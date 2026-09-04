@@ -1,0 +1,99 @@
+import { useState } from 'react';
+import { WizzletLogo } from '@/components/WizzletLogo';
+import { useNavigate } from 'react-router-dom';
+import { useAuth } from '@/contexts/AuthContext';
+import { supabase } from '@/lib/supabase';
+import { Zap, Crown, Users, Loader2 } from 'lucide-react';
+import { toast } from 'sonner';
+
+const SelectRole = () => {
+  const { user, refreshRole } = useAuth();
+  const navigate = useNavigate();
+  const [selected, setSelected] = useState<'creator' | 'subscriber' | null>(null);
+  const [loading, setLoading] = useState(false);
+
+  const handleContinue = async () => {
+    if (!selected || !user) return;
+    setLoading(true);
+
+    const { error } = await supabase.from('user_roles').upsert(
+      { user_id: user.id, role: selected },
+      { onConflict: 'user_id,role', ignoreDuplicates: true },
+    );
+
+
+    if (error) {
+      toast.error('Failed to set role. Please try again.');
+      setLoading(false);
+      return;
+    }
+
+    await refreshRole();
+    setLoading(false);
+    navigate(selected === 'creator' ? '/creator/onboarding' : '/dashboard');
+  };
+
+  const roles = [
+    {
+      id: 'creator' as const,
+      icon: Crown,
+      title: 'Become a Creator',
+      description: 'Share your sports picks, build an audience, and earn from subscriptions.',
+    },
+    {
+      id: 'subscriber' as const,
+      icon: Users,
+      title: 'Continue as Subscriber',
+      description: 'Follow top creators and access premium sports picks and content.',
+    },
+  ];
+
+  return (
+    <div className="min-h-screen flex items-center justify-center px-4">
+      <div className="w-full max-w-lg">
+        <div className="text-center mb-10">
+          <WizzletLogo size="lg" linkTo="" className="justify-center mb-6" />
+          <h1 className="text-2xl font-bold mt-4">How do you want to use Wizzlet?</h1>
+          <p className="text-sm text-muted-foreground mt-2">You can always change this later</p>
+        </div>
+
+        <div className="grid gap-4">
+          {roles.map((role) => (
+            <button
+              key={role.id}
+              onClick={() => setSelected(role.id)}
+              className={`flex items-start gap-4 rounded-xl border p-5 text-left transition-all ${
+                selected === role.id
+                  ? 'border-primary bg-primary/5 ring-1 ring-primary'
+                  : 'border-border bg-card hover:border-muted-foreground/30'
+              }`}
+            >
+              <div
+                className={`mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-lg ${
+                  selected === role.id ? 'bg-primary text-primary-foreground' : 'bg-secondary text-muted-foreground'
+                }`}
+              >
+                <role.icon className="h-5 w-5" />
+              </div>
+              <div>
+                <p className="font-semibold">{role.title}</p>
+                <p className="text-sm text-muted-foreground mt-1">{role.description}</p>
+              </div>
+            </button>
+          ))}
+        </div>
+
+        <button
+          onClick={handleContinue}
+          disabled={!selected || loading}
+          className="mt-6 w-full rounded-lg bg-primary px-4 py-3 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          {loading && <Loader2 className="mr-2 inline h-4 w-4 animate-spin" />}
+          Continue
+        </button>
+      </div>
+    </div>
+  );
+};
+
+export default SelectRole;
