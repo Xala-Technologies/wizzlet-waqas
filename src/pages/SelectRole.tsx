@@ -1,35 +1,39 @@
 import { useState } from 'react';
 import { WizzletLogo } from '@/components/WizzletLogo';
-import { useNavigate } from 'react-router-dom';
+import { Seo } from '@/components/Seo';
+import { Navigate, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/lib/supabase';
-import { Zap, Crown, Users, Loader2 } from 'lucide-react';
+import { Crown, Users, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 
 const SelectRole = () => {
-  const { user, refreshRole } = useAuth();
+  const { user, loading, refreshRole } = useAuth();
   const navigate = useNavigate();
   const [selected, setSelected] = useState<'creator' | 'subscriber' | null>(null);
-  const [loading, setLoading] = useState(false);
+  const [saving, setSaving] = useState(false);
+
+  if (!loading && !user) {
+    return <Navigate to="/login" replace />;
+  }
 
   const handleContinue = async () => {
     if (!selected || !user) return;
-    setLoading(true);
+    setSaving(true);
 
     const { error } = await supabase.from('user_roles').upsert(
       { user_id: user.id, role: selected },
       { onConflict: 'user_id,role', ignoreDuplicates: true },
     );
 
-
     if (error) {
       toast.error('Failed to set role. Please try again.');
-      setLoading(false);
+      setSaving(false);
       return;
     }
 
     await refreshRole();
-    setLoading(false);
+    setSaving(false);
     navigate(selected === 'creator' ? '/creator/onboarding' : '/dashboard');
   };
 
@@ -49,7 +53,8 @@ const SelectRole = () => {
   ];
 
   return (
-    <div className="min-h-screen flex items-center justify-center px-4">
+    <main id="main-content" className="min-h-screen flex items-center justify-center px-4">
+      <Seo title="Choose your role — Wizzlet" description="Choose whether to join Wizzlet as a creator or subscriber." noindex />
       <div className="w-full max-w-lg">
         <div className="text-center mb-10">
           <WizzletLogo size="lg" linkTo="" className="justify-center mb-6" />
@@ -61,6 +66,7 @@ const SelectRole = () => {
           {roles.map((role) => (
             <button
               key={role.id}
+              type="button"
               onClick={() => setSelected(role.id)}
               className={`flex items-start gap-4 rounded-xl border p-5 text-left transition-all ${
                 selected === role.id
@@ -84,15 +90,16 @@ const SelectRole = () => {
         </div>
 
         <button
+          type="button"
           onClick={handleContinue}
-          disabled={!selected || loading}
+          disabled={!selected || saving}
           className="mt-6 w-full rounded-lg bg-primary px-4 py-3 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          {loading && <Loader2 className="mr-2 inline h-4 w-4 animate-spin" />}
+          {saving && <Loader2 className="mr-2 inline h-4 w-4 animate-spin" />}
           Continue
         </button>
       </div>
-    </div>
+    </main>
   );
 };
 

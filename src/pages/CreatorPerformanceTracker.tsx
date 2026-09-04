@@ -26,6 +26,7 @@ import { toast } from 'sonner';
 import { ResponsiveContainer, AreaChart, Area, XAxis, YAxis, Tooltip, PieChart, Pie, Cell, BarChart, Bar } from 'recharts';
 import { downloadCsv, readFileAsText } from '@/lib/csv';
 import { PICK_CSV_HEADERS, parsePickCsv } from '@/lib/pickCsv';
+import { americanToDecimal, decimalToAmerican } from '@/lib/odds';
 
 interface PickEntry {
   id: string; date: string; pick_event: string; sport: string;
@@ -36,19 +37,6 @@ interface PickEntry {
 const SPORTS = ['NFL', 'NBA', 'MLB', 'NHL', 'Soccer', 'MMA', 'Tennis', 'Other'];
 const RESULTS = ['win', 'loss', 'push', 'pending'];
 const DAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
-
-function euToUs(eu: number): string {
-  if (eu >= 2) return `+${Math.round((eu - 1) * 100)}`;
-  if (eu > 1) return `-${Math.round(100 / (eu - 1))}`;
-  return '';
-}
-function usToEu(us: string): number | null {
-  const n = parseFloat(us);
-  if (isNaN(n)) return null;
-  if (n > 0) return parseFloat((n / 100 + 1).toFixed(3));
-  if (n < 0) return parseFloat((100 / Math.abs(n) + 1).toFixed(3));
-  return null;
-}
 
 const defaultForm = {
   date: new Date().toISOString().split('T')[0], pick_event: '', sport: 'NFL',
@@ -81,7 +69,7 @@ const CreatorPerformanceTracker = () => {
   const { data: picks = [], isLoading } = useQuery({
     queryKey: ['creator_pick_tracker'],
     queryFn: async () => {
-      const { data, error } = await supabase.from('pick_tracker' as any).select('*').order('date', { ascending: true });
+      const { data, error } = await supabase.from('pick_tracker').select('*').order('date', { ascending: true });
       if (error) throw error;
       return (data || []) as unknown as PickEntry[];
     },
@@ -111,12 +99,12 @@ const CreatorPerformanceTracker = () => {
   });
 
   const upsertMutation = useMutation({
-    mutationFn: async (entry: any) => {
+    mutationFn: async (entry: Omit<PickEntry, 'id'> & { id?: string }) => {
       if (editId) {
-        const { error } = await supabase.from('pick_tracker' as any).update(entry).eq('id', editId);
+        const { error } = await supabase.from('pick_tracker').update(entry).eq('id', editId);
         if (error) throw error;
       } else {
-        const { error } = await supabase.from('pick_tracker' as any).insert({ ...entry, user_id: user?.id });
+        const { error } = await supabase.from('pick_tracker').insert({ ...entry, user_id: user?.id });
         if (error) throw error;
       }
     },
@@ -125,7 +113,7 @@ const CreatorPerformanceTracker = () => {
   });
 
   const deleteMutation = useMutation({
-    mutationFn: async (id: string) => { const { error } = await supabase.from('pick_tracker' as any).delete().eq('id', id); if (error) throw error; },
+    mutationFn: async (id: string) => { const { error } = await supabase.from('pick_tracker').delete().eq('id', id); if (error) throw error; },
     onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['creator_pick_tracker'] }); toast.success('Deleted'); },
   });
 
@@ -188,7 +176,7 @@ const CreatorPerformanceTracker = () => {
       const { rows, skipped } = parsePickCsv(await readFileAsText(file));
       if (rows.length === 0) { toast.error('No valid rows found in that CSV'); return; }
       const { error } = await supabase
-        .from('pick_tracker' as any)
+        .from('pick_tracker')
         .insert(rows.map(r => ({ ...r, user_id: user.id })));
       if (error) throw error;
       queryClient.invalidateQueries({ queryKey: ['creator_pick_tracker'] });
@@ -214,11 +202,11 @@ const CreatorPerformanceTracker = () => {
 
   const handleEuChange = useCallback((val: string) => {
     const eu = parseFloat(val);
-    setForm(f => ({ ...f, eu_odds: val, us_odds: !isNaN(eu) && eu > 1 ? euToUs(eu) : f.us_odds }));
+    setForm(f => ({ ...f, eu_odds: val, us_odds: !isNaN(eu) && eu > 1 ? decimalToAmerican(eu) : f.us_odds }));
   }, []);
 
   const handleUsChange = useCallback((val: string) => {
-    const eu = usToEu(val);
+    const eu = americanToDecimal(val);
     setForm(f => ({ ...f, us_odds: val, eu_odds: eu !== null ? String(eu) : f.eu_odds }));
   }, []);
 

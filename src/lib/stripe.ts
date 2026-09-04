@@ -1,19 +1,26 @@
 /**
  * Payments — Client-Side Helpers
  *
- * The platform currently runs in SANDBOX mode: no live payment provider is
- * connected, so checkout is simulated by the `sandbox-checkout` edge function.
- * It writes a real `subscriptions` row (fees/earnings are calculated by the
- * database trigger) without moving any money.
- *
- * When a live provider is enabled, swap `sandbox-checkout` for the provider's
- * checkout session function — the rest of the app needs no changes.
+ * Default mode is SANDBOX for local development: checkout is simulated by the
+ * `sandbox-checkout` edge function (requires ALLOW_SANDBOX_CHECKOUT=true on
+ * the function). Production builds refuse sandbox checkout unless
+ * VITE_ALLOW_SANDBOX_CHECKOUT=true is explicitly set.
  */
 
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
 export const PAYMENTS_MODE = 'sandbox' as const;
+
+/** Sandbox minting is allowed in Vite DEV, or when explicitly opted in. */
+export const SANDBOX_CHECKOUT_ALLOWED =
+  import.meta.env.DEV || import.meta.env.VITE_ALLOW_SANDBOX_CHECKOUT === 'true';
+
+function assertSandboxAllowed(): boolean {
+  if (SANDBOX_CHECKOUT_ALLOWED) return true;
+  toast.error('Checkout is not available in this environment.');
+  return false;
+}
 
 /**
  * Simulated checkout. Creates an active subscription for the signed-in user.
@@ -23,6 +30,8 @@ export async function createCheckoutSession(
   creatorUsername: string,
   productId?: string
 ): Promise<void> {
+  if (!assertSandboxAllowed()) return;
+
   const { data: session } = await supabase.auth.getSession();
   if (!session.session) {
     toast.error('Please sign in to subscribe.');
@@ -59,6 +68,8 @@ export async function createCheckoutSession(
  * Cancels a sandbox subscription.
  */
 export async function cancelSubscription(creatorId: string): Promise<boolean> {
+  if (!assertSandboxAllowed()) return false;
+
   try {
     const { data, error } = await supabase.functions.invoke('sandbox-checkout', {
       body: { action: 'cancel', creatorId },

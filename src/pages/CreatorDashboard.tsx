@@ -61,7 +61,7 @@ const CreatorDashboard = () => {
   const { data: picks = [] } = useQuery({
     queryKey: ['creator_dashboard_picks'],
     queryFn: async () => {
-      const { data, error } = await supabase.from('pick_tracker' as any).select('*').order('date', { ascending: true });
+      const { data, error } = await supabase.from('pick_tracker').select('*').order('date', { ascending: true });
       if (error) throw error;
       return (data || []) as unknown as PickEntry[];
     },

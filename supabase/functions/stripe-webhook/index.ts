@@ -2,24 +2,16 @@
  * Edge Function: stripe-webhook
  *
  * Handles Stripe webhook events to keep the database in sync.
- * 
- * Supported events:
- *   - checkout.session.completed  → Create subscription record
- *   - invoice.paid               → Renew / confirm recurring payment
- *   - invoice.payment_failed     → Mark subscription as past_due
- *   - customer.subscription.deleted → Mark subscription as cancelled
  *
- * The database trigger `calculate_platform_fee` automatically splits:
- *   - 10% → platform_fee
- *   - 90% → creator_earnings
+ * FAIL CLOSED: until Stripe signature verification is implemented with
+ * `constructEvent`, this function refuses to process payloads. Returning 200
+ * without verification would allow forged events to mutate subscriptions.
  *
- * Required secrets:
+ * Required secrets (when activating):
  *   - STRIPE_SECRET_KEY
  *   - STRIPE_WEBHOOK_SECRET
- *   - SUPABASE_SERVICE_ROLE_KEY (to bypass RLS for inserts)
+ *   - SUPABASE_SERVICE_ROLE_KEY
  */
-
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -33,9 +25,7 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const body = await req.text();
     const signature = req.headers.get("stripe-signature");
-
     if (!signature) {
       return new Response(JSON.stringify({ error: "Missing stripe-signature" }), {
         status: 400,
@@ -43,67 +33,31 @@ Deno.serve(async (req) => {
       });
     }
 
-    // --- TODO: Verify webhook signature ---
-    // const stripe = new Stripe(Deno.env.get('STRIPE_SECRET_KEY')!);
-    // const webhookSecret = Deno.env.get('STRIPE_WEBHOOK_SECRET')!;
-    // const event = stripe.webhooks.constructEvent(body, signature, webhookSecret);
+    const webhookSecret = Deno.env.get("STRIPE_WEBHOOK_SECRET");
+    if (!webhookSecret) {
+      return new Response(
+        JSON.stringify({ error: "Webhook not configured" }),
+        {
+          status: 503,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        },
+      );
+    }
 
-    // --- TODO: Use service role client to bypass RLS ---
-    // const supabaseAdmin = createClient(
-    //   Deno.env.get('SUPABASE_URL')!,
-    //   Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
-    // );
+    // Consume body so the request is fully read, but do not trust it.
+    await req.text();
 
-    // --- TODO: Handle events ---
-    // switch (event.type) {
-    //   case 'checkout.session.completed': {
-    //     const session = event.data.object;
-    //     const { creatorId, userId } = session.metadata;
-    //     const amount = session.amount_total / 100;
-    //
-    //     // Insert subscription — trigger auto-calculates platform_fee & creator_earnings
-    //     await supabaseAdmin.from('subscriptions').insert({
-    //       user_id: userId,
-    //       creator_id: creatorId,
-    //       stripe_subscription_id: session.subscription,
-    //       amount,
-    //       status: 'active',
-    //     });
-    //     break;
-    //   }
-    //
-    //   case 'invoice.paid': {
-    //     const invoice = event.data.object;
-    //     // Update subscription status and amount for renewals
-    //     await supabaseAdmin.from('subscriptions')
-    //       .update({ status: 'active', amount: invoice.amount_paid / 100 })
-    //       .eq('stripe_subscription_id', invoice.subscription);
-    //     break;
-    //   }
-    //
-    //   case 'invoice.payment_failed': {
-    //     const invoice = event.data.object;
-    //     await supabaseAdmin.from('subscriptions')
-    //       .update({ status: 'past_due' })
-    //       .eq('stripe_subscription_id', invoice.subscription);
-    //     break;
-    //   }
-    //
-    //   case 'customer.subscription.deleted': {
-    //     const subscription = event.data.object;
-    //     await supabaseAdmin.from('subscriptions')
-    //       .update({ status: 'cancelled' })
-    //       .eq('stripe_subscription_id', subscription.id);
-    //     break;
-    //   }
-    // }
-
+    // Signature verification (constructEvent) is not yet wired. Refuse all
+    // processing so unverified events cannot create or cancel subscriptions.
     return new Response(
-      JSON.stringify({ received: true, note: "Stripe webhook structure ready — not yet active" }),
+      JSON.stringify({
+        error:
+          "Webhook signature verification is not implemented — refusing to process events",
+      }),
       {
-        status: 200,
+        status: 501,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
-      }
+      },
     );
   } catch (err) {
     console.error("stripe-webhook error:", err);
@@ -112,7 +66,7 @@ Deno.serve(async (req) => {
       {
         status: 500,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
-      }
+      },
     );
   }
 });

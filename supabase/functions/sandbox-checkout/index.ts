@@ -32,6 +32,12 @@ Deno.serve(async (req) => {
   }
 
   try {
+    // Explicit allow-list: never mint free premium subscriptions in production
+    // unless operators intentionally enable sandbox checkout.
+    if (Deno.env.get("ALLOW_SANDBOX_CHECKOUT") !== "true") {
+      return json({ error: "Sandbox checkout is disabled" }, 403);
+    }
+
     const authHeader = req.headers.get("Authorization");
     if (!authHeader?.startsWith("Bearer ")) {
       return json({ error: "Unauthorized" }, 401);
@@ -99,7 +105,10 @@ Deno.serve(async (req) => {
         .from("subscriptions")
         .update({ status: "cancelled" })
         .eq("id", existing.id);
-      if (error) return json({ error: error.message }, 400);
+      if (error) {
+        console.error("sandbox-checkout cancel error:", error);
+        return json({ error: "Could not cancel subscription" }, 400);
+      }
       return json({ ok: true, status: "cancelled", sandbox: true });
     }
 
@@ -140,7 +149,10 @@ Deno.serve(async (req) => {
           stripe_subscription_id: sandboxRef,
         })
         .eq("id", existing.id);
-      if (error) return json({ error: error.message }, 400);
+      if (error) {
+        console.error("sandbox-checkout update error:", error);
+        return json({ error: "Could not update subscription" }, 400);
+      }
     } else {
       const { error } = await admin.from("subscriptions").insert({
         user_id: appUser.id,
@@ -149,7 +161,10 @@ Deno.serve(async (req) => {
         status: "active",
         stripe_subscription_id: sandboxRef,
       });
-      if (error) return json({ error: error.message }, 400);
+      if (error) {
+        console.error("sandbox-checkout insert error:", error);
+        return json({ error: "Could not create subscription" }, 400);
+      }
     }
 
     await admin.from("notifications").insert({

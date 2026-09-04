@@ -78,18 +78,28 @@ import Pricing from "./pages/Pricing";
 import Discover from "./pages/Discover";
 import TopCreators from "./pages/TopCreators";
 import Community from "./pages/Community";
+import { ErrorBoundary } from "./components/ErrorBoundary";
 
-const queryClient = new QueryClient();
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      retry: 1,
+      refetchOnWindowFocus: false,
+      staleTime: 30_000,
+    },
+  },
+});
 
 const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <AuthProvider>
-      <TooltipProvider>
-        <Toaster />
-        <Sonner />
-        <BrowserRouter>
-          <DevModeBanner />
-          <Routes>
+  <ErrorBoundary>
+    <QueryClientProvider client={queryClient}>
+      <AuthProvider>
+        <TooltipProvider>
+          <Toaster />
+          <Sonner />
+          <BrowserRouter>
+            <DevModeBanner />
+            <Routes>
             <Route path="/" element={<Index />} />
             <Route path="/network" element={<Network />} />
             <Route path="/creators" element={<Creators />} />
@@ -173,6 +183,7 @@ const App = () => (
       </TooltipProvider>
     </AuthProvider>
   </QueryClientProvider>
+  </ErrorBoundary>
 );
 
 export default App;

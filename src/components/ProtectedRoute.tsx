@@ -60,7 +60,7 @@ export function ProtectedRoute({ children, allowedRoles }: ProtectedRouteProps) 
     return <Navigate to="/login" replace />;
   }
 
-  if (!devMode) {
+  if (!(import.meta.env.DEV && devMode)) {
     // Authenticated but no role assigned yet → role selection.
     if (roles.length === 0) {
       return <Navigate to="/select-role" replace />;

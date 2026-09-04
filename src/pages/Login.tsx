@@ -12,7 +12,7 @@ import { ACTIVE_ROLE_STORAGE_KEY, fetchUserRoles, homePathForRole, resolveActive
 import { Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 
-
+const isDevBuild = import.meta.env.DEV;
 
 const Login = () => {
   const navigate = useNavigate();
@@ -43,8 +43,12 @@ const Login = () => {
     navigate(homePathForRole(active));
   };
 
-
   const handleTestLogin = async () => {
+    if (!isDevBuild) {
+      toast.error('Dev login is only available in development builds.');
+      return;
+    }
+
     setLoading(true);
     const testEmail = 'test@wizzlet.dev';
     const testPassword = 'test123456';
@@ -76,20 +80,19 @@ const Login = () => {
       }
     }
 
-    // Assign all roles to the test user
+    // Non-admin roles only — admin cannot be self-assigned via client RLS.
     const { data: { user } } = await supabase.auth.getUser();
     if (user) {
-      const rolesToAssign: ('admin' | 'creator' | 'subscriber')[] = ['admin', 'creator', 'subscriber'];
+      const rolesToAssign: ('creator' | 'subscriber')[] = ['creator', 'subscriber'];
       await supabase.from('user_roles').upsert(
         rolesToAssign.map((role) => ({ user_id: user.id, role })),
         { onConflict: 'user_id,role', ignoreDuplicates: true },
       );
     }
 
-    // Enable dev mode in context
     enableDevMode();
     setDevRole('admin');
-    toast.success('Dev mode activated — full access enabled');
+    toast.success('Dev mode activated — UI role bypass enabled (DB admin still requires service role)');
     setLoading(false);
     navigate('/admin');
   };
@@ -120,21 +123,25 @@ const Login = () => {
         </form>
 
         <div className="mt-6 pt-4 border-t border-border space-y-3">
-          <Button
-            variant="outline"
-            className="w-full text-muted-foreground"
-            onClick={handleTestLogin}
-            disabled={loading}
-          >
-            {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-            🧪 Dev: Quick Test (Full Access)
-          </Button>
-          <p className="text-[10px] text-muted-foreground/50 text-center">
-            Grants admin + creator + subscriber roles
-          </p>
+          {isDevBuild && (
+            <>
+              <Button
+                variant="outline"
+                className="w-full text-muted-foreground"
+                onClick={handleTestLogin}
+                disabled={loading}
+              >
+                {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                Dev: Quick Test
+              </Button>
+              <p className="text-[10px] text-muted-foreground/50 text-center">
+                Development only — UI bypass; does not grant DB admin
+              </p>
+            </>
+          )}
           <Link to="/demo/admin">
             <Button variant="ghost" className="w-full text-muted-foreground text-xs">
-              👀 Explore Demo Mode
+              Explore Demo Mode
             </Button>
           </Link>
         </div>

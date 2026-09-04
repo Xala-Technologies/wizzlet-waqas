@@ -4,6 +4,7 @@ import { supabase } from '@/lib/supabase';
 import { Users, Crown, DollarSign, CreditCard, Loader2, TrendingUp, Activity, UserPlus, BarChart3, Wallet, Percent, AlertTriangle, FileWarning } from 'lucide-react';
 import { BarChart, Bar, LineChart, Line, AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts';
 import { format } from 'date-fns';
+import { toast } from 'sonner';
 
 const monthlyRevenue = [
   { month: 'Oct', revenue: 1200, fees: 120 },
@@ -54,6 +55,16 @@ const AdminDashboard = () => {
         supabase.from('users').select('full_name, email, created_at').order('created_at', { ascending: false }).limit(5),
       ]);
 
+      const firstError =
+        usersRes.error ||
+        creatorsRes.error ||
+        subsRes.error ||
+        allSubsRes.error ||
+        recentCreatorsRes.error ||
+        recentUsersRes.error;
+      if (firstError) {
+        toast.error(firstError.message || 'Failed to load admin dashboard');
+      }
       setUserCount(usersRes.count ?? 0);
       setCreatorCount(creatorsRes.count ?? 0);
       const subs = subsRes.data ?? [];

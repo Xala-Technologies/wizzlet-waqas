@@ -1,6 +1,7 @@
 import { createContext, useContext, useEffect, useState, useCallback, ReactNode } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/lib/supabase';
+import { resetAnalyticsUser } from '@/lib/analytics';
 import {
   AppRole,
   ACTIVE_ROLE_STORAGE_KEY,
@@ -8,6 +9,8 @@ import {
   isAppRole,
   resolveActiveRole,
 } from '@/lib/roles';
+
+const DEV_BYPASS_ALLOWED = import.meta.env.DEV;
 
 interface AuthContextType {
   user: User | null;
@@ -22,6 +25,7 @@ interface AuthContextType {
   switchRole: (role: AppRole) => void;
   signOut: () => Promise<void>;
   refreshRole: () => Promise<void>;
+  /** True only in development when Quick Test enabled a UI bypass. */
   devMode: boolean;
   setDevRole: (role: AppRole) => void;
   enableDevMode: () => void;
@@ -88,7 +92,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const switchRole = useCallback(
     (next: AppRole) => {
-      if (!devMode && !roles.includes(next)) return;
+      if (!(DEV_BYPASS_ALLOWED && devMode) && !roles.includes(next)) return;
       setRole(next);
       persistRole(next);
     },
@@ -96,6 +100,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   );
 
   const setDevRole = useCallback((newRole: AppRole) => {
+    if (!DEV_BYPASS_ALLOWED) return;
     setDevMode((enabled) => {
       if (enabled) {
         setRole(newRole);
@@ -105,27 +110,33 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     });
   }, []);
 
-  const enableDevMode = useCallback(() => setDevMode(true), []);
+  const enableDevMode = useCallback(() => {
+    if (!DEV_BYPASS_ALLOWED) return;
+    setDevMode(true);
+  }, []);
 
   const hasRole = useCallback(
-    (target: AppRole) => devMode || roles.includes(target),
+    (target: AppRole) => (DEV_BYPASS_ALLOWED && devMode) || roles.includes(target),
     [roles, devMode],
   );
 
   useEffect(() => {
+    let roleLoadTimer: ReturnType<typeof setTimeout> | undefined;
+
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, nextSession) => {
       setSession(nextSession);
       setUser(nextSession?.user ?? null);
       setLoading(false);
       if (nextSession?.user) {
         // Defer the Supabase call out of the auth callback to avoid deadlocks.
-        setTimeout(() => loadRoles(nextSession.user.id), 0);
+        roleLoadTimer = setTimeout(() => loadRoles(nextSession.user.id), 0);
       } else {
         setRole(null);
         setRoles([]);
         setRoleLoading(false);
         setDevMode(false);
         persistRole(null);
+        resetAnalyticsUser();
       }
     });
 
@@ -140,12 +151,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
     });
 
-    return () => subscription.unsubscribe();
+    return () => {
+      subscription.unsubscribe();
+      if (roleLoadTimer) clearTimeout(roleLoadTimer);
+    };
   }, [loadRoles]);
 
   const signOut = async () => {
     setDevMode(false);
     persistRole(null);
+    resetAnalyticsUser();
     await supabase.auth.signOut();
     setRole(null);
     setRoles([]);
@@ -164,7 +179,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         switchRole,
         signOut,
         refreshRole,
-        devMode,
+        // Never expose active bypass outside development builds.
+        devMode: DEV_BYPASS_ALLOWED && devMode,
         setDevRole,
         enableDevMode,
       }}

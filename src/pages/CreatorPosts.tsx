@@ -20,6 +20,7 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
+import { americanToDecimal, decimalToAmerican } from '@/lib/odds';
 
 interface Post {
   id: string;
@@ -35,21 +36,6 @@ interface Product {
   id: string;
   name: string;
   subCount: number;
-}
-
-// Odds conversion helpers
-function usToEu(us: string): string {
-  const n = parseFloat(us);
-  if (isNaN(n)) return '';
-  if (n > 0) return (n / 100 + 1).toFixed(2);
-  return (100 / Math.abs(n) + 1).toFixed(2);
-}
-
-function euToUs(eu: string): string {
-  const n = parseFloat(eu);
-  if (isNaN(n) || n < 1) return '';
-  if (n >= 2) return `+${((n - 1) * 100).toFixed(0)}`;
-  return `-${(100 / (n - 1)).toFixed(0)}`;
 }
 
 const SPORTS = ['NBA', 'NFL', 'Soccer', 'Tennis', 'MLB', 'NHL', 'MMA', 'Boxing', 'Golf', 'Other'];
@@ -126,8 +112,17 @@ const CreatorPosts = () => {
     setIsPremium(post.is_premium); setMode('create');
   };
 
-  const handleUsOddsChange = (val: string) => { setUsOdds(val); setOddsSource('us'); setEuOdds(usToEu(val)); };
-  const handleEuOddsChange = (val: string) => { setEuOdds(val); setOddsSource('eu'); setUsOdds(euToUs(val)); };
+  const handleUsOddsChange = (val: string) => {
+    setUsOdds(val);
+    setOddsSource('us');
+    const eu = americanToDecimal(val);
+    setEuOdds(eu !== null ? String(eu) : '');
+  };
+  const handleEuOddsChange = (val: string) => {
+    setEuOdds(val);
+    setOddsSource('eu');
+    setUsOdds(decimalToAmerican(val));
+  };
 
   const buildContent = (): string => {
     const parts: string[] = [];

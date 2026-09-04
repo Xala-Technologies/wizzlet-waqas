@@ -207,7 +207,7 @@ const Dashboard = () => {
     try {
       const euVal = trackForm.eu_odds ? parseFloat(trackForm.eu_odds) : null;
       const units = parseFloat(trackForm.units_risked) || 1;
-      const { error } = await supabase.from('pick_tracker' as any).insert({
+      const { error } = await supabase.from('pick_tracker').insert({
         user_id: user.id, pick_event: trackForm.pick_event, sport: trackForm.sport || 'Other',
         eu_odds: euVal, us_odds: trackForm.us_odds || null, units_risked: units, result: 'pending', units_won_lost: 0,
       });

@@ -53,8 +53,47 @@ export function useCreatorProfile() {
   }, [user]);
 
   useEffect(() => {
-    void load();
-  }, [load]);
+    let cancelled = false;
+
+    const run = async () => {
+      if (!user) {
+        if (!cancelled) {
+          setCreator(null);
+          setLoading(false);
+        }
+        return;
+      }
+      setLoading(true);
+      const { data: appUser } = await supabase
+        .from('users')
+        .select('id')
+        .eq('auth_id', user.id)
+        .maybeSingle();
+
+      if (cancelled) return;
+
+      if (!appUser) {
+        setCreator(null);
+        setLoading(false);
+        return;
+      }
+
+      const { data } = await supabase
+        .from('creators')
+        .select('id, user_id, username, display_name, monthly_price, referral_code, messaging_enabled, created_at')
+        .eq('user_id', appUser.id)
+        .maybeSingle();
+
+      if (cancelled) return;
+      setCreator((data as CreatorProfile) ?? null);
+      setLoading(false);
+    };
+
+    void run();
+    return () => {
+      cancelled = true;
+    };
+  }, [user]);
 
   return { creator, loading, reload: load };
 }

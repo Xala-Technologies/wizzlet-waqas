@@ -35,8 +35,16 @@ const AdminUsers = () => {
       supabase.from('creators').select('id, user_id'),
     ]);
 
-    const payoutsRes = await supabase.from('payouts').select('creator_id, amount, status');
+    if (usersRes.error) {
+      toast.error(usersRes.error.message || 'Failed to load users');
+      setLoading(false);
+      return;
+    }
 
+    const payoutsRes = await supabase.from('payouts').select('creator_id, amount, status');
+    if (payoutsRes.error) {
+      toast.error(payoutsRes.error.message || 'Failed to load payouts');
+    }
     const subs = subsRes.data ?? [];
     const subCounts = new Map<string, number>();
     subs.filter(s => s.status === 'active').forEach(s => {

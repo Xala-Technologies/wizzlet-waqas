@@ -128,19 +128,26 @@ const CreatorProfile = () => {
     return { wins, settled: settled.length, winRate, totalUnits: Math.abs(unitsWon).toFixed(1), roi, streak };
   }, [posts]);
 
-  // Simulated 30-day chart
+  // Cumulative units from settled picks (real data — no simulated chart)
   const chartData = useMemo(() => {
-    const days = 30;
+    const settled = [...posts]
+      .filter((p) => p.result === 'won' || p.result === 'lost' || p.result === 'push')
+      .sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
+
+    if (settled.length === 0) return [];
+
     let running = 0;
-    const data = [];
-    for (let i = days; i >= 0; i--) {
-      const d = new Date();
-      d.setDate(d.getDate() - i);
-      running += (Math.random() - 0.4) * 2;
-      data.push({ date: format(d, 'MMM d'), units: parseFloat(running.toFixed(1)) });
-    }
-    return data;
-  }, []);
+    return settled.map((p) => {
+      const pick = parsePick(p.content);
+      const u = parseFloat(pick?.units?.replace(/[^0-9.]/g, '') || '1');
+      if (p.result === 'won') running += u * 0.9;
+      else if (p.result === 'lost') running -= u;
+      return {
+        date: format(new Date(p.created_at), 'MMM d'),
+        units: parseFloat(running.toFixed(1)),
+      };
+    });
+  }, [posts]);
 
   if (loading) {
     return <div className="min-h-screen flex items-center justify-center"><Loader2 className="h-6 w-6 animate-spin text-primary" /></div>;
@@ -235,23 +242,27 @@ const CreatorProfile = () => {
           ))}
         </div>
 
-        {/* Last 30 Days Chart */}
+        {/* Performance chart from settled picks */}
         <div className="mt-6 rounded-xl border border-border bg-card p-4">
-          <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">Last 30 Days Performance</h3>
-          <ResponsiveContainer width="100%" height={150}>
-            <AreaChart data={chartData}>
-              <defs>
-                <linearGradient id="profitGrad" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor="hsl(var(--primary))" stopOpacity={0.3} />
-                  <stop offset="100%" stopColor="hsl(var(--primary))" stopOpacity={0} />
-                </linearGradient>
-              </defs>
-              <XAxis dataKey="date" tick={{ fontSize: 10 }} stroke="hsl(var(--muted-foreground))" tickLine={false} axisLine={false} interval="preserveStartEnd" />
-              <YAxis tick={{ fontSize: 10 }} stroke="hsl(var(--muted-foreground))" tickLine={false} axisLine={false} width={30} />
-              <Tooltip contentStyle={{ background: 'hsl(var(--card))', border: '1px solid hsl(var(--border))', borderRadius: '8px', fontSize: '12px' }} />
-              <Area type="monotone" dataKey="units" stroke="hsl(var(--primary))" fill="url(#profitGrad)" strokeWidth={2} />
-            </AreaChart>
-          </ResponsiveContainer>
+          <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">Performance</h3>
+          {chartData.length === 0 ? (
+            <p className="text-sm text-muted-foreground py-8 text-center">No settled picks yet to chart.</p>
+          ) : (
+            <ResponsiveContainer width="100%" height={150}>
+              <AreaChart data={chartData}>
+                <defs>
+                  <linearGradient id="profitGrad" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="hsl(var(--primary))" stopOpacity={0.3} />
+                    <stop offset="100%" stopColor="hsl(var(--primary))" stopOpacity={0} />
+                  </linearGradient>
+                </defs>
+                <XAxis dataKey="date" tick={{ fontSize: 10 }} stroke="hsl(var(--muted-foreground))" tickLine={false} axisLine={false} interval="preserveStartEnd" />
+                <YAxis tick={{ fontSize: 10 }} stroke="hsl(var(--muted-foreground))" tickLine={false} axisLine={false} width={30} />
+                <Tooltip contentStyle={{ background: 'hsl(var(--card))', border: '1px solid hsl(var(--border))', borderRadius: '8px', fontSize: '12px' }} />
+                <Area type="monotone" dataKey="units" stroke="hsl(var(--primary))" fill="url(#profitGrad)" strokeWidth={2} />
+              </AreaChart>
+            </ResponsiveContainer>
+          )}
         </div>
 
         {/* Subscribe CTA */}
