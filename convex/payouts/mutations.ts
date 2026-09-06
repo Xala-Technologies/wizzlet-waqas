@@ -1,5 +1,5 @@
 import { mutation, query } from "../_generated/server";
-import { v } from "convex/values";
+import { ConvexError, v } from "convex/values";
 import { getCreatorForUser, requireAdmin, requireAppUser } from "../lib/auth";
 import { getCreatorAvailableBalanceCents } from "../lib/payoutBalance";
 import {
@@ -114,7 +114,7 @@ export const upsertSettings = mutation({
   handler: async (ctx, args) => {
     const user = await requireAppUser(ctx);
     const creator = await getCreatorForUser(ctx, user._id);
-    if (!creator) throw new Error("NOT_FOUND");
+    if (!creator) throw new ConvexError("NOT_FOUND");
     const existing = await ctx.db
       .query("creatorPayoutSettings")
       .withIndex("by_creatorId", (q) => q.eq("creatorId", creator._id))
@@ -143,9 +143,9 @@ export const requestPayout = mutation({
   handler: async (ctx, args) => {
     const user = await requireAppUser(ctx);
     const creator = await getCreatorForUser(ctx, user._id);
-    if (!creator) throw new Error("NOT_FOUND");
+    if (!creator) throw new ConvexError("NOT_FOUND");
     if (!Number.isFinite(args.amountCents) || args.amountCents <= 0) {
-      throw new Error("INVALID_AMOUNT");
+      throw new ConvexError("INVALID_AMOUNT");
     }
 
     const settings = await ctx.db
@@ -154,12 +154,12 @@ export const requestPayout = mutation({
       .unique();
     const min = settings?.minimumPayoutCents ?? 5000;
     if (args.amountCents < min) {
-      throw new Error("BELOW_MINIMUM");
+      throw new ConvexError("BELOW_MINIMUM");
     }
 
     const balance = await getCreatorAvailableBalanceCents(ctx, creator._id);
     if (args.amountCents > balance.availableCents) {
-      throw new Error("INSUFFICIENT_BALANCE");
+      throw new ConvexError("INSUFFICIENT_BALANCE");
     }
 
     const now = Date.now();

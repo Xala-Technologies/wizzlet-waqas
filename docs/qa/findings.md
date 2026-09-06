@@ -18,7 +18,7 @@ Prior IDs from [docs/convex-audit/findings.md](../convex-audit/findings.md) reus
 | F-006 | P1 | **PASS (fixed)** | Growth upserts check creator ownership |
 | F-007 | P2 | **PASS (fixed)** | `getByUsername` public projection |
 | F-008 | P2 | **PARTIAL** | Auth required; residual legacy unowned ACL — see **QA-W1-03** |
-| F-009 | P2 | **PASS (unit)** | Balance helper tested; live payout UI NOT_RUN |
+| F-009 | P2 | **PASS (W16)** | Balance helper + UI: Paid out ≠ reserved; request uses ConvexError |
 | F-010 | P2 | **PASS (code) / E2E NOT_RUN** | Stripe + webhook path present; soak not run |
 | F-011 | P2 | **PASS** | Public Convex APIs have `returns` validators (Waves 9–12; migrations/internal excluded) |
 | F-012 | P2 | **PARTIAL** | Admin lists capped at 500 newest rows; cursor pagination + exact aggregates still open |
@@ -385,10 +385,22 @@ J2 closed for launch-monthly product pricing. Remaining journeys: J4–J8.
 | Browser | Cancelled member `qa.member.w3.1101` on `/dashboard/subscriptions-billing`: CANCELLED row, **no Message button** |
 | Support channel | Admin/creator `supportMessages` remains separate (not subscription-gated by design) |
 
-## Gate (after Wave 15)
+## Gate (after Wave 16)
 
 ```text
 NOT READY
 ```
 
-Remaining journeys: J5–J8.
+Remaining journeys: J6–J8.
+
+## QA-W16-J5 — Payout reconciliation
+
+| | |
+|--|--|
+| Category | Commerce / finance |
+| Severity | **P2** (UI bug fixed) |
+| Layer | Unit + browser |
+| Finding | “Paid out” card used `reservedCents` (includes requested/pending) |
+| Fix | Paid out = sum of `completed`/`paid` payout rows; shared `payoutBalance` helpers; `ConvexError` on request |
+| Unit | `payoutBalance.test.ts` — 5 cases PASS |
+| Browser | Creator `/creator/payouts`: Lifetime **$18.98**; after request Available **$0** / Pending **$18.98** / Paid **$0**; History shows `requested` |
