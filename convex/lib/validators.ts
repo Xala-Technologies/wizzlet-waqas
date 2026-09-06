@@ -598,7 +598,7 @@ export const adminDashboardStatsValidator = v.object({
       date: v.number(),
     }),
   ),
-  /** True when any underlying admin take hit ADMIN_LIST_LIMIT (counts may be incomplete). */
+  /** True when any underlying admin scan hit ADMIN_SCAN_MAX_DOCS (counts may be incomplete). */
   truncated: v.boolean(),
   listLimit: v.number(),
 });

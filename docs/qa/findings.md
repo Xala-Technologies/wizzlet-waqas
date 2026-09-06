@@ -21,7 +21,7 @@ Prior IDs from [docs/convex-audit/findings.md](../convex-audit/findings.md) reus
 | F-009 | P2 | **PASS (W16)** | Balance helper + UI: Paid out ≠ reserved; request uses ConvexError |
 | F-010 | P2 | **PASS (code) / E2E NOT_RUN** | Stripe + webhook path present; soak not run |
 | F-011 | P2 | **PASS** | Public Convex APIs have `returns` validators (Waves 9–12; migrations/internal excluded) |
-| F-012 | P2 | **PARTIAL (W20)** | Users/Creators/Payouts + Customers/Cases/Growth inbox/Transactions paginated; residual admin + dashboardStats still capped |
+| F-012 | P2 | **PARTIAL (W21)** | List UIs paginated; dashboard/finance/fees/alerts use exact scans (50k safety); Reports + some payout joins residual |
 | F-013 | P1 data | **INSUFFICIENT** | Not re-validated via MCP data dump this wave |
 | F-014 | P3 | **PASS (fixed W7)** | Client passes `fromMs`/`toMs`; query has no clock |
 | F-015 | P3 | **OPEN** | Full `tsc` app project not re-run this wave; lint errors remain |
@@ -385,13 +385,24 @@ J2 closed for launch-monthly product pricing. Remaining journeys: J4–J8.
 | Browser | Cancelled member `qa.member.w3.1101` on `/dashboard/subscriptions-billing`: CANCELLED row, **no Message button** |
 | Support channel | Admin/creator `supportMessages` remains separate (not subscription-gated by design) |
 
-## Gate (after Wave 20)
+## Gate (after Wave 21)
 
 ```text
 NOT READY
 ```
 
-Remaining: J8 BLOCKED; residual admin (Finance/Fees/Alerts/Reports/email/messaging) + exact dashboardStats; referral cash commission.
+Remaining: J8 BLOCKED; Admin Reports + residual payout joins; referral cash commission; Aggregate component at very large scale.
+
+## QA-W21-F012 — Exact admin aggregates
+
+| | |
+|--|--|
+| Category | Scale / admin |
+| Severity | **P2** |
+| Layer | Convex + UI |
+| Finding | Dashboard / Finance / Fees / Alerts used 500-row takes; email/messaging loaded full joins |
+| Fix | `adminScanAll` (5k/table take) + `financeOverview` / `feesOverview` / `alertsOverview`; raised `dashboardStats`; server-side announcement audience; paginated campaigns/creators/messaging |
+| Residual | Admin Reports CSV path; Admin Payouts balance panel still uses capped lists |
 
 ## QA-W20-F012 — Admin pagination residual
 

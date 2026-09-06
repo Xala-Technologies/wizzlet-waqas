@@ -1,7 +1,14 @@
 import { mutation, query } from "../_generated/server";
 import { v } from "convex/values";
+import type { Id } from "../_generated/dataModel";
 import { requireAdmin } from "../lib/auth";
-import { ADMIN_LIST_LIMIT, adminListTruncated, adminTakeNewest } from "../lib/adminLists";
+import {
+  ADMIN_LIST_LIMIT,
+  ADMIN_SCAN_MAX_DOCS,
+  adminScanAll,
+  adminTakeNewest,
+} from "../lib/adminLists";
+import { isPaidOutPayoutStatus } from "../lib/payoutBalance";
 import {
   adminDashboardStatsValidator,
   emailCampaignDocValidator,
@@ -22,23 +29,33 @@ export const dashboardStats = query({
   returns: adminDashboardStatsValidator,
   handler: async (ctx) => {
     await requireAdmin(ctx);
-    const users = await adminTakeNewest(ctx, "users");
-    const creators = await adminTakeNewest(ctx, "creators");
-    const subs = await adminTakeNewest(ctx, "subscriptions");
-    const payouts = await adminTakeNewest(ctx, "payouts");
-    const cases = await adminTakeNewest(ctx, "resolutionCases");
-    const events = await adminTakeNewest(ctx, "paymentEvents");
+    const [usersScan, creatorsScan, subsScan, payoutsScan, casesScan, eventsScan] =
+      await Promise.all([
+        adminScanAll(ctx, "users"),
+        adminScanAll(ctx, "creators"),
+        adminScanAll(ctx, "subscriptions"),
+        adminScanAll(ctx, "payouts"),
+        adminScanAll(ctx, "resolutionCases"),
+        adminScanAll(ctx, "paymentEvents"),
+      ]);
+
+    const users = usersScan.docs;
+    const creators = creatorsScan.docs;
+    const subs = subsScan.docs;
+    const payouts = payoutsScan.docs;
+    const cases = casesScan.docs;
+    const events = eventsScan.docs;
     const truncated =
-      adminListTruncated(users.length) ||
-      adminListTruncated(creators.length) ||
-      adminListTruncated(subs.length) ||
-      adminListTruncated(payouts.length) ||
-      adminListTruncated(cases.length) ||
-      adminListTruncated(events.length);
+      usersScan.truncated ||
+      creatorsScan.truncated ||
+      subsScan.truncated ||
+      payoutsScan.truncated ||
+      casesScan.truncated ||
+      eventsScan.truncated;
 
     const active = subs.filter((s) => s.status === "active");
     const paidOutCents = payouts
-      .filter((p) => p.status === "completed")
+      .filter((p) => isPaidOutPayoutStatus(p.status))
       .reduce((a, b) => a + b.amountCents, 0);
     const openCases = cases.filter(
       (c) => c.status === "open" || c.status === "pending" || c.status === "in_progress",
@@ -47,7 +64,6 @@ export const dashboardStats = query({
     const platformFeesCents = active.reduce((a, b) => a + b.platformFeeCents, 0);
     const totalRevenueCents = active.reduce((a, b) => a + b.amountCents, 0);
 
-    // Build month buckets from settled payment events (year-month keys)
     const monthMap = new Map<
       string,
       { revenue: number; fees: number; creators: number; customers: number }
@@ -78,12 +94,12 @@ export const dashboardStats = query({
     }
     const monthly = [...monthMap.entries()]
       .sort(([a], [b]) => a.localeCompare(b))
-      .map(([month, v]) => ({
+      .map(([month, row]) => ({
         month,
-        revenue: Math.round(v.revenue / 100),
-        fees: Math.round(v.fees / 100),
-        creators: v.creators,
-        customers: v.customers,
+        revenue: Math.round(row.revenue / 100),
+        fees: Math.round(row.fees / 100),
+        creators: row.creators,
+        customers: row.customers,
       }));
 
     const recentSubsRaw = [...subs].sort((a, b) => b.createdAt - a.createdAt).slice(0, 6);
@@ -133,10 +149,70 @@ export const dashboardStats = query({
       recentCreators,
       recentCustomers,
       truncated,
-      listLimit: ADMIN_LIST_LIMIT,
+      listLimit: ADMIN_SCAN_MAX_DOCS,
     };
   },
 });
+
+const announcementAudienceValidator = v.union(
+  v.literal("all"),
+  v.literal("active"),
+  v.literal("canceled"),
+  v.literal("specific"),
+);
+
+async function resolveAnnouncementRecipients(
+  ctx: Parameters<typeof requireAdmin>[0] extends never ? never : import("../_generated/server").MutationCtx | import("../_generated/server").QueryCtx,
+  audience: "all" | "active" | "canceled" | "specific",
+  creatorId: Id<"creators"> | undefined,
+): Promise<{ ids: Id<"users">[]; truncated: boolean; label: string }> {
+  const [usersScan, subsScan] = await Promise.all([
+    adminScanAll(ctx, "users"),
+    adminScanAll(ctx, "subscriptions"),
+  ]);
+  const truncated = usersScan.truncated || subsScan.truncated;
+  const activeUsers = new Set(
+    subsScan.docs.filter((s) => s.status === "active").map((s) => s.userId),
+  );
+
+  if (audience === "all") {
+    return {
+      ids: usersScan.docs.map((u) => u._id),
+      truncated,
+      label: "All Customers",
+    };
+  }
+  if (audience === "active") {
+    return {
+      ids: [...activeUsers],
+      truncated,
+      label: "Active Subscribers",
+    };
+  }
+  if (audience === "canceled") {
+    const canceled = [
+      ...new Set(
+        subsScan.docs
+          .filter((s) => s.status !== "active" && !activeUsers.has(s.userId))
+          .map((s) => s.userId),
+      ),
+    ];
+    return { ids: canceled, truncated, label: "Canceled Subscribers" };
+  }
+  if (!creatorId) {
+    return { ids: [], truncated, label: "Customers of creator" };
+  }
+  const creator = await ctx.db.get(creatorId);
+  const label = `Customers of ${creator?.displayName || creator?.username || "creator"}`;
+  const ids = [
+    ...new Set(
+      subsScan.docs
+        .filter((s) => s.creatorId === creatorId && s.status === "active")
+        .map((s) => s.userId),
+    ),
+  ];
+  return { ids, truncated, label };
+}
 
 export const createEmailCampaign = mutation({
   args: {

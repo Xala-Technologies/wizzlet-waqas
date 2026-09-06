@@ -40,7 +40,7 @@ const AdminDashboardInner = () => {
         <p className="text-muted-foreground text-sm mt-0.5">Executive dashboard — live Convex aggregates</p>
         {stats.truncated && (
           <p className="text-amber-600 text-xs mt-2">
-            Showing newest {stats.listLimit.toLocaleString()} rows per table — totals may be incomplete at this scale.
+            Showing up to {stats.listLimit.toLocaleString()} rows per table — totals may be incomplete at this scale.
           </p>
         )}
       </div>
