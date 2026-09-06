@@ -2,6 +2,10 @@ import { mutation, query } from "../_generated/server";
 import { v } from "convex/values";
 import { getAuthUserId } from "@convex-dev/auth/server";
 import { getCreatorForUser, requireAppUser, requireAdmin } from "../lib/auth";
+import {
+  analyticsActivityItemValidator,
+  analyticsEventDocValidator,
+} from "../lib/validators";
 
 export const track = mutation({
   args: {
@@ -30,6 +34,7 @@ export const track = mutation({
 /** Member activity feed with joined post + creator. */
 export const listMine = query({
   args: {},
+  returns: v.array(analyticsActivityItemValidator),
   handler: async (ctx) => {
     const user = await requireAppUser(ctx);
     const events = (await ctx.db
@@ -66,6 +71,7 @@ export const listMine = query({
 
 export const listForMyCreator = query({
   args: {},
+  returns: v.array(analyticsEventDocValidator),
   handler: async (ctx) => {
     const user = await requireAppUser(ctx);
     const creator = await getCreatorForUser(ctx, user._id);
@@ -79,6 +85,7 @@ export const listForMyCreator = query({
 
 export const listAllAdmin = query({
   args: {},
+  returns: v.array(analyticsEventDocValidator),
   handler: async (ctx) => {
     await requireAdmin(ctx);
     return ctx.db.query("analyticsEvents").collect();

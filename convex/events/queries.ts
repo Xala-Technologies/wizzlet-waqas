@@ -1,12 +1,14 @@
 import { mutation, query } from "../_generated/server";
 import { v } from "convex/values";
 import { requireAdmin } from "../lib/auth";
+import { sportEventDocValidator } from "../lib/validators";
 
 export const listPublishedToday = query({
   args: {
     fromMs: v.number(),
     toMs: v.number(),
   },
+  returns: v.array(sportEventDocValidator),
   handler: async (ctx, args) => {
     const rows = await ctx.db
       .query("sportEvents")
@@ -33,6 +35,7 @@ export const upsertAdmin = mutation({
     priority: v.number(),
     isPublished: v.boolean(),
   },
+  returns: v.id("sportEvents"),
   handler: async (ctx, args) => {
     await requireAdmin(ctx);
     const now = Date.now();
@@ -51,8 +54,10 @@ export const upsertAdmin = mutation({
 
 export const removeAdmin = mutation({
   args: { eventId: v.id("sportEvents") },
+  returns: v.null(),
   handler: async (ctx, args) => {
     await requireAdmin(ctx);
     await ctx.db.delete(args.eventId);
+    return null;
   },
 });

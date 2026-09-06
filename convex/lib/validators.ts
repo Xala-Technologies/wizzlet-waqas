@@ -321,3 +321,182 @@ export const supportMessageDocValidator = v.object({
   read: v.boolean(),
   createdAt: v.number(),
 });
+
+export const payoutDocValidator = v.object({
+  _id: v.id("payouts"),
+  _creationTime: v.number(),
+  legacyId: v.optional(v.string()),
+  creatorId: v.id("creators"),
+  amountCents: v.number(),
+  status: v.string(),
+  method: v.optional(v.string()),
+  reference: v.optional(v.string()),
+  periodStart: v.optional(v.number()),
+  periodEnd: v.optional(v.number()),
+  processedAt: v.optional(v.number()),
+  createdAt: v.number(),
+  updatedAt: v.number(),
+});
+
+export const creatorPayoutSettingsDocValidator = v.object({
+  _id: v.id("creatorPayoutSettings"),
+  _creationTime: v.number(),
+  legacyId: v.optional(v.string()),
+  creatorId: v.id("creators"),
+  method: v.string(),
+  accountLabel: v.optional(v.string()),
+  schedule: v.string(),
+  minimumPayoutCents: v.number(),
+  createdAt: v.number(),
+  updatedAt: v.number(),
+});
+
+export const availableBalanceValidator = v.object({
+  earnedCents: v.number(),
+  reservedCents: v.number(),
+  availableCents: v.number(),
+});
+
+export const resolutionCaseDocValidator = v.object({
+  _id: v.id("resolutionCases"),
+  _creationTime: v.number(),
+  legacyId: v.optional(v.string()),
+  creatorId: v.id("creators"),
+  subject: v.string(),
+  category: v.optional(v.string()),
+  description: v.optional(v.string()),
+  status: v.string(),
+  priority: v.optional(v.string()),
+  createdAt: v.number(),
+  updatedAt: v.number(),
+});
+
+export const resolutionCaseMessageDocValidator = v.object({
+  _id: v.id("resolutionCaseMessages"),
+  _creationTime: v.number(),
+  legacyId: v.optional(v.string()),
+  caseId: v.id("resolutionCases"),
+  senderRole: v.string(),
+  body: v.string(),
+  createdAt: v.number(),
+});
+
+export const sportEventDocValidator = v.object({
+  _id: v.id("sportEvents"),
+  _creationTime: v.number(),
+  legacyId: v.optional(v.string()),
+  sport: v.string(),
+  league: v.string(),
+  homeTeam: v.string(),
+  awayTeam: v.string(),
+  startsAt: v.number(),
+  status: v.string(),
+  homeOdds: v.optional(v.number()),
+  awayOdds: v.optional(v.number()),
+  drawOdds: v.optional(v.number()),
+  priority: v.number(),
+  isPublished: v.boolean(),
+  createdAt: v.number(),
+  updatedAt: v.number(),
+});
+
+export const platformSettingsDocValidator = v.object({
+  _id: v.id("platformSettings"),
+  _creationTime: v.number(),
+  legacyId: v.optional(v.string()),
+  singletonKey: v.literal("default"),
+  introFeePercent: v.number(),
+  standardFeePercent: v.number(),
+  introFeeDays: v.number(),
+  branding: v.optional(v.any()),
+  payoutDefaults: v.optional(v.any()),
+  featureFlags: v.optional(v.any()),
+  updatedAt: v.number(),
+});
+
+export const savedPostDocValidator = v.object({
+  _id: v.id("savedPosts"),
+  _creationTime: v.number(),
+  legacyId: v.optional(v.string()),
+  userId: v.id("users"),
+  postId: v.id("posts"),
+  createdAt: v.number(),
+});
+
+export const creatorBookmarkDocValidator = v.object({
+  _id: v.id("creatorBookmarks"),
+  _creationTime: v.number(),
+  legacyId: v.optional(v.string()),
+  userId: v.id("users"),
+  creatorId: v.id("creators"),
+  createdAt: v.number(),
+});
+
+export const pickTrackerDocValidator = v.object({
+  _id: v.id("pickTracker"),
+  _creationTime: v.number(),
+  legacyId: v.optional(v.string()),
+  userId: v.id("users"),
+  postId: v.optional(v.id("posts")),
+  date: v.string(),
+  pickEvent: v.string(),
+  sport: v.string(),
+  odds: v.optional(v.string()),
+  euOdds: v.optional(v.number()),
+  usOdds: v.optional(v.string()),
+  unitsRisked: v.number(),
+  unitsWonLost: v.optional(v.number()),
+  result: pickResultValidator,
+  notes: v.optional(v.string()),
+  createdAt: v.number(),
+});
+
+export const analyticsEventDocValidator = v.object({
+  _id: v.id("analyticsEvents"),
+  _creationTime: v.number(),
+  legacyId: v.optional(v.string()),
+  creatorId: v.optional(v.id("creators")),
+  postId: v.optional(v.id("posts")),
+  userId: v.optional(v.id("users")),
+  eventType: v.string(),
+  createdAt: v.number(),
+});
+
+export const analyticsActivityItemValidator = v.object({
+  _id: v.id("analyticsEvents"),
+  eventType: v.string(),
+  createdAt: v.number(),
+  post: v.object({
+    _id: v.id("posts"),
+    title: v.string(),
+    creator: v.union(
+      v.object({
+        username: v.string(),
+        displayName: v.optional(v.string()),
+      }),
+      v.null(),
+    ),
+  }),
+});
+
+export const creatorEarningsValidator = v.object({
+  grossCents: v.number(),
+  feeCents: v.number(),
+  netCents: v.number(),
+  perSubCents: v.number(),
+  activeCount: v.number(),
+  monthly: v.array(
+    v.object({
+      month: v.string(),
+      revenueCents: v.number(),
+    }),
+  ),
+  recentPayments: v.array(
+    v.object({
+      id: v.id("paymentEvents"),
+      label: v.string(),
+      amountCents: v.number(),
+      createdAt: v.number(),
+    }),
+  ),
+});
