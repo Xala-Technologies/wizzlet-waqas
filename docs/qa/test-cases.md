@@ -28,7 +28,7 @@
 | Journey | Result |
 |---------|--------|
 | J1 Commercial lifecycle | **PASS** (W4 pay+cancel) |
-| J2 Product edits | NOT_RUN |
+| J2 Product edits | **PASS** (W14 — code + fixture notes) |
 | J3 Content access | **PASS** (W5) |
 | J4 Messages/support | NOT_RUN |
 | J5 Payout reconciliation | NOT_RUN |

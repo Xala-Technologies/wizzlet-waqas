@@ -94,6 +94,12 @@ export const upsert = mutation({
         isClosed: args.isClosed,
         updatedAt: now,
       });
+      if (args.isFeatured) {
+        await ctx.db.patch(args.creatorId, {
+          monthlyPriceCents: args.priceCents,
+          updatedAt: now,
+        });
+      }
       return args.productId;
     }
     const id = await ctx.db.insert("products", {
@@ -116,6 +122,12 @@ export const upsert = mutation({
       action: "upsert",
       actorExternalAuthId: user.externalAuthId,
     });
+    if (args.isFeatured) {
+      await ctx.db.patch(args.creatorId, {
+        monthlyPriceCents: args.priceCents,
+        updatedAt: now,
+      });
+    }
     return id;
   },
 });

@@ -9,8 +9,8 @@
 | Webhook / confirmCheckoutSession | Access without success-page return | Active sub even if user abandons return URL | Async ≤ bounded | COM-05 | PASS (inferred via ACTIVE after Checkout) |
 | Cancel subscription | Premium access | Locked after cancel rule | Immediate | J1 | **PASS (W5)** |
 | Cancel subscription | Messaging eligibility | Prefer server `messagingEnabled` + active sub | Immediate | J4 | NOT_RUN |
-| Product price / period edit | New checkout | New buyers see new terms | Immediate | J2 | NOT_RUN |
-| Product price edit | Existing subs | Preserve purchased terms unless migration | Immediate | J2 | NOT_RUN |
+| Product price / period edit | New checkout | New buyers see new terms | Immediate | J2 | **PASS (W14)** |
+| Product price edit | Existing subs | Preserve purchased terms unless migration | Immediate | J2 | **PASS (W14)** |
 | Product capacity / isClosed | Checkout | Reject when unavailable | Immediate | COM-01/02 | STATIC_PARTIAL |
 | `ALLOW_SANDBOX_CHECKOUT` unset | `sandboxSubscribe` | FORBIDDEN | Env | SEC sandbox | STATIC_PASS |
 | Payout request | Available balance | Reject if over available | Immediate | J5 | STATIC_PARTIAL (unit) |
