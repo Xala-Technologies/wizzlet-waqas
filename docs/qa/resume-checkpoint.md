@@ -1,22 +1,23 @@
-# Resume checkpoint — after Wave 18 (J7)
+# Resume checkpoint — after Wave 19 (F-012)
 
 ## Open PR stack
 
-- **#10–#20** through J6 promo/referral
-- **#21** (this) `test/qa-j7-identity-w18` — J7 identity cross-device continuity
+- **#10–#21** through J7 identity
+- **#22** (this) `fix/admin-pagination-f012-w19` — F-012 cursor pagination for admin lists
 
-## Wave 18 / J7
+## Wave 19 / F-012
 
-- Login navigates from `refreshRole()` server-held roles (empty localStorage / new device OK)
-- `SelectRole` redirects when DB roles already exist (spinner while loading)
-- Unit: `roles.test.ts` — preferred / stale / empty storage cases
-- Browser: cleared `wizzlet.activeRole` → login creator → `/creator`; `/select-role` → redirect home
+- `convex/admin/paginatedLists.ts`: `listUsersPage`, `listCreatorsPage`, `listPayoutsPage`, `listSubscriptionsPage`
+- Admin Users / Creators / Payouts history use `usePaginatedQuery` + Load more
+- Per-row enrichment via indexes (no full-table client joins on those pages)
+- Residual: join-heavy admin pages + `dashboardStats` still use capped `adminTakeNewest` (500)
 
 ## Still open
 
 - Journey J8 (migration — BLOCKED)
 - Referral cash commission productization
-- F-012 residual cursor pagination
+- Remaining admin pages on capped `listAllAdmin`
+- Exact dashboard aggregates (not take-based)
 - Gate: **NOT READY** for full-app claim
 
 ## Prod reminder

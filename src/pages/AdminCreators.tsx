@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { useMutation, useQuery } from 'convex/react';
+import { useMutation, usePaginatedQuery } from 'convex/react';
 import { api } from '../../convex/_generated/api';
 import type { Id } from '../../convex/_generated/dataModel';
 import { DashboardLayout } from '@/components/dashboard/DashboardLayout';
@@ -11,6 +11,8 @@ import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 import { Link, useNavigate } from 'react-router-dom';
+
+const PAGE_SIZE = 25;
 
 interface Creator {
   id: string;
@@ -32,44 +34,36 @@ const AdminCreators = () => {
   const navigate = useNavigate();
   const [search, setSearch] = useState('');
 
-  const creatorsRaw = useQuery(api.creators.queries.listAllAdmin);
-  const subsRaw = useQuery(api.subscriptions.mutations.listAllAdmin);
-  const usersRaw = useQuery(api.admin.queries.listUsers);
+  const { results, status, loadMore } = usePaginatedQuery(
+    api.admin.paginatedLists.listCreatorsPage,
+    {},
+    { initialNumItems: PAGE_SIZE },
+  );
   const setPublished = useMutation(api.creators.queries.setPublished);
 
-  const loading = creatorsRaw === undefined || subsRaw === undefined || usersRaw === undefined;
+  const loading = status === 'LoadingFirstPage';
 
   const creators = useMemo((): Creator[] => {
-    if (!creatorsRaw || !subsRaw || !usersRaw) return [];
-
-    const subCounts = new Map<string, number>();
-    subsRaw.filter(s => s.status === 'active').forEach(s => {
-      subCounts.set(s.creatorId, (subCounts.get(s.creatorId) ?? 0) + 1);
-    });
-
-    const userMap = new Map(usersRaw.map(u => [u._id, u]));
-
-    return creatorsRaw.map(c => {
+    return (results ?? []).map((c) => {
       const days = Math.floor((Date.now() - c.createdAt) / (1000 * 60 * 60 * 24));
-      const user = userMap.get(c.userId);
       const monthlyPrice = (c.monthlyPriceCents ?? 999) / 100;
       return {
-        id: c._id,
+        id: c.id,
         username: c.username,
-        display_name: c.displayName ?? null,
+        display_name: c.displayName,
         monthly_price: monthlyPrice,
         is_published: c.isPublished,
         created_at: c.createdAt,
         user_id: c.userId,
-        email: user?.email ?? '—',
-        subCount: subCounts.get(c._id) ?? 0,
-        revenue: (subCounts.get(c._id) ?? 0) * monthlyPrice,
+        email: c.email,
+        subCount: c.subCount,
+        revenue: c.revenue,
         feePercent: days < 30 ? 5 : 10,
         verified: c.verificationStatus === 'verified' || days > 14,
         daysSinceSignup: days,
       };
-    }).sort((a, b) => b.created_at - a.created_at);
-  }, [creatorsRaw, subsRaw, usersRaw]);
+    });
+  }, [results]);
 
   const togglePublish = async (creator: Creator) => {
     try {
@@ -83,33 +77,35 @@ const AdminCreators = () => {
     }
   };
 
-  const filtered = creators.filter(c => {
+  const filtered = creators.filter((c) => {
     const q = search.toLowerCase();
     return !q || (c.display_name?.toLowerCase().includes(q)) || (c.username?.toLowerCase().includes(q)) || c.email.toLowerCase().includes(q);
   });
 
   const topCreators = [...creators].sort((a, b) => b.revenue - a.revenue).slice(0, 5);
-  const fastestGrowing = [...creators].sort((a, b) => b.subCount - a.subCount).filter(c => c.daysSinceSignup < 60).slice(0, 5);
-  const atRisk = creators.filter(c => c.subCount > 0 && c.subCount < 3);
-  const inactive = creators.filter(c => c.daysSinceSignup > 30 && c.subCount === 0);
+  const fastestGrowing = [...creators].sort((a, b) => b.subCount - a.subCount).filter((c) => c.daysSinceSignup < 60).slice(0, 5);
+  const atRisk = creators.filter((c) => c.subCount > 0 && c.subCount < 3);
+  const inactive = creators.filter((c) => c.daysSinceSignup > 30 && c.subCount === 0);
 
   return (
     <DashboardLayout type="admin">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mb-6">
         <div className="min-w-0">
           <h1 className="text-2xl font-bold">Creators Management</h1>
-          <p className="text-muted-foreground text-sm mt-0.5">{creators.length} total creators</p>
+          <p className="text-muted-foreground text-sm mt-0.5">
+            {creators.length} loaded{status === 'CanLoadMore' || status === 'LoadingMore' ? ' (more available)' : ''}
+          </p>
         </div>
         <div className="relative w-full sm:w-64">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
-          <Input placeholder="Search creators…" value={search} onChange={e => setSearch(e.target.value)} className="pl-9 h-11 sm:h-9" />
+          <Input placeholder="Search loaded creators…" value={search} onChange={(e) => setSearch(e.target.value)} className="pl-9 h-11 sm:h-9" />
         </div>
       </div>
 
       {!loading && (
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
           <div className="rounded-xl border border-border bg-card p-4">
-            <div className="flex items-center gap-2 mb-2"><Star className="h-3.5 w-3.5 text-amber-400" /><span className="text-xs font-medium text-muted-foreground">Top Creators</span></div>
+            <div className="flex items-center gap-2 mb-2"><Star className="h-3.5 w-3.5 text-amber-400" /><span className="text-xs font-medium text-muted-foreground">Top (loaded)</span></div>
             {topCreators.slice(0, 3).map((c) => (
               <div key={c.id} className="flex items-center justify-between py-1">
                 <span className="text-xs font-medium truncate">{c.display_name ?? `@${c.username}`}</span>
@@ -118,7 +114,7 @@ const AdminCreators = () => {
             ))}
           </div>
           <div className="rounded-xl border border-border bg-card p-4">
-            <div className="flex items-center gap-2 mb-2"><TrendingDown className="h-3.5 w-3.5 text-blue-400" /><span className="text-xs font-medium text-muted-foreground">Fastest Growing</span></div>
+            <div className="flex items-center gap-2 mb-2"><TrendingDown className="h-3.5 w-3.5 text-blue-400" /><span className="text-xs font-medium text-muted-foreground">Growing (loaded)</span></div>
             {fastestGrowing.slice(0, 3).map((c) => (
               <div key={c.id} className="flex items-center justify-between py-1">
                 <span className="text-xs font-medium truncate">{c.display_name ?? `@${c.username}`}</span>
@@ -130,12 +126,12 @@ const AdminCreators = () => {
           <div className="rounded-xl border border-amber-500/20 bg-amber-500/5 p-4">
             <div className="flex items-center gap-2 mb-2"><Crown className="h-3.5 w-3.5 text-amber-400" /><span className="text-xs font-medium text-muted-foreground">At Risk</span></div>
             <p className="text-xl font-bold text-amber-400">{atRisk.length}</p>
-            <p className="text-[10px] text-muted-foreground">Creators with &lt;3 subscribers</p>
+            <p className="text-[10px] text-muted-foreground">Among loaded · &lt;3 subscribers</p>
           </div>
           <div className="rounded-xl border border-border bg-card p-4">
             <div className="flex items-center gap-2 mb-2"><UserX className="h-3.5 w-3.5 text-muted-foreground" /><span className="text-xs font-medium text-muted-foreground">Inactive</span></div>
             <p className="text-xl font-bold">{inactive.length}</p>
-            <p className="text-[10px] text-muted-foreground">30+ days, 0 subscribers</p>
+            <p className="text-[10px] text-muted-foreground">Among loaded · 30d / 0 subs</p>
           </div>
         </div>
       )}
@@ -177,7 +173,7 @@ const AdminCreators = () => {
                   <Button variant="outline" size="sm" className="h-11 flex-1 min-w-[7rem] text-xs" onClick={() => navigate('/admin/creator-messaging')}>
                     <MessageSquare className="mr-1.5 h-3.5 w-3.5" /> Message
                   </Button>
-                  <Button variant="outline" size="sm" className="h-11 flex-1 min-w-[7rem] text-xs" onClick={() => togglePublish(c)}>
+                  <Button variant="outline" size="sm" className="h-11 flex-1 min-w-[7rem] text-xs" onClick={() => void togglePublish(c)}>
                     {c.is_published ? <><Ban className="mr-1.5 h-3.5 w-3.5 text-destructive" /> Disable</> : <><CheckCircle2 className="mr-1.5 h-3.5 w-3.5 text-primary" /> Enable</>}
                   </Button>
                 </div>
@@ -201,7 +197,7 @@ const AdminCreators = () => {
                 </tr>
               </thead>
               <tbody>
-                {filtered.map(c => (
+                {filtered.map((c) => (
                   <tr key={c.id} className="border-b border-border last:border-0 hover:bg-muted/20 transition-colors">
                     <td className="p-4">
                       <p className="font-medium">{c.display_name ?? 'Unnamed'}</p>
@@ -238,7 +234,7 @@ const AdminCreators = () => {
                           </Link>
                         )}
                         <Button variant="ghost" size="sm" className="h-9 w-9 px-0 text-xs" onClick={() => navigate('/admin/creator-messaging')} title="Message creator" aria-label="Message creator"><MessageSquare className="h-3.5 w-3.5" /></Button>
-                        <Button variant="ghost" size="sm" className="h-9 w-9 px-0 text-xs" onClick={() => togglePublish(c)} title={c.is_published ? 'Disable' : 'Enable'} aria-label={c.is_published ? 'Disable' : 'Enable'}>
+                        <Button variant="ghost" size="sm" className="h-9 w-9 px-0 text-xs" onClick={() => void togglePublish(c)} title={c.is_published ? 'Disable' : 'Enable'} aria-label={c.is_published ? 'Disable' : 'Enable'}>
                           {c.is_published ? <Ban className="h-3.5 w-3.5 text-destructive" /> : <CheckCircle2 className="h-3.5 w-3.5 text-primary" />}
                         </Button>
                       </div>
@@ -248,6 +244,20 @@ const AdminCreators = () => {
               </tbody>
             </table>
           </DesktopTableRegion>
+
+          {(status === 'CanLoadMore' || status === 'LoadingMore') && (
+            <div className="flex justify-center mt-4">
+              <Button
+                variant="outline"
+                size="sm"
+                disabled={status === 'LoadingMore'}
+                onClick={() => loadMore(PAGE_SIZE)}
+              >
+                {status === 'LoadingMore' ? <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" /> : null}
+                Load more
+              </Button>
+            </div>
+          )}
         </>
       )}
     </DashboardLayout>

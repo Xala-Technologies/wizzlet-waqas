@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { useMutation, useQuery } from 'convex/react';
+import { useMutation, usePaginatedQuery, useQuery } from 'convex/react';
 import { api } from '../../convex/_generated/api';
 import type { Id } from '../../convex/_generated/dataModel';
 import { DashboardLayout } from '@/components/dashboard/DashboardLayout';
@@ -8,6 +8,8 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Wallet, Clock, CheckCircle2, XCircle, TrendingUp, Calendar, Loader2, Crown, Send } from 'lucide-react';
 import { toast } from 'sonner';
+
+const PAGE_SIZE = 25;
 
 interface PayoutRow {
   id: string;
@@ -18,6 +20,7 @@ interface PayoutRow {
   reference: string | null;
   processed_at: number | null;
   created_at: number;
+  creator_name?: string;
 }
 
 interface CreatorBalance {
@@ -45,27 +48,36 @@ const AdminPayouts = () => {
 
   const subsRaw = useQuery(api.subscriptions.mutations.listAllAdmin);
   const creatorsRaw = useQuery(api.creators.queries.listAllAdmin);
-  const payoutsRaw = useQuery(api.payouts.mutations.listAllAdmin);
+  const {
+    results: payoutResults,
+    status: payoutStatus,
+    loadMore: loadMorePayouts,
+  } = usePaginatedQuery(
+    api.admin.paginatedLists.listPayoutsPage,
+    {},
+    { initialNumItems: PAGE_SIZE },
+  );
   const createPayoutMutation = useMutation(api.payouts.mutations.createAdmin);
   const setStatusMutation = useMutation(api.payouts.mutations.setStatusAdmin);
 
-  const loading = subsRaw === undefined || creatorsRaw === undefined || payoutsRaw === undefined;
+  const loading =
+    subsRaw === undefined ||
+    creatorsRaw === undefined ||
+    payoutStatus === 'LoadingFirstPage';
 
   const payouts = useMemo((): PayoutRow[] => {
-    if (!payoutsRaw) return [];
-    return [...payoutsRaw]
-      .sort((a, b) => b.createdAt - a.createdAt)
-      .map(p => ({
-        id: p._id,
-        creator_id: p.creatorId,
-        amount: p.amountCents / 100,
-        status: p.status,
-        method: p.method ?? 'bank_transfer',
-        reference: p.reference ?? null,
-        processed_at: p.processedAt ?? null,
-        created_at: p.createdAt,
-      }));
-  }, [payoutsRaw]);
+    return (payoutResults ?? []).map((p) => ({
+      id: p.id,
+      creator_id: p.creatorId,
+      amount: p.amountCents / 100,
+      status: p.status,
+      method: p.method ?? 'bank_transfer',
+      reference: p.reference ?? null,
+      processed_at: p.processedAt ?? null,
+      created_at: p.createdAt,
+      creator_name: p.creatorName,
+    }));
+  }, [payoutResults]);
 
   const balances = useMemo((): CreatorBalance[] => {
     if (!subsRaw || !creatorsRaw) return [];
@@ -117,7 +129,8 @@ const AdminPayouts = () => {
     };
   }, [payouts, balances]);
 
-  const creatorName = (id: string) => balances.find(b => b.creatorId === id)?.name ?? 'Unknown creator';
+  const creatorName = (p: PayoutRow) =>
+    p.creator_name ?? balances.find((b) => b.creatorId === p.creator_id)?.name ?? 'Unknown creator';
 
   const createPayout = async (row: CreatorBalance) => {
     if (row.available <= 0) return;
@@ -291,7 +304,7 @@ const AdminPayouts = () => {
                 <li key={p.id} className="mx-3 mb-3 rounded-xl border border-border bg-card p-4 space-y-3">
                   <div className="flex items-start justify-between gap-2">
                     <div className="min-w-0">
-                      <p className="text-sm font-medium truncate">{creatorName(p.creator_id)}</p>
+                      <p className="text-sm font-medium truncate">{creatorName(p)}</p>
                       <p className="text-xs text-muted-foreground mt-0.5">{fmtDate(p.created_at)}</p>
                     </div>
                     <Badge variant="outline" className={`text-[10px] shrink-0 ${statusStyles[p.status] ?? ''}`}>
@@ -336,7 +349,7 @@ const AdminPayouts = () => {
                 <tbody>
                   {payouts.map(p => (
                     <tr key={p.id} className="border-b border-border last:border-0 hover:bg-muted/20 transition-colors">
-                      <td className="p-4 font-medium text-xs">{creatorName(p.creator_id)}</td>
+                      <td className="p-4 font-medium text-xs">{creatorName(p)}</td>
                       <td className="p-4 text-xs text-muted-foreground">{fmtDate(p.created_at)}</td>
                       <td className="p-4 text-xs text-muted-foreground">{fmtDate(p.processed_at)}</td>
                       <td className="p-4 font-medium text-emerald-400">{fmt(p.amount)}</td>
@@ -370,6 +383,19 @@ const AdminPayouts = () => {
               </table>
             </DesktopTableRegion>
           </>
+        )}
+        {(payoutStatus === 'CanLoadMore' || payoutStatus === 'LoadingMore') && (
+          <div className="flex justify-center p-4 border-t border-border">
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={payoutStatus === 'LoadingMore'}
+              onClick={() => loadMorePayouts(PAGE_SIZE)}
+            >
+              {payoutStatus === 'LoadingMore' ? <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" /> : null}
+              Load more history
+            </Button>
+          </div>
         )}
       </div>
     </DashboardLayout>
