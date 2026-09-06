@@ -55,7 +55,7 @@ const CustomerDiscover = () => {
 
   const postCounts = useMemo(() => {
     const counts: Record<string, number> = {};
-    for (const c of creatorsRaw ?? []) {
+    for (const c of creatorsRaw?.items ?? []) {
       counts[c._id] = c.postCount ?? 0;
     }
     return counts;
