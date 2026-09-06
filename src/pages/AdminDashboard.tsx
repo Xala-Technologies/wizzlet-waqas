@@ -1,11 +1,12 @@
 import { useQuery } from 'convex/react';
 import { api } from '../../convex/_generated/api';
 import { DashboardLayout } from '@/components/dashboard/DashboardLayout';
+import { AdminQueryBoundary } from '@/components/dashboard/AdminQueryBoundary';
 import { Users, Crown, DollarSign, CreditCard, Loader2, TrendingUp, Activity, UserPlus, BarChart3, Wallet, Percent, FileWarning } from 'lucide-react';
 import { BarChart, Bar, LineChart, Line, AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts';
 import { format } from 'date-fns';
 
-const AdminDashboard = () => {
+const AdminDashboardInner = () => {
   const stats = useQuery(api.admin.queries.dashboardStats);
 
   if (stats === undefined) {
@@ -168,5 +169,11 @@ const AdminDashboard = () => {
     </DashboardLayout>
   );
 };
+
+const AdminDashboard = () => (
+  <AdminQueryBoundary>
+    <AdminDashboardInner />
+  </AdminQueryBoundary>
+);
 
 export default AdminDashboard;

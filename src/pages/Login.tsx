@@ -8,7 +8,9 @@ import { Label } from '@/components/ui/label';
 import { useAuthActions } from '@convex-dev/auth/react';
 import { useMutation } from 'convex/react';
 import { useAuth } from '@/contexts/AuthContext';
+import { ADMIN_BOOTSTRAP } from '@/lib/adminBootstrap';
 import { ACTIVE_ROLE_STORAGE_KEY, homePathForRole, isAppRole } from '@/lib/roles';
+import { useConvexAuthReady, waitForAuthenticated, withAuthRetry } from '@/lib/authSession';
 import { api } from '@convex/_generated/api';
 import { Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
@@ -18,25 +20,49 @@ const isDevBuild = import.meta.env.DEV;
 const Login = () => {
   const navigate = useNavigate();
   const { signIn } = useAuthActions();
-  const { enableDevMode, setDevRole, refreshRole } = useAuth();
-  const assignSelfRole = useMutation(api.roles.mutations.assignSelfRole);
+  const { refreshRole, clearDevBypass, acceptAssignedRole } = useAuth();
+  const authReady = useConvexAuthReady();
+  const grantTestAdmin = useMutation(api.roles.mutations.grantTestAdmin);
   const ensureUser = useMutation(api.users.queries.ensureUser);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
 
+  const finishAdminSession = async () => {
+    await waitForAuthenticated(() => authReady.current);
+    await withAuthRetry(() =>
+      ensureUser({
+        username: ADMIN_BOOTSTRAP.username,
+        fullName: ADMIN_BOOTSTRAP.fullName,
+      }),
+    );
+    await withAuthRetry(() => grantTestAdmin({}));
+    acceptAssignedRole('admin');
+    await refreshRole('admin');
+    toast.success('Signed in as platform owner');
+    navigate('/admin');
+  };
+
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     try {
+      const normalizedEmail = email.trim().toLowerCase();
       const form = new FormData();
-      form.set('email', email.trim().toLowerCase());
+      form.set('email', normalizedEmail);
       form.set('password', password);
       form.set('flow', 'signIn');
       await signIn('password', form);
-      await ensureUser({});
+      await waitForAuthenticated(() => authReady.current);
+
+      if (normalizedEmail === ADMIN_BOOTSTRAP.email) {
+        await finishAdminSession();
+        return;
+      }
+
+      clearDevBypass();
+      await withAuthRetry(() => ensureUser({})).catch(() => undefined);
       await refreshRole();
-      // Roles load reactively; default to select-role if none yet
       const preferred = localStorage.getItem(ACTIVE_ROLE_STORAGE_KEY);
       navigate(isAppRole(preferred) ? homePathForRole(preferred) : '/select-role');
     } catch (err) {
@@ -46,40 +72,33 @@ const Login = () => {
     }
   };
 
-  const handleTestLogin = async () => {
+  const handleAdminLogin = async () => {
     if (!isDevBuild) {
-      toast.error('Dev login is only available in development builds.');
+      toast.error('Admin bootstrap login is only available in development builds.');
       return;
     }
     setLoading(true);
-    const testEmail = 'test@wizzlet.dev';
-    const testPassword = 'test123456';
+    setEmail(ADMIN_BOOTSTRAP.email);
+    setPassword(ADMIN_BOOTSTRAP.password);
     try {
       const signInForm = new FormData();
-      signInForm.set('email', testEmail);
-      signInForm.set('password', testPassword);
+      signInForm.set('email', ADMIN_BOOTSTRAP.email);
+      signInForm.set('password', ADMIN_BOOTSTRAP.password);
       signInForm.set('flow', 'signIn');
       try {
         await signIn('password', signInForm);
       } catch {
         const signUpForm = new FormData();
-        signUpForm.set('email', testEmail);
-        signUpForm.set('password', testPassword);
-        signUpForm.set('username', 'devtester');
-        signUpForm.set('name', 'Dev Tester');
+        signUpForm.set('email', ADMIN_BOOTSTRAP.email);
+        signUpForm.set('password', ADMIN_BOOTSTRAP.password);
+        signUpForm.set('username', ADMIN_BOOTSTRAP.username);
+        signUpForm.set('name', ADMIN_BOOTSTRAP.fullName);
         signUpForm.set('flow', 'signUp');
         await signIn('password', signUpForm);
       }
-      await ensureUser({ username: 'devtester', fullName: 'Dev Tester' });
-      await assignSelfRole({ role: 'creator' });
-      await assignSelfRole({ role: 'subscriber' });
-      await refreshRole();
-      enableDevMode();
-      setDevRole('admin');
-      toast.success('Dev mode activated — UI role bypass enabled');
-      navigate('/admin');
+      await finishAdminSession();
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Dev login failed');
+      toast.error(err instanceof Error ? err.message : 'Admin login failed');
     } finally {
       setLoading(false);
     }
@@ -116,9 +135,24 @@ const Login = () => {
         </p>
 
         {isDevBuild && (
-          <Button type="button" variant="outline" className="w-full mt-6" onClick={() => void handleTestLogin()} disabled={loading}>
-            Quick Test Login (dev)
-          </Button>
+          <div className="mt-6 space-y-3 rounded-xl border border-border bg-muted/30 p-4">
+            <p className="text-[12px] font-medium text-foreground">Platform owner (local)</p>
+            <p className="text-[11px] text-muted-foreground font-mono leading-relaxed">
+              {ADMIN_BOOTSTRAP.email}
+              <br />
+              {ADMIN_BOOTSTRAP.password}
+            </p>
+            <Button
+              type="button"
+              variant="outline"
+              className="w-full"
+              onClick={() => void handleAdminLogin()}
+              disabled={loading}
+            >
+              {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              Sign in as platform owner
+            </Button>
+          </div>
         )}
       </div>
     </main>

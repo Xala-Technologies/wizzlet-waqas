@@ -1,6 +1,6 @@
 import { useParams, Link } from 'react-router-dom';
 import { useEffect, useMemo } from 'react';
-import { useQuery } from 'convex/react';
+import { useConvexAuth, useQuery } from 'convex/react';
 import { api } from '../../convex/_generated/api';
 import type { Id } from '../../convex/_generated/dataModel';
 import { Button } from '@/components/ui/button';
@@ -74,6 +74,7 @@ const resultConfig = {
 
 const CreatorProfile = () => {
   const { username } = useParams();
+  const { isAuthenticated } = useConvexAuth();
   const creatorData = useQuery(
     api.creators.queries.getByUsername,
     username ? { username } : 'skip',
@@ -85,6 +86,14 @@ const CreatorProfile = () => {
   const productsRaw = useQuery(
     api.products.mutations.listPublicByCreator,
     creatorData ? { creatorId: creatorData._id } : 'skip',
+  );
+  const subCountRaw = useQuery(
+    api.subscriptions.mutations.countActiveByCreator,
+    creatorData ? { creatorId: creatorData._id } : 'skip',
+  );
+  const mySubs = useQuery(
+    api.subscriptions.mutations.mySubscriptions,
+    isAuthenticated ? {} : 'skip',
   );
 
   const loading = creatorData === undefined || (creatorData && (postsRaw === undefined || productsRaw === undefined));
@@ -127,7 +136,11 @@ const CreatorProfile = () => {
     [productsRaw],
   );
 
-  const subCount = 0;
+  const subCount = subCountRaw ?? 0;
+  const isSubscribed = Boolean(
+    creator &&
+      mySubs?.some((s) => s.creatorId === creator.id && s.status === 'active'),
+  );
 
   useEffect(() => {
     if (!creator) return;
@@ -301,7 +314,17 @@ const CreatorProfile = () => {
         </div>
 
         {/* Subscribe CTA */}
-        {hasProducts ? (
+        {isSubscribed ? (
+          <div className="mt-6 flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+            <Button variant="outline" size="lg" className="text-base px-10 h-12 pointer-events-none">
+              <CheckCircle className="mr-2 h-4 w-4 text-emerald-500" />
+              Subscribed
+            </Button>
+            <Button variant="ghost" size="lg" className="h-12" asChild>
+              <Link to="/dashboard/subscriptions-billing">Manage billing</Link>
+            </Button>
+          </div>
+        ) : hasProducts ? (
           <div className="mt-8 w-full">
             <PricingCards products={products} creatorId={creator.id} creatorUsername={creator.username} />
           </div>
@@ -388,11 +411,17 @@ const CreatorProfile = () => {
                           <Lock className="h-4 w-4 text-primary" />
                         </div>
                         <p className="text-sm font-medium mb-1">Premium Content</p>
-                        <p className="text-xs text-muted-foreground mb-3">Subscribe to unlock this pick</p>
-                        <Button variant="hero" size="sm" className="text-xs px-5"
-                          onClick={(e) => { e.stopPropagation(); trackSubscribeClick(creator.id); createCheckoutSession(creator.id, creator.username); }}>
-                          Subscribe — ${price}/mo
-                        </Button>
+                        {isSubscribed ? (
+                          <p className="text-xs text-muted-foreground mb-3">Content will appear when the creator unlocks this pick.</p>
+                        ) : (
+                          <>
+                            <p className="text-xs text-muted-foreground mb-3">Subscribe to unlock this pick</p>
+                            <Button variant="hero" size="sm" className="text-xs px-5"
+                              onClick={(e) => { e.stopPropagation(); trackSubscribeClick(creator.id); createCheckoutSession(creator.id, creator.username); }}>
+                              Subscribe — ${price}/mo
+                            </Button>
+                          </>
+                        )}
                       </div>
                     </div>
                   ) : (

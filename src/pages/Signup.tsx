@@ -8,12 +8,17 @@ import { Label } from '@/components/ui/label';
 import { useAuthActions } from '@convex-dev/auth/react';
 import { useMutation } from 'convex/react';
 import { api } from '@convex/_generated/api';
+import { useAuth } from '@/contexts/AuthContext';
+import { ACTIVE_ROLE_STORAGE_KEY } from '@/lib/roles';
+import { useConvexAuthReady, waitForAuthenticated, withAuthRetry } from '@/lib/authSession';
 import { Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 
 const Signup = () => {
   const navigate = useNavigate();
   const { signIn } = useAuthActions();
+  const { clearDevBypass } = useAuth();
+  const authReady = useConvexAuthReady();
   const ensureUser = useMutation(api.users.queries.ensureUser);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -35,12 +40,21 @@ const Signup = () => {
       form.set('name', username.trim());
       form.set('flow', 'signUp');
       await signIn('password', form);
-      await ensureUser({
-        username: username.trim().toLowerCase().replace(/[^a-z0-9_]/g, ''),
-        fullName: username.trim(),
-      });
+      await waitForAuthenticated(() => authReady.current);
+      await withAuthRetry(() =>
+        ensureUser({
+          username: username.trim().toLowerCase().replace(/[^a-z0-9_]/g, ''),
+          fullName: username.trim(),
+        }),
+      );
+      clearDevBypass();
+      try {
+        localStorage.removeItem(ACTIVE_ROLE_STORAGE_KEY);
+      } catch {
+        /* ignore */
+      }
       toast.success('Account created!');
-      navigate('/select-role');
+      navigate('/select-role', { replace: true });
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Sign up failed');
     } finally {

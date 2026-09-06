@@ -18,7 +18,7 @@ const Spinner = () => (
 );
 
 export function ProtectedRoute({ children, allowedRoles }: ProtectedRouteProps) {
-  const { user, role, roles, loading, roleLoading, devMode, switchRole } = useAuth();
+  const { user, role, roles, loading, roleLoading, switchRole } = useAuth();
   const location = useLocation();
 
   const grantedRole = allowedRoles?.find((r) => roles.includes(r)) ?? null;
@@ -41,14 +41,13 @@ export function ProtectedRoute({ children, allowedRoles }: ProtectedRouteProps) 
     return <Navigate to="/login" replace />;
   }
 
-  if (!(import.meta.env.DEV && devMode)) {
-    if (roles.length === 0) {
-      return <Navigate to="/select-role" replace />;
-    }
+  // Always enforce DB-held roles (no DEV UI bypass).
+  if (roles.length === 0) {
+    return <Navigate to="/select-role" replace />;
+  }
 
-    if (allowedRoles && !grantedRole) {
-      return <Navigate to={homePathForRole(role)} replace />;
-    }
+  if (allowedRoles && !grantedRole) {
+    return <Navigate to={homePathForRole(role)} replace />;
   }
 
   if (needsCreatorProfile) {

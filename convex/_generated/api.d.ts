@@ -21,6 +21,7 @@ import type * as http from "../http.js";
 import type * as lib_auth from "../lib/auth.js";
 import type * as lib_commerceIdentity from "../lib/commerceIdentity.js";
 import type * as lib_credentialOwnership from "../lib/credentialOwnership.js";
+import type * as lib_devAdminGrant from "../lib/devAdminGrant.js";
 import type * as lib_entitlements from "../lib/entitlements.js";
 import type * as lib_money from "../lib/money.js";
 import type * as lib_payoutBalance from "../lib/payoutBalance.js";
@@ -65,6 +66,7 @@ declare const fullApi: ApiFromModules<{
   "lib/auth": typeof lib_auth;
   "lib/commerceIdentity": typeof lib_commerceIdentity;
   "lib/credentialOwnership": typeof lib_credentialOwnership;
+  "lib/devAdminGrant": typeof lib_devAdminGrant;
   "lib/entitlements": typeof lib_entitlements;
   "lib/money": typeof lib_money;
   "lib/payoutBalance": typeof lib_payoutBalance;
