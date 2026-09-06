@@ -105,23 +105,24 @@ const CustomerDiscover = () => {
         <p className="text-muted-foreground text-sm mt-0.5">Find top-performing creators to follow</p>
       </div>
 
-      <div className="flex flex-wrap items-center gap-2 mb-6">
-        <div className="relative flex-1 min-w-[220px]">
+      <div className="flex flex-col gap-3 mb-6 sm:flex-row sm:flex-wrap sm:items-center">
+        <div className="relative w-full sm:flex-1 sm:min-w-0 sm:max-w-md">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
           <Input
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder="Search creators"
-            className="pl-9 h-9 text-sm"
+            className="pl-9 h-11 sm:h-9 text-sm w-full"
             aria-label="Search creators"
           />
         </div>
-        <div className="flex gap-1.5">
+        <div className="flex flex-wrap gap-1.5 w-full sm:w-auto">
           {sortOptions.map((o) => (
             <button
               key={o.key}
+              type="button"
               onClick={() => setSort(o.key)}
-              className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
+              className={`min-h-11 sm:min-h-0 px-3 py-2 sm:py-1.5 rounded-lg text-xs font-medium transition-colors ${
                 sort === o.key ? 'bg-primary/10 text-primary' : 'text-muted-foreground hover:text-foreground hover:bg-muted/60'
               }`}
             >

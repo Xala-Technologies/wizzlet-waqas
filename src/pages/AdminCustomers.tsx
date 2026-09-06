@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react';
 import { useQuery } from 'convex/react';
 import { api } from '../../convex/_generated/api';
 import { DashboardLayout } from '@/components/dashboard/DashboardLayout';
+import { DesktopTableRegion, MobileRecordCards } from '@/components/dashboard/MobileRecordList';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -92,12 +93,12 @@ const AdminCustomers = () => {
           <h1 className="text-2xl font-bold">Customers</h1>
           <p className="text-muted-foreground text-sm mt-0.5">{customers.length} total customers</p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-col sm:flex-row flex-wrap items-stretch sm:items-center gap-2 w-full sm:w-auto">
           <div className="relative w-full sm:w-64">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
-            <Input placeholder="Search customers…" value={search} onChange={e => setSearch(e.target.value)} className="pl-9 h-9" />
+            <Input placeholder="Search customers…" value={search} onChange={e => setSearch(e.target.value)} className="pl-9 h-11 sm:h-9" />
           </div>
-          <Button variant="outline" size="sm" className="h-9 text-xs" onClick={handleExport}>
+          <Button variant="outline" size="sm" className="h-11 sm:h-9 text-xs w-full sm:w-auto" onClick={handleExport}>
             <Download className="mr-1.5 h-3.5 w-3.5" /> Export
           </Button>
         </div>
@@ -134,9 +135,35 @@ const AdminCustomers = () => {
           <h3 className="font-semibold mb-2">{search ? 'No matching customers' : 'No customers yet'}</h3>
         </div>
       ) : (
-        <div className="rounded-xl border border-border overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
+        <>
+          <MobileRecordCards>
+            {filtered.map((c) => (
+              <li key={c.id} className="rounded-xl border border-border bg-card p-4 space-y-3">
+                <div className="min-w-0">
+                  <p className="text-sm font-medium truncate">{c.full_name ?? 'Unknown'}</p>
+                  <p className="text-xs text-muted-foreground truncate mt-0.5">{c.email}</p>
+                </div>
+                <div className="flex flex-wrap items-center gap-2">
+                  {c.activeCount > 0 ? (
+                    <Badge variant="outline" className="text-[10px] bg-emerald-500/10 text-emerald-400 border-emerald-500/20"><CheckCircle2 className="h-2.5 w-2.5 mr-1" />Active</Badge>
+                  ) : c.canceledCount > 0 ? (
+                    <Badge variant="outline" className="text-[10px] bg-destructive/10 text-destructive border-destructive/20"><XCircle className="h-2.5 w-2.5 mr-1" />Canceled</Badge>
+                  ) : (
+                    <span className="text-xs text-muted-foreground">No subs</span>
+                  )}
+                  <span className="text-xs text-muted-foreground">{c.subCount} subs · ${c.totalSpent.toFixed(2)}</span>
+                </div>
+                <p className="text-xs text-muted-foreground">Last activity {format(new Date(c.lastActivity), 'MMM d, yyyy')}</p>
+                <div className="flex gap-2">
+                  <Button variant="outline" size="sm" className="h-11 flex-1 text-xs" onClick={() => setSelected(c)}><Eye className="mr-1.5 h-3.5 w-3.5" /> Details</Button>
+                  <Button variant="outline" size="sm" className="h-11 flex-1 text-xs" onClick={() => navigate('/admin/customer-email')}><Mail className="mr-1.5 h-3.5 w-3.5" /> Email</Button>
+                </div>
+              </li>
+            ))}
+          </MobileRecordCards>
+
+          <DesktopTableRegion label="Customers table" className="overflow-hidden">
+            <table className="w-full min-w-[640px] text-sm">
               <thead>
                 <tr className="border-b border-border bg-muted/30">
                   <th className="text-left text-xs font-medium text-muted-foreground p-4">Name</th>
@@ -167,16 +194,16 @@ const AdminCustomers = () => {
                     <td className="p-4 text-xs text-muted-foreground">{format(new Date(c.lastActivity), 'MMM d, yyyy')}</td>
                     <td className="p-4">
                       <div className="flex items-center justify-end gap-1">
-                        <Button variant="ghost" size="sm" className="h-7 px-2 text-xs" onClick={() => setSelected(c)} title="View details"><Eye className="h-3 w-3" /></Button>
-                        <Button variant="ghost" size="sm" className="h-7 px-2 text-xs" onClick={() => navigate('/admin/customer-email')} title="Email customers"><Mail className="h-3 w-3" /></Button>
+                        <Button variant="ghost" size="sm" className="h-9 w-9 px-0 text-xs" onClick={() => setSelected(c)} title="View details" aria-label="View details"><Eye className="h-3.5 w-3.5" /></Button>
+                        <Button variant="ghost" size="sm" className="h-9 w-9 px-0 text-xs" onClick={() => navigate('/admin/customer-email')} title="Email customers" aria-label="Email customers"><Mail className="h-3.5 w-3.5" /></Button>
                       </div>
                     </td>
                   </tr>
                 ))}
               </tbody>
             </table>
-          </div>
-        </div>
+          </DesktopTableRegion>
+        </>
       )}
       <Dialog open={!!selected} onOpenChange={open => !open && setSelected(null)}>
         <DialogContent className="sm:max-w-md">
