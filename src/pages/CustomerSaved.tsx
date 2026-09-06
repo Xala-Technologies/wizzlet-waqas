@@ -1,13 +1,15 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
+import { useQuery, useMutation } from 'convex/react';
 import { DashboardLayout } from '@/components/dashboard/DashboardLayout';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Bookmark, Trash2, Lock, Globe } from 'lucide-react';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
-import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/contexts/AuthContext';
+import { api } from '@convex/_generated/api';
+import type { Id } from '@convex/_generated/dataModel';
 
 interface SavedPost {
   id: string;
@@ -35,56 +37,70 @@ interface BookmarkedCreator {
 const CustomerSaved = () => {
   const { user } = useAuth();
   const [tab, setTab] = useState<'posts' | 'creators'>('posts');
-  const [posts, setPosts] = useState<SavedPost[]>([]);
-  const [creators, setCreators] = useState<BookmarkedCreator[]>([]);
-  const [loading, setLoading] = useState(true);
+  const savedDetailed = useQuery(api.posts.queries.listSavedDetailed, user ? {} : 'skip');
+  const bookmarkRows = useQuery(api.bookmarks.mutations.listCreatorBookmarks, user ? {} : 'skip');
+  const publishedCreators = useQuery(api.creators.queries.listPublished, user ? {} : 'skip');
+  const toggleSavedPost = useMutation(api.bookmarks.mutations.toggleSavedPost);
+  const toggleCreatorBookmark = useMutation(api.bookmarks.mutations.toggleCreatorBookmark);
 
-  const load = useCallback(async () => {
-    if (!user) {
-      setLoading(false);
-      return;
-    }
-    setLoading(true);
-    const [savedRes, bookmarkRes] = await Promise.all([
-      supabase
-        .from('saved_posts')
-        .select('id, created_at, post:posts(id, title, content, is_premium, creator:creators(username, display_name))')
-        .eq('user_id', user.id)
-        .order('created_at', { ascending: false }),
-      supabase
-        .from('creator_bookmarks')
-        .select('id, creator:creators(id, username, display_name, bio, monthly_price)')
-        .eq('user_id', user.id)
-        .order('created_at', { ascending: false }),
-    ]);
-    setPosts(((savedRes.data as SavedPost[] | null) ?? []).filter((r) => r.post));
-    setCreators(((bookmarkRes.data as BookmarkedCreator[] | null) ?? []).filter((r) => r.creator));
-    setLoading(false);
-  }, [user]);
+  const loading = user ? savedDetailed === undefined || bookmarkRows === undefined || publishedCreators === undefined : false;
 
-  useEffect(() => { load(); }, [load]);
+  const posts: SavedPost[] = useMemo(
+    () =>
+      (savedDetailed ?? []).map((row) => ({
+        id: row.savedId,
+        created_at: new Date(row.savedAt).toISOString(),
+        post: {
+          id: row.post._id,
+          title: row.post.title,
+          content: row.post.content ?? null,
+          is_premium: row.post.isPremium,
+          creator: {
+            username: row.creator.username,
+            display_name: row.creator.displayName ?? null,
+          },
+        },
+      })),
+    [savedDetailed],
+  );
 
-  const removePost = async (id: string) => {
-    const previous = posts;
-    setPosts((rows) => rows.filter((r) => r.id !== id));
-    const { error } = await supabase.from('saved_posts').delete().eq('id', id);
-    if (error) {
-      setPosts(previous);
-      toast.error('Could not remove this post');
-    } else {
+  const creators: BookmarkedCreator[] = useMemo(() => {
+    const byId = new Map((publishedCreators?.items ?? []).map((c) => [c._id, c]));
+    return (bookmarkRows ?? [])
+      .map((row) => {
+        const c = byId.get(row.creatorId);
+        if (!c) return null;
+        return {
+          id: row._id,
+          creator: {
+            id: c._id,
+            username: c.username,
+            display_name: c.displayName ?? null,
+            bio: c.bio ?? null,
+            monthly_price: c.monthlyPriceCents != null ? c.monthlyPriceCents / 100 : null,
+          },
+        };
+      })
+      .filter((row): row is BookmarkedCreator => row !== null);
+  }, [bookmarkRows, publishedCreators]);
+
+  const removePost = async (row: SavedPost) => {
+    if (!row.post) return;
+    try {
+      await toggleSavedPost({ postId: row.post.id as Id<'posts'> });
       toast.success('Removed from saved');
+    } catch {
+      toast.error('Could not remove this post');
     }
   };
 
-  const removeCreator = async (id: string) => {
-    const previous = creators;
-    setCreators((rows) => rows.filter((r) => r.id !== id));
-    const { error } = await supabase.from('creator_bookmarks').delete().eq('id', id);
-    if (error) {
-      setCreators(previous);
-      toast.error('Could not remove this bookmark');
-    } else {
+  const removeCreator = async (row: BookmarkedCreator) => {
+    if (!row.creator) return;
+    try {
+      await toggleCreatorBookmark({ creatorId: row.creator.id as Id<'creators'> });
       toast.success('Bookmark removed');
+    } catch {
+      toast.error('Could not remove this bookmark');
     }
   };
 
@@ -163,7 +179,7 @@ const CustomerSaved = () => {
                       </Link>
                     )}
                     <button
-                      onClick={() => removePost(row.id)}
+                      onClick={() => removePost(row)}
                       className="flex items-center gap-1 text-xs text-muted-foreground hover:text-destructive transition-colors"
                     >
                       <Trash2 className="h-3.5 w-3.5" /> Remove
@@ -197,7 +213,7 @@ const CustomerSaved = () => {
                     {c.username && <p className="text-xs text-muted-foreground truncate">@{c.username}</p>}
                   </div>
                   <button
-                    onClick={() => removeCreator(row.id)}
+                    onClick={() => removeCreator(row)}
                     aria-label={`Remove ${name} from bookmarks`}
                     className="text-primary hover:text-destructive transition-colors"
                   >

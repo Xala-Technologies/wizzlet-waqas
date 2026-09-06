@@ -1,9 +1,10 @@
 import { useEffect, useMemo, useState } from 'react';
+import { useMutation, useQuery } from 'convex/react';
+import { api } from '../../convex/_generated/api';
 import { DashboardLayout } from '@/components/dashboard/DashboardLayout';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import { supabase } from '@/lib/supabase';
 import { useCreatorProfile } from '@/hooks/useCreatorProfile';
 import { DollarSign, Zap, BarChart3, ArrowUpRight, ArrowDownRight, Target, Lightbulb, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
@@ -19,49 +20,46 @@ interface PricingData {
 }
 
 const CreatorSmartPricing = () => {
-  const { creator, loading: creatorLoading, reload } = useCreatorProfile();
+  const { creator, loading: creatorLoading } = useCreatorProfile();
+  const subs = useQuery(api.subscriptions.mutations.listForMyCreator);
+  const analytics = useQuery(api.analytics.mutations.listForMyCreator);
+  const posts = useQuery(api.posts.queries.listMine);
+  const marketPage = useQuery(api.creators.queries.listPublished, {});
+  const updateSettings = useMutation(api.creators.queries.updateSettings);
+
   const [data, setData] = useState<PricingData | null>(null);
-  const [loading, setLoading] = useState(true);
   const [priceInput, setPriceInput] = useState('');
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
-    if (creatorLoading) return;
-    if (!creator) { setLoading(false); return; }
+    if (creatorLoading || !creator) return;
+    if (subs === undefined || analytics === undefined || posts === undefined || marketPage === undefined) return;
+    const market = marketPage.items;
 
-    const load = async () => {
-      const [{ data: subs }, { data: views }, { data: posts }, { data: market }] = await Promise.all([
-        supabase.from('subscriptions').select('amount, status').eq('creator_id', creator.id).eq('status', 'active'),
-        supabase.from('analytics_events').select('id').eq('creator_id', creator.id).eq('event_type', 'profile_view'),
-        supabase.from('posts').select('result').eq('creator_id', creator.id),
-        supabase.from('creators').select('monthly_price').eq('is_published', true),
-      ]);
+    const activeSubs = subs.filter((s) => s.status === 'active');
+    const price = creator.monthly_price ?? 9.99;
+    const settled = posts.filter((p) => p.result === 'won' || p.result === 'lost');
+    const wins = settled.filter((p) => p.result === 'won').length;
+    const marketPrices = market
+      .map((m) => (m.monthlyPriceCents ?? 0) / 100)
+      .filter((p) => p > 0);
 
-      const activeSubs = subs?.length ?? 0;
-      const price = Number(creator.monthly_price ?? 9.99);
-      const settled = (posts ?? []).filter(p => p.result === 'won' || p.result === 'lost');
-      const wins = settled.filter(p => p.result === 'won').length;
-      const marketPrices = (market ?? []).map(m => Number(m.monthly_price ?? 0)).filter(p => p > 0);
+    setData({
+      price,
+      activeSubs: activeSubs.length,
+      monthlyRevenue: activeSubs.reduce((a, b) => a + b.amountCents / 100, 0),
+      profileViews: analytics.filter((e) => e.eventType === 'profile_view').length,
+      winRate: settled.length ? (wins / settled.length) * 100 : 0,
+      settledPicks: settled.length,
+      marketAverage: marketPrices.length ? marketPrices.reduce((a, b) => a + b, 0) / marketPrices.length : price,
+    });
+    setPriceInput(price.toFixed(2));
+  }, [creator, creatorLoading, subs, analytics, posts, marketPage]);
 
-      setData({
-        price,
-        activeSubs,
-        monthlyRevenue: (subs ?? []).reduce((a, b) => a + Number(b.amount), 0),
-        profileViews: views?.length ?? 0,
-        winRate: settled.length ? (wins / settled.length) * 100 : 0,
-        settledPicks: settled.length,
-        marketAverage: marketPrices.length ? marketPrices.reduce((a, b) => a + b, 0) / marketPrices.length : price,
-      });
-      setPriceInput(price.toFixed(2));
-      setLoading(false);
-    };
-    void load();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [creator?.id, creatorLoading]);
+  const loading = creatorLoading || !creator || subs === undefined || analytics === undefined || posts === undefined || marketPage === undefined;
 
   const suggestion = useMemo(() => {
     if (!data) return null;
-    // Demand signal: how efficiently views turn into subscribers.
     const conversion = data.profileViews > 0 ? (data.activeSubs / data.profileViews) * 100 : 0;
     let multiplier = 1;
     if (data.winRate >= 58 && data.settledPicks >= 20) multiplier += 0.35;
@@ -85,12 +83,15 @@ const CreatorSmartPricing = () => {
     const next = Number(priceInput);
     if (!next || next < 1) { toast.error('Enter a valid price'); return; }
     setSaving(true);
-    const { error } = await supabase.from('creators').update({ monthly_price: next }).eq('id', creator.id);
-    setSaving(false);
-    if (error) { toast.error(error.message); return; }
-    setData(d => d ? { ...d, price: next } : d);
-    void reload();
-    toast.success('Subscription price updated');
+    try {
+      await updateSettings({ monthlyPriceCents: Math.round(next * 100) });
+      setData((d) => d ? { ...d, price: next } : d);
+      toast.success('Subscription price updated');
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : 'Failed to update price');
+    } finally {
+      setSaving(false);
+    }
   };
 
   if (loading || !data || !suggestion) {

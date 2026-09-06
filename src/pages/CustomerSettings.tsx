@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useQuery, useMutation, useAction } from 'convex/react';
 import { DashboardLayout } from '@/components/dashboard/DashboardLayout';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -6,8 +7,8 @@ import { Switch } from '@/components/ui/switch';
 import { Skeleton } from '@/components/ui/skeleton';
 import { User, Bell, Shield, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
-import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/contexts/AuthContext';
+import { api } from '@convex/_generated/api';
 
 interface Prefs {
   new_posts: boolean;
@@ -23,86 +24,103 @@ const prefLabels: { key: keyof Prefs; label: string }[] = [
   { key: 'promotions', label: 'Promotions & deals' },
 ];
 
+function normalizePrefs(raw: unknown): Prefs {
+  if (!raw || typeof raw !== 'object') return defaultPrefs;
+  const p = raw as Partial<Prefs>;
+  return {
+    new_posts: p.new_posts ?? defaultPrefs.new_posts,
+    price_changes: p.price_changes ?? defaultPrefs.price_changes,
+    promotions: p.promotions ?? defaultPrefs.promotions,
+  };
+}
+
 const CustomerSettings = () => {
   const { user } = useAuth();
-  const [rowId, setRowId] = useState<string | null>(null);
+  const me = useQuery(api.users.queries.me, user ? {} : 'skip');
+  const updateProfile = useMutation(api.users.queries.updateProfile);
+  const changePasswordAction = useAction(api.users.queries.changePassword);
   const [fullName, setFullName] = useState('');
   const [username, setUsername] = useState('');
   const [email, setEmail] = useState('');
   const [prefs, setPrefs] = useState<Prefs>(defaultPrefs);
-  const [loading, setLoading] = useState(true);
   const [savingProfile, setSavingProfile] = useState(false);
   const [password, setPassword] = useState('');
+  const [currentPassword, setCurrentPassword] = useState('');
   const [savingPassword, setSavingPassword] = useState(false);
+  const [initialized, setInitialized] = useState(false);
+
+  const loading = user ? me === undefined : false;
 
   useEffect(() => {
-    if (!user) { setLoading(false); return; }
-    let cancelled = false;
-
-    (async () => {
-      const { data } = await supabase
-        .from('users')
-        .select('id, full_name, username, email, notification_prefs')
-        .eq('auth_id', user.id)
-        .maybeSingle();
-
-      if (cancelled) return;
-      if (data) {
-        setRowId(data.id);
-        setFullName(data.full_name ?? '');
-        setUsername(data.username ?? '');
-        setEmail(data.email ?? user.email ?? '');
-        setPrefs({ ...defaultPrefs, ...((data.notification_prefs as Partial<Prefs> | null) ?? {}) });
-      } else {
-        setEmail(user.email ?? '');
-      }
-      setLoading(false);
-    })();
-
-    return () => { cancelled = true; };
-  }, [user]);
-
-  const saveProfile = async () => {
-    if (!rowId) return;
-    setSavingProfile(true);
-    const { error } = await supabase
-      .from('users')
-      .update({ full_name: fullName.trim() || null, username: username.trim() || null })
-      .eq('id', rowId);
-    setSavingProfile(false);
-    if (error) {
-      toast.error(error.message.includes('duplicate') ? 'That username is already taken' : 'Could not save your profile');
+    if (loading || initialized) return;
+    if (me) {
+      setFullName(me.fullName ?? '');
+      setUsername(me.username ?? '');
+      setEmail(me.email ?? user?.email ?? '');
+      setPrefs(normalizePrefs(me.notificationPrefs));
+      setInitialized(true);
       return;
     }
-    toast.success('Profile updated');
+    if (!user) {
+      setInitialized(true);
+      return;
+    }
+    if (me === null) {
+      setEmail(user.email ?? '');
+      setInitialized(true);
+    }
+  }, [me, user, loading, initialized]);
+
+  const saveProfile = async () => {
+    if (!me) return;
+    setSavingProfile(true);
+    try {
+      await updateProfile({
+        fullName: fullName.trim() || undefined,
+        username: username.trim() || undefined,
+      });
+      toast.success('Profile updated');
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Could not save your profile';
+      toast.error(message.includes('duplicate') ? 'That username is already taken' : 'Could not save your profile');
+    } finally {
+      setSavingProfile(false);
+    }
   };
 
   const updatePrefs = async (key: keyof Prefs, value: boolean) => {
     const previous = prefs;
     const next = { ...prefs, [key]: value };
     setPrefs(next);
-    if (!rowId) return;
-    const { error } = await supabase.from('users').update({ notification_prefs: next }).eq('id', rowId);
-    if (error) {
+    if (!me) return;
+    try {
+      await updateProfile({ notificationPrefs: next });
+    } catch {
       setPrefs(previous);
       toast.error('Could not save preference');
     }
   };
 
   const changePassword = async () => {
+    if (!currentPassword) {
+      toast.error('Enter your current password');
+      return;
+    }
     if (password.length < 8) {
       toast.error('Password must be at least 8 characters');
       return;
     }
     setSavingPassword(true);
-    const { error } = await supabase.auth.updateUser({ password });
-    setSavingPassword(false);
-    if (error) {
-      toast.error(error.message);
-      return;
+    try {
+      await changePasswordAction({ currentPassword, newPassword: password });
+      setPassword('');
+      setCurrentPassword('');
+      toast.success('Password updated — please sign in again');
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : 'Could not update password');
+    } finally {
+      setSavingPassword(false);
     }
-    setPassword('');
-    toast.success('Password updated');
   };
 
   return (
@@ -137,7 +155,7 @@ const CustomerSettings = () => {
                 <Input id="email" value={email} type="email" disabled />
                 <p className="text-[10px] text-muted-foreground mt-1">Contact support to change your sign-in email.</p>
               </div>
-              <Button size="sm" className="w-fit mt-1" onClick={saveProfile} disabled={savingProfile || !rowId}>
+              <Button size="sm" className="w-fit mt-1" onClick={saveProfile} disabled={savingProfile || !me}>
                 {savingProfile && <Loader2 className="mr-2 h-3 w-3 animate-spin" />}
                 Save Changes
               </Button>
@@ -170,6 +188,16 @@ const CustomerSettings = () => {
             </div>
             <div className="grid gap-3 max-w-sm">
               <div>
+                <label htmlFor="currentPassword" className="text-xs text-muted-foreground mb-1 block">Current Password</label>
+                <Input
+                  id="currentPassword"
+                  type="password"
+                  value={currentPassword}
+                  onChange={(e) => setCurrentPassword(e.target.value)}
+                  autoComplete="current-password"
+                />
+              </div>
+              <div>
                 <label htmlFor="newPassword" className="text-xs text-muted-foreground mb-1 block">New Password</label>
                 <Input
                   id="newPassword"
@@ -180,7 +208,13 @@ const CustomerSettings = () => {
                   autoComplete="new-password"
                 />
               </div>
-              <Button variant="outline" size="sm" className="w-fit" onClick={changePassword} disabled={savingPassword || !password}>
+              <Button
+                variant="outline"
+                size="sm"
+                className="w-fit"
+                onClick={changePassword}
+                disabled={savingPassword || !password || !currentPassword}
+              >
                 {savingPassword && <Loader2 className="mr-2 h-3 w-3 animate-spin" />}
                 Change Password
               </Button>

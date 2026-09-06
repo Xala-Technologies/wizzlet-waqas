@@ -1,12 +1,12 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo } from 'react';
 import { Link } from 'react-router-dom';
+import { useQuery } from 'convex/react';
 import { DashboardLayout } from '@/components/dashboard/DashboardLayout';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Eye, Bookmark, BarChart3, Activity as ActivityIcon, CalendarDays } from 'lucide-react';
 import { formatDistanceToNowStrict } from 'date-fns';
-import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/contexts/AuthContext';
-import { useAppUser } from '@/hooks/useAppUser';
+import { api } from '@convex/_generated/api';
 
 interface EventRow {
   id: string;
@@ -21,39 +21,34 @@ interface EventRow {
 
 const CustomerActivity = () => {
   const { user } = useAuth();
-  const { appUserId, loading: userLoading } = useAppUser();
-  const [events, setEvents] = useState<EventRow[]>([]);
-  const [savedCount, setSavedCount] = useState(0);
-  const [loading, setLoading] = useState(true);
+  const eventsRaw = useQuery(api.analytics.mutations.listMine, user ? {} : 'skip');
+  const savedDetailed = useQuery(api.posts.queries.listSavedDetailed, user ? {} : 'skip');
 
-  useEffect(() => {
-    if (userLoading) return;
-    let cancelled = false;
+  const loading = user ? eventsRaw === undefined || savedDetailed === undefined : false;
 
-    (async () => {
-      setLoading(true);
-      const [eventRes, savedRes] = await Promise.all([
-        appUserId
-          ? supabase
-              .from('analytics_events')
-              .select('id, event_type, created_at, post:posts(id, title, creator:creators(username, display_name))')
-              .eq('user_id', appUserId)
-              .order('created_at', { ascending: false })
-              .limit(100)
-          : Promise.resolve({ data: [] as EventRow[] }),
-        user
-          ? supabase.from('saved_posts').select('id', { count: 'exact', head: true }).eq('user_id', user.id)
-          : Promise.resolve({ count: 0 }),
-      ]);
+  const events: EventRow[] = useMemo(
+    () =>
+      (eventsRaw ?? []).map((e) => ({
+        id: e._id,
+        event_type: e.eventType,
+        created_at: new Date(e.createdAt).toISOString(),
+        post: e.post
+          ? {
+              id: e.post._id,
+              title: e.post.title,
+              creator: e.post.creator
+                ? {
+                    username: e.post.creator.username,
+                    display_name: e.post.creator.displayName ?? null,
+                  }
+                : null,
+            }
+          : null,
+      })),
+    [eventsRaw],
+  );
 
-      if (cancelled) return;
-      setEvents((eventRes.data as EventRow[] | null) ?? []);
-      setSavedCount(('count' in savedRes ? savedRes.count : 0) ?? 0);
-      setLoading(false);
-    })();
-
-    return () => { cancelled = true; };
-  }, [appUserId, userLoading, user]);
+  const savedCount = savedDetailed?.length ?? 0;
 
   const stats = useMemo(() => {
     const views = events.filter((e) => e.event_type.includes('view'));

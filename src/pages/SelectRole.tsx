@@ -2,8 +2,9 @@ import { useState } from 'react';
 import { WizzletLogo } from '@/components/WizzletLogo';
 import { Seo } from '@/components/Seo';
 import { Navigate, useNavigate } from 'react-router-dom';
+import { useMutation } from 'convex/react';
 import { useAuth } from '@/contexts/AuthContext';
-import { supabase } from '@/lib/supabase';
+import { api } from '@convex/_generated/api';
 import { Crown, Users, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -12,6 +13,7 @@ const SelectRole = () => {
   const navigate = useNavigate();
   const [selected, setSelected] = useState<'creator' | 'subscriber' | null>(null);
   const [saving, setSaving] = useState(false);
+  const assignSelfRole = useMutation(api.roles.mutations.assignSelfRole);
 
   if (!loading && !user) {
     return <Navigate to="/login" replace />;
@@ -21,12 +23,9 @@ const SelectRole = () => {
     if (!selected || !user) return;
     setSaving(true);
 
-    const { error } = await supabase.from('user_roles').upsert(
-      { user_id: user.id, role: selected },
-      { onConflict: 'user_id,role', ignoreDuplicates: true },
-    );
-
-    if (error) {
+    try {
+      await assignSelfRole({ role: selected });
+    } catch {
       toast.error('Failed to set role. Please try again.');
       setSaving(false);
       return;

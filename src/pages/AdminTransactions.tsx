@@ -1,6 +1,7 @@
-import { useState, useEffect } from 'react';
+import { useMemo, useState } from 'react';
+import { useQuery } from 'convex/react';
+import { api } from '../../convex/_generated/api';
 import { DashboardLayout } from '@/components/dashboard/DashboardLayout';
-import { supabase } from '@/lib/supabase';
 import { Button } from '@/components/ui/button';
 import { CreditCard, Loader2, Search, Download } from 'lucide-react';
 import { Input } from '@/components/ui/input';
@@ -13,7 +14,7 @@ import { downloadCsv } from '@/lib/csv';
 interface Transaction {
   id: string;
   status: string;
-  created_at: string;
+  created_at: number;
   userName: string;
   creatorName: string;
   amount: number;
@@ -23,41 +24,37 @@ interface Transaction {
 }
 
 const AdminTransactions = () => {
-  const [loading, setLoading] = useState(true);
-  const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
 
-  useEffect(() => {
-    const load = async () => {
-      const [subsRes, creatorsRes, usersRes] = await Promise.all([
-        supabase.from('subscriptions').select('id, status, created_at, user_id, creator_id, amount, platform_fee, creator_earnings, fee_percentage').order('created_at', { ascending: false }),
-        supabase.from('creators').select('id, display_name, username'),
-        supabase.from('users').select('id, email, full_name'),
-      ]);
+  const subsRaw = useQuery(api.subscriptions.mutations.listAllAdmin);
+  const creatorsRaw = useQuery(api.creators.queries.listAllAdmin);
+  const usersRaw = useQuery(api.admin.queries.listUsers);
 
-      const creatorMap = new Map((creatorsRes.data ?? []).map(c => [c.id, c]));
-      const userMap = new Map((usersRes.data ?? []).map(u => [u.id, u]));
+  const loading = subsRaw === undefined || creatorsRaw === undefined || usersRaw === undefined;
 
-      setTransactions((subsRes.data ?? []).map(s => {
-        const creator = creatorMap.get(s.creator_id);
-        const user = userMap.get(s.user_id);
-        return {
-          id: s.id,
-          status: s.status,
-          created_at: s.created_at,
-          userName: user?.full_name ?? user?.email ?? 'Unknown',
-          creatorName: creator?.display_name ?? `@${creator?.username ?? 'unknown'}`,
-          amount: Number(s.amount),
-          creatorEarnings: Number(s.creator_earnings),
-          platformFee: Number(s.platform_fee),
-          feePercentage: Number(s.fee_percentage),
-        };
-      }));
-      setLoading(false);
-    };
-    load();
-  }, []);
+  const transactions = useMemo((): Transaction[] => {
+    if (!subsRaw || !creatorsRaw || !usersRaw) return [];
+
+    const creatorMap = new Map(creatorsRaw.map(c => [c._id, c]));
+    const userMap = new Map(usersRaw.map(u => [u._id, u]));
+
+    return subsRaw.map(s => {
+      const creator = creatorMap.get(s.creatorId);
+      const user = userMap.get(s.userId);
+      return {
+        id: s._id,
+        status: s.status,
+        created_at: s.createdAt,
+        userName: user?.fullName ?? user?.email ?? 'Unknown',
+        creatorName: creator?.displayName ?? `@${creator?.username ?? 'unknown'}`,
+        amount: s.amountCents / 100,
+        creatorEarnings: s.creatorEarningsCents / 100,
+        platformFee: s.platformFeeCents / 100,
+        feePercentage: s.feePercentage,
+      };
+    }).sort((a, b) => b.created_at - a.created_at);
+  }, [subsRaw, creatorsRaw, usersRaw]);
 
   const active = transactions.filter(t => t.status === 'active');
   const totalAmount = active.reduce((a, b) => a + b.amount, 0);
@@ -110,7 +107,6 @@ const AdminTransactions = () => {
         </div>
       </div>
 
-      {/* Summary */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
         <div className="rounded-xl border border-border bg-card p-5">
           <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1">Total Volume</p>

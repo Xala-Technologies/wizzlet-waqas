@@ -1,5 +1,6 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useQuery, useMutation } from 'convex/react';
 import { DashboardLayout } from '@/components/dashboard/DashboardLayout';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -7,8 +8,9 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { FileText, DollarSign, Megaphone, Info, CheckCircle2, BellOff } from 'lucide-react';
 import { toast } from 'sonner';
 import { formatDistanceToNowStrict } from 'date-fns';
-import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/contexts/AuthContext';
+import { api } from '@convex/_generated/api';
+import type { Id } from '@convex/_generated/dataModel';
 
 interface NotificationRow {
   id: string;
@@ -31,51 +33,47 @@ const typeConfig: Record<string, { icon: typeof FileText; color: string; bg: str
 const CustomerNotifications = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
-  const [items, setItems] = useState<NotificationRow[]>([]);
-  const [loading, setLoading] = useState(true);
+  const itemsRaw = useQuery(api.notifications.mutations.listMine, user ? {} : 'skip');
+  const markReadMutation = useMutation(api.notifications.mutations.markRead);
+  const markAllReadMutation = useMutation(api.notifications.mutations.markAllRead);
 
-  const load = useCallback(async () => {
-    if (!user) {
-      setLoading(false);
-      return;
-    }
-    setLoading(true);
-    const { data } = await supabase
-      .from('notifications')
-      .select('id, type, title, description, link, read, created_at')
-      .eq('user_id', user.id)
-      .order('created_at', { ascending: false })
-      .limit(100);
-    setItems((data as NotificationRow[] | null) ?? []);
-    setLoading(false);
-  }, [user]);
+  const loading = user ? itemsRaw === undefined : false;
 
-  useEffect(() => { load(); }, [load]);
+  const items: NotificationRow[] = useMemo(
+    () =>
+      (itemsRaw ?? []).map((n) => ({
+        id: n._id,
+        type: n.type,
+        title: n.title,
+        description: n.description ?? null,
+        link: n.link ?? null,
+        read: n.read,
+        created_at: new Date(n.createdAt).toISOString(),
+      })),
+    [itemsRaw],
+  );
 
   const unreadCount = items.filter((n) => !n.read).length;
 
   const markRead = async (row: NotificationRow) => {
     if (!row.read) {
-      setItems((rows) => rows.map((r) => (r.id === row.id ? { ...r, read: true } : r)));
-      await supabase.from('notifications').update({ read: true }).eq('id', row.id);
+      try {
+        await markReadMutation({ notificationId: row.id as Id<'notifications'> });
+      } catch {
+        toast.error('Could not update notification');
+        return;
+      }
     }
     if (row.link) navigate(row.link);
   };
 
   const markAllRead = async () => {
     if (!user || unreadCount === 0) return;
-    const previous = items;
-    setItems((rows) => rows.map((r) => ({ ...r, read: true })));
-    const { error } = await supabase
-      .from('notifications')
-      .update({ read: true })
-      .eq('user_id', user.id)
-      .eq('read', false);
-    if (error) {
-      setItems(previous);
-      toast.error('Could not update notifications');
-    } else {
+    try {
+      await markAllReadMutation({});
       toast.success('All marked as read');
+    } catch {
+      toast.error('Could not update notifications');
     }
   };
 

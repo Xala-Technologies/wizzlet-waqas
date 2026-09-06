@@ -1,7 +1,8 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo } from 'react';
 import { Link } from 'react-router-dom';
+import { useQuery } from 'convex/react';
+import { api } from '../../convex/_generated/api';
 import { DashboardLayout } from '@/components/dashboard/DashboardLayout';
-import { supabase } from '@/lib/supabase';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { DollarSign, Percent, TrendingUp, Wallet, Loader2, Crown, ArrowUpRight } from 'lucide-react';
@@ -15,13 +16,7 @@ interface Sub {
   platform_fee: number;
   creator_earnings: number;
   status: string;
-  created_at: string;
-}
-
-interface Payout {
-  creator_id: string;
-  amount: number;
-  status: string;
+  created_at: number;
 }
 
 interface MonthPoint {
@@ -34,34 +29,35 @@ interface MonthPoint {
 const fmt = (n: number) => `$${n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 
 const AdminFinance = () => {
-  const [loading, setLoading] = useState(true);
-  const [subs, setSubs] = useState<Sub[]>([]);
-  const [payouts, setPayouts] = useState<Payout[]>([]);
-  const [creatorNames, setCreatorNames] = useState<Map<string, string>>(new Map());
-  const [userEmails, setUserEmails] = useState<Map<string, string>>(new Map());
+  const subsRaw = useQuery(api.subscriptions.mutations.listAllAdmin);
+  const payoutsRaw = useQuery(api.payouts.mutations.listAllAdmin);
+  const creatorsRaw = useQuery(api.creators.queries.listAllAdmin);
+  const usersRaw = useQuery(api.admin.queries.listUsers);
 
-  useEffect(() => {
-    const load = async () => {
-      const [subsRes, payoutsRes, creatorsRes, usersRes] = await Promise.all([
-        supabase.from('subscriptions').select('id, user_id, creator_id, amount, platform_fee, creator_earnings, status, created_at').order('created_at', { ascending: false }),
-        supabase.from('payouts').select('creator_id, amount, status'),
-        supabase.from('creators').select('id, display_name, username'),
-        supabase.from('users').select('id, email'),
-      ]);
+  const loading = subsRaw === undefined || payoutsRaw === undefined || creatorsRaw === undefined || usersRaw === undefined;
 
-      setSubs((subsRes.data ?? []).map(s => ({
-        ...s,
-        amount: Number(s.amount),
-        platform_fee: Number(s.platform_fee),
-        creator_earnings: Number(s.creator_earnings),
-      })));
-      setPayouts((payoutsRes.data ?? []).map(p => ({ ...p, amount: Number(p.amount) })));
-      setCreatorNames(new Map((creatorsRes.data ?? []).map(c => [c.id, c.display_name || `@${c.username ?? 'unknown'}`])));
-      setUserEmails(new Map((usersRes.data ?? []).map(u => [u.id, u.email])));
-      setLoading(false);
-    };
-    load();
-  }, []);
+  const subs = useMemo((): Sub[] => {
+    if (!subsRaw) return [];
+    return subsRaw.map(s => ({
+      id: s._id,
+      user_id: s.userId,
+      creator_id: s.creatorId,
+      amount: s.amountCents / 100,
+      platform_fee: s.platformFeeCents / 100,
+      creator_earnings: s.creatorEarningsCents / 100,
+      status: s.status,
+      created_at: s.createdAt,
+    })).sort((a, b) => b.created_at - a.created_at);
+  }, [subsRaw]);
+
+  const payouts = useMemo(() => (payoutsRaw ?? []).map(p => ({
+    creator_id: p.creatorId,
+    amount: p.amountCents / 100,
+    status: p.status,
+  })), [payoutsRaw]);
+
+  const creatorNames = useMemo(() => new Map((creatorsRaw ?? []).map(c => [c._id, c.displayName || `@${c.username ?? 'unknown'}`])), [creatorsRaw]);
+  const userEmails = useMemo(() => new Map((usersRaw ?? []).map(u => [u._id, u.email])), [usersRaw]);
 
   const stats = useMemo(() => {
     const active = subs.filter(s => s.status === 'active');

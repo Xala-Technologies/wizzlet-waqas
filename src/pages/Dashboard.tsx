@@ -1,24 +1,25 @@
 import { parsePickOdds as parseOdds, americanToDecimal, decimalToAmerican } from '@/lib/odds';
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useMemo } from 'react';
 import { Link } from 'react-router-dom';
+import { useQuery, useMutation } from 'convex/react';
 import { DashboardLayout } from '@/components/dashboard/DashboardLayout';
 import { useAuth } from '@/contexts/AuthContext';
-import { supabase } from '@/lib/supabase';
+import { api } from '@convex/_generated/api';
+import type { Id } from '@convex/_generated/dataModel';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
 } from '@/components/ui/dialog';
 import {
   Crown, FileText, Loader2, Lock, Globe, Users, CreditCard,
-  Zap, Bookmark, TrendingUp, Star, ArrowRight, Copy, PlusCircle,
+  Bookmark, Star, ArrowRight, Copy, PlusCircle,
   Clock, Check, Flame, Trophy, XCircle, Minus,
 } from 'lucide-react';
 import { openCustomerPortal } from '@/lib/stripe';
 import { formatDistanceToNowStrict } from 'date-fns';
-import { useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 
 interface Subscription {
@@ -86,95 +87,97 @@ interface TrackForm {
 
 const Dashboard = () => {
   const { user } = useAuth();
-  const queryClient = useQueryClient();
-  const [subs, setSubs] = useState<Subscription[]>([]);
-  const [posts, setPosts] = useState<FeedPost[]>([]);
-  const [loading, setLoading] = useState(true);
+  const feedRaw = useQuery(api.posts.queries.memberFeed, user ? {} : 'skip');
+  const subsRaw = useQuery(api.subscriptions.mutations.mySubscriptionsDetailed, user ? {} : 'skip');
+  const savedRaw = useQuery(api.bookmarks.mutations.listSavedPosts, user ? {} : 'skip');
+  const toggleSavedPost = useMutation(api.bookmarks.mutations.toggleSavedPost);
+  const upsertPick = useMutation(api.picks.mutations.upsert);
+
   const [visibleCount, setVisibleCount] = useState(10);
   const [trackOpen, setTrackOpen] = useState(false);
   const [trackSaving, setTrackSaving] = useState(false);
   const [feedTab, setFeedTab] = useState('following');
-  const [savedIds, setSavedIds] = useState<Set<string>>(new Set());
+  const [optimisticSaved, setOptimisticSaved] = useState<Set<string> | null>(null);
 
   const [trackForm, setTrackForm] = useState<TrackForm>({
     pick_event: '', sport: '', eu_odds: '', us_odds: '', units_risked: '1',
   });
 
-  useEffect(() => {
-    if (!user) return;
-    const load = async () => {
-      const { data: userData } = await supabase.from('users').select('id').eq('auth_id', user.id).maybeSingle();
-      if (!userData) { setLoading(false); return; }
-      const { data: subsData } = await supabase
-        .from('subscriptions')
-        .select('id, status, created_at, creator:creators(id, username, display_name, avatar_url, monthly_price)')
-        .eq('user_id', userData.id)
-        .order('created_at', { ascending: false });
-      const activeSubs = (subsData ?? []) as unknown as Subscription[];
-      setSubs(activeSubs);
-      const creatorIds = activeSubs.filter(s => s.status === 'active').map(s => s.creator.id);
-      if (creatorIds.length > 0) {
-        const { data: postsData } = await supabase
-          .from('posts')
-          .select('id, title, content, is_premium, created_at, result, creator:creators(username, display_name, avatar_url)')
-          .in('creator_id', creatorIds)
-          .order('created_at', { ascending: false })
-          .limit(50);
-        setPosts((postsData ?? []) as unknown as FeedPost[]);
-      }
-      const { data: savedData } = await supabase
-        .from('saved_posts')
-        .select('post_id')
-        .eq('user_id', user.id);
-      setSavedIds(new Set((savedData ?? []).map((r) => r.post_id)));
-      setLoading(false);
-    };
-    load();
-  }, [user]);
+  const loading = user ? feedRaw === undefined || subsRaw === undefined || savedRaw === undefined : false;
+
+  const subs: Subscription[] = useMemo(
+    () =>
+      (subsRaw ?? []).map((s) => ({
+        id: s._id,
+        status: s.status,
+        created_at: new Date(s.createdAt).toISOString(),
+        creator: {
+          id: s.creator._id,
+          username: s.creator.username,
+          display_name: s.creator.displayName ?? null,
+          avatar_url: s.creator.avatarUrl ?? null,
+          monthly_price:
+            s.creator.monthlyPriceCents != null ? s.creator.monthlyPriceCents / 100 : null,
+        },
+      })),
+    [subsRaw],
+  );
+
+  const posts: FeedPost[] = useMemo(
+    () =>
+      (feedRaw ?? []).map((p) => ({
+        id: p._id,
+        title: p.title,
+        content: p.content,
+        is_premium: p.isPremium,
+        created_at: new Date(p.createdAt).toISOString(),
+        result: p.result ?? 'pending',
+        creator: {
+          username: p.creator.username,
+          display_name: p.creator.displayName ?? null,
+          avatar_url: p.creator.avatarUrl ?? null,
+        },
+      })),
+    [feedRaw],
+  );
+
+  const savedIds = useMemo(() => {
+    const base = new Set((savedRaw ?? []).map((r) => r.postId as string));
+    return optimisticSaved ?? base;
+  }, [savedRaw, optimisticSaved]);
 
   const toggleSave = async (postId: string) => {
     if (!user) return;
     const wasSaved = savedIds.has(postId);
-    setSavedIds(prev => {
-      const next = new Set(prev);
-      if (wasSaved) next.delete(postId); else next.add(postId);
+    setOptimisticSaved((prev) => {
+      const next = new Set(prev ?? savedIds);
+      if (wasSaved) next.delete(postId);
+      else next.add(postId);
       return next;
     });
 
-    const { error } = wasSaved
-      ? await supabase.from('saved_posts').delete().eq('user_id', user.id).eq('post_id', postId)
-      : await supabase.from('saved_posts').insert({ user_id: user.id, post_id: postId });
-
-    if (error) {
-      setSavedIds(prev => {
-        const next = new Set(prev);
-        if (wasSaved) next.add(postId); else next.delete(postId);
-        return next;
-      });
+    try {
+      await toggleSavedPost({ postId: postId as Id<'posts'> });
+      setOptimisticSaved(null);
+      toast.success(wasSaved ? 'Removed from saved' : 'Saved to your library');
+    } catch {
+      setOptimisticSaved(null);
       toast.error('Could not update your saved picks');
-      return;
     }
-    toast.success(wasSaved ? 'Removed from saved' : 'Saved to your library');
   };
-
-
 
   const activeSubs = subs.filter(s => s.status === 'active');
 
-  // Feed tabs logic
   const feedPosts = useMemo(() => {
     if (feedTab === 'following') return posts;
     if (feedTab === 'trending') {
-      // Sort by recency (simulated popularity)
       return [...posts].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
     }
-    // "For You" - mix based on variety
     return [...posts].sort(() => Math.random() - 0.5);
   }, [posts, feedTab]);
 
   const visiblePosts = feedPosts.slice(0, visibleCount);
 
-  // Stats from tracked picks
   const wonPicks = posts.filter(p => p.result === 'won').length;
   const settledPicks = posts.filter(p => p.result !== 'pending').length;
   const winRate = settledPicks > 0 ? Math.round((wonPicks / settledPicks) * 100) : 0;
@@ -205,18 +208,25 @@ const Dashboard = () => {
     if (!user) return;
     setTrackSaving(true);
     try {
-      const euVal = trackForm.eu_odds ? parseFloat(trackForm.eu_odds) : null;
+      const euVal = trackForm.eu_odds ? parseFloat(trackForm.eu_odds) : undefined;
       const units = parseFloat(trackForm.units_risked) || 1;
-      const { error } = await supabase.from('pick_tracker').insert({
-        user_id: user.id, pick_event: trackForm.pick_event, sport: trackForm.sport || 'Other',
-        eu_odds: euVal, us_odds: trackForm.us_odds || null, units_risked: units, result: 'pending', units_won_lost: 0,
+      await upsertPick({
+        date: new Date().toISOString().split('T')[0],
+        pickEvent: trackForm.pick_event,
+        sport: trackForm.sport || 'Other',
+        euOdds: euVal,
+        usOdds: trackForm.us_odds || undefined,
+        unitsRisked: units,
+        result: 'pending',
+        unitsWonLost: 0,
       });
-      if (error) throw error;
-      queryClient.invalidateQueries({ queryKey: ['pick_tracker'] });
       toast.success('Added to My Results tracker');
       setTrackOpen(false);
-    } catch { toast.error('Failed to add to tracker'); }
-    finally { setTrackSaving(false); }
+    } catch {
+      toast.error('Failed to add to tracker');
+    } finally {
+      setTrackSaving(false);
+    }
   };
 
   const copyPick = (post: FeedPost) => {
@@ -243,7 +253,6 @@ const Dashboard = () => {
     const rs = resultStyles[result] || resultStyles.pending;
     const ResultIcon = rs.icon;
 
-    // Check for win streak on this creator's posts
     const creatorPosts = posts.filter(p => p.creator.username === post.creator.username);
     let streak = 0;
     for (const cp of creatorPosts) {
@@ -253,7 +262,6 @@ const Dashboard = () => {
 
     return (
       <article key={post.id} className="rounded-xl border border-border bg-card overflow-hidden transition-colors hover:border-primary/20">
-        {/* Creator Header */}
         <div className="flex items-center gap-3 px-4 sm:px-5 pt-4 sm:pt-5 pb-3">
           {post.creator.avatar_url ? (
             <img src={post.creator.avatar_url} alt="" className="h-9 w-9 rounded-full object-cover shrink-0" />
@@ -291,7 +299,6 @@ const Dashboard = () => {
           )}
         </div>
 
-        {/* Pick Content */}
         <div className="px-4 sm:px-5 pb-4 sm:pb-5">
           {pick && (pick.sport || pick.event) && (
             <div className="flex items-center gap-2 mb-3">
@@ -308,7 +315,6 @@ const Dashboard = () => {
             {pick?.pick || post.title}
           </h3>
 
-          {/* Odds + Units + Status */}
           <div className="flex flex-wrap items-center gap-2 mb-3">
             {(odds.us || odds.eu) && (
               <div className="inline-flex items-center gap-1.5 rounded-lg bg-muted/50 px-3 py-1.5">
@@ -341,7 +347,6 @@ const Dashboard = () => {
             <p className="text-sm text-muted-foreground leading-relaxed line-clamp-3 mb-3">{post.content}</p>
           )}
 
-          {/* Actions */}
           <div className="flex items-center gap-1 pt-2 border-t border-border">
             <Button
               variant="ghost"
@@ -367,7 +372,6 @@ const Dashboard = () => {
 
   return (
     <DashboardLayout type="member">
-      {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
         <div>
           <h1 className="text-2xl font-bold">Your Feed</h1>
@@ -389,7 +393,6 @@ const Dashboard = () => {
         </div>
       </div>
 
-      {/* Quick Stats */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
         {[
           { label: 'Active Subs', value: String(activeSubs.length), icon: Crown, color: 'text-primary' },
@@ -405,7 +408,6 @@ const Dashboard = () => {
         ))}
       </div>
 
-      {/* Feed Tabs */}
       <Tabs value={feedTab} onValueChange={setFeedTab} className="mb-4">
         <TabsList className="grid w-full grid-cols-3 max-w-sm">
           <TabsTrigger value="following">Following</TabsTrigger>
@@ -414,7 +416,6 @@ const Dashboard = () => {
         </TabsList>
       </Tabs>
 
-      {/* Feed */}
       {visiblePosts.length > 0 ? (
         <div className="space-y-4">
           {visiblePosts.map(renderPost)}
@@ -447,7 +448,6 @@ const Dashboard = () => {
         </div>
       )}
 
-      {/* Add to Tracker Modal */}
       <Dialog open={trackOpen} onOpenChange={setTrackOpen}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>

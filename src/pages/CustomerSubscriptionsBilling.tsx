@@ -1,5 +1,6 @@
-import { useEffect, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useQuery, useMutation } from 'convex/react';
 import { DashboardLayout } from '@/components/dashboard/DashboardLayout';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
@@ -10,8 +11,9 @@ import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '
 import { Textarea } from '@/components/ui/textarea';
 import { toast } from 'sonner';
 import { format, addMonths } from 'date-fns';
-import { supabase } from '@/lib/supabase';
 import { useAppUser } from '@/hooks/useAppUser';
+import { api } from '@convex/_generated/api';
+import type { Id } from '@convex/_generated/dataModel';
 
 interface SubscriptionRow {
   id: string;
@@ -41,7 +43,6 @@ function nextRenewal(startedAt: string): Date {
   return next;
 }
 
-/** Monthly charges implied by an active subscription, newest first. */
 function billingHistory(subs: SubscriptionRow[]) {
   const now = new Date();
   const rows: { key: string; date: Date; description: string; amount: number }[] = [];
@@ -68,71 +69,62 @@ function billingHistory(subs: SubscriptionRow[]) {
 const CustomerSubscriptionsBilling = () => {
   const navigate = useNavigate();
   const { appUserId, loading: userLoading } = useAppUser();
-  const [subs, setSubs] = useState<SubscriptionRow[]>([]);
-  const [loading, setLoading] = useState(true);
+  const subsRaw = useQuery(api.subscriptions.mutations.mySubscriptionsDetailed, appUserId ? {} : 'skip');
+  const sendMessageMutation = useMutation(api.messaging.mutations.send);
   const [portalLoading, setPortalLoading] = useState(false);
   const [messageTarget, setMessageTarget] = useState<{ id: string; name: string } | null>(null);
   const [messageBody, setMessageBody] = useState('');
   const [sendingMessage, setSendingMessage] = useState(false);
 
+  const loading = userLoading || (appUserId ? subsRaw === undefined : false);
+
+  const subs: SubscriptionRow[] = useMemo(
+    () =>
+      (subsRaw ?? []).map((s) => ({
+        id: s._id,
+        status: s.status,
+        amount: s.amountCents / 100,
+        created_at: new Date(s.createdAt).toISOString(),
+        creator: {
+          id: s.creator._id,
+          username: s.creator.username,
+          display_name: s.creator.displayName ?? null,
+          messaging_enabled: s.creator.messagingEnabled,
+        },
+      })),
+    [subsRaw],
+  );
+
   const sendMessage = async () => {
     if (!appUserId || !messageTarget || !messageBody.trim()) return;
     setSendingMessage(true);
-    const { error } = await supabase.from('direct_messages').insert({
-      creator_id: messageTarget.id,
-      subscriber_id: appUserId,
-      sender_role: 'subscriber',
-      body: messageBody.trim(),
-    });
-    setSendingMessage(false);
-    if (error) {
-      toast.error(error.message);
-      return;
+    try {
+      await sendMessageMutation({
+        creatorId: messageTarget.id as Id<'creators'>,
+        subscriberId: appUserId as Id<'users'>,
+        body: messageBody.trim(),
+        senderRole: 'subscriber',
+      });
+      toast.success(`Message sent to ${messageTarget.name}`);
+      setMessageBody('');
+      setMessageTarget(null);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Could not send message');
+    } finally {
+      setSendingMessage(false);
     }
-    toast.success(`Message sent to ${messageTarget.name}`);
-    setMessageBody('');
-    setMessageTarget(null);
   };
-
-  useEffect(() => {
-    if (userLoading) return;
-    if (!appUserId) {
-      setSubs([]);
-      setLoading(false);
-      return;
-    }
-
-    let cancelled = false;
-    (async () => {
-      setLoading(true);
-      const { data } = await supabase
-        .from('subscriptions')
-        .select('id, status, amount, created_at, creator:creators(id, username, display_name, messaging_enabled)')
-        .eq('user_id', appUserId)
-        .order('created_at', { ascending: false });
-
-      if (!cancelled) {
-        setSubs((data as SubscriptionRow[] | null) ?? []);
-        setLoading(false);
-      }
-    })();
-
-    return () => {
-      cancelled = true;
-    };
-  }, [appUserId, userLoading]);
 
   const active = subs.filter((s) => s.status === 'active');
   const history = billingHistory(active);
   const monthlyTotal = active.reduce((sum, s) => sum + (Number(s.amount) || 0), 0);
-  const busy = loading || userLoading;
+  const busy = loading;
 
   const manageBilling = async () => {
     setPortalLoading(true);
     toast.info('Sandbox mode — no live payment provider is connected yet. Manage your subscriptions below.');
     setPortalLoading(false);
   };
-
 
   return (
     <DashboardLayout type="member">
@@ -215,7 +207,6 @@ const CustomerSubscriptionsBilling = () => {
                         <ExternalLink className="h-3 w-3" />
                       </Button>
                     )}
-
                   </div>
                 );
               })}

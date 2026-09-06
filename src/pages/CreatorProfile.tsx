@@ -1,13 +1,15 @@
 import { useParams, Link } from 'react-router-dom';
-import { useEffect, useState, useMemo } from 'react';
+import { useEffect, useMemo } from 'react';
+import { useQuery } from 'convex/react';
+import { api } from '../../convex/_generated/api';
+import type { Id } from '../../convex/_generated/dataModel';
 import { Button } from '@/components/ui/button';
 import { Seo } from '@/components/Seo';
 import { parsePickOdds as parseOdds } from '@/lib/odds';
 import { Badge } from '@/components/ui/badge';
 import { Navbar } from '@/components/landing/Navbar';
 import { Footer } from '@/components/landing/Footer';
-import { supabase } from '@/lib/supabase';
-import { createCheckoutSession } from '@/lib/stripe';
+import { createCheckoutSession } from '@/data/payments';
 import { trackPageView, trackPostView, trackSubscribeClick } from '@/lib/analytics';
 import { Lock, Users, CheckCircle, Loader2, Trophy, TrendingUp, Target, Flame, Clock, XCircle, Minus, Copy } from 'lucide-react';
 import { format, formatDistanceToNowStrict } from 'date-fns';
@@ -72,33 +74,66 @@ const resultConfig = {
 
 const CreatorProfile = () => {
   const { username } = useParams();
-  const [creator, setCreator] = useState<Creator | null>(null);
-  const [posts, setPosts] = useState<Post[]>([]);
-  const [products, setProducts] = useState<Product[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [subCount, setSubCount] = useState(0);
+  const creatorData = useQuery(
+    api.creators.queries.getByUsername,
+    username ? { username } : 'skip',
+  );
+  const postsRaw = useQuery(
+    api.posts.queries.listPreviewsByCreator,
+    creatorData ? { creatorId: creatorData._id } : 'skip',
+  );
+  const productsRaw = useQuery(
+    api.products.mutations.listPublicByCreator,
+    creatorData ? { creatorId: creatorData._id } : 'skip',
+  );
+
+  const loading = creatorData === undefined || (creatorData && (postsRaw === undefined || productsRaw === undefined));
+
+  const creator = creatorData
+    ? {
+        id: creatorData._id,
+        username: creatorData.username,
+        display_name: creatorData.displayName ?? null,
+        bio: creatorData.bio ?? null,
+        avatar_url: creatorData.avatarUrl ?? null,
+        banner_url: creatorData.bannerUrl ?? null,
+        monthly_price: creatorData.monthlyPriceCents != null ? creatorData.monthlyPriceCents / 100 : null,
+      }
+    : null;
+
+  const posts = useMemo(
+    () => (postsRaw ?? []).map((p) => ({
+      id: p._id,
+      title: p.title,
+      content: p.content,
+      is_premium: p.isPremium,
+      created_at: new Date(p.createdAt).toISOString(),
+      result: p.result,
+    })),
+    [postsRaw],
+  );
+
+  const products = useMemo(
+    () => (productsRaw ?? [])
+      .sort((a, b) => Number(b.isFeatured) - Number(a.isFeatured) || a.priceCents - b.priceCents)
+      .map((p) => ({
+        id: p._id,
+        name: p.name,
+        description: p.description ?? null,
+        price: p.priceCents / 100,
+        billing_period: p.billingPeriod,
+        is_featured: p.isFeatured,
+      })),
+    [productsRaw],
+  );
+
+  const subCount = 0;
 
   useEffect(() => {
-    if (!username) return;
-    const load = async () => {
-      setLoading(true);
-      const { data: creatorData } = await supabase.from('creators').select('*').eq('username', username).eq('is_published', true).maybeSingle();
-      if (!creatorData) { setLoading(false); return; }
-      setCreator(creatorData);
-      const [postsRes, subsRes, productsRes] = await Promise.all([
-        supabase.rpc('get_creator_post_previews', { p_creator_id: creatorData.id }),
-        supabase.from('subscriptions').select('id', { count: 'exact', head: true }).eq('creator_id', creatorData.id).eq('status', 'active'),
-        supabase.from('products').select('*').eq('creator_id', creatorData.id).eq('is_active', true).order('is_featured', { ascending: false }).order('price', { ascending: true }),
-      ]);
-      setPosts((postsRes.data ?? []) as Post[]);
-      setSubCount(subsRes.count ?? 0);
-      setProducts((productsRes.data ?? []) as Product[]);
-      setLoading(false);
-      trackPageView(`creator:${creatorData.username}`);
-      (postsRes.data ?? []).forEach((p: any) => trackPostView(p.id, creatorData.id));
-    };
-    load();
-  }, [username]);
+    if (!creator) return;
+    trackPageView(`creator:${creator.username}`);
+    posts.forEach((p) => trackPostView(p.id, creator.id));
+  }, [creator?.id, posts.length]);
 
   // Stats
   const stats = useMemo(() => {

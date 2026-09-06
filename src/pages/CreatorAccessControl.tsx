@@ -1,70 +1,68 @@
-import { useEffect, useState } from 'react';
+import { useMemo, useState } from 'react';
+import { useMutation, useQuery } from 'convex/react';
+import { api } from '../../convex/_generated/api';
+import type { Id } from '../../convex/_generated/dataModel';
 import { DashboardLayout } from '@/components/dashboard/DashboardLayout';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
-import { supabase } from '@/lib/supabase';
 import { useCreatorProfile } from '@/hooks/useCreatorProfile';
 import { Lock, Unlock, Users, AlertTriangle, Zap, Loader2, PackageOpen } from 'lucide-react';
 import { toast } from 'sonner';
 
-interface AccessProduct {
-  id: string;
-  name: string;
-  price: number;
-  max_spots: number | null;
-  is_limited: boolean;
-  is_closed: boolean;
-  taken: number;
-}
-
 const CreatorAccessControl = () => {
   const { creator, loading: creatorLoading } = useCreatorProfile();
-  const [items, setItems] = useState<AccessProduct[]>([]);
-  const [loading, setLoading] = useState(true);
+  const products = useQuery(
+    api.products.mutations.listByCreator,
+    creator ? { creatorId: creator.id as Id<'creators'>, activeOnly: true } : 'skip',
+  );
+  const subs = useQuery(api.subscriptions.mutations.listForMyCreator);
+  const upsertProduct = useMutation(api.products.mutations.upsert);
+  const [draftSpots, setDraftSpots] = useState<Record<string, number | null>>({});
 
-  useEffect(() => {
-    if (creatorLoading) return;
-    if (!creator) { setLoading(false); return; }
-    const load = async () => {
-      const [{ data: products, error }, { data: subs }] = await Promise.all([
-        supabase
-          .from('products')
-          .select('id, name, price, max_spots, is_limited, is_closed')
-          .eq('creator_id', creator.id)
-          .eq('is_active', true)
-          .order('created_at', { ascending: true }),
-        supabase
-          .from('subscriptions')
-          .select('amount')
-          .eq('creator_id', creator.id)
-          .eq('status', 'active'),
-      ]);
-      if (error) toast.error(error.message);
+  const loading = creatorLoading || products === undefined || subs === undefined;
 
-      const activeSubs = subs ?? [];
-      setItems((products ?? []).map(p => ({
-        ...p,
-        price: Number(p.price),
-        taken: activeSubs.filter(s => Number(s.amount) === Number(p.price)).length,
-      })));
-      setLoading(false);
-    };
-    void load();
-  }, [creator, creatorLoading]);
+  const items = useMemo(() => {
+    const activeSubs = (subs ?? []).filter((s) => s.status === 'active');
+    return (products ?? []).map((p) => ({
+      id: p._id,
+      name: p.name,
+      price: p.priceCents / 100,
+      max_spots: draftSpots[p._id] ?? p.maxSpots ?? null,
+      is_limited: p.isLimited,
+      is_closed: p.isClosed,
+      taken: activeSubs.filter((s) => s.amountCents === p.priceCents).length,
+      raw: p,
+    }));
+  }, [products, subs, draftSpots]);
 
   const patch = async (
-    id: string,
-    changes: { max_spots?: number | null; is_limited?: boolean; is_closed?: boolean },
+    id: Id<'products'>,
+    changes: { maxSpots?: number | null; isLimited?: boolean; isClosed?: boolean },
     message: string,
   ) => {
-    const previous = items;
-    setItems(prev => prev.map(p => p.id === id ? { ...p, ...changes } : p));
-    const { error } = await supabase.from('products').update(changes).eq('id', id);
-    if (error) { setItems(previous); toast.error(error.message); return; }
-    toast.success(message);
+    const product = products?.find((p) => p._id === id);
+    if (!product || !creator) return;
+    try {
+      await upsertProduct({
+        productId: id,
+        creatorId: creator.id as Id<'creators'>,
+        name: product.name,
+        description: product.description,
+        priceCents: product.priceCents,
+        billingPeriod: product.billingPeriod,
+        isFeatured: product.isFeatured,
+        isActive: product.isActive,
+        maxSpots: changes.maxSpots !== undefined ? (changes.maxSpots ?? undefined) : product.maxSpots,
+        isLimited: changes.isLimited ?? product.isLimited,
+        isClosed: changes.isClosed ?? product.isClosed,
+      });
+      toast.success(message);
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : 'Update failed');
+    }
   };
 
   return (
@@ -120,7 +118,7 @@ const CreatorAccessControl = () => {
                     variant={product.is_closed ? 'hero' : 'outline'}
                     size="sm"
                     className="text-xs"
-                    onClick={() => patch(product.id, { is_closed: !product.is_closed }, product.is_closed ? 'Product reopened' : 'Product closed')}
+                    onClick={() => patch(product.id, { isClosed: !product.is_closed }, product.is_closed ? 'Product reopened' : 'Product closed')}
                   >
                     {product.is_closed ? <><Unlock className="mr-1 h-3 w-3" /> Reopen</> : <><Lock className="mr-1 h-3 w-3" /> Close</>}
                   </Button>
@@ -148,7 +146,7 @@ const CreatorAccessControl = () => {
                       checked={product.is_limited}
                       onCheckedChange={() => patch(
                         product.id,
-                        { is_limited: !product.is_limited, max_spots: !product.is_limited ? (product.max_spots ?? 100) : product.max_spots },
+                        { isLimited: !product.is_limited, maxSpots: !product.is_limited ? (product.max_spots ?? 100) : product.max_spots },
                         'Access limit updated',
                       )}
                     />
@@ -162,8 +160,11 @@ const CreatorAccessControl = () => {
                         min="1"
                         className="h-8 w-24"
                         value={product.max_spots ?? ''}
-                        onChange={e => setItems(prev => prev.map(p => p.id === product.id ? { ...p, max_spots: e.target.value ? Number(e.target.value) : null } : p))}
-                        onBlur={() => patch(product.id, { max_spots: product.max_spots }, 'Spot limit saved')}
+                        onChange={e => setDraftSpots(prev => ({
+                          ...prev,
+                          [product.id]: e.target.value ? Number(e.target.value) : null,
+                        }))}
+                        onBlur={() => patch(product.id, { maxSpots: product.max_spots }, 'Spot limit saved')}
                       />
                     </div>
                   )}

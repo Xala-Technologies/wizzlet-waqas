@@ -5,12 +5,16 @@ import { Link, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { supabase } from '@/lib/supabase';
+import { useAuthActions } from '@convex-dev/auth/react';
+import { useMutation } from 'convex/react';
+import { api } from '@convex/_generated/api';
 import { Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 
 const Signup = () => {
   const navigate = useNavigate();
+  const { signIn } = useAuthActions();
+  const ensureUser = useMutation(api.users.queries.ensureUser);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [username, setUsername] = useState('');
@@ -18,29 +22,29 @@ const Signup = () => {
 
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (password.length < 6) { toast.error('Password must be at least 6 characters'); return; }
-    setLoading(true);
-
-    const { error, data } = await supabase.auth.signUp({
-      email,
-      password,
-      options: { data: { username }, emailRedirectTo: window.location.origin },
-    });
-
-    setLoading(false);
-
-    if (error) {
-      toast.error(error.message);
+    if (password.length < 8) {
+      toast.error('Password must be at least 8 characters');
       return;
     }
-
-    // With auto-confirm enabled, user is immediately logged in
-    if (data.session) {
+    setLoading(true);
+    try {
+      const form = new FormData();
+      form.set('email', email.trim().toLowerCase());
+      form.set('password', password);
+      form.set('username', username.trim());
+      form.set('name', username.trim());
+      form.set('flow', 'signUp');
+      await signIn('password', form);
+      await ensureUser({
+        username: username.trim().toLowerCase().replace(/[^a-z0-9_]/g, ''),
+        fullName: username.trim(),
+      });
       toast.success('Account created!');
       navigate('/select-role');
-    } else {
-      toast.success('Check your email to confirm your account');
-      navigate('/login');
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Sign up failed');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -54,7 +58,7 @@ const Signup = () => {
           <p className="text-[13px] text-muted-foreground mt-1.5">Start monetizing your expertise</p>
         </div>
 
-        <form onSubmit={handleSignup} className="space-y-4">
+        <form onSubmit={(e) => void handleSignup(e)} className="space-y-4">
           <div className="space-y-2">
             <Label htmlFor="username" className="text-[13px]">Username</Label>
             <Input id="username" placeholder="Choose a username" value={username} onChange={(e) => setUsername(e.target.value)} required className="bg-card border-border h-10" />

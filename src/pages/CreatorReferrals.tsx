@@ -1,58 +1,52 @@
 import { useEffect, useState } from 'react';
+import { useMutation, useQuery } from 'convex/react';
+import { api } from '../../convex/_generated/api';
 import { DashboardLayout } from '@/components/dashboard/DashboardLayout';
 import { Button } from '@/components/ui/button';
-import { supabase } from '@/lib/supabase';
 import { buildReferralCode, useCreatorProfile } from '@/hooks/useCreatorProfile';
 import { UserPlus, Users, DollarSign, Copy, Gift, Loader2 } from 'lucide-react';
 import { format } from 'date-fns';
 import { toast } from 'sonner';
 
-interface ReferralRow {
-  id: string;
-  referred_email: string | null;
-  converted: boolean;
-  commission_earned: number;
-  created_at: string;
-}
-
 const CreatorReferrals = () => {
-  const { creator, loading: creatorLoading, reload } = useCreatorProfile();
-  const [rows, setRows] = useState<ReferralRow[]>([]);
+  const { creator, loading: creatorLoading } = useCreatorProfile();
+  const rows = useQuery(api.creators.growth.listMyReferrals);
+  const updateSettings = useMutation(api.creators.queries.updateSettings);
   const [code, setCode] = useState<string | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [savingCode, setSavingCode] = useState(false);
 
   useEffect(() => {
-    if (creatorLoading) return;
-    if (!creator) { setLoading(false); return; }
-
-    const load = async () => {
+    if (creatorLoading || !creator) return;
+    const ensureCode = async () => {
       let referralCode = creator.referral_code;
       if (!referralCode) {
         referralCode = buildReferralCode(creator);
-        const { error } = await supabase
-          .from('creators')
-          .update({ referral_code: referralCode })
-          .eq('id', creator.id);
-        if (!error) void reload();
+        setSavingCode(true);
+        try {
+          await updateSettings({ referralCode });
+        } catch {
+          // keep generated code for display even if save fails
+        } finally {
+          setSavingCode(false);
+        }
       }
       setCode(referralCode);
-
-      const { data } = await supabase
-        .from('referrals')
-        .select('id, referred_email, converted, commission_earned, created_at')
-        .eq('creator_id', creator.id)
-        .order('created_at', { ascending: false });
-
-      setRows((data ?? []).map(r => ({ ...r, commission_earned: Number(r.commission_earned) })));
-      setLoading(false);
     };
-    void load();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [creator?.id, creatorLoading]);
+    void ensureCode();
+  }, [creator, creatorLoading, updateSettings]);
+
+  const loading = creatorLoading || rows === undefined || savingCode;
+  const referralRows = (rows ?? []).map((r) => ({
+    id: r._id,
+    referred_email: r.referredEmail ?? null,
+    converted: r.converted,
+    commission_earned: r.commissionEarnedCents / 100,
+    created_at: new Date(r.createdAt).toISOString(),
+  }));
 
   const referralLink = code ? `${window.location.origin}/signup?ref=${code}` : '';
-  const converted = rows.filter(r => r.converted).length;
-  const earnings = rows.reduce((a, b) => a + b.commission_earned, 0);
+  const converted = referralRows.filter(r => r.converted).length;
+  const earnings = referralRows.reduce((a, b) => a + b.commission_earned, 0);
 
   return (
     <DashboardLayout type="creator">
@@ -64,7 +58,7 @@ const CreatorReferrals = () => {
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
         <div className="rounded-xl border border-border bg-card p-5">
           <Users className="h-4 w-4 text-blue-400 mb-2" />
-          <p className="text-2xl font-bold">{rows.length}</p>
+          <p className="text-2xl font-bold">{referralRows.length}</p>
           <p className="text-xs text-muted-foreground">Referred Users</p>
         </div>
         <div className="rounded-xl border border-border bg-card p-5">
@@ -100,7 +94,7 @@ const CreatorReferrals = () => {
       <h2 className="text-sm font-medium text-muted-foreground uppercase tracking-wider mb-3">Referral Activity</h2>
       {loading ? (
         <div className="flex justify-center py-16"><Loader2 className="h-5 w-5 animate-spin text-primary" /></div>
-      ) : rows.length === 0 ? (
+      ) : referralRows.length === 0 ? (
         <div className="rounded-xl border border-border bg-card p-10 text-center">
           <Gift className="h-10 w-10 text-muted-foreground mx-auto mb-3" />
           <p className="text-sm text-muted-foreground">No referrals yet — share your link to get started.</p>
@@ -117,7 +111,7 @@ const CreatorReferrals = () => {
               </tr>
             </thead>
             <tbody>
-              {rows.map(r => (
+              {referralRows.map(r => (
                 <tr key={r.id} className="border-b border-border last:border-0">
                   <td className="p-4 text-sm">{r.referred_email ?? 'Anonymous signup'}</td>
                   <td className="p-4 text-sm text-muted-foreground">{format(new Date(r.created_at), 'MMM d, yyyy')}</td>

@@ -1,11 +1,12 @@
 import { useEffect, useState } from 'react';
+import { useAction, useMutation, useQuery } from 'convex/react';
+import { api } from '../../convex/_generated/api';
 import { DashboardLayout } from '@/components/dashboard/DashboardLayout';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
-import { supabase } from '@/lib/supabase';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Settings, Save, Percent, Palette, Shield, MessageSquare, Wallet, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
@@ -38,26 +39,46 @@ const DEFAULTS: PlatformSettings = {
   auto_approve_creators: false,
 };
 
+function fromConvex(raw: {
+  standardFeePercent?: number;
+  introFeePercent?: number;
+  introFeeDays?: number;
+  branding?: unknown;
+  payoutDefaults?: unknown;
+  featureFlags?: unknown;
+}): PlatformSettings {
+  const branding = (raw.branding ?? {}) as Record<string, unknown>;
+  const payoutDefaults = (raw.payoutDefaults ?? {}) as Record<string, unknown>;
+  const featureFlags = (raw.featureFlags ?? {}) as Record<string, unknown>;
+  return {
+    standard_fee_percent: raw.standardFeePercent ?? DEFAULTS.standard_fee_percent,
+    intro_fee_percent: raw.introFeePercent ?? DEFAULTS.intro_fee_percent,
+    intro_period_days: raw.introFeeDays ?? DEFAULTS.intro_period_days,
+    platform_name: String(branding.platformName ?? branding.platform_name ?? DEFAULTS.platform_name),
+    support_email: String(branding.supportEmail ?? branding.support_email ?? DEFAULTS.support_email),
+    tagline: String(branding.tagline ?? DEFAULTS.tagline),
+    min_payout_amount: Number(payoutDefaults.minPayoutAmount ?? payoutDefaults.min_payout_amount ?? DEFAULTS.min_payout_amount),
+    payout_schedule: String(payoutDefaults.payoutSchedule ?? payoutDefaults.payout_schedule ?? DEFAULTS.payout_schedule),
+    creator_messaging_enabled: Boolean(featureFlags.creatorMessagingEnabled ?? featureFlags.creator_messaging_enabled ?? DEFAULTS.creator_messaging_enabled),
+    growth_manager_enabled: Boolean(featureFlags.growthManagerEnabled ?? featureFlags.growth_manager_enabled ?? DEFAULTS.growth_manager_enabled),
+    auto_approve_creators: Boolean(featureFlags.autoApproveCreators ?? featureFlags.auto_approve_creators ?? DEFAULTS.auto_approve_creators),
+  };
+}
+
 const AdminSettings = () => {
   const [settings, setSettings] = useState<PlatformSettings>(DEFAULTS);
-  const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [changingPassword, setChangingPassword] = useState(false);
+  const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
 
+  const platformRaw = useQuery(api.platform.mutations.get);
+  const upsertPlatform = useMutation(api.platform.mutations.upsert);
+  const changePasswordAction = useAction(api.users.queries.changePassword);
+
   useEffect(() => {
-    const load = async () => {
-      const { data, error } = await supabase
-        .from('platform_settings')
-        .select('*')
-        .eq('id', true)
-        .maybeSingle();
-      if (error) toast.error(error.message);
-      if (data) setSettings({ ...DEFAULTS, ...(data as unknown as PlatformSettings) });
-      setLoading(false);
-    };
-    void load();
-  }, []);
+    if (platformRaw) setSettings(fromConvex(platformRaw));
+  }, [platformRaw]);
 
   const set = <K extends keyof PlatformSettings>(key: K, value: PlatformSettings[K]) =>
     setSettings(prev => ({ ...prev, [key]: value }));
@@ -72,47 +93,57 @@ const AdminSettings = () => {
       return;
     }
     setSaving(true);
-    const { error } = await supabase
-      .from('platform_settings')
-      .update({
-        standard_fee_percent: settings.standard_fee_percent,
-        intro_fee_percent: settings.intro_fee_percent,
-        intro_period_days: settings.intro_period_days,
-        platform_name: settings.platform_name.trim(),
-        support_email: settings.support_email.trim(),
-        tagline: settings.tagline,
-        min_payout_amount: settings.min_payout_amount,
-        payout_schedule: settings.payout_schedule,
-        creator_messaging_enabled: settings.creator_messaging_enabled,
-        growth_manager_enabled: settings.growth_manager_enabled,
-        auto_approve_creators: settings.auto_approve_creators,
-      })
-      .eq('id', true);
-    setSaving(false);
-    if (error) {
-      toast.error(error.message);
-      return;
+    try {
+      await upsertPlatform({
+        standardFeePercent: settings.standard_fee_percent,
+        introFeePercent: settings.intro_fee_percent,
+        introFeeDays: settings.intro_period_days,
+        branding: {
+          platformName: settings.platform_name.trim(),
+          supportEmail: settings.support_email.trim(),
+          tagline: settings.tagline,
+        },
+        payoutDefaults: {
+          minPayoutAmount: settings.min_payout_amount,
+          payoutSchedule: settings.payout_schedule,
+        },
+        featureFlags: {
+          creatorMessagingEnabled: settings.creator_messaging_enabled,
+          growthManagerEnabled: settings.growth_manager_enabled,
+          autoApproveCreators: settings.auto_approve_creators,
+        },
+      });
+      toast.success('Platform settings saved');
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : 'Failed to save settings');
+    } finally {
+      setSaving(false);
     }
-    toast.success('Platform settings saved');
   };
 
   const handlePasswordChange = async () => {
+    if (!currentPassword) {
+      toast.error('Enter your current password');
+      return;
+    }
     if (newPassword.length < 8) {
       toast.error('Password must be at least 8 characters');
       return;
     }
     setChangingPassword(true);
-    const { error } = await supabase.auth.updateUser({ password: newPassword });
-    setChangingPassword(false);
-    if (error) {
-      toast.error(error.message);
-      return;
+    try {
+      await changePasswordAction({ currentPassword, newPassword });
+      setCurrentPassword('');
+      setNewPassword('');
+      toast.success('Password updated — please sign in again');
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : 'Could not update password');
+    } finally {
+      setChangingPassword(false);
     }
-    setNewPassword('');
-    toast.success('Password updated');
   };
 
-  if (loading) {
+  if (platformRaw === undefined) {
     return (
       <DashboardLayout type="admin">
         <div className="flex items-center justify-center py-24">
@@ -231,13 +262,23 @@ const AdminSettings = () => {
 
       <div className="rounded-xl border border-border bg-card p-6 mb-6">
         <h2 className="text-sm font-medium mb-4 flex items-center gap-2"><Shield className="h-4 w-4 text-primary" /> Admin Account</h2>
-        <div className="flex flex-col sm:flex-row sm:items-end gap-3">
-          <div className="flex-1">
+        <div className="flex flex-col gap-3 max-w-md">
+          <div>
+            <Label className="text-xs">Current password</Label>
+            <Input type="password" value={currentPassword} onChange={e => setCurrentPassword(e.target.value)}
+              className="mt-1" autoComplete="current-password" />
+          </div>
+          <div>
             <Label className="text-xs">New password</Label>
             <Input type="password" value={newPassword} onChange={e => setNewPassword(e.target.value)}
-              placeholder="At least 8 characters" className="mt-1" />
+              placeholder="At least 8 characters" className="mt-1" autoComplete="new-password" />
           </div>
-          <Button variant="outline" onClick={handlePasswordChange} disabled={changingPassword || !newPassword}>
+          <Button
+            variant="outline"
+            className="w-fit"
+            onClick={handlePasswordChange}
+            disabled={changingPassword || !newPassword || !currentPassword}
+          >
             {changingPassword && <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />}
             Update password
           </Button>

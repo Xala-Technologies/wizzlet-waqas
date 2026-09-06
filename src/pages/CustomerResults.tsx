@@ -18,8 +18,9 @@ import {
   ArrowUpRight, ArrowDownRight
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
-import { supabase } from '@/integrations/supabase/client';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useMutation } from 'convex/react';
+import { api } from '@convex/_generated/api';
+import type { Id } from '@convex/_generated/dataModel';
 import { toast } from 'sonner';
 import { ResponsiveContainer, AreaChart, Area, XAxis, YAxis, Tooltip, PieChart, Pie, Cell, BarChart, Bar } from 'recharts';
 import { downloadCsv, readFileAsText } from '@/lib/csv';
@@ -44,6 +45,12 @@ const SPORTS = ['NFL', 'NBA', 'MLB', 'NHL', 'Soccer', 'MMA', 'Tennis', 'Other'];
 const RESULTS = ['win', 'loss', 'push', 'pending'];
 const DAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 
+function toUiResult(result: string): string {
+  if (result === 'won') return 'win';
+  if (result === 'lost') return 'loss';
+  return result;
+}
+
 const defaultForm = {
   date: new Date().toISOString().split('T')[0],
   pick_event: '',
@@ -60,7 +67,9 @@ const defaultForm = {
 // --- Component ---
 const CustomerResults = () => {
   const { user } = useAuth();
-  const queryClient = useQueryClient();
+  const picksRaw = useQuery(api.picks.mutations.listMine, user ? {} : 'skip');
+  const upsertPick = useMutation(api.picks.mutations.upsert);
+  const removePick = useMutation(api.picks.mutations.remove);
   const [form, setForm] = useState(defaultForm);
   const [editId, setEditId] = useState<string | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -68,48 +77,29 @@ const CustomerResults = () => {
   const [filterResult, setFilterResult] = useState('all');
   const [quickAddOpen, setQuickAddOpen] = useState(false);
   const [selectedMonth, setSelectedMonth] = useState('all');
+  const [saving, setSaving] = useState(false);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
 
-  const { data: picks = [], isLoading } = useQuery({
-    queryKey: ['pick_tracker'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('pick_tracker')
-        .select('*')
-        .order('date', { ascending: true });
-      if (error) throw error;
-      return (data || []) as unknown as PickEntry[];
-    },
-    enabled: !!user,
-  });
+  const picks: PickEntry[] = useMemo(
+    () =>
+      (picksRaw ?? [])
+        .map((p) => ({
+          id: p._id,
+          date: p.date,
+          pick_event: p.pickEvent,
+          sport: p.sport,
+          eu_odds: p.euOdds ?? null,
+          us_odds: p.usOdds ?? null,
+          units_risked: p.unitsRisked,
+          result: toUiResult(p.result),
+          units_won_lost: p.unitsWonLost ?? null,
+          notes: p.notes ?? null,
+        }))
+        .sort((a, b) => a.date.localeCompare(b.date)),
+    [picksRaw],
+  );
 
-  const upsertMutation = useMutation({
-    mutationFn: async (entry: Omit<PickEntry, 'id'> & { id?: string }) => {
-      if (editId) {
-        const { error } = await supabase.from('pick_tracker').update(entry).eq('id', editId);
-        if (error) throw error;
-      } else {
-        const { error } = await supabase.from('pick_tracker').insert({ ...entry, user_id: user?.id });
-        if (error) throw error;
-      }
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['pick_tracker'] });
-      toast.success(editId ? 'Pick updated' : 'Pick added');
-      resetForm();
-    },
-    onError: () => toast.error('Failed to save pick'),
-  });
-
-  const deleteMutation = useMutation({
-    mutationFn: async (id: string) => {
-      const { error } = await supabase.from('pick_tracker').delete().eq('id', id);
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['pick_tracker'] });
-      toast.success('Pick deleted');
-    },
-  });
+  const isLoading = user ? picksRaw === undefined : false;
 
   const resetForm = () => { setForm(defaultForm); setEditId(null); setDialogOpen(false); setQuickAddOpen(false); };
 
@@ -129,16 +119,24 @@ const CustomerResults = () => {
 
   const handleImportCSV = async (file: File | undefined) => {
     if (!file) return;
-    if (!user?.id) { toast.error('You must be signed in to import'); return; }
+    if (!user) { toast.error('You must be signed in to import'); return; }
     setImporting(true);
     try {
       const { rows, skipped } = parsePickCsv(await readFileAsText(file));
       if (rows.length === 0) { toast.error('No valid rows found in that CSV'); return; }
-      const { error } = await supabase
-        .from('pick_tracker')
-        .insert(rows.map(r => ({ ...r, user_id: user.id })));
-      if (error) throw error;
-      queryClient.invalidateQueries({ queryKey: ['pick_tracker'] });
+      for (const row of rows) {
+        await upsertPick({
+          date: row.date,
+          pickEvent: row.pick_event,
+          sport: row.sport,
+          euOdds: row.eu_odds ?? undefined,
+          usOdds: row.us_odds ?? undefined,
+          unitsRisked: row.units_risked,
+          result: row.result,
+          unitsWonLost: row.units_won_lost ?? undefined,
+          notes: row.notes ?? undefined,
+        });
+      }
       toast.success(`Imported ${rows.length} picks${skipped ? ` — ${skipped} rows skipped` : ''}`);
     } catch {
       toast.error('Import failed — check the CSV format');
@@ -185,22 +183,44 @@ const CustomerResults = () => {
     setDialogOpen(true);
   };
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (!form.pick_event.trim()) { toast.error('Pick/Event is required'); return; }
     if (!form.eu_odds && !form.us_odds) { toast.error('Enter EU or US odds'); return; }
-    const euVal = form.eu_odds ? parseFloat(form.eu_odds) : null;
-    const usVal = form.us_odds || null;
-    upsertMutation.mutate({
-      date: form.date,
-      pick_event: form.pick_event,
-      sport: form.sport,
-      eu_odds: euVal,
-      us_odds: usVal,
-      units_risked: parseFloat(form.units_risked) || 1,
-      result: form.result,
-      units_won_lost: parseFloat(form.units_won_lost) || 0,
-      notes: form.notes || null,
-    });
+    const euVal = form.eu_odds ? parseFloat(form.eu_odds) : undefined;
+    const usVal = form.us_odds || undefined;
+    setSaving(true);
+    try {
+      await upsertPick({
+        pickId: editId ? (editId as Id<'pickTracker'>) : undefined,
+        date: form.date,
+        pickEvent: form.pick_event,
+        sport: form.sport,
+        euOdds: euVal,
+        usOdds: usVal,
+        unitsRisked: parseFloat(form.units_risked) || 1,
+        result: form.result,
+        unitsWonLost: parseFloat(form.units_won_lost) || 0,
+        notes: form.notes || undefined,
+      });
+      toast.success(editId ? 'Pick updated' : 'Pick added');
+      resetForm();
+    } catch {
+      toast.error('Failed to save pick');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleDelete = async (id: string) => {
+    setDeletingId(id);
+    try {
+      await removePick({ pickId: id as Id<'pickTracker'> });
+      toast.success('Pick deleted');
+    } catch {
+      toast.error('Failed to delete pick');
+    } finally {
+      setDeletingId(null);
+    }
   };
 
   // --- Derived Data ---
@@ -529,7 +549,7 @@ const CustomerResults = () => {
               <label className="text-[10px] text-muted-foreground mb-0.5 block">+/−</label>
               <Input type="number" step="0.5" className="h-8 text-xs" value={form.units_won_lost} onChange={e => setForm(f => ({ ...f, units_won_lost: e.target.value }))} />
             </div>
-            <Button size="sm" className="h-8 text-xs px-3" onClick={handleSubmit} disabled={upsertMutation.isPending}>Add</Button>
+            <Button size="sm" className="h-8 text-xs px-3" onClick={handleSubmit} disabled={saving}>Add</Button>
             <Button variant="ghost" size="sm" className="h-8 text-xs px-2" onClick={() => setQuickAddOpen(false)}>✕</Button>
           </div>
         </div>
@@ -601,7 +621,7 @@ const CustomerResults = () => {
                   <TableCell className="py-1 px-1">
                     <div className="flex gap-0.5">
                       <Button variant="ghost" size="icon" className="h-5 w-5 opacity-30 hover:opacity-100" onClick={() => handleEdit(pick)}><Pencil className="h-2.5 w-2.5" /></Button>
-                      <Button variant="ghost" size="icon" className="h-5 w-5 opacity-30 hover:opacity-100 text-destructive" onClick={() => deleteMutation.mutate(pick.id)}><Trash2 className="h-2.5 w-2.5" /></Button>
+                      <Button variant="ghost" size="icon" className="h-5 w-5 opacity-30 hover:opacity-100 text-destructive" onClick={() => handleDelete(pick.id)} disabled={deletingId === pick.id}><Trash2 className="h-2.5 w-2.5" /></Button>
                     </div>
                   </TableCell>
                 </TableRow>
@@ -763,7 +783,7 @@ const CustomerResults = () => {
           </div>
           <DialogFooter>
             <DialogClose asChild><Button variant="outline" size="sm">Cancel</Button></DialogClose>
-            <Button size="sm" onClick={handleSubmit} disabled={upsertMutation.isPending}>Update</Button>
+            <Button size="sm" onClick={handleSubmit} disabled={saving}>Update</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

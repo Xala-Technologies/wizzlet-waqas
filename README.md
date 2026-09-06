@@ -1,22 +1,30 @@
 # Wizzlet
 
-Sports creator subscription platform (Vite + React + Supabase).
+Sports creator subscription platform (Vite + React + Convex Auth, database, and file storage).
 
 ## Prerequisites
 
 - Node.js 20+
 - npm (use npm for this repo — `package-lock.json` is the source of truth)
 
+## Branches
+
+| Branch | Purpose |
+|--------|---------|
+| `dev` | Day-to-day work and testing |
+| `production` | Stable releases |
+
+Feature branches should be cut from `dev`. Merge `dev` → `production` after testing.
+
 ## Setup
 
 ```bash
 cp .env.example .env
-# Fill in VITE_SUPABASE_URL and VITE_SUPABASE_PUBLISHABLE_KEY
+# Set VITE_CONVEX_URL to your Convex deployment URL
 npm install
-npm run dev
+npx convex dev   # sync backend (keep running while developing)
+npm run dev      # Vite app at http://localhost:8080/
 ```
-
-App runs at http://localhost:8080/
 
 ## Scripts
 
@@ -24,24 +32,12 @@ App runs at http://localhost:8080/
 |---------|-------------|
 | `npm run dev` | Start Vite dev server |
 | `npm run build` | Production build |
-| `npm run preview` | Preview production build |
-| `npm run test` | Run Vitest unit tests |
-| `npm run lint` | ESLint |
-
-## Environment
-
-See `.env.example`. Never commit `.env`.
-
-Sandbox checkout (dev only):
-
-1. Set Supabase Edge Function secret `ALLOW_SANDBOX_CHECKOUT=true`
-2. Local Vite DEV already allows the client to call sandbox checkout
-3. For non-dev builds, set `VITE_ALLOW_SANDBOX_CHECKOUT=true` only on staging
-
-Admin roles cannot be self-assigned from the client. Grant `admin` via the Supabase service role / SQL editor.
+| `npm run test` | Vitest unit tests |
+| `npm run convex:dev` | Convex backend sync |
 
 ## Security notes
 
-- Apply migrations under `supabase/migrations/` (including `*_security_hardening_rls.sql`)
-- Redeploy edge functions after pulling (`sandbox-checkout`, `stripe-webhook`)
-- Stripe webhook fails closed until signature verification is implemented
+- Admin roles cannot be self-assigned from the client
+- Stripe Checkout is enabled when `VITE_STRIPE_PUBLISHABLE_KEY` + Convex `STRIPE_SECRET_KEY` are set
+- Configure webhook `POST /stripe/webhook` and set `STRIPE_WEBHOOK_SECRET` for signature verification
+- Never commit secret keys; use Convex env + gitignored `.env.local`

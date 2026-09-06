@@ -1,8 +1,10 @@
 import { Link } from 'react-router-dom';
-import { ArrowRight, Zap, Flame, Star } from 'lucide-react';
+import { ArrowRight, Zap, Flame, Star, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { getTodaysEvents, SPORT_ICONS, formatEventTime, type SportEvent, type EventStatus } from '@/lib/events';
+import { mapConvexSportEvent, SPORT_ICONS, formatEventTime, type SportEvent, type EventStatus } from '@/lib/events';
 import { useMemo } from 'react';
+import { useQuery } from 'convex/react';
+import { api } from '../../../convex/_generated/api';
 
 const statusConfig: Record<EventStatus, { label: string; class: string; icon: typeof Zap }> = {
   featured: { label: 'Featured', class: 'bg-primary/15 text-primary border-primary/20', icon: Star },
@@ -55,7 +57,11 @@ function EventCard({ event }: { event: SportEvent }) {
 }
 
 export function TodaysEventsSection() {
-  const events = useMemo(() => getTodaysEvents().slice(0, 6), []);
+  const rows = useQuery(api.events.queries.listPublishedToday, {});
+  const events = useMemo(
+    () => (rows ?? []).map(mapConvexSportEvent).slice(0, 6),
+    [rows],
+  );
 
   return (
     <section className="py-24 relative overflow-hidden">
@@ -77,13 +83,19 @@ export function TodaysEventsSection() {
           </Link>
         </div>
 
-        <div className="flex gap-4 overflow-x-auto pb-4 snap-x snap-mandatory lg:grid lg:grid-cols-3 lg:overflow-visible lg:pb-0">
-          {events.map(event => (
-            <div key={event.id} className="snap-start shrink-0 lg:shrink">
-              <EventCard event={event} />
-            </div>
-          ))}
-        </div>
+        {rows === undefined ? (
+          <div className="flex justify-center py-12"><Loader2 className="h-5 w-5 animate-spin text-primary" /></div>
+        ) : events.length === 0 ? (
+          <p className="text-sm text-muted-foreground py-8 text-center">No events published for today yet.</p>
+        ) : (
+          <div className="flex gap-4 overflow-x-auto pb-4 snap-x snap-mandatory lg:grid lg:grid-cols-3 lg:overflow-visible lg:pb-0">
+            {events.map(event => (
+              <div key={event.id} className="snap-start shrink-0 lg:shrink">
+                <EventCard event={event} />
+              </div>
+            ))}
+          </div>
+        )}
 
         <div className="mt-8 text-center sm:hidden">
           <Link to="/todays-events">

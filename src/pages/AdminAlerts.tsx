@@ -1,9 +1,10 @@
-import { useEffect, useState } from 'react';
+import { useMemo } from 'react';
+import { useQuery } from 'convex/react';
+import { api } from '../../convex/_generated/api';
 import { DashboardLayout } from '@/components/dashboard/DashboardLayout';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { supabase } from '@/lib/supabase';
-import { Bell, CreditCard, UserX, Inbox, FileWarning, Wallet, ShieldCheck, ArrowRight, Loader2, CheckCircle2 } from 'lucide-react';
+import { CreditCard, UserX, Inbox, FileWarning, Wallet, ShieldCheck, ArrowRight, Loader2, CheckCircle2 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 interface AlertItem {
@@ -30,85 +31,75 @@ const badgeStyles = {
 };
 
 const AdminAlerts = () => {
-  const [alerts, setAlerts] = useState<AlertItem[]>([]);
-  const [loading, setLoading] = useState(true);
+  const subsRaw = useQuery(api.subscriptions.mutations.listAllAdmin);
+  const casesRaw = useQuery(api.resolution.mutations.listAllAdmin);
+  const supportRaw = useQuery(api.support.mutations.listAllAdmin);
+  const payoutsRaw = useQuery(api.payouts.mutations.listAllAdmin);
+  const creatorsRaw = useQuery(api.creators.queries.listAllAdmin);
 
-  useEffect(() => {
-    const load = async () => {
-      const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
+  const loading = subsRaw === undefined || casesRaw === undefined || supportRaw === undefined || payoutsRaw === undefined || creatorsRaw === undefined;
 
-      const [
-        { data: failedSubs },
-        { data: openCases },
-        { data: unreadMessages },
-        { data: pendingPayouts },
-        { data: unpublished },
-        { data: creators },
-        { data: recentPosts },
-      ] = await Promise.all([
-        supabase.from('subscriptions').select('id').in('status', ['past_due', 'failed']),
-        supabase.from('resolution_cases').select('id').in('status', ['open', 'escalated']),
-        supabase.from('support_messages').select('id').eq('sender_role', 'creator').eq('read', false),
-        supabase.from('payouts').select('amount').in('status', ['pending', 'processing']),
-        supabase.from('creators').select('id').eq('is_published', false),
-        supabase.from('creators').select('id'),
-        supabase.from('posts').select('creator_id').gte('created_at', thirtyDaysAgo),
-      ]);
+  const alerts = useMemo((): AlertItem[] => {
+    if (!subsRaw || !casesRaw || !supportRaw || !payoutsRaw || !creatorsRaw) return [];
 
-      const pendingTotal = (pendingPayouts ?? []).reduce((a, b) => a + Number(b.amount), 0);
-      const activeCreatorIds = new Set((recentPosts ?? []).map(p => p.creator_id));
-      const inactiveCount = (creators ?? []).filter(c => !activeCreatorIds.has(c.id)).length;
+    const failedSubs = subsRaw.filter(s => s.status === 'past_due' || s.status === 'failed');
+    const openCases = casesRaw.filter(c => c.status === 'open' || c.status === 'escalated');
+    const unreadMessages = supportRaw.filter(m => m.senderRole === 'creator' && !m.read);
+    const pendingPayouts = payoutsRaw.filter(p => p.status === 'pending' || p.status === 'processing');
+    const unpublished = creatorsRaw.filter(c => !c.isPublished);
+    const inactive = creatorsRaw.filter(c => {
+      const days = Math.floor((Date.now() - c.createdAt) / (1000 * 60 * 60 * 24));
+      const subs = subsRaw.filter(s => s.creatorId === c._id && s.status === 'active');
+      return days > 30 && subs.length === 0;
+    });
 
-      const next: AlertItem[] = [
-        {
-          id: 'failed-payments',
-          title: 'Failed Payments',
-          description: `${failedSubs?.length ?? 0} subscriptions are past due or failed`,
-          type: 'critical', icon: CreditCard, count: failedSubs?.length ?? 0,
-          link: '/admin/transactions', linkLabel: 'View Transactions',
-        },
-        {
-          id: 'open-cases',
-          title: 'Open Resolution Cases',
-          description: `${openCases?.length ?? 0} unresolved cases need an admin response`,
-          type: 'critical', icon: FileWarning, count: openCases?.length ?? 0,
-          link: '/admin/resolution-cases', linkLabel: 'View Cases',
-        },
-        {
-          id: 'unread-messages',
-          title: 'Unread Creator Messages',
-          description: `${unreadMessages?.length ?? 0} creator messages waiting for a reply`,
-          type: 'warning', icon: Inbox, count: unreadMessages?.length ?? 0,
-          link: '/admin/growth-manager-inbox', linkLabel: 'Open Inbox',
-        },
-        {
-          id: 'pending-payouts',
-          title: 'Pending Payouts',
-          description: `$${pendingTotal.toFixed(2)} awaiting processing`,
-          type: 'warning', icon: Wallet, count: pendingPayouts?.length ?? 0,
-          link: '/admin/payouts', linkLabel: 'View Payouts',
-        },
-        {
-          id: 'unpublished',
-          title: 'Unpublished Creator Profiles',
-          description: `${unpublished?.length ?? 0} creator profiles are not live yet`,
-          type: 'info', icon: ShieldCheck, count: unpublished?.length ?? 0,
-          link: '/admin/creators', linkLabel: 'View Creators',
-        },
-        {
-          id: 'inactive',
-          title: 'Inactive Creators',
-          description: `${inactiveCount} creators have not posted in 30+ days`,
-          type: 'info', icon: UserX, count: inactiveCount,
-          link: '/admin/creators', linkLabel: 'View Creators',
-        },
-      ].filter(a => a.count > 0) as AlertItem[];
+    const pendingTotal = pendingPayouts.reduce((a, b) => a + b.amountCents / 100, 0);
 
-      setAlerts(next);
-      setLoading(false);
-    };
-    void load();
-  }, []);
+    return [
+      {
+        id: 'failed-payments',
+        title: 'Failed Payments',
+        description: `${failedSubs.length} subscriptions are past due or failed`,
+        type: 'critical', icon: CreditCard, count: failedSubs.length,
+        link: '/admin/transactions', linkLabel: 'View Transactions',
+      },
+      {
+        id: 'open-cases',
+        title: 'Open Resolution Cases',
+        description: `${openCases.length} unresolved cases need an admin response`,
+        type: 'critical', icon: FileWarning, count: openCases.length,
+        link: '/admin/resolution-cases', linkLabel: 'View Cases',
+      },
+      {
+        id: 'unread-messages',
+        title: 'Unread Creator Messages',
+        description: `${unreadMessages.length} creator messages waiting for a reply`,
+        type: 'warning', icon: Inbox, count: unreadMessages.length,
+        link: '/admin/growth-manager-inbox', linkLabel: 'Open Inbox',
+      },
+      {
+        id: 'pending-payouts',
+        title: 'Pending Payouts',
+        description: `$${pendingTotal.toFixed(2)} awaiting processing`,
+        type: 'warning', icon: Wallet, count: pendingPayouts.length,
+        link: '/admin/payouts', linkLabel: 'View Payouts',
+      },
+      {
+        id: 'unpublished',
+        title: 'Unpublished Creator Profiles',
+        description: `${unpublished.length} creator profiles are not live yet`,
+        type: 'info', icon: ShieldCheck, count: unpublished.length,
+        link: '/admin/creators', linkLabel: 'View Creators',
+      },
+      {
+        id: 'inactive',
+        title: 'Inactive Creators',
+        description: `${inactive.length} creators have 0 subscribers after 30+ days`,
+        type: 'info', icon: UserX, count: inactive.length,
+        link: '/admin/creators', linkLabel: 'View Creators',
+      },
+    ].filter(a => a.count > 0) as AlertItem[];
+  }, [subsRaw, casesRaw, supportRaw, payoutsRaw, creatorsRaw]);
 
   const criticalCount = alerts.filter(a => a.type === 'critical').length;
   const warningCount = alerts.filter(a => a.type === 'warning').length;

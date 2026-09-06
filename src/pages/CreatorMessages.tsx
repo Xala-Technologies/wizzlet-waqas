@@ -1,10 +1,12 @@
 import { useEffect, useMemo, useState } from 'react';
+import { useMutation, useQuery } from 'convex/react';
+import { api } from '../../convex/_generated/api';
+import type { Id } from '../../convex/_generated/dataModel';
 import { DashboardLayout } from '@/components/dashboard/DashboardLayout';
 import { Switch } from '@/components/ui/switch';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
-import { supabase } from '@/lib/supabase';
 import { useCreatorProfile } from '@/hooks/useCreatorProfile';
 import { MessageSquare, User, Power, Loader2, Send } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
@@ -12,7 +14,6 @@ import { toast } from 'sonner';
 
 interface DirectMessage {
   id: string;
-  creator_id: string;
   subscriber_id: string;
   sender_role: string;
   body: string;
@@ -29,123 +30,129 @@ interface Thread {
 }
 
 const CreatorMessages = () => {
-  const { creator, loading: creatorLoading, reload } = useCreatorProfile();
-  const [threads, setThreads] = useState<Thread[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { creator, loading: creatorLoading } = useCreatorProfile();
+  const inbox = useQuery(api.messaging.mutations.myCreatorInbox);
+  const subscribers = useQuery(api.subscriptions.mutations.listSubscribersDetailed);
+  const setMessagingEnabledMut = useMutation(api.messaging.mutations.setMessagingEnabled);
+  const sendMessage = useMutation(api.messaging.mutations.send);
+
   const [activeId, setActiveId] = useState<string | null>(null);
   const [reply, setReply] = useState('');
   const [sending, setSending] = useState(false);
   const [messagingEnabled, setMessagingEnabled] = useState(true);
   const [savingToggle, setSavingToggle] = useState(false);
+  const [readLocally, setReadLocally] = useState<Set<string>>(new Set());
 
   useEffect(() => {
-    if (!creator) {
-      if (!creatorLoading) setLoading(false);
-      return;
+    if (creator) setMessagingEnabled(creator.messaging_enabled ?? true);
+  }, [creator]);
+
+  const activeThreadMessages = useQuery(
+    api.messaging.mutations.listThread,
+    creator && activeId
+      ? {
+          creatorId: creator.id as Id<'creators'>,
+          subscriberId: activeId as Id<'users'>,
+        }
+      : 'skip',
+  );
+
+  const threads = useMemo(() => {
+    if (!inbox) return [] as Thread[];
+    const nameMap = new Map(
+      (subscribers ?? []).map((s) => [
+        s.userId,
+        s.user?.fullName || s.user?.username || s.user?.email || 'Subscriber',
+      ]),
+    );
+    const grouped = new Map<string, DirectMessage[]>();
+    for (const r of inbox) {
+      const msg: DirectMessage = {
+        id: r._id,
+        subscriber_id: r.subscriberId,
+        sender_role: r.senderRole,
+        body: r.body,
+        read: r.read || readLocally.has(r._id),
+        created_at: new Date(r.createdAt).toISOString(),
+      };
+      grouped.set(r.subscriberId, [...(grouped.get(r.subscriberId) ?? []), msg]);
     }
-    setMessagingEnabled(creator.messaging_enabled ?? true);
+    return [...grouped.entries()]
+      .map(([subscriberId, messages]) => ({
+        subscriberId,
+        name: nameMap.get(subscriberId as Id<'users'>) ?? 'Subscriber',
+        messages: messages.sort((a, b) => a.created_at.localeCompare(b.created_at)),
+        unread: messages.filter((m) => m.sender_role === 'subscriber' && !m.read).length,
+        lastAt: messages[messages.length - 1]?.created_at ?? '',
+      }))
+      .sort((a, b) => b.lastAt.localeCompare(a.lastAt));
+  }, [inbox, subscribers, readLocally]);
 
-    const load = async () => {
-      setLoading(true);
-      const { data, error } = await supabase
-        .from('direct_messages')
-        .select('id, creator_id, subscriber_id, sender_role, body, read, created_at')
-        .eq('creator_id', creator.id)
-        .order('created_at', { ascending: true });
+  useEffect(() => {
+    if (!activeId && threads.length > 0) setActiveId(threads[0]?.subscriberId ?? null);
+  }, [threads, activeId]);
 
-      if (error) {
-        toast.error(error.message);
-        setLoading(false);
-        return;
-      }
-
-      const rows = (data ?? []) as DirectMessage[];
-      const subscriberIds = [...new Set(rows.map(r => r.subscriber_id))];
-      const { data: people } = subscriberIds.length
-        ? await supabase.from('users').select('id, username, full_name, email').in('id', subscriberIds)
-        : { data: [] as { id: string; username: string | null; full_name: string | null; email: string }[] };
-      const nameMap = new Map((people ?? []).map(p => [p.id, p.full_name || p.username || p.email]));
-
-      const grouped = new Map<string, DirectMessage[]>();
-      rows.forEach(r => grouped.set(r.subscriber_id, [...(grouped.get(r.subscriber_id) ?? []), r]));
-
-      const list: Thread[] = [...grouped.entries()]
-        .map(([subscriberId, messages]) => ({
-          subscriberId,
-          name: nameMap.get(subscriberId) ?? 'Subscriber',
-          messages,
-          unread: messages.filter(m => m.sender_role === 'subscriber' && !m.read).length,
-          lastAt: messages[messages.length - 1].created_at,
-        }))
-        .sort((a, b) => b.lastAt.localeCompare(a.lastAt));
-
-      setThreads(list);
-      setActiveId(prev => prev ?? list[0]?.subscriberId ?? null);
-      setLoading(false);
-    };
-
-    void load();
-  }, [creator, creatorLoading]);
-
-  const active = useMemo(() => threads.find(t => t.subscriberId === activeId) ?? null, [threads, activeId]);
+  const active = useMemo(() => {
+    if (!activeId) return null;
+    const base = threads.find((t) => t.subscriberId === activeId);
+    if (!base) return null;
+    if (activeThreadMessages) {
+      return {
+        ...base,
+        messages: activeThreadMessages.map((m) => ({
+          id: m._id,
+          subscriber_id: m.subscriberId,
+          sender_role: m.senderRole,
+          body: m.body,
+          read: m.read || readLocally.has(m._id),
+          created_at: new Date(m.createdAt).toISOString(),
+        })),
+      };
+    }
+    return base;
+  }, [threads, activeId, activeThreadMessages, readLocally]);
 
   const toggleMessaging = async (next: boolean) => {
-    if (!creator) return;
     setMessagingEnabled(next);
     setSavingToggle(true);
-    const { error } = await supabase
-      .from('creators')
-      .update({ messaging_enabled: next })
-      .eq('id', creator.id);
-    setSavingToggle(false);
-    if (error) {
+    try {
+      await setMessagingEnabledMut({ enabled: next });
+      toast.success(next ? 'Messaging enabled' : 'Messaging turned off');
+    } catch (e) {
       setMessagingEnabled(!next);
-      toast.error(error.message);
-      return;
+      toast.error(e instanceof Error ? e.message : 'Failed to update messaging');
+    } finally {
+      setSavingToggle(false);
     }
-    toast.success(next ? 'Messaging enabled' : 'Messaging turned off');
-    void reload();
   };
 
-  const openThread = async (thread: Thread) => {
+  const openThread = (thread: Thread) => {
     setActiveId(thread.subscriberId);
-    const unreadIds = thread.messages.filter(m => m.sender_role === 'subscriber' && !m.read).map(m => m.id);
-    if (unreadIds.length === 0) return;
-    await supabase.from('direct_messages').update({ read: true }).in('id', unreadIds);
-    setThreads(prev => prev.map(t => t.subscriberId === thread.subscriberId
-      ? { ...t, unread: 0, messages: t.messages.map(m => ({ ...m, read: true })) }
-      : t));
+    const unreadIds = thread.messages.filter((m) => m.sender_role === 'subscriber' && !m.read).map((m) => m.id);
+    if (unreadIds.length > 0) {
+      setReadLocally((prev) => new Set([...prev, ...unreadIds]));
+    }
   };
 
   const send = async () => {
     if (!creator || !active || !reply.trim()) return;
     setSending(true);
-    const { data, error } = await supabase
-      .from('direct_messages')
-      .insert({
-        creator_id: creator.id,
-        subscriber_id: active.subscriberId,
-        sender_role: 'creator',
+    try {
+      await sendMessage({
+        creatorId: creator.id as Id<'creators'>,
+        subscriberId: active.subscriberId as Id<'users'>,
+        senderRole: 'creator',
         body: reply.trim(),
-        read: true,
-      })
-      .select('id, creator_id, subscriber_id, sender_role, body, read, created_at')
-      .maybeSingle();
-    setSending(false);
-    if (error) {
-      toast.error(error.message);
-      return;
-    }
-    if (data) {
-      const msg = data as DirectMessage;
-      setThreads(prev => prev.map(t => t.subscriberId === active.subscriberId
-        ? { ...t, messages: [...t.messages, msg], lastAt: msg.created_at }
-        : t));
+      });
       setReply('');
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : 'Failed to send message');
+    } finally {
+      setSending(false);
     }
   };
 
-  const busy = creatorLoading || loading;
+  const busy = creatorLoading || inbox === undefined || subscribers === undefined;
 
   return (
     <DashboardLayout type="creator">

@@ -1,13 +1,15 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
+import { useQuery, useMutation } from 'convex/react';
 import { DashboardLayout } from '@/components/dashboard/DashboardLayout';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Skeleton } from '@/components/ui/skeleton';
 import { TrendingUp, Users, Search, Bookmark, FileText } from 'lucide-react';
 import { toast } from 'sonner';
-import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/contexts/AuthContext';
+import { api } from '@convex/_generated/api';
+import type { Id } from '@convex/_generated/dataModel';
 
 interface CreatorRow {
   id: string;
@@ -29,43 +31,43 @@ const sortOptions: { key: SortKey; label: string }[] = [
 
 const CustomerDiscover = () => {
   const { user } = useAuth();
-  const [creators, setCreators] = useState<CreatorRow[]>([]);
-  const [postCounts, setPostCounts] = useState<Record<string, number>>({});
-  const [bookmarks, setBookmarks] = useState<Record<string, string>>({});
   const [query, setQuery] = useState('');
   const [sort, setSort] = useState<SortKey>('popular');
-  const [loading, setLoading] = useState(true);
+  const creatorsRaw = useQuery(api.creators.queries.listPublished, {});
+  const bookmarkRows = useQuery(api.bookmarks.mutations.listCreatorBookmarks, user ? {} : 'skip');
+  const toggleCreatorBookmark = useMutation(api.bookmarks.mutations.toggleCreatorBookmark);
 
-  const load = useCallback(async () => {
-    setLoading(true);
-    const [creatorRes, postRes, bookmarkRes] = await Promise.all([
-      supabase
-        .from('creators')
-        .select('id, username, display_name, bio, avatar_url, monthly_price, created_at')
-        .eq('is_published', true),
-      supabase.from('posts').select('id, creator_id'),
-      user
-        ? supabase.from('creator_bookmarks').select('id, creator_id').eq('user_id', user.id)
-        : Promise.resolve({ data: [] as { id: string; creator_id: string }[] }),
-    ]);
+  const loading = creatorsRaw === undefined || (user ? bookmarkRows === undefined : false);
 
+  const creators: CreatorRow[] = useMemo(
+    () =>
+      (creatorsRaw?.items ?? []).map((c) => ({
+        id: c._id,
+        username: c.username,
+        display_name: c.displayName ?? null,
+        bio: c.bio ?? null,
+        avatar_url: c.avatarUrl ?? null,
+        monthly_price: c.monthlyPriceCents != null ? c.monthlyPriceCents / 100 : null,
+        created_at: new Date(c.createdAt).toISOString(),
+      })),
+    [creatorsRaw],
+  );
+
+  const postCounts = useMemo(() => {
     const counts: Record<string, number> = {};
-    for (const p of (postRes.data ?? []) as { creator_id: string }[]) {
-      counts[p.creator_id] = (counts[p.creator_id] ?? 0) + 1;
+    for (const c of creatorsRaw?.items ?? []) {
+      counts[c._id] = c.postCount ?? 0;
     }
+    return counts;
+  }, [creatorsRaw]);
 
+  const bookmarks = useMemo(() => {
     const marks: Record<string, string> = {};
-    for (const b of ((bookmarkRes.data ?? []) as { id: string; creator_id: string }[])) {
-      marks[b.creator_id] = b.id;
+    for (const b of bookmarkRows ?? []) {
+      marks[b.creatorId] = b._id;
     }
-
-    setCreators((creatorRes.data as CreatorRow[] | null) ?? []);
-    setPostCounts(counts);
-    setBookmarks(marks);
-    setLoading(false);
-  }, [user]);
-
-  useEffect(() => { load(); }, [load]);
+    return marks;
+  }, [bookmarkRows]);
 
   const visible = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -88,30 +90,12 @@ const CustomerDiscover = () => {
   const toggleBookmark = async (creatorId: string) => {
     if (!user) return;
     const existing = bookmarks[creatorId];
-    if (existing) {
-      setBookmarks(({ [creatorId]: _removed, ...rest }) => rest);
-      const { error } = await supabase.from('creator_bookmarks').delete().eq('id', existing);
-      if (error) {
-        setBookmarks((prev) => ({ ...prev, [creatorId]: existing }));
-        toast.error('Could not remove bookmark');
-      } else {
-        toast.success('Bookmark removed');
-      }
-      return;
+    try {
+      await toggleCreatorBookmark({ creatorId: creatorId as Id<'creators'> });
+      toast.success(existing ? 'Bookmark removed' : 'Saved to your bookmarks');
+    } catch {
+      toast.error(existing ? 'Could not remove bookmark' : 'Could not bookmark this creator');
     }
-
-    const { data, error } = await supabase
-      .from('creator_bookmarks')
-      .insert({ user_id: user.id, creator_id: creatorId })
-      .select('id')
-      .maybeSingle();
-
-    if (error || !data) {
-      toast.error('Could not bookmark this creator');
-      return;
-    }
-    setBookmarks((prev) => ({ ...prev, [creatorId]: data.id }));
-    toast.success('Saved to your bookmarks');
   };
 
   return (

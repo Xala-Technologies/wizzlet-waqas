@@ -1,4 +1,7 @@
 import { useState, useMemo, useCallback, useRef } from 'react';
+import { useMutation, useQuery } from 'convex/react';
+import { api } from '../../convex/_generated/api';
+import type { Id } from '../../convex/_generated/dataModel';
 import { DashboardLayout } from '@/components/dashboard/DashboardLayout';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -19,9 +22,6 @@ import {
   ArrowUpRight, ArrowDownRight, Lightbulb, FileText, Eye, MousePointerClick,
   Copy, ShieldCheck, Flame
 } from 'lucide-react';
-import { useAuth } from '@/contexts/AuthContext';
-import { supabase } from '@/integrations/supabase/client';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { ResponsiveContainer, AreaChart, Area, XAxis, YAxis, Tooltip, PieChart, Pie, Cell, BarChart, Bar } from 'recharts';
 import { downloadCsv, readFileAsText } from '@/lib/csv';
@@ -44,9 +44,60 @@ const defaultForm = {
   units_won_lost: '0', notes: '',
 };
 
+function uiPickResult(result: string): string {
+  if (result === 'won') return 'win';
+  if (result === 'lost') return 'loss';
+  return result;
+}
+
+function toConvexPick(entry: Omit<PickEntry, 'id'> & { id?: string }) {
+  return {
+    pickId: entry.id as Id<'pickTracker'> | undefined,
+    date: entry.date,
+    pickEvent: entry.pick_event,
+    sport: entry.sport,
+    euOdds: entry.eu_odds,
+    usOdds: entry.us_odds ?? undefined,
+    unitsRisked: entry.units_risked,
+    unitsWonLost: entry.units_won_lost ?? undefined,
+    result: entry.result === 'win' ? 'won' : entry.result === 'loss' ? 'lost' : entry.result,
+    notes: entry.notes ?? undefined,
+  };
+}
+
+function fromConvexPick(p: {
+  _id: Id<'pickTracker'>;
+  date: string;
+  pickEvent: string;
+  sport: string;
+  euOdds?: number;
+  usOdds?: string;
+  unitsRisked: number;
+  result: string;
+  unitsWonLost?: number;
+  notes?: string;
+}): PickEntry {
+  return {
+    id: p._id,
+    date: p.date,
+    pick_event: p.pickEvent,
+    sport: p.sport,
+    eu_odds: p.euOdds ?? null,
+    us_odds: p.usOdds ?? null,
+    units_risked: p.unitsRisked,
+    result: uiPickResult(p.result),
+    units_won_lost: p.unitsWonLost ?? null,
+    notes: p.notes ?? null,
+  };
+}
+
 const CreatorPerformanceTracker = () => {
-  const { user } = useAuth();
-  const queryClient = useQueryClient();
+  const creatorProfile = useQuery(api.creators.queries.myCreator);
+  const picksRaw = useQuery(api.picks.mutations.listMine);
+  const postsRaw = useQuery(api.posts.queries.listMine);
+  const analyticsRaw = useQuery(api.analytics.mutations.listForMyCreator);
+  const upsertPick = useMutation(api.picks.mutations.upsert);
+  const removePick = useMutation(api.picks.mutations.remove);
   const [form, setForm] = useState(defaultForm);
   const [editId, setEditId] = useState<string | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -54,68 +105,52 @@ const CreatorPerformanceTracker = () => {
   const [filterResult, setFilterResult] = useState('all');
   const [quickAddOpen, setQuickAddOpen] = useState(false);
 
-  // Fetch creator profile
-  const { data: creatorProfile } = useQuery({
-    queryKey: ['creator_profile_for_tracker'],
-    queryFn: async () => {
-      const { data: userData } = await supabase.from('users').select('id').eq('auth_id', user!.id).maybeSingle();
-      if (!userData) return null;
-      const { data: creator } = await supabase.from('creators').select('id').eq('user_id', userData.id).maybeSingle();
-      return creator;
-    },
-    enabled: !!user,
-  });
+  const picks = useMemo(() => (picksRaw ?? []).map(fromConvexPick).sort((a, b) => a.date.localeCompare(b.date)), [picksRaw]);
+  const posts = useMemo(
+    () => (postsRaw ?? []).map((p) => ({
+      id: p._id,
+      title: p.title,
+      content: p.content,
+      is_premium: p.isPremium,
+      created_at: new Date(p.createdAt).toISOString(),
+      result: p.result,
+    })),
+    [postsRaw],
+  );
+  const analyticsEvents = useMemo(
+    () => (analyticsRaw ?? []).map((e) => ({
+      id: e._id,
+      post_id: e.postId,
+      event_type: e.eventType,
+      created_at: new Date(e.createdAt).toISOString(),
+    })),
+    [analyticsRaw],
+  );
+  const isLoading = picksRaw === undefined;
 
-  const { data: picks = [], isLoading } = useQuery({
-    queryKey: ['creator_pick_tracker'],
-    queryFn: async () => {
-      const { data, error } = await supabase.from('pick_tracker').select('*').order('date', { ascending: true });
-      if (error) throw error;
-      return (data || []) as unknown as PickEntry[];
-    },
-    enabled: !!user,
-  });
-
-  // Fetch posts for content performance
-  const { data: posts = [] } = useQuery({
-    queryKey: ['creator_posts_for_tracker', creatorProfile?.id],
-    queryFn: async () => {
-      const { data, error } = await supabase.from('posts').select('*').eq('creator_id', creatorProfile!.id).order('created_at', { ascending: false });
-      if (error) throw error;
-      return data || [];
-    },
-    enabled: !!creatorProfile?.id,
-  });
-
-  // Fetch analytics events for content
-  const { data: analyticsEvents = [] } = useQuery({
-    queryKey: ['creator_analytics_for_tracker', creatorProfile?.id],
-    queryFn: async () => {
-      const { data, error } = await supabase.from('analytics_events').select('*').eq('creator_id', creatorProfile!.id);
-      if (error) throw error;
-      return data || [];
-    },
-    enabled: !!creatorProfile?.id,
-  });
-
-  const upsertMutation = useMutation({
-    mutationFn: async (entry: Omit<PickEntry, 'id'> & { id?: string }) => {
-      if (editId) {
-        const { error } = await supabase.from('pick_tracker').update(entry).eq('id', editId);
-        if (error) throw error;
-      } else {
-        const { error } = await supabase.from('pick_tracker').insert({ ...entry, user_id: user?.id });
-        if (error) throw error;
+  const upsertMutation = {
+    isPending: false,
+    mutate: async (entry: Omit<PickEntry, 'id'> & { id?: string }) => {
+      try {
+        await upsertPick(toConvexPick(entry));
+        toast.success(editId ? 'Updated' : 'Added');
+        resetForm();
+      } catch {
+        toast.error('Failed to save');
       }
     },
-    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['creator_pick_tracker'] }); toast.success(editId ? 'Updated' : 'Added'); resetForm(); },
-    onError: () => toast.error('Failed to save'),
-  });
+  };
 
-  const deleteMutation = useMutation({
-    mutationFn: async (id: string) => { const { error } = await supabase.from('pick_tracker').delete().eq('id', id); if (error) throw error; },
-    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['creator_pick_tracker'] }); toast.success('Deleted'); },
-  });
+  const deleteMutation = {
+    mutate: async (id: string) => {
+      try {
+        await removePick({ pickId: id as Id<'pickTracker'> });
+        toast.success('Deleted');
+      } catch {
+        toast.error('Failed to delete');
+      }
+    },
+  };
 
   const resetForm = () => { setForm(defaultForm); setEditId(null); setDialogOpen(false); setQuickAddOpen(false); };
 
@@ -170,16 +205,23 @@ const CreatorPerformanceTracker = () => {
 
   const handleImportCSV = async (file: File | undefined) => {
     if (!file) return;
-    if (!user?.id) { toast.error('You must be signed in to import'); return; }
     setImporting(true);
     try {
       const { rows, skipped } = parsePickCsv(await readFileAsText(file));
       if (rows.length === 0) { toast.error('No valid rows found in that CSV'); return; }
-      const { error } = await supabase
-        .from('pick_tracker')
-        .insert(rows.map(r => ({ ...r, user_id: user.id })));
-      if (error) throw error;
-      queryClient.invalidateQueries({ queryKey: ['creator_pick_tracker'] });
+      for (const r of rows) {
+        await upsertPick({
+          date: r.date,
+          pickEvent: r.pick_event,
+          sport: r.sport,
+          euOdds: r.eu_odds,
+          usOdds: r.us_odds ?? undefined,
+          unitsRisked: r.units_risked,
+          unitsWonLost: r.units_won_lost ?? undefined,
+          result: r.result === 'win' ? 'won' : r.result === 'loss' ? 'lost' : r.result,
+          notes: r.notes ?? undefined,
+        });
+      }
       toast.success(`Imported ${rows.length} picks${skipped ? ` — ${skipped} rows skipped` : ''}`);
     } catch {
       toast.error('Import failed — check the CSV format');
@@ -225,6 +267,7 @@ const CreatorPerformanceTracker = () => {
     if (!form.pick_event.trim()) { toast.error('Pick/Event is required'); return; }
     if (!form.eu_odds && !form.us_odds) { toast.error('Enter EU or US odds'); return; }
     upsertMutation.mutate({
+      id: editId ?? undefined,
       date: form.date, pick_event: form.pick_event, sport: form.sport,
       eu_odds: form.eu_odds ? parseFloat(form.eu_odds) : null, us_odds: form.us_odds || null,
       units_risked: parseFloat(form.units_risked) || 1, result: form.result,
