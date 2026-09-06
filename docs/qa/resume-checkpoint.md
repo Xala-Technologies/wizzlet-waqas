@@ -1,20 +1,17 @@
-# Resume checkpoint — after Wave 10
+# Resume checkpoint — after Wave 11
 
 ## Open PR stack
 
-- **#10** `fix/qa-w1-auth-harden-w6` — auth harden + commerce reliability
-- **#11** `fix/eslint-and-billing-portal` — ESLint errors + Stripe Customer Portal
-- **#12** `fix/convex-returns-validators-w9` — F-011 priority auth/subs/messaging
-- **#13** (this) `fix/convex-returns-validators-w10` — F-011 creators/posts/products/notifications/support
+- **#10–#13** auth harden → portal → returns W9 → returns W10
+- **#14** (this) `fix/convex-returns-validators-w11` — payouts/resolution/events/platform/bookmarks/picks/analytics/earnings
 
-## Wave 10
+## Wave 11
 
-- Extended `convex/lib/validators.ts` (creator/post/product/notification/support docs + projections)
-- `returns` on creators, posts, products, notifications, support public APIs (~26 exports)
+- More shared validators + `returns` on payouts, resolution, events, platform, bookmarks, picks, analytics lists, creator earnings
 
 ## Still open
 
-- Remaining without `returns`: payouts, resolution, events, admin, analytics lists, growth, bookmarks, picks, platform (~40+)
+- Remaining without `returns`: mainly `creators/growth` (~9) and `admin/queries` (~4)
 - F-012 admin pagination
 - Journeys J2/J4–J8
 - Gate: **NOT READY** for full-app claim

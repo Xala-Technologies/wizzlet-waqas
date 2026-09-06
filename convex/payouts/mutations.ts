@@ -2,9 +2,15 @@ import { mutation, query } from "../_generated/server";
 import { v } from "convex/values";
 import { getCreatorForUser, requireAdmin, requireAppUser } from "../lib/auth";
 import { getCreatorAvailableBalanceCents } from "../lib/payoutBalance";
+import {
+  availableBalanceValidator,
+  creatorPayoutSettingsDocValidator,
+  payoutDocValidator,
+} from "../lib/validators";
 
 export const listMine = query({
   args: {},
+  returns: v.array(payoutDocValidator),
   handler: async (ctx) => {
     const user = await requireAppUser(ctx);
     const creator = await getCreatorForUser(ctx, user._id);
@@ -18,6 +24,7 @@ export const listMine = query({
 
 export const availableBalance = query({
   args: {},
+  returns: availableBalanceValidator,
   handler: async (ctx) => {
     const user = await requireAppUser(ctx);
     const creator = await getCreatorForUser(ctx, user._id);
@@ -30,6 +37,7 @@ export const availableBalance = query({
 
 export const listAllAdmin = query({
   args: {},
+  returns: v.array(payoutDocValidator),
   handler: async (ctx) => {
     await requireAdmin(ctx);
     return ctx.db.query("payouts").collect();
@@ -44,6 +52,7 @@ export const createAdmin = mutation({
     method: v.optional(v.string()),
     reference: v.optional(v.string()),
   },
+  returns: v.id("payouts"),
   handler: async (ctx, args) => {
     await requireAdmin(ctx);
     const now = Date.now();
@@ -65,6 +74,7 @@ export const setStatusAdmin = mutation({
     status: v.string(),
     reference: v.optional(v.string()),
   },
+  returns: v.null(),
   handler: async (ctx, args) => {
     await requireAdmin(ctx);
     const now = Date.now();
@@ -74,11 +84,13 @@ export const setStatusAdmin = mutation({
       processedAt: args.status === "completed" ? now : undefined,
       updatedAt: now,
     });
+    return null;
   },
 });
 
 export const getMySettings = query({
   args: {},
+  returns: v.union(creatorPayoutSettingsDocValidator, v.null()),
   handler: async (ctx) => {
     const user = await requireAppUser(ctx);
     const creator = await getCreatorForUser(ctx, user._id);
@@ -97,6 +109,7 @@ export const upsertSettings = mutation({
     schedule: v.string(),
     minimumPayoutCents: v.number(),
   },
+  returns: v.id("creatorPayoutSettings"),
   handler: async (ctx, args) => {
     const user = await requireAppUser(ctx);
     const creator = await getCreatorForUser(ctx, user._id);
@@ -125,6 +138,7 @@ export const requestPayout = mutation({
     amountCents: v.number(),
     method: v.optional(v.string()),
   },
+  returns: v.id("payouts"),
   handler: async (ctx, args) => {
     const user = await requireAppUser(ctx);
     const creator = await getCreatorForUser(ctx, user._id);

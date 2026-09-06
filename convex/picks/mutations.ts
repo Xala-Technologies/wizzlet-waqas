@@ -2,9 +2,11 @@ import { mutation, query } from "../_generated/server";
 import { v } from "convex/values";
 import { requireAppUser, logMutation } from "../lib/auth";
 import { normalizePickResult } from "../lib/results";
+import { pickTrackerDocValidator } from "../lib/validators";
 
 export const listMine = query({
   args: {},
+  returns: v.array(pickTrackerDocValidator),
   handler: async (ctx) => {
     const user = await requireAppUser(ctx);
     return ctx.db
@@ -29,6 +31,7 @@ export const upsert = mutation({
     result: v.string(),
     notes: v.optional(v.string()),
   },
+  returns: v.id("pickTracker"),
   handler: async (ctx, args) => {
     const user = await requireAppUser(ctx);
     const now = Date.now();
@@ -78,10 +81,12 @@ export const upsert = mutation({
 
 export const remove = mutation({
   args: { pickId: v.id("pickTracker") },
+  returns: v.null(),
   handler: async (ctx, args) => {
     const user = await requireAppUser(ctx);
     const existing = await ctx.db.get(args.pickId);
     if (!existing || existing.userId !== user._id) throw new Error("FORBIDDEN");
     await ctx.db.delete(args.pickId);
+    return null;
   },
 });

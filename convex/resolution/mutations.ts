@@ -1,9 +1,14 @@
 import { mutation, query } from "../_generated/server";
 import { v } from "convex/values";
 import { getCreatorForUser, requireAdmin, requireAppUser, requireCreatorOwner } from "../lib/auth";
+import {
+  resolutionCaseDocValidator,
+  resolutionCaseMessageDocValidator,
+} from "../lib/validators";
 
 export const listMine = query({
   args: {},
+  returns: v.array(resolutionCaseDocValidator),
   handler: async (ctx) => {
     const user = await requireAppUser(ctx);
     const creator = await getCreatorForUser(ctx, user._id);
@@ -17,6 +22,7 @@ export const listMine = query({
 
 export const listAllAdmin = query({
   args: {},
+  returns: v.array(resolutionCaseDocValidator),
   handler: async (ctx) => {
     await requireAdmin(ctx);
     return ctx.db.query("resolutionCases").collect();
@@ -31,6 +37,7 @@ export const create = mutation({
     description: v.optional(v.string()),
     priority: v.optional(v.string()),
   },
+  returns: v.id("resolutionCases"),
   handler: async (ctx, args) => {
     await requireCreatorOwner(ctx, args.creatorId);
     const now = Date.now();
@@ -53,6 +60,7 @@ export const addMessage = mutation({
     body: v.string(),
     senderRole: v.string(),
   },
+  returns: v.id("resolutionCaseMessages"),
   handler: async (ctx, args) => {
     const c = await ctx.db.get(args.caseId);
     if (!c) throw new Error("NOT_FOUND");
@@ -69,6 +77,7 @@ export const addMessage = mutation({
 
 export const listMessages = query({
   args: { caseId: v.id("resolutionCases") },
+  returns: v.array(resolutionCaseMessageDocValidator),
   handler: async (ctx, args) => {
     const c = await ctx.db.get(args.caseId);
     if (!c) throw new Error("NOT_FOUND");
@@ -91,10 +100,12 @@ export const setStatus = mutation({
     caseId: v.id("resolutionCases"),
     status: v.string(),
   },
+  returns: v.null(),
   handler: async (ctx, args) => {
     await requireAdmin(ctx);
     const c = await ctx.db.get(args.caseId);
     if (!c) throw new Error("NOT_FOUND");
     await ctx.db.patch(args.caseId, { status: args.status, updatedAt: Date.now() });
+    return null;
   },
 });
