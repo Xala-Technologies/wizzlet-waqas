@@ -46,9 +46,9 @@ const CreatorEarnings = () => {
         </div>
       </div>
 
-      <div className="rounded-xl border border-border bg-card p-6 mb-6">
+      <div className="rounded-xl border border-border bg-card p-4 sm:p-6 mb-6 min-w-0">
         <h2 className="text-sm font-medium mb-4">Monthly Revenue</h2>
-        <div className="h-64">
+        <div className="h-64 min-w-0 w-full">
           {chartData.length === 0 ? (
             <p className="text-sm text-muted-foreground py-20 text-center">No payment events yet.</p>
           ) : (

@@ -8,9 +8,10 @@ import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { useCreatorProfile } from '@/hooks/useCreatorProfile';
-import { MessageSquare, User, Power, Loader2, Send } from 'lucide-react';
+import { MessageSquare, User, Power, Loader2, Send, ArrowLeft } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { toast } from 'sonner';
+import { cn } from '@/lib/utils';
 
 interface DirectMessage {
   id: string;
@@ -89,6 +90,9 @@ const CreatorMessages = () => {
   }, [inbox, subscribers, readLocally]);
 
   useEffect(() => {
+    // Auto-select first thread only on desktop so phones stay on the list first.
+    if (typeof window === 'undefined') return;
+    if (!window.matchMedia('(min-width: 1024px)').matches) return;
     if (!activeId && threads.length > 0) setActiveId(threads[0]?.subscriberId ?? null);
   }, [threads, activeId]);
 
@@ -195,13 +199,14 @@ const CreatorMessages = () => {
           </p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <div className="space-y-2">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 min-w-0">
+          <div className={cn('space-y-2', activeId && 'hidden lg:block')}>
             {threads.map(thread => (
               <button
                 key={thread.subscriberId}
+                type="button"
                 onClick={() => openThread(thread)}
-                className={`w-full text-left rounded-xl border p-4 transition-colors ${
+                className={`w-full min-h-14 text-left rounded-xl border p-4 transition-colors ${
                   thread.subscriberId === activeId ? 'border-primary bg-primary/5' : 'border-border bg-card hover:bg-muted/40'
                 }`}
               >
@@ -225,11 +230,24 @@ const CreatorMessages = () => {
             ))}
           </div>
 
-          <div className="lg:col-span-2 rounded-xl border border-border bg-card flex flex-col" style={{ minHeight: 420 }}>
+          <div
+            className={cn(
+              'lg:col-span-2 rounded-xl border border-border bg-card flex-col min-w-0 min-h-[min(70vh,520px)] lg:min-h-[420px]',
+              activeId ? 'flex' : 'hidden lg:flex',
+            )}
+          >
             {active ? (
               <>
-                <div className="border-b border-border px-5 py-3">
-                  <p className="text-sm font-semibold">{active.name}</p>
+                <div className="border-b border-border px-3 sm:px-5 py-3 flex items-center gap-2">
+                  <button
+                    type="button"
+                    className="lg:hidden inline-flex h-11 w-11 items-center justify-center rounded-lg text-muted-foreground hover:bg-muted/60 hover:text-foreground"
+                    aria-label="Back to conversations"
+                    onClick={() => setActiveId(null)}
+                  >
+                    <ArrowLeft className="h-5 w-5" />
+                  </button>
+                  <p className="text-sm font-semibold truncate">{active.name}</p>
                 </div>
                 <div className="flex-1 overflow-y-auto p-4 space-y-3">
                   {active.messages.map(msg => (
@@ -245,15 +263,15 @@ const CreatorMessages = () => {
                     </div>
                   ))}
                 </div>
-                <div className="border-t border-border p-3 flex gap-2">
+                <div className="border-t border-border p-3 flex gap-2 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
                   <Textarea
                     placeholder="Write a reply…"
                     value={reply}
                     onChange={e => setReply(e.target.value)}
                     rows={2}
-                    className="resize-none"
+                    className="resize-none min-w-0 flex-1"
                   />
-                  <Button onClick={send} disabled={sending || !reply.trim()} size="icon" className="h-auto">
+                  <Button onClick={send} disabled={sending || !reply.trim()} size="icon" className="h-11 w-11 shrink-0" aria-label="Send reply">
                     {sending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
                   </Button>
                 </div>

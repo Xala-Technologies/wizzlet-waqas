@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useMutation, useQuery } from 'convex/react';
 import { api } from '../../convex/_generated/api';
 import { DashboardLayout } from '@/components/dashboard/DashboardLayout';
+import { DesktopTableRegion, MobileRecordCards } from '@/components/dashboard/MobileRecordList';
 import { Button } from '@/components/ui/button';
 import { buildReferralCode, useCreatorProfile } from '@/hooks/useCreatorProfile';
 import { UserPlus, Users, DollarSign, Copy, Gift, Loader2 } from 'lucide-react';
@@ -76,13 +77,14 @@ const CreatorReferrals = () => {
       <div className="rounded-xl border border-border bg-card p-6 mb-6">
         <h2 className="text-sm font-medium mb-2 flex items-center gap-2"><Gift className="h-4 w-4 text-primary" /> Your Referral Link</h2>
         <p className="text-xs text-muted-foreground mb-4">Share this link and earn 10% commission on every referred subscription.</p>
-        <div className="flex gap-2">
-          <div className="flex-1 rounded-lg border border-border bg-muted/30 px-4 py-2.5 text-sm text-muted-foreground font-mono truncate">
+        <div className="flex flex-col sm:flex-row gap-2">
+          <div className="min-w-0 flex-1 rounded-lg border border-border bg-muted/30 px-4 py-2.5 text-sm text-muted-foreground font-mono truncate">
             {referralLink || 'Generating…'}
           </div>
           <Button
             variant="hero"
             size="sm"
+            className="h-11 min-h-11 w-full sm:w-auto shrink-0"
             disabled={!referralLink}
             onClick={() => { navigator.clipboard.writeText(referralLink); toast.success('Referral link copied!'); }}
           >
@@ -100,32 +102,51 @@ const CreatorReferrals = () => {
           <p className="text-sm text-muted-foreground">No referrals yet — share your link to get started.</p>
         </div>
       ) : (
-        <div className="rounded-xl border border-border overflow-x-auto">
-          <table className="w-full min-w-[520px]">
-            <thead>
-              <tr className="border-b border-border bg-muted/30">
-                <th className="text-left text-xs font-medium text-muted-foreground p-4">Referred</th>
-                <th className="text-left text-xs font-medium text-muted-foreground p-4">Date</th>
-                <th className="text-left text-xs font-medium text-muted-foreground p-4">Status</th>
-                <th className="text-right text-xs font-medium text-muted-foreground p-4">Commission</th>
-              </tr>
-            </thead>
-            <tbody>
-              {referralRows.map(r => (
-                <tr key={r.id} className="border-b border-border last:border-0">
-                  <td className="p-4 text-sm">{r.referred_email ?? 'Anonymous signup'}</td>
-                  <td className="p-4 text-sm text-muted-foreground">{format(new Date(r.created_at), 'MMM d, yyyy')}</td>
-                  <td className="p-4 text-xs font-medium">
-                    <span className={r.converted ? 'text-emerald-500' : 'text-muted-foreground'}>
-                      {r.converted ? 'Converted' : 'Pending'}
-                    </span>
-                  </td>
-                  <td className="p-4 text-sm font-bold text-right">${r.commission_earned.toFixed(2)}</td>
+        <>
+          <MobileRecordCards>
+            {referralRows.map((r) => (
+              <li key={r.id} className="rounded-xl border border-border bg-card p-4">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <p className="text-sm font-medium truncate">{r.referred_email ?? 'Anonymous signup'}</p>
+                    <p className="text-xs text-muted-foreground mt-0.5">{format(new Date(r.created_at), 'MMM d, yyyy')}</p>
+                  </div>
+                  <span className={`text-xs font-medium shrink-0 ${r.converted ? 'text-emerald-500' : 'text-muted-foreground'}`}>
+                    {r.converted ? 'Converted' : 'Pending'}
+                  </span>
+                </div>
+                <p className="text-sm font-bold mt-3">${r.commission_earned.toFixed(2)}</p>
+              </li>
+            ))}
+          </MobileRecordCards>
+
+          <DesktopTableRegion label="Referral activity table">
+            <table className="w-full min-w-[520px]">
+              <thead>
+                <tr className="border-b border-border bg-muted/30">
+                  <th className="text-left text-xs font-medium text-muted-foreground p-4">Referred</th>
+                  <th className="text-left text-xs font-medium text-muted-foreground p-4">Date</th>
+                  <th className="text-left text-xs font-medium text-muted-foreground p-4">Status</th>
+                  <th className="text-right text-xs font-medium text-muted-foreground p-4">Commission</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+              </thead>
+              <tbody>
+                {referralRows.map(r => (
+                  <tr key={r.id} className="border-b border-border last:border-0">
+                    <td className="p-4 text-sm">{r.referred_email ?? 'Anonymous signup'}</td>
+                    <td className="p-4 text-sm text-muted-foreground">{format(new Date(r.created_at), 'MMM d, yyyy')}</td>
+                    <td className="p-4 text-xs font-medium">
+                      <span className={r.converted ? 'text-emerald-500' : 'text-muted-foreground'}>
+                        {r.converted ? 'Converted' : 'Pending'}
+                      </span>
+                    </td>
+                    <td className="p-4 text-sm font-bold text-right">${r.commission_earned.toFixed(2)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </DesktopTableRegion>
+        </>
       )}
     </DashboardLayout>
   );

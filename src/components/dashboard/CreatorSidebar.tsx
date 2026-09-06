@@ -134,14 +134,16 @@ export function CreatorSidebar({ mobile = false }: { mobile?: boolean } = {}) {
   };
 
   return (
-    <aside className={mobile ? 'flex h-full w-full flex-col bg-card' : 'hidden md:flex w-[220px] flex-col border-r border-border bg-card/80 backdrop-blur-sm'}>
-      {/* Logo */}
-      <div className="px-5 py-5">
-        <WizzletLogo size="md" />
-      </div>
+    <aside className={mobile ? 'flex h-full min-h-0 w-full flex-col bg-card' : 'hidden md:flex w-[220px] flex-col border-r border-border bg-card/80 backdrop-blur-sm'}>
+      {/* Logo — omitted in mobile drawer (shown in MobileTopBar) */}
+      {!mobile && (
+        <div className="px-5 py-5">
+          <WizzletLogo size="md" />
+        </div>
+      )}
 
       {/* Navigation */}
-      <nav className="flex-1 overflow-y-auto px-3 pb-4 space-y-5">
+      <nav className={`flex-1 overflow-y-auto px-3 pb-4 space-y-5 ${mobile ? 'pt-4' : ''}`}>
         {/* Main */}
         <div className="space-y-0.5">
           <SectionLabel>Main</SectionLabel>
@@ -168,7 +170,7 @@ export function CreatorSidebar({ mobile = false }: { mobile?: boolean } = {}) {
       </nav>
 
       {/* Footer */}
-      <div className="px-3 py-4 border-t border-border space-y-2">
+      <div className="shrink-0 px-3 py-4 border-t border-border space-y-2">
         <RoleSwitcher />
         <div className="flex items-center justify-between px-3">
 

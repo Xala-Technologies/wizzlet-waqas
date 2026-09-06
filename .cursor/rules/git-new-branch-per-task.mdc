@@ -1,0 +1,29 @@
+---
+description: Always start new work on a fresh git branch; push and open a PR from that branch
+alwaysApply: true
+---
+
+# Git: new branch per work session
+
+When starting a new task or continuing after a completed PR/commit wave:
+
+- **Create a new branch first** — do not keep committing on the previous feature branch.
+- Name branches by intent, e.g. `fix/…`, `feat/…`, `chore/…`.
+- Base the branch on the appropriate upstream (`dev`, `main`, or the open cutover branch only when stacking intentionally).
+- Commit only when asked (or when the user explicitly requests push/PR); then **push the new branch** and **open a new PR**.
+- Prefer a focused PR for the current change set; do not dump unrelated work onto an old branch.
+
+## Examples
+
+```bash
+# ✅ Start fresh
+git checkout dev   # or the agreed base
+git pull
+git checkout -b fix/creators-footer-onboarding-exit
+
+# ❌ Continue piling onto the last branch
+git checkout feat/convex-cutover-stripe
+git commit ...
+```
+
+Stack onto an existing feature branch only when the user asks for a stacked PR or the change depends on unmerged work on that branch.
