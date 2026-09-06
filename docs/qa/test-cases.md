@@ -33,7 +33,7 @@
 | J4 Messages/support | **PASS** (W15) |
 | J5 Payout reconciliation | **PASS** (W16 — unit + browser UI) |
 | J6 Promo/referral | **PASS** (W17 — CRUD + attribution; commission cash TBD) |
-| J7 Identity continuity | NOT_RUN |
+| J7 Identity continuity | **PASS** (W18 — login + select-role continuity) |
 | J8 Migration continuity | BLOCKED |
 | J9 Public nav/controls | PASS (W2) |
 

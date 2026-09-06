@@ -385,13 +385,25 @@ J2 closed for launch-monthly product pricing. Remaining journeys: J4–J8.
 | Browser | Cancelled member `qa.member.w3.1101` on `/dashboard/subscriptions-billing`: CANCELLED row, **no Message button** |
 | Support channel | Admin/creator `supportMessages` remains separate (not subscription-gated by design) |
 
-## Gate (after Wave 17)
+## Gate (after Wave 18)
 
 ```text
 NOT READY
 ```
 
-Remaining journeys: J7–J8. Referral cash commission not productized.
+Remaining journey: J8 (BLOCKED — no approved migration snapshot). Referral cash commission not productized.
+
+## QA-W18-J7 — Identity cross-device continuity
+
+| | |
+|--|--|
+| Category | Identity |
+| Severity | **P2** |
+| Layer | Unit + browser |
+| Finding | Login destination depended on localStorage preferred; empty storage → `/select-role` even with DB roles |
+| Fix | `refreshRole` returns active role; login uses `homePathForRole(active)`; SelectRole redirects when roles exist |
+| Unit | `roles.test.ts` — 4 PASS |
+| Browser | Cleared `wizzlet.activeRole` → creator login lands `/creator`; `/select-role` redirects to creator home |
 
 ## QA-W17-J6 — Promo / referral attribution
 

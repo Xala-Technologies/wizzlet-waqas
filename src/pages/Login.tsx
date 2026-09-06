@@ -9,7 +9,7 @@ import { useAuthActions } from '@convex-dev/auth/react';
 import { useMutation } from 'convex/react';
 import { useAuth } from '@/contexts/AuthContext';
 import { ADMIN_BOOTSTRAP } from '@/lib/adminBootstrap';
-import { ACTIVE_ROLE_STORAGE_KEY, homePathForRole, isAppRole } from '@/lib/roles';
+import { homePathForRole } from '@/lib/roles';
 import { useConvexAuthReady, waitForAuthenticated, withAuthRetry } from '@/lib/authSession';
 import { api } from '@convex/_generated/api';
 import { Loader2 } from 'lucide-react';
@@ -62,9 +62,9 @@ const Login = () => {
 
       clearDevBypass();
       await withAuthRetry(() => ensureUser({})).catch(() => undefined);
-      await refreshRole();
-      const preferred = localStorage.getItem(ACTIVE_ROLE_STORAGE_KEY);
-      navigate(isAppRole(preferred) ? homePathForRole(preferred) : '/select-role');
+      const active = await refreshRole();
+      // Server-held roles drive destination — works with empty localStorage (new device).
+      navigate(homePathForRole(active));
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Sign in failed');
     } finally {

@@ -30,8 +30,8 @@ interface AuthContextType {
   acceptAssignedRole: (role: AppRole) => void;
   clearDevBypass: () => void;
   signOut: () => Promise<void>;
-  /** Wait until `me.roles` includes `expectRole` (or any role if omitted). */
-  refreshRole: (expectRole?: AppRole) => Promise<boolean>;
+  /** Wait until `me.roles` includes `expectRole` (or any role if omitted). Returns active role. */
+  refreshRole: (expectRole?: AppRole) => Promise<AppRole | null>;
   devMode: boolean;
   setDevRole: (role: AppRole) => void;
   enableDevMode: () => void;
@@ -49,7 +49,7 @@ const AuthContext = createContext<AuthContextType>({
   acceptAssignedRole: () => {},
   clearDevBypass: () => {},
   signOut: async () => {},
-  refreshRole: async () => false,
+  refreshRole: async () => null,
   devMode: false,
   setDevRole: () => {},
   enableDevMode: () => {},
@@ -142,7 +142,7 @@ function AuthProviderInner({ children }: { children: ReactNode }) {
   }, []);
 
   const refreshRole = useCallback(
-    async (expectRole?: AppRole) => {
+    async (expectRole?: AppRole): Promise<AppRole | null> => {
       const deadline = Date.now() + 8_000;
       while (Date.now() < deadline) {
         try {
@@ -154,14 +154,19 @@ function AuthProviderInner({ children }: { children: ReactNode }) {
             setRole(active);
             persistRole(active);
             setRoleLoading(false);
-            if (!expectRole || held.includes(expectRole)) return true;
+            if (!expectRole || held.includes(expectRole)) return active;
+          } else if (!expectRole) {
+            setRoles([]);
+            setRole(null);
+            setRoleLoading(false);
+            return null;
           }
         } catch {
           /* still authenticating */
         }
         await new Promise((r) => setTimeout(r, 100));
       }
-      return false;
+      return null;
     },
     [convex],
   );
