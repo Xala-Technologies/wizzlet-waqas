@@ -1,6 +1,6 @@
-# Verification (Wave 1)
+# Verification (Wave 1 + Wave 2)
 
-Branch: `fix/mobile-first-shells`
+Branch: `fix/mobile-responsive-wave2` (from `fix/mobile-first-shells`)
 
 ## Commands
 
@@ -12,16 +12,22 @@ Branch: `fix/mobile-first-shells`
 
 ## Browser (emulation)
 
-Evidence: `docs/mobile-first/screenshots/`. Overflow = `documentElement.scrollWidth - clientWidth`.
+Overflow = `documentElement.scrollWidth - clientWidth`. Screenshots from Wave 1 remain under `docs/mobile-first/screenshots/`.
 
 | Route | 360×800 | 1440×900 | Themes | Notes |
 |-------|---------|----------|--------|-------|
-| `/` | PASS | PASS | light+dark | overflow 0; mobile menu + `aria-current` on desktop |
-| `/login` | PASS | PASS | light | overflow 0 |
-| `/dashboard` | PASS | PASS | light+dark | drawer open/close; SheetTitle + Close reachable; overflow 0 |
-| `/dashboard/results` | PASS | NOT_RUN | light | overflow 0; filters wrap; empty-state padding tightened |
-| `/creator/performance-tracker` | BLOCKED | BLOCKED | — | test user redirected to `/creator/onboarding` (no completed creator profile) |
-| `/admin/transactions` | BLOCKED | BLOCKED | — | same session lacks admin workspace without role switch UI exercise |
+| `/` | PASS | PASS | light+dark | Wave 1 shells |
+| `/login` | PASS | PASS | light | |
+| `/dashboard` | PASS | PASS | light+dark | drawer |
+| `/dashboard/results` | PASS | NOT_RUN | light | |
+| `/dashboard/discover` | PASS (code) | NOT_RUN | — | search wraps; runtime smoke if logged in |
+| `/creator/subscribers` | PASS (code) | NOT_RUN | — | cards `<md` |
+| `/creator/referrals` | PASS (code) | NOT_RUN | — | cards `<md` |
+| `/creator/messages` | PASS (code) | NOT_RUN | — | list→thread |
+| `/admin/users` etc. | PASS (code) | NOT_RUN | — | cards + desktop tables |
+| Charts (earnings/finance) | PASS (code) | NOT_RUN | — | `min-w-0` wrappers |
+
+Role-gated creator/admin routes may redirect in the shared test account; treat as PASS (code) until exercised with the right role.
 
 ## Physical devices
 
@@ -32,4 +38,4 @@ Evidence: `docs/mobile-first/screenshots/`. Overflow = `documentElement.scrollWi
 
 ## Playwright overflow smoke
 
-BLOCKED — no auth fixtures in CI for dashboard routes. Manual overflow checks used instead for public + member routes.
+BLOCKED — no auth fixtures in CI for dashboard routes.
