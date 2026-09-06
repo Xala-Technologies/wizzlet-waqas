@@ -5,6 +5,7 @@ import {
   resolutionCaseDocValidator,
   resolutionCaseMessageDocValidator,
 } from "../lib/validators";
+import { adminTakeNewest } from "../lib/adminLists";
 
 export const listMine = query({
   args: {},
@@ -25,7 +26,7 @@ export const listAllAdmin = query({
   returns: v.array(resolutionCaseDocValidator),
   handler: async (ctx) => {
     await requireAdmin(ctx);
-    return ctx.db.query("resolutionCases").collect();
+    return adminTakeNewest(ctx, "resolutionCases");
   },
 });
 

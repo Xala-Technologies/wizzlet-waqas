@@ -7,6 +7,7 @@ import {
   creatorPayoutSettingsDocValidator,
   payoutDocValidator,
 } from "../lib/validators";
+import { adminTakeNewest } from "../lib/adminLists";
 
 export const listMine = query({
   args: {},
@@ -40,7 +41,7 @@ export const listAllAdmin = query({
   returns: v.array(payoutDocValidator),
   handler: async (ctx) => {
     await requireAdmin(ctx);
-    return ctx.db.query("payouts").collect();
+    return adminTakeNewest(ctx, "payouts");
   },
 });
 

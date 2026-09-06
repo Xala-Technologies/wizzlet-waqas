@@ -13,6 +13,7 @@ import {
   subscriptionWithCreatorValidator,
   subscriptionWithUserValidator,
 } from "../lib/validators";
+import { adminTakeNewest } from "../lib/adminLists";
 
 async function loadFeeSettings(ctx: MutationCtx) {
   const row = await ctx.db
@@ -173,7 +174,7 @@ export const listAllAdmin = query({
   returns: v.array(subscriptionDocValidator),
   handler: async (ctx) => {
     await requireAdmin(ctx);
-    return ctx.db.query("subscriptions").collect();
+    return adminTakeNewest(ctx, "subscriptions");
   },
 });
 

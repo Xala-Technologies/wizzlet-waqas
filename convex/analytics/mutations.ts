@@ -6,6 +6,7 @@ import {
   analyticsActivityItemValidator,
   analyticsEventDocValidator,
 } from "../lib/validators";
+import { adminTakeNewest } from "../lib/adminLists";
 
 export const track = mutation({
   args: {
@@ -88,6 +89,6 @@ export const listAllAdmin = query({
   returns: v.array(analyticsEventDocValidator),
   handler: async (ctx) => {
     await requireAdmin(ctx);
-    return ctx.db.query("analyticsEvents").collect();
+    return adminTakeNewest(ctx, "analyticsEvents");
   },
 });

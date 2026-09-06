@@ -1,18 +1,20 @@
-# Resume checkpoint — after Wave 12 (F-011 complete)
+# Resume checkpoint — after Wave 13 (F-012 partial)
 
 ## Open PR stack
 
-- **#10–#14** auth → portal → returns W9–W11
-- **#15** (this) `fix/convex-returns-validators-w12` — growth + admin (F-011 residual)
+- **#10–#15** auth → portal → F-011 returns W9–W12
+- **#16** (this) `fix/admin-pagination-f012-w13` — admin list hard caps (F-012 interim)
 
-## Wave 12 / F-011
+## Wave 13 / F-012
 
-- `returns` on creators growth (links/promos/referrals) and admin queries (users/stats/campaigns)
-- Public Convex APIs (excluding migrations/internal): **0 missing `returns`**
+- `convex/lib/adminLists.ts` — `ADMIN_LIST_LIMIT` (500) + `adminTakeNewest`
+- Admin full-table reads use `.take(500)` instead of unbounded `.collect()`
+- Dashboard stats expose `truncated` / `listLimit` with UI notice
+- True cursor pagination + admin UI load-more still deferred (join-heavy pages)
 
 ## Still open
 
-- F-012 admin pagination (`.collect()` scale)
+- F-012 residual: cursor pagination / `usePaginatedQuery` for admin join pages; aggregate counters for exact dashboard stats
 - Journeys J2/J4–J8
 - Gate: **NOT READY** for full-app claim
 
