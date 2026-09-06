@@ -55,11 +55,9 @@ export const financeOverview = query({
   }),
   handler: async (ctx, args) => {
     await requireAdmin(ctx);
-    const [subsScan, payoutsScan, creatorsScan] = await Promise.all([
-      adminScanAll(ctx, "subscriptions"),
-      adminScanAll(ctx, "payouts"),
-      adminScanAll(ctx, "creators"),
-    ]);
+    const subsScan = await adminScanAll(ctx, "subscriptions");
+    const payoutsScan = await adminScanAll(ctx, "payouts");
+    const creatorsScan = await adminScanAll(ctx, "creators");
     const truncated =
       subsScan.truncated || payoutsScan.truncated || creatorsScan.truncated;
 
@@ -211,10 +209,8 @@ export const feesOverview = query({
   }),
   handler: async (ctx, args) => {
     await requireAdmin(ctx);
-    const [subsScan, creatorsScan] = await Promise.all([
-      adminScanAll(ctx, "subscriptions"),
-      adminScanAll(ctx, "creators"),
-    ]);
+    const subsScan = await adminScanAll(ctx, "subscriptions");
+    const creatorsScan = await adminScanAll(ctx, "creators");
     const truncated = subsScan.truncated || creatorsScan.truncated;
     const active = subsScan.docs.filter((s) => s.status === "active");
     const creatorMap = new Map(creatorsScan.docs.map((c) => [c._id, c]));
@@ -302,14 +298,11 @@ export const alertsOverview = query({
   }),
   handler: async (ctx, args) => {
     await requireAdmin(ctx);
-    const [subsScan, casesScan, supportScan, payoutsScan, creatorsScan] =
-      await Promise.all([
-        adminScanAll(ctx, "subscriptions"),
-        adminScanAll(ctx, "resolutionCases"),
-        adminScanAll(ctx, "supportMessages"),
-        adminScanAll(ctx, "payouts"),
-        adminScanAll(ctx, "creators"),
-      ]);
+    const subsScan = await adminScanAll(ctx, "subscriptions");
+    const casesScan = await adminScanAll(ctx, "resolutionCases");
+    const supportScan = await adminScanAll(ctx, "supportMessages");
+    const payoutsScan = await adminScanAll(ctx, "payouts");
+    const creatorsScan = await adminScanAll(ctx, "creators");
     const truncated =
       subsScan.truncated ||
       casesScan.truncated ||

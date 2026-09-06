@@ -29,15 +29,14 @@ export const dashboardStats = query({
   returns: adminDashboardStatsValidator,
   handler: async (ctx) => {
     await requireAdmin(ctx);
-    const [usersScan, creatorsScan, subsScan, payoutsScan, casesScan, eventsScan] =
-      await Promise.all([
-        adminScanAll(ctx, "users"),
-        adminScanAll(ctx, "creators"),
-        adminScanAll(ctx, "subscriptions"),
-        adminScanAll(ctx, "payouts"),
-        adminScanAll(ctx, "resolutionCases"),
-        adminScanAll(ctx, "paymentEvents"),
-      ]);
+    // Sequential takes — Convex forbids multiple `.paginate()` calls in one function;
+    // `.take()` is safe across tables, but keep scans sequential for clearer failure modes.
+    const usersScan = await adminScanAll(ctx, "users");
+    const creatorsScan = await adminScanAll(ctx, "creators");
+    const subsScan = await adminScanAll(ctx, "subscriptions");
+    const payoutsScan = await adminScanAll(ctx, "payouts");
+    const casesScan = await adminScanAll(ctx, "resolutionCases");
+    const eventsScan = await adminScanAll(ctx, "paymentEvents");
 
     const users = usersScan.docs;
     const creators = creatorsScan.docs;
@@ -166,10 +165,8 @@ async function resolveAnnouncementRecipients(
   audience: "all" | "active" | "canceled" | "specific",
   creatorId: Id<"creators"> | undefined,
 ): Promise<{ ids: Id<"users">[]; truncated: boolean; label: string }> {
-  const [usersScan, subsScan] = await Promise.all([
-    adminScanAll(ctx, "users"),
-    adminScanAll(ctx, "subscriptions"),
-  ]);
+  const usersScan = await adminScanAll(ctx, "users");
+  const subsScan = await adminScanAll(ctx, "subscriptions");
   const truncated = usersScan.truncated || subsScan.truncated;
   const activeUsers = new Set(
     subsScan.docs.filter((s) => s.status === "active").map((s) => s.userId),
