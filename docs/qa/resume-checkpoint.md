@@ -1,16 +1,15 @@
-# Resume checkpoint — after Wave 19 (F-012)
+# Resume checkpoint — after Wave 20 (F-012 residual)
 
 ## Open PR stack
 
-- **#10–#21** through J7 identity
-- **#22** (this) `fix/admin-pagination-f012-w19` — F-012 cursor pagination for admin lists
+- **#10–#22** through primary admin pagination
+- **#23** (this) `fix/admin-pagination-f012-w20` — F-012 residual admin pages
 
-## Wave 19 / F-012
+## Wave 20 / F-012 residual
 
-- `convex/admin/paginatedLists.ts`: `listUsersPage`, `listCreatorsPage`, `listPayoutsPage`, `listSubscriptionsPage`
-- Admin Users / Creators / Payouts history use `usePaginatedQuery` + Load more
-- Per-row enrichment via indexes (no full-table client joins on those pages)
-- Residual: join-heavy admin pages + `dashboardStats` still use capped `adminTakeNewest` (500)
+- Extended `convex/admin/paginatedLists.ts`: `listCustomersPage`, `listCasesPage`, `listSupportMessagesPage`, `listTransactionsPage`
+- Wired: Admin Customers, Resolution Cases, Growth Manager Inbox, Transactions → `usePaginatedQuery` + Load more
+- Residual: Finance / Fees / Alerts / Reports / Customer Email / Creator Messaging + `dashboardStats` still capped
 
 ## Still open
 

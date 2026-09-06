@@ -214,3 +214,187 @@ export const listSubscriptionsPage = query({
     };
   },
 });
+
+const adminCustomerRowValidator = v.object({
+  id: v.id("users"),
+  email: v.string(),
+  fullName: v.union(v.string(), v.null()),
+  createdAt: v.number(),
+  subCount: v.number(),
+  activeCount: v.number(),
+  canceledCount: v.number(),
+  totalSpent: v.number(),
+  lastActivity: v.number(),
+});
+
+const adminCaseRowValidator = v.object({
+  id: v.id("resolutionCases"),
+  creatorId: v.id("creators"),
+  creatorName: v.string(),
+  subject: v.string(),
+  category: v.string(),
+  description: v.union(v.string(), v.null()),
+  status: v.string(),
+  priority: v.string(),
+  createdAt: v.number(),
+  updatedAt: v.number(),
+});
+
+const adminSupportRowValidator = v.object({
+  id: v.id("supportMessages"),
+  creatorId: v.id("creators"),
+  creatorName: v.string(),
+  senderRole: v.string(),
+  channel: v.string(),
+  body: v.string(),
+  read: v.boolean(),
+  createdAt: v.number(),
+});
+
+const adminTransactionRowValidator = v.object({
+  id: v.id("subscriptions"),
+  status: v.string(),
+  createdAt: v.number(),
+  userName: v.string(),
+  creatorName: v.string(),
+  amountCents: v.number(),
+  creatorEarningsCents: v.number(),
+  platformFeeCents: v.number(),
+  feePercentage: v.number(),
+});
+
+/** Cursor-paginated customers (users + per-user subscription stats). */
+export const listCustomersPage = query({
+  args: { paginationOpts: paginationOptsValidator },
+  returns: paginationResultValidator(adminCustomerRowValidator),
+  handler: async (ctx, args) => {
+    await requireAdmin(ctx);
+    const result = await ctx.db.query("users").order("desc").paginate(args.paginationOpts);
+
+    const page = [];
+    for (const u of result.page) {
+      const subs = await ctx.db
+        .query("subscriptions")
+        .withIndex("by_userId", (q) => q.eq("userId", u._id))
+        .collect();
+      const active = subs.filter((s) => s.status === "active");
+      const canceled = subs.filter((s) => s.status !== "active");
+      const totalSpent = subs.reduce((a, s) => a + s.amountCents / 100, 0);
+      const lastSub = [...subs].sort((a, b) => b.createdAt - a.createdAt)[0];
+      const createdAt = u.createdAt ?? u._creationTime;
+      page.push({
+        id: u._id,
+        email: u.email ?? "",
+        fullName: u.fullName ?? null,
+        createdAt,
+        subCount: subs.length,
+        activeCount: active.length,
+        canceledCount: canceled.length,
+        totalSpent,
+        lastActivity: lastSub?.createdAt ?? createdAt,
+      });
+    }
+
+    return { ...result, page };
+  },
+});
+
+/** Cursor-paginated resolution cases with creator display name. */
+export const listCasesPage = query({
+  args: { paginationOpts: paginationOptsValidator },
+  returns: paginationResultValidator(adminCaseRowValidator),
+  handler: async (ctx, args) => {
+    await requireAdmin(ctx);
+    const result = await ctx.db
+      .query("resolutionCases")
+      .order("desc")
+      .paginate(args.paginationOpts);
+
+    const page = [];
+    for (const c of result.page) {
+      const creator = await ctx.db.get(c.creatorId);
+      page.push({
+        id: c._id,
+        creatorId: c.creatorId,
+        creatorName: creator
+          ? (creator.displayName || creator.username || "Unnamed creator")
+          : "Unknown creator",
+        subject: c.subject,
+        category: c.category ?? "general",
+        description: c.description ?? null,
+        status: c.status,
+        priority: c.priority ?? "normal",
+        createdAt: c.createdAt,
+        updatedAt: c.updatedAt,
+      });
+    }
+
+    return { ...result, page };
+  },
+});
+
+/** Cursor-paginated support messages with creator display name. */
+export const listSupportMessagesPage = query({
+  args: { paginationOpts: paginationOptsValidator },
+  returns: paginationResultValidator(adminSupportRowValidator),
+  handler: async (ctx, args) => {
+    await requireAdmin(ctx);
+    const result = await ctx.db
+      .query("supportMessages")
+      .order("desc")
+      .paginate(args.paginationOpts);
+
+    const page = [];
+    for (const m of result.page) {
+      const creator = await ctx.db.get(m.creatorId);
+      page.push({
+        id: m._id,
+        creatorId: m.creatorId,
+        creatorName: creator
+          ? (creator.displayName || creator.username || "Unnamed creator")
+          : "Unknown creator",
+        senderRole: m.senderRole,
+        channel: m.channel ?? "growth",
+        body: m.body,
+        read: m.read,
+        createdAt: m.createdAt,
+      });
+    }
+
+    return { ...result, page };
+  },
+});
+
+/** Cursor-paginated subscription “transactions” with user/creator names. */
+export const listTransactionsPage = query({
+  args: { paginationOpts: paginationOptsValidator },
+  returns: paginationResultValidator(adminTransactionRowValidator),
+  handler: async (ctx, args) => {
+    await requireAdmin(ctx);
+    const result = await ctx.db
+      .query("subscriptions")
+      .order("desc")
+      .paginate(args.paginationOpts);
+
+    const page = [];
+    for (const s of result.page) {
+      const user = await ctx.db.get(s.userId);
+      const creator = await ctx.db.get(s.creatorId);
+      page.push({
+        id: s._id,
+        status: s.status,
+        createdAt: s.createdAt,
+        userName: user?.fullName ?? user?.email ?? "Unknown",
+        creatorName: creator
+          ? (creator.displayName ?? `@${creator.username}`)
+          : "Unknown",
+        amountCents: s.amountCents,
+        creatorEarningsCents: s.creatorEarningsCents,
+        platformFeeCents: s.platformFeeCents,
+        feePercentage: s.feePercentage,
+      });
+    }
+
+    return { ...result, page };
+  },
+});
