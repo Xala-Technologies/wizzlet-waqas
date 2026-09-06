@@ -7,9 +7,15 @@ import {
   requireCreatorOwner,
   requireAdmin,
 } from "../lib/auth";
+import {
+  creatorDocValidator,
+  creatorPublicValidator,
+  creatorPublishedPageValidator,
+} from "../lib/validators";
 
 export const getByUsername = query({
   args: { username: v.string() },
+  returns: v.union(creatorPublicValidator, v.null()),
   handler: async (ctx, args) => {
     const creator = await ctx.db
       .query("creators")
@@ -40,6 +46,7 @@ export const listPublished = query({
     cursor: v.optional(v.string()),
     limit: v.optional(v.number()),
   },
+  returns: creatorPublishedPageValidator,
   handler: async (ctx, args) => {
     const pageSize = Math.min(Math.max(args.limit ?? 24, 1), 50);
     const rows = await ctx.db
@@ -91,6 +98,7 @@ export const listPublished = query({
 
 export const myCreator = query({
   args: {},
+  returns: v.union(creatorDocValidator, v.null()),
   handler: async (ctx) => {
     const user = await requireAppUser(ctx);
     return getCreatorForUser(ctx, user._id);
@@ -106,6 +114,7 @@ export const upsertOnboarding = mutation({
     bannerUrl: v.optional(v.string()),
     monthlyPriceCents: v.optional(v.number()),
   },
+  returns: v.id("creators"),
   handler: async (ctx, args) => {
     const user = await requireAppUser(ctx);
     const username = args.username.trim().toLowerCase();
@@ -158,17 +167,20 @@ export const upsertOnboarding = mutation({
 
 export const setPublished = mutation({
   args: { creatorId: v.id("creators"), isPublished: v.boolean() },
+  returns: v.null(),
   handler: async (ctx, args) => {
     await requireCreatorOwner(ctx, args.creatorId);
     await ctx.db.patch(args.creatorId, {
       isPublished: args.isPublished,
       updatedAt: Date.now(),
     });
+    return null;
   },
 });
 
 export const listAllAdmin = query({
   args: {},
+  returns: v.array(creatorDocValidator),
   handler: async (ctx) => {
     await requireAdmin(ctx);
     return ctx.db.query("creators").collect();
@@ -187,6 +199,7 @@ export const updateSettings = mutation({
     discordServerId: v.optional(v.union(v.string(), v.null())),
     discordRoleId: v.optional(v.union(v.string(), v.null())),
   },
+  returns: v.id("creators"),
   handler: async (ctx, args) => {
     const user = await requireAppUser(ctx);
     const creator = await getCreatorForUser(ctx, user._id);

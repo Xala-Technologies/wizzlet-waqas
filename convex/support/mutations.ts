@@ -1,9 +1,11 @@
 import { mutation, query } from "../_generated/server";
 import { v } from "convex/values";
 import { getCreatorForUser, requireAdmin, requireAppUser } from "../lib/auth";
+import { supportMessageDocValidator } from "../lib/validators";
 
 export const listForMyCreator = query({
   args: {},
+  returns: v.array(supportMessageDocValidator),
   handler: async (ctx) => {
     const user = await requireAppUser(ctx);
     const creator = await getCreatorForUser(ctx, user._id);
@@ -17,6 +19,7 @@ export const listForMyCreator = query({
 
 export const listAllAdmin = query({
   args: {},
+  returns: v.array(supportMessageDocValidator),
   handler: async (ctx) => {
     await requireAdmin(ctx);
     return ctx.db.query("supportMessages").collect();
@@ -30,6 +33,7 @@ export const send = mutation({
     senderRole: v.string(),
     channel: v.optional(v.string()),
   },
+  returns: v.id("supportMessages"),
   handler: async (ctx, args) => {
     const user = await requireAppUser(ctx);
     const creator = await ctx.db.get(args.creatorId);

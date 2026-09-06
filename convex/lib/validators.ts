@@ -142,3 +142,182 @@ export const directMessageDocValidator = v.object({
   read: v.boolean(),
   createdAt: v.number(),
 });
+
+export const pickResultValidator = v.union(
+  v.literal("pending"),
+  v.literal("won"),
+  v.literal("lost"),
+  v.literal("push"),
+);
+
+export const verificationStatusValidator = v.union(
+  v.literal("none"),
+  v.literal("pending"),
+  v.literal("verified"),
+);
+
+export const creatorDocValidator = v.object({
+  _id: v.id("creators"),
+  _creationTime: v.number(),
+  legacyId: v.optional(v.string()),
+  userId: v.id("users"),
+  username: v.string(),
+  displayName: v.optional(v.string()),
+  bio: v.optional(v.string()),
+  avatarUrl: v.optional(v.string()),
+  bannerUrl: v.optional(v.string()),
+  monthlyPriceCents: v.optional(v.number()),
+  stripeAccountId: v.optional(v.string()),
+  isPublished: v.boolean(),
+  discordServerId: v.optional(v.string()),
+  discordRoleId: v.optional(v.string()),
+  referralCode: v.optional(v.string()),
+  messagingEnabled: v.boolean(),
+  verificationStatus: v.optional(verificationStatusValidator),
+  createdAt: v.number(),
+  updatedAt: v.number(),
+});
+
+export const creatorPublicValidator = v.object({
+  _id: v.id("creators"),
+  username: v.string(),
+  displayName: v.optional(v.string()),
+  bio: v.optional(v.string()),
+  avatarUrl: v.optional(v.string()),
+  bannerUrl: v.optional(v.string()),
+  monthlyPriceCents: v.optional(v.number()),
+  isPublished: v.boolean(),
+  messagingEnabled: v.boolean(),
+  verificationStatus: verificationStatusValidator,
+  createdAt: v.number(),
+});
+
+export const creatorDiscoveryItemValidator = v.object({
+  _id: v.id("creators"),
+  username: v.string(),
+  displayName: v.optional(v.string()),
+  bio: v.optional(v.string()),
+  avatarUrl: v.optional(v.string()),
+  monthlyPriceCents: v.optional(v.number()),
+  verificationStatus: verificationStatusValidator,
+  createdAt: v.number(),
+  postCount: v.number(),
+});
+
+export const creatorPublishedPageValidator = v.object({
+  items: v.array(creatorDiscoveryItemValidator),
+  continueCursor: v.union(v.id("creators"), v.null()),
+  isDone: v.boolean(),
+});
+
+export const postDocValidator = v.object({
+  _id: v.id("posts"),
+  _creationTime: v.number(),
+  legacyId: v.optional(v.string()),
+  creatorId: v.id("creators"),
+  title: v.string(),
+  content: v.optional(v.string()),
+  isPremium: v.boolean(),
+  result: v.optional(pickResultValidator),
+  trackingMode: v.optional(v.string()),
+  createdAt: v.number(),
+  updatedAt: v.number(),
+});
+
+export const postPreviewValidator = v.object({
+  _id: v.id("posts"),
+  title: v.string(),
+  content: v.union(v.string(), v.null()),
+  isPremium: v.boolean(),
+  result: v.optional(pickResultValidator),
+  createdAt: v.number(),
+});
+
+export const memberFeedItemValidator = v.object({
+  _id: v.id("posts"),
+  title: v.string(),
+  content: v.union(v.string(), v.null()),
+  isPremium: v.boolean(),
+  result: v.optional(pickResultValidator),
+  createdAt: v.number(),
+  creator: v.object({
+    username: v.string(),
+    displayName: v.optional(v.string()),
+    avatarUrl: v.optional(v.string()),
+  }),
+});
+
+export const savedPostDetailedValidator = v.object({
+  savedId: v.id("savedPosts"),
+  savedAt: v.number(),
+  post: v.object({
+    _id: v.id("posts"),
+    title: v.string(),
+    content: v.union(v.string(), v.null()),
+    isPremium: v.boolean(),
+    result: v.optional(pickResultValidator),
+    createdAt: v.number(),
+  }),
+  creator: v.object({
+    _id: v.id("creators"),
+    username: v.string(),
+    displayName: v.optional(v.string()),
+    avatarUrl: v.optional(v.string()),
+  }),
+});
+
+export const productDocValidator = v.object({
+  _id: v.id("products"),
+  _creationTime: v.number(),
+  legacyId: v.optional(v.string()),
+  creatorId: v.id("creators"),
+  name: v.string(),
+  description: v.optional(v.string()),
+  priceCents: v.number(),
+  billingPeriod: v.string(),
+  isFeatured: v.boolean(),
+  isActive: v.boolean(),
+  maxSpots: v.optional(v.number()),
+  isLimited: v.boolean(),
+  isClosed: v.boolean(),
+  createdAt: v.number(),
+  updatedAt: v.number(),
+});
+
+export const productPublicValidator = v.object({
+  _id: v.id("products"),
+  creatorId: v.id("creators"),
+  name: v.string(),
+  description: v.optional(v.string()),
+  priceCents: v.number(),
+  billingPeriod: v.string(),
+  isFeatured: v.boolean(),
+  isLimited: v.boolean(),
+  maxSpots: v.optional(v.number()),
+  isClosed: v.boolean(),
+});
+
+export const notificationDocValidator = v.object({
+  _id: v.id("notifications"),
+  _creationTime: v.number(),
+  legacyId: v.optional(v.string()),
+  userId: v.id("users"),
+  type: v.string(),
+  title: v.string(),
+  description: v.optional(v.string()),
+  read: v.boolean(),
+  link: v.optional(v.string()),
+  createdAt: v.number(),
+});
+
+export const supportMessageDocValidator = v.object({
+  _id: v.id("supportMessages"),
+  _creationTime: v.number(),
+  legacyId: v.optional(v.string()),
+  creatorId: v.id("creators"),
+  senderRole: v.string(),
+  channel: v.optional(v.string()),
+  body: v.string(),
+  read: v.boolean(),
+  createdAt: v.number(),
+});

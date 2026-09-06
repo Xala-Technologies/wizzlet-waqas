@@ -2,10 +2,12 @@ import { mutation, query } from "../_generated/server";
 import { ConvexError, v } from "convex/values";
 import { requireCreatorOwner, requireAppUser, logMutation } from "../lib/auth";
 import { normalizeBillingPeriod } from "../lib/commerceIdentity";
+import { productDocValidator, productPublicValidator } from "../lib/validators";
 
 /** Public projection — active, non-closed products only. */
 export const listPublicByCreator = query({
   args: { creatorId: v.id("creators") },
+  returns: v.array(productPublicValidator),
   handler: async (ctx, args) => {
     const rows = await ctx.db
       .query("products")
@@ -31,6 +33,7 @@ export const listPublicByCreator = query({
 /** Owner projection — all products including inactive/archived. */
 export const listByCreator = query({
   args: { creatorId: v.id("creators"), activeOnly: v.optional(v.boolean()) },
+  returns: v.array(productDocValidator),
   handler: async (ctx, args) => {
     const rows = await ctx.db
       .query("products")
@@ -55,6 +58,7 @@ export const upsert = mutation({
     isLimited: v.boolean(),
     isClosed: v.boolean(),
   },
+  returns: v.id("products"),
   handler: async (ctx, args) => {
     const { user } = await requireCreatorOwner(ctx, args.creatorId);
     const billingPeriod = normalizeBillingPeriod(args.billingPeriod);
@@ -119,6 +123,7 @@ export const upsert = mutation({
 /** Soft-archive instead of hard delete when product may have history. */
 export const remove = mutation({
   args: { productId: v.id("products") },
+  returns: v.object({ archived: v.boolean() }),
   handler: async (ctx, args) => {
     const product = await ctx.db.get(args.productId);
     if (!product) throw new ConvexError("NOT_FOUND");
