@@ -21,11 +21,15 @@ export function DashboardLayout({ children, type }: DashboardLayoutProps) {
   return (
     <div className="min-h-screen flex bg-background">
       <Sidebar />
-      <main className="flex-1 min-w-0 overflow-auto">
+      <main className="flex-1 min-w-0 overflow-x-hidden overflow-y-auto">
         <MobileTopBar>
           <Sidebar mobile />
         </MobileTopBar>
-        <div className={`p-4 sm:p-6 md:p-8 w-full ${CONTENT_WIDTH[type]}`}>{children}</div>
+        <div
+          className={`p-4 sm:p-6 md:p-8 w-full min-w-0 ${CONTENT_WIDTH[type]} pb-[max(1rem,env(safe-area-inset-bottom))]`}
+        >
+          {children}
+        </div>
       </main>
     </div>
   );

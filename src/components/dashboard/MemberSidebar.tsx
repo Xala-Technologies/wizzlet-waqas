@@ -96,12 +96,14 @@ export function MemberSidebar({ demo = false, mobile = false }: { demo?: boolean
   };
 
   return (
-    <aside className={mobile ? 'flex h-full w-full flex-col bg-card' : 'hidden md:flex w-[220px] flex-col border-r border-border bg-card/80 backdrop-blur-sm'}>
-      <div className="px-5 py-5">
-        <WizzletLogo size="md" />
-      </div>
+    <aside className={mobile ? 'flex h-full min-h-0 w-full flex-col bg-card' : 'hidden md:flex w-[220px] flex-col border-r border-border bg-card/80 backdrop-blur-sm'}>
+      {!mobile && (
+        <div className="px-5 py-5">
+          <WizzletLogo size="md" />
+        </div>
+      )}
 
-      <nav className="flex-1 overflow-y-auto px-3 pb-4 space-y-0.5">
+      <nav className={`flex-1 overflow-y-auto px-3 pb-4 space-y-0.5 ${mobile ? 'pt-4' : ''}`}>
         {items.map((item) => (
           <NavItemLink
             key={item.href}
@@ -115,7 +117,7 @@ export function MemberSidebar({ demo = false, mobile = false }: { demo?: boolean
         ))}
       </nav>
 
-      <div className="px-3 py-4 border-t border-border space-y-2">
+      <div className="shrink-0 px-3 py-4 border-t border-border space-y-2">
         {!demo && <RoleSwitcher />}
         <div className="flex items-center justify-between px-3">
           <span className="text-[11px] text-muted-foreground">Theme</span>

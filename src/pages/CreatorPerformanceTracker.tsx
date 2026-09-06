@@ -459,11 +459,11 @@ const CreatorPerformanceTracker = () => {
 
   const OddsFields = ({ compact = false }: { compact?: boolean }) => (
     <>
-      <div className={compact ? 'w-[75px]' : ''}>
+      <div className={compact ? 'w-full sm:w-[75px]' : ''}>
         <label className={`text-muted-foreground mb-0.5 block ${compact ? 'text-[10px]' : 'text-xs mb-1'}`}>EU Odds</label>
         <Input type="number" step="0.01" min="1.01" placeholder="1.91" className={compact ? 'h-8 text-xs' : ''} value={form.eu_odds} onChange={e => handleEuChange(e.target.value)} />
       </div>
-      <div className={compact ? 'w-[75px]' : ''}>
+      <div className={compact ? 'w-full sm:w-[75px]' : ''}>
         <label className={`text-muted-foreground mb-0.5 block ${compact ? 'text-[10px]' : 'text-xs mb-1'}`}>US Odds</label>
         <Input placeholder="-110" className={compact ? 'h-8 text-xs' : ''} value={form.us_odds} onChange={e => handleUsChange(e.target.value)} />
       </div>
@@ -484,12 +484,12 @@ const CreatorPerformanceTracker = () => {
           </h1>
           <p className="text-muted-foreground text-sm mt-0.5">Track, analyze, and optimize your picks</p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
           <input ref={importInputRef} type="file" accept=".csv,text/csv" className="hidden" onChange={e => handleImportCSV(e.target.files?.[0])} />
-          <Button variant="outline" size="sm" className="gap-1.5 text-xs h-8" disabled={importing} onClick={() => importInputRef.current?.click()}><Upload className="h-3 w-3" /> {importing ? 'Importing…' : 'Import'}</Button>
-          <Button variant="outline" size="sm" className="gap-1.5 text-xs h-8" onClick={handleExportCSV}><Download className="h-3 w-3" /> Export</Button>
-          <Button variant="outline" size="sm" className="gap-1.5 text-xs h-8" onClick={handleSmartAdd}><Flame className="h-3 w-3" /> Smart Add</Button>
-          <Button size="sm" className="gap-1.5 h-8" onClick={() => { resetForm(); setQuickAddOpen(true); }}><Plus className="h-3.5 w-3.5" /> Add Pick</Button>
+          <Button variant="outline" size="sm" className="gap-1.5 text-xs h-9 min-h-9 flex-1 sm:flex-none" disabled={importing} onClick={() => importInputRef.current?.click()}><Upload className="h-3 w-3" /> {importing ? 'Importing…' : 'Import'}</Button>
+          <Button variant="outline" size="sm" className="gap-1.5 text-xs h-9 min-h-9 flex-1 sm:flex-none" onClick={handleExportCSV}><Download className="h-3 w-3" /> Export</Button>
+          <Button variant="outline" size="sm" className="gap-1.5 text-xs h-9 min-h-9 flex-1 sm:flex-none" onClick={handleSmartAdd}><Flame className="h-3 w-3" /> Smart Add</Button>
+          <Button size="sm" className="gap-1.5 h-9 min-h-9 w-full sm:w-auto" onClick={() => { resetForm(); setQuickAddOpen(true); }}><Plus className="h-3.5 w-3.5" /> Add Pick</Button>
         </div>
       </div>
 
@@ -592,42 +592,49 @@ const CreatorPerformanceTracker = () => {
       {/* Quick Add */}
       {quickAddOpen && (
         <div className="rounded-lg border border-primary/20 bg-card p-3 mb-4">
-          <div className="flex items-end gap-2 flex-wrap">
-            <div className="w-[100px]"><label className="text-[10px] text-muted-foreground mb-0.5 block">Date</label><Input type="date" className="h-8 text-xs" value={form.date} onChange={e => setForm(f => ({ ...f, date: e.target.value }))} /></div>
-            <div className="flex-1 min-w-[120px]"><label className="text-[10px] text-muted-foreground mb-0.5 block">Pick / Event</label><Input className="h-8 text-xs" placeholder="Chiefs -3.5" value={form.pick_event} onChange={e => setForm(f => ({ ...f, pick_event: e.target.value }))} /></div>
-            <div className="w-[80px]"><label className="text-[10px] text-muted-foreground mb-0.5 block">Sport</label><Select value={form.sport} onValueChange={v => setForm(f => ({ ...f, sport: v }))}><SelectTrigger className="h-8 text-xs"><SelectValue /></SelectTrigger><SelectContent>{SPORTS.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}</SelectContent></Select></div>
+          <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-4 xl:flex xl:flex-wrap xl:items-end">
+            <div className="w-full sm:w-auto xl:w-[100px]"><label className="text-[10px] text-muted-foreground mb-0.5 block">Date</label><Input type="date" className="h-9 text-xs" value={form.date} onChange={e => setForm(f => ({ ...f, date: e.target.value }))} /></div>
+            <div className="w-full sm:col-span-2 xl:flex-1 xl:min-w-[120px]"><label className="text-[10px] text-muted-foreground mb-0.5 block">Pick / Event</label><Input className="h-9 text-xs" placeholder="Chiefs -3.5" value={form.pick_event} onChange={e => setForm(f => ({ ...f, pick_event: e.target.value }))} /></div>
+            <div className="w-full sm:w-auto xl:w-[80px]"><label className="text-[10px] text-muted-foreground mb-0.5 block">Sport</label><Select value={form.sport} onValueChange={v => setForm(f => ({ ...f, sport: v }))}><SelectTrigger className="h-9 text-xs"><SelectValue /></SelectTrigger><SelectContent>{SPORTS.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}</SelectContent></Select></div>
             <OddsFields compact />
-            <div className="w-[60px]"><label className="text-[10px] text-muted-foreground mb-0.5 block">Risked</label><Input type="number" step="0.5" className="h-8 text-xs" value={form.units_risked} onChange={e => setForm(f => ({ ...f, units_risked: e.target.value }))} /></div>
-            <div className="w-[85px]"><label className="text-[10px] text-muted-foreground mb-0.5 block">Result</label><Select value={form.result} onValueChange={v => setForm(f => ({ ...f, result: v }))}><SelectTrigger className="h-8 text-xs"><SelectValue /></SelectTrigger><SelectContent>{RESULTS.map(r => <SelectItem key={r} value={r}>{r.charAt(0).toUpperCase() + r.slice(1)}</SelectItem>)}</SelectContent></Select></div>
-            <div className="w-[65px]"><label className="text-[10px] text-muted-foreground mb-0.5 block">+/−</label><Input type="number" step="0.5" className="h-8 text-xs" value={form.units_won_lost} onChange={e => setForm(f => ({ ...f, units_won_lost: e.target.value }))} /></div>
-            <Button size="sm" className="h-8 text-xs px-3" onClick={handleSubmit} disabled={upsertMutation.isPending}>Add</Button>
-            <Button variant="ghost" size="sm" className="h-8 text-xs px-2" onClick={() => setQuickAddOpen(false)}>✕</Button>
+            <div className="w-full sm:w-auto xl:w-[72px]"><label className="text-[10px] text-muted-foreground mb-0.5 block">Risked</label><Input type="number" step="0.5" className="h-9 text-xs" value={form.units_risked} onChange={e => setForm(f => ({ ...f, units_risked: e.target.value }))} /></div>
+            <div className="w-full sm:w-auto xl:w-[85px]"><label className="text-[10px] text-muted-foreground mb-0.5 block">Result</label><Select value={form.result} onValueChange={v => setForm(f => ({ ...f, result: v }))}><SelectTrigger className="h-9 text-xs"><SelectValue /></SelectTrigger><SelectContent>{RESULTS.map(r => <SelectItem key={r} value={r}>{r.charAt(0).toUpperCase() + r.slice(1)}</SelectItem>)}</SelectContent></Select></div>
+            <div className="w-full sm:w-auto xl:w-[72px]"><label className="text-[10px] text-muted-foreground mb-0.5 block">+/−</label><Input type="number" step="0.5" className="h-9 text-xs" value={form.units_won_lost} onChange={e => setForm(f => ({ ...f, units_won_lost: e.target.value }))} /></div>
+            <div className="flex gap-2 w-full sm:w-auto xl:w-auto">
+              <Button size="sm" className="h-9 min-h-9 text-xs px-3 flex-1 sm:flex-none" onClick={handleSubmit} disabled={upsertMutation.isPending}>Add</Button>
+              <Button variant="ghost" size="sm" className="h-9 min-h-9 text-xs px-3" onClick={() => setQuickAddOpen(false)}>✕</Button>
+            </div>
           </div>
         </div>
       )}
 
       {/* Filters */}
-      <div className="flex items-center gap-2 mb-3">
-        <ListFilter className="h-3 w-3 text-muted-foreground" />
-        <Select value={filterSport} onValueChange={setFilterSport}><SelectTrigger className="w-[100px] h-7 text-[11px]"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="all">All Sports</SelectItem>{SPORTS.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}</SelectContent></Select>
-        <Select value={filterResult} onValueChange={setFilterResult}><SelectTrigger className="w-[100px] h-7 text-[11px]"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="all">All Results</SelectItem>{RESULTS.map(r => <SelectItem key={r} value={r}>{r.charAt(0).toUpperCase() + r.slice(1)}</SelectItem>)}</SelectContent></Select>
-        <span className="text-[10px] text-muted-foreground ml-auto">{filtered.length} pick{filtered.length !== 1 ? 's' : ''}</span>
+      <div className="flex flex-wrap items-center gap-2 mb-3">
+        <ListFilter className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+        <Select value={filterSport} onValueChange={setFilterSport}><SelectTrigger className="w-full sm:w-[100px] h-9 sm:h-7 text-[11px]"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="all">All Sports</SelectItem>{SPORTS.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}</SelectContent></Select>
+        <Select value={filterResult} onValueChange={setFilterResult}><SelectTrigger className="w-full sm:w-[100px] h-9 sm:h-7 text-[11px]"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="all">All Results</SelectItem>{RESULTS.map(r => <SelectItem key={r} value={r}>{r.charAt(0).toUpperCase() + r.slice(1)}</SelectItem>)}</SelectContent></Select>
+        <span className="text-[10px] text-muted-foreground sm:ml-auto w-full sm:w-auto">{filtered.length} pick{filtered.length !== 1 ? 's' : ''}</span>
       </div>
 
       {/* Table */}
       {picks.length === 0 && !isLoading ? (
-        <div className="rounded-xl border border-dashed border-border bg-card/50 p-16 text-center">
+        <div className="rounded-xl border border-dashed border-border bg-card/50 p-8 sm:p-16 text-center">
           <BarChart3 className="h-12 w-12 text-muted-foreground/30 mx-auto mb-4" />
           <h3 className="text-base font-semibold mb-1">Start tracking your performance</h3>
-          <p className="text-sm text-muted-foreground mb-5 max-w-sm mx-auto">Log your picks to get real-time analytics on win rate, ROI, and profitability across sports and time.</p>
+          <p className="text-sm text-muted-foreground mb-5 max-w-sm mx-auto px-1">Log your picks to get real-time analytics on win rate, ROI, and profitability across sports and time.</p>
           <Button size="sm" onClick={() => { resetForm(); setQuickAddOpen(true); }} className="gap-1.5"><Plus className="h-3.5 w-3.5" /> Add First Pick</Button>
         </div>
       ) : (
-        <div className="rounded-lg border border-border overflow-auto max-h-[420px] mb-5">
-          <Table>
+        <div
+          role="region"
+          aria-label="Performance picks table"
+          tabIndex={0}
+          className="rounded-lg border border-border overflow-x-auto overflow-y-auto max-h-[420px] mb-5 max-w-full"
+        >
+          <Table className="min-w-[720px]">
             <TableHeader className="sticky top-0 z-10">
               <TableRow className="bg-muted/60 hover:bg-muted/60">
-                <TableHead className="text-[9px] font-semibold uppercase tracking-wider py-1.5 px-2 w-[78px]">Date</TableHead>
+                <TableHead className="text-[9px] font-semibold uppercase tracking-wider py-1.5 px-2 w-[78px] sticky left-0 z-[1] bg-muted/95">Date</TableHead>
                 <TableHead className="text-[9px] font-semibold uppercase tracking-wider py-1.5 px-2">Pick / Event</TableHead>
                 <TableHead className="text-[9px] font-semibold uppercase tracking-wider py-1.5 px-2 w-[55px]">Sport</TableHead>
                 <TableHead className="text-[9px] font-semibold uppercase tracking-wider py-1.5 px-2 w-[52px] text-right">EU</TableHead>
@@ -643,7 +650,7 @@ const CreatorPerformanceTracker = () => {
             <TableBody>
               {displayPicks.map((pick, i) => (
                 <TableRow key={pick.id} className={`hover:bg-muted/30 transition-colors ${i % 2 ? 'bg-muted/8' : ''}`}>
-                  <TableCell className="text-[10px] py-1 px-2 font-mono text-muted-foreground">{pick.date}</TableCell>
+                  <TableCell className="text-[10px] py-1 px-2 font-mono text-muted-foreground sticky left-0 z-[1] bg-card">{pick.date}</TableCell>
                   <TableCell className="text-[10px] py-1 px-2 font-medium">{pick.pick_event}</TableCell>
                   <TableCell className="py-1 px-2"><span className="text-[8px] font-medium text-muted-foreground bg-muted/50 rounded px-1 py-0.5">{pick.sport}</span></TableCell>
                   <TableCell className="text-[10px] py-1 px-2 text-right font-mono text-muted-foreground">{pick.eu_odds || '—'}</TableCell>
@@ -653,7 +660,7 @@ const CreatorPerformanceTracker = () => {
                   <TableCell className={`text-[10px] py-1 px-2 text-right font-mono font-medium ${valColor(pick.units_won_lost || 0)}`}>{fmtUnit(pick.units_won_lost || 0)}</TableCell>
                   <TableCell className={`text-[10px] py-1 px-2 text-right font-mono font-semibold ${valColor(pick.runningTotal)}`}>{fmtUnit(pick.runningTotal)}</TableCell>
                   <TableCell className="text-[9px] py-1 px-2 text-muted-foreground/60 max-w-[80px] truncate">{pick.notes || ''}</TableCell>
-                  <TableCell className="py-1 px-1"><div className="flex gap-0.5"><Button variant="ghost" size="icon" className="h-5 w-5 opacity-30 hover:opacity-100" onClick={() => handleDuplicate(pick)} title="Duplicate"><Copy className="h-2.5 w-2.5" /></Button><Button variant="ghost" size="icon" className="h-5 w-5 opacity-30 hover:opacity-100" onClick={() => handleEdit(pick)}><Pencil className="h-2.5 w-2.5" /></Button><Button variant="ghost" size="icon" className="h-5 w-5 opacity-30 hover:opacity-100 text-destructive" onClick={() => deleteMutation.mutate(pick.id)}><Trash2 className="h-2.5 w-2.5" /></Button></div></TableCell>
+                  <TableCell className="py-1 px-1"><div className="flex gap-0.5"><Button variant="ghost" size="icon" className="h-9 w-9 opacity-60 hover:opacity-100" onClick={() => handleDuplicate(pick)} title="Duplicate" aria-label="Duplicate pick"><Copy className="h-3.5 w-3.5" /></Button><Button variant="ghost" size="icon" className="h-9 w-9 opacity-60 hover:opacity-100" onClick={() => handleEdit(pick)} aria-label="Edit pick"><Pencil className="h-3.5 w-3.5" /></Button><Button variant="ghost" size="icon" className="h-9 w-9 opacity-60 hover:opacity-100 text-destructive" onClick={() => deleteMutation.mutate(pick.id)} aria-label="Delete pick"><Trash2 className="h-3.5 w-3.5" /></Button></div></TableCell>
                 </TableRow>
               ))}
             </TableBody>
@@ -718,8 +725,13 @@ const CreatorPerformanceTracker = () => {
 
               {/* Post Performance Table */}
               {contentPerformance.postStats.length > 0 ? (
-                <div className="rounded-lg border border-border overflow-auto max-h-[360px]">
-                  <Table>
+                <div
+                  role="region"
+                  aria-label="Post performance table"
+                  tabIndex={0}
+                  className="rounded-lg border border-border overflow-x-auto overflow-y-auto max-h-[360px] max-w-full"
+                >
+                  <Table className="min-w-[520px]">
                     <TableHeader className="sticky top-0 z-10">
                       <TableRow className="bg-muted/60 hover:bg-muted/60">
                         <TableHead className="text-[9px] font-semibold uppercase tracking-wider py-1.5 px-2">Post</TableHead>
