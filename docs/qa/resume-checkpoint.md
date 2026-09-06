@@ -1,18 +1,18 @@
-# Resume checkpoint — after Wave 11
+# Resume checkpoint — after Wave 12 (F-011 complete)
 
 ## Open PR stack
 
-- **#10–#13** auth harden → portal → returns W9 → returns W10
-- **#14** (this) `fix/convex-returns-validators-w11` — payouts/resolution/events/platform/bookmarks/picks/analytics/earnings
+- **#10–#14** auth → portal → returns W9–W11
+- **#15** (this) `fix/convex-returns-validators-w12` — growth + admin (F-011 residual)
 
-## Wave 11
+## Wave 12 / F-011
 
-- More shared validators + `returns` on payouts, resolution, events, platform, bookmarks, picks, analytics lists, creator earnings
+- `returns` on creators growth (links/promos/referrals) and admin queries (users/stats/campaigns)
+- Public Convex APIs (excluding migrations/internal): **0 missing `returns`**
 
 ## Still open
 
-- Remaining without `returns`: mainly `creators/growth` (~9) and `admin/queries` (~4)
-- F-012 admin pagination
+- F-012 admin pagination (`.collect()` scale)
 - Journeys J2/J4–J8
 - Gate: **NOT READY** for full-app claim
 

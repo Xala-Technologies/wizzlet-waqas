@@ -1,9 +1,15 @@
 import { mutation, query } from "../_generated/server";
 import { v } from "convex/values";
 import { getCreatorForUser, requireAppUser, requireCreatorOwner } from "../lib/auth";
+import {
+  creatorLinkDocValidator,
+  promoCodeDocValidator,
+  referralDocValidator,
+} from "../lib/validators";
 
 export const listMyLinks = query({
   args: {},
+  returns: v.array(creatorLinkDocValidator),
   handler: async (ctx) => {
     const user = await requireAppUser(ctx);
     const creator = await getCreatorForUser(ctx, user._id);
@@ -22,6 +28,7 @@ export const upsertLink = mutation({
     url: v.string(),
     slug: v.optional(v.string()),
   },
+  returns: v.id("creatorLinks"),
   handler: async (ctx, args) => {
     const user = await requireAppUser(ctx);
     const creator = await getCreatorForUser(ctx, user._id);
@@ -56,16 +63,19 @@ export const upsertLink = mutation({
 
 export const removeLink = mutation({
   args: { linkId: v.id("creatorLinks") },
+  returns: v.null(),
   handler: async (ctx, args) => {
     const link = await ctx.db.get(args.linkId);
     if (!link) throw new Error("NOT_FOUND");
     await requireCreatorOwner(ctx, link.creatorId);
     await ctx.db.delete(args.linkId);
+    return null;
   },
 });
 
 export const recordLinkClick = mutation({
   args: { linkId: v.id("creatorLinks") },
+  returns: v.null(),
   handler: async (ctx, args) => {
     const link = await ctx.db.get(args.linkId);
     if (!link) throw new Error("NOT_FOUND");
@@ -73,11 +83,13 @@ export const recordLinkClick = mutation({
       clicks: link.clicks + 1,
       updatedAt: Date.now(),
     });
+    return null;
   },
 });
 
 export const listMyPromos = query({
   args: {},
+  returns: v.array(promoCodeDocValidator),
   handler: async (ctx) => {
     const user = await requireAppUser(ctx);
     const creator = await getCreatorForUser(ctx, user._id);
@@ -98,6 +110,7 @@ export const upsertPromo = mutation({
     expiresAt: v.optional(v.number()),
     isActive: v.boolean(),
   },
+  returns: v.id("promoCodes"),
   handler: async (_ctx, _args) => {
     // Checkout does not apply promos yet — block commercial claims.
     throw new Error("PROMO_UNAVAILABLE");
@@ -106,16 +119,19 @@ export const upsertPromo = mutation({
 
 export const removePromo = mutation({
   args: { promoId: v.id("promoCodes") },
+  returns: v.null(),
   handler: async (ctx, args) => {
     const promo = await ctx.db.get(args.promoId);
     if (!promo) throw new Error("NOT_FOUND");
     await requireCreatorOwner(ctx, promo.creatorId);
     await ctx.db.delete(args.promoId);
+    return null;
   },
 });
 
 export const listMyReferrals = query({
   args: {},
+  returns: v.array(referralDocValidator),
   handler: async (ctx) => {
     const user = await requireAppUser(ctx);
     const creator = await getCreatorForUser(ctx, user._id);
@@ -133,6 +149,7 @@ export const recordReferral = mutation({
     creatorId: v.id("creators"),
     referredEmail: v.optional(v.string()),
   },
+  returns: v.id("referrals"),
   handler: async (ctx, args) => {
     const user = await requireAppUser(ctx);
     const now = Date.now();

@@ -500,3 +500,102 @@ export const creatorEarningsValidator = v.object({
     }),
   ),
 });
+
+export const creatorLinkDocValidator = v.object({
+  _id: v.id("creatorLinks"),
+  _creationTime: v.number(),
+  legacyId: v.optional(v.string()),
+  creatorId: v.id("creators"),
+  name: v.string(),
+  url: v.string(),
+  slug: v.optional(v.string()),
+  clicks: v.number(),
+  conversions: v.number(),
+  createdAt: v.number(),
+  updatedAt: v.number(),
+});
+
+export const promoCodeDocValidator = v.object({
+  _id: v.id("promoCodes"),
+  _creationTime: v.number(),
+  legacyId: v.optional(v.string()),
+  creatorId: v.id("creators"),
+  code: v.string(),
+  discountPercent: v.number(),
+  maxUses: v.optional(v.number()),
+  usedCount: v.number(),
+  expiresAt: v.optional(v.number()),
+  isActive: v.boolean(),
+  createdAt: v.number(),
+  updatedAt: v.number(),
+});
+
+export const referralDocValidator = v.object({
+  _id: v.id("referrals"),
+  _creationTime: v.number(),
+  legacyId: v.optional(v.string()),
+  creatorId: v.id("creators"),
+  referredUserId: v.optional(v.id("users")),
+  referredEmail: v.optional(v.string()),
+  converted: v.boolean(),
+  commissionEarnedCents: v.number(),
+  createdAt: v.number(),
+  updatedAt: v.number(),
+});
+
+export const emailCampaignDocValidator = v.object({
+  _id: v.id("emailCampaigns"),
+  _creationTime: v.number(),
+  legacyId: v.optional(v.string()),
+  subject: v.string(),
+  body: v.string(),
+  audience: v.optional(v.string()),
+  recipients: v.number(),
+  status: v.string(),
+  sentBy: v.optional(v.id("users")),
+  createdAt: v.number(),
+});
+
+export const adminDashboardStatsValidator = v.object({
+  userCount: v.number(),
+  creatorCount: v.number(),
+  activeSubscriptionCount: v.number(),
+  totalRevenueCents: v.number(),
+  platformFeesCents: v.number(),
+  availableBalanceCents: v.number(),
+  pendingBalanceCents: v.number(),
+  paidOutCents: v.number(),
+  openCases: v.number(),
+  mrrCents: v.number(),
+  monthly: v.array(
+    v.object({
+      month: v.string(),
+      revenue: v.number(),
+      fees: v.number(),
+      creators: v.number(),
+      customers: v.number(),
+    }),
+  ),
+  recentSubs: v.array(
+    v.object({
+      id: v.id("subscriptions"),
+      userName: v.string(),
+      creatorName: v.string(),
+      amountCents: v.number(),
+      createdAt: v.number(),
+    }),
+  ),
+  recentCreators: v.array(
+    v.object({
+      name: v.string(),
+      date: v.number(),
+    }),
+  ),
+  recentCustomers: v.array(
+    v.object({
+      name: v.string(),
+      email: v.optional(v.string()),
+      date: v.number(),
+    }),
+  ),
+});

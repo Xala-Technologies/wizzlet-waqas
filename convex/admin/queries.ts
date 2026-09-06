@@ -1,9 +1,15 @@
 import { mutation, query } from "../_generated/server";
 import { v } from "convex/values";
 import { requireAdmin } from "../lib/auth";
+import {
+  adminDashboardStatsValidator,
+  emailCampaignDocValidator,
+  userDocValidator,
+} from "../lib/validators";
 
 export const listUsers = query({
   args: {},
+  returns: v.array(userDocValidator),
   handler: async (ctx) => {
     await requireAdmin(ctx);
     return ctx.db.query("users").collect();
@@ -12,6 +18,7 @@ export const listUsers = query({
 
 export const dashboardStats = query({
   args: {},
+  returns: adminDashboardStatsValidator,
   handler: async (ctx) => {
     await requireAdmin(ctx);
     const users = await ctx.db.query("users").collect();
@@ -127,6 +134,7 @@ export const createEmailCampaign = mutation({
     audience: v.optional(v.string()),
     recipientUserIds: v.array(v.id("users")),
   },
+  returns: v.id("emailCampaigns"),
   handler: async (ctx, args) => {
     const admin = await requireAdmin(ctx);
     const campaignId = await ctx.db.insert("emailCampaigns", {
@@ -155,6 +163,7 @@ export const createEmailCampaign = mutation({
 
 export const listCampaigns = query({
   args: {},
+  returns: v.array(emailCampaignDocValidator),
   handler: async (ctx) => {
     await requireAdmin(ctx);
     return ctx.db.query("emailCampaigns").collect();
