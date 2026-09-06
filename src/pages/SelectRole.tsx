@@ -9,7 +9,7 @@ import { Crown, Users, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 
 const SelectRole = () => {
-  const { user, loading, refreshRole } = useAuth();
+  const { user, loading, acceptAssignedRole, clearDevBypass, refreshRole } = useAuth();
   const navigate = useNavigate();
   const [selected, setSelected] = useState<'creator' | 'subscriber' | null>(null);
   const [saving, setSaving] = useState(false);
@@ -22,18 +22,22 @@ const SelectRole = () => {
   const handleContinue = async () => {
     if (!selected || !user) return;
     setSaving(true);
+    clearDevBypass();
 
     try {
       await assignSelfRole({ role: selected });
+      acceptAssignedRole(selected);
+      const ready = await refreshRole(selected);
+      if (!ready) {
+        // Optimistic state still allows ProtectedRoute through.
+        toast.message('Role saved — continuing…');
+      }
+      navigate(selected === 'creator' ? '/creator/onboarding' : '/dashboard', { replace: true });
     } catch {
       toast.error('Failed to set role. Please try again.');
+    } finally {
       setSaving(false);
-      return;
     }
-
-    await refreshRole();
-    setSaving(false);
-    navigate(selected === 'creator' ? '/creator/onboarding' : '/dashboard');
   };
 
   const roles = [
@@ -90,8 +94,8 @@ const SelectRole = () => {
 
         <button
           type="button"
-          onClick={handleContinue}
-          disabled={!selected || saving}
+          onClick={() => void handleContinue()}
+          disabled={!selected || saving || loading}
           className="mt-6 w-full rounded-lg bg-primary px-4 py-3 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed"
         >
           {saving && <Loader2 className="mr-2 inline h-4 w-4 animate-spin" />}

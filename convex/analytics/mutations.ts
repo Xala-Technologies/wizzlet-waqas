@@ -1,5 +1,6 @@
 import { mutation, query } from "../_generated/server";
 import { v } from "convex/values";
+import { getAuthUserId } from "@convex-dev/auth/server";
 import { getCreatorForUser, requireAppUser, requireAdmin } from "../lib/auth";
 
 export const track = mutation({
@@ -8,8 +9,13 @@ export const track = mutation({
     creatorId: v.optional(v.id("creators")),
     postId: v.optional(v.id("posts")),
   },
+  returns: v.null(),
   handler: async (ctx, args) => {
-    const user = await requireAppUser(ctx);
+    // Soft-no-op when signed out (e.g. late track during signOut).
+    const userId = await getAuthUserId(ctx);
+    if (!userId) return null;
+    const user = await ctx.db.get(userId);
+    if (!user) return null;
     await ctx.db.insert("analyticsEvents", {
       userId: user._id,
       creatorId: args.creatorId,
@@ -17,6 +23,7 @@ export const track = mutation({
       eventType: args.eventType,
       createdAt: Date.now(),
     });
+    return null;
   },
 });
 

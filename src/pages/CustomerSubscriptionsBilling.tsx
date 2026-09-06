@@ -14,6 +14,7 @@ import { format, addMonths } from 'date-fns';
 import { useAppUser } from '@/hooks/useAppUser';
 import { api } from '@convex/_generated/api';
 import type { Id } from '@convex/_generated/dataModel';
+import { cancelSubscription } from '@/lib/stripe';
 
 interface SubscriptionRow {
   id: string;
@@ -72,6 +73,7 @@ const CustomerSubscriptionsBilling = () => {
   const subsRaw = useQuery(api.subscriptions.mutations.mySubscriptionsDetailed, appUserId ? {} : 'skip');
   const sendMessageMutation = useMutation(api.messaging.mutations.send);
   const [portalLoading, setPortalLoading] = useState(false);
+  const [cancellingId, setCancellingId] = useState<string | null>(null);
   const [messageTarget, setMessageTarget] = useState<{ id: string; name: string } | null>(null);
   const [messageBody, setMessageBody] = useState('');
   const [sendingMessage, setSendingMessage] = useState(false);
@@ -122,8 +124,17 @@ const CustomerSubscriptionsBilling = () => {
 
   const manageBilling = async () => {
     setPortalLoading(true);
-    toast.info('Sandbox mode — no live payment provider is connected yet. Manage your subscriptions below.');
+    toast.info('Use Cancel on an active subscription below to end access immediately.');
     setPortalLoading(false);
+  };
+
+  const handleCancel = async (creatorId: string) => {
+    setCancellingId(creatorId);
+    try {
+      await cancelSubscription(creatorId);
+    } finally {
+      setCancellingId(null);
+    }
   };
 
   return (
@@ -186,6 +197,18 @@ const CustomerSubscriptionsBilling = () => {
                     >
                       {sub.status.toUpperCase()}
                     </Badge>
+                    {isActive && sub.creator && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="h-7 text-[11px] text-destructive border-destructive/30 hover:bg-destructive/10"
+                        disabled={cancellingId === sub.creator.id}
+                        onClick={() => handleCancel(sub.creator!.id)}
+                      >
+                        {cancellingId === sub.creator.id && <Loader2 className="mr-1 h-3 w-3 animate-spin" />}
+                        Cancel
+                      </Button>
+                    )}
                     {isActive && sub.creator && (sub.creator.messaging_enabled ?? true) && (
                       <Button
                         variant="outline"
@@ -211,7 +234,7 @@ const CustomerSubscriptionsBilling = () => {
                 );
               })}
               <p className="text-[11px] text-muted-foreground pt-1">
-                Cancellations and plan changes are handled in the secure billing portal.
+                Cancel ends Stripe billing and access for that creator. Card updates can be handled when customer portal is enabled.
               </p>
             </div>
           )}

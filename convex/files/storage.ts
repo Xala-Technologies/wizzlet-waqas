@@ -39,18 +39,20 @@ export const registerOwnedFile = mutation({
   },
 });
 
-/** Resolve a storage URL — owner or authenticated with registered asset. */
+/** Resolve a storage URL — authenticated owner of a registered asset only. */
 export const getUrl = query({
   args: { storageId: v.id("_storage") },
+  returns: v.union(v.string(), v.null()),
   handler: async (ctx, args) => {
     const user = await requireAppUser(ctx);
     const asset = await ctx.db
       .query("fileAssets")
       .withIndex("by_storageId", (q) => q.eq("storageId", args.storageId))
       .unique();
-    // Legacy files without metadata remain readable by any authenticated user
-    // until backfill; owned files require ownership.
-    if (asset && asset.ownerUserId !== user._id) {
+    if (!asset) {
+      throw new Error("FORBIDDEN");
+    }
+    if (asset.ownerUserId !== user._id) {
       throw new Error("FORBIDDEN");
     }
     return await ctx.storage.getUrl(args.storageId);

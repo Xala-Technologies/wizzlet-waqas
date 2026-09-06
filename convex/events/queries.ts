@@ -4,22 +4,16 @@ import { requireAdmin } from "../lib/auth";
 
 export const listPublishedToday = query({
   args: {
-    fromMs: v.optional(v.number()),
-    toMs: v.optional(v.number()),
+    fromMs: v.number(),
+    toMs: v.number(),
   },
   handler: async (ctx, args) => {
-    const start = args.fromMs ?? (() => {
-      const d = new Date();
-      d.setHours(0, 0, 0, 0);
-      return d.getTime();
-    })();
-    const end = args.toMs ?? start + 24 * 60 * 60 * 1000;
     const rows = await ctx.db
       .query("sportEvents")
       .withIndex("by_published_startsAt", (q) => q.eq("isPublished", true))
       .collect();
     return rows
-      .filter((e) => e.startsAt >= start && e.startsAt < end)
+      .filter((e) => e.startsAt >= args.fromMs && e.startsAt < args.toMs)
       .sort((a, b) => b.priority - a.priority || a.startsAt - b.startsAt);
   },
 });

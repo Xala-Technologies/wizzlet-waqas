@@ -8,6 +8,7 @@ import {
   requireIdentity,
   type AppRole,
 } from "../lib/auth";
+import { isDevAdminGrantAllowed } from "../lib/devAdminGrant";
 
 const assignableRole = v.union(v.literal("creator"), v.literal("subscriber"));
 
@@ -69,5 +70,39 @@ export const myRoles = query({
   handler: async (ctx) => {
     const user = await requireAppUser(ctx);
     return listRolesForUser(ctx, user._id);
+  },
+});
+
+/**
+ * Bootstrap platform-owner role for local/dev only.
+ * Requires ALLOW_DEV_ADMIN_GRANT=true on the Convex deployment **and** an allowlisted email.
+ * Never set ALLOW_DEV_ADMIN_GRANT on production.
+ */
+export const grantTestAdmin = mutation({
+  args: {},
+  returns: v.null(),
+  handler: async (ctx) => {
+    const user = await requireAppUser(ctx);
+    if (!isDevAdminGrantAllowed(user.email, process.env.ALLOW_DEV_ADMIN_GRANT)) {
+      throw new ConvexError("FORBIDDEN");
+    }
+    const existing = await ctx.db
+      .query("userRoles")
+      .withIndex("by_userId_role", (q) => q.eq("userId", user._id).eq("role", "admin"))
+      .unique();
+    if (!existing) {
+      const id = await ctx.db.insert("userRoles", {
+        userId: user._id,
+        role: "admin",
+        createdAt: Date.now(),
+      });
+      await logMutation(ctx, {
+        table: "userRoles",
+        documentId: id,
+        action: "grantTestAdmin",
+        actorExternalAuthId: user.externalAuthId,
+      });
+    }
+    return null;
   },
 });
