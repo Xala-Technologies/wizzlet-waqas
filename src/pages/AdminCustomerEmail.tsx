@@ -1,8 +1,9 @@
-import { useMemo, useState } from 'react';
-import { useMutation, useQuery } from 'convex/react';
+import { useState } from 'react';
+import { useMutation, usePaginatedQuery, useQuery } from 'convex/react';
 import { api } from '../../convex/_generated/api';
 import type { Id } from '../../convex/_generated/dataModel';
 import { DashboardLayout } from '@/components/dashboard/DashboardLayout';
+import { AdminQueryBoundary } from '@/components/dashboard/AdminQueryBoundary';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -12,68 +13,58 @@ import { Mail, Send, Users, Eye, Clock, Loader2 } from 'lucide-react';
 import { format } from 'date-fns';
 import { toast } from 'sonner';
 
-interface CreatorOption {
-  id: string;
-  label: string;
-}
+const PAGE_SIZE = 25;
 
-const AUDIENCE_LABEL: Record<string, string> = {
-  all: 'All Customers',
-  active: 'Active Subscribers',
-  canceled: 'Canceled Subscribers',
-};
-
-const AdminCustomerEmail = () => {
+const AdminCustomerEmailInner = () => {
   const [subject, setSubject] = useState('');
   const [body, setBody] = useState('');
-  const [audience, setAudience] = useState('all');
+  const [audience, setAudience] = useState<'all' | 'active' | 'canceled' | 'specific'>('all');
   const [creatorId, setCreatorId] = useState<string>('');
   const [sending, setSending] = useState(false);
 
-  const usersRaw = useQuery(api.admin.queries.listUsers);
-  const subsRaw = useQuery(api.subscriptions.mutations.listAllAdmin);
-  const creatorsRaw = useQuery(api.creators.queries.listAllAdmin);
-  const campaignsRaw = useQuery(api.admin.queries.listCampaigns);
-  const createCampaign = useMutation(api.admin.queries.createEmailCampaign);
+  const {
+    results: creatorResults,
+    status: creatorStatus,
+    loadMore: loadMoreCreators,
+  } = usePaginatedQuery(
+    api.admin.paginatedLists.listCreatorsPage,
+    {},
+    { initialNumItems: PAGE_SIZE },
+  );
+  const {
+    results: campaignResults,
+    status: campaignStatus,
+    loadMore: loadMoreCampaigns,
+  } = usePaginatedQuery(
+    api.admin.paginatedLists.listCampaignsPage,
+    {},
+    { initialNumItems: PAGE_SIZE },
+  );
 
-  const loading = usersRaw === undefined || subsRaw === undefined || creatorsRaw === undefined || campaignsRaw === undefined;
+  const preview = useQuery(api.admin.queries.previewAnnouncementAudience, {
+    audience,
+    creatorId: audience === 'specific' && creatorId
+      ? (creatorId as Id<'creators'>)
+      : undefined,
+  });
+  const sendAnnouncement = useMutation(api.admin.queries.sendAnnouncement);
 
-  const allUsers = useMemo(() => (usersRaw ?? []).map(u => u._id), [usersRaw]);
-  const subs = useMemo(() => subsRaw ?? [], [subsRaw]);
-  const creators = useMemo((): CreatorOption[] => (creatorsRaw ?? []).map(c => ({
-    id: c._id,
+  const creators = (creatorResults ?? []).map((c) => ({
+    id: c.id,
     label: c.displayName || c.username || 'Unnamed creator',
-  })), [creatorsRaw]);
+  }));
+  const campaigns = (campaignResults ?? []).map((c) => ({
+    id: c.id,
+    subject: c.subject,
+    body: c.body,
+    audience: c.audience ?? '',
+    recipients: c.recipients,
+    status: c.status,
+    created_at: c.createdAt,
+  }));
 
-  const campaigns = useMemo(() => (campaignsRaw ?? [])
-    .sort((a, b) => b.createdAt - a.createdAt)
-    .slice(0, 50)
-    .map(c => ({
-      id: c._id,
-      subject: c.subject,
-      body: c.body,
-      audience: c.audience ?? '',
-      recipients: c.recipients,
-      status: c.status,
-      created_at: c.createdAt,
-    })), [campaignsRaw]);
-
-  const recipientIds = useMemo(() => {
-    const activeUsers = new Set(subs.filter(s => s.status === 'active').map(s => s.userId));
-    if (audience === 'all') return allUsers;
-    if (audience === 'active') return [...activeUsers];
-    if (audience === 'canceled') {
-      return [...new Set(subs.filter(s => s.status !== 'active' && !activeUsers.has(s.userId)).map(s => s.userId))];
-    }
-    if (audience === 'specific' && creatorId) {
-      return [...new Set(subs.filter(s => s.creatorId === creatorId && s.status === 'active').map(s => s.userId))];
-    }
-    return [];
-  }, [audience, creatorId, allUsers, subs]);
-
-  const audienceLabel = audience === 'specific'
-    ? `Customers of ${creators.find(c => c.id === creatorId)?.label ?? 'creator'}`
-    : AUDIENCE_LABEL[audience];
+  const recipientCount = preview?.count ?? 0;
+  const previewLoading = preview === undefined;
 
   const handleSend = async () => {
     if (!subject.trim() || !body.trim()) {
@@ -84,20 +75,20 @@ const AdminCustomerEmail = () => {
       toast.error('Select a creator for this audience');
       return;
     }
-    if (recipientIds.length === 0) {
+    if (recipientCount === 0) {
       toast.error('No customers match this audience');
       return;
     }
 
     setSending(true);
     try {
-      await createCampaign({
+      const result = await sendAnnouncement({
         subject: subject.trim(),
         body: body.trim(),
-        audience: audienceLabel,
-        recipientUserIds: recipientIds as Id<'users'>[],
+        audience,
+        creatorId: audience === 'specific' ? (creatorId as Id<'creators'>) : undefined,
       });
-      toast.success(`Delivered to ${recipientIds.length} customer${recipientIds.length === 1 ? '' : 's'}`);
+      toast.success(`Delivered to ${result.recipients} customer${result.recipients === 1 ? '' : 's'}`);
       setSubject('');
       setBody('');
     } catch (e) {
@@ -124,7 +115,7 @@ const AdminCustomerEmail = () => {
           <div className="flex flex-col sm:flex-row gap-4">
             <div className="flex-1">
               <label className="text-xs font-medium text-muted-foreground mb-1.5 block">Audience</label>
-              <Select value={audience} onValueChange={setAudience}>
+              <Select value={audience} onValueChange={(v) => setAudience(v as typeof audience)}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">All Customers</SelectItem>
@@ -140,36 +131,49 @@ const AdminCustomerEmail = () => {
                 <Select value={creatorId} onValueChange={setCreatorId}>
                   <SelectTrigger><SelectValue placeholder="Select creator" /></SelectTrigger>
                   <SelectContent>
-                    {creators.map(c => <SelectItem key={c.id} value={c.id}>{c.label}</SelectItem>)}
+                    {creators.map((c) => <SelectItem key={c.id} value={c.id}>{c.label}</SelectItem>)}
                   </SelectContent>
                 </Select>
+                {(creatorStatus === 'CanLoadMore' || creatorStatus === 'LoadingMore') && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="mt-2 h-7 text-xs"
+                    disabled={creatorStatus === 'LoadingMore'}
+                    onClick={() => loadMoreCreators(PAGE_SIZE)}
+                  >
+                    Load more creators
+                  </Button>
+                )}
               </div>
             )}
           </div>
 
           <p className="text-xs text-muted-foreground flex items-center gap-1.5">
             <Users className="h-3 w-3" />
-            {loading ? 'Counting recipients…' : `${recipientIds.length} customer${recipientIds.length === 1 ? '' : 's'} will receive this`}
+            {previewLoading
+              ? 'Counting recipients…'
+              : `${recipientCount} customer${recipientCount === 1 ? '' : 's'} will receive this${preview?.truncated ? ' (scan capped)' : ''}`}
           </p>
 
           <div>
             <label className="text-xs font-medium text-muted-foreground mb-1.5 block">Subject Line</label>
-            <Input placeholder="Enter subject…" value={subject} onChange={e => setSubject(e.target.value)} />
+            <Input placeholder="Enter subject…" value={subject} onChange={(e) => setSubject(e.target.value)} />
           </div>
           <div>
             <label className="text-xs font-medium text-muted-foreground mb-1.5 block">Content</label>
-            <Textarea placeholder="Write your message…" value={body} onChange={e => setBody(e.target.value)} rows={8} className="resize-none" />
+            <Textarea placeholder="Write your message…" value={body} onChange={(e) => setBody(e.target.value)} rows={8} className="resize-none" />
           </div>
-          <Button onClick={handleSend} disabled={sending || loading}>
+          <Button onClick={handleSend} disabled={sending || previewLoading}>
             {sending ? <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" /> : <Send className="mr-1.5 h-3.5 w-3.5" />}
-            Send to {recipientIds.length} customer{recipientIds.length === 1 ? '' : 's'}
+            Send to {recipientCount} customer{recipientCount === 1 ? '' : 's'}
           </Button>
         </div>
       </div>
 
       <div>
         <h2 className="text-sm font-medium text-muted-foreground uppercase tracking-wider mb-3">Announcement history</h2>
-        {loading ? (
+        {campaignStatus === 'LoadingFirstPage' ? (
           <div className="flex items-center justify-center py-12">
             <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
           </div>
@@ -179,32 +183,48 @@ const AdminCustomerEmail = () => {
             <p className="text-sm text-muted-foreground">No announcements yet.</p>
           </div>
         ) : (
-          <div className="space-y-3">
-            {campaigns.map(c => (
-              <div key={c.id} className="rounded-xl border border-border bg-card p-5">
-                <div className="flex items-start justify-between gap-3 mb-2">
-                  <div className="min-w-0 flex-1">
-                    <p className="text-sm font-semibold">{c.subject}</p>
-                    <p className="text-xs text-muted-foreground mt-1 line-clamp-2">{c.body}</p>
+          <>
+            <div className="space-y-3">
+              {campaigns.map((c) => (
+                <div key={c.id} className="rounded-xl border border-border bg-card p-5">
+                  <div className="flex items-start justify-between gap-3 mb-2">
+                    <div className="min-w-0 flex-1">
+                      <p className="text-sm font-semibold">{c.subject}</p>
+                      <p className="text-xs text-muted-foreground mt-1 line-clamp-2">{c.body}</p>
+                    </div>
+                    <Badge variant="outline" className="text-[9px] shrink-0">
+                      {c.status === 'in_app_announcement' || c.status === 'sent'
+                        ? 'In-app'
+                        : c.status}
+                    </Badge>
                   </div>
-                  <Badge variant="outline" className="text-[9px] shrink-0">
-                    {c.status === 'in_app_announcement' || c.status === 'sent'
-                      ? 'In-app'
-                      : c.status}
-                  </Badge>
+                  <div className="flex flex-wrap items-center gap-4 text-xs text-muted-foreground mt-3">
+                    <span className="flex items-center gap-1"><Clock className="h-3 w-3" /> {format(new Date(c.created_at), 'MMM d, yyyy')}</span>
+                    <span className="flex items-center gap-1"><Users className="h-3 w-3" /> {c.recipients} recipients</span>
+                    <span className="flex items-center gap-1"><Eye className="h-3 w-3" /> {c.audience}</span>
+                  </div>
                 </div>
-                <div className="flex flex-wrap items-center gap-4 text-xs text-muted-foreground mt-3">
-                  <span className="flex items-center gap-1"><Clock className="h-3 w-3" /> {format(new Date(c.created_at), 'MMM d, yyyy')}</span>
-                  <span className="flex items-center gap-1"><Users className="h-3 w-3" /> {c.recipients} recipients</span>
-                  <span className="flex items-center gap-1"><Eye className="h-3 w-3" /> {c.audience}</span>
-                </div>
+              ))}
+            </div>
+            {(campaignStatus === 'CanLoadMore' || campaignStatus === 'LoadingMore') && (
+              <div className="flex justify-center mt-4">
+                <Button variant="outline" size="sm" disabled={campaignStatus === 'LoadingMore'} onClick={() => loadMoreCampaigns(PAGE_SIZE)}>
+                  {campaignStatus === 'LoadingMore' ? <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" /> : null}
+                  Load more
+                </Button>
               </div>
-            ))}
-          </div>
+            )}
+          </>
         )}
       </div>
     </DashboardLayout>
   );
 };
+
+const AdminCustomerEmail = () => (
+  <AdminQueryBoundary>
+    <AdminCustomerEmailInner />
+  </AdminQueryBoundary>
+);
 
 export default AdminCustomerEmail;

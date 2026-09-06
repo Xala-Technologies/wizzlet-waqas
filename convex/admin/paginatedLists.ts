@@ -398,3 +398,38 @@ export const listTransactionsPage = query({
     return { ...result, page };
   },
 });
+
+const adminCampaignRowValidator = v.object({
+  id: v.id("emailCampaigns"),
+  subject: v.string(),
+  body: v.string(),
+  audience: v.union(v.string(), v.null()),
+  recipients: v.number(),
+  status: v.string(),
+  createdAt: v.number(),
+});
+
+/** Cursor-paginated in-app announcement history. */
+export const listCampaignsPage = query({
+  args: { paginationOpts: paginationOptsValidator },
+  returns: paginationResultValidator(adminCampaignRowValidator),
+  handler: async (ctx, args) => {
+    await requireAdmin(ctx);
+    const result = await ctx.db
+      .query("emailCampaigns")
+      .order("desc")
+      .paginate(args.paginationOpts);
+    return {
+      ...result,
+      page: result.page.map((c) => ({
+        id: c._id,
+        subject: c.subject,
+        body: c.body,
+        audience: c.audience ?? null,
+        recipients: c.recipients,
+        status: c.status,
+        createdAt: c.createdAt,
+      })),
+    };
+  },
+});

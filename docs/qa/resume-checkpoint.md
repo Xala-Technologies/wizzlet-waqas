@@ -1,22 +1,25 @@
-# Resume checkpoint — after Wave 20 (F-012 residual)
+# Resume checkpoint — after Wave 21 (exact admin aggregates)
 
 ## Open PR stack
 
-- **#10–#22** through primary admin pagination
-- **#23** (this) `fix/admin-pagination-f012-w20` — F-012 residual admin pages
+- **#10–#23** through F-012 residual list pagination
+- **#24** (this) `fix/admin-pagination-f012-w21` — exact dashboard/finance/fees/alerts + email/messaging
 
-## Wave 20 / F-012 residual
+## Wave 21
 
-- Extended `convex/admin/paginatedLists.ts`: `listCustomersPage`, `listCasesPage`, `listSupportMessagesPage`, `listTransactionsPage`
-- Wired: Admin Customers, Resolution Cases, Growth Manager Inbox, Transactions → `usePaginatedQuery` + Load more
-- Residual: Finance / Fees / Alerts / Reports / Customer Email / Creator Messaging + `dashboardStats` still capped
+- `adminScanAll` (5k/table take; no paginate — Convex one-paginate-per-fn) for aggregates
+- `dashboardStats` raised from 500 → 5k/table exact-ish scans
+- `admin/snapshots`: `financeOverview`, `feesOverview`, `alertsOverview`
+- Customer Email: server-side audience resolve + `listCampaignsPage`
+- Creator Messaging: `listCreatorsPage` + `listSupportMessagesPage`
+- Residual: Admin Reports / Payouts top-panel still use capped `listAllAdmin`; Aggregate component for true unbounded exactness
 
 ## Still open
 
 - Journey J8 (migration — BLOCKED)
 - Referral cash commission productization
-- Remaining admin pages on capped `listAllAdmin`
-- Exact dashboard aggregates (not take-based)
+- Admin Reports export path (still take-based)
+- Denormalized counters / Aggregate component for very large scale
 - Gate: **NOT READY** for full-app claim
 
 ## Prod reminder

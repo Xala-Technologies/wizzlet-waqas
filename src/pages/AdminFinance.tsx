@@ -1,5 +1,5 @@
-import { useMemo } from 'react';
 import { Link } from 'react-router-dom';
+import { useState } from 'react';
 import { useQuery } from 'convex/react';
 import { api } from '../../convex/_generated/api';
 import { DashboardLayout } from '@/components/dashboard/DashboardLayout';
@@ -8,114 +8,13 @@ import { Button } from '@/components/ui/button';
 import { DollarSign, Percent, TrendingUp, Wallet, Loader2, Crown, ArrowUpRight } from 'lucide-react';
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Legend } from 'recharts';
 
-interface Sub {
-  id: string;
-  user_id: string;
-  creator_id: string;
-  amount: number;
-  platform_fee: number;
-  creator_earnings: number;
-  status: string;
-  created_at: number;
-}
-
-interface MonthPoint {
-  month: string;
-  revenue: number;
-  fees: number;
-  earnings: number;
-}
-
 const fmt = (n: number) => `$${n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 
 const AdminFinance = () => {
-  const subsRaw = useQuery(api.subscriptions.mutations.listAllAdmin);
-  const payoutsRaw = useQuery(api.payouts.mutations.listAllAdmin);
-  const creatorsRaw = useQuery(api.creators.queries.listAllAdmin);
-  const usersRaw = useQuery(api.admin.queries.listUsers);
+  const [nowMs] = useState(() => Date.now());
+  const overview = useQuery(api.admin.snapshots.financeOverview, { nowMs });
 
-  const loading = subsRaw === undefined || payoutsRaw === undefined || creatorsRaw === undefined || usersRaw === undefined;
-
-  const subs = useMemo((): Sub[] => {
-    if (!subsRaw) return [];
-    return subsRaw.map(s => ({
-      id: s._id,
-      user_id: s.userId,
-      creator_id: s.creatorId,
-      amount: s.amountCents / 100,
-      platform_fee: s.platformFeeCents / 100,
-      creator_earnings: s.creatorEarningsCents / 100,
-      status: s.status,
-      created_at: s.createdAt,
-    })).sort((a, b) => b.created_at - a.created_at);
-  }, [subsRaw]);
-
-  const payouts = useMemo(() => (payoutsRaw ?? []).map(p => ({
-    creator_id: p.creatorId,
-    amount: p.amountCents / 100,
-    status: p.status,
-  })), [payoutsRaw]);
-
-  const creatorNames = useMemo(() => new Map((creatorsRaw ?? []).map(c => [c._id, c.displayName || `@${c.username ?? 'unknown'}`])), [creatorsRaw]);
-  const userEmails = useMemo(() => new Map((usersRaw ?? []).map(u => [u._id, u.email])), [usersRaw]);
-
-  const stats = useMemo(() => {
-    const active = subs.filter(s => s.status === 'active');
-    const grossRevenue = subs.reduce((a, b) => a + b.amount, 0);
-    const feeRevenue = subs.reduce((a, b) => a + b.platform_fee, 0);
-    const creatorEarnings = subs.reduce((a, b) => a + b.creator_earnings, 0);
-    const mrr = active.reduce((a, b) => a + b.amount, 0);
-    const feeMrr = active.reduce((a, b) => a + b.platform_fee, 0);
-    const paidOut = payouts.filter(p => p.status === 'completed').reduce((a, b) => a + b.amount, 0);
-    const inFlight = payouts.filter(p => p.status === 'pending' || p.status === 'processing').reduce((a, b) => a + b.amount, 0);
-    const liability = Math.max(0, creatorEarnings - paidOut - inFlight);
-    const effectiveRate = grossRevenue > 0 ? (feeRevenue / grossRevenue) * 100 : 0;
-    return { grossRevenue, feeRevenue, creatorEarnings, mrr, feeMrr, paidOut, inFlight, liability, effectiveRate, activeCount: active.length };
-  }, [subs, payouts]);
-
-  const monthly: MonthPoint[] = useMemo(() => {
-    const now = new Date();
-    const buckets: MonthPoint[] = [];
-    const index = new Map<string, number>();
-    for (let i = 11; i >= 0; i--) {
-      const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
-      index.set(`${d.getFullYear()}-${d.getMonth()}`, buckets.length);
-      buckets.push({ month: d.toLocaleDateString('en-US', { month: 'short' }), revenue: 0, fees: 0, earnings: 0 });
-    }
-    subs.forEach(s => {
-      const d = new Date(s.created_at);
-      const pos = index.get(`${d.getFullYear()}-${d.getMonth()}`);
-      if (pos === undefined) return;
-      buckets[pos].revenue += s.amount;
-      buckets[pos].fees += s.platform_fee;
-      buckets[pos].earnings += s.creator_earnings;
-    });
-    return buckets.map(b => ({
-      month: b.month,
-      revenue: Number(b.revenue.toFixed(2)),
-      fees: Number(b.fees.toFixed(2)),
-      earnings: Number(b.earnings.toFixed(2)),
-    }));
-  }, [subs]);
-
-  const topCreators = useMemo(() => {
-    const map = new Map<string, { revenue: number; earnings: number; fees: number; subs: number }>();
-    subs.filter(s => s.status === 'active').forEach(s => {
-      const prev = map.get(s.creator_id) ?? { revenue: 0, earnings: 0, fees: 0, subs: 0 };
-      map.set(s.creator_id, {
-        revenue: prev.revenue + s.amount,
-        earnings: prev.earnings + s.creator_earnings,
-        fees: prev.fees + s.platform_fee,
-        subs: prev.subs + 1,
-      });
-    });
-    return [...map.entries()]
-      .map(([id, v]) => ({ id, name: creatorNames.get(id) ?? 'Unknown creator', ...v }))
-      .sort((a, b) => b.revenue - a.revenue)
-      .slice(0, 8);
-  }, [subs, creatorNames]);
-
-  if (loading) {
+  if (overview === undefined) {
     return (
       <DashboardLayout type="admin">
         <div className="flex justify-center py-20"><Loader2 className="h-5 w-5 animate-spin text-primary" /></div>
@@ -123,12 +22,19 @@ const AdminFinance = () => {
     );
   }
 
+  const stats = overview;
+
   return (
     <DashboardLayout type="admin">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-8">
         <div>
           <h1 className="text-2xl font-bold">Finance</h1>
           <p className="text-muted-foreground text-sm mt-0.5">Live revenue, fees, creator earnings and payout liability</p>
+          {stats.truncated && (
+            <p className="text-amber-600 text-xs mt-2">
+              Showing up to {stats.listLimit.toLocaleString()} rows per table — totals may be incomplete at this scale.
+            </p>
+          )}
         </div>
         <div className="flex gap-2">
           <Button asChild variant="outline" size="sm" className="h-9 text-xs"><Link to="/admin/payouts">Payouts</Link></Button>
@@ -182,10 +88,10 @@ const AdminFinance = () => {
         <h2 className="text-sm font-medium mb-4">Revenue Split — Last 12 Months</h2>
         <div className="h-72 min-w-0 w-full">
           <ResponsiveContainer width="100%" height="100%">
-            <AreaChart data={monthly}>
+            <AreaChart data={stats.monthly}>
               <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
               <XAxis dataKey="month" tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 12 }} axisLine={false} tickLine={false} />
-              <YAxis tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 12 }} axisLine={false} tickLine={false} tickFormatter={v => `$${v}`} />
+              <YAxis tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 12 }} axisLine={false} tickLine={false} tickFormatter={(v) => `$${v}`} />
               <Tooltip
                 contentStyle={{ backgroundColor: 'hsl(var(--card))', border: '1px solid hsl(var(--border))', borderRadius: '8px', fontSize: 12 }}
                 formatter={(value: number, name: string) => [`$${Number(value).toFixed(2)}`, name]}
@@ -205,11 +111,11 @@ const AdminFinance = () => {
             <Crown className="h-4 w-4 text-primary" />
             <h2 className="text-sm font-medium">Top Creators by Revenue</h2>
           </div>
-          {topCreators.length === 0 ? (
+          {stats.topCreators.length === 0 ? (
             <p className="text-sm text-muted-foreground text-center py-10">No active subscription revenue yet</p>
           ) : (
             <div className="divide-y divide-border">
-              {topCreators.map((c, i) => (
+              {stats.topCreators.map((c, i) => (
                 <div key={c.id} className="flex items-center justify-between gap-4 px-4 py-3">
                   <div className="flex items-center gap-3 min-w-0">
                     <span className="text-xs text-muted-foreground w-4">{i + 1}</span>
@@ -230,16 +136,16 @@ const AdminFinance = () => {
             <h2 className="text-sm font-medium">Recent Transactions</h2>
             <Link to="/admin/transactions" className="text-xs text-primary inline-flex items-center gap-1">All <ArrowUpRight className="h-3 w-3" /></Link>
           </div>
-          {subs.length === 0 ? (
+          {stats.recentTransactions.length === 0 ? (
             <p className="text-sm text-muted-foreground text-center py-10">No transactions yet</p>
           ) : (
             <div className="divide-y divide-border">
-              {subs.slice(0, 8).map(s => (
+              {stats.recentTransactions.map((s) => (
                 <div key={s.id} className="flex items-center justify-between gap-4 px-4 py-3">
                   <div className="min-w-0">
-                    <p className="text-sm font-medium truncate">{creatorNames.get(s.creator_id) ?? 'Unknown creator'}</p>
+                    <p className="text-sm font-medium truncate">{s.creatorName}</p>
                     <p className="text-xs text-muted-foreground truncate">
-                      {userEmails.get(s.user_id) ?? 'Unknown customer'} · {new Date(s.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                      {s.userEmail} · {new Date(s.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
                     </p>
                   </div>
                   <div className="text-right shrink-0">
