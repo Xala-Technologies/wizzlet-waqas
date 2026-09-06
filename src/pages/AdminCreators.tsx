@@ -3,6 +3,7 @@ import { useMutation, useQuery } from 'convex/react';
 import { api } from '../../convex/_generated/api';
 import type { Id } from '../../convex/_generated/dataModel';
 import { DashboardLayout } from '@/components/dashboard/DashboardLayout';
+import { DesktopTableRegion, MobileRecordCards } from '@/components/dashboard/MobileRecordList';
 import { Button } from '@/components/ui/button';
 import { Crown, Loader2, ExternalLink, Ban, Star, CheckCircle2, XCircle, Search, MessageSquare, ShieldCheck, TrendingDown, UserX } from 'lucide-react';
 import { Input } from '@/components/ui/input';
@@ -94,14 +95,14 @@ const AdminCreators = () => {
 
   return (
     <DashboardLayout type="admin">
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
-        <div>
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mb-6">
+        <div className="min-w-0">
           <h1 className="text-2xl font-bold">Creators Management</h1>
           <p className="text-muted-foreground text-sm mt-0.5">{creators.length} total creators</p>
         </div>
         <div className="relative w-full sm:w-64">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
-          <Input placeholder="Search creators…" value={search} onChange={e => setSearch(e.target.value)} className="pl-9 h-9" />
+          <Input placeholder="Search creators…" value={search} onChange={e => setSearch(e.target.value)} className="pl-9 h-11 sm:h-9" />
         </div>
       </div>
 
@@ -147,9 +148,45 @@ const AdminCreators = () => {
           <h3 className="font-semibold mb-2">{search ? 'No matching creators' : 'No creators yet'}</h3>
         </div>
       ) : (
-        <div className="rounded-xl border border-border overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
+        <>
+          <MobileRecordCards>
+            {filtered.map((c) => (
+              <li key={c.id} className="rounded-xl border border-border bg-card p-4 space-y-3">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <p className="text-sm font-medium truncate">{c.display_name ?? 'Unnamed'}</p>
+                    <p className="text-xs text-muted-foreground truncate">@{c.username ?? '—'} · {c.email}</p>
+                  </div>
+                  {c.is_published ? (
+                    <span className="inline-flex items-center gap-1 text-xs font-medium text-emerald-400 shrink-0"><CheckCircle2 className="h-3.5 w-3.5" /> Active</span>
+                  ) : (
+                    <span className="inline-flex items-center gap-1 text-xs font-medium text-destructive shrink-0"><XCircle className="h-3.5 w-3.5" /> Disabled</span>
+                  )}
+                </div>
+                <div className="grid grid-cols-3 gap-2 text-xs">
+                  <div><span className="text-muted-foreground">Subs</span><p className="font-medium mt-0.5">{c.subCount}</p></div>
+                  <div><span className="text-muted-foreground">Revenue</span><p className="font-medium mt-0.5 text-emerald-400">${c.revenue.toFixed(0)}</p></div>
+                  <div><span className="text-muted-foreground">Fee</span><p className="font-medium mt-0.5">{c.feePercent}%</p></div>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  {c.username && (
+                    <Link to={`/${c.username}`} className="flex-1 min-w-[7rem]">
+                      <Button variant="outline" size="sm" className="h-11 w-full text-xs"><ExternalLink className="mr-1.5 h-3.5 w-3.5" /> Profile</Button>
+                    </Link>
+                  )}
+                  <Button variant="outline" size="sm" className="h-11 flex-1 min-w-[7rem] text-xs" onClick={() => navigate('/admin/creator-messaging')}>
+                    <MessageSquare className="mr-1.5 h-3.5 w-3.5" /> Message
+                  </Button>
+                  <Button variant="outline" size="sm" className="h-11 flex-1 min-w-[7rem] text-xs" onClick={() => togglePublish(c)}>
+                    {c.is_published ? <><Ban className="mr-1.5 h-3.5 w-3.5 text-destructive" /> Disable</> : <><CheckCircle2 className="mr-1.5 h-3.5 w-3.5 text-primary" /> Enable</>}
+                  </Button>
+                </div>
+              </li>
+            ))}
+          </MobileRecordCards>
+
+          <DesktopTableRegion label="Creators table" className="overflow-hidden">
+            <table className="w-full min-w-[720px] text-sm">
               <thead>
                 <tr className="border-b border-border bg-muted/30">
                   <th className="text-left text-xs font-medium text-muted-foreground p-4">Creator</th>
@@ -197,12 +234,12 @@ const AdminCreators = () => {
                       <div className="flex items-center justify-end gap-1">
                         {c.username && (
                           <Link to={`/${c.username}`}>
-                            <Button variant="ghost" size="sm" className="h-7 px-2 text-xs" title="View profile"><ExternalLink className="h-3 w-3" /></Button>
+                            <Button variant="ghost" size="sm" className="h-9 w-9 px-0 text-xs" title="View profile" aria-label="View profile"><ExternalLink className="h-3.5 w-3.5" /></Button>
                           </Link>
                         )}
-                        <Button variant="ghost" size="sm" className="h-7 px-2 text-xs" onClick={() => navigate('/admin/creator-messaging')} title="Message creator"><MessageSquare className="h-3 w-3" /></Button>
-                        <Button variant="ghost" size="sm" className="h-7 px-2 text-xs" onClick={() => togglePublish(c)} title={c.is_published ? 'Disable' : 'Enable'}>
-                          {c.is_published ? <Ban className="h-3 w-3 text-destructive" /> : <CheckCircle2 className="h-3 w-3 text-primary" />}
+                        <Button variant="ghost" size="sm" className="h-9 w-9 px-0 text-xs" onClick={() => navigate('/admin/creator-messaging')} title="Message creator" aria-label="Message creator"><MessageSquare className="h-3.5 w-3.5" /></Button>
+                        <Button variant="ghost" size="sm" className="h-9 w-9 px-0 text-xs" onClick={() => togglePublish(c)} title={c.is_published ? 'Disable' : 'Enable'} aria-label={c.is_published ? 'Disable' : 'Enable'}>
+                          {c.is_published ? <Ban className="h-3.5 w-3.5 text-destructive" /> : <CheckCircle2 className="h-3.5 w-3.5 text-primary" />}
                         </Button>
                       </div>
                     </td>
@@ -210,8 +247,8 @@ const AdminCreators = () => {
                 ))}
               </tbody>
             </table>
-          </div>
-        </div>
+          </DesktopTableRegion>
+        </>
       )}
     </DashboardLayout>
   );
