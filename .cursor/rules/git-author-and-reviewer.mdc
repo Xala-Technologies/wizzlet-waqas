@@ -1,0 +1,29 @@
+---
+description: Commit as wahidullahr; request Ibrahim Rahmani as PR reviewer
+alwaysApply: true
+---
+
+# Git author and PR reviewer
+
+## Commits
+
+- **Author must be `wahidullahr`** (`wahidullahr <89798201+wahidullahr@users.noreply.github.com>`).
+- Do **not** change global `git config`. If the local repo author is wrong, pass `--author` on the commit, or ensure this repo’s local `user.name` / `user.email` match wahidullahr before committing.
+- Never commit as `xalatechnologies`, Cursor, or another identity.
+
+## `gh` / pull requests
+
+- Prefer the **`wahidullahr`** GitHub CLI account (`gh auth switch --user wahidullahr` when needed) so PRs are opened by wahidullahr.
+- When opening a PR, always request review from **Ibrahim Rahmani** — GitHub login **`xalatechnologies`**:
+  ```bash
+  gh pr create ... --reviewer xalatechnologies
+  ```
+  or after create: `gh pr edit <n> --add-reviewer xalatechnologies`
+- Do not request Amin (`Am11n`) as the default reviewer unless the user asks.
+
+## Quick check
+
+```bash
+git log -1 --format='%an <%ae>'   # expect wahidullahr
+gh auth status                    # active account should be wahidullahr when creating PRs
+```
