@@ -20,7 +20,7 @@
 | Soft-fail analytics on logout (QA-W1-04) | Cleaner logs / no toast noise | Sign-out never calls authed track | S | Low |
 | Fix ESLint errors (QA-W1-05) | CI-ready | `eslint` exit 0 | S | Low |
 | Add `returns` validators (F-011) | Contract safety | Public functions validated | M | **Done** Waves 9–12 |
-| Paginate admin `.collect()` (F-012) | Scale safety | Admin lists use cursors | M | Wave 19: Users/Creators/Payout history paginated; residual join pages + dashboardStats |
+| Paginate admin `.collect()` (F-012) | Scale safety | Admin lists use cursors | M | W19+W20: primary + customers/cases/inbox/txns; residual Finance/Fees/Alerts/Reports/email/messaging + dashboardStats |
 
 ## Later product improvements
 
