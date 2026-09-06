@@ -8,7 +8,7 @@
 4. ~~**J1 Stripe commercial lifecycle**~~ — Waves 3–4 PASS.
 5. ~~**Profile CTA / subscriber count** (QA-W3-01)~~ — Wave 4 PASS.
 6. ~~**files.getUrl legacy unowned** (QA-W1-03)~~ — Wave 6 PASS.
-7. Optional: real Stripe Customer Portal (QA-W4-01 residual).
+7. ~~Optional: real Stripe Customer Portal (QA-W4-01 residual)~~ — Wave 8 wired.
 8. **Never set `ALLOW_DEV_ADMIN_GRANT` on production.**
 
 ## Next-release corrections

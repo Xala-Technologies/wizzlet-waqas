@@ -103,8 +103,28 @@ export async function cancelSubscription(creatorId: string): Promise<boolean> {
 }
 
 export async function openCustomerPortal(): Promise<void> {
-  toast.info('Manage your subscriptions on the billing page.');
-  window.location.href = '/dashboard/subscriptions-billing';
+  const toastId = toast.loading('Opening billing portal…');
+  try {
+    if (PAYMENTS_MODE !== 'stripe') {
+      toast.info('Billing portal requires Stripe. Manage subscriptions on this page.', {
+        id: toastId,
+      });
+      window.location.href = '/dashboard/subscriptions-billing';
+      return;
+    }
+    const result = await convex.action(api.payments.stripeNode.createBillingPortalSession, {});
+    toast.dismiss(toastId);
+    window.location.href = result.url;
+  } catch (err) {
+    console.error('[Payments] openCustomerPortal error:', err);
+    const message =
+      err instanceof Error && err.message.includes('NO_BILLING_CUSTOMER')
+        ? 'No Stripe customer found yet. Subscribe once, then open the portal to manage cards.'
+        : err instanceof Error
+          ? err.message
+          : 'Could not open billing portal.';
+    toast.error(message, { id: toastId });
+  }
 }
 
 export async function createConnectOnboardingLink(_creatorId?: string): Promise<void> {

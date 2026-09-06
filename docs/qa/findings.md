@@ -262,8 +262,9 @@ J1 subscribe path works end-to-end on Stripe test mode, but cancel/entitlement s
 | Confidence | High |
 | Layer | Static + runtime |
 | Actual | `manageBilling` only toasted sandbox message; copy claimed Stripe portal |
-| Fix applied | Cancel button uses real Stripe cancel action; portal button copy/toast clarified |
-| Residual | True Stripe Customer Portal still not implemented |
+| Fix applied (W4) | Cancel button uses real Stripe cancel action; portal button copy/toast clarified |
+| Fix applied (W8) | `createBillingPortalSession` + client `openCustomerPortal` / billing page button |
+| Residual | Needs Stripe Customer Portal configuration in Dashboard; customer must exist (from checkout) |
 
 ## Gate (after Wave 4)
 

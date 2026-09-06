@@ -14,7 +14,7 @@ import { format, addMonths } from 'date-fns';
 import { useAppUser } from '@/hooks/useAppUser';
 import { api } from '@convex/_generated/api';
 import type { Id } from '@convex/_generated/dataModel';
-import { cancelSubscription } from '@/lib/stripe';
+import { cancelSubscription, openCustomerPortal } from '@/lib/stripe';
 
 interface SubscriptionRow {
   id: string;
@@ -124,8 +124,11 @@ const CustomerSubscriptionsBilling = () => {
 
   const manageBilling = async () => {
     setPortalLoading(true);
-    toast.info('Use Cancel on an active subscription below to end access immediately.');
-    setPortalLoading(false);
+    try {
+      await openCustomerPortal();
+    } finally {
+      setPortalLoading(false);
+    }
   };
 
   const handleCancel = async (creatorId: string) => {
@@ -234,7 +237,7 @@ const CustomerSubscriptionsBilling = () => {
                 );
               })}
               <p className="text-[11px] text-muted-foreground pt-1">
-                Cancel ends Stripe billing and access for that creator. Card updates can be handled when customer portal is enabled.
+                Cancel ends Stripe billing and access for that creator. Use Open Billing Portal to update cards and view invoices.
               </p>
             </div>
           )}
