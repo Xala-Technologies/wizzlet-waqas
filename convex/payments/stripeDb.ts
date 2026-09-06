@@ -7,6 +7,7 @@ import {
   LAUNCH_BILLING_PERIOD,
   normalizeBillingPeriod,
 } from "../lib/commerceIdentity";
+import { applySubscribeGrowthAttribution } from "../lib/growthAttribution";
 import type { Id } from "../_generated/dataModel";
 
 async function loadFeeSettings(ctx: MutationCtx) {
@@ -112,6 +113,7 @@ export const fulfillCheckout = internalMutation({
     /** Optional delivery receipt (Stripe event id); not used for ledger dedupe. */
     deliveryRef: v.optional(v.string()),
     paymentMode: v.optional(v.union(v.literal("test"), v.literal("live"), v.literal("sandbox"))),
+    promoId: v.optional(v.id("promoCodes")),
   },
   handler: async (ctx, args) => {
     const commercialRef = commercialRefForCheckout(args.checkoutSessionId);
@@ -219,6 +221,13 @@ export const fulfillCheckout = internalMutation({
       read: false,
       link: "/dashboard/subscriptions-billing",
       createdAt: now,
+    });
+
+    await applySubscribeGrowthAttribution(ctx, {
+      userId: args.userId,
+      creatorId: args.creatorId,
+      promoId: args.promoId,
+      nowMs: now,
     });
 
     return { ok: true as const, duplicate: false, subscriptionId };

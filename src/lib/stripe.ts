@@ -23,6 +23,7 @@ export async function createCheckoutSession(
   creatorId: string,
   creatorUsername: string,
   productId?: string,
+  promoCode?: string,
 ): Promise<void> {
   const toastId = toast.loading(
     PAYMENTS_MODE === 'stripe' ? 'Redirecting to Stripe…' : 'Processing sandbox payment…',
@@ -33,6 +34,7 @@ export async function createCheckoutSession(
         creatorId: creatorId as Id<'creators'>,
         productId: productId ? (productId as Id<'products'>) : undefined,
         creatorUsername,
+        promoCode: promoCode?.trim() || undefined,
       });
       if (result.alreadySubscribed) {
         toast.success('You are already subscribed to this creator.', { id: toastId });

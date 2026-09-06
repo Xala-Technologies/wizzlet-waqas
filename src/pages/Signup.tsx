@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { WizzletLogo } from '@/components/WizzletLogo';
 import { Seo } from '@/components/Seo';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -16,10 +16,13 @@ import { toast } from 'sonner';
 
 const Signup = () => {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const referralCode = (searchParams.get('ref') ?? '').trim();
   const { signIn } = useAuthActions();
   const { clearDevBypass } = useAuth();
   const authReady = useConvexAuthReady();
   const ensureUser = useMutation(api.users.queries.ensureUser);
+  const recordReferralByCode = useMutation(api.creators.growth.recordReferralByCode);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [username, setUsername] = useState('');
@@ -47,6 +50,18 @@ const Signup = () => {
           fullName: username.trim(),
         }),
       );
+      if (referralCode) {
+        try {
+          await withAuthRetry(() =>
+            recordReferralByCode({
+              code: referralCode,
+              referredEmail: email.trim().toLowerCase(),
+            }),
+          );
+        } catch {
+          /* attribution is best-effort — do not block signup */
+        }
+      }
       clearDevBypass();
       try {
         localStorage.removeItem(ACTIVE_ROLE_STORAGE_KEY);
@@ -70,6 +85,9 @@ const Signup = () => {
           <WizzletLogo size="md" className="justify-center mb-8" />
           <h1 className="text-xl font-bold tracking-tight mt-4 text-foreground">Create your account</h1>
           <p className="text-[13px] text-muted-foreground mt-1.5">Start monetizing your expertise</p>
+          {referralCode ? (
+            <p className="text-[12px] text-primary mt-2">Referred via code {referralCode}</p>
+          ) : null}
         </div>
 
         <form onSubmit={(e) => void handleSignup(e)} className="space-y-4">
