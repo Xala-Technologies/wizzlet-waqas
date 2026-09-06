@@ -1,6 +1,7 @@
 import { mutation, query } from "../_generated/server";
 import { v } from "convex/values";
 import { requireAdmin } from "../lib/auth";
+import { ADMIN_LIST_LIMIT, adminListTruncated, adminTakeNewest } from "../lib/adminLists";
 import {
   adminDashboardStatsValidator,
   emailCampaignDocValidator,
@@ -12,7 +13,7 @@ export const listUsers = query({
   returns: v.array(userDocValidator),
   handler: async (ctx) => {
     await requireAdmin(ctx);
-    return ctx.db.query("users").collect();
+    return adminTakeNewest(ctx, "users");
   },
 });
 
@@ -21,11 +22,20 @@ export const dashboardStats = query({
   returns: adminDashboardStatsValidator,
   handler: async (ctx) => {
     await requireAdmin(ctx);
-    const users = await ctx.db.query("users").collect();
-    const creators = await ctx.db.query("creators").collect();
-    const subs = await ctx.db.query("subscriptions").collect();
-    const payouts = await ctx.db.query("payouts").collect();
-    const cases = await ctx.db.query("resolutionCases").collect();
+    const users = await adminTakeNewest(ctx, "users");
+    const creators = await adminTakeNewest(ctx, "creators");
+    const subs = await adminTakeNewest(ctx, "subscriptions");
+    const payouts = await adminTakeNewest(ctx, "payouts");
+    const cases = await adminTakeNewest(ctx, "resolutionCases");
+    const events = await adminTakeNewest(ctx, "paymentEvents");
+    const truncated =
+      adminListTruncated(users.length) ||
+      adminListTruncated(creators.length) ||
+      adminListTruncated(subs.length) ||
+      adminListTruncated(payouts.length) ||
+      adminListTruncated(cases.length) ||
+      adminListTruncated(events.length);
+
     const active = subs.filter((s) => s.status === "active");
     const paidOutCents = payouts
       .filter((p) => p.status === "completed")
@@ -42,7 +52,6 @@ export const dashboardStats = query({
       string,
       { revenue: number; fees: number; creators: number; customers: number }
     >();
-    const events = await ctx.db.query("paymentEvents").collect();
     for (const e of events) {
       if (e.paymentMode === "sandbox") continue;
       const d = new Date(e.createdAt);
@@ -123,6 +132,8 @@ export const dashboardStats = query({
       recentSubs,
       recentCreators,
       recentCustomers,
+      truncated,
+      listLimit: ADMIN_LIST_LIMIT,
     };
   },
 });
@@ -166,6 +177,6 @@ export const listCampaigns = query({
   returns: v.array(emailCampaignDocValidator),
   handler: async (ctx) => {
     await requireAdmin(ctx);
-    return ctx.db.query("emailCampaigns").collect();
+    return adminTakeNewest(ctx, "emailCampaigns");
   },
 });

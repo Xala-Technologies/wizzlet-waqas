@@ -12,6 +12,7 @@ import {
   creatorPublicValidator,
   creatorPublishedPageValidator,
 } from "../lib/validators";
+import { adminTakeNewest } from "../lib/adminLists";
 
 export const getByUsername = query({
   args: { username: v.string() },
@@ -183,7 +184,7 @@ export const listAllAdmin = query({
   returns: v.array(creatorDocValidator),
   handler: async (ctx) => {
     await requireAdmin(ctx);
-    return ctx.db.query("creators").collect();
+    return adminTakeNewest(ctx, "creators");
   },
 });
 

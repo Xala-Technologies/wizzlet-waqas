@@ -38,6 +38,11 @@ const AdminDashboardInner = () => {
       <div className="mb-8">
         <h1 className="text-2xl font-bold">Platform Overview</h1>
         <p className="text-muted-foreground text-sm mt-0.5">Executive dashboard — live Convex aggregates</p>
+        {stats.truncated && (
+          <p className="text-amber-600 text-xs mt-2">
+            Showing newest {stats.listLimit.toLocaleString()} rows per table — totals may be incomplete at this scale.
+          </p>
+        )}
       </div>
 
       <div className="grid grid-cols-2 lg:grid-cols-5 gap-4 mb-8">

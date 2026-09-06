@@ -2,6 +2,7 @@ import { mutation, query } from "../_generated/server";
 import { v } from "convex/values";
 import { getCreatorForUser, requireAdmin, requireAppUser } from "../lib/auth";
 import { supportMessageDocValidator } from "../lib/validators";
+import { adminTakeNewest } from "../lib/adminLists";
 
 export const listForMyCreator = query({
   args: {},
@@ -22,7 +23,7 @@ export const listAllAdmin = query({
   returns: v.array(supportMessageDocValidator),
   handler: async (ctx) => {
     await requireAdmin(ctx);
-    return ctx.db.query("supportMessages").collect();
+    return adminTakeNewest(ctx, "supportMessages");
   },
 });
 
