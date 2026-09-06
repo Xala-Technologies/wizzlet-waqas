@@ -3,6 +3,7 @@ import { useMutation, usePaginatedQuery, useQuery } from 'convex/react';
 import { api } from '../../convex/_generated/api';
 import type { Id } from '../../convex/_generated/dataModel';
 import { DashboardLayout } from '@/components/dashboard/DashboardLayout';
+import { AdminQueryBoundary } from '@/components/dashboard/AdminQueryBoundary';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -14,7 +15,7 @@ import { toast } from 'sonner';
 
 const PAGE_SIZE = 25;
 
-const AdminCustomerEmail = () => {
+const AdminCustomerEmailInner = () => {
   const [subject, setSubject] = useState('');
   const [body, setBody] = useState('');
   const [audience, setAudience] = useState<'all' | 'active' | 'canceled' | 'specific'>('all');
@@ -219,5 +220,11 @@ const AdminCustomerEmail = () => {
     </DashboardLayout>
   );
 };
+
+const AdminCustomerEmail = () => (
+  <AdminQueryBoundary>
+    <AdminCustomerEmailInner />
+  </AdminQueryBoundary>
+);
 
 export default AdminCustomerEmail;

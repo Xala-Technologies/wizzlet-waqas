@@ -1,9 +1,9 @@
 import { mutation, query } from "../_generated/server";
 import { v } from "convex/values";
 import type { Id } from "../_generated/dataModel";
+import type { MutationCtx, QueryCtx } from "../_generated/server";
 import { requireAdmin } from "../lib/auth";
 import {
-  ADMIN_LIST_LIMIT,
   ADMIN_SCAN_MAX_DOCS,
   adminScanAll,
   adminTakeNewest,
@@ -161,7 +161,7 @@ const announcementAudienceValidator = v.union(
 );
 
 async function resolveAnnouncementRecipients(
-  ctx: Parameters<typeof requireAdmin>[0] extends never ? never : import("../_generated/server").MutationCtx | import("../_generated/server").QueryCtx,
+  ctx: QueryCtx | MutationCtx,
   audience: "all" | "active" | "canceled" | "specific",
   creatorId: Id<"creators"> | undefined,
 ): Promise<{ ids: Id<"users">[]; truncated: boolean; label: string }> {
@@ -211,6 +211,81 @@ async function resolveAnnouncementRecipients(
   return { ids, truncated, label };
 }
 
+/** Preview recipient count without shipping full ID lists to the client. */
+export const previewAnnouncementAudience = query({
+  args: {
+    audience: announcementAudienceValidator,
+    creatorId: v.optional(v.id("creators")),
+  },
+  returns: v.object({
+    count: v.number(),
+    label: v.string(),
+    truncated: v.boolean(),
+  }),
+  handler: async (ctx, args) => {
+    await requireAdmin(ctx);
+    const resolved = await resolveAnnouncementRecipients(
+      ctx,
+      args.audience,
+      args.creatorId,
+    );
+    return {
+      count: resolved.ids.length,
+      label: resolved.label,
+      truncated: resolved.truncated,
+    };
+  },
+});
+
+/** Resolve audience server-side and deliver in-app announcements. */
+export const sendAnnouncement = mutation({
+  args: {
+    subject: v.string(),
+    body: v.string(),
+    audience: announcementAudienceValidator,
+    creatorId: v.optional(v.id("creators")),
+  },
+  returns: v.object({
+    campaignId: v.id("emailCampaigns"),
+    recipients: v.number(),
+  }),
+  handler: async (ctx, args) => {
+    const admin = await requireAdmin(ctx);
+    if (args.audience === "specific" && !args.creatorId) {
+      throw new Error("Select a creator for this audience");
+    }
+    const resolved = await resolveAnnouncementRecipients(
+      ctx,
+      args.audience,
+      args.creatorId,
+    );
+    if (resolved.ids.length === 0) {
+      throw new Error("No customers match this audience");
+    }
+    const campaignId = await ctx.db.insert("emailCampaigns", {
+      subject: args.subject,
+      body: args.body,
+      audience: resolved.label,
+      recipients: resolved.ids.length,
+      status: "in_app_announcement",
+      sentBy: admin._id,
+      createdAt: Date.now(),
+    });
+    for (const userId of resolved.ids) {
+      await ctx.db.insert("notifications", {
+        userId,
+        type: "announcement",
+        title: args.subject,
+        description: args.body.slice(0, 400),
+        read: false,
+        createdAt: Date.now(),
+      });
+    }
+    return { campaignId, recipients: resolved.ids.length };
+  },
+});
+
+/** @deprecated Prefer sendAnnouncement — kept for older clients. */
 export const createEmailCampaign = mutation({
   args: {
     subject: v.string(),
@@ -226,7 +301,6 @@ export const createEmailCampaign = mutation({
       body: args.body,
       audience: args.audience,
       recipients: args.recipientUserIds.length,
-      // Relabel: in-app announcements until real email outbox exists
       status: "in_app_announcement",
       sentBy: admin._id,
       createdAt: Date.now(),
