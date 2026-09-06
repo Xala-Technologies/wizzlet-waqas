@@ -1,7 +1,7 @@
 import { Link } from 'react-router-dom';
 import { ArrowRight, Zap, Flame, Star, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { mapConvexSportEvent, SPORT_ICONS, formatEventTime, type SportEvent, type EventStatus } from '@/lib/events';
+import { mapConvexSportEvent, SPORT_ICONS, formatEventTime, todayBoundsMs, type SportEvent, type EventStatus } from '@/lib/events';
 import { useMemo } from 'react';
 import { useQuery } from 'convex/react';
 import { api } from '../../../convex/_generated/api';
@@ -57,7 +57,8 @@ function EventCard({ event }: { event: SportEvent }) {
 }
 
 export function TodaysEventsSection() {
-  const rows = useQuery(api.events.queries.listPublishedToday, {});
+  const dayBounds = useMemo(() => todayBoundsMs(), []);
+  const rows = useQuery(api.events.queries.listPublishedToday, dayBounds);
   const events = useMemo(
     () => (rows ?? []).map(mapConvexSportEvent).slice(0, 6),
     [rows],

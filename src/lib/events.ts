@@ -57,6 +57,14 @@ export function mapConvexSportEvent(row: {
   };
 }
 
+/** Local calendar-day bounds for `listPublishedToday` (pass from client — never Date.now in queries). */
+export function todayBoundsMs(nowMs: number = Date.now()): { fromMs: number; toMs: number } {
+  const d = new Date(nowMs);
+  d.setHours(0, 0, 0, 0);
+  const fromMs = d.getTime();
+  return { fromMs, toMs: fromMs + 24 * 60 * 60 * 1000 };
+}
+
 /** @deprecated Prefer Convex query — kept empty so callers never show fake games. */
 export function getTodaysEvents(): SportEvent[] {
   return [];

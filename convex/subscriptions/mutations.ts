@@ -77,6 +77,21 @@ export const mySubscriptions = query({
   },
 });
 
+/** Public active subscriber count for creator profiles. */
+export const countActiveByCreator = query({
+  args: { creatorId: v.id("creators") },
+  returns: v.number(),
+  handler: async (ctx, args) => {
+    const creator = await ctx.db.get(args.creatorId);
+    if (!creator || !creator.isPublished) return 0;
+    const subs = await ctx.db
+      .query("subscriptions")
+      .withIndex("by_creatorId", (q) => q.eq("creatorId", args.creatorId))
+      .collect();
+    return subs.filter((s) => s.status === "active").length;
+  },
+});
+
 /** Subscriptions with creator details for billing / dashboard. */
 export const mySubscriptionsDetailed = query({
   args: {},

@@ -435,6 +435,45 @@ export const getSubscriptionForCancel = internalQuery({
   },
 });
 
+/** Resolve Stripe customer for Billing Portal (stored id or any subscription with Stripe id). */
+export const getBillingPortalContext = internalQuery({
+  args: { userId: v.id("users") },
+  returns: v.object({
+    stripeCustomerId: v.union(v.string(), v.null()),
+    stripeSubscriptionId: v.union(v.string(), v.null()),
+    email: v.optional(v.string()),
+  }),
+  handler: async (ctx, args) => {
+    const user = await ctx.db.get(args.userId);
+    if (!user) throw new ConvexError("USER_NOT_FOUND");
+    const subs = await ctx.db
+      .query("subscriptions")
+      .withIndex("by_userId", (q) => q.eq("userId", args.userId))
+      .collect();
+    const withStripe = subs.find((s) => !!s.stripeSubscriptionId);
+    return {
+      stripeCustomerId: user.stripeCustomerId ?? null,
+      stripeSubscriptionId: withStripe?.stripeSubscriptionId ?? null,
+      email: user.email ?? undefined,
+    };
+  },
+});
+
+export const setStripeCustomerId = internalMutation({
+  args: {
+    userId: v.id("users"),
+    stripeCustomerId: v.string(),
+  },
+  returns: v.null(),
+  handler: async (ctx, args) => {
+    await ctx.db.patch(args.userId, {
+      stripeCustomerId: args.stripeCustomerId,
+      updatedAt: Date.now(),
+    });
+    return null;
+  },
+});
+
 /** Mark cancel pending before calling Stripe (truthful cancel workflow). */
 export const markCancelPending = internalMutation({
   args: {

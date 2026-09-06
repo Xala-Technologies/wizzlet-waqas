@@ -1,0 +1,863 @@
+{
+  "campaign": "wizzlet-full-application-qa",
+  "wave": "1+2",
+  "auditedAt": "2026-09-06",
+  "branch": "fix/login-ensureuser-auth-race",
+  "baseCommit": "bafb16a",
+  "dirtyTree": true,
+  "environment": {
+    "vite": "http://localhost:8080",
+    "convexDeployment": "combative-mongoose-559",
+    "stripePublishableMode": "pk_test"
+  },
+  "denominators": {
+    "featuresDiscovered": 72,
+    "featuresInventoried": 72,
+    "featuresRuntimeTestedWave1": 4,
+    "criticalJourneysDefined": 9,
+    "criticalJourneysRunWave1": 0,
+    "priorFindingsRetested": 15,
+    "featuresRuntimeTestedWave2": 6,
+    "criticalJourneysRunWave2": 1
+  },
+  "features": [
+    {
+      "id": "PUB-01",
+      "domain": "public",
+      "name": "Landing",
+      "route": "/",
+      "roles": [
+        "anon"
+      ],
+      "wave1": "NOT_RUN"
+    },
+    {
+      "id": "PUB-02",
+      "domain": "public",
+      "name": "Network",
+      "route": "/network",
+      "roles": [
+        "anon"
+      ],
+      "wave1": "NOT_RUN"
+    },
+    {
+      "id": "PUB-03",
+      "domain": "public",
+      "name": "Creators directory",
+      "route": "/creators",
+      "roles": [
+        "anon"
+      ],
+      "wave1": "NOT_RUN",
+      "wave2": "PASS"
+    },
+    {
+      "id": "PUB-04",
+      "domain": "public",
+      "name": "Todays events",
+      "route": "/todays-events",
+      "roles": [
+        "anon"
+      ],
+      "wave1": "NOT_RUN"
+    },
+    {
+      "id": "PUB-05",
+      "domain": "public",
+      "name": "Discover",
+      "route": "/discover",
+      "roles": [
+        "anon"
+      ],
+      "wave1": "NOT_RUN"
+    },
+    {
+      "id": "PUB-06",
+      "domain": "public",
+      "name": "Top creators",
+      "route": "/top-creators",
+      "roles": [
+        "anon"
+      ],
+      "wave1": "NOT_RUN"
+    },
+    {
+      "id": "PUB-07",
+      "domain": "public",
+      "name": "Pricing",
+      "route": "/pricing",
+      "roles": [
+        "anon"
+      ],
+      "wave1": "NOT_RUN"
+    },
+    {
+      "id": "PUB-08",
+      "domain": "public",
+      "name": "Community",
+      "route": "/community",
+      "roles": [
+        "anon"
+      ],
+      "wave1": "NOT_RUN"
+    },
+    {
+      "id": "PUB-09",
+      "domain": "public",
+      "name": "Creator profile",
+      "route": "/:username",
+      "roles": [
+        "anon",
+        "subscriber",
+        "creator"
+      ],
+      "wave1": "NOT_RUN"
+    },
+    {
+      "id": "PUB-10",
+      "domain": "public",
+      "name": "Navbar scroll-to-top",
+      "route": "*",
+      "roles": [
+        "anon"
+      ],
+      "wave1": "NOT_RUN",
+      "notes": "Uncommitted ScrollToTop work may be on stash"
+    },
+    {
+      "id": "ID-01",
+      "domain": "identity",
+      "name": "Login",
+      "route": "/login",
+      "roles": [
+        "anon"
+      ],
+      "wave1": "PASS",
+      "api": [
+        "auth:signIn",
+        "users/queries:ensureUser"
+      ]
+    },
+    {
+      "id": "ID-02",
+      "domain": "identity",
+      "name": "Signup",
+      "route": "/signup",
+      "roles": [
+        "anon"
+      ],
+      "wave1": "NOT_RUN",
+      "wave2": "PASS"
+    },
+    {
+      "id": "ID-03",
+      "domain": "identity",
+      "name": "Select role",
+      "route": "/select-role",
+      "roles": [
+        "auth"
+      ],
+      "wave1": "NOT_RUN",
+      "api": [
+        "roles/mutations:assignSelfRole"
+      ],
+      "wave2": "FAIL",
+      "wave3": "PASS"
+    },
+    {
+      "id": "ID-04",
+      "domain": "identity",
+      "name": "Platform owner bootstrap",
+      "route": "/login",
+      "roles": [
+        "admin"
+      ],
+      "wave1": "PASS",
+      "api": [
+        "roles/mutations:grantTestAdmin"
+      ]
+    },
+    {
+      "id": "ID-05",
+      "domain": "identity",
+      "name": "Role switcher",
+      "route": "dashboard shells",
+      "roles": [
+        "multi"
+      ],
+      "wave1": "NOT_RUN"
+    },
+    {
+      "id": "ID-06",
+      "domain": "identity",
+      "name": "Logout",
+      "route": "*",
+      "roles": [
+        "auth"
+      ],
+      "wave1": "NOT_RUN"
+    },
+    {
+      "id": "DEMO-01",
+      "domain": "demo",
+      "name": "Demo creator",
+      "route": "/demo/creator",
+      "roles": [
+        "anon"
+      ],
+      "wave1": "NOT_RUN"
+    },
+    {
+      "id": "DEMO-02",
+      "domain": "demo",
+      "name": "Demo admin",
+      "route": "/demo/admin",
+      "roles": [
+        "anon"
+      ],
+      "wave1": "NOT_RUN"
+    },
+    {
+      "id": "DEMO-03",
+      "domain": "demo",
+      "name": "Demo member",
+      "route": "/demo/member",
+      "roles": [
+        "anon"
+      ],
+      "wave1": "NOT_RUN"
+    },
+    {
+      "id": "MEM-01",
+      "domain": "member",
+      "name": "Member dashboard",
+      "route": "/dashboard",
+      "roles": [
+        "subscriber"
+      ],
+      "wave1": "NOT_RUN",
+      "wave3": "PASS"
+    },
+    {
+      "id": "MEM-02",
+      "domain": "member",
+      "name": "Results tracker",
+      "route": "/dashboard/results",
+      "roles": [
+        "subscriber"
+      ],
+      "wave1": "NOT_RUN"
+    },
+    {
+      "id": "MEM-03",
+      "domain": "member",
+      "name": "Subscriptions billing",
+      "route": "/dashboard/subscriptions-billing",
+      "roles": [
+        "subscriber"
+      ],
+      "wave1": "NOT_RUN",
+      "wave3": "PASS"
+    },
+    {
+      "id": "MEM-04",
+      "domain": "member",
+      "name": "Saved",
+      "route": "/dashboard/saved",
+      "roles": [
+        "subscriber"
+      ],
+      "wave1": "NOT_RUN"
+    },
+    {
+      "id": "MEM-05",
+      "domain": "member",
+      "name": "Notifications",
+      "route": "/dashboard/notifications",
+      "roles": [
+        "subscriber"
+      ],
+      "wave1": "NOT_RUN"
+    },
+    {
+      "id": "MEM-06",
+      "domain": "member",
+      "name": "Member discover",
+      "route": "/dashboard/discover",
+      "roles": [
+        "subscriber"
+      ],
+      "wave1": "NOT_RUN"
+    },
+    {
+      "id": "MEM-07",
+      "domain": "member",
+      "name": "Activity",
+      "route": "/dashboard/activity",
+      "roles": [
+        "subscriber"
+      ],
+      "wave1": "NOT_RUN"
+    },
+    {
+      "id": "MEM-08",
+      "domain": "member",
+      "name": "Member settings",
+      "route": "/dashboard/settings",
+      "roles": [
+        "subscriber"
+      ],
+      "wave1": "NOT_RUN"
+    },
+    {
+      "id": "CR-01",
+      "domain": "creator",
+      "name": "Creator dashboard",
+      "route": "/creator",
+      "roles": [
+        "creator"
+      ],
+      "wave1": "NOT_RUN"
+    },
+    {
+      "id": "CR-02",
+      "domain": "creator",
+      "name": "Posts",
+      "route": "/creator/posts",
+      "roles": [
+        "creator"
+      ],
+      "wave1": "NOT_RUN"
+    },
+    {
+      "id": "CR-03",
+      "domain": "creator",
+      "name": "Products",
+      "route": "/creator/products",
+      "roles": [
+        "creator"
+      ],
+      "wave1": "NOT_RUN"
+    },
+    {
+      "id": "CR-04",
+      "domain": "creator",
+      "name": "Subscribers",
+      "route": "/creator/subscribers",
+      "roles": [
+        "creator"
+      ],
+      "wave1": "NOT_RUN"
+    },
+    {
+      "id": "CR-05",
+      "domain": "creator",
+      "name": "Promo",
+      "route": "/creator/promo",
+      "roles": [
+        "creator"
+      ],
+      "wave1": "NOT_RUN"
+    },
+    {
+      "id": "CR-06",
+      "domain": "creator",
+      "name": "Growth manager",
+      "route": "/creator/personal-growth-manager",
+      "roles": [
+        "creator"
+      ],
+      "wave1": "NOT_RUN"
+    },
+    {
+      "id": "CR-07",
+      "domain": "creator",
+      "name": "Resolution case",
+      "route": "/creator/resolution-case",
+      "roles": [
+        "creator"
+      ],
+      "wave1": "NOT_RUN"
+    },
+    {
+      "id": "CR-08",
+      "domain": "creator",
+      "name": "Smart pricing",
+      "route": "/creator/smart-pricing",
+      "roles": [
+        "creator"
+      ],
+      "wave1": "NOT_RUN"
+    },
+    {
+      "id": "CR-09",
+      "domain": "creator",
+      "name": "Access control",
+      "route": "/creator/access-control",
+      "roles": [
+        "creator"
+      ],
+      "wave1": "NOT_RUN"
+    },
+    {
+      "id": "CR-10",
+      "domain": "creator",
+      "name": "Performance tracker",
+      "route": "/creator/performance-tracker",
+      "roles": [
+        "creator"
+      ],
+      "wave1": "NOT_RUN"
+    },
+    {
+      "id": "CR-11",
+      "domain": "creator",
+      "name": "Messages",
+      "route": "/creator/messages",
+      "roles": [
+        "creator"
+      ],
+      "wave1": "NOT_RUN"
+    },
+    {
+      "id": "CR-12",
+      "domain": "creator",
+      "name": "Links",
+      "route": "/creator/links",
+      "roles": [
+        "creator"
+      ],
+      "wave1": "NOT_RUN"
+    },
+    {
+      "id": "CR-13",
+      "domain": "creator",
+      "name": "Referrals",
+      "route": "/creator/referrals",
+      "roles": [
+        "creator"
+      ],
+      "wave1": "NOT_RUN"
+    },
+    {
+      "id": "CR-14",
+      "domain": "creator",
+      "name": "Earnings",
+      "route": "/creator/earnings",
+      "roles": [
+        "creator"
+      ],
+      "wave1": "NOT_RUN"
+    },
+    {
+      "id": "CR-15",
+      "domain": "creator",
+      "name": "Payouts",
+      "route": "/creator/payouts",
+      "roles": [
+        "creator"
+      ],
+      "wave1": "NOT_RUN"
+    },
+    {
+      "id": "CR-16",
+      "domain": "creator",
+      "name": "Creator settings",
+      "route": "/creator/settings",
+      "roles": [
+        "creator"
+      ],
+      "wave1": "NOT_RUN"
+    },
+    {
+      "id": "CR-17",
+      "domain": "creator",
+      "name": "Onboarding",
+      "route": "/creator/onboarding",
+      "roles": [
+        "creator"
+      ],
+      "wave1": "NOT_RUN"
+    },
+    {
+      "id": "COM-01",
+      "domain": "commerce",
+      "name": "Sandbox subscribe",
+      "route": "profile CTA",
+      "roles": [
+        "subscriber"
+      ],
+      "wave1": "STATIC_PASS",
+      "api": [
+        "payments/sandbox:sandboxSubscribe"
+      ]
+    },
+    {
+      "id": "COM-02",
+      "domain": "commerce",
+      "name": "Stripe checkout",
+      "route": "profile CTA",
+      "roles": [
+        "subscriber"
+      ],
+      "wave1": "NOT_RUN",
+      "api": [
+        "payments/stripe*"
+      ],
+      "wave2": "NOT_RUN",
+      "wave3": "PASS"
+    },
+    {
+      "id": "COM-03",
+      "domain": "commerce",
+      "name": "Subscription success",
+      "route": "/subscription/success",
+      "roles": [
+        "subscriber"
+      ],
+      "wave1": "NOT_RUN",
+      "wave3": "PASS"
+    },
+    {
+      "id": "COM-04",
+      "domain": "commerce",
+      "name": "Subscription cancel return",
+      "route": "/subscription/cancel",
+      "roles": [
+        "subscriber"
+      ],
+      "wave1": "NOT_RUN"
+    },
+    {
+      "id": "COM-05",
+      "domain": "commerce",
+      "name": "Webhook fulfillment",
+      "route": "HTTP /stripe/webhook",
+      "roles": [
+        "system"
+      ],
+      "wave1": "NOT_RUN",
+      "wave2": "NOT_RUN",
+      "wave3": "PASS",
+      "notes": "Inferred from ACTIVE billing after Checkout"
+    },
+    {
+      "id": "ADM-01",
+      "domain": "admin",
+      "name": "Admin overview",
+      "route": "/admin",
+      "roles": [
+        "admin"
+      ],
+      "wave1": "PASS",
+      "api": [
+        "admin/queries:dashboardStats"
+      ]
+    },
+    {
+      "id": "ADM-02",
+      "domain": "admin",
+      "name": "Admin creators",
+      "route": "/admin/creators",
+      "roles": [
+        "admin"
+      ],
+      "wave1": "NOT_RUN"
+    },
+    {
+      "id": "ADM-03",
+      "domain": "admin",
+      "name": "Admin users",
+      "route": "/admin/users",
+      "roles": [
+        "admin"
+      ],
+      "wave1": "NOT_RUN"
+    },
+    {
+      "id": "ADM-04",
+      "domain": "admin",
+      "name": "Admin customers",
+      "route": "/admin/customers",
+      "roles": [
+        "admin"
+      ],
+      "wave1": "NOT_RUN"
+    },
+    {
+      "id": "ADM-05",
+      "domain": "admin",
+      "name": "Admin finance",
+      "route": "/admin/finance",
+      "roles": [
+        "admin"
+      ],
+      "wave1": "NOT_RUN"
+    },
+    {
+      "id": "ADM-06",
+      "domain": "admin",
+      "name": "Admin transactions",
+      "route": "/admin/transactions",
+      "roles": [
+        "admin"
+      ],
+      "wave1": "NOT_RUN"
+    },
+    {
+      "id": "ADM-07",
+      "domain": "admin",
+      "name": "Platform fees",
+      "route": "/admin/fees",
+      "roles": [
+        "admin"
+      ],
+      "wave1": "NOT_RUN"
+    },
+    {
+      "id": "ADM-08",
+      "domain": "admin",
+      "name": "Creator messaging",
+      "route": "/admin/creator-messaging",
+      "roles": [
+        "admin"
+      ],
+      "wave1": "NOT_RUN"
+    },
+    {
+      "id": "ADM-09",
+      "domain": "admin",
+      "name": "Customer email",
+      "route": "/admin/customer-email",
+      "roles": [
+        "admin"
+      ],
+      "wave1": "NOT_RUN"
+    },
+    {
+      "id": "ADM-10",
+      "domain": "admin",
+      "name": "Growth inbox",
+      "route": "/admin/growth-manager-inbox",
+      "roles": [
+        "admin"
+      ],
+      "wave1": "NOT_RUN"
+    },
+    {
+      "id": "ADM-11",
+      "domain": "admin",
+      "name": "Resolution cases",
+      "route": "/admin/resolution-cases",
+      "roles": [
+        "admin"
+      ],
+      "wave1": "NOT_RUN"
+    },
+    {
+      "id": "ADM-12",
+      "domain": "admin",
+      "name": "Payouts admin",
+      "route": "/admin/payouts",
+      "roles": [
+        "admin"
+      ],
+      "wave1": "NOT_RUN"
+    },
+    {
+      "id": "ADM-13",
+      "domain": "admin",
+      "name": "Alerts",
+      "route": "/admin/alerts",
+      "roles": [
+        "admin"
+      ],
+      "wave1": "NOT_RUN"
+    },
+    {
+      "id": "ADM-14",
+      "domain": "admin",
+      "name": "Reports",
+      "route": "/admin/reports",
+      "roles": [
+        "admin"
+      ],
+      "wave1": "NOT_RUN"
+    },
+    {
+      "id": "ADM-15",
+      "domain": "admin",
+      "name": "Admin settings",
+      "route": "/admin/settings",
+      "roles": [
+        "admin"
+      ],
+      "wave1": "NOT_RUN"
+    },
+    {
+      "id": "SEC-01",
+      "domain": "security",
+      "name": "Self-assign roles (no admin)",
+      "route": "api",
+      "roles": [
+        "auth"
+      ],
+      "wave1": "STATIC_PASS",
+      "api": [
+        "roles/mutations:assignSelfRole"
+      ],
+      "wave2": "STATIC_PASS"
+    },
+    {
+      "id": "SEC-02",
+      "domain": "security",
+      "name": "Subscription invent-billing",
+      "route": "api",
+      "roles": [
+        "auth"
+      ],
+      "wave1": "STATIC_PASS",
+      "api": [
+        "subscriptions/mutations:*"
+      ]
+    },
+    {
+      "id": "SEC-03",
+      "domain": "security",
+      "name": "File URL ACL",
+      "route": "api",
+      "roles": [
+        "auth"
+      ],
+      "wave1": "STATIC_PARTIAL",
+      "api": [
+        "files/storage:getUrl"
+      ]
+    },
+    {
+      "id": "SEC-04",
+      "domain": "security",
+      "name": "Migration import surface",
+      "route": "api",
+      "roles": [
+        "system"
+      ],
+      "wave1": "STATIC_PASS",
+      "api": [
+        "migrations/importBatch"
+      ]
+    },
+    {
+      "id": "SEC-05",
+      "domain": "security",
+      "name": "Dev UI role bypass",
+      "route": "ProtectedRoute",
+      "roles": [
+        "dev"
+      ],
+      "wave1": "FAIL",
+      "finding": "QA-W1-02"
+    },
+    {
+      "id": "SEC-06",
+      "domain": "security",
+      "name": "Bootstrap admin grant",
+      "route": "api",
+      "roles": [
+        "auth"
+      ],
+      "wave1": "FAIL",
+      "finding": "QA-W1-01",
+      "api": [
+        "roles/mutations:grantTestAdmin"
+      ]
+    },
+    {
+      "id": "PLAT-01",
+      "domain": "platform",
+      "name": "Events query",
+      "route": "/todays-events",
+      "roles": [
+        "anon"
+      ],
+      "wave1": "STATIC_FAIL",
+      "finding": "F-014",
+      "api": [
+        "events/queries"
+      ]
+    },
+    {
+      "id": "PLAT-02",
+      "domain": "platform",
+      "name": "Analytics track",
+      "route": "*",
+      "roles": [
+        "auth"
+      ],
+      "wave1": "NOT_RUN",
+      "notes": "Observed UNAUTHENTICATED on signOut race in Convex logs"
+    },
+    {
+      "id": "J1",
+      "domain": "journey",
+      "name": "Creator-to-customer commercial lifecycle",
+      "wave1": "NOT_RUN",
+      "wave2": "PARTIAL",
+      "wave3": "PARTIAL_PASS",
+      "wave4": "PASS",
+      "notes": "Pay+cancel PASS; gated-pick entitlement deferred to J3"
+    },
+    {
+      "id": "J2",
+      "domain": "journey",
+      "name": "Product edits and purchase terms",
+      "wave1": "NOT_RUN"
+    },
+    {
+      "id": "J3",
+      "domain": "journey",
+      "name": "Content ownership and access",
+      "wave1": "NOT_RUN",
+      "wave5": "PASS"
+    },
+    {
+      "id": "J4",
+      "domain": "journey",
+      "name": "Messages preferences support",
+      "wave1": "NOT_RUN"
+    },
+    {
+      "id": "J5",
+      "domain": "journey",
+      "name": "Money-to-payout reconciliation",
+      "wave1": "NOT_RUN"
+    },
+    {
+      "id": "J6",
+      "domain": "journey",
+      "name": "Promotion referral attribution",
+      "wave1": "NOT_RUN"
+    },
+    {
+      "id": "J7",
+      "domain": "journey",
+      "name": "Identity cross-device continuity",
+      "wave1": "NOT_RUN"
+    },
+    {
+      "id": "J8",
+      "domain": "journey",
+      "name": "Migration continuity",
+      "wave1": "BLOCKED",
+      "notes": "No approved historical snapshot exercised in Wave 1"
+    },
+    {
+      "id": "J9",
+      "domain": "journey",
+      "name": "Public navigation small controls",
+      "wave1": "NOT_RUN",
+      "wave2": "PASS"
+    }
+  ]
+}

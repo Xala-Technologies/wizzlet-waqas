@@ -152,6 +152,57 @@ export const confirmCheckoutSession = action({
   },
 });
 
+/** Stripe Customer Portal for payment methods / invoices. */
+export const createBillingPortalSession = action({
+  args: {},
+  returns: v.object({ url: v.string() }),
+  handler: async (ctx) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) throw new Error("UNAUTHENTICATED");
+
+    const prep = await ctx.runQuery(internal.payments.stripeDb.getBillingPortalContext, {
+      userId,
+    });
+    const stripe = requireStripe();
+
+    let customerId = prep.stripeCustomerId ?? undefined;
+    if (!customerId && prep.stripeSubscriptionId) {
+      const subscription = await stripe.subscriptions.retrieve(prep.stripeSubscriptionId);
+      customerId =
+        typeof subscription.customer === "string"
+          ? subscription.customer
+          : subscription.customer.id;
+      await ctx.runMutation(internal.payments.stripeDb.setStripeCustomerId, {
+        userId,
+        stripeCustomerId: customerId,
+      });
+    }
+
+    if (!customerId && prep.email) {
+      const found = await stripe.customers.list({ email: prep.email, limit: 1 });
+      const existing = found.data[0];
+      if (existing) {
+        customerId = existing.id;
+        await ctx.runMutation(internal.payments.stripeDb.setStripeCustomerId, {
+          userId,
+          stripeCustomerId: customerId,
+        });
+      }
+    }
+
+    if (!customerId) {
+      throw new Error("NO_BILLING_CUSTOMER");
+    }
+
+    const session = await stripe.billingPortal.sessions.create({
+      customer: customerId,
+      return_url: `${siteUrl()}/dashboard/subscriptions-billing`,
+    });
+    if (!session.url) throw new Error("PORTAL_URL_MISSING");
+    return { url: session.url };
+  },
+});
+
 export const cancelCreatorSubscription = action({
   args: { creatorId: v.id("creators") },
   returns: v.object({ ok: v.boolean(), status: v.string() }),

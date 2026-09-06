@@ -1,5 +1,7 @@
 import { internalMutation } from "../_generated/server";
 import { v } from "convex/values";
+import type { Id } from "../_generated/dataModel";
+import type { AppRole } from "../lib/auth";
 import { dollarsToCents } from "../lib/money";
 import { normalizePickResult } from "../lib/results";
 
@@ -102,7 +104,7 @@ export const importRoles = internalMutation({
       const existing = await ctx.db
         .query("userRoles")
         .withIndex("by_userId_role", (q) =>
-          q.eq("userId", user._id).eq("role", row.role as any),
+          q.eq("userId", user._id).eq("role", row.role as AppRole),
         )
         .unique();
       if (existing) {
@@ -111,7 +113,7 @@ export const importRoles = internalMutation({
         await ctx.db.insert("userRoles", {
           legacyId: row.legacyId,
           userId: user._id,
-          role: row.role as any,
+          role: row.role as AppRole,
           createdAt: ts(row.createdAt),
         });
       }
@@ -365,7 +367,7 @@ export const importGenericByUserAuthOrLegacy = internalMutation({
       const row = raw as Record<string, unknown>;
       const legacyId = String(row.id);
       const userIdRaw = String(row.user_id ?? "");
-      let user =
+      const user =
         (await ctx.db
           .query("users")
           .withIndex("by_legacyId", (q) => q.eq("legacyId", userIdRaw))
@@ -433,8 +435,8 @@ export const importGenericByUserAuthOrLegacy = internalMutation({
           });
         n++;
       } else if (args.table === "analyticsEvents") {
-        let creatorId = undefined as any;
-        let postId = undefined as any;
+        let creatorId: Id<"creators"> | undefined;
+        let postId: Id<"posts"> | undefined;
         if (row.creator_id) {
           const c = await ctx.db
             .query("creators")
