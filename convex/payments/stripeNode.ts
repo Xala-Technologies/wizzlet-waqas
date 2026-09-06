@@ -31,11 +31,27 @@ function stripeMode(livemode: boolean | null | undefined): "test" | "live" {
   return livemode ? "live" : "test";
 }
 
+function optionalMetaId<T extends string>(raw: string | undefined | null): T | undefined {
+  if (!raw || raw.length === 0) return undefined;
+  return raw as T;
+}
+
+function checkoutAmountCents(session: {
+  amount_total?: number | null;
+  metadata?: Record<string, string> | null;
+}): number {
+  if (session.amount_total != null && session.amount_total > 0) {
+    return session.amount_total;
+  }
+  return Number(session.metadata?.amountCents ?? 0);
+}
+
 export const createCheckoutSession = action({
   args: {
     creatorId: v.id("creators"),
     productId: v.optional(v.id("products")),
     creatorUsername: v.string(),
+    promoCode: v.optional(v.string()),
   },
   returns: v.object({
     url: v.string(),
@@ -59,10 +75,35 @@ export const createCheckoutSession = action({
       };
     }
 
+    let promo: {
+      promoId: Id<"promoCodes">;
+      code: string;
+      discountPercent: number;
+    } | null = null;
+    if (args.promoCode?.trim()) {
+      promo = await ctx.runQuery(internal.creators.growth.resolvePromoForCheckout, {
+        creatorId: args.creatorId,
+        code: args.promoCode,
+        nowMs: Date.now(),
+      });
+      if (!promo) throw new Error("PROMO_INVALID");
+    }
+
     const stripe = requireStripe();
     const productLabel =
       prep.productName ??
       `Subscription — ${prep.displayName ?? `@${prep.username}`}`;
+
+    let discountCouponId: string | undefined;
+    if (promo) {
+      const coupon = await stripe.coupons.create({
+        percent_off: promo.discountPercent,
+        duration: "once",
+        name: `Wizzlet ${promo.code}`,
+        max_redemptions: 1,
+      });
+      discountCouponId = coupon.id;
+    }
 
     const session = await stripe.checkout.sessions.create({
       mode: "subscription",
@@ -81,6 +122,9 @@ export const createCheckoutSession = action({
           quantity: 1,
         },
       ],
+      ...(discountCouponId
+        ? { discounts: [{ coupon: discountCouponId }] }
+        : {}),
       success_url: `${siteUrl()}/subscription/success?creator=${encodeURIComponent(args.creatorUsername)}&session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${siteUrl()}/subscription/cancel?creator=${encodeURIComponent(args.creatorUsername)}`,
       client_reference_id: userId,
@@ -89,12 +133,15 @@ export const createCheckoutSession = action({
         creatorId: args.creatorId,
         productId: args.productId ?? "",
         amountCents: String(prep.amountCents),
+        promoId: promo?.promoId ?? "",
+        promoCode: promo?.code ?? "",
       },
       subscription_data: {
         metadata: {
           userId,
           creatorId: args.creatorId,
           productId: args.productId ?? "",
+          promoId: promo?.promoId ?? "",
         },
       },
     });
@@ -129,7 +176,8 @@ export const confirmCheckoutSession = action({
       productIdRaw && productIdRaw.length > 0
         ? (productIdRaw as Id<"products">)
         : undefined;
-    const amountCents = Number(session.metadata?.amountCents ?? session.amount_total ?? 0);
+    const amountCents = checkoutAmountCents(session);
+    const promoId = optionalMetaId<Id<"promoCodes">>(session.metadata?.promoId);
     const stripeSubscriptionId =
       typeof session.subscription === "string"
         ? session.subscription
@@ -147,6 +195,7 @@ export const confirmCheckoutSession = action({
         stripeCustomerId,
         checkoutSessionId: session.id,
         paymentMode: stripeMode(session.livemode),
+        promoId,
       });
     return { ok: true, duplicate: result.duplicate };
   },
@@ -292,7 +341,8 @@ export const fulfillWebhook = internalAction({
           productIdRaw && productIdRaw.length > 0
             ? (productIdRaw as Id<"products">)
             : undefined;
-        const amountCents = Number(session.metadata?.amountCents ?? session.amount_total ?? 0);
+        const amountCents = checkoutAmountCents(session);
+        const promoId = optionalMetaId<Id<"promoCodes">>(session.metadata?.promoId);
         const stripeSubscriptionId =
           typeof session.subscription === "string"
             ? session.subscription
@@ -310,6 +360,7 @@ export const fulfillWebhook = internalAction({
           checkoutSessionId: session.id,
           deliveryRef: event.id,
           paymentMode: stripeMode(event.livemode),
+          promoId,
         });
       } else if (event.type === "invoice.paid") {
         const invoice = event.data.object as Stripe.Invoice & {

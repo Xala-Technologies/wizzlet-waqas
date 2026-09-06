@@ -7,6 +7,7 @@ import { mutation } from "../_generated/server";
 import { ConvexError, v } from "convex/values";
 import { logMutation, requireAppUser } from "../lib/auth";
 import { calculatePlatformFee } from "../lib/money";
+import { applySubscribeGrowthAttribution } from "../lib/growthAttribution";
 import { assertSandboxEnabled } from "../lib/sandbox";
 
 export const sandboxSubscribe = mutation({
@@ -129,6 +130,12 @@ export const sandboxSubscribe = mutation({
       read: false,
       link: "/dashboard/subscriptions-billing",
       createdAt: now,
+    });
+
+    await applySubscribeGrowthAttribution(ctx, {
+      userId: user._id,
+      creatorId: creator._id,
+      nowMs: now,
     });
 
     await logMutation(ctx, {

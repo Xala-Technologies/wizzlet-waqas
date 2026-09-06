@@ -385,13 +385,25 @@ J2 closed for launch-monthly product pricing. Remaining journeys: J4–J8.
 | Browser | Cancelled member `qa.member.w3.1101` on `/dashboard/subscriptions-billing`: CANCELLED row, **no Message button** |
 | Support channel | Admin/creator `supportMessages` remains separate (not subscription-gated by design) |
 
-## Gate (after Wave 16)
+## Gate (after Wave 17)
 
 ```text
 NOT READY
 ```
 
-Remaining journeys: J6–J8.
+Remaining journeys: J7–J8. Referral cash commission not productized.
+
+## QA-W17-J6 — Promo / referral attribution
+
+| | |
+|--|--|
+| Category | Growth / commerce |
+| Severity | **P2** (was blocked by `PROMO_UNAVAILABLE`) |
+| Layer | Unit + static + browser |
+| Finding | `upsertPromo` hard-threw; signup ignored `?ref=`; false 10% commission copy |
+| Fix | Real promo CRUD; Stripe one-time coupon on checkout; `recordReferralByCode`; fulfill attribution |
+| Unit | `promoCodes.test.ts` — 3 PASS |
+| Browser | Creator created `QAJ6OFF20`; `/signup?ref=…` shows referred banner |
 
 ## QA-W16-J5 — Payout reconciliation
 

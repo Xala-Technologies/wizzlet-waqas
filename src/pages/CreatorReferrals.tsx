@@ -65,18 +65,20 @@ const CreatorReferrals = () => {
         <div className="rounded-xl border border-border bg-card p-5">
           <UserPlus className="h-4 w-4 text-emerald-400 mb-2" />
           <p className="text-2xl font-bold">{converted}</p>
-          <p className="text-xs text-muted-foreground">Converted</p>
+          <p className="text-xs text-muted-foreground">Attributed conversions</p>
         </div>
         <div className="rounded-xl border border-border bg-card p-5">
           <DollarSign className="h-4 w-4 text-amber-400 mb-2" />
           <p className="text-2xl font-bold">${earnings.toFixed(2)}</p>
-          <p className="text-xs text-muted-foreground">Referral Earnings</p>
+          <p className="text-xs text-muted-foreground">Commission (pending productization)</p>
         </div>
       </div>
 
       <div className="rounded-xl border border-border bg-card p-6 mb-6">
         <h2 className="text-sm font-medium mb-2 flex items-center gap-2"><Gift className="h-4 w-4 text-primary" /> Your Referral Link</h2>
-        <p className="text-xs text-muted-foreground mb-4">Share this link and earn 10% commission on every referred subscription.</p>
+        <p className="text-xs text-muted-foreground mb-4">
+          Share this link to attribute signups. Conversion marks when they subscribe; cash commission payouts are not enabled yet.
+        </p>
         <div className="flex flex-col sm:flex-row gap-2">
           <div className="min-w-0 flex-1 rounded-lg border border-border bg-muted/30 px-4 py-2.5 text-sm text-muted-foreground font-mono truncate">
             {referralLink || 'Generating…'}

@@ -15,7 +15,7 @@
 | `ALLOW_SANDBOX_CHECKOUT` unset | `sandboxSubscribe` | FORBIDDEN | Env | SEC sandbox | STATIC_PASS |
 | Payout request | Available balance | Reject if over available | Immediate | J5 | **PASS** (W16 unit + UI) |
 | Admin grant / role | `/admin/*` queries | `requireAdmin` passes | Immediate | ID-04, ADM-* | PASS (bootstrap) |
-| Promo create | Checkout attribution | Discount + attribution rows | At purchase | J6 | NOT_RUN |
+| Promo create | Checkout attribution | Discount + attribution rows | At purchase | J6 | **PASS** (W17) |
 | Creator unpublish | Public profile | Hidden from discovery / getByUsername | Immediate | PUB-09 | NOT_RUN |
 | File registerOwnedFile | `files.getUrl` | Non-owners FORBIDDEN | Immediate | SEC-03 | STATIC_PARTIAL |
 | Sign-out | Analytics track | Must not throw / must skip when unauth | Immediate | PLAT-02 | FAIL (log) |
