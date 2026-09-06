@@ -31,7 +31,7 @@
 | J2 Product edits | **PASS** (W14 — code + fixture notes) |
 | J3 Content access | **PASS** (W5) |
 | J4 Messages/support | **PASS** (W15) |
-| J5 Payout reconciliation | NOT_RUN |
+| J5 Payout reconciliation | **PASS** (W16 — unit + browser UI) |
 | J6 Promo/referral | NOT_RUN |
 | J7 Identity continuity | NOT_RUN |
 | J8 Migration continuity | BLOCKED |

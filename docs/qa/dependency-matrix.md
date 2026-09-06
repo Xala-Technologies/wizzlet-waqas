@@ -13,7 +13,7 @@
 | Product price edit | Existing subs | Preserve purchased terms unless migration | Immediate | J2 | **PASS (W14)** |
 | Product capacity / isClosed | Checkout | Reject when unavailable | Immediate | COM-01/02 | STATIC_PARTIAL |
 | `ALLOW_SANDBOX_CHECKOUT` unset | `sandboxSubscribe` | FORBIDDEN | Env | SEC sandbox | STATIC_PASS |
-| Payout request | Available balance | Reject if over available | Immediate | J5 | STATIC_PARTIAL (unit) |
+| Payout request | Available balance | Reject if over available | Immediate | J5 | **PASS** (W16 unit + UI) |
 | Admin grant / role | `/admin/*` queries | `requireAdmin` passes | Immediate | ID-04, ADM-* | PASS (bootstrap) |
 | Promo create | Checkout attribution | Discount + attribution rows | At purchase | J6 | NOT_RUN |
 | Creator unpublish | Public profile | Hidden from discovery / getByUsername | Immediate | PUB-09 | NOT_RUN |
