@@ -30,7 +30,7 @@
 | J1 Commercial lifecycle | **PASS** (W4 pay+cancel) |
 | J2 Product edits | **PASS** (W14 — code + fixture notes) |
 | J3 Content access | **PASS** (W5) |
-| J4 Messages/support | NOT_RUN |
+| J4 Messages/support | **PASS** (W15) |
 | J5 Payout reconciliation | NOT_RUN |
 | J6 Promo/referral | NOT_RUN |
 | J7 Identity continuity | NOT_RUN |
