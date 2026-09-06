@@ -83,12 +83,14 @@ export function AdminSidebar({ mobile = false }: { mobile?: boolean } = {}) {
   };
 
   return (
-    <aside className={mobile ? 'flex h-full w-full flex-col bg-card' : 'hidden md:flex w-[220px] flex-col border-r border-border bg-card/80 backdrop-blur-sm'}>
-      <div className="px-5 py-5">
-        <WizzletLogo size="md" />
-      </div>
+    <aside className={mobile ? 'flex h-full min-h-0 w-full flex-col bg-card' : 'hidden md:flex w-[220px] flex-col border-r border-border bg-card/80 backdrop-blur-sm'}>
+      {!mobile && (
+        <div className="px-5 py-5">
+          <WizzletLogo size="md" />
+        </div>
+      )}
 
-      <div className="px-5 mb-4">
+      <div className={`px-5 mb-4 ${mobile ? 'pt-4' : ''}`}>
         <div className="flex items-center gap-2 rounded-lg bg-destructive/10 px-3 py-1.5">
           <Shield className="h-3.5 w-3.5 text-destructive" />
           <span className="text-[11px] font-medium text-destructive">Admin Panel</span>
@@ -101,7 +103,7 @@ export function AdminSidebar({ mobile = false }: { mobile?: boolean } = {}) {
         ))}
       </nav>
 
-      <div className="px-3 py-4 border-t border-border space-y-2">
+      <div className="shrink-0 px-3 py-4 border-t border-border space-y-2">
         <RoleSwitcher />
         <div className="flex items-center justify-between px-3">
 

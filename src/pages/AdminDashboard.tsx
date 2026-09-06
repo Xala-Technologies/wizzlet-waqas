@@ -51,10 +51,10 @@ const AdminDashboard = () => {
         ))}
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-        <div className="rounded-xl border border-border bg-card p-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6 min-w-0">
+        <div className="rounded-xl border border-border bg-card p-4 sm:p-6 min-w-0">
           <h2 className="text-sm font-medium mb-4">Monthly Revenue</h2>
-          <div className="h-56">
+          <div className="h-56 min-w-0 w-full">
             {monthlyRevenue.length === 0 ? (
               <p className="text-sm text-muted-foreground py-16 text-center">No subscription data yet.</p>
             ) : (
@@ -70,9 +70,9 @@ const AdminDashboard = () => {
             )}
           </div>
         </div>
-        <div className="rounded-xl border border-border bg-card p-6">
+        <div className="rounded-xl border border-border bg-card p-4 sm:p-6 min-w-0">
           <h2 className="text-sm font-medium mb-4">Monthly Platform Fees</h2>
-          <div className="h-56">
+          <div className="h-56 min-w-0 w-full">
             {monthlyRevenue.length === 0 ? (
               <p className="text-sm text-muted-foreground py-16 text-center">No fee data yet.</p>
             ) : (
@@ -90,10 +90,10 @@ const AdminDashboard = () => {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-        <div className="rounded-xl border border-border bg-card p-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6 min-w-0">
+        <div className="rounded-xl border border-border bg-card p-4 sm:p-6 min-w-0">
           <h2 className="text-sm font-medium mb-4 flex items-center gap-2"><Activity className="h-4 w-4" /> Creator & customer growth</h2>
-          <div className="h-56">
+          <div className="h-56 min-w-0 w-full">
             {creatorGrowth.length === 0 ? (
               <p className="text-sm text-muted-foreground py-16 text-center">No growth data yet.</p>
             ) : (

@@ -3,6 +3,7 @@ import { useMutation, useQuery } from 'convex/react';
 import { api } from '../../convex/_generated/api';
 import type { Id } from '../../convex/_generated/dataModel';
 import { DashboardLayout } from '@/components/dashboard/DashboardLayout';
+import { DesktopTableRegion, MobileRecordCards } from '@/components/dashboard/MobileRecordList';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Wallet, Clock, CheckCircle2, XCircle, TrendingUp, Calendar, Loader2, Crown, Send } from 'lucide-react';
@@ -199,42 +200,66 @@ const AdminPayouts = () => {
         {balances.length === 0 ? (
           <p className="text-sm text-muted-foreground text-center py-10">No creator earnings yet</p>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b border-border bg-muted/20">
-                  <th className="text-left text-xs font-medium text-muted-foreground p-4">Creator</th>
-                  <th className="text-left text-xs font-medium text-muted-foreground p-4">Lifetime Earnings</th>
-                  <th className="text-left text-xs font-medium text-muted-foreground p-4">Paid</th>
-                  <th className="text-left text-xs font-medium text-muted-foreground p-4">In Progress</th>
-                  <th className="text-left text-xs font-medium text-muted-foreground p-4">Available</th>
-                  <th className="text-right text-xs font-medium text-muted-foreground p-4">Action</th>
-                </tr>
-              </thead>
-              <tbody>
-                {balances.map(b => (
-                  <tr key={b.creatorId} className="border-b border-border last:border-0 hover:bg-muted/20 transition-colors">
-                    <td className="p-4 font-medium text-xs">{b.name}</td>
-                    <td className="p-4 text-xs text-muted-foreground">{fmt(b.earned)}</td>
-                    <td className="p-4 text-xs text-muted-foreground">{fmt(b.paid)}</td>
-                    <td className="p-4 text-xs text-amber-400">{fmt(b.inFlight)}</td>
-                    <td className="p-4 font-medium text-emerald-400">{fmt(b.available)}</td>
-                    <td className="p-4 text-right">
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        className="h-8 text-xs"
-                        disabled={b.available <= 0 || busyId === b.creatorId}
-                        onClick={() => createPayout(b)}
-                      >
-                        {busyId === b.creatorId ? <Loader2 className="h-3 w-3 animate-spin" /> : <><Send className="mr-1.5 h-3 w-3" /> Create payout</>}
-                      </Button>
-                    </td>
+          <>
+            <MobileRecordCards>
+              {balances.map((b) => (
+                <li key={b.creatorId} className="mx-3 mb-3 last:mb-3 rounded-xl border border-border bg-card p-4 space-y-3 md:mx-0">
+                  <p className="text-sm font-medium truncate">{b.name}</p>
+                  <div className="grid grid-cols-2 gap-2 text-xs">
+                    <div><span className="text-muted-foreground">Lifetime</span><p className="mt-0.5">{fmt(b.earned)}</p></div>
+                    <div><span className="text-muted-foreground">Paid</span><p className="mt-0.5">{fmt(b.paid)}</p></div>
+                    <div><span className="text-muted-foreground">In progress</span><p className="mt-0.5 text-amber-400">{fmt(b.inFlight)}</p></div>
+                    <div><span className="text-muted-foreground">Available</span><p className="mt-0.5 font-medium text-emerald-400">{fmt(b.available)}</p></div>
+                  </div>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="h-11 w-full text-xs"
+                    disabled={b.available <= 0 || busyId === b.creatorId}
+                    onClick={() => createPayout(b)}
+                  >
+                    {busyId === b.creatorId ? <Loader2 className="h-3 w-3 animate-spin" /> : <><Send className="mr-1.5 h-3 w-3" /> Create payout</>}
+                  </Button>
+                </li>
+              ))}
+            </MobileRecordCards>
+            <DesktopTableRegion label="Creator balances table" className="rounded-none border-0">
+              <table className="w-full min-w-[640px] text-sm">
+                <thead>
+                  <tr className="border-b border-border bg-muted/20">
+                    <th className="text-left text-xs font-medium text-muted-foreground p-4">Creator</th>
+                    <th className="text-left text-xs font-medium text-muted-foreground p-4">Lifetime Earnings</th>
+                    <th className="text-left text-xs font-medium text-muted-foreground p-4">Paid</th>
+                    <th className="text-left text-xs font-medium text-muted-foreground p-4">In Progress</th>
+                    <th className="text-left text-xs font-medium text-muted-foreground p-4">Available</th>
+                    <th className="text-right text-xs font-medium text-muted-foreground p-4">Action</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                </thead>
+                <tbody>
+                  {balances.map(b => (
+                    <tr key={b.creatorId} className="border-b border-border last:border-0 hover:bg-muted/20 transition-colors">
+                      <td className="p-4 font-medium text-xs">{b.name}</td>
+                      <td className="p-4 text-xs text-muted-foreground">{fmt(b.earned)}</td>
+                      <td className="p-4 text-xs text-muted-foreground">{fmt(b.paid)}</td>
+                      <td className="p-4 text-xs text-amber-400">{fmt(b.inFlight)}</td>
+                      <td className="p-4 font-medium text-emerald-400">{fmt(b.available)}</td>
+                      <td className="p-4 text-right">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="h-9 text-xs"
+                          disabled={b.available <= 0 || busyId === b.creatorId}
+                          onClick={() => createPayout(b)}
+                        >
+                          {busyId === b.creatorId ? <Loader2 className="h-3 w-3 animate-spin" /> : <><Send className="mr-1.5 h-3 w-3" /> Create payout</>}
+                        </Button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </DesktopTableRegion>
+          </>
         )}
       </div>
 
@@ -260,54 +285,91 @@ const AdminPayouts = () => {
         {payouts.length === 0 ? (
           <p className="text-sm text-muted-foreground text-center py-10">No payouts recorded yet — create one from a creator balance above</p>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b border-border bg-muted/20">
-                  <th className="text-left text-xs font-medium text-muted-foreground p-4">Creator</th>
-                  <th className="text-left text-xs font-medium text-muted-foreground p-4">Created</th>
-                  <th className="text-left text-xs font-medium text-muted-foreground p-4">Processed</th>
-                  <th className="text-left text-xs font-medium text-muted-foreground p-4">Amount</th>
-                  <th className="text-left text-xs font-medium text-muted-foreground p-4">Status</th>
-                  <th className="text-right text-xs font-medium text-muted-foreground p-4">Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {payouts.map(p => (
-                  <tr key={p.id} className="border-b border-border last:border-0 hover:bg-muted/20 transition-colors">
-                    <td className="p-4 font-medium text-xs">{creatorName(p.creator_id)}</td>
-                    <td className="p-4 text-xs text-muted-foreground">{fmtDate(p.created_at)}</td>
-                    <td className="p-4 text-xs text-muted-foreground">{fmtDate(p.processed_at)}</td>
-                    <td className="p-4 font-medium text-emerald-400">{fmt(p.amount)}</td>
-                    <td className="p-4">
-                      <Badge variant="outline" className={`text-[10px] ${statusStyles[p.status] ?? ''}`}>
-                        {p.status === 'completed' && <CheckCircle2 className="h-2.5 w-2.5 mr-1" />}
-                        {p.status === 'failed' && <XCircle className="h-2.5 w-2.5 mr-1" />}
-                        {p.status}
-                      </Badge>
-                    </td>
-                    <td className="p-4 text-right space-x-1">
-                      {p.status !== 'completed' && (
-                        <Button size="sm" variant="ghost" className="h-7 px-2 text-xs" disabled={busyId === p.id} onClick={() => updateStatus(p.id, 'completed')}>
-                          Mark paid
-                        </Button>
-                      )}
-                      {p.status === 'pending' && (
-                        <Button size="sm" variant="ghost" className="h-7 px-2 text-xs" disabled={busyId === p.id} onClick={() => updateStatus(p.id, 'processing')}>
-                          Processing
-                        </Button>
-                      )}
-                      {p.status !== 'failed' && p.status !== 'completed' && (
-                        <Button size="sm" variant="ghost" className="h-7 px-2 text-xs text-destructive" disabled={busyId === p.id} onClick={() => updateStatus(p.id, 'failed')}>
-                          Fail
-                        </Button>
-                      )}
-                    </td>
+          <>
+            <MobileRecordCards>
+              {payouts.map((p) => (
+                <li key={p.id} className="mx-3 mb-3 rounded-xl border border-border bg-card p-4 space-y-3">
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="min-w-0">
+                      <p className="text-sm font-medium truncate">{creatorName(p.creator_id)}</p>
+                      <p className="text-xs text-muted-foreground mt-0.5">{fmtDate(p.created_at)}</p>
+                    </div>
+                    <Badge variant="outline" className={`text-[10px] shrink-0 ${statusStyles[p.status] ?? ''}`}>
+                      {p.status === 'completed' && <CheckCircle2 className="h-2.5 w-2.5 mr-1" />}
+                      {p.status === 'failed' && <XCircle className="h-2.5 w-2.5 mr-1" />}
+                      {p.status}
+                    </Badge>
+                  </div>
+                  <p className="text-sm font-medium text-emerald-400">{fmt(p.amount)}</p>
+                  <div className="flex flex-wrap gap-2">
+                    {p.status !== 'completed' && (
+                      <Button size="sm" variant="outline" className="h-11 flex-1 text-xs" disabled={busyId === p.id} onClick={() => updateStatus(p.id, 'completed')}>
+                        Mark paid
+                      </Button>
+                    )}
+                    {p.status === 'pending' && (
+                      <Button size="sm" variant="outline" className="h-11 flex-1 text-xs" disabled={busyId === p.id} onClick={() => updateStatus(p.id, 'processing')}>
+                        Processing
+                      </Button>
+                    )}
+                    {p.status !== 'failed' && p.status !== 'completed' && (
+                      <Button size="sm" variant="outline" className="h-11 flex-1 text-xs text-destructive" disabled={busyId === p.id} onClick={() => updateStatus(p.id, 'failed')}>
+                        Fail
+                      </Button>
+                    )}
+                  </div>
+                </li>
+              ))}
+            </MobileRecordCards>
+            <DesktopTableRegion label="Payout history table" className="rounded-none border-0">
+              <table className="w-full min-w-[640px] text-sm">
+                <thead>
+                  <tr className="border-b border-border bg-muted/20">
+                    <th className="text-left text-xs font-medium text-muted-foreground p-4">Creator</th>
+                    <th className="text-left text-xs font-medium text-muted-foreground p-4">Created</th>
+                    <th className="text-left text-xs font-medium text-muted-foreground p-4">Processed</th>
+                    <th className="text-left text-xs font-medium text-muted-foreground p-4">Amount</th>
+                    <th className="text-left text-xs font-medium text-muted-foreground p-4">Status</th>
+                    <th className="text-right text-xs font-medium text-muted-foreground p-4">Actions</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                </thead>
+                <tbody>
+                  {payouts.map(p => (
+                    <tr key={p.id} className="border-b border-border last:border-0 hover:bg-muted/20 transition-colors">
+                      <td className="p-4 font-medium text-xs">{creatorName(p.creator_id)}</td>
+                      <td className="p-4 text-xs text-muted-foreground">{fmtDate(p.created_at)}</td>
+                      <td className="p-4 text-xs text-muted-foreground">{fmtDate(p.processed_at)}</td>
+                      <td className="p-4 font-medium text-emerald-400">{fmt(p.amount)}</td>
+                      <td className="p-4">
+                        <Badge variant="outline" className={`text-[10px] ${statusStyles[p.status] ?? ''}`}>
+                          {p.status === 'completed' && <CheckCircle2 className="h-2.5 w-2.5 mr-1" />}
+                          {p.status === 'failed' && <XCircle className="h-2.5 w-2.5 mr-1" />}
+                          {p.status}
+                        </Badge>
+                      </td>
+                      <td className="p-4 text-right space-x-1">
+                        {p.status !== 'completed' && (
+                          <Button size="sm" variant="ghost" className="h-9 px-2 text-xs" disabled={busyId === p.id} onClick={() => updateStatus(p.id, 'completed')}>
+                            Mark paid
+                          </Button>
+                        )}
+                        {p.status === 'pending' && (
+                          <Button size="sm" variant="ghost" className="h-9 px-2 text-xs" disabled={busyId === p.id} onClick={() => updateStatus(p.id, 'processing')}>
+                            Processing
+                          </Button>
+                        )}
+                        {p.status !== 'failed' && p.status !== 'completed' && (
+                          <Button size="sm" variant="ghost" className="h-9 px-2 text-xs text-destructive" disabled={busyId === p.id} onClick={() => updateStatus(p.id, 'failed')}>
+                            Fail
+                          </Button>
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </DesktopTableRegion>
+          </>
         )}
       </div>
     </DashboardLayout>

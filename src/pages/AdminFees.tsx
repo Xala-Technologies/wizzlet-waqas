@@ -155,9 +155,9 @@ const AdminFees = () => {
         </div>
       </div>
 
-      <div className="rounded-xl border border-border bg-card p-6 mb-6">
+      <div className="rounded-xl border border-border bg-card p-4 sm:p-6 mb-6 min-w-0">
         <h2 className="text-sm font-medium mb-4">Monthly Fee Revenue</h2>
-        <div className="h-64">
+        <div className="h-64 min-w-0 w-full">
           <ResponsiveContainer width="100%" height="100%">
             <BarChart data={monthlyFeeData}>
               <CartesianGrid strokeDasharray="3 3" className="stroke-border" />

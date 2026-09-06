@@ -8,7 +8,7 @@ import { useConvex, useMutation } from 'convex/react';
 import { api } from '../../convex/_generated/api';
 import { useAuth } from '@/contexts/AuthContext';
 import { uploadToConvexStorage } from '@/lib/upload';
-import { Zap, ArrowRight, Loader2, Camera, ImageIcon, User } from 'lucide-react';
+import { Zap, ArrowRight, ArrowLeft, Loader2, Camera, ImageIcon, User } from 'lucide-react';
 import { toast } from 'sonner';
 import { useQueryClient } from '@tanstack/react-query';
 
@@ -17,7 +17,7 @@ const STEPS = ['Profile', 'Images', 'Pricing'];
 const CreatorOnboarding = () => {
   const queryClient = useQueryClient();
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user, roles, switchRole } = useAuth();
   const convex = useConvex();
   const upsertOnboarding = useMutation(api.creators.queries.upsertOnboarding);
   const setPublished = useMutation(api.creators.queries.setPublished);
@@ -36,6 +36,21 @@ const CreatorOnboarding = () => {
 
   const avatarRef = useRef<HTMLInputElement>(null);
   const bannerRef = useRef<HTMLInputElement>(null);
+
+  /** Leave setup without finishing — member home if available, else public home. */
+  const exitSetup = () => {
+    if (roles.includes('subscriber')) {
+      switchRole('subscriber');
+      navigate('/dashboard');
+      return;
+    }
+    if (roles.includes('admin')) {
+      switchRole('admin');
+      navigate('/admin');
+      return;
+    }
+    navigate('/');
+  };
 
   const handleFileSelect = (
     e: React.ChangeEvent<HTMLInputElement>,
@@ -115,7 +130,7 @@ const CreatorOnboarding = () => {
             </div>
             Wizzlet
           </Link>
-          <h1 className="text-2xl font-bold mt-4">Set up your creator profile</h1>
+          <h1 className="text-2xl font-bold">Set up your creator profile</h1>
           <p className="text-sm text-muted-foreground mt-1">
             Step {step + 1} of {STEPS.length} · {STEPS[step]}
           </p>
@@ -317,10 +332,14 @@ const CreatorOnboarding = () => {
         <div className="flex justify-between mt-8">
           {step > 0 ? (
             <Button variant="ghost" onClick={() => setStep(step - 1)}>
+              <ArrowLeft className="mr-1 h-4 w-4" />
               Back
             </Button>
           ) : (
-            <div />
+            <Button variant="ghost" onClick={exitSetup}>
+              <ArrowLeft className="mr-1 h-4 w-4" />
+              {roles.includes('subscriber') ? 'Back to dashboard' : 'Back to home'}
+            </Button>
           )}
           {step < STEPS.length - 1 ? (
             <Button variant="hero" onClick={() => setStep(step + 1)} disabled={!canAdvance()}>
