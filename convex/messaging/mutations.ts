@@ -1,12 +1,14 @@
 import { mutation, query } from "../_generated/server";
 import { ConvexError, v } from "convex/values";
 import { getCreatorForUser, requireAppUser, hasActiveSubscription } from "../lib/auth";
+import { directMessageDocValidator } from "../lib/validators";
 
 export const listThread = query({
   args: {
     creatorId: v.id("creators"),
     subscriberId: v.id("users"),
   },
+  returns: v.array(directMessageDocValidator),
   handler: async (ctx, args) => {
     const user = await requireAppUser(ctx);
     const creator = await ctx.db.get(args.creatorId);
@@ -30,6 +32,7 @@ export const send = mutation({
     body: v.string(),
     senderRole: v.union(v.literal("creator"), v.literal("subscriber")),
   },
+  returns: v.id("directMessages"),
   handler: async (ctx, args) => {
     const user = await requireAppUser(ctx);
     const creator = await ctx.db.get(args.creatorId);
@@ -60,6 +63,7 @@ export const send = mutation({
 
 export const myCreatorInbox = query({
   args: {},
+  returns: v.array(directMessageDocValidator),
   handler: async (ctx) => {
     const user = await requireAppUser(ctx);
     const creator = await getCreatorForUser(ctx, user._id);
@@ -73,6 +77,7 @@ export const myCreatorInbox = query({
 
 export const mySubscriberInbox = query({
   args: {},
+  returns: v.array(directMessageDocValidator),
   handler: async (ctx) => {
     const user = await requireAppUser(ctx);
     return ctx.db
@@ -84,6 +89,7 @@ export const mySubscriberInbox = query({
 
 export const setMessagingEnabled = mutation({
   args: { enabled: v.boolean() },
+  returns: v.null(),
   handler: async (ctx, args) => {
     const user = await requireAppUser(ctx);
     const creator = await getCreatorForUser(ctx, user._id);
@@ -92,5 +98,6 @@ export const setMessagingEnabled = mutation({
       messagingEnabled: args.enabled,
       updatedAt: Date.now(),
     });
+    return null;
   },
 });

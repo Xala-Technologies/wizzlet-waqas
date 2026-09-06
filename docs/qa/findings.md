@@ -20,7 +20,7 @@ Prior IDs from [docs/convex-audit/findings.md](../convex-audit/findings.md) reus
 | F-008 | P2 | **PARTIAL** | Auth required; residual legacy unowned ACL — see **QA-W1-03** |
 | F-009 | P2 | **PASS (unit)** | Balance helper tested; live payout UI NOT_RUN |
 | F-010 | P2 | **PASS (code) / E2E NOT_RUN** | Stripe + webhook path present; soak not run |
-| F-011 | P2 | **OPEN** | Many public functions still lack `returns` validators |
+| F-011 | P2 | **PARTIAL** | Priority commerce/auth/messaging APIs now have `returns`; many admin/list APIs still open |
 | F-012 | P2 | **OPEN** | Admin aggregates still unbounded `.collect()` |
 | F-013 | P1 data | **INSUFFICIENT** | Not re-validated via MCP data dump this wave |
 | F-014 | P3 | **PASS (fixed W7)** | Client passes `fromMs`/`toMs`; query has no clock |

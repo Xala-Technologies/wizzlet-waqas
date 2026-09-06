@@ -8,6 +8,11 @@ import {
 } from "../lib/auth";
 import { calculatePlatformFee } from "../lib/money";
 import { assertSubscriptionStatusTransition } from "../lib/subscriptions";
+import {
+  subscriptionDocValidator,
+  subscriptionWithCreatorValidator,
+  subscriptionWithUserValidator,
+} from "../lib/validators";
 
 async function loadFeeSettings(ctx: MutationCtx) {
   const row = await ctx.db
@@ -68,6 +73,7 @@ export const createSubscriptionRecord = internalMutation({
 
 export const mySubscriptions = query({
   args: {},
+  returns: v.array(subscriptionDocValidator),
   handler: async (ctx) => {
     const user = await requireAppUser(ctx);
     return ctx.db
@@ -95,6 +101,7 @@ export const countActiveByCreator = query({
 /** Subscriptions with creator details for billing / dashboard. */
 export const mySubscriptionsDetailed = query({
   args: {},
+  returns: v.array(subscriptionWithCreatorValidator),
   handler: async (ctx) => {
     const user = await requireAppUser(ctx);
     const subs = await ctx.db
@@ -124,6 +131,7 @@ export const mySubscriptionsDetailed = query({
 /** Creator view: subscribers with user profile. */
 export const listSubscribersDetailed = query({
   args: {},
+  returns: v.array(subscriptionWithUserValidator),
   handler: async (ctx) => {
     const user = await requireAppUser(ctx);
     const creator = await getCreatorForUser(ctx, user._id);
@@ -148,6 +156,7 @@ export const listSubscribersDetailed = query({
 
 export const listForMyCreator = query({
   args: {},
+  returns: v.array(subscriptionDocValidator),
   handler: async (ctx) => {
     const user = await requireAppUser(ctx);
     const creator = await getCreatorForUser(ctx, user._id);
@@ -161,6 +170,7 @@ export const listForMyCreator = query({
 
 export const listAllAdmin = query({
   args: {},
+  returns: v.array(subscriptionDocValidator),
   handler: async (ctx) => {
     await requireAdmin(ctx);
     return ctx.db.query("subscriptions").collect();
@@ -177,6 +187,7 @@ export const setStatus = mutation({
       v.literal("incomplete"),
     ),
   },
+  returns: v.null(),
   handler: async (ctx, args) => {
     // Public invent-billing blocked: only admins may set status here.
     // Subscribers cancel via cancelCreatorSubscription (Stripe-backed).
@@ -189,5 +200,6 @@ export const setStatus = mutation({
       billingStatus: args.status === "cancelled" ? "canceled" : args.status,
       updatedAt: Date.now(),
     });
+    return null;
   },
 });
