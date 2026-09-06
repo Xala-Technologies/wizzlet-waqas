@@ -131,6 +131,10 @@ export default defineSchema({
     productId: v.optional(v.id("products")),
     stripeSubscriptionId: v.optional(v.string()),
     status: v.string(),
+    /** Distinct from access: active | past_due | canceled | unpaid | incomplete */
+    billingStatus: v.optional(v.string()),
+    currentPeriodEnd: v.optional(v.number()),
+    cancelAtPeriodEnd: v.optional(v.boolean()),
     amountCents: v.number(),
     platformFeeCents: v.number(),
     creatorEarningsCents: v.number(),
@@ -186,13 +190,19 @@ export default defineSchema({
     userId: v.optional(v.id("users")),
     subscriptionId: v.optional(v.id("subscriptions")),
     productId: v.optional(v.id("products")),
-    type: v.string(), // subscription_charge | refund | adjustment | payout
+    type: v.string(), // subscription_charge | refund | adjustment | payout | renewal
     amountCents: v.number(),
     platformFeeCents: v.number(),
     creatorEarningsCents: v.number(),
     currency: v.string(),
     status: v.string(),
+    /** Delivery/event id (webhook) or legacy key — not the commercial identity alone */
     externalRef: v.optional(v.string()),
+    /** Stable commerce identity: checkout session id or invoice id */
+    commercialRef: v.optional(v.string()),
+    checkoutSessionId: v.optional(v.string()),
+    /** test | live — exclude sandbox/test from real payouts */
+    paymentMode: v.optional(v.union(v.literal("test"), v.literal("live"), v.literal("sandbox"))),
     createdAt: v.number(),
   })
     .index("by_creatorId", ["creatorId"])
@@ -200,7 +210,23 @@ export default defineSchema({
     .index("by_subscriptionId", ["subscriptionId"])
     .index("by_createdAt", ["createdAt"])
     .index("by_legacyId", ["legacyId"])
-    .index("by_externalRef", ["externalRef"]),
+    .index("by_externalRef", ["externalRef"])
+    .index("by_commercialRef", ["commercialRef"])
+    .index("by_checkoutSessionId", ["checkoutSessionId"]),
+
+  /** Stripe (or other) webhook delivery receipts — separate from financial ledger. */
+  webhookReceipts: defineTable({
+    provider: v.string(),
+    eventId: v.string(),
+    eventType: v.string(),
+    processingState: v.union(
+      v.literal("processed"),
+      v.literal("failed"),
+      v.literal("ignored"),
+    ),
+    error: v.optional(v.string()),
+    createdAt: v.number(),
+  }).index("by_provider_eventId", ["provider", "eventId"]),
 
   /** Admin-managed sports slate (replaces hardcoded src/lib/events.ts). */
   sportEvents: defineTable({
@@ -405,6 +431,16 @@ export default defineSchema({
   })
     .index("by_status", ["status"])
     .index("by_legacyId", ["legacyId"]),
+
+  /** Uploaded file ownership metadata */
+  fileAssets: defineTable({
+    storageId: v.id("_storage"),
+    ownerUserId: v.id("users"),
+    purpose: v.optional(v.string()),
+    createdAt: v.number(),
+  })
+    .index("by_storageId", ["storageId"])
+    .index("by_ownerUserId", ["ownerUserId"]),
 
   /** ETL checkpoints — not product data */
   migrationCheckpoints: defineTable({

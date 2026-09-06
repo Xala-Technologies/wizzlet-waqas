@@ -30,34 +30,45 @@ export const dashboardStats = query({
     const platformFeesCents = active.reduce((a, b) => a + b.platformFeeCents, 0);
     const totalRevenueCents = active.reduce((a, b) => a + b.amountCents, 0);
 
-    // Build month buckets from real subscription createdAt
-    const monthMap = new Map<string, { revenue: number; fees: number; creators: number; customers: number }>();
-    for (const s of subs) {
-      const key = new Date(s.createdAt).toLocaleString("en-US", { month: "short" });
+    // Build month buckets from settled payment events (year-month keys)
+    const monthMap = new Map<
+      string,
+      { revenue: number; fees: number; creators: number; customers: number }
+    >();
+    const events = await ctx.db.query("paymentEvents").collect();
+    for (const e of events) {
+      if (e.paymentMode === "sandbox") continue;
+      const d = new Date(e.createdAt);
+      const key = `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, "0")}`;
       const cur = monthMap.get(key) ?? { revenue: 0, fees: 0, creators: 0, customers: 0 };
-      cur.revenue += s.amountCents;
-      cur.fees += s.platformFeeCents;
+      cur.revenue += e.amountCents;
+      cur.fees += e.platformFeeCents;
       monthMap.set(key, cur);
     }
     for (const c of creators) {
-      const key = new Date(c.createdAt).toLocaleString("en-US", { month: "short" });
+      const d = new Date(c.createdAt);
+      const key = `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, "0")}`;
       const cur = monthMap.get(key) ?? { revenue: 0, fees: 0, creators: 0, customers: 0 };
       cur.creators += 1;
       monthMap.set(key, cur);
     }
     for (const u of users) {
-      const key = new Date(u.createdAt ?? u._creationTime).toLocaleString("en-US", { month: "short" });
+      const ts = u.createdAt ?? u._creationTime;
+      const d = new Date(ts);
+      const key = `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, "0")}`;
       const cur = monthMap.get(key) ?? { revenue: 0, fees: 0, creators: 0, customers: 0 };
       cur.customers += 1;
       monthMap.set(key, cur);
     }
-    const monthly = [...monthMap.entries()].map(([month, v]) => ({
-      month,
-      revenue: Math.round(v.revenue / 100),
-      fees: Math.round(v.fees / 100),
-      creators: v.creators,
-      customers: v.customers,
-    }));
+    const monthly = [...monthMap.entries()]
+      .sort(([a], [b]) => a.localeCompare(b))
+      .map(([month, v]) => ({
+        month,
+        revenue: Math.round(v.revenue / 100),
+        fees: Math.round(v.fees / 100),
+        creators: v.creators,
+        customers: v.customers,
+      }));
 
     const recentSubsRaw = [...subs].sort((a, b) => b.createdAt - a.createdAt).slice(0, 6);
     const recentSubs = [];
@@ -123,7 +134,8 @@ export const createEmailCampaign = mutation({
       body: args.body,
       audience: args.audience,
       recipients: args.recipientUserIds.length,
-      status: "sent",
+      // Relabel: in-app announcements until real email outbox exists
+      status: "in_app_announcement",
       sentBy: admin._id,
       createdAt: Date.now(),
     });

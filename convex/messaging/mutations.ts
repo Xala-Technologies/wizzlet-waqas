@@ -34,6 +34,9 @@ export const send = mutation({
     const user = await requireAppUser(ctx);
     const creator = await ctx.db.get(args.creatorId);
     if (!creator) throw new ConvexError("NOT_FOUND");
+    if (!creator.messagingEnabled) {
+      throw new ConvexError("MESSAGING_DISABLED");
+    }
     if (args.senderRole === "creator" && creator.userId !== user._id) {
       throw new ConvexError("FORBIDDEN");
     }

@@ -110,8 +110,10 @@ const AdminCustomerEmail = () => {
   return (
     <DashboardLayout type="admin">
       <div className="mb-6">
-        <h1 className="text-2xl font-bold">Customer Email</h1>
-        <p className="text-muted-foreground text-sm mt-0.5">Send announcements to your customer base</p>
+        <h1 className="text-2xl font-bold">In-app announcements</h1>
+        <p className="text-muted-foreground text-sm mt-0.5">
+          Delivers notifications in the app. Email outbox is not enabled yet.
+        </p>
       </div>
 
       <div className="rounded-xl border border-border bg-card p-6 mb-8">
@@ -166,7 +168,7 @@ const AdminCustomerEmail = () => {
       </div>
 
       <div>
-        <h2 className="text-sm font-medium text-muted-foreground uppercase tracking-wider mb-3">Campaign History</h2>
+        <h2 className="text-sm font-medium text-muted-foreground uppercase tracking-wider mb-3">Announcement history</h2>
         {loading ? (
           <div className="flex items-center justify-center py-12">
             <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
@@ -174,7 +176,7 @@ const AdminCustomerEmail = () => {
         ) : campaigns.length === 0 ? (
           <div className="rounded-xl border border-border bg-card p-10 text-center">
             <Mail className="h-8 w-8 text-muted-foreground/40 mx-auto mb-3" />
-            <p className="text-sm text-muted-foreground">No campaigns sent yet.</p>
+            <p className="text-sm text-muted-foreground">No announcements yet.</p>
           </div>
         ) : (
           <div className="space-y-3">
@@ -185,7 +187,11 @@ const AdminCustomerEmail = () => {
                     <p className="text-sm font-semibold">{c.subject}</p>
                     <p className="text-xs text-muted-foreground mt-1 line-clamp-2">{c.body}</p>
                   </div>
-                  <Badge variant="outline" className="text-[9px] shrink-0 capitalize">{c.status}</Badge>
+                  <Badge variant="outline" className="text-[9px] shrink-0">
+                    {c.status === 'in_app_announcement' || c.status === 'sent'
+                      ? 'In-app'
+                      : c.status}
+                  </Badge>
                 </div>
                 <div className="flex flex-wrap items-center gap-4 text-xs text-muted-foreground mt-3">
                   <span className="flex items-center gap-1"><Clock className="h-3 w-3" /> {format(new Date(c.created_at), 'MMM d, yyyy')}</span>

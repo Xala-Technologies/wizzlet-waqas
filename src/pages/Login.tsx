@@ -34,7 +34,7 @@ const Login = () => {
       form.set('password', password);
       form.set('flow', 'signIn');
       await signIn('password', form);
-      await ensureUser({ email: email.trim().toLowerCase() });
+      await ensureUser({});
       await refreshRole();
       // Roles load reactively; default to select-role if none yet
       const preferred = localStorage.getItem(ACTIVE_ROLE_STORAGE_KEY);
@@ -70,7 +70,7 @@ const Login = () => {
         signUpForm.set('flow', 'signUp');
         await signIn('password', signUpForm);
       }
-      await ensureUser({ email: testEmail, username: 'devtester', fullName: 'Dev Tester' });
+      await ensureUser({ username: 'devtester', fullName: 'Dev Tester' });
       await assignSelfRole({ role: 'creator' });
       await assignSelfRole({ role: 'subscriber' });
       await refreshRole();

@@ -5,13 +5,9 @@ import {
   logMutation,
   requireAdmin,
   requireAppUser,
-  requireCreatorOwner,
 } from "../lib/auth";
 import { calculatePlatformFee } from "../lib/money";
-import {
-  assertSubscriptionStatusTransition,
-  type SubscriptionActorKind,
-} from "../lib/subscriptions";
+import { assertSubscriptionStatusTransition } from "../lib/subscriptions";
 
 async function loadFeeSettings(ctx: MutationCtx) {
   const row = await ctx.db
@@ -69,15 +65,6 @@ export const createSubscriptionRecord = internalMutation({
     return id;
   },
 });
-
-async function requireAdminSafe(ctx: Parameters<typeof requireAdmin>[0]) {
-  try {
-    await requireAdmin(ctx);
-    return true;
-  } catch {
-    return false;
-  }
-}
 
 export const mySubscriptions = query({
   args: {},
@@ -176,30 +163,15 @@ export const setStatus = mutation({
     ),
   },
   handler: async (ctx, args) => {
+    // Public invent-billing blocked: only admins may set status here.
+    // Subscribers cancel via cancelCreatorSubscription (Stripe-backed).
+    await requireAdmin(ctx);
     const sub = await ctx.db.get(args.subscriptionId);
     if (!sub) throw new ConvexError("NOT_FOUND");
-    const user = await requireAppUser(ctx);
-    const isOwner = user._id === sub.userId;
-    const isAdmin = await requireAdminSafe(ctx);
-
-    let actor: SubscriptionActorKind | null = null;
-    if (isAdmin) {
-      actor = "admin";
-    } else if (isOwner) {
-      actor = "owner";
-    } else {
-      try {
-        await requireCreatorOwner(ctx, sub.creatorId);
-        actor = "creator";
-      } catch {
-        throw new ConvexError("FORBIDDEN");
-      }
-    }
-
-    assertSubscriptionStatusTransition(actor, args.status);
-
+    assertSubscriptionStatusTransition("admin", args.status);
     await ctx.db.patch(args.subscriptionId, {
       status: args.status,
+      billingStatus: args.status === "cancelled" ? "canceled" : args.status,
       updatedAt: Date.now(),
     });
   },

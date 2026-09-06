@@ -41,7 +41,7 @@ const CustomerDiscover = () => {
 
   const creators: CreatorRow[] = useMemo(
     () =>
-      (creatorsRaw ?? []).map((c) => ({
+      (creatorsRaw?.items ?? []).map((c) => ({
         id: c._id,
         username: c.username,
         display_name: c.displayName ?? null,

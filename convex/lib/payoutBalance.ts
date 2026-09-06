@@ -1,6 +1,6 @@
 /**
  * Available payout balance for a creator.
- * Earnings = settled paymentEvents.creatorEarningsCents
+ * Earnings = settled paymentEvents.creatorEarningsCents excluding sandbox/test
  * Reserved = payouts not cancelled/rejected
  */
 
@@ -18,6 +18,8 @@ const RESERVED_PAYOUT_STATUSES = new Set([
   "paid",
 ]);
 
+const EXCLUDED_PAYMENT_MODES = new Set(["sandbox"]);
+
 export async function getCreatorAvailableBalanceCents(
   ctx: Ctx,
   creatorId: Id<"creators">,
@@ -32,6 +34,7 @@ export async function getCreatorAvailableBalanceCents(
     .collect();
   const earnedCents = events
     .filter((e) => e.status === "settled" || e.status === "paid")
+    .filter((e) => !e.paymentMode || !EXCLUDED_PAYMENT_MODES.has(e.paymentMode))
     .reduce((sum, e) => sum + e.creatorEarningsCents, 0);
 
   const payouts = await ctx.db

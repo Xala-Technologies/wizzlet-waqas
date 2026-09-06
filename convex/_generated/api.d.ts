@@ -19,6 +19,8 @@ import type * as events_queries from "../events/queries.js";
 import type * as files_storage from "../files/storage.js";
 import type * as http from "../http.js";
 import type * as lib_auth from "../lib/auth.js";
+import type * as lib_commerceIdentity from "../lib/commerceIdentity.js";
+import type * as lib_credentialOwnership from "../lib/credentialOwnership.js";
 import type * as lib_entitlements from "../lib/entitlements.js";
 import type * as lib_money from "../lib/money.js";
 import type * as lib_payoutBalance from "../lib/payoutBalance.js";
@@ -61,6 +63,8 @@ declare const fullApi: ApiFromModules<{
   "files/storage": typeof files_storage;
   http: typeof http;
   "lib/auth": typeof lib_auth;
+  "lib/commerceIdentity": typeof lib_commerceIdentity;
+  "lib/credentialOwnership": typeof lib_credentialOwnership;
   "lib/entitlements": typeof lib_entitlements;
   "lib/money": typeof lib_money;
   "lib/payoutBalance": typeof lib_payoutBalance;

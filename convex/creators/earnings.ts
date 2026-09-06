@@ -1,5 +1,6 @@
 import { query } from "../_generated/server";
 import { getCreatorForUser, requireAppUser } from "../lib/auth";
+import { yearMonthKey } from "../lib/commerceIdentity";
 
 /** Creator earnings dashboard — real subscriptions + paymentEvents (no fake names). */
 export const myEarnings = query({
@@ -37,18 +38,21 @@ export const myEarnings = query({
       .query("paymentEvents")
       .withIndex("by_creatorId", (q) => q.eq("creatorId", creator._id))
       .collect();
-    const sorted = events.sort((a, b) => b.createdAt - a.createdAt);
+    const sorted = events
+      .filter((e) => e.paymentMode !== "sandbox")
+      .sort((a, b) => b.createdAt - a.createdAt);
 
     const monthMap = new Map<string, number>();
     for (const e of sorted) {
-      const d = new Date(e.createdAt);
-      const key = d.toLocaleString("en-US", { month: "short", year: "2-digit" });
+      const key = yearMonthKey(e.createdAt);
       monthMap.set(key, (monthMap.get(key) ?? 0) + e.creatorEarningsCents);
     }
-    const monthly = [...monthMap.entries()].map(([month, revenueCents]) => ({
-      month,
-      revenueCents,
-    }));
+    const monthly = [...monthMap.entries()]
+      .sort(([a], [b]) => a.localeCompare(b))
+      .map(([month, revenueCents]) => ({
+        month,
+        revenueCents,
+      }));
 
     const recentPayments = [];
     for (const e of sorted.slice(0, 20)) {

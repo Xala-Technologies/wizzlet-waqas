@@ -36,7 +36,6 @@ const Signup = () => {
       form.set('flow', 'signUp');
       await signIn('password', form);
       await ensureUser({
-        email: email.trim().toLowerCase(),
         username: username.trim().toLowerCase().replace(/[^a-z0-9_]/g, ''),
         fullName: username.trim(),
       });

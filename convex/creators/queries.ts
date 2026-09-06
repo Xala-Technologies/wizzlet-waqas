@@ -33,10 +33,15 @@ export const getByUsername = query({
   },
 });
 
-/** Public discovery — published creators only (no mock list). */
+/** Public discovery — published creators only (no mock list). Paginated. */
 export const listPublished = query({
-  args: { search: v.optional(v.string()) },
+  args: {
+    search: v.optional(v.string()),
+    cursor: v.optional(v.string()),
+    limit: v.optional(v.number()),
+  },
   handler: async (ctx, args) => {
+    const pageSize = Math.min(Math.max(args.limit ?? 24, 1), 50);
     const rows = await ctx.db
       .query("creators")
       .withIndex("by_published", (q) => q.eq("isPublished", true))
@@ -50,8 +55,15 @@ export const listPublished = query({
             (c.bio ?? "").toLowerCase().includes(q),
         )
       : rows;
+    const sorted = filtered.sort((a, b) => b.createdAt - a.createdAt);
+    let start = 0;
+    if (args.cursor) {
+      const idx = sorted.findIndex((c) => c._id === args.cursor);
+      start = idx >= 0 ? idx + 1 : 0;
+    }
+    const page = sorted.slice(start, start + pageSize);
     const mapped = [];
-    for (const c of filtered.sort((a, b) => b.createdAt - a.createdAt)) {
+    for (const c of page) {
       const posts = await ctx.db
         .query("posts")
         .withIndex("by_creatorId", (q) => q.eq("creatorId", c._id))
@@ -68,7 +80,12 @@ export const listPublished = query({
         postCount: posts.length,
       });
     }
-    return mapped;
+    const last = page[page.length - 1];
+    return {
+      items: mapped,
+      continueCursor: last && start + pageSize < sorted.length ? last._id : null,
+      isDone: start + pageSize >= sorted.length,
+    };
   },
 });
 
@@ -91,11 +108,22 @@ export const upsertOnboarding = mutation({
   },
   handler: async (ctx, args) => {
     const user = await requireAppUser(ctx);
+    const username = args.username.trim().toLowerCase();
+    if (!/^[a-z0-9_]{3,32}$/.test(username)) {
+      throw new Error("INVALID_USERNAME");
+    }
+    const taken = await ctx.db
+      .query("creators")
+      .withIndex("by_username", (q) => q.eq("username", username))
+      .unique();
     const existing = await getCreatorForUser(ctx, user._id);
+    if (taken && (!existing || taken._id !== existing._id)) {
+      throw new Error("USERNAME_TAKEN");
+    }
     const now = Date.now();
     if (existing) {
       await ctx.db.patch(existing._id, {
-        username: args.username,
+        username,
         displayName: args.displayName,
         bio: args.bio,
         avatarUrl: args.avatarUrl,
@@ -107,7 +135,7 @@ export const upsertOnboarding = mutation({
     }
     const id = await ctx.db.insert("creators", {
       userId: user._id,
-      username: args.username,
+      username,
       displayName: args.displayName,
       bio: args.bio,
       avatarUrl: args.avatarUrl,
@@ -149,32 +177,47 @@ export const listAllAdmin = query({
 
 export const updateSettings = mutation({
   args: {
-    displayName: v.optional(v.string()),
-    bio: v.optional(v.string()),
-    avatarUrl: v.optional(v.string()),
-    bannerUrl: v.optional(v.string()),
+    displayName: v.optional(v.union(v.string(), v.null())),
+    bio: v.optional(v.union(v.string(), v.null())),
+    avatarUrl: v.optional(v.union(v.string(), v.null())),
+    bannerUrl: v.optional(v.union(v.string(), v.null())),
     monthlyPriceCents: v.optional(v.number()),
     messagingEnabled: v.optional(v.boolean()),
-    referralCode: v.optional(v.string()),
-    discordServerId: v.optional(v.string()),
-    discordRoleId: v.optional(v.string()),
+    referralCode: v.optional(v.union(v.string(), v.null())),
+    discordServerId: v.optional(v.union(v.string(), v.null())),
+    discordRoleId: v.optional(v.union(v.string(), v.null())),
   },
   handler: async (ctx, args) => {
     const user = await requireAppUser(ctx);
     const creator = await getCreatorForUser(ctx, user._id);
     if (!creator) throw new Error("NOT_FOUND");
+    // null clears; undefined omits (leave unchanged)
     const patch: Record<string, string | number | boolean | undefined> = {
       updatedAt: Date.now(),
     };
-    if (args.displayName !== undefined) patch.displayName = args.displayName;
-    if (args.bio !== undefined) patch.bio = args.bio;
-    if (args.avatarUrl !== undefined) patch.avatarUrl = args.avatarUrl;
-    if (args.bannerUrl !== undefined) patch.bannerUrl = args.bannerUrl;
+    if (args.displayName !== undefined) {
+      patch.displayName = args.displayName === null ? undefined : args.displayName;
+    }
+    if (args.bio !== undefined) {
+      patch.bio = args.bio === null ? undefined : args.bio;
+    }
+    if (args.avatarUrl !== undefined) {
+      patch.avatarUrl = args.avatarUrl === null ? undefined : args.avatarUrl;
+    }
+    if (args.bannerUrl !== undefined) {
+      patch.bannerUrl = args.bannerUrl === null ? undefined : args.bannerUrl;
+    }
     if (args.monthlyPriceCents !== undefined) patch.monthlyPriceCents = args.monthlyPriceCents;
     if (args.messagingEnabled !== undefined) patch.messagingEnabled = args.messagingEnabled;
-    if (args.referralCode !== undefined) patch.referralCode = args.referralCode;
-    if (args.discordServerId !== undefined) patch.discordServerId = args.discordServerId;
-    if (args.discordRoleId !== undefined) patch.discordRoleId = args.discordRoleId;
+    if (args.referralCode !== undefined) {
+      patch.referralCode = args.referralCode === null ? undefined : args.referralCode;
+    }
+    if (args.discordServerId !== undefined) {
+      patch.discordServerId = args.discordServerId === null ? undefined : args.discordServerId;
+    }
+    if (args.discordRoleId !== undefined) {
+      patch.discordRoleId = args.discordRoleId === null ? undefined : args.discordRoleId;
+    }
     await ctx.db.patch(creator._id, patch);
     return creator._id;
   },

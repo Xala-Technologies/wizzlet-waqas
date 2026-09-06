@@ -65,7 +65,7 @@ const CustomerSaved = () => {
   );
 
   const creators: BookmarkedCreator[] = useMemo(() => {
-    const byId = new Map((publishedCreators ?? []).map((c) => [c._id, c]));
+    const byId = new Map((publishedCreators?.items ?? []).map((c) => [c._id, c]));
     return (bookmarkRows ?? [])
       .map((row) => {
         const c = byId.get(row.creatorId);

@@ -23,7 +23,12 @@ export const sandboxSubscribe = mutation({
     let amountCents = creator.monthlyPriceCents ?? 999;
     if (args.productId) {
       const product = await ctx.db.get(args.productId);
-      if (!product || product.creatorId !== creator._id || !product.isActive) {
+      if (
+        !product ||
+        product.creatorId !== creator._id ||
+        !product.isActive ||
+        product.isClosed
+      ) {
         throw new ConvexError("PRODUCT_UNAVAILABLE");
       }
       amountCents = product.priceCents;
@@ -98,6 +103,9 @@ export const sandboxSubscribe = mutation({
       currency: "usd",
       status: "settled",
       externalRef: sandboxRef,
+      commercialRef: `sandbox:${sandboxRef}`,
+      checkoutSessionId: sandboxRef,
+      paymentMode: "sandbox",
       createdAt: now,
     });
 

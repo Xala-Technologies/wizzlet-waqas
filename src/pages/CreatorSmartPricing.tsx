@@ -24,7 +24,7 @@ const CreatorSmartPricing = () => {
   const subs = useQuery(api.subscriptions.mutations.listForMyCreator);
   const analytics = useQuery(api.analytics.mutations.listForMyCreator);
   const posts = useQuery(api.posts.queries.listMine);
-  const market = useQuery(api.creators.queries.listPublished, {});
+  const marketPage = useQuery(api.creators.queries.listPublished, {});
   const updateSettings = useMutation(api.creators.queries.updateSettings);
 
   const [data, setData] = useState<PricingData | null>(null);
@@ -33,7 +33,8 @@ const CreatorSmartPricing = () => {
 
   useEffect(() => {
     if (creatorLoading || !creator) return;
-    if (subs === undefined || analytics === undefined || posts === undefined || market === undefined) return;
+    if (subs === undefined || analytics === undefined || posts === undefined || marketPage === undefined) return;
+    const market = marketPage.items;
 
     const activeSubs = subs.filter((s) => s.status === 'active');
     const price = creator.monthly_price ?? 9.99;
@@ -53,9 +54,9 @@ const CreatorSmartPricing = () => {
       marketAverage: marketPrices.length ? marketPrices.reduce((a, b) => a + b, 0) / marketPrices.length : price,
     });
     setPriceInput(price.toFixed(2));
-  }, [creator, creatorLoading, subs, analytics, posts, market]);
+  }, [creator, creatorLoading, subs, analytics, posts, marketPage]);
 
-  const loading = creatorLoading || !creator || subs === undefined || analytics === undefined || posts === undefined || market === undefined;
+  const loading = creatorLoading || !creator || subs === undefined || analytics === undefined || posts === undefined || marketPage === undefined;
 
   const suggestion = useMemo(() => {
     if (!data) return null;

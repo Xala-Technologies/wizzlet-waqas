@@ -69,6 +69,7 @@ const AdminSettings = () => {
   const [settings, setSettings] = useState<PlatformSettings>(DEFAULTS);
   const [saving, setSaving] = useState(false);
   const [changingPassword, setChangingPassword] = useState(false);
+  const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
 
   const platformRaw = useQuery(api.platform.mutations.get);
@@ -121,15 +122,20 @@ const AdminSettings = () => {
   };
 
   const handlePasswordChange = async () => {
+    if (!currentPassword) {
+      toast.error('Enter your current password');
+      return;
+    }
     if (newPassword.length < 8) {
       toast.error('Password must be at least 8 characters');
       return;
     }
     setChangingPassword(true);
     try {
-      await changePasswordAction({ newPassword });
+      await changePasswordAction({ currentPassword, newPassword });
+      setCurrentPassword('');
       setNewPassword('');
-      toast.success('Password updated');
+      toast.success('Password updated — please sign in again');
     } catch (e) {
       toast.error(e instanceof Error ? e.message : 'Could not update password');
     } finally {
@@ -256,13 +262,23 @@ const AdminSettings = () => {
 
       <div className="rounded-xl border border-border bg-card p-6 mb-6">
         <h2 className="text-sm font-medium mb-4 flex items-center gap-2"><Shield className="h-4 w-4 text-primary" /> Admin Account</h2>
-        <div className="flex flex-col sm:flex-row sm:items-end gap-3">
-          <div className="flex-1">
+        <div className="flex flex-col gap-3 max-w-md">
+          <div>
+            <Label className="text-xs">Current password</Label>
+            <Input type="password" value={currentPassword} onChange={e => setCurrentPassword(e.target.value)}
+              className="mt-1" autoComplete="current-password" />
+          </div>
+          <div>
             <Label className="text-xs">New password</Label>
             <Input type="password" value={newPassword} onChange={e => setNewPassword(e.target.value)}
-              placeholder="At least 8 characters" className="mt-1" />
+              placeholder="At least 8 characters" className="mt-1" autoComplete="new-password" />
           </div>
-          <Button variant="outline" onClick={handlePasswordChange} disabled={changingPassword || !newPassword}>
+          <Button
+            variant="outline"
+            className="w-fit"
+            onClick={handlePasswordChange}
+            disabled={changingPassword || !newPassword || !currentPassword}
+          >
             {changingPassword && <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />}
             Update password
           </Button>

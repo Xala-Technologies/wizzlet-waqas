@@ -6,6 +6,7 @@ import { v } from "convex/values";
 import { getAuthUserId } from "@convex-dev/auth/server";
 import { internal } from "../_generated/api";
 import type { Id } from "../_generated/dataModel";
+import { isStripeAlreadyCanceledError } from "../lib/commerceIdentity";
 
 function requireStripe(): Stripe {
   const key = process.env.STRIPE_SECRET_KEY;
@@ -15,6 +16,19 @@ function requireStripe(): Stripe {
 
 function siteUrl(): string {
   return (process.env.SITE_URL || "http://localhost:8080").replace(/\/$/, "");
+}
+
+function extractStripeSubscriptionId(obj: {
+  subscription?: string | { id: string } | null;
+}): string | undefined {
+  const sub = obj.subscription;
+  if (typeof sub === "string") return sub;
+  if (sub && typeof sub === "object" && "id" in sub) return sub.id;
+  return undefined;
+}
+
+function stripeMode(livemode: boolean | null | undefined): "test" | "live" {
+  return livemode ? "live" : "test";
 }
 
 export const createCheckoutSession = action({
@@ -132,7 +146,7 @@ export const confirmCheckoutSession = action({
         stripeSubscriptionId,
         stripeCustomerId,
         checkoutSessionId: session.id,
-        idempotencyKey: `cs_${session.id}`,
+        paymentMode: stripeMode(session.livemode),
       });
     return { ok: true, duplicate: result.duplicate };
   },
@@ -150,16 +164,24 @@ export const cancelCreatorSubscription = action({
     });
     if (!sub) throw new Error("NOT_FOUND");
 
+    await ctx.runMutation(internal.payments.stripeDb.markCancelPending, {
+      subscriptionId: sub._id,
+      userId,
+    });
+
     const stripeId = sub.stripeSubscriptionId;
     if (stripeId && stripeId.startsWith("sub_")) {
       const stripe = requireStripe();
       try {
         await stripe.subscriptions.cancel(stripeId);
       } catch (err) {
-        // Already cancelled on Stripe is fine — still sync local
-        const message = err instanceof Error ? err.message : "";
-        if (!message.toLowerCase().includes("no such subscription")) {
-          console.error("Stripe cancel error", message);
+        const message = err instanceof Error ? err.message : String(err);
+        if (!isStripeAlreadyCanceledError(message)) {
+          await ctx.runMutation(internal.payments.stripeDb.clearCancelPending, {
+            subscriptionId: sub._id,
+            userId,
+          });
+          throw new Error("STRIPE_CANCEL_FAILED");
         }
       }
     }
@@ -167,7 +189,7 @@ export const cancelCreatorSubscription = action({
     await ctx.runMutation(internal.payments.stripeDb.cancelBySubscriptionId, {
       subscriptionId: sub._id,
       userId,
-      idempotencyKey: `cancel_${sub._id}`,
+      deliveryRef: `user_cancel_${sub._id}`,
     });
 
     return { ok: true, status: "cancelled" };
@@ -194,6 +216,16 @@ export const fulfillWebhook = internalAction({
         success: false,
         error: err instanceof Error ? err.message : "SIGNATURE_INVALID",
       };
+    }
+
+    const receipt = await ctx.runMutation(internal.payments.stripeDb.recordWebhookReceipt, {
+      provider: "stripe",
+      eventId: event.id,
+      eventType: event.type,
+      processingState: "processed",
+    });
+    if (receipt.duplicate) {
+      return { success: true };
     }
 
     try {
@@ -225,13 +257,67 @@ export const fulfillWebhook = internalAction({
           stripeSubscriptionId,
           stripeCustomerId,
           checkoutSessionId: session.id,
-          idempotencyKey: event.id,
+          deliveryRef: event.id,
+          paymentMode: stripeMode(event.livemode),
+        });
+      } else if (event.type === "invoice.paid") {
+        const invoice = event.data.object as Stripe.Invoice & {
+          subscription?: string | { id: string } | null;
+          billing_reason?: string | null;
+        };
+        const stripeSubscriptionId = extractStripeSubscriptionId(invoice);
+        if (stripeSubscriptionId && invoice.billing_reason !== "subscription_create") {
+          // Initial checkout is fulfilled via checkout.session.completed
+          const line = invoice.lines?.data?.[0] as
+            | { period?: { end?: number } }
+            | undefined;
+          await ctx.runMutation(internal.payments.stripeDb.applyInvoicePaid, {
+            stripeSubscriptionId,
+            invoiceId: invoice.id,
+            amountCents: invoice.amount_paid ?? 0,
+            periodEnd: line?.period?.end ? line.period.end * 1000 : undefined,
+            deliveryRef: event.id,
+            paymentMode: stripeMode(event.livemode),
+          });
+        }
+      } else if (event.type === "invoice.payment_failed") {
+        const invoice = event.data.object as Stripe.Invoice & {
+          subscription?: string | { id: string } | null;
+        };
+        const stripeSubscriptionId = extractStripeSubscriptionId(invoice);
+        if (stripeSubscriptionId) {
+          await ctx.runMutation(internal.payments.stripeDb.applyInvoicePaymentFailed, {
+            stripeSubscriptionId,
+            deliveryRef: event.id,
+          });
+        }
+      } else if (event.type === "customer.subscription.updated") {
+        const subscription = event.data.object as Stripe.Subscription & {
+          current_period_end?: number;
+          cancel_at_period_end?: boolean;
+        };
+        const accessStatus =
+          subscription.status === "canceled" || subscription.status === "unpaid"
+            ? "cancelled"
+            : subscription.status === "past_due"
+              ? "past_due"
+              : subscription.status === "active" || subscription.status === "trialing"
+                ? "active"
+                : undefined;
+        await ctx.runMutation(internal.payments.stripeDb.applySubscriptionUpdated, {
+          stripeSubscriptionId: subscription.id,
+          billingStatus: subscription.status,
+          currentPeriodEnd: subscription.current_period_end
+            ? subscription.current_period_end * 1000
+            : undefined,
+          cancelAtPeriodEnd: subscription.cancel_at_period_end,
+          accessStatus,
         });
       } else if (event.type === "customer.subscription.deleted") {
         const subscription = event.data.object as Stripe.Subscription;
         await ctx.runMutation(internal.payments.stripeDb.markSubscriptionCancelled, {
           stripeSubscriptionId: subscription.id,
-          idempotencyKey: event.id,
+          deliveryRef: event.id,
         });
       }
       return { success: true };

@@ -83,8 +83,8 @@ const CreatorProfile = () => {
     creatorData ? { creatorId: creatorData._id } : 'skip',
   );
   const productsRaw = useQuery(
-    api.products.mutations.listByCreator,
-    creatorData ? { creatorId: creatorData._id, activeOnly: true } : 'skip',
+    api.products.mutations.listPublicByCreator,
+    creatorData ? { creatorId: creatorData._id } : 'skip',
   );
 
   const loading = creatorData === undefined || (creatorData && (postsRaw === undefined || productsRaw === undefined));

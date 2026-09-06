@@ -73,7 +73,7 @@ const ProductsSection = ({ creatorId }: ProductsSectionProps) => {
     setName(product.name);
     setDescription(product.description ?? '');
     setPrice((product.priceCents / 100).toFixed(2));
-    setBillingPeriod(product.billingPeriod);
+    setBillingPeriod('monthly');
     setIsFeatured(product.isFeatured);
     setDialogOpen(true);
   };
@@ -333,18 +333,17 @@ const ProductsSection = ({ creatorId }: ProductsSectionProps) => {
                 <label className="text-xs font-medium text-muted-foreground mb-1.5 block">
                   Billing Period
                 </label>
-                <Select value={billingPeriod} onValueChange={setBillingPeriod}>
+                <Select value={billingPeriod} onValueChange={setBillingPeriod} disabled>
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="daily">Daily</SelectItem>
-                    <SelectItem value="weekly">Weekly</SelectItem>
                     <SelectItem value="monthly">Monthly</SelectItem>
-                    <SelectItem value="yearly">Yearly</SelectItem>
-                    <SelectItem value="one-time">One-Time Purchase</SelectItem>
                   </SelectContent>
                 </Select>
+                <p className="text-[11px] text-muted-foreground mt-1">
+                  Launch supports monthly recurring only.
+                </p>
               </div>
             </div>
             <label className="flex items-center gap-2 cursor-pointer">

@@ -7,7 +7,8 @@ import { Footer } from '@/components/landing/Footer';
 import { Crown, Loader2, Users } from 'lucide-react';
 
 const Creators = () => {
-  const creators = useQuery(api.creators.queries.listPublished, {});
+  const creatorsPage = useQuery(api.creators.queries.listPublished, {});
+  const creators = creatorsPage?.items;
 
   return (
     <div className="min-h-screen bg-background">
@@ -18,9 +19,9 @@ const Creators = () => {
         <h1 className="text-4xl font-bold text-foreground mb-2 tracking-tight">Top performers on the platform</h1>
         <p className="text-muted-foreground mb-12">Published creators on Wizzlet. Profiles come from the live database.</p>
 
-        {creators === undefined ? (
+        {creatorsPage === undefined ? (
           <div className="flex justify-center py-16"><Loader2 className="h-5 w-5 animate-spin text-primary" /></div>
-        ) : creators.length === 0 ? (
+        ) : !creators || creators.length === 0 ? (
           <p className="text-sm text-muted-foreground py-12 text-center">No published creators yet.</p>
         ) : (
           <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">

@@ -17,6 +17,14 @@ function ts(value?: string | number | null) {
   return Number.isFinite(t) ? t : Date.now();
 }
 
+/** Strict timestamp for quarantine-aware imports. */
+function parseTsOrQuarantine(value: unknown): number | null {
+  if (value == null || value === "") return null;
+  if (typeof value === "number" && Number.isFinite(value)) return value;
+  const t = Date.parse(String(value));
+  return Number.isFinite(t) ? t : null;
+}
+
 /** Batch upsert users — ETL only. */
 export const importUsers = internalMutation({
   args: {
@@ -275,6 +283,7 @@ export const importSubscriptions = internalMutation({
     assertMigrationSecret(args.secret);
     let n = 0;
     let skipped = 0;
+    let quarantined = 0;
     for (const raw of args.rows) {
       const row = raw as Record<string, unknown>;
       const user = await ctx.db
@@ -289,6 +298,23 @@ export const importSubscriptions = internalMutation({
         skipped++;
         continue;
       }
+      const statusRaw = row.status;
+      if (statusRaw == null || statusRaw === "") {
+        quarantined++;
+        continue;
+      }
+      const status = String(statusRaw).toLowerCase().trim();
+      const allowed = new Set(["active", "cancelled", "canceled", "past_due", "incomplete"]);
+      if (!allowed.has(status)) {
+        quarantined++;
+        continue;
+      }
+      const normalizedStatus = status === "canceled" ? "cancelled" : status;
+      const createdAt = parseTsOrQuarantine(row.created_at);
+      if (row.created_at != null && row.created_at !== "" && createdAt == null) {
+        quarantined++;
+        continue;
+      }
       const legacyId = String(row.id);
       const existing = await ctx.db
         .query("subscriptions")
@@ -299,7 +325,7 @@ export const importSubscriptions = internalMutation({
         userId: user._id,
         creatorId: creator._id,
         stripeSubscriptionId: (row.stripe_subscription_id as string) || undefined,
-        status: String(row.status ?? "active"),
+        status: normalizedStatus,
         amountCents: dollarsToCents(row.amount as number),
         platformFeeCents: dollarsToCents(row.platform_fee as number),
         creatorEarningsCents: dollarsToCents(row.creator_earnings as number),
@@ -311,11 +337,11 @@ export const importSubscriptions = internalMutation({
         await ctx.db.insert("subscriptions", {
           legacyId,
           ...fields,
-          createdAt: ts(row.created_at as string),
+          createdAt: createdAt ?? now,
         });
       n++;
     }
-    return { imported: n, skipped };
+    return { imported: n, skipped, quarantined };
   },
 });
 

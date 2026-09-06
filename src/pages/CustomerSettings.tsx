@@ -45,6 +45,7 @@ const CustomerSettings = () => {
   const [prefs, setPrefs] = useState<Prefs>(defaultPrefs);
   const [savingProfile, setSavingProfile] = useState(false);
   const [password, setPassword] = useState('');
+  const [currentPassword, setCurrentPassword] = useState('');
   const [savingPassword, setSavingPassword] = useState(false);
   const [initialized, setInitialized] = useState(false);
 
@@ -101,15 +102,20 @@ const CustomerSettings = () => {
   };
 
   const changePassword = async () => {
+    if (!currentPassword) {
+      toast.error('Enter your current password');
+      return;
+    }
     if (password.length < 8) {
       toast.error('Password must be at least 8 characters');
       return;
     }
     setSavingPassword(true);
     try {
-      await changePasswordAction({ newPassword: password });
+      await changePasswordAction({ currentPassword, newPassword: password });
       setPassword('');
-      toast.success('Password updated');
+      setCurrentPassword('');
+      toast.success('Password updated — please sign in again');
     } catch (e) {
       toast.error(e instanceof Error ? e.message : 'Could not update password');
     } finally {
@@ -182,6 +188,16 @@ const CustomerSettings = () => {
             </div>
             <div className="grid gap-3 max-w-sm">
               <div>
+                <label htmlFor="currentPassword" className="text-xs text-muted-foreground mb-1 block">Current Password</label>
+                <Input
+                  id="currentPassword"
+                  type="password"
+                  value={currentPassword}
+                  onChange={(e) => setCurrentPassword(e.target.value)}
+                  autoComplete="current-password"
+                />
+              </div>
+              <div>
                 <label htmlFor="newPassword" className="text-xs text-muted-foreground mb-1 block">New Password</label>
                 <Input
                   id="newPassword"
@@ -192,7 +208,13 @@ const CustomerSettings = () => {
                   autoComplete="new-password"
                 />
               </div>
-              <Button variant="outline" size="sm" className="w-fit" onClick={changePassword} disabled={savingPassword || !password}>
+              <Button
+                variant="outline"
+                size="sm"
+                className="w-fit"
+                onClick={changePassword}
+                disabled={savingPassword || !password || !currentPassword}
+              >
                 {savingPassword && <Loader2 className="mr-2 h-3 w-3 animate-spin" />}
                 Change Password
               </Button>

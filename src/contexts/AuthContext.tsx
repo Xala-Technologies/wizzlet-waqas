@@ -118,7 +118,6 @@ function AuthProviderInner({ children }: { children: ReactNode }) {
     if (!ensured) {
       setEnsured(true);
       void ensureUser({
-        email: me.email,
         fullName: me.fullName,
         username: me.username,
       }).catch(() => undefined);

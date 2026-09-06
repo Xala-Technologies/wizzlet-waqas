@@ -15,9 +15,10 @@ const filters = [
 export function CreatorDiscovery() {
   const [activeFilter, setActiveFilter] = useState('Trending');
   const [search, setSearch] = useState('');
-  const creators = useQuery(api.creators.queries.listPublished, {
+  const creatorsPage = useQuery(api.creators.queries.listPublished, {
     search: search.trim() || undefined,
   });
+  const creators = creatorsPage?.items;
 
   const filtered = useMemo(() => {
     if (!creators) return [];
@@ -71,7 +72,7 @@ export function CreatorDiscovery() {
           </div>
         </div>
 
-        {creators === undefined ? (
+        {creatorsPage === undefined ? (
           <div className="flex justify-center py-12"><Loader2 className="h-5 w-5 animate-spin text-primary" /></div>
         ) : (
           <>

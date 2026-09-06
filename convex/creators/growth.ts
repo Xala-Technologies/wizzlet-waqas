@@ -98,37 +98,9 @@ export const upsertPromo = mutation({
     expiresAt: v.optional(v.number()),
     isActive: v.boolean(),
   },
-  handler: async (ctx, args) => {
-    const user = await requireAppUser(ctx);
-    const creator = await getCreatorForUser(ctx, user._id);
-    if (!creator) throw new Error("NOT_FOUND");
-    const now = Date.now();
-    if (args.promoId) {
-      const existing = await ctx.db.get(args.promoId);
-      if (!existing || existing.creatorId !== creator._id) {
-        throw new Error("FORBIDDEN");
-      }
-      await ctx.db.patch(args.promoId, {
-        code: args.code,
-        discountPercent: args.discountPercent,
-        maxUses: args.maxUses,
-        expiresAt: args.expiresAt,
-        isActive: args.isActive,
-        updatedAt: now,
-      });
-      return args.promoId;
-    }
-    return ctx.db.insert("promoCodes", {
-      creatorId: creator._id,
-      code: args.code,
-      discountPercent: args.discountPercent,
-      maxUses: args.maxUses,
-      usedCount: 0,
-      expiresAt: args.expiresAt,
-      isActive: args.isActive,
-      createdAt: now,
-      updatedAt: now,
-    });
+  handler: async (_ctx, _args) => {
+    // Checkout does not apply promos yet — block commercial claims.
+    throw new Error("PROMO_UNAVAILABLE");
   },
 });
 
@@ -155,7 +127,7 @@ export const listMyReferrals = query({
   },
 });
 
-/** Hardened referral insert — commission/converted forced false. */
+/** Referral tracking only — no commission until checkout applies referrals. */
 export const recordReferral = mutation({
   args: {
     creatorId: v.id("creators"),
