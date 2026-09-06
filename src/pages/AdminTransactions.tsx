@@ -88,20 +88,20 @@ const AdminTransactions = () => {
           <h1 className="text-2xl font-bold">Transactions</h1>
           <p className="text-muted-foreground text-sm mt-0.5">{transactions.length} total transactions</p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
           <div className="relative w-full sm:w-48">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
             <Input placeholder="Search…" value={search} onChange={e => setSearch(e.target.value)} className="pl-9 h-9" />
           </div>
           <Select value={statusFilter} onValueChange={setStatusFilter}>
-            <SelectTrigger className="w-32 h-9"><SelectValue /></SelectTrigger>
+            <SelectTrigger className="w-full sm:w-32 h-9"><SelectValue /></SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All Status</SelectItem>
               <SelectItem value="active">Active</SelectItem>
               <SelectItem value="canceled">Canceled</SelectItem>
             </SelectContent>
           </Select>
-          <Button variant="outline" size="sm" className="h-9 text-xs" onClick={handleExport}>
+          <Button variant="outline" size="sm" className="h-9 min-h-9 text-xs w-full sm:w-auto" onClick={handleExport}>
             <Download className="mr-1.5 h-3.5 w-3.5" /> Export
           </Button>
         </div>
@@ -134,9 +134,14 @@ const AdminTransactions = () => {
           <h3 className="font-semibold mb-2">{search ? 'No matching transactions' : 'No transactions yet'}</h3>
         </div>
       ) : (
-        <div className="rounded-xl border border-border overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
+        <div className="rounded-xl border border-border overflow-hidden max-w-full">
+          <div
+            role="region"
+            aria-label="Transactions table"
+            tabIndex={0}
+            className="overflow-x-auto max-w-full"
+          >
+            <table className="w-full min-w-[720px] text-sm">
               <thead>
                 <tr className="border-b border-border bg-muted/30">
                   <th className="text-left text-xs font-medium text-muted-foreground p-4">Date</th>
