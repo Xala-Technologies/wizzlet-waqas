@@ -8,7 +8,7 @@
 | Sandbox/Stripe subscribe success | Admin finance / transactions | Fee + revenue aggregates | Immediate or after ledger write | J1, J5 | NOT_RUN |
 | Webhook / confirmCheckoutSession | Access without success-page return | Active sub even if user abandons return URL | Async ≤ bounded | COM-05 | PASS (inferred via ACTIVE after Checkout) |
 | Cancel subscription | Premium access | Locked after cancel rule | Immediate | J1 | **PASS (W5)** |
-| Cancel subscription | Messaging eligibility | Prefer server `messagingEnabled` + active sub | Immediate | J4 | NOT_RUN |
+| Cancel subscription | Messaging eligibility | Prefer server `messagingEnabled` + active sub | Immediate | J4 | **PASS (W15)** |
 | Product price / period edit | New checkout | New buyers see new terms | Immediate | J2 | **PASS (W14)** |
 | Product price edit | Existing subs | Preserve purchased terms unless migration | Immediate | J2 | **PASS (W14)** |
 | Product capacity / isClosed | Checkout | Reject when unavailable | Immediate | COM-01/02 | STATIC_PARTIAL |

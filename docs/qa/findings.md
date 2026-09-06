@@ -367,3 +367,28 @@ NOT READY
 ```
 
 J2 closed for launch-monthly product pricing. Remaining journeys: J4–J8.
+
+---
+
+# Wave 15 additions (2026-09-07)
+
+## J4 Messages preferences / support — **PASS (hardened)**
+
+| | |
+|--|--|
+| Category | Entitlement |
+| Severity | **P2** |
+| Layer | Unit + static + browser |
+| Finding | Subscriber sends required active sub + messagingEnabled; creator could still DM cancelled subscribers |
+| Fix | Shared `canSendDirectMessage` — both roles need `messagingEnabled` + active subscription; empty body rejected |
+| Unit | `messaging.security.test.ts` — 6 cases PASS |
+| Browser | Cancelled member `qa.member.w3.1101` on `/dashboard/subscriptions-billing`: CANCELLED row, **no Message button** |
+| Support channel | Admin/creator `supportMessages` remains separate (not subscription-gated by design) |
+
+## Gate (after Wave 15)
+
+```text
+NOT READY
+```
+
+Remaining journeys: J5–J8.
