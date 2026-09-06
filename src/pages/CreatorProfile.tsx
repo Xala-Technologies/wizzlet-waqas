@@ -218,7 +218,13 @@ const CreatorProfile = () => {
     );
   }
 
-  const price = (creator.monthly_price ?? 9.99).toFixed(2);
+  const featuredProduct = products.find((p) => p.is_featured) ?? products[0];
+  const price = (
+    featuredProduct?.price ??
+    creator.monthly_price ??
+    9.99
+  ).toFixed(2);
+  const checkoutProductId = featuredProduct?.id;
   const hasProducts = products.length > 0;
   const initials = (creator.display_name?.[0] ?? creator.username[0]).toUpperCase();
 
@@ -330,7 +336,10 @@ const CreatorProfile = () => {
           </div>
         ) : (
           <Button variant="hero" size="lg" className="mt-6 text-base px-10 h-12 w-full sm:w-auto"
-            onClick={() => { trackSubscribeClick(creator.id); createCheckoutSession(creator.id, creator.username); }}>
+            onClick={() => {
+              trackSubscribeClick(creator.id);
+              createCheckoutSession(creator.id, creator.username, checkoutProductId);
+            }}>
             Subscribe — ${price}/mo
           </Button>
         )}
@@ -417,7 +426,11 @@ const CreatorProfile = () => {
                           <>
                             <p className="text-xs text-muted-foreground mb-3">Subscribe to unlock this pick</p>
                             <Button variant="hero" size="sm" className="text-xs px-5"
-                              onClick={(e) => { e.stopPropagation(); trackSubscribeClick(creator.id); createCheckoutSession(creator.id, creator.username); }}>
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                trackSubscribeClick(creator.id);
+                                createCheckoutSession(creator.id, creator.username, checkoutProductId);
+                              }}>
                               Subscribe — ${price}/mo
                             </Button>
                           </>

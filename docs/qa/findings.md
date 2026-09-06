@@ -342,3 +342,28 @@ NOT READY
 ```
 
 Security promote blockers from W1 remediated. Remaining: journeys J2/J4–J8, ESLint baseline, prod env checklist.
+
+---
+
+# Wave 14 additions (2026-09-07)
+
+## J2 Product edits — **PASS (fixed)**
+
+| | |
+|--|--|
+| Category | Commerce |
+| Severity | **P2** (pricing drift) |
+| Layer | Static + browser + data |
+| Finding | Featured/fallback subscribe CTAs used `creator.monthlyPriceCents` / omitted `productId`; product edits could diverge from profile/checkout fallback |
+| Fix | Featured product upsert syncs `creators.monthlyPriceCents`; profile lock/fallback CTAs use featured (or first) product price + `productId` |
+| Existing subs | Confirmed `subscriptions.amountCents` stored at purchase (fixture cancelled sub still `999`); checkout uses live product price only for new sessions |
+| Browser | `@qacreator1101` profile loads Subscribe CTA at $9.99; fixture had **0** product rows (PricingCards path code-verified via `PricingCards` → `createCheckoutSession(..., product.id)`) |
+| Residual | Optional: create/edit product E2E under creator session once products exist on fixture |
+
+## Gate (after Wave 14)
+
+```text
+NOT READY
+```
+
+J2 closed for launch-monthly product pricing. Remaining journeys: J4–J8.

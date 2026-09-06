@@ -1,21 +1,21 @@
-# Resume checkpoint — after Wave 13 (F-012 partial)
+# Resume checkpoint — after Wave 14 (J2)
 
 ## Open PR stack
 
-- **#10–#15** auth → portal → F-011 returns W9–W12
-- **#16** (this) `fix/admin-pagination-f012-w13` — admin list hard caps (F-012 interim)
+- **#10–#16** auth → portal → F-011 → F-012 caps
+- **#17** (this) `test/qa-j2-products-w14` — J2 product pricing sync + profile checkout productId
 
-## Wave 13 / F-012
+## Wave 14 / J2
 
-- `convex/lib/adminLists.ts` — `ADMIN_LIST_LIMIT` (500) + `adminTakeNewest`
-- Admin full-table reads use `.take(500)` instead of unbounded `.collect()`
-- Dashboard stats expose `truncated` / `listLimit` with UI notice
-- True cursor pagination + admin UI load-more still deferred (join-heavy pages)
+- Featured product upsert syncs `creators.monthlyPriceCents`
+- Profile subscribe / premium-lock CTAs use featured product price + `productId`
+- Existing subscription amounts preserved on sub rows (not rewritten by product edits)
+- Fixture note: `@qacreator1101` had no `products` rows; PricingCards path already passes product id in code
 
 ## Still open
 
-- F-012 residual: cursor pagination / `usePaginatedQuery` for admin join pages; aggregate counters for exact dashboard stats
-- Journeys J2/J4–J8
+- Journeys J4–J8
+- F-012 residual: true cursor pagination for admin join pages
 - Gate: **NOT READY** for full-app claim
 
 ## Prod reminder
