@@ -28,6 +28,7 @@ import type * as lib_payoutBalance from "../lib/payoutBalance.js";
 import type * as lib_results from "../lib/results.js";
 import type * as lib_sandbox from "../lib/sandbox.js";
 import type * as lib_subscriptions from "../lib/subscriptions.js";
+import type * as lib_validators from "../lib/validators.js";
 import type * as messaging_mutations from "../messaging/mutations.js";
 import type * as migrations_importBatch from "../migrations/importBatch.js";
 import type * as migrations_load from "../migrations/load.js";
@@ -73,6 +74,7 @@ declare const fullApi: ApiFromModules<{
   "lib/results": typeof lib_results;
   "lib/sandbox": typeof lib_sandbox;
   "lib/subscriptions": typeof lib_subscriptions;
+  "lib/validators": typeof lib_validators;
   "messaging/mutations": typeof messaging_mutations;
   "migrations/importBatch": typeof migrations_importBatch;
   "migrations/load": typeof migrations_load;

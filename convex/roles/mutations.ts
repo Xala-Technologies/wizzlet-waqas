@@ -9,12 +9,14 @@ import {
   type AppRole,
 } from "../lib/auth";
 import { isDevAdminGrantAllowed } from "../lib/devAdminGrant";
+import { appRoleValidator } from "../lib/validators";
 
 const assignableRole = v.union(v.literal("creator"), v.literal("subscriber"));
 
 /** Self-assign creator/subscriber only — never admin (hardening parity). */
 export const assignSelfRole = mutation({
   args: { role: assignableRole },
+  returns: v.id("userRoles"),
   handler: async (ctx, args) => {
     await requireIdentity(ctx);
     const user = await requireAppUser(ctx);
@@ -50,6 +52,7 @@ export const grantRole = mutation({
       v.literal("subscriber"),
     ),
   },
+  returns: v.id("userRoles"),
   handler: async (ctx, args) => {
     await requireAdmin(ctx);
     const existing = await ctx.db
@@ -67,6 +70,7 @@ export const grantRole = mutation({
 
 export const myRoles = query({
   args: {},
+  returns: v.array(appRoleValidator),
   handler: async (ctx) => {
     const user = await requireAppUser(ctx);
     return listRolesForUser(ctx, user._id);

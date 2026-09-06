@@ -5,6 +5,7 @@ import { requireAppUser } from "../lib/auth";
 /** Generate a short-lived upload URL for Convex file storage. */
 export const generateUploadUrl = mutation({
   args: {},
+  returns: v.string(),
   handler: async (ctx) => {
     await requireAppUser(ctx);
     return await ctx.storage.generateUploadUrl();
@@ -20,6 +21,7 @@ export const registerOwnedFile = mutation({
     storageId: v.id("_storage"),
     purpose: v.optional(v.string()),
   },
+  returns: v.id("fileAssets"),
   handler: async (ctx, args) => {
     const user = await requireAppUser(ctx);
     const existing = await ctx.db

@@ -1,20 +1,22 @@
-# Resume checkpoint — after Wave 8
+# Resume checkpoint — after Wave 9
 
-## Open PR #10 (`fix/qa-w1-auth-harden-w6`)
+## Open PRs
 
-- Commerce + entitlement (J1/J3), select-role fix, profile CTA, cancel
-- Security: QA-W1-01/02/03 + runtime auth matrix
-- Reliability: F-014 events day bounds from client; analytics track soft-no-op when signed out
+- **#10** `fix/qa-w1-auth-harden-w6` — auth harden + commerce reliability
+- **#11** `fix/eslint-and-billing-portal` — ESLint errors + Stripe Customer Portal
+- **#12** (this) `fix/convex-returns-validators-w9` — F-011 returns validators (stacked on #11)
 
-## Wave 8 branch `fix/eslint-and-billing-portal`
+## Wave 9
 
-- ESLint error baseline cleared (migrations `any`, empty UI interfaces, unused expression, tailwind `require`)
-- Real Stripe Customer Portal: `createBillingPortalSession` + `openCustomerPortal` / billing page button
+- Shared `convex/lib/validators.ts` document validators
+- `returns` on users, files upload/register, roles, sandbox pay, subscriptions (member + admin list), messaging
 
 ## Still open
 
-- Journeys J2/J4–J8, admin pagination / returns validators, ESLint warnings
-- Gate: **NOT READY** for full-app claim; core money + auth + portal path is stronger
+- Remaining public APIs without `returns` (creators/posts/admin/etc.)
+- F-012 admin pagination (needs UI redesign for join-heavy lists)
+- Journeys J2/J4–J8
+- Gate: **NOT READY** for full-app claim
 
 ## Prod reminder
 

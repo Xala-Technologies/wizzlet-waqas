@@ -19,8 +19,8 @@
 | Pass `now` into events query (F-014) | Restores Convex query caching | Client passes clock; query deterministic | S | Clients must refresh periodically |
 | Soft-fail analytics on logout (QA-W1-04) | Cleaner logs / no toast noise | Sign-out never calls authed track | S | Low |
 | Fix ESLint errors (QA-W1-05) | CI-ready | `eslint` exit 0 | S | Low |
+| Add `returns` validators (F-011) | Contract safety | Public functions validated | M | Wave 9: priority auth/files/subs/messaging/roles/sandbox done; admin/list residual |
 | Paginate admin `.collect()` (F-012) | Scale safety | Admin lists use cursors | M | UI changes |
-| Add `returns` validators (F-011) | Contract safety | Public functions validated | M | Touch many files |
 
 ## Later product improvements
 

@@ -8,6 +8,7 @@ import {
 } from "@convex-dev/auth/server";
 import { listRolesForUser, logMutation, requireAppUser } from "../lib/auth";
 import { internal } from "../_generated/api";
+import { userDocValidator, userWithRolesValidator } from "../lib/validators";
 
 /**
  * Ensure profile fields exist. Never accepts client email — email is Auth-owned.
@@ -17,6 +18,7 @@ export const ensureUser = mutation({
     fullName: v.optional(v.string()),
     username: v.optional(v.string()),
   },
+  returns: v.id("users"),
   handler: async (ctx, args) => {
     const userId = await getAuthUserId(ctx);
     if (!userId) throw new Error("UNAUTHENTICATED");
@@ -42,6 +44,7 @@ export const ensureUser = mutation({
 
 export const me = query({
   args: {},
+  returns: v.union(userWithRolesValidator, v.null()),
   handler: async (ctx) => {
     const userId = await getAuthUserId(ctx);
     if (!userId) return null;
@@ -54,6 +57,7 @@ export const me = query({
 
 export const getById = query({
   args: { userId: v.id("users") },
+  returns: v.union(userDocValidator, v.null()),
   handler: async (ctx, args) => {
     const meUser = await requireAppUser(ctx);
     const roles = await listRolesForUser(ctx, meUser._id);
@@ -76,6 +80,7 @@ export const updateProfile = mutation({
       }),
     ),
   },
+  returns: v.id("users"),
   handler: async (ctx, args) => {
     const user = await requireAppUser(ctx);
     await ctx.db.patch(user._id, {
