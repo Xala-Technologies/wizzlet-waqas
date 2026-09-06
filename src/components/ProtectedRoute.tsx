@@ -1,9 +1,9 @@
 import { ReactNode, useEffect } from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery } from 'convex/react';
 import { useAuth } from '@/contexts/AuthContext';
-import { supabase } from '@/lib/supabase';
 import { AppRole, homePathForRole } from '@/lib/roles';
+import { api } from '@convex/_generated/api';
 import { Loader2 } from 'lucide-react';
 
 interface ProtectedRouteProps {
@@ -21,34 +21,15 @@ export function ProtectedRoute({ children, allowedRoles }: ProtectedRouteProps) 
   const { user, role, roles, loading, roleLoading, devMode, switchRole } = useAuth();
   const location = useLocation();
 
-  // A multi-role account may legitimately open a section that isn't its active
-  // role — align the active role with the section instead of bouncing them out.
   const grantedRole = allowedRoles?.find((r) => roles.includes(r)) ?? null;
 
   const needsCreatorProfile =
     !!user && allowedRoles?.includes('creator') === true && location.pathname !== '/creator/onboarding';
 
-  // Creator sections are useless without a creator profile row — send those
-  // accounts through onboarding instead of rendering empty/erroring pages.
-  const { data: creatorProfile, isLoading: creatorProfileLoading } = useQuery({
-    queryKey: ['creator-profile-exists', user?.id],
-    enabled: needsCreatorProfile,
-    staleTime: 60_000,
-    queryFn: async () => {
-      const { data: appUser } = await supabase
-        .from('users')
-        .select('id')
-        .eq('auth_id', user!.id)
-        .maybeSingle();
-      if (!appUser) return null;
-      const { data } = await supabase
-        .from('creators')
-        .select('id')
-        .eq('user_id', appUser.id)
-        .maybeSingle();
-      return data ?? null;
-    },
-  });
+  const creatorProfile = useQuery(
+    api.creators.queries.myCreator,
+    needsCreatorProfile ? {} : 'skip',
+  );
 
   useEffect(() => {
     if (grantedRole && role !== grantedRole) switchRole(grantedRole);
@@ -61,7 +42,6 @@ export function ProtectedRoute({ children, allowedRoles }: ProtectedRouteProps) 
   }
 
   if (!(import.meta.env.DEV && devMode)) {
-    // Authenticated but no role assigned yet → role selection.
     if (roles.length === 0) {
       return <Navigate to="/select-role" replace />;
     }
@@ -72,7 +52,7 @@ export function ProtectedRoute({ children, allowedRoles }: ProtectedRouteProps) 
   }
 
   if (needsCreatorProfile) {
-    if (creatorProfileLoading) return <Spinner />;
+    if (creatorProfile === undefined) return <Spinner />;
     if (!creatorProfile) return <Navigate to="/creator/onboarding" replace />;
   }
 

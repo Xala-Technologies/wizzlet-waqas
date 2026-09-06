@@ -1,4 +1,6 @@
 import { useState, useMemo } from 'react';
+import { useQuery } from 'convex/react';
+import { api } from '../../convex/_generated/api';
 import { Navbar } from '@/components/landing/Navbar';
 import { Seo } from '@/components/Seo';
 import { Footer } from '@/components/landing/Footer';
@@ -7,8 +9,8 @@ import { Button } from '@/components/ui/button';
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue
 } from '@/components/ui/select';
-import { Search, Star, Zap, Flame, Clock, Filter } from 'lucide-react';
-import { getTodaysEvents, getEventsBySport, SPORT_ICONS, formatEventTime, getTimeUntil, type SportEvent, type EventStatus } from '@/lib/events';
+import { Search, Loader2, Star, Clock, Filter, Zap } from 'lucide-react';
+import { mapConvexSportEvent, getEventsBySport, SPORT_ICONS, formatEventTime, getTimeUntil, type SportEvent, type EventStatus } from '@/lib/events';
 
 const statusConfig: Record<EventStatus, { label: string; class: string }> = {
   featured: { label: 'Featured', class: 'bg-primary/15 text-primary border-primary/20' },
@@ -59,7 +61,8 @@ function EventRow({ event }: { event: SportEvent }) {
 }
 
 const TodaysEvents = () => {
-  const allEvents = useMemo(() => getTodaysEvents(), []);
+  const rows = useQuery(api.events.queries.listPublishedToday, {});
+  const allEvents = useMemo(() => (rows ?? []).map(mapConvexSportEvent), [rows]);
   const [search, setSearch] = useState('');
   const [sportFilter, setSportFilter] = useState('All Sports');
   const [timeFilter, setTimeFilter] = useState('All Times');
@@ -142,6 +145,10 @@ const TodaysEvents = () => {
             <span className="text-[10px] text-muted-foreground ml-auto">{filtered.length} event{filtered.length !== 1 ? 's' : ''}</span>
           </div>
 
+          {rows === undefined ? (
+            <div className="flex justify-center py-20"><Loader2 className="h-5 w-5 animate-spin text-primary" /></div>
+          ) : (
+            <>
           {/* Featured Events */}
           {featured.length > 0 && (
             <div className="mb-8">
@@ -185,9 +192,17 @@ const TodaysEvents = () => {
           {filtered.length === 0 && (
             <div className="rounded-xl border border-dashed border-border bg-card/50 p-16 text-center">
               <Filter className="h-10 w-10 text-muted-foreground/30 mx-auto mb-4" />
-              <h3 className="text-base font-semibold mb-1">No events match your filters</h3>
-              <p className="text-sm text-muted-foreground">Try adjusting your search or filters.</p>
+              <h3 className="text-base font-semibold mb-1">
+                {allEvents.length === 0 ? 'No events published today' : 'No events match your filters'}
+              </h3>
+              <p className="text-sm text-muted-foreground">
+                {allEvents.length === 0
+                  ? 'Admins can add sport events in Convex. Nothing is fabricated for the UI.'
+                  : 'Try adjusting your search or filters.'}
+              </p>
             </div>
+          )}
+            </>
           )}
         </div>
       </main>

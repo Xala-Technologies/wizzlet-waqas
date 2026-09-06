@@ -1,6 +1,7 @@
-import { useState, useEffect } from 'react';
+import { useMemo, useState } from 'react';
+import { useQuery } from 'convex/react';
+import { api } from '../../convex/_generated/api';
 import { DashboardLayout } from '@/components/dashboard/DashboardLayout';
-import { supabase } from '@/lib/supabase';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -15,67 +16,61 @@ interface Customer {
   id: string;
   email: string;
   full_name: string | null;
-  created_at: string;
+  created_at: number;
   subCount: number;
   activeCount: number;
   canceledCount: number;
   totalSpent: number;
-  lastActivity: string;
+  lastActivity: number;
 }
 
 const AdminCustomers = () => {
   const navigate = useNavigate();
   const [selected, setSelected] = useState<Customer | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [customers, setCustomers] = useState<Customer[]>([]);
   const [search, setSearch] = useState('');
 
-  useEffect(() => {
-    const load = async () => {
-      const [usersRes, subsRes] = await Promise.all([
-        supabase.from('users').select('id, email, full_name, created_at').order('created_at', { ascending: false }),
-        supabase.from('subscriptions').select('user_id, status, amount, created_at'),
-      ]);
+  const usersRaw = useQuery(api.admin.queries.listUsers);
+  const subsRaw = useQuery(api.subscriptions.mutations.listAllAdmin);
 
-      const subs = subsRes.data ?? [];
-      const subsByUser = new Map<string, typeof subs>();
-      subs.forEach(s => {
-        const arr = subsByUser.get(s.user_id) ?? [];
-        arr.push(s);
-        subsByUser.set(s.user_id, arr);
-      });
+  const loading = usersRaw === undefined || subsRaw === undefined;
 
-      setCustomers((usersRes.data ?? []).map(u => {
-        const userSubs = subsByUser.get(u.id) ?? [];
-        const active = userSubs.filter(s => s.status === 'active');
-        const canceled = userSubs.filter(s => s.status !== 'active');
-        const totalSpent = userSubs.reduce((a, b) => a + Number(b.amount), 0);
-        const lastSub = userSubs.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())[0];
-        return {
-          id: u.id,
-          email: u.email,
-          full_name: u.full_name,
-          created_at: u.created_at,
-          subCount: userSubs.length,
-          activeCount: active.length,
-          canceledCount: canceled.length,
-          totalSpent,
-          lastActivity: lastSub?.created_at ?? u.created_at,
-        };
-      }));
-      setLoading(false);
-    };
-    load();
-  }, []);
+  const customers = useMemo((): Customer[] => {
+    if (!usersRaw || !subsRaw) return [];
+
+    const subsByUser = new Map<string, typeof subsRaw>();
+    subsRaw.forEach(s => {
+      const arr = subsByUser.get(s.userId) ?? [];
+      arr.push(s);
+      subsByUser.set(s.userId, arr);
+    });
+
+    return usersRaw.map(u => {
+      const userSubs = subsByUser.get(u._id) ?? [];
+      const active = userSubs.filter(s => s.status === 'active');
+      const canceled = userSubs.filter(s => s.status !== 'active');
+      const totalSpent = userSubs.reduce((a, b) => a + b.amountCents / 100, 0);
+      const lastSub = [...userSubs].sort((a, b) => b.createdAt - a.createdAt)[0];
+      return {
+        id: u._id,
+        email: u.email,
+        full_name: u.fullName ?? null,
+        created_at: u.createdAt,
+        subCount: userSubs.length,
+        activeCount: active.length,
+        canceledCount: canceled.length,
+        totalSpent,
+        lastActivity: lastSub?.createdAt ?? u.createdAt,
+      };
+    }).sort((a, b) => b.created_at - a.created_at);
+  }, [usersRaw, subsRaw]);
 
   const filtered = customers.filter(c => {
     const q = search.toLowerCase();
     return !q || (c.full_name?.toLowerCase().includes(q)) || c.email.toLowerCase().includes(q);
   });
 
-  const highValue = customers.filter(c => c.totalSpent > 50).length;
-  const recentlyChurned = customers.filter(c => c.canceledCount > 0 && c.activeCount === 0).length;
   const atRisk = customers.filter(c => c.activeCount === 1 && c.canceledCount > 0).length;
+  const recentlyChurned = customers.filter(c => c.canceledCount > 0 && c.activeCount === 0).length;
 
   const handleExport = () => {
     if (filtered.length === 0) { toast.error('Nothing to export'); return; }
@@ -108,7 +103,6 @@ const AdminCustomers = () => {
         </div>
       </div>
 
-      {/* Summary + Insight Cards */}
       <div className="grid grid-cols-2 lg:grid-cols-5 gap-4 mb-6">
         <div className="rounded-xl border border-border bg-card p-4">
           <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1">Total</p>

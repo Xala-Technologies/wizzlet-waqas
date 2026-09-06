@@ -1,5 +1,3 @@
-import { supabase } from '@/lib/supabase';
-
 export type AppRole = 'creator' | 'subscriber' | 'admin';
 
 /**
@@ -48,15 +46,9 @@ export function homePathForRole(role: AppRole | null): string {
   }
 }
 
-/** Fetch every role a user holds. Never returns duplicates. */
-export async function fetchUserRoles(userId: string): Promise<AppRole[]> {
-  const { data, error } = await supabase
-    .from('user_roles')
-    .select('role')
-    .eq('user_id', userId);
-
-  if (error || !data) return [];
-
-  const roles = data.map((r) => r.role).filter(isAppRole);
-  return sortRoles(Array.from(new Set(roles)));
+/**
+ * @deprecated Roles load via Convex AuthContext (api.roles.mutations.myRoles).
+ */
+export async function fetchUserRoles(_userId: string): Promise<AppRole[]> {
+  return [];
 }

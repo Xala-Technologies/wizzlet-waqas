@@ -1,25 +1,17 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { useMutation, useQuery } from 'convex/react';
+import { api } from '../../convex/_generated/api';
+import type { Id } from '../../convex/_generated/dataModel';
 import { DashboardLayout } from '@/components/dashboard/DashboardLayout';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Progress } from '@/components/ui/progress';
-import { supabase } from '@/lib/supabase';
 import { useCreatorProfile } from '@/hooks/useCreatorProfile';
 import {
   Send, Bot, User, Circle, TrendingUp, TrendingDown, BarChart3, Target, Zap, ArrowUpRight, Loader2,
 } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { toast } from 'sonner';
-
-interface SupportMessage {
-  id: string;
-  creator_id: string;
-  sender_role: string;
-  channel: string;
-  body: string;
-  read: boolean;
-  created_at: string;
-}
 
 interface Metrics {
   revenue30: number;
@@ -43,73 +35,60 @@ const EMPTY: Metrics = {
 
 const CreatorPersonalGrowth = () => {
   const { creator, loading: creatorLoading } = useCreatorProfile();
-  const [messages, setMessages] = useState<SupportMessage[]>([]);
-  const [metrics, setMetrics] = useState<Metrics>(EMPTY);
-  const [loading, setLoading] = useState(true);
+  const subs = useQuery(api.subscriptions.mutations.listForMyCreator);
+  const posts = useQuery(api.posts.queries.listMine);
+  const analytics = useQuery(api.analytics.mutations.listForMyCreator);
+  const supportRows = useQuery(api.support.mutations.listForMyCreator);
+  const sendSupport = useMutation(api.support.mutations.send);
+
   const [input, setInput] = useState('');
   const [sending, setSending] = useState(false);
   const endRef = useRef<HTMLDivElement>(null);
 
-  useEffect(() => {
-    if (!creator) {
-      if (!creatorLoading) setLoading(false);
-      return;
-    }
+  const sinceMs = Date.now() - 30 * 24 * 60 * 60 * 1000;
 
-    const load = async () => {
-      setLoading(true);
-      const since = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
+  const messages = useMemo(
+    () => (supportRows ?? [])
+      .filter((m) => m.channel === 'growth')
+      .sort((a, b) => a.createdAt - b.createdAt)
+      .map((m) => ({
+        id: m._id,
+        sender_role: m.senderRole,
+        body: m.body,
+        created_at: new Date(m.createdAt).toISOString(),
+      })),
+    [supportRows],
+  );
 
-      const [{ data: subs }, { data: posts }, { data: events }, { data: msgs }] = await Promise.all([
-        supabase.from('subscriptions')
-          .select('id, status, amount, creator_earnings, created_at')
-          .eq('creator_id', creator.id),
-        supabase.from('posts')
-          .select('id, created_at, result')
-          .eq('creator_id', creator.id),
-        supabase.from('analytics_events')
-          .select('id, event_type, created_at')
-          .eq('creator_id', creator.id)
-          .gte('created_at', since),
-        supabase.from('support_messages')
-          .select('id, creator_id, sender_role, channel, body, read, created_at')
-          .eq('creator_id', creator.id)
-          .eq('channel', 'growth')
-          .order('created_at', { ascending: true }),
-      ]);
+  const metrics = useMemo(() => {
+    if (!subs || !posts || !analytics) return EMPTY;
+    const subRows = subs;
+    const postRows = posts;
+    const eventRows = analytics.filter((e) => e.createdAt >= sinceMs);
 
-      const subRows = subs ?? [];
-      const postRows = posts ?? [];
-      const eventRows = events ?? [];
+    const active = subRows.filter((s) => s.status === 'active');
+    const newSubs30 = subRows.filter((s) => s.createdAt >= sinceMs).length;
+    const canceled = subRows.filter((s) => s.status !== 'active').length;
+    const revenue30 = subRows
+      .filter((s) => s.createdAt >= sinceMs)
+      .reduce((sum, s) => sum + s.creatorEarningsCents / 100, 0);
+    const views30 = eventRows.filter((e) => e.eventType === 'profile_view' || e.eventType === 'post_view').length;
+    const posts30 = postRows.filter((p) => p.createdAt >= sinceMs).length;
+    const settled = postRows.filter((p) => p.result === 'won' || p.result === 'lost');
+    const winRate = settled.length ? (settled.filter((p) => p.result === 'won').length / settled.length) * 100 : 0;
+    const churnRate = subRows.length ? (canceled / subRows.length) * 100 : 0;
+    const conversion = views30 ? (newSubs30 / views30) * 100 : 0;
 
-      const active = subRows.filter(s => s.status === 'active');
-      const newSubs30 = subRows.filter(s => s.created_at >= since).length;
-      const canceled = subRows.filter(s => s.status !== 'active').length;
-      const revenue30 = subRows
-        .filter(s => s.created_at >= since)
-        .reduce((sum, s) => sum + Number(s.creator_earnings ?? 0), 0);
-      const views30 = eventRows.filter(e => e.event_type === 'profile_view' || e.event_type === 'post_view').length;
-      const posts30 = postRows.filter(p => p.created_at >= since).length;
-      const settled = postRows.filter(p => p.result === 'won' || p.result === 'lost');
-      const winRate = settled.length ? (settled.filter(p => p.result === 'won').length / settled.length) * 100 : 0;
-      const churnRate = subRows.length ? (canceled / subRows.length) * 100 : 0;
-      const conversion = views30 ? (newSubs30 / views30) * 100 : 0;
+    const engagement = Math.min(100, Math.round(posts30 * 8 + Math.min(views30, 200) / 4));
+    const retention = Math.round(Math.max(0, 100 - churnRate));
+    const revenueScore = Math.min(100, Math.round(revenue30 / 20 + active.length * 4));
+    const score = Math.round((engagement + retention + revenueScore) / 3);
 
-      const engagement = Math.min(100, Math.round(posts30 * 8 + Math.min(views30, 200) / 4));
-      const retention = Math.round(Math.max(0, 100 - churnRate));
-      const revenueScore = Math.min(100, Math.round(revenue30 / 20 + active.length * 4));
-      const score = Math.round((engagement + retention + revenueScore) / 3);
-
-      setMetrics({
-        revenue30, activeSubs: active.length, newSubs30, churnRate, conversion,
-        views30, posts30, winRate, score, engagement, retention, revenueScore,
-      });
-      setMessages((msgs ?? []) as SupportMessage[]);
-      setLoading(false);
+    return {
+      revenue30, activeSubs: active.length, newSubs30, churnRate, conversion,
+      views30, posts30, winRate, score, engagement, retention, revenueScore,
     };
-
-    void load();
-  }, [creator, creatorLoading]);
+  }, [subs, posts, analytics, sinceMs]);
 
   useEffect(() => {
     endRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -149,19 +128,18 @@ const CreatorPersonalGrowth = () => {
   const send = async () => {
     if (!creator || !input.trim()) return;
     setSending(true);
-    const { data, error } = await supabase
-      .from('support_messages')
-      .insert({ creator_id: creator.id, sender_role: 'creator', channel: 'growth', body: input.trim(), read: false })
-      .select('id, creator_id, sender_role, channel, body, read, created_at')
-      .maybeSingle();
-    setSending(false);
-    if (error) {
-      toast.error(error.message);
-      return;
-    }
-    if (data) {
-      setMessages(prev => [...prev, data as SupportMessage]);
+    try {
+      await sendSupport({
+        creatorId: creator.id as Id<'creators'>,
+        senderRole: 'creator',
+        channel: 'growth',
+        body: input.trim(),
+      });
       setInput('');
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : 'Failed to send message');
+    } finally {
+      setSending(false);
     }
   };
 
@@ -169,7 +147,7 @@ const CreatorPersonalGrowth = () => {
     score >= 80 ? 'text-emerald-500' : score >= 60 ? 'text-primary' : 'text-destructive';
   const scoreLevel = (score: number) => (score >= 80 ? 'Elite' : score >= 60 ? 'Pro' : 'Starter');
 
-  const busy = creatorLoading || loading;
+  const busy = creatorLoading || subs === undefined || posts === undefined || analytics === undefined || supportRows === undefined;
 
   return (
     <DashboardLayout type="creator">

@@ -1,10 +1,12 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
+import { useMutation, useQuery } from 'convex/react';
+import { api } from '../../convex/_generated/api';
+import type { Id } from '../../convex/_generated/dataModel';
 import { DashboardLayout } from '@/components/dashboard/DashboardLayout';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { supabase } from '@/lib/supabase';
 import { FileWarning, MessageSquare, Clock, User, Loader2, Send } from 'lucide-react';
 import { format } from 'date-fns';
 import { toast } from 'sonner';
@@ -17,8 +19,8 @@ interface CaseRow {
   description: string | null;
   status: string;
   priority: string;
-  created_at: string;
-  updated_at: string;
+  created_at: number;
+  updated_at: number;
   creatorName: string;
 }
 
@@ -26,7 +28,7 @@ interface CaseMessage {
   id: string;
   sender_role: string;
   body: string;
-  created_at: string;
+  created_at: number;
 }
 
 const statusColors: Record<string, string> = {
@@ -43,47 +45,51 @@ const priorityColors: Record<string, string> = {
 };
 
 const AdminResolutionCases = () => {
-  const [cases, setCases] = useState<CaseRow[]>([]);
-  const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState('all');
   const [selected, setSelected] = useState<string | null>(null);
-  const [messages, setMessages] = useState<CaseMessage[]>([]);
   const [reply, setReply] = useState('');
   const [sending, setSending] = useState(false);
 
-  useEffect(() => {
-    const load = async () => {
-      const { data, error } = await supabase
-        .from('resolution_cases')
-        .select('id, creator_id, subject, category, description, status, priority, created_at, updated_at')
-        .order('updated_at', { ascending: false });
-      if (error) toast.error(error.message);
+  const casesRaw = useQuery(api.resolution.mutations.listAllAdmin);
+  const creatorsRaw = useQuery(api.creators.queries.listAllAdmin);
+  const messagesRaw = useQuery(
+    api.resolution.mutations.listMessages,
+    selected ? { caseId: selected as Id<'resolutionCases'> } : 'skip',
+  );
+  const setStatus = useMutation(api.resolution.mutations.setStatus);
+  const addMessage = useMutation(api.resolution.mutations.addMessage);
 
-      const rows = data ?? [];
-      const creatorIds = [...new Set(rows.map(r => r.creator_id))];
-      const { data: creators } = creatorIds.length
-        ? await supabase.from('creators').select('id, display_name, username').in('id', creatorIds)
-        : { data: [] as { id: string; display_name: string | null; username: string | null }[] };
-      const nameMap = new Map((creators ?? []).map(c => [c.id, c.display_name || c.username || 'Unnamed creator']));
+  const loading = casesRaw === undefined || creatorsRaw === undefined;
 
-      setCases(rows.map(r => ({ ...r, creatorName: nameMap.get(r.creator_id) ?? 'Unknown creator' })));
-      setLoading(false);
-    };
-    void load();
-  }, []);
+  const cases = useMemo((): CaseRow[] => {
+    if (!casesRaw || !creatorsRaw) return [];
+    const nameMap = new Map(creatorsRaw.map(c => [c._id, c.displayName || c.username || 'Unnamed creator']));
+    return casesRaw
+      .map(r => ({
+        id: r._id,
+        creator_id: r.creatorId,
+        subject: r.subject,
+        category: r.category ?? 'general',
+        description: r.description ?? null,
+        status: r.status,
+        priority: r.priority ?? 'normal',
+        created_at: r.createdAt,
+        updated_at: r.updatedAt,
+        creatorName: nameMap.get(r.creatorId) ?? 'Unknown creator',
+      }))
+      .sort((a, b) => b.updated_at - a.updated_at);
+  }, [casesRaw, creatorsRaw]);
 
-  useEffect(() => {
-    if (!selected) { setMessages([]); return; }
-    const load = async () => {
-      const { data } = await supabase
-        .from('resolution_case_messages')
-        .select('id, sender_role, body, created_at')
-        .eq('case_id', selected)
-        .order('created_at', { ascending: true });
-      setMessages(data ?? []);
-    };
-    void load();
-  }, [selected]);
+  const messages = useMemo((): CaseMessage[] => {
+    if (!messagesRaw) return [];
+    return messagesRaw.map(m => ({
+      id: m._id,
+      sender_role: m.senderRole,
+      body: m.body,
+      created_at: m.createdAt,
+    }));
+  }, [messagesRaw]);
+
 
   const filtered = useMemo(
     () => filter === 'all' ? cases : cases.filter(c => c.status === filter),
@@ -91,26 +97,30 @@ const AdminResolutionCases = () => {
   );
 
   const updateStatus = async (id: string, status: string) => {
-    const previous = cases;
-    setCases(prev => prev.map(c => c.id === id ? { ...c, status } : c));
-    const { error } = await supabase.from('resolution_cases').update({ status }).eq('id', id);
-    if (error) { setCases(previous); toast.error(error.message); return; }
-    toast.success(`Case marked ${status.replace('_', ' ')}`);
+    try {
+      await setStatus({ caseId: id as Id<'resolutionCases'>, status });
+      toast.success(`Case marked ${status.replace('_', ' ')}`);
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : 'Failed to update case');
+    }
   };
 
   const sendReply = async () => {
     if (!selected || !reply.trim()) return;
     setSending(true);
-    const { data, error } = await supabase
-      .from('resolution_case_messages')
-      .insert({ case_id: selected, sender_role: 'admin', body: reply.trim() })
-      .select('id, sender_role, body, created_at')
-      .maybeSingle();
-    setSending(false);
-    if (error) { toast.error(error.message); return; }
-    if (data) setMessages(prev => [...prev, data]);
-    setReply('');
-    toast.success('Reply sent');
+    try {
+      await addMessage({
+        caseId: selected as Id<'resolutionCases'>,
+        senderRole: 'admin',
+        body: reply.trim(),
+      });
+      setReply('');
+      toast.success('Reply sent');
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : 'Failed to send reply');
+    } finally {
+      setSending(false);
+    }
   };
 
   const openCount = cases.filter(c => c.status === 'open' || c.status === 'escalated').length;

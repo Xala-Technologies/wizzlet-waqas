@@ -1,11 +1,13 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
+import { useMutation, useQuery } from 'convex/react';
+import { api } from '../../convex/_generated/api';
+import type { Id } from '../../convex/_generated/dataModel';
 import { DashboardLayout } from '@/components/dashboard/DashboardLayout';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
-import { supabase } from '@/lib/supabase';
 import { MessageSquare, Send, Loader2, Users } from 'lucide-react';
 import { format } from 'date-fns';
 import { toast } from 'sonner';
@@ -19,41 +21,36 @@ interface SentMessage {
   id: string;
   creator_id: string;
   body: string;
-  created_at: string;
+  created_at: number;
 }
 
 const AdminCreatorMessaging = () => {
-  const [creators, setCreators] = useState<CreatorOption[]>([]);
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [search, setSearch] = useState('');
   const [body, setBody] = useState('');
   const [sending, setSending] = useState(false);
-  const [loading, setLoading] = useState(true);
-  const [recent, setRecent] = useState<SentMessage[]>([]);
 
-  const loadRecent = async () => {
-    const { data } = await supabase
-      .from('support_messages')
-      .select('id, creator_id, body, created_at')
-      .eq('sender_role', 'admin')
-      .eq('channel', 'support')
-      .order('created_at', { ascending: false })
-      .limit(20);
-    setRecent(data ?? []);
-  };
+  const creatorsRaw = useQuery(api.creators.queries.listAllAdmin);
+  const supportRaw = useQuery(api.support.mutations.listAllAdmin);
+  const sendMessage = useMutation(api.support.mutations.send);
 
-  useEffect(() => {
-    const load = async () => {
-      const { data } = await supabase
-        .from('creators')
-        .select('id, display_name, username')
-        .order('created_at', { ascending: false });
-      setCreators((data ?? []).map(c => ({ id: c.id, name: c.display_name || c.username || 'Unnamed creator' })));
-      await loadRecent();
-      setLoading(false);
-    };
-    void load();
-  }, []);
+  const loading = creatorsRaw === undefined || supportRaw === undefined;
+
+  const creators = useMemo((): CreatorOption[] => (creatorsRaw ?? []).map(c => ({
+    id: c._id,
+    name: c.displayName || c.username || 'Unnamed creator',
+  })), [creatorsRaw]);
+
+  const recent = useMemo((): SentMessage[] => (supportRaw ?? [])
+    .filter(m => m.senderRole === 'admin' && m.channel === 'support')
+    .sort((a, b) => b.createdAt - a.createdAt)
+    .slice(0, 20)
+    .map(m => ({
+      id: m._id,
+      creator_id: m.creatorId,
+      body: m.body,
+      created_at: m.createdAt,
+    })), [supportRaw]);
 
   const filtered = useMemo(
     () => creators.filter(c => c.name.toLowerCase().includes(search.toLowerCase())),
@@ -74,15 +71,23 @@ const AdminCreatorMessaging = () => {
     if (selected.size === 0) { toast.error('Select at least one creator'); return; }
     if (!body.trim()) { toast.error('Write a message'); return; }
     setSending(true);
-    const { error } = await supabase.from('support_messages').insert(
-      [...selected].map(creator_id => ({ creator_id, sender_role: 'admin', channel: 'support', body: body.trim() })),
-    );
-    setSending(false);
-    if (error) { toast.error(error.message); return; }
-    setBody('');
-    setSelected(new Set());
-    await loadRecent();
-    toast.success('Message delivered');
+    try {
+      await Promise.all([...selected].map(creatorId =>
+        sendMessage({
+          creatorId: creatorId as Id<'creators'>,
+          senderRole: 'admin',
+          channel: 'support',
+          body: body.trim(),
+        }),
+      ));
+      setBody('');
+      setSelected(new Set());
+      toast.success('Message delivered');
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : 'Failed to send message');
+    } finally {
+      setSending(false);
+    }
   };
 
   return (

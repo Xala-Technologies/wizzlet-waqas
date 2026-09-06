@@ -1,6 +1,6 @@
-import { useCallback, useEffect, useState } from 'react';
-import { supabase } from '@/lib/supabase';
+import { useQuery } from 'convex/react';
 import { useAuth } from '@/contexts/AuthContext';
+import { api } from '@convex/_generated/api';
 
 export interface CreatorProfile {
   id: string;
@@ -13,92 +13,30 @@ export interface CreatorProfile {
   created_at: string;
 }
 
-/**
- * Resolves the `public.creators` row that belongs to the signed-in account.
- * Every creator dashboard page needs this before it can query its own data.
- */
 export function useCreatorProfile() {
   const { user } = useAuth();
-  const [creator, setCreator] = useState<CreatorProfile | null>(null);
-  const [loading, setLoading] = useState(true);
+  const convexCreator = useQuery(api.creators.queries.myCreator, user ? {} : 'skip');
 
-  const load = useCallback(async () => {
-    if (!user) {
-      setCreator(null);
-      setLoading(false);
-      return null;
-    }
-    setLoading(true);
-    const { data: appUser } = await supabase
-      .from('users')
-      .select('id')
-      .eq('auth_id', user.id)
-      .maybeSingle();
-
-    if (!appUser) {
-      setCreator(null);
-      setLoading(false);
-      return null;
-    }
-
-    const { data } = await supabase
-      .from('creators')
-      .select('id, user_id, username, display_name, monthly_price, referral_code, messaging_enabled, created_at')
-      .eq('user_id', appUser.id)
-      .maybeSingle();
-
-    setCreator((data as CreatorProfile) ?? null);
-    setLoading(false);
-    return (data as CreatorProfile) ?? null;
-  }, [user]);
-
-  useEffect(() => {
-    let cancelled = false;
-
-    const run = async () => {
-      if (!user) {
-        if (!cancelled) {
-          setCreator(null);
-          setLoading(false);
-        }
-        return;
+  const loading = user ? convexCreator === undefined : false;
+  const creator: CreatorProfile | null = convexCreator
+    ? {
+        id: convexCreator._id,
+        user_id: convexCreator.userId,
+        username: convexCreator.username,
+        display_name: convexCreator.displayName ?? null,
+        monthly_price:
+          convexCreator.monthlyPriceCents != null
+            ? convexCreator.monthlyPriceCents / 100
+            : null,
+        referral_code: convexCreator.referralCode ?? null,
+        messaging_enabled: convexCreator.messagingEnabled,
+        created_at: new Date(convexCreator.createdAt).toISOString(),
       }
-      setLoading(true);
-      const { data: appUser } = await supabase
-        .from('users')
-        .select('id')
-        .eq('auth_id', user.id)
-        .maybeSingle();
+    : null;
 
-      if (cancelled) return;
-
-      if (!appUser) {
-        setCreator(null);
-        setLoading(false);
-        return;
-      }
-
-      const { data } = await supabase
-        .from('creators')
-        .select('id, user_id, username, display_name, monthly_price, referral_code, messaging_enabled, created_at')
-        .eq('user_id', appUser.id)
-        .maybeSingle();
-
-      if (cancelled) return;
-      setCreator((data as CreatorProfile) ?? null);
-      setLoading(false);
-    };
-
-    void run();
-    return () => {
-      cancelled = true;
-    };
-  }, [user]);
-
-  return { creator, loading, reload: load };
+  return { creator, loading, reload: async () => null };
 }
 
-/** Stable, human-friendly referral code derived from the creator id. */
 export function buildReferralCode(creator: { username: string | null; id: string }) {
   const base = (creator.username ?? 'wz').replace(/[^a-zA-Z0-9]/g, '').slice(0, 10) || 'wz';
   return `${base}-${creator.id.slice(0, 6)}`.toLowerCase();

@@ -1,9 +1,11 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
+import { useMutation, useQuery } from 'convex/react';
+import { api } from '../../convex/_generated/api';
+import type { Id } from '../../convex/_generated/dataModel';
 import { DashboardLayout } from '@/components/dashboard/DashboardLayout';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
-import { supabase } from '@/lib/supabase';
 import { Inbox, Send, Loader2, MessageSquare } from 'lucide-react';
 import { format } from 'date-fns';
 import { toast } from 'sonner';
@@ -15,7 +17,7 @@ interface Message {
   channel: string;
   body: string;
   read: boolean;
-  created_at: string;
+  created_at: number;
 }
 
 interface Thread {
@@ -23,76 +25,73 @@ interface Thread {
   name: string;
   messages: Message[];
   unread: number;
-  lastAt: string;
+  lastAt: number;
 }
 
 const AdminGrowthManagerInbox = () => {
-  const [threads, setThreads] = useState<Thread[]>([]);
-  const [loading, setLoading] = useState(true);
   const [activeId, setActiveId] = useState<string | null>(null);
   const [reply, setReply] = useState('');
   const [sending, setSending] = useState(false);
+  const [readOverrides, setReadOverrides] = useState<Set<string>>(new Set());
 
-  const load = async () => {
-    const { data, error } = await supabase
-      .from('support_messages')
-      .select('id, creator_id, sender_role, channel, body, read, created_at')
-      .order('created_at', { ascending: true });
-    if (error) { toast.error(error.message); setLoading(false); return; }
+  const supportRaw = useQuery(api.support.mutations.listAllAdmin);
+  const creatorsRaw = useQuery(api.creators.queries.listAllAdmin);
+  const sendMessage = useMutation(api.support.mutations.send);
 
-    const rows = (data ?? []) as Message[];
-    const creatorIds = [...new Set(rows.map(r => r.creator_id))];
-    const { data: creators } = creatorIds.length
-      ? await supabase.from('creators').select('id, display_name, username').in('id', creatorIds)
-      : { data: [] as { id: string; display_name: string | null; username: string | null }[] };
-    const nameMap = new Map((creators ?? []).map(c => [c.id, c.display_name || c.username || 'Unnamed creator']));
+  const loading = supportRaw === undefined || creatorsRaw === undefined;
+
+  const threads = useMemo((): Thread[] => {
+    if (!supportRaw || !creatorsRaw) return [];
+
+    const nameMap = new Map(creatorsRaw.map(c => [c._id, c.displayName || c.username || 'Unnamed creator']));
+    const rows = supportRaw.map(r => ({
+      id: r._id,
+      creator_id: r.creatorId,
+      sender_role: r.senderRole,
+      channel: r.channel ?? 'growth',
+      body: r.body,
+      read: r.read || readOverrides.has(r._id),
+      created_at: r.createdAt,
+    }));
 
     const grouped = new Map<string, Message[]>();
     rows.forEach(r => grouped.set(r.creator_id, [...(grouped.get(r.creator_id) ?? []), r]));
 
-    const list: Thread[] = [...grouped.entries()].map(([creatorId, messages]) => ({
+    return [...grouped.entries()].map(([creatorId, messages]) => ({
       creatorId,
       name: nameMap.get(creatorId) ?? 'Unknown creator',
       messages,
       unread: messages.filter(m => m.sender_role === 'creator' && !m.read).length,
       lastAt: messages[messages.length - 1].created_at,
-    })).sort((a, b) => b.lastAt.localeCompare(a.lastAt));
+    })).sort((a, b) => b.lastAt - a.lastAt);
+  }, [supportRaw, creatorsRaw, readOverrides]);
 
-    setThreads(list);
-    setActiveId(prev => prev ?? list[0]?.creatorId ?? null);
-    setLoading(false);
-  };
+  const active = useMemo(() => threads.find(t => t.creatorId === activeId) ?? threads[0] ?? null, [threads, activeId]);
 
-  useEffect(() => { void load(); }, []);
-
-  const active = useMemo(() => threads.find(t => t.creatorId === activeId) ?? null, [threads, activeId]);
-
-  const openThread = async (thread: Thread) => {
+  const openThread = (thread: Thread) => {
     setActiveId(thread.creatorId);
     const unreadIds = thread.messages.filter(m => m.sender_role === 'creator' && !m.read).map(m => m.id);
-    if (unreadIds.length === 0) return;
-    await supabase.from('support_messages').update({ read: true }).in('id', unreadIds);
-    setThreads(prev => prev.map(t => t.creatorId === thread.creatorId
-      ? { ...t, unread: 0, messages: t.messages.map(m => ({ ...m, read: true })) }
-      : t));
+    if (unreadIds.length > 0) {
+      setReadOverrides(prev => new Set([...prev, ...unreadIds]));
+    }
   };
 
   const send = async () => {
     if (!active || !reply.trim()) return;
     setSending(true);
-    const { data, error } = await supabase
-      .from('support_messages')
-      .insert({ creator_id: active.creatorId, sender_role: 'admin', channel: 'growth', body: reply.trim(), read: true })
-      .select('id, creator_id, sender_role, channel, body, read, created_at')
-      .maybeSingle();
-    setSending(false);
-    if (error) { toast.error(error.message); return; }
-    if (data) {
-      setThreads(prev => prev.map(t => t.creatorId === active.creatorId
-        ? { ...t, messages: [...t.messages, data as Message], lastAt: data.created_at }
-        : t));
+    try {
+      await sendMessage({
+        creatorId: active.creatorId as Id<'creators'>,
+        senderRole: 'admin',
+        channel: 'growth',
+        body: reply.trim(),
+      });
+      setReply('');
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : 'Failed to send reply');
+    } finally {
+      setSending(false);
     }
-    setReply('');
   };
 
   const totalUnread = threads.reduce((a, t) => a + t.unread, 0);
@@ -119,7 +118,7 @@ const AdminGrowthManagerInbox = () => {
                 key={t.creatorId}
                 onClick={() => openThread(t)}
                 className={`w-full text-left px-4 py-3 border-b border-border last:border-0 transition-colors ${
-                  activeId === t.creatorId ? 'bg-muted/50' : 'hover:bg-muted/30'
+                  active?.creatorId === t.creatorId ? 'bg-muted/50' : 'hover:bg-muted/30'
                 }`}
               >
                 <div className="flex items-center justify-between gap-2">

@@ -1,8 +1,9 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useMemo } from 'react';
 import { Link } from 'react-router-dom';
+import { useQuery } from 'convex/react';
+import { api } from '../../convex/_generated/api';
+import type { Id } from '../../convex/_generated/dataModel';
 import { DashboardLayout } from '@/components/dashboard/DashboardLayout';
-import { useAuth } from '@/contexts/AuthContext';
-import { supabase } from '@/lib/supabase';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import {
@@ -10,65 +11,62 @@ import {
   ShieldCheck, Lightbulb, BarChart3, Target, Zap, Flame,
 } from 'lucide-react';
 import { format } from 'date-fns';
-import { useQuery } from '@tanstack/react-query';
-
-interface Post {
-  id: string;
-  title: string;
-  is_premium: boolean;
-  created_at: string;
-}
 
 interface PickEntry {
   id: string; result: string; units_won_lost: number | null; units_risked: number; sport: string; date: string;
 }
 
+function uiPickResult(result: string): string {
+  if (result === 'won') return 'win';
+  if (result === 'lost') return 'loss';
+  return result;
+}
+
 const CreatorDashboard = () => {
-  const { user } = useAuth();
-  const [loading, setLoading] = useState(true);
-  const [subCount, setSubCount] = useState(0);
-  const [revenue, setRevenue] = useState(0);
-  const [postCount, setPostCount] = useState(0);
-  const [productCount, setProductCount] = useState(0);
-  const [posts, setPosts] = useState<Post[]>([]);
-  const [creatorUsername, setCreatorUsername] = useState<string | null>(null);
+  const creator = useQuery(api.creators.queries.myCreator);
+  const subs = useQuery(api.subscriptions.mutations.listForMyCreator);
+  const postsRaw = useQuery(api.posts.queries.listMine);
+  const products = useQuery(
+    api.products.mutations.listByCreator,
+    creator ? { creatorId: creator._id } : 'skip',
+  );
+  const picksRaw = useQuery(api.picks.mutations.listMine);
 
-  useEffect(() => {
-    if (!user) return;
-    const load = async () => {
-      const { data: userData } = await supabase.from('users').select('id').eq('auth_id', user.id).maybeSingle();
-      if (!userData) { setLoading(false); return; }
-      const { data: creator } = await supabase.from('creators').select('id, username, monthly_price').eq('user_id', userData.id).maybeSingle();
-      if (!creator) { setLoading(false); return; }
-      setCreatorUsername(creator.username);
-      const [subsRes, postsRes, productsRes] = await Promise.all([
-        supabase.from('subscriptions').select('id', { count: 'exact', head: true }).eq('creator_id', creator.id).eq('status', 'active'),
-        supabase.from('posts').select('id, title, is_premium, created_at').eq('creator_id', creator.id).order('created_at', { ascending: false }).limit(5),
-        supabase.from('products').select('id', { count: 'exact', head: true }).eq('creator_id', creator.id),
-      ]);
-      const subs = subsRes.count ?? 0;
-      setSubCount(subs);
-      setRevenue(subs * (creator.monthly_price ?? 9.99));
-      setPosts(postsRes.data ?? []);
-      setPostCount(postsRes.data?.length ?? 0);
-      setProductCount(productsRes.count ?? 0);
-      setLoading(false);
-    };
-    load();
-  }, [user]);
+  const loading = creator === undefined || subs === undefined || postsRaw === undefined || picksRaw === undefined;
 
-  // Fetch picks for performance summary
-  const { data: picks = [] } = useQuery({
-    queryKey: ['creator_dashboard_picks'],
-    queryFn: async () => {
-      const { data, error } = await supabase.from('pick_tracker').select('*').order('date', { ascending: true });
-      if (error) throw error;
-      return (data || []) as unknown as PickEntry[];
-    },
-    enabled: !!user,
-  });
+  const posts = useMemo(
+    () => (postsRaw ?? []).slice(0, 5).map((p) => ({
+      id: p._id,
+      title: p.title,
+      is_premium: p.isPremium,
+      created_at: new Date(p.createdAt).toISOString(),
+    })),
+    [postsRaw],
+  );
 
-  // Performance stats
+  const picks = useMemo(
+    () => (picksRaw ?? []).map((p) => ({
+      id: p._id,
+      date: p.date,
+      pick_event: p.pickEvent,
+      sport: p.sport,
+      eu_odds: p.euOdds ?? null,
+      us_odds: p.usOdds ?? null,
+      units_risked: p.unitsRisked,
+      result: uiPickResult(p.result),
+      units_won_lost: p.unitsWonLost ?? null,
+      notes: p.notes ?? null,
+    })) as PickEntry[],
+    [picksRaw],
+  );
+
+  const subCount = (subs ?? []).filter((s) => s.status === 'active').length;
+  const monthlyPrice = (creator?.monthlyPriceCents ?? 999) / 100;
+  const revenue = subCount * monthlyPrice;
+  const postCount = postsRaw?.length ?? 0;
+  const productCount = products?.length ?? 0;
+  const creatorUsername = creator?.username ?? null;
+
   const perfStats = useMemo(() => {
     const settled = picks.filter(p => p.result !== 'pending');
     const wins = settled.filter(p => p.result === 'win').length;
@@ -79,7 +77,6 @@ const CreatorDashboard = () => {
     return { totalPicks: picks.length, wins, totalWonLost, winRate, roi, settled: settled.length };
   }, [picks]);
 
-  // Verification
   const verification = useMemo(() => {
     const minPicks = 50;
     const minWinRate = 52;
@@ -88,12 +85,10 @@ const CreatorDashboard = () => {
     return { isVerified, progress, settled: perfStats.settled, minPicks };
   }, [perfStats]);
 
-  // Revenue insights
   const revenueInsights = useMemo(() => {
     const insightsList: string[] = [];
     if (picks.length === 0) return insightsList;
 
-    // Best sport by profit
     const sportMap: Record<string, { profit: number; picks: number }> = {};
     picks.forEach(p => {
       if (!sportMap[p.sport]) sportMap[p.sport] = { profit: 0, picks: 0 };
@@ -108,7 +103,6 @@ const CreatorDashboard = () => {
       }
     }
 
-    // Premium vs free content correlation
     const premiumPosts = posts.filter(p => p.is_premium);
     const freePosts = posts.filter(p => !p.is_premium);
     if (premiumPosts.length > 0 && freePosts.length > 0) {
@@ -127,6 +121,14 @@ const CreatorDashboard = () => {
     return (
       <DashboardLayout type="creator">
         <div className="flex justify-center py-20"><Loader2 className="h-5 w-5 animate-spin text-primary" /></div>
+      </DashboardLayout>
+    );
+  }
+
+  if (!creator) {
+    return (
+      <DashboardLayout type="creator">
+        <p className="text-muted-foreground text-sm">Creator profile not found.</p>
       </DashboardLayout>
     );
   }
@@ -158,7 +160,6 @@ const CreatorDashboard = () => {
         </div>
       </div>
 
-      {/* Stats Grid */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
         {stats.map((stat) => (
           <div key={stat.label} className="rounded-xl border border-border bg-card p-5 transition-colors hover:border-primary/20">
@@ -172,7 +173,6 @@ const CreatorDashboard = () => {
         ))}
       </div>
 
-      {/* Performance Summary */}
       {picks.length > 0 && (
         <div className="rounded-xl border border-border bg-card p-4 mb-6">
           <div className="flex items-center justify-between mb-3">
@@ -204,7 +204,6 @@ const CreatorDashboard = () => {
         </div>
       )}
 
-      {/* Verification Progress */}
       {!verification.isVerified && picks.length > 0 && (
         <div className="rounded-xl border border-border bg-card p-4 mb-6">
           <div className="flex items-center gap-2 mb-2">
@@ -217,7 +216,6 @@ const CreatorDashboard = () => {
         </div>
       )}
 
-      {/* Revenue Insights */}
       {revenueInsights.length > 0 && (
         <div className="rounded-xl border border-primary/15 bg-primary/5 p-4 mb-6">
           <div className="flex items-center gap-2 mb-3">
@@ -235,7 +233,6 @@ const CreatorDashboard = () => {
         </div>
       )}
 
-      {/* Quick Actions */}
       <div className="mb-8">
         <h2 className="text-sm font-medium text-muted-foreground uppercase tracking-wider mb-3">Quick Actions</h2>
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
@@ -251,7 +248,6 @@ const CreatorDashboard = () => {
               <span className="text-xs">Track Pick</span>
             </Button>
           </Link>
-
           <Link to="/creator/products">
             <Button variant="outline" className="w-full h-auto py-4 flex-col gap-2">
               <Package className="h-5 w-5 text-primary" />
@@ -267,11 +263,9 @@ const CreatorDashboard = () => {
         </div>
       </div>
 
-      {/* Recent Activity */}
       <div className="flex items-center justify-between mb-4">
         <h2 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">Recent Activity</h2>
       </div>
-
 
       {posts.length === 0 ? (
         <div className="rounded-xl border border-border bg-card p-10 text-center">

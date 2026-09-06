@@ -1,6 +1,8 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
+import { useMutation, useQuery } from 'convex/react';
+import { api } from '../../convex/_generated/api';
+import type { Id } from '../../convex/_generated/dataModel';
 import { DashboardLayout } from '@/components/dashboard/DashboardLayout';
-import { supabase } from '@/lib/supabase';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Wallet, Clock, CheckCircle2, XCircle, TrendingUp, Calendar, Loader2, Crown, Send } from 'lucide-react';
@@ -13,8 +15,8 @@ interface PayoutRow {
   status: string;
   method: string;
   reference: string | null;
-  processed_at: string | null;
-  created_at: string;
+  processed_at: number | null;
+  created_at: number;
 }
 
 interface CreatorBalance {
@@ -34,53 +36,60 @@ const statusStyles: Record<string, string> = {
 };
 
 const fmt = (n: number) => `$${n.toFixed(2)}`;
-const fmtDate = (d: string | null) =>
+const fmtDate = (d: number | null) =>
   d ? new Date(d).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '—';
 
 const AdminPayouts = () => {
-  const [loading, setLoading] = useState(true);
   const [busyId, setBusyId] = useState<string | null>(null);
-  const [payouts, setPayouts] = useState<PayoutRow[]>([]);
-  const [balances, setBalances] = useState<CreatorBalance[]>([]);
 
-  const load = useCallback(async () => {
-    const [subsRes, creatorsRes, payoutsRes] = await Promise.all([
-      supabase.from('subscriptions').select('creator_id, creator_earnings, status'),
-      supabase.from('creators').select('id, display_name, username'),
-      supabase.from('payouts').select('*').order('created_at', { ascending: false }),
-    ]);
+  const subsRaw = useQuery(api.subscriptions.mutations.listAllAdmin);
+  const creatorsRaw = useQuery(api.creators.queries.listAllAdmin);
+  const payoutsRaw = useQuery(api.payouts.mutations.listAllAdmin);
+  const createPayoutMutation = useMutation(api.payouts.mutations.createAdmin);
+  const setStatusMutation = useMutation(api.payouts.mutations.setStatusAdmin);
 
-    if (subsRes.error || creatorsRes.error || payoutsRes.error) {
-      toast.error('Failed to load payout data');
-      setLoading(false);
-      return;
-    }
+  const loading = subsRaw === undefined || creatorsRaw === undefined || payoutsRaw === undefined;
 
-    const payoutRows = (payoutsRes.data ?? []).map(p => ({ ...p, amount: Number(p.amount) })) as PayoutRow[];
-    setPayouts(payoutRows);
+  const payouts = useMemo((): PayoutRow[] => {
+    if (!payoutsRaw) return [];
+    return [...payoutsRaw]
+      .sort((a, b) => b.createdAt - a.createdAt)
+      .map(p => ({
+        id: p._id,
+        creator_id: p.creatorId,
+        amount: p.amountCents / 100,
+        status: p.status,
+        method: p.method ?? 'bank_transfer',
+        reference: p.reference ?? null,
+        processed_at: p.processedAt ?? null,
+        created_at: p.createdAt,
+      }));
+  }, [payoutsRaw]);
 
-    const creators = creatorsRes.data ?? [];
+  const balances = useMemo((): CreatorBalance[] => {
+    if (!subsRaw || !creatorsRaw) return [];
+
     const earnedBy = new Map<string, number>();
-    (subsRes.data ?? [])
+    subsRaw
       .filter(s => s.status === 'active')
-      .forEach(s => earnedBy.set(s.creator_id, (earnedBy.get(s.creator_id) ?? 0) + Number(s.creator_earnings)));
+      .forEach(s => earnedBy.set(s.creatorId, (earnedBy.get(s.creatorId) ?? 0) + s.creatorEarningsCents / 100));
 
     const paidBy = new Map<string, number>();
     const inFlightBy = new Map<string, number>();
-    payoutRows.forEach(p => {
+    payouts.forEach(p => {
       if (p.status === 'completed') paidBy.set(p.creator_id, (paidBy.get(p.creator_id) ?? 0) + p.amount);
       else if (p.status === 'pending' || p.status === 'processing')
         inFlightBy.set(p.creator_id, (inFlightBy.get(p.creator_id) ?? 0) + p.amount);
     });
 
-    const rows: CreatorBalance[] = creators
+    return creatorsRaw
       .map(c => {
-        const earned = earnedBy.get(c.id) ?? 0;
-        const paid = paidBy.get(c.id) ?? 0;
-        const inFlight = inFlightBy.get(c.id) ?? 0;
+        const earned = earnedBy.get(c._id) ?? 0;
+        const paid = paidBy.get(c._id) ?? 0;
+        const inFlight = inFlightBy.get(c._id) ?? 0;
         return {
-          creatorId: c.id,
-          name: c.display_name || `@${c.username ?? 'unknown'}`,
+          creatorId: c._id,
+          name: c.displayName || `@${c.username ?? 'unknown'}`,
           earned,
           paid,
           inFlight,
@@ -89,14 +98,7 @@ const AdminPayouts = () => {
       })
       .filter(r => r.earned > 0 || r.paid > 0 || r.inFlight > 0)
       .sort((a, b) => b.available - a.available);
-
-    setBalances(rows);
-    setLoading(false);
-  }, []);
-
-  useEffect(() => {
-    load();
-  }, [load]);
+  }, [subsRaw, creatorsRaw, payouts]);
 
   const totals = useMemo(() => {
     const totalPaidOut = payouts.filter(p => p.status === 'completed').reduce((a, b) => a + b.amount, 0);
@@ -120,36 +122,35 @@ const AdminPayouts = () => {
     if (row.available <= 0) return;
     setBusyId(row.creatorId);
     const now = new Date();
-    const { error } = await supabase.from('payouts').insert({
-      creator_id: row.creatorId,
-      amount: Number(row.available.toFixed(2)),
-      status: 'pending',
-      method: 'bank_transfer',
-      reference: `Payout – ${now.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}`,
-      period_end: now.toISOString().slice(0, 10),
-    });
-    setBusyId(null);
-    if (error) {
-      toast.error(error.message);
-      return;
+    try {
+      await createPayoutMutation({
+        creatorId: row.creatorId as Id<'creators'>,
+        amountCents: Math.round(row.available * 100),
+        status: 'pending',
+        method: 'bank_transfer',
+        reference: `Payout – ${now.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}`,
+      });
+      toast.success(`Payout of ${fmt(row.available)} queued for ${row.name}`);
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : 'Failed to create payout');
+    } finally {
+      setBusyId(null);
     }
-    toast.success(`Payout of ${fmt(row.available)} queued for ${row.name}`);
-    load();
   };
 
   const updateStatus = async (id: string, status: string) => {
     setBusyId(id);
-    const { error } = await supabase
-      .from('payouts')
-      .update({ status, processed_at: status === 'completed' ? new Date().toISOString() : null })
-      .eq('id', id);
-    setBusyId(null);
-    if (error) {
-      toast.error(error.message);
-      return;
+    try {
+      await setStatusMutation({
+        payoutId: id as Id<'payouts'>,
+        status,
+      });
+      toast.success(`Payout marked ${status}`);
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : 'Failed to update payout');
+    } finally {
+      setBusyId(null);
     }
-    toast.success(`Payout marked ${status}`);
-    load();
   };
 
   if (loading) {
@@ -190,7 +191,6 @@ const AdminPayouts = () => {
         </div>
       </div>
 
-      {/* Creator balances */}
       <div className="rounded-xl border border-border overflow-hidden mb-8">
         <div className="p-4 border-b border-border bg-muted/30 flex items-center gap-2">
           <Crown className="h-4 w-4 text-primary" />
@@ -253,7 +253,6 @@ const AdminPayouts = () => {
         </div>
       </div>
 
-      {/* Payout history */}
       <div className="rounded-xl border border-border overflow-hidden">
         <div className="p-4 border-b border-border bg-muted/30">
           <h2 className="text-sm font-medium">Payout History</h2>

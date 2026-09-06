@@ -1,24 +1,16 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
+import { useMutation, useQuery } from 'convex/react';
+import { api } from '../../convex/_generated/api';
+import type { Id } from '../../convex/_generated/dataModel';
 import { DashboardLayout } from '@/components/dashboard/DashboardLayout';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
-import { supabase } from '@/lib/supabase';
 import { Mail, Send, Users, Eye, Clock, Loader2 } from 'lucide-react';
 import { format } from 'date-fns';
 import { toast } from 'sonner';
-
-interface Campaign {
-  id: string;
-  subject: string;
-  body: string;
-  audience: string;
-  recipients: number;
-  status: string;
-  created_at: string;
-}
 
 interface CreatorOption {
   id: string;
@@ -36,50 +28,45 @@ const AdminCustomerEmail = () => {
   const [body, setBody] = useState('');
   const [audience, setAudience] = useState('all');
   const [creatorId, setCreatorId] = useState<string>('');
-  const [creators, setCreators] = useState<CreatorOption[]>([]);
-  const [campaigns, setCampaigns] = useState<Campaign[]>([]);
-  const [allUsers, setAllUsers] = useState<string[]>([]);
-  const [subs, setSubs] = useState<{ user_id: string; creator_id: string; status: string }[]>([]);
-  const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
 
-  const loadCampaigns = async () => {
-    const { data } = await supabase
-      .from('email_campaigns')
-      .select('id, subject, body, audience, recipients, status, created_at')
-      .order('created_at', { ascending: false })
-      .limit(50);
-    setCampaigns((data ?? []) as Campaign[]);
-  };
+  const usersRaw = useQuery(api.admin.queries.listUsers);
+  const subsRaw = useQuery(api.subscriptions.mutations.listAllAdmin);
+  const creatorsRaw = useQuery(api.creators.queries.listAllAdmin);
+  const campaignsRaw = useQuery(api.admin.queries.listCampaigns);
+  const createCampaign = useMutation(api.admin.queries.createEmailCampaign);
 
-  useEffect(() => {
-    const load = async () => {
-      const [{ data: users }, { data: subscriptions }, { data: creatorRows }] = await Promise.all([
-        supabase.from('users').select('id'),
-        supabase.from('subscriptions').select('user_id, creator_id, status'),
-        supabase.from('creators').select('id, display_name, username'),
-      ]);
-      setAllUsers((users ?? []).map(u => u.id));
-      setSubs((subscriptions ?? []) as { user_id: string; creator_id: string; status: string }[]);
-      setCreators((creatorRows ?? []).map(c => ({
-        id: c.id,
-        label: c.display_name || c.username || 'Unnamed creator',
-      })));
-      await loadCampaigns();
-      setLoading(false);
-    };
-    void load();
-  }, []);
+  const loading = usersRaw === undefined || subsRaw === undefined || creatorsRaw === undefined || campaignsRaw === undefined;
+
+  const allUsers = useMemo(() => (usersRaw ?? []).map(u => u._id), [usersRaw]);
+  const subs = useMemo(() => subsRaw ?? [], [subsRaw]);
+  const creators = useMemo((): CreatorOption[] => (creatorsRaw ?? []).map(c => ({
+    id: c._id,
+    label: c.displayName || c.username || 'Unnamed creator',
+  })), [creatorsRaw]);
+
+  const campaigns = useMemo(() => (campaignsRaw ?? [])
+    .sort((a, b) => b.createdAt - a.createdAt)
+    .slice(0, 50)
+    .map(c => ({
+      id: c._id,
+      subject: c.subject,
+      body: c.body,
+      audience: c.audience ?? '',
+      recipients: c.recipients,
+      status: c.status,
+      created_at: c.createdAt,
+    })), [campaignsRaw]);
 
   const recipientIds = useMemo(() => {
-    const activeUsers = new Set(subs.filter(s => s.status === 'active').map(s => s.user_id));
+    const activeUsers = new Set(subs.filter(s => s.status === 'active').map(s => s.userId));
     if (audience === 'all') return allUsers;
     if (audience === 'active') return [...activeUsers];
     if (audience === 'canceled') {
-      return [...new Set(subs.filter(s => s.status !== 'active' && !activeUsers.has(s.user_id)).map(s => s.user_id))];
+      return [...new Set(subs.filter(s => s.status !== 'active' && !activeUsers.has(s.userId)).map(s => s.userId))];
     }
     if (audience === 'specific' && creatorId) {
-      return [...new Set(subs.filter(s => s.creator_id === creatorId && s.status === 'active').map(s => s.user_id))];
+      return [...new Set(subs.filter(s => s.creatorId === creatorId && s.status === 'active').map(s => s.userId))];
     }
     return [];
   }, [audience, creatorId, allUsers, subs]);
@@ -103,39 +90,21 @@ const AdminCustomerEmail = () => {
     }
 
     setSending(true);
-    const { error: campaignError } = await supabase.from('email_campaigns').insert({
-      subject: subject.trim(),
-      body: body.trim(),
-      audience: audienceLabel,
-      recipients: recipientIds.length,
-      status: 'sent',
-    });
-
-    if (campaignError) {
-      setSending(false);
-      toast.error(campaignError.message);
-      return;
-    }
-
-    const { error: notifyError } = await supabase.from('notifications').insert(
-      recipientIds.map(id => ({
-        user_id: id,
-        type: 'announcement',
-        title: subject.trim(),
-        description: body.trim().slice(0, 400),
-      })),
-    );
-    setSending(false);
-
-    if (notifyError) {
-      toast.error(`Campaign logged, but in-app delivery failed: ${notifyError.message}`);
-    } else {
+    try {
+      await createCampaign({
+        subject: subject.trim(),
+        body: body.trim(),
+        audience: audienceLabel,
+        recipientUserIds: recipientIds as Id<'users'>[],
+      });
       toast.success(`Delivered to ${recipientIds.length} customer${recipientIds.length === 1 ? '' : 's'}`);
+      setSubject('');
+      setBody('');
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : 'Failed to send campaign');
+    } finally {
+      setSending(false);
     }
-
-    setSubject('');
-    setBody('');
-    await loadCampaigns();
   };
 
   return (

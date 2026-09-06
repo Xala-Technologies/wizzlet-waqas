@@ -4,8 +4,10 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { supabase } from '@/lib/supabase';
+import { useConvex, useMutation } from 'convex/react';
+import { api } from '../../convex/_generated/api';
 import { useAuth } from '@/contexts/AuthContext';
+import { uploadToConvexStorage } from '@/lib/upload';
 import { Zap, ArrowRight, Loader2, Camera, ImageIcon, User } from 'lucide-react';
 import { toast } from 'sonner';
 import { useQueryClient } from '@tanstack/react-query';
@@ -16,6 +18,9 @@ const CreatorOnboarding = () => {
   const queryClient = useQueryClient();
   const navigate = useNavigate();
   const { user } = useAuth();
+  const convex = useConvex();
+  const upsertOnboarding = useMutation(api.creators.queries.upsertOnboarding);
+  const setPublished = useMutation(api.creators.queries.setPublished);
   const [step, setStep] = useState(0);
   const [loading, setLoading] = useState(false);
 
@@ -49,17 +54,13 @@ const CreatorOnboarding = () => {
     reader.readAsDataURL(file);
   };
 
-  const uploadImage = async (file: File, bucket: string): Promise<string | null> => {
-    if (!user) return null;
-    const ext = file.name.split('.').pop();
-    const path = `${user.id}/${Date.now()}.${ext}`;
-    const { error } = await supabase.storage.from(bucket).upload(path, file, { upsert: true });
-    if (error) {
-      toast.error(`Upload failed: ${error.message}`);
+  const uploadImage = async (file: File): Promise<string | null> => {
+    try {
+      return await uploadToConvexStorage(convex, file);
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : 'Upload failed');
       return null;
     }
-    const { data } = supabase.storage.from(bucket).getPublicUrl(path);
-    return data.publicUrl;
   };
 
   const canAdvance = () => {
@@ -73,45 +74,33 @@ const CreatorOnboarding = () => {
 
     // Upload images in parallel
     const [avatarUrl, bannerUrl] = await Promise.all([
-      avatarFile ? uploadImage(avatarFile, 'avatars') : Promise.resolve(null),
-      bannerFile ? uploadImage(bannerFile, 'banners') : Promise.resolve(null),
+      avatarFile ? uploadImage(avatarFile) : Promise.resolve(null),
+      bannerFile ? uploadImage(bannerFile) : Promise.resolve(null),
     ]);
 
-    // Get the user record
-    const { data: userData } = await supabase
-      .from('users')
-      .select('id')
-      .eq('auth_id', user.id)
-      .maybeSingle();
-
-    if (!userData) {
-      toast.error('User record not found. Please try again.');
-      setLoading(false);
-      return;
-    }
-
-    const { error } = await supabase.from('creators').insert({
-      user_id: userData.id,
-      username: username.toLowerCase().replace(/[^a-z0-9_]/g, ''),
-      display_name: displayName.trim(),
-      bio: bio.trim() || null,
-      avatar_url: avatarUrl,
-      banner_url: bannerUrl,
-      monthly_price: parseFloat(price) || 9.99,
-      is_published: true,
-    });
-
-    setLoading(false);
-    if (error) {
-      if (error.message.includes('unique')) {
-        toast.error('That username is already taken');
-      } else {
-        toast.error(error.message);
-      }
-    } else {
+    try {
+      const cleanUsername = username.toLowerCase().replace(/[^a-z0-9_]/g, '');
+      const creatorId = await upsertOnboarding({
+        username: cleanUsername,
+        displayName: displayName.trim(),
+        bio: bio.trim() || undefined,
+        avatarUrl: avatarUrl ?? undefined,
+        bannerUrl: bannerUrl ?? undefined,
+        monthlyPriceCents: Math.round((parseFloat(price) || 9.99) * 100),
+      });
+      await setPublished({ creatorId, isPublished: true });
       await queryClient.invalidateQueries({ queryKey: ['creator-profile-exists'] });
       toast.success('Your creator profile is live!');
       navigate('/creator');
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Failed to create profile';
+      if (message.includes('unique') || message.includes('already')) {
+        toast.error('That username is already taken');
+      } else {
+        toast.error(message);
+      }
+    } finally {
+      setLoading(false);
     }
   };
 

@@ -1,73 +1,75 @@
-import { useState, useEffect } from 'react';
+import { useEffect, useState } from 'react';
+import { useConvex, useMutation, useQuery } from 'convex/react';
+import { api } from '../../convex/_generated/api';
+import { uploadToConvexStorage } from '@/lib/upload';
 import { DashboardLayout } from '@/components/dashboard/DashboardLayout';
-import { useAuth } from '@/contexts/AuthContext';
-import { supabase } from '@/lib/supabase';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { Settings, Loader2, Upload, Link as LinkIcon } from 'lucide-react';
+import { Loader2, Upload, Link as LinkIcon } from 'lucide-react';
 import { toast } from 'sonner';
 
 const CreatorSettings = () => {
-  const { user } = useAuth();
-  const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
-  const [creatorId, setCreatorId] = useState<string | null>(null);
+  const creator = useQuery(api.creators.queries.myCreator);
+  const updateSettings = useMutation(api.creators.queries.updateSettings);
+  const convex = useConvex();
 
+  const [saving, setSaving] = useState(false);
   const [displayName, setDisplayName] = useState('');
   const [username, setUsername] = useState('');
   const [bio, setBio] = useState('');
   const [avatarUrl, setAvatarUrl] = useState('');
 
   useEffect(() => {
-    if (!user) return;
-    const load = async () => {
-      const { data: userData } = await supabase.from('users').select('id').eq('auth_id', user.id).maybeSingle();
-      if (!userData) { setLoading(false); return; }
-      const { data: creator } = await supabase.from('creators').select('*').eq('user_id', userData.id).maybeSingle();
-      if (!creator) { setLoading(false); return; }
-      setCreatorId(creator.id);
-      setDisplayName(creator.display_name ?? '');
-      setUsername(creator.username ?? '');
-      setBio(creator.bio ?? '');
-      setAvatarUrl(creator.avatar_url ?? '');
-      setLoading(false);
-    };
-    load();
-  }, [user]);
+    if (!creator) return;
+    setDisplayName(creator.displayName ?? '');
+    setUsername(creator.username ?? '');
+    setBio(creator.bio ?? '');
+    setAvatarUrl(creator.avatarUrl ?? '');
+  }, [creator]);
 
   const handleSave = async () => {
-    if (!creatorId) return;
+    if (!creator) return;
     setSaving(true);
-    const { error } = await supabase.from('creators').update({
-      display_name: displayName.trim() || null,
-      username: username.trim() || null,
-      bio: bio.trim() || null,
-      avatar_url: avatarUrl.trim() || null,
-    }).eq('id', creatorId);
-
-    if (error) toast.error(error.message);
-    else toast.success('Settings saved');
-    setSaving(false);
+    try {
+      await updateSettings({
+        displayName: displayName.trim() || undefined,
+        bio: bio.trim() || undefined,
+        avatarUrl: avatarUrl.trim() || undefined,
+      });
+      toast.success('Settings saved');
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : 'Failed to save settings');
+    } finally {
+      setSaving(false);
+    }
   };
 
   const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (!file || !creatorId) return;
-    const ext = file.name.split('.').pop();
-    const path = `${creatorId}/avatar.${ext}`;
-    const { error } = await supabase.storage.from('avatars').upload(path, file, { upsert: true });
-    if (error) { toast.error('Upload failed'); return; }
-    const { data: { publicUrl } } = supabase.storage.from('avatars').getPublicUrl(path);
-    setAvatarUrl(publicUrl);
-    toast.success('Avatar uploaded');
+    if (!file || !creator) return;
+    try {
+      const publicUrl = await uploadToConvexStorage(convex, file);
+      setAvatarUrl(publicUrl);
+      toast.success('Avatar uploaded');
+    } catch {
+      toast.error('Upload failed');
+    }
   };
 
-  if (loading) {
+  if (creator === undefined) {
     return (
       <DashboardLayout type="creator">
         <div className="flex justify-center py-20"><Loader2 className="h-5 w-5 animate-spin text-primary" /></div>
+      </DashboardLayout>
+    );
+  }
+
+  if (!creator) {
+    return (
+      <DashboardLayout type="creator">
+        <p className="text-muted-foreground text-sm">Creator profile not found.</p>
       </DashboardLayout>
     );
   }
@@ -79,11 +81,9 @@ const CreatorSettings = () => {
         <p className="text-muted-foreground text-sm mt-0.5">Manage your profile and account</p>
       </div>
 
-      {/* Profile */}
       <div className="rounded-xl border border-border bg-card p-6 mb-6">
         <h2 className="text-sm font-medium mb-4">Profile Information</h2>
         <div className="space-y-4">
-          {/* Avatar */}
           <div className="flex items-center gap-4">
             <div className="h-16 w-16 rounded-full bg-muted overflow-hidden shrink-0">
               {avatarUrl ? (
@@ -112,7 +112,7 @@ const CreatorSettings = () => {
             </div>
             <div>
               <Label className="text-xs">Username</Label>
-              <Input value={username} onChange={e => setUsername(e.target.value)} className="mt-1" placeholder="username" />
+              <Input value={username} onChange={e => setUsername(e.target.value)} className="mt-1" placeholder="username" disabled />
             </div>
           </div>
 
@@ -123,7 +123,6 @@ const CreatorSettings = () => {
         </div>
       </div>
 
-      {/* Integrations */}
       <div className="rounded-xl border border-border bg-card p-6 mb-6">
         <h2 className="text-sm font-medium mb-4">Integrations</h2>
         <div className="space-y-3">

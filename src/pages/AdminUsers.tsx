@@ -1,6 +1,7 @@
-import { useState, useEffect } from 'react';
+import { useMemo, useState } from 'react';
+import { useQuery } from 'convex/react';
+import { api } from '../../convex/_generated/api';
 import { DashboardLayout } from '@/components/dashboard/DashboardLayout';
-import { supabase } from '@/lib/supabase';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Users, Loader2, Search, Eye, Download } from 'lucide-react';
@@ -13,7 +14,7 @@ interface UserRow {
   id: string;
   email: string;
   full_name: string | null;
-  created_at: string;
+  created_at: number;
   subCount: number;
   role: string;
   totalSpend: number;
@@ -23,77 +24,63 @@ interface UserRow {
 
 const AdminUsers = () => {
   const [selected, setSelected] = useState<UserRow | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [users, setUsers] = useState<UserRow[]>([]);
   const [search, setSearch] = useState('');
 
-  const loadUsers = async () => {
-    const [usersRes, subsRes, rolesRes, creatorsRes] = await Promise.all([
-      supabase.from('users').select('id, email, full_name, created_at, auth_id').order('created_at', { ascending: false }),
-      supabase.from('subscriptions').select('user_id, creator_id, amount, creator_earnings, status'),
-      supabase.from('user_roles').select('user_id, role'),
-      supabase.from('creators').select('id, user_id'),
-    ]);
+  const usersRaw = useQuery(api.admin.queries.listUsers);
+  const subsRaw = useQuery(api.subscriptions.mutations.listAllAdmin);
+  const payoutsRaw = useQuery(api.payouts.mutations.listAllAdmin);
+  const creatorsRaw = useQuery(api.creators.queries.listAllAdmin);
 
-    if (usersRes.error) {
-      toast.error(usersRes.error.message || 'Failed to load users');
-      setLoading(false);
-      return;
-    }
+  const loading = usersRaw === undefined || subsRaw === undefined || payoutsRaw === undefined || creatorsRaw === undefined;
 
-    const payoutsRes = await supabase.from('payouts').select('creator_id, amount, status');
-    if (payoutsRes.error) {
-      toast.error(payoutsRes.error.message || 'Failed to load payouts');
-    }
-    const subs = subsRes.data ?? [];
+  const users = useMemo((): UserRow[] => {
+    if (!usersRaw || !subsRaw || !payoutsRaw || !creatorsRaw) return [];
+
     const subCounts = new Map<string, number>();
-    subs.filter(s => s.status === 'active').forEach(s => {
-      subCounts.set(s.user_id, (subCounts.get(s.user_id) ?? 0) + 1);
+    subsRaw.filter(s => s.status === 'active').forEach(s => {
+      subCounts.set(s.userId, (subCounts.get(s.userId) ?? 0) + 1);
     });
 
-    const roleMap = new Map<string, string>();
-    (rolesRes.data ?? []).forEach(r => roleMap.set(r.user_id, r.role));
-
     const creatorsByUser = new Map<string, string[]>();
-    (creatorsRes.data ?? []).forEach(c => {
-      creatorsByUser.set(c.user_id, [...(creatorsByUser.get(c.user_id) ?? []), c.id]);
+    creatorsRaw.forEach(c => {
+      creatorsByUser.set(c.userId, [...(creatorsByUser.get(c.userId) ?? []), c._id]);
     });
     const creatorUserIds = new Set(creatorsByUser.keys());
 
     const spendBy = new Map<string, number>();
     const earningsByCreator = new Map<string, number>();
-    subs.forEach(s => {
-      spendBy.set(s.user_id, (spendBy.get(s.user_id) ?? 0) + Number(s.amount));
+    subsRaw.forEach(s => {
+      spendBy.set(s.userId, (spendBy.get(s.userId) ?? 0) + s.amountCents / 100);
       if (s.status === 'active') {
-        earningsByCreator.set(s.creator_id, (earningsByCreator.get(s.creator_id) ?? 0) + Number(s.creator_earnings));
+        earningsByCreator.set(s.creatorId, (earningsByCreator.get(s.creatorId) ?? 0) + s.creatorEarningsCents / 100);
       }
     });
 
     const paidByCreator = new Map<string, number>();
-    (payoutsRes.data ?? [])
+    payoutsRaw
       .filter(p => p.status === 'completed')
-      .forEach(p => paidByCreator.set(p.creator_id, (paidByCreator.get(p.creator_id) ?? 0) + Number(p.amount)));
+      .forEach(p => paidByCreator.set(p.creatorId, (paidByCreator.get(p.creatorId) ?? 0) + p.amountCents / 100));
 
     const sumFor = (userId: string, source: Map<string, number>) =>
       (creatorsByUser.get(userId) ?? []).reduce((a, id) => a + (source.get(id) ?? 0), 0);
 
-    setUsers((usersRes.data ?? []).map(u => {
-      // Determine role: check user_roles first (uses auth_id), then creator table
-      let role = roleMap.get(u.auth_id) ?? 'user';
-      if (creatorUserIds.has(u.id) && role === 'user') role = 'creator';
+    return usersRaw.map(u => {
+      let role = 'user';
+      if (creatorUserIds.has(u._id)) role = 'creator';
+      else if ((subCounts.get(u._id) ?? 0) > 0) role = 'subscriber';
       return {
-        ...u,
-        subCount: subCounts.get(u.id) ?? 0,
+        id: u._id,
+        email: u.email,
+        full_name: u.fullName ?? null,
+        created_at: u.createdAt,
+        subCount: subCounts.get(u._id) ?? 0,
         role,
-        totalSpend: spendBy.get(u.id) ?? 0,
-        creatorEarnings: sumFor(u.id, earningsByCreator),
-        paidOut: sumFor(u.id, paidByCreator),
+        totalSpend: spendBy.get(u._id) ?? 0,
+        creatorEarnings: sumFor(u._id, earningsByCreator),
+        paidOut: sumFor(u._id, paidByCreator),
       };
-    }));
-    setLoading(false);
-  };
-
-  useEffect(() => { loadUsers(); }, []);
+    }).sort((a, b) => b.created_at - a.created_at);
+  }, [usersRaw, subsRaw, payoutsRaw, creatorsRaw]);
 
   const filtered = users.filter(u => {
     const q = search.toLowerCase();

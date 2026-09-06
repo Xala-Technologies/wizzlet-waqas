@@ -79,6 +79,7 @@ import Discover from "./pages/Discover";
 import TopCreators from "./pages/TopCreators";
 import Community from "./pages/Community";
 import { ErrorBoundary } from "./components/ErrorBoundary";
+import { ConvexAppProvider } from "./integrations/convex/ConvexAppProvider";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -92,6 +93,7 @@ const queryClient = new QueryClient({
 
 const App = () => (
   <ErrorBoundary>
+    <ConvexAppProvider>
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
         <TooltipProvider>
@@ -183,6 +185,7 @@ const App = () => (
       </TooltipProvider>
     </AuthProvider>
   </QueryClientProvider>
+    </ConvexAppProvider>
   </ErrorBoundary>
 );
 

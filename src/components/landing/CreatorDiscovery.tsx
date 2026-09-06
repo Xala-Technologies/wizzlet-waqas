@@ -1,7 +1,10 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
+import { Link } from 'react-router-dom';
+import { useQuery } from 'convex/react';
+import { api } from '../../../convex/_generated/api';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Search, TrendingUp, Star, Sparkles } from 'lucide-react';
+import { Search, TrendingUp, Star, Sparkles, Loader2 } from 'lucide-react';
 
 const filters = [
   { label: 'Trending', icon: TrendingUp },
@@ -9,23 +12,21 @@ const filters = [
   { label: 'New', icon: Sparkles },
 ] as const;
 
-const mockCreators = [
-  { id: '1', name: 'Marcus Cole', handle: '@marcuscole', avatar: 'MC', description: 'NFL analyst with 8+ years covering the league. Data-driven picks.', color: 'bg-primary/10 text-primary' },
-  { id: '2', name: 'Sarah Lin', handle: '@sarahlin', avatar: 'SL', description: 'NBA betting specialist. Known for consistent player prop analysis.', color: 'bg-success/10 text-success' },
-  { id: '3', name: 'Diego Reyes', handle: '@diegoreyes', avatar: 'DR', description: 'Soccer expert covering La Liga and Premier League markets.', color: 'bg-ring/10 text-ring' },
-  { id: '4', name: 'Ava Chen', handle: '@avachen', avatar: 'AC', description: 'Tennis and golf specialist with a focus on live in-game edges.', color: 'bg-destructive/10 text-destructive' },
-  { id: '5', name: 'Jordan Patel', handle: '@jordanpatel', avatar: 'JP', description: 'MMA and combat sports insider. Exclusive card breakdowns.', color: 'bg-primary/10 text-primary' },
-  { id: '6', name: 'Lena Zhao', handle: '@lenazhao', avatar: 'LZ', description: 'MLB analytics expert. Modeling strikeouts, home runs, and more.', color: 'bg-success/10 text-success' },
-];
-
 export function CreatorDiscovery() {
   const [activeFilter, setActiveFilter] = useState('Trending');
   const [search, setSearch] = useState('');
+  const creators = useQuery(api.creators.queries.listPublished, {
+    search: search.trim() || undefined,
+  });
 
-  const filtered = mockCreators.filter((c) =>
-    c.name.toLowerCase().includes(search.toLowerCase()) ||
-    c.description.toLowerCase().includes(search.toLowerCase())
-  );
+  const filtered = useMemo(() => {
+    if (!creators) return [];
+    const sorted = [...creators];
+    if (activeFilter === 'New') {
+      sorted.sort((a, b) => b.createdAt - a.createdAt);
+    }
+    return sorted;
+  }, [creators, activeFilter]);
 
   return (
     <section id="creators" className="py-24 bg-background">
@@ -42,7 +43,6 @@ export function CreatorDiscovery() {
           </p>
         </div>
 
-        {/* Search + Filters */}
         <div className="max-w-2xl mx-auto mb-10 space-y-4">
           <div className="relative">
             <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -71,38 +71,51 @@ export function CreatorDiscovery() {
           </div>
         </div>
 
-        {/* Creator Grid */}
-        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4 max-w-4xl mx-auto">
-          {filtered.map((creator) => (
-            <div
-              key={creator.id}
-              className="group rounded-xl border border-border bg-card p-5 card-shadow transition-all duration-300 hover:card-shadow-hover hover:border-primary/20"
-            >
-              <div className="flex items-start gap-3.5 mb-4">
-                <div className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-full ${creator.color} text-sm font-semibold`}>
-                  {creator.avatar}
-                </div>
-                <div className="min-w-0">
-                  <h3 className="font-semibold text-[14px] leading-tight truncate text-foreground">
-                    {creator.name}
-                  </h3>
-                  <p className="text-[12px] text-muted-foreground">{creator.handle}</p>
-                </div>
-              </div>
-              <p className="text-[13px] text-muted-foreground leading-relaxed mb-5 line-clamp-2">
-                {creator.description}
-              </p>
-              <Button variant="outline" size="sm" className="w-full group-hover:border-primary/30 group-hover:text-primary transition-colors">
-                Subscribe
-              </Button>
+        {creators === undefined ? (
+          <div className="flex justify-center py-12"><Loader2 className="h-5 w-5 animate-spin text-primary" /></div>
+        ) : (
+          <>
+            <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4 max-w-4xl mx-auto">
+              {filtered.map((creator) => {
+                const name = creator.displayName ?? creator.username;
+                const initials = name.slice(0, 2).toUpperCase();
+                return (
+                  <div
+                    key={creator._id}
+                    className="group rounded-xl border border-border bg-card p-5 card-shadow transition-all duration-300 hover:card-shadow-hover hover:border-primary/20"
+                  >
+                    <div className="flex items-start gap-3.5 mb-4">
+                      <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary text-sm font-semibold overflow-hidden">
+                        {creator.avatarUrl ? (
+                          <img src={creator.avatarUrl} alt="" className="h-full w-full object-cover" />
+                        ) : (
+                          initials
+                        )}
+                      </div>
+                      <div className="min-w-0">
+                        <h3 className="font-semibold text-[14px] leading-tight truncate text-foreground">
+                          {name}
+                        </h3>
+                        <p className="text-[12px] text-muted-foreground">@{creator.username}</p>
+                      </div>
+                    </div>
+                    <p className="text-[13px] text-muted-foreground leading-relaxed mb-5 line-clamp-2">
+                      {creator.bio || 'Sports creator on Wizzlet.'}
+                    </p>
+                    <Button asChild variant="outline" size="sm" className="w-full group-hover:border-primary/30 group-hover:text-primary transition-colors">
+                      <Link to={`/c/${creator.username}`}>View profile</Link>
+                    </Button>
+                  </div>
+                );
+              })}
             </div>
-          ))}
-        </div>
 
-        {filtered.length === 0 && (
-          <p className="text-center text-sm text-muted-foreground py-12">
-            No creators found. Try a different search.
-          </p>
+            {filtered.length === 0 && (
+              <p className="text-center text-sm text-muted-foreground py-12">
+                No published creators yet. Be the first to go live.
+              </p>
+            )}
+          </>
         )}
       </div>
     </section>

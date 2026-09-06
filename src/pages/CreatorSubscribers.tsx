@@ -1,48 +1,23 @@
-import { useState, useEffect } from 'react';
+import { useQuery } from 'convex/react';
+import { api } from '../../convex/_generated/api';
 import { DashboardLayout } from '@/components/dashboard/DashboardLayout';
-import { useAuth } from '@/contexts/AuthContext';
-import { supabase } from '@/lib/supabase';
 import { Users, Loader2, CheckCircle2, XCircle } from 'lucide-react';
 import { format } from 'date-fns';
 
-interface Subscriber {
-  id: string;
-  status: string;
-  created_at: string;
-  user: { email: string; full_name: string | null } | null;
-}
-
 const CreatorSubscribers = () => {
-  const { user } = useAuth();
-  const [loading, setLoading] = useState(true);
-  const [subscribers, setSubscribers] = useState<Subscriber[]>([]);
+  const rows = useQuery(api.subscriptions.mutations.listSubscribersDetailed);
 
-  useEffect(() => {
-    if (!user) return;
-    const load = async () => {
-      const { data: userData } = await supabase.from('users').select('id').eq('auth_id', user.id).maybeSingle();
-      if (!userData) { setLoading(false); return; }
-      const { data: creator } = await supabase.from('creators').select('id').eq('user_id', userData.id).maybeSingle();
-      if (!creator) { setLoading(false); return; }
+  const loading = rows === undefined;
+  const subscribers = (rows ?? []).map((s) => ({
+    id: s._id,
+    status: s.status,
+    created_at: new Date(s.createdAt).toISOString(),
+    user: s.user
+      ? { email: s.user.email, full_name: s.user.fullName ?? null }
+      : null,
+  }));
 
-      const { data } = await supabase
-        .from('subscriptions')
-        .select('id, status, created_at, user_id')
-        .eq('creator_id', creator.id)
-        .order('created_at', { ascending: false });
-
-      if (data && data.length > 0) {
-        const userIds = data.map(s => s.user_id);
-        const { data: usersData } = await supabase.from('users').select('id, email, full_name').in('id', userIds);
-        const userMap = new Map((usersData ?? []).map(u => [u.id, u]));
-        setSubscribers(data.map(s => ({ ...s, user: userMap.get(s.user_id) ?? null })));
-      }
-      setLoading(false);
-    };
-    load();
-  }, [user]);
-
-  const activeCount = subscribers.filter(s => s.status === 'active').length;
+  const activeCount = subscribers.filter((s) => s.status === 'active').length;
 
   return (
     <DashboardLayout type="creator">
@@ -74,7 +49,7 @@ const CreatorSubscribers = () => {
               </tr>
             </thead>
             <tbody>
-              {subscribers.map(sub => (
+              {subscribers.map((sub) => (
                 <tr key={sub.id} className="border-b border-border last:border-0 hover:bg-muted/20 transition-colors">
                   <td className="p-4">
                     <p className="text-sm font-medium">{sub.user?.full_name || 'Unknown'}</p>

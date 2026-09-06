@@ -1,6 +1,7 @@
-import { useState, useEffect } from 'react';
+import { useEffect, useMemo, useState } from 'react';
+import { useMutation, useQuery } from 'convex/react';
+import { api } from '../../convex/_generated/api';
 import { DashboardLayout } from '@/components/dashboard/DashboardLayout';
-import { supabase } from '@/lib/supabase';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
@@ -20,7 +21,7 @@ interface MonthlyFee {
   fees: number;
 }
 
-const buildMonthlyFees = (rows: { created_at: string; platform_fee: number | string }[]): MonthlyFee[] => {
+const buildMonthlyFees = (rows: { createdAt: number; platformFeeCents: number }[]): MonthlyFee[] => {
   const now = new Date();
   const buckets: MonthlyFee[] = [];
   const index = new Map<string, number>();
@@ -31,43 +32,64 @@ const buildMonthlyFees = (rows: { created_at: string; platform_fee: number | str
     buckets.push({ month: d.toLocaleDateString('en-US', { month: 'short' }), fees: 0 });
   }
   rows.forEach(r => {
-    const d = new Date(r.created_at);
+    const d = new Date(r.createdAt);
     const pos = index.get(`${d.getFullYear()}-${d.getMonth()}`);
-    if (pos !== undefined) buckets[pos].fees += Number(r.platform_fee);
+    if (pos !== undefined) buckets[pos].fees += r.platformFeeCents / 100;
   });
   return buckets.map(b => ({ ...b, fees: Number(b.fees.toFixed(2)) }));
 };
 
-
 const AdminFees = () => {
-  const [loading, setLoading] = useState(true);
-  const [totalRevenue, setTotalRevenue] = useState(0);
-  const [totalFees, setTotalFees] = useState(0);
-  const [totalCreatorEarnings, setTotalCreatorEarnings] = useState(0);
-  const [introFeeCount, setIntroFeeCount] = useState(0);
-  const [standardFeeCount, setStandardFeeCount] = useState(0);
-  const [creatorFees, setCreatorFees] = useState<CreatorFee[]>([]);
-  const [monthlyFeeData, setMonthlyFeeData] = useState<MonthlyFee[]>([]);
   const [introFee, setIntroFee] = useState('5');
   const [introDays, setIntroDays] = useState('30');
   const [standardFee, setStandardFee] = useState('10');
   const [savingFees, setSavingFees] = useState(false);
 
+  const platformSettings = useQuery(api.platform.mutations.get);
+  const subsRaw = useQuery(api.subscriptions.mutations.listAllAdmin);
+  const creatorsRaw = useQuery(api.creators.queries.listAllAdmin);
+  const upsertSettings = useMutation(api.platform.mutations.upsert);
+
+  const loading = platformSettings === undefined || subsRaw === undefined || creatorsRaw === undefined;
+
   useEffect(() => {
-    const loadSettings = async () => {
-      const { data } = await supabase
-        .from('platform_settings')
-        .select('intro_fee_percent, intro_period_days, standard_fee_percent')
-        .eq('id', true)
-        .maybeSingle();
-      if (data) {
-        setIntroFee(String(data.intro_fee_percent));
-        setIntroDays(String(data.intro_period_days));
-        setStandardFee(String(data.standard_fee_percent));
-      }
-    };
-    void loadSettings();
-  }, []);
+    if (platformSettings) {
+      setIntroFee(String(platformSettings.introFeePercent));
+      setIntroDays(String(platformSettings.introFeeDays));
+      setStandardFee(String(platformSettings.standardFeePercent));
+    }
+  }, [platformSettings]);
+
+  const active = useMemo(() => (subsRaw ?? []).filter(s => s.status === 'active'), [subsRaw]);
+
+  const monthlyFeeData = useMemo(() => buildMonthlyFees(active), [active]);
+  const totalRevenue = useMemo(() => active.reduce((a, b) => a + b.amountCents / 100, 0), [active]);
+  const totalFees = useMemo(() => active.reduce((a, b) => a + b.platformFeeCents / 100, 0), [active]);
+  const totalCreatorEarnings = useMemo(() => active.reduce((a, b) => a + b.creatorEarningsCents / 100, 0), [active]);
+  const introFeeCount = useMemo(() => active.filter(s => s.feePercentage <= 5).length, [active]);
+  const standardFeeCount = useMemo(() => active.filter(s => s.feePercentage > 5).length, [active]);
+
+  const creatorFees = useMemo((): CreatorFee[] => {
+    if (!creatorsRaw) return [];
+    const creatorMap = new Map(creatorsRaw.map(c => [c._id, c]));
+    const feeByCreator = new Map<string, { fee: number; count: number; amount: number }>();
+    active.forEach(s => {
+      const prev = feeByCreator.get(s.creatorId) ?? { fee: 0, count: 0, amount: 0 };
+      feeByCreator.set(s.creatorId, {
+        fee: prev.fee + s.platformFeeCents / 100,
+        count: prev.count + 1,
+        amount: prev.amount + s.amountCents / 100,
+      });
+    });
+
+    const cfList: CreatorFee[] = [];
+    feeByCreator.forEach((val, creatorId) => {
+      const c = creatorMap.get(creatorId);
+      const effective = val.amount > 0 ? Math.round((val.fee / val.amount) * 1000) / 10 : 0;
+      cfList.push({ name: c?.displayName ?? `@${c?.username ?? 'unknown'}`, feeEarned: val.fee, feePercent: effective, subCount: val.count });
+    });
+    return cfList.sort((a, b) => b.feeEarned - a.feeEarned);
+  }, [active, creatorsRaw]);
 
   const saveFeeSettings = async () => {
     const intro = Number(introFee);
@@ -78,58 +100,22 @@ const AdminFees = () => {
       return;
     }
     setSavingFees(true);
-    const { error } = await supabase
-      .from('platform_settings')
-      .update({ intro_fee_percent: intro, standard_fee_percent: standard, intro_period_days: days })
-      .eq('id', true);
-    setSavingFees(false);
-    if (error) {
-      toast.error(error.message);
-      return;
+    try {
+      await upsertSettings({
+        introFeePercent: intro,
+        standardFeePercent: standard,
+        introFeeDays: days,
+        branding: platformSettings?.branding,
+        payoutDefaults: platformSettings?.payoutDefaults,
+        featureFlags: platformSettings?.featureFlags,
+      });
+      toast.success('Fee rules saved — applied to new subscriptions');
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : 'Failed to save fee settings');
+    } finally {
+      setSavingFees(false);
     }
-    toast.success('Fee rules saved — applied to new subscriptions');
   };
-
-  useEffect(() => {
-    const load = async () => {
-      const [subsRes, creatorsRes] = await Promise.all([
-        supabase.from('subscriptions').select('creator_id, amount, platform_fee, creator_earnings, status, fee_percentage, created_at'),
-        supabase.from('creators').select('id, display_name, username, created_at'),
-      ]);
-
-      const active = (subsRes.data ?? []).filter(s => s.status === 'active');
-      setMonthlyFeeData(buildMonthlyFees(active));
-      setTotalRevenue(active.reduce((a, b) => a + Number(b.amount), 0));
-      setTotalFees(active.reduce((a, b) => a + Number(b.platform_fee), 0));
-      setTotalCreatorEarnings(active.reduce((a, b) => a + Number(b.creator_earnings), 0));
-      setIntroFeeCount(active.filter(s => Number(s.fee_percentage) <= 5).length);
-      setStandardFeeCount(active.filter(s => Number(s.fee_percentage) > 5).length);
-
-      const creators = creatorsRes.data ?? [];
-      const creatorMap = new Map(creators.map(c => [c.id, c]));
-      const feeByCreator = new Map<string, { fee: number; count: number; amount: number }>();
-      active.forEach(s => {
-        const prev = feeByCreator.get(s.creator_id) ?? { fee: 0, count: 0, amount: 0 };
-        feeByCreator.set(s.creator_id, {
-          fee: prev.fee + Number(s.platform_fee),
-          count: prev.count + 1,
-          amount: prev.amount + Number(s.amount),
-        });
-      });
-
-      const cfList: CreatorFee[] = [];
-      feeByCreator.forEach((val, creatorId) => {
-        const c = creatorMap.get(creatorId);
-        // Effective rate from the real billed amounts, never re-derived from account age.
-        const effective = val.amount > 0 ? Math.round((val.fee / val.amount) * 1000) / 10 : 0;
-        cfList.push({ name: c?.display_name ?? `@${c?.username ?? 'unknown'}`, feeEarned: val.fee, feePercent: effective, subCount: val.count });
-      });
-      cfList.sort((a, b) => b.feeEarned - a.feeEarned);
-      setCreatorFees(cfList);
-      setLoading(false);
-    };
-    load();
-  }, []);
 
   if (loading) {
     return (
@@ -169,7 +155,6 @@ const AdminFees = () => {
         </div>
       </div>
 
-      {/* Fee Revenue Chart */}
       <div className="rounded-xl border border-border bg-card p-6 mb-6">
         <h2 className="text-sm font-medium mb-4">Monthly Fee Revenue</h2>
         <div className="h-64">
@@ -185,7 +170,6 @@ const AdminFees = () => {
         </div>
       </div>
 
-      {/* Intro vs Standard Breakdown */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
         <div className="rounded-xl border border-emerald-500/20 bg-emerald-500/5 p-5">
           <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1">Intro Fee (5%)</p>
@@ -199,7 +183,6 @@ const AdminFees = () => {
         </div>
       </div>
 
-      {/* Fee Earnings by Creator */}
       <div className="rounded-xl border border-border bg-card p-6 mb-6">
         <div className="flex items-center gap-2 mb-4">
           <Crown className="h-4 w-4 text-primary" />
@@ -230,7 +213,6 @@ const AdminFees = () => {
         )}
       </div>
 
-      {/* Fee Settings */}
       <div className="rounded-xl border border-border bg-card p-6">
         <h2 className="text-sm font-medium mb-4">Fee Rule Settings</h2>
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-4">

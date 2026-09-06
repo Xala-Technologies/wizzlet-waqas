@@ -1,6 +1,8 @@
-import { useState, useEffect } from 'react';
+import { useMemo, useState } from 'react';
+import { useMutation, useQuery } from 'convex/react';
+import { api } from '../../convex/_generated/api';
+import type { Id } from '../../convex/_generated/dataModel';
 import { DashboardLayout } from '@/components/dashboard/DashboardLayout';
-import { supabase } from '@/lib/supabase';
 import { Button } from '@/components/ui/button';
 import { Crown, Loader2, ExternalLink, Ban, Star, CheckCircle2, XCircle, Search, MessageSquare, ShieldCheck, TrendingDown, UserX } from 'lucide-react';
 import { Input } from '@/components/ui/input';
@@ -14,8 +16,8 @@ interface Creator {
   username: string | null;
   display_name: string | null;
   monthly_price: number | null;
-  is_published: boolean | null;
-  created_at: string;
+  is_published: boolean;
+  created_at: number;
   user_id: string;
   email: string;
   subCount: number;
@@ -27,47 +29,57 @@ interface Creator {
 
 const AdminCreators = () => {
   const navigate = useNavigate();
-  const [loading, setLoading] = useState(true);
-  const [creators, setCreators] = useState<Creator[]>([]);
   const [search, setSearch] = useState('');
 
-  const loadCreators = async () => {
-    const [creatorsRes, subsRes, usersRes] = await Promise.all([
-      supabase.from('creators').select('id, username, display_name, monthly_price, is_published, created_at, user_id').order('created_at', { ascending: false }),
-      supabase.from('subscriptions').select('creator_id, status'),
-      supabase.from('users').select('id, email'),
-    ]);
+  const creatorsRaw = useQuery(api.creators.queries.listAllAdmin);
+  const subsRaw = useQuery(api.subscriptions.mutations.listAllAdmin);
+  const usersRaw = useQuery(api.admin.queries.listUsers);
+  const setPublished = useMutation(api.creators.queries.setPublished);
 
-    const subs = subsRes.data ?? [];
+  const loading = creatorsRaw === undefined || subsRaw === undefined || usersRaw === undefined;
+
+  const creators = useMemo((): Creator[] => {
+    if (!creatorsRaw || !subsRaw || !usersRaw) return [];
+
     const subCounts = new Map<string, number>();
-    subs.filter(s => s.status === 'active').forEach(s => {
-      subCounts.set(s.creator_id, (subCounts.get(s.creator_id) ?? 0) + 1);
+    subsRaw.filter(s => s.status === 'active').forEach(s => {
+      subCounts.set(s.creatorId, (subCounts.get(s.creatorId) ?? 0) + 1);
     });
 
-    const userMap = new Map((usersRes.data ?? []).map(u => [u.id, u]));
+    const userMap = new Map(usersRaw.map(u => [u._id, u]));
 
-    setCreators((creatorsRes.data ?? []).map(c => {
-      const days = Math.floor((Date.now() - new Date(c.created_at).getTime()) / (1000 * 60 * 60 * 24));
-      const user = userMap.get(c.user_id);
+    return creatorsRaw.map(c => {
+      const days = Math.floor((Date.now() - c.createdAt) / (1000 * 60 * 60 * 24));
+      const user = userMap.get(c.userId);
+      const monthlyPrice = (c.monthlyPriceCents ?? 999) / 100;
       return {
-        ...c,
+        id: c._id,
+        username: c.username,
+        display_name: c.displayName ?? null,
+        monthly_price: monthlyPrice,
+        is_published: c.isPublished,
+        created_at: c.createdAt,
+        user_id: c.userId,
         email: user?.email ?? '—',
-        subCount: subCounts.get(c.id) ?? 0,
-        revenue: (subCounts.get(c.id) ?? 0) * (c.monthly_price ?? 9.99),
+        subCount: subCounts.get(c._id) ?? 0,
+        revenue: (subCounts.get(c._id) ?? 0) * monthlyPrice,
         feePercent: days < 30 ? 5 : 10,
-        verified: days > 14,
+        verified: c.verificationStatus === 'verified' || days > 14,
         daysSinceSignup: days,
       };
-    }));
-    setLoading(false);
-  };
-
-  useEffect(() => { loadCreators(); }, []);
+    }).sort((a, b) => b.created_at - a.created_at);
+  }, [creatorsRaw, subsRaw, usersRaw]);
 
   const togglePublish = async (creator: Creator) => {
-    const { error } = await supabase.from('creators').update({ is_published: !creator.is_published }).eq('id', creator.id);
-    if (error) toast.error(error.message);
-    else { toast.success(creator.is_published ? 'Creator disabled' : 'Creator enabled'); loadCreators(); }
+    try {
+      await setPublished({
+        creatorId: creator.id as Id<'creators'>,
+        isPublished: !creator.is_published,
+      });
+      toast.success(creator.is_published ? 'Creator disabled' : 'Creator enabled');
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : 'Failed to update creator');
+    }
   };
 
   const filtered = creators.filter(c => {
@@ -93,12 +105,11 @@ const AdminCreators = () => {
         </div>
       </div>
 
-      {/* Insight Sections */}
       {!loading && (
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
           <div className="rounded-xl border border-border bg-card p-4">
             <div className="flex items-center gap-2 mb-2"><Star className="h-3.5 w-3.5 text-amber-400" /><span className="text-xs font-medium text-muted-foreground">Top Creators</span></div>
-            {topCreators.slice(0, 3).map((c, i) => (
+            {topCreators.slice(0, 3).map((c) => (
               <div key={c.id} className="flex items-center justify-between py-1">
                 <span className="text-xs font-medium truncate">{c.display_name ?? `@${c.username}`}</span>
                 <span className="text-xs text-emerald-400">${c.revenue.toFixed(0)}</span>

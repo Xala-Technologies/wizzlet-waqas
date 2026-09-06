@@ -1,18 +1,15 @@
 /**
- * Payments — Client-Side Helpers
- *
- * Default mode is SANDBOX for local development: checkout is simulated by the
- * `sandbox-checkout` edge function (requires ALLOW_SANDBOX_CHECKOUT=true on
- * the function). Production builds refuse sandbox checkout unless
- * VITE_ALLOW_SANDBOX_CHECKOUT=true is explicitly set.
+ * Payments — Stripe Checkout (test/live) with sandbox fallback.
  */
 
-import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { convex } from '@/integrations/convex/client';
+import { api } from '@convex/_generated/api';
+import type { Id } from '@convex/_generated/dataModel';
 
-export const PAYMENTS_MODE = 'sandbox' as const;
+export const PAYMENTS_MODE =
+  import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY ? ('stripe' as const) : ('sandbox' as const);
 
-/** Sandbox minting is allowed in Vite DEV, or when explicitly opted in. */
 export const SANDBOX_CHECKOUT_ALLOWED =
   import.meta.env.DEV || import.meta.env.VITE_ALLOW_SANDBOX_CHECKOUT === 'true';
 
@@ -22,60 +19,80 @@ function assertSandboxAllowed(): boolean {
   return false;
 }
 
-/**
- * Simulated checkout. Creates an active subscription for the signed-in user.
- */
 export async function createCheckoutSession(
   creatorId: string,
   creatorUsername: string,
-  productId?: string
+  productId?: string,
 ): Promise<void> {
-  if (!assertSandboxAllowed()) return;
-
-  const { data: session } = await supabase.auth.getSession();
-  if (!session.session) {
-    toast.error('Please sign in to subscribe.');
-    window.location.href = `/login?redirect=/${creatorUsername}`;
-    return;
-  }
-
-  const toastId = toast.loading('Processing sandbox payment…');
-
+  const toastId = toast.loading(
+    PAYMENTS_MODE === 'stripe' ? 'Redirecting to Stripe…' : 'Processing sandbox payment…',
+  );
   try {
-    const { data, error } = await supabase.functions.invoke('sandbox-checkout', {
-      body: { action: 'subscribe', creatorId, productId },
-    });
-
-    if (error) throw error;
-    if (data?.error) throw new Error(data.error);
-
-    if (data?.alreadySubscribed) {
-      toast.success('You are already subscribed to this creator.', { id: toastId });
+    if (PAYMENTS_MODE === 'stripe') {
+      const result = await convex.action(api.payments.stripeNode.createCheckoutSession, {
+        creatorId: creatorId as Id<'creators'>,
+        productId: productId ? (productId as Id<'products'>) : undefined,
+        creatorUsername,
+      });
+      if (result.alreadySubscribed) {
+        toast.success('You are already subscribed to this creator.', { id: toastId });
+        window.location.href = `/subscription/success?creator=${encodeURIComponent(creatorUsername)}`;
+        return;
+      }
+      toast.dismiss(toastId);
+      window.location.href = result.url;
       return;
     }
 
+    if (!assertSandboxAllowed()) {
+      toast.dismiss(toastId);
+      return;
+    }
+    const result = await convex.mutation(api.payments.sandbox.sandboxSubscribe, {
+      creatorId: creatorId as Id<'creators'>,
+      productId: productId ? (productId as Id<'products'>) : undefined,
+    });
+    if ((result as { alreadySubscribed?: boolean })?.alreadySubscribed) {
+      toast.success('You are already subscribed to this creator.', { id: toastId });
+      return;
+    }
     toast.success('Sandbox payment complete — no real charge was made.', { id: toastId });
     window.location.href = `/subscription/success?creator=${encodeURIComponent(creatorUsername)}&sandbox=1`;
   } catch (err) {
     console.error('[Payments] createCheckoutSession error:', err);
-    toast.error(err instanceof Error ? err.message : 'Checkout failed. Please try again.', {
-      id: toastId,
-    });
+    const message = err instanceof Error ? err.message : 'Checkout failed. Please try again.';
+    if (message.includes('UNAUTHENTICATED') || message.includes('Not authenticated')) {
+      toast.error('Please sign in to subscribe.', { id: toastId });
+      window.location.href = `/login?redirect=/${creatorUsername}`;
+      return;
+    }
+    toast.error(message, { id: toastId });
   }
 }
 
-/**
- * Cancels a sandbox subscription.
- */
-export async function cancelSubscription(creatorId: string): Promise<boolean> {
-  if (!assertSandboxAllowed()) return false;
-
+export async function confirmStripeCheckoutSession(sessionId: string): Promise<boolean> {
   try {
-    const { data, error } = await supabase.functions.invoke('sandbox-checkout', {
-      body: { action: 'cancel', creatorId },
+    await convex.action(api.payments.stripeNode.confirmCheckoutSession, { sessionId });
+    return true;
+  } catch (err) {
+    console.error('[Payments] confirmCheckoutSession error:', err);
+    return false;
+  }
+}
+
+export async function cancelSubscription(creatorId: string): Promise<boolean> {
+  try {
+    if (PAYMENTS_MODE === 'stripe') {
+      await convex.action(api.payments.stripeNode.cancelCreatorSubscription, {
+        creatorId: creatorId as Id<'creators'>,
+      });
+      toast.success('Subscription cancelled.');
+      return true;
+    }
+    if (!assertSandboxAllowed()) return false;
+    await convex.mutation(api.payments.sandbox.sandboxCancel, {
+      creatorId: creatorId as Id<'creators'>,
     });
-    if (error) throw error;
-    if (data?.error) throw new Error(data.error);
     toast.success('Subscription cancelled.');
     return true;
   } catch (err) {
@@ -85,22 +102,13 @@ export async function cancelSubscription(creatorId: string): Promise<boolean> {
   }
 }
 
-/**
- * Billing management. In sandbox mode there is no hosted provider portal,
- * so we send the user to the in-app billing page.
- */
 export async function openCustomerPortal(): Promise<void> {
-  toast.info('Sandbox mode — manage your subscriptions here.');
+  toast.info('Manage your subscriptions on the billing page.');
   window.location.href = '/dashboard/subscriptions-billing';
 }
 
-/**
- * Payout onboarding. Requires a live payment provider; unavailable in sandbox.
- */
-export async function createConnectOnboardingLink(
-  _creatorId?: string
-): Promise<void> {
+export async function createConnectOnboardingLink(_creatorId?: string): Promise<void> {
   toast.info(
-    'Payout onboarding is unavailable in sandbox mode. Earnings are tracked and paid out manually by the platform.'
+    'Payout onboarding via Stripe Connect is not enabled yet. Earnings are tracked and paid out manually by the platform.',
   );
 }

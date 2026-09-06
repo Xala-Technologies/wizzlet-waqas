@@ -1,5 +1,7 @@
 import { useState, useEffect } from 'react';
-import { supabase } from '@/lib/supabase';
+import { useMutation, useQuery } from 'convex/react';
+import { api } from '@convex/_generated/api';
+import type { Id } from '@convex/_generated/dataModel';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -19,20 +21,8 @@ import {
 import { Plus, Pencil, Trash2, Star, Package, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 
-interface Product {
-  id: string;
-  creator_id: string;
-  name: string;
-  description: string | null;
-  price: number;
-  billing_period: string;
-  is_featured: boolean;
-  is_active: boolean;
-  created_at: string;
-}
-
 interface ProductsSectionProps {
-  creatorId: string;
+  creatorId: Id<'creators'>;
 }
 
 const PERIOD_LABELS: Record<string, string> = {
@@ -44,32 +34,25 @@ const PERIOD_LABELS: Record<string, string> = {
 };
 
 const ProductsSection = ({ creatorId }: ProductsSectionProps) => {
-  const [products, setProducts] = useState<Product[]>([]);
-  const [loading, setLoading] = useState(true);
+  const products = useQuery(api.products.mutations.listByCreator, { creatorId });
+  const upsertProduct = useMutation(api.products.mutations.upsert);
+  const removeProduct = useMutation(api.products.mutations.remove);
+
   const [dialogOpen, setDialogOpen] = useState(false);
-  const [editing, setEditing] = useState<Product | null>(null);
+  const [editingId, setEditingId] = useState<Id<'products'> | null>(null);
   const [saving, setSaving] = useState(false);
 
-  // Form state
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
   const [price, setPrice] = useState('9.99');
   const [billingPeriod, setBillingPeriod] = useState('monthly');
   const [isFeatured, setIsFeatured] = useState(false);
 
-  const fetchProducts = async () => {
-    const { data } = await supabase
-      .from('products')
-      .select('*')
-      .eq('creator_id', creatorId)
-      .order('created_at', { ascending: true });
-    setProducts((data as Product[]) ?? []);
-    setLoading(false);
-  };
+  const loading = products === undefined;
 
   useEffect(() => {
-    if (creatorId) fetchProducts();
-  }, [creatorId]);
+    if (!dialogOpen) resetForm();
+  }, [dialogOpen]);
 
   const resetForm = () => {
     setName('');
@@ -77,7 +60,7 @@ const ProductsSection = ({ creatorId }: ProductsSectionProps) => {
     setPrice('9.99');
     setBillingPeriod('monthly');
     setIsFeatured(false);
-    setEditing(null);
+    setEditingId(null);
   };
 
   const openCreate = () => {
@@ -85,13 +68,13 @@ const ProductsSection = ({ creatorId }: ProductsSectionProps) => {
     setDialogOpen(true);
   };
 
-  const openEdit = (product: Product) => {
-    setEditing(product);
+  const openEdit = (product: NonNullable<typeof products>[number]) => {
+    setEditingId(product._id);
     setName(product.name);
     setDescription(product.description ?? '');
-    setPrice(product.price.toString());
-    setBillingPeriod(product.billing_period);
-    setIsFeatured(product.is_featured);
+    setPrice((product.priceCents / 100).toFixed(2));
+    setBillingPeriod(product.billingPeriod);
+    setIsFeatured(product.isFeatured);
     setDialogOpen(true);
   };
 
@@ -107,65 +90,101 @@ const ProductsSection = ({ creatorId }: ProductsSectionProps) => {
     }
 
     setSaving(true);
+    try {
+      if (isFeatured && products) {
+        for (const p of products) {
+          if (p.isFeatured && p._id !== editingId) {
+            await upsertProduct({
+              productId: p._id,
+              creatorId,
+              name: p.name,
+              description: p.description,
+              priceCents: p.priceCents,
+              billingPeriod: p.billingPeriod,
+              isFeatured: false,
+              isActive: p.isActive,
+              maxSpots: p.maxSpots,
+              isLimited: p.isLimited,
+              isClosed: p.isClosed,
+            });
+          }
+        }
+      }
 
-    // If marking as featured, unfeatured others first
-    if (isFeatured) {
-      await supabase
-        .from('products')
-        .update({ is_featured: false } as any)
-        .eq('creator_id', creatorId);
+      await upsertProduct({
+        productId: editingId ?? undefined,
+        creatorId,
+        name: name.trim(),
+        description: description.trim() || undefined,
+        priceCents: Math.round(numPrice * 100),
+        billingPeriod,
+        isFeatured,
+        isActive: true,
+        isLimited: editingId
+          ? (products?.find((p) => p._id === editingId)?.isLimited ?? false)
+          : false,
+        isClosed: editingId
+          ? (products?.find((p) => p._id === editingId)?.isClosed ?? false)
+          : false,
+        maxSpots: editingId ? products?.find((p) => p._id === editingId)?.maxSpots : undefined,
+      });
+
+      toast.success(editingId ? 'Product updated' : 'Product created');
+      setDialogOpen(false);
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : 'Failed to save product');
+    } finally {
+      setSaving(false);
     }
-
-    const payload = {
-      name: name.trim(),
-      description: description.trim() || null,
-      price: numPrice,
-      billing_period: billingPeriod,
-      is_featured: isFeatured,
-      is_active: true,
-    };
-
-    if (editing) {
-      const { error } = await supabase
-        .from('products')
-        .update(payload as any)
-        .eq('id', editing.id);
-      if (error) toast.error('Failed to update product');
-      else toast.success('Product updated');
-    } else {
-      const { error } = await supabase
-        .from('products')
-        .insert({ ...payload, creator_id: creatorId } as any);
-      if (error) toast.error('Failed to create product');
-      else toast.success('Product created');
-    }
-
-    setSaving(false);
-    setDialogOpen(false);
-    resetForm();
-    fetchProducts();
   };
 
-  const handleDelete = async (id: string) => {
-    const { error } = await supabase.from('products').delete().eq('id', id);
-    if (error) toast.error('Failed to delete product');
-    else {
+  const handleDelete = async (id: Id<'products'>) => {
+    try {
+      await removeProduct({ productId: id });
       toast.success('Product deleted');
-      fetchProducts();
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : 'Failed to delete product');
     }
   };
 
-  const handleSetFeatured = async (id: string) => {
-    await supabase
-      .from('products')
-      .update({ is_featured: false } as any)
-      .eq('creator_id', creatorId);
-    await supabase
-      .from('products')
-      .update({ is_featured: true } as any)
-      .eq('id', id);
-    toast.success('Featured product updated');
-    fetchProducts();
+  const handleSetFeatured = async (id: Id<'products'>) => {
+    const product = products?.find((p) => p._id === id);
+    if (!product || !products) return;
+    try {
+      for (const p of products) {
+        if (p.isFeatured) {
+          await upsertProduct({
+            productId: p._id,
+            creatorId,
+            name: p.name,
+            description: p.description,
+            priceCents: p.priceCents,
+            billingPeriod: p.billingPeriod,
+            isFeatured: false,
+            isActive: p.isActive,
+            maxSpots: p.maxSpots,
+            isLimited: p.isLimited,
+            isClosed: p.isClosed,
+          });
+        }
+      }
+      await upsertProduct({
+        productId: id,
+        creatorId,
+        name: product.name,
+        description: product.description,
+        priceCents: product.priceCents,
+        billingPeriod: product.billingPeriod,
+        isFeatured: true,
+        isActive: product.isActive,
+        maxSpots: product.maxSpots,
+        isLimited: product.isLimited,
+        isClosed: product.isClosed,
+      });
+      toast.success('Featured product updated');
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : 'Failed to update featured product');
+    }
   };
 
   if (loading) {
@@ -175,6 +194,8 @@ const ProductsSection = ({ creatorId }: ProductsSectionProps) => {
       </div>
     );
   }
+
+  const rows = products ?? [];
 
   return (
     <div>
@@ -187,7 +208,7 @@ const ProductsSection = ({ creatorId }: ProductsSectionProps) => {
         </Button>
       </div>
 
-      {products.length === 0 ? (
+      {rows.length === 0 ? (
         <div className="rounded-xl border border-border bg-card p-10 text-center">
           <Package className="h-10 w-10 text-muted-foreground mx-auto mb-4" />
           <h3 className="font-semibold mb-2">No products yet</h3>
@@ -200,23 +221,23 @@ const ProductsSection = ({ creatorId }: ProductsSectionProps) => {
         </div>
       ) : (
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-          {products.map((product) => (
+          {rows.map((product) => (
             <div
-              key={product.id}
+              key={product._id}
               className={`rounded-xl border bg-card p-5 relative transition-colors ${
-                product.is_featured
+                product.isFeatured
                   ? 'border-primary/40 ring-1 ring-primary/20'
                   : 'border-border'
               }`}
             >
-              {product.is_featured && (
+              {product.isFeatured && (
                 <span className="absolute -top-2.5 left-4 inline-flex items-center gap-1 rounded-full bg-primary px-2.5 py-0.5 text-[10px] font-medium text-primary-foreground uppercase tracking-wide">
                   <Star className="h-2.5 w-2.5" /> Featured
                 </span>
               )}
               <div className="mb-3 mt-1">
                 <span className="text-[10px] font-medium text-muted-foreground uppercase tracking-wide rounded-full bg-secondary px-2 py-0.5">
-                  {PERIOD_LABELS[product.billing_period]}
+                  {PERIOD_LABELS[product.billingPeriod]}
                 </span>
               </div>
               <h3 className="font-semibold text-sm mb-1">{product.name}</h3>
@@ -226,20 +247,20 @@ const ProductsSection = ({ creatorId }: ProductsSectionProps) => {
                 </p>
               )}
               <p className="text-xl font-bold mb-4">
-                ${product.price.toFixed(2)}
-                {product.billing_period !== 'one-time' && (
+                ${(product.priceCents / 100).toFixed(2)}
+                {product.billingPeriod !== 'one-time' && (
                   <span className="text-xs font-normal text-muted-foreground">
-                    /{product.billing_period === 'daily' ? 'day' : product.billing_period === 'weekly' ? 'wk' : product.billing_period === 'monthly' ? 'mo' : 'yr'}
+                    /{product.billingPeriod === 'daily' ? 'day' : product.billingPeriod === 'weekly' ? 'wk' : product.billingPeriod === 'monthly' ? 'mo' : 'yr'}
                   </span>
                 )}
               </p>
               <div className="flex items-center gap-1.5">
-                {!product.is_featured && (
+                {!product.isFeatured && (
                   <Button
                     variant="ghost"
                     size="sm"
                     className="text-xs h-7 px-2"
-                    onClick={() => handleSetFeatured(product.id)}
+                    onClick={() => handleSetFeatured(product._id)}
                     title="Set as featured"
                   >
                     <Star className="h-3 w-3" />
@@ -257,7 +278,7 @@ const ProductsSection = ({ creatorId }: ProductsSectionProps) => {
                   variant="ghost"
                   size="sm"
                   className="text-xs h-7 px-2 text-destructive hover:text-destructive"
-                  onClick={() => handleDelete(product.id)}
+                  onClick={() => handleDelete(product._id)}
                 >
                   <Trash2 className="h-3 w-3" />
                 </Button>
@@ -267,11 +288,10 @@ const ProductsSection = ({ creatorId }: ProductsSectionProps) => {
         </div>
       )}
 
-      {/* Create / Edit Dialog */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>{editing ? 'Edit Product' : 'New Product'}</DialogTitle>
+            <DialogTitle>{editingId ? 'Edit Product' : 'New Product'}</DialogTitle>
           </DialogHeader>
           <div className="space-y-4 mt-2">
             <div>
@@ -342,7 +362,7 @@ const ProductsSection = ({ creatorId }: ProductsSectionProps) => {
               </Button>
               <Button variant="hero" size="sm" onClick={handleSave} disabled={saving}>
                 {saving && <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />}
-                {editing ? 'Save Changes' : 'Create Product'}
+                {editingId ? 'Save Changes' : 'Create Product'}
               </Button>
             </div>
           </div>

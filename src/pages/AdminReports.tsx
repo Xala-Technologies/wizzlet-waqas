@@ -1,6 +1,7 @@
 import { useState } from 'react';
+import { useConvex } from 'convex/react';
+import { api } from '../../convex/_generated/api';
 import { DashboardLayout } from '@/components/dashboard/DashboardLayout';
-import { supabase } from '@/lib/supabase';
 import { Button } from '@/components/ui/button';
 import { FileText, Download, Crown, Users, CreditCard, Percent, Wallet, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
@@ -15,8 +16,8 @@ interface ReportItem {
   build: () => Promise<Row[]>;
 }
 
-const money = (v: unknown) => Number(v ?? 0).toFixed(2);
-const day = (v: unknown) => (v ? new Date(String(v)).toISOString().slice(0, 10) : '');
+const money = (cents: number) => (cents / 100).toFixed(2);
+const day = (ms: number) => (ms ? new Date(ms).toISOString().slice(0, 10) : '');
 
 const toCsv = (rows: Row[]) => {
   if (rows.length === 0) return '';
@@ -38,6 +39,7 @@ const download = (name: string, csv: string) => {
 };
 
 const AdminReports = () => {
+  const convex = useConvex();
   const [busy, setBusy] = useState<string | null>(null);
   const [recentExports, setRecentExports] = useState<{ name: string; date: string; size: string; csv: string }[]>([]);
 
@@ -48,23 +50,23 @@ const AdminReports = () => {
       description: 'Creators with subscriber counts, gross revenue, platform fees, and net earnings',
       icon: Crown,
       build: async () => {
-        const [{ data: creators }, { data: subs }] = await Promise.all([
-          supabase.from('creators').select('id, display_name, username, monthly_price, is_published, created_at'),
-          supabase.from('subscriptions').select('creator_id, amount, platform_fee, creator_earnings, status'),
+        const [creators, subs] = await Promise.all([
+          convex.query(api.creators.queries.listAllAdmin, {}),
+          convex.query(api.subscriptions.mutations.listAllAdmin, {}),
         ]);
-        const active = (subs ?? []).filter(s => s.status === 'active');
-        return (creators ?? []).map(c => {
-          const mine = active.filter(s => s.creator_id === c.id);
+        const active = subs.filter(s => s.status === 'active');
+        return creators.map(c => {
+          const mine = active.filter(s => s.creatorId === c._id);
           return {
-            creator: c.display_name ?? '',
+            creator: c.displayName ?? '',
             username: c.username ?? '',
-            published: c.is_published ? 'yes' : 'no',
-            monthly_price: money(c.monthly_price),
+            published: c.isPublished ? 'yes' : 'no',
+            monthly_price: money(c.monthlyPriceCents ?? 0),
             active_subscribers: mine.length,
-            gross_revenue: money(mine.reduce((a, b) => a + Number(b.amount), 0)),
-            platform_fees: money(mine.reduce((a, b) => a + Number(b.platform_fee), 0)),
-            net_earnings: money(mine.reduce((a, b) => a + Number(b.creator_earnings), 0)),
-            joined: day(c.created_at),
+            gross_revenue: money(mine.reduce((a, b) => a + b.amountCents, 0)),
+            platform_fees: money(mine.reduce((a, b) => a + b.platformFeeCents, 0)),
+            net_earnings: money(mine.reduce((a, b) => a + b.creatorEarningsCents, 0)),
+            joined: day(c.createdAt),
           };
         });
       },
@@ -75,19 +77,19 @@ const AdminReports = () => {
       description: 'Accounts with subscription counts, total spend, and signup dates',
       icon: Users,
       build: async () => {
-        const [{ data: users }, { data: subs }] = await Promise.all([
-          supabase.from('users').select('id, email, username, full_name, created_at'),
-          supabase.from('subscriptions').select('user_id, amount, status'),
+        const [users, subs] = await Promise.all([
+          convex.query(api.admin.queries.listUsers, {}),
+          convex.query(api.subscriptions.mutations.listAllAdmin, {}),
         ]);
-        return (users ?? []).map(u => {
-          const mine = (subs ?? []).filter(s => s.user_id === u.id);
+        return users.map(u => {
+          const mine = subs.filter(s => s.userId === u._id);
           return {
-            name: u.full_name ?? u.username ?? '',
+            name: u.fullName ?? u.username ?? '',
             email: u.email,
             subscriptions: mine.length,
             active_subscriptions: mine.filter(s => s.status === 'active').length,
-            total_spend: money(mine.reduce((a, b) => a + Number(b.amount), 0)),
-            joined: day(u.created_at),
+            total_spend: money(mine.reduce((a, b) => a + b.amountCents, 0)),
+            joined: day(u.createdAt),
           };
         });
       },
@@ -98,23 +100,25 @@ const AdminReports = () => {
       description: 'Subscription ledger with amounts, fees, creator earnings, and status',
       icon: CreditCard,
       build: async () => {
-        const [{ data: subs }, { data: creators }, { data: users }] = await Promise.all([
-          supabase.from('subscriptions').select('*').order('created_at', { ascending: false }),
-          supabase.from('creators').select('id, display_name, username'),
-          supabase.from('users').select('id, email'),
+        const [subs, creators, users] = await Promise.all([
+          convex.query(api.subscriptions.mutations.listAllAdmin, {}),
+          convex.query(api.creators.queries.listAllAdmin, {}),
+          convex.query(api.admin.queries.listUsers, {}),
         ]);
-        const cMap = new Map((creators ?? []).map(c => [c.id, c.display_name ?? c.username ?? '']));
-        const uMap = new Map((users ?? []).map(u => [u.id, u.email]));
-        return (subs ?? []).map(s => ({
-          date: day(s.created_at),
-          creator: cMap.get(s.creator_id) ?? '',
-          customer: uMap.get(s.user_id) ?? '',
-          amount: money(s.amount),
-          fee_percentage: Number(s.fee_percentage),
-          platform_fee: money(s.platform_fee),
-          creator_earnings: money(s.creator_earnings),
-          status: s.status,
-        }));
+        const cMap = new Map(creators.map(c => [c._id, c.displayName ?? c.username ?? '']));
+        const uMap = new Map(users.map(u => [u._id, u.email]));
+        return [...subs]
+          .sort((a, b) => b.createdAt - a.createdAt)
+          .map(s => ({
+            date: day(s.createdAt),
+            creator: cMap.get(s.creatorId) ?? '',
+            customer: uMap.get(s.userId) ?? '',
+            amount: money(s.amountCents),
+            fee_percentage: s.feePercentage,
+            platform_fee: money(s.platformFeeCents),
+            creator_earnings: money(s.creatorEarningsCents),
+            status: s.status,
+          }));
       },
     },
     {
@@ -123,20 +127,22 @@ const AdminReports = () => {
       description: 'Payout ledger with creator, amount, status, method, and processed date',
       icon: Wallet,
       build: async () => {
-        const [{ data: payouts }, { data: creators }] = await Promise.all([
-          supabase.from('payouts').select('*').order('created_at', { ascending: false }),
-          supabase.from('creators').select('id, display_name, username'),
+        const [payouts, creators] = await Promise.all([
+          convex.query(api.payouts.mutations.listAllAdmin, {}),
+          convex.query(api.creators.queries.listAllAdmin, {}),
         ]);
-        const cMap = new Map((creators ?? []).map(c => [c.id, c.display_name ?? c.username ?? '']));
-        return (payouts ?? []).map(p => ({
-          created: day(p.created_at),
-          processed: day(p.processed_at),
-          creator: cMap.get(p.creator_id) ?? '',
-          amount: money(p.amount),
-          status: p.status,
-          method: p.method,
-          reference: p.reference ?? '',
-        }));
+        const cMap = new Map(creators.map(c => [c._id, c.displayName ?? c.username ?? '']));
+        return [...payouts]
+          .sort((a, b) => b.createdAt - a.createdAt)
+          .map(p => ({
+            created: day(p.createdAt),
+            processed: day(p.processedAt ?? 0),
+            creator: cMap.get(p.creatorId) ?? '',
+            amount: money(p.amountCents),
+            status: p.status,
+            method: p.method ?? '',
+            reference: p.reference ?? '',
+          }));
       },
     },
     {
@@ -145,20 +151,20 @@ const AdminReports = () => {
       description: 'Fee revenue per creator, split by intro and standard rates',
       icon: Percent,
       build: async () => {
-        const [{ data: subs }, { data: creators }] = await Promise.all([
-          supabase.from('subscriptions').select('creator_id, platform_fee, fee_percentage, status'),
-          supabase.from('creators').select('id, display_name, username'),
+        const [subs, creators] = await Promise.all([
+          convex.query(api.subscriptions.mutations.listAllAdmin, {}),
+          convex.query(api.creators.queries.listAllAdmin, {}),
         ]);
-        const active = (subs ?? []).filter(s => s.status === 'active');
-        return (creators ?? [])
+        const active = subs.filter(s => s.status === 'active');
+        return creators
           .map(c => {
-            const mine = active.filter(s => s.creator_id === c.id);
+            const mine = active.filter(s => s.creatorId === c._id);
             return {
-              creator: c.display_name ?? c.username ?? '',
+              creator: c.displayName ?? c.username ?? '',
               subscriptions: mine.length,
-              intro_rate_subs: mine.filter(s => Number(s.fee_percentage) <= 5).length,
-              standard_rate_subs: mine.filter(s => Number(s.fee_percentage) > 5).length,
-              fees_collected: money(mine.reduce((a, b) => a + Number(b.platform_fee), 0)),
+              intro_rate_subs: mine.filter(s => s.feePercentage <= 5).length,
+              standard_rate_subs: mine.filter(s => s.feePercentage > 5).length,
+              fees_collected: money(mine.reduce((a, b) => a + b.platformFeeCents, 0)),
             };
           })
           .filter(r => r.subscriptions > 0);

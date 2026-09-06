@@ -1,22 +1,20 @@
-import { useEffect, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { useQuery } from 'convex/react';
 import { WizzletLogo } from '@/components/WizzletLogo';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import {
   LayoutGrid,
-  Crown,
   CreditCard,
   Compass,
   Settings,
   LogOut,
-  Zap,
   Trophy,
   Bookmark,
   Bell,
   Activity,
 } from 'lucide-react';
-import { supabase } from '@/lib/supabase';
+import { api } from '@convex/_generated/api';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { RoleSwitcher } from './RoleSwitcher';
 import { demoMemberUnread, useDemoMemberStoreOptional } from '@/components/demo/demoMemberStore';
@@ -80,43 +78,16 @@ function NavItemLink({ item, active }: { item: NavItem; active: boolean }) {
 export function MemberSidebar({ demo = false, mobile = false }: { demo?: boolean; mobile?: boolean }) {
   const { signOut, user } = useAuth();
   const demoStore = useDemoMemberStoreOptional();
-  const [liveUnread, setLiveUnread] = useState(0);
-  const unread = demo && demoStore ? demoStore.metrics.unread : liveUnread;
-  const setUnread = setLiveUnread;
+  const liveUnread = useQuery(
+    api.notifications.mutations.unreadCount,
+    !demo && user ? {} : 'skip',
+  );
+  const unread = demo && demoStore ? demoStore.metrics.unread : (liveUnread ?? 0);
   const location = useLocation();
   const navigate = useNavigate();
   const pathname = location.pathname;
   const items = demo ? demoMemberItems : memberItems;
   const baseRoute = demo ? '/demo/member' : '/dashboard';
-
-  useEffect(() => {
-    if (demo) {
-      setUnread(demoMemberUnread());
-      return;
-    }
-    if (!user) return;
-    let cancelled = false;
-
-    const loadUnread = async () => {
-      const { count } = await supabase
-        .from('notifications')
-        .select('id', { count: 'exact', head: true })
-        .eq('user_id', user.id)
-        .eq('read', false);
-      if (!cancelled) setUnread(count ?? 0);
-    };
-
-    loadUnread();
-    const channel = supabase
-      .channel('member-notifications')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'notifications', filter: `user_id=eq.${user.id}` }, loadUnread)
-      .subscribe();
-    return () => {
-      cancelled = true;
-      supabase.removeChannel(channel);
-    };
-  }, [demo, user, pathname]);
-
 
   const handleSignOut = async () => {
     if (demo) { navigate('/'); return; }

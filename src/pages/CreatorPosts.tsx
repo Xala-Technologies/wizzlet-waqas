@@ -1,7 +1,8 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useMemo } from 'react';
+import { useMutation, useQuery } from 'convex/react';
+import { api } from '../../convex/_generated/api';
+import type { Id } from '../../convex/_generated/dataModel';
 import { DashboardLayout } from '@/components/dashboard/DashboardLayout';
-import { useAuth } from '@/contexts/AuthContext';
-import { supabase } from '@/lib/supabase';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -49,11 +50,38 @@ const resultConfig = {
 };
 
 const CreatorPosts = () => {
-  const { user } = useAuth();
-  const [posts, setPosts] = useState<Post[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [creatorId, setCreatorId] = useState<string | null>(null);
-  const [products, setProducts] = useState<Product[]>([]);
+  const creator = useQuery(api.creators.queries.myCreator);
+  const postsRaw = useQuery(api.posts.queries.listMine);
+  const productsRaw = useQuery(
+    api.products.mutations.listByCreator,
+    creator ? { creatorId: creator._id, activeOnly: true } : 'skip',
+  );
+  const subs = useQuery(api.subscriptions.mutations.listForMyCreator);
+  const upsertPost = useMutation(api.posts.queries.upsert);
+  const removePost = useMutation(api.posts.queries.remove);
+  const setResultMut = useMutation(api.posts.queries.setResult);
+
+  const loading = creator === undefined || postsRaw === undefined || productsRaw === undefined || subs === undefined;
+  const creatorId = creator?._id ?? null;
+  const subCount = (subs ?? []).filter((s) => s.status === 'active').length;
+
+  const posts = useMemo(
+    () => (postsRaw ?? []).map((p) => ({
+      id: p._id,
+      title: p.title,
+      content: p.content ?? null,
+      is_premium: p.isPremium,
+      created_at: new Date(p.createdAt).toISOString(),
+      result: p.result ?? 'pending',
+      tracking_mode: p.trackingMode ?? '',
+    })),
+    [postsRaw],
+  );
+
+  const products = useMemo(
+    () => (productsRaw ?? []).map((p) => ({ id: p._id, name: p.name, subCount })),
+    [productsRaw, subCount],
+  );
 
   // Create/Edit state
   const [mode, setMode] = useState<'list' | 'create'>('list');
@@ -76,28 +104,6 @@ const CreatorPosts = () => {
   const [sendApp, setSendApp] = useState(true);
   const [sendEmail, setSendEmail] = useState(false);
   const [oddsSource, setOddsSource] = useState<'us' | 'eu' | null>(null);
-
-  const loadPosts = useCallback(async () => {
-    if (!user) return;
-    const { data: userData } = await supabase.from('users').select('id').eq('auth_id', user.id).maybeSingle();
-    if (!userData) return;
-    const { data: creator } = await supabase.from('creators').select('id').eq('user_id', userData.id).maybeSingle();
-    if (!creator) return;
-    setCreatorId(creator.id);
-
-    const [postsRes, productsRes, subsRes] = await Promise.all([
-      supabase.from('posts').select('id, title, content, is_premium, created_at, result, tracking_mode').eq('creator_id', creator.id).order('created_at', { ascending: false }),
-      supabase.from('products').select('id, name').eq('creator_id', creator.id).eq('is_active', true),
-      supabase.from('subscriptions').select('creator_id').eq('creator_id', creator.id).eq('status', 'active'),
-    ]);
-
-    setPosts((postsRes.data ?? []) as unknown as Post[]);
-    const subCount = (subsRes.data ?? []).length;
-    setProducts((productsRes.data ?? []).map(p => ({ ...p, subCount })));
-    setLoading(false);
-  }, [user]);
-
-  useEffect(() => { loadPosts(); }, [loadPosts]);
 
   const resetForm = () => {
     setEditId(null); setTitle(''); setSport(''); setEvent(''); setPickType('');
@@ -141,28 +147,38 @@ const CreatorPosts = () => {
     if (!creatorId) return;
     setSaving(true);
     const contentStr = buildContent();
-    if (editId) {
-      const { error } = await supabase.from('posts').update({ title: title.trim(), content: contentStr || null, is_premium: isPremium }).eq('id', editId);
-      if (error) toast.error(error.message); else setShowSuccess(true);
-    } else {
-      const { error } = await supabase.from('posts').insert({ creator_id: creatorId, title: title.trim(), content: contentStr || null, is_premium: isPremium });
-      if (error) toast.error(error.message); else setShowSuccess(true);
+    try {
+      await upsertPost({
+        postId: editId ? (editId as Id<'posts'>) : undefined,
+        creatorId,
+        title: title.trim(),
+        content: contentStr || undefined,
+        isPremium,
+      });
+      setShowSuccess(true);
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : 'Failed to save post');
+    } finally {
+      setSaving(false);
     }
-    setSaving(false);
-    loadPosts();
   };
 
   const handleDelete = async (id: string) => {
-    const { error } = await supabase.from('posts').delete().eq('id', id);
-    if (error) toast.error(error.message);
-    else { toast.success('Post deleted'); setPosts(prev => prev.filter(p => p.id !== id)); }
+    try {
+      await removePost({ postId: id as Id<'posts'> });
+      toast.success('Post deleted');
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : 'Failed to delete post');
+    }
   };
 
   const handleResultChange = async (postId: string, newResult: string) => {
-    const { error } = await supabase.from('posts').update({ result: newResult }).eq('id', postId);
-    if (error) { toast.error('Failed to update result'); return; }
-    setPosts(prev => prev.map(p => p.id === postId ? { ...p, result: newResult } : p));
-    toast.success(`Marked as ${newResult}`);
+    try {
+      await setResultMut({ postId: postId as Id<'posts'>, result: newResult });
+      toast.success(`Marked as ${newResult}`);
+    } catch {
+      toast.error('Failed to update result');
+    }
   };
 
   const toggleProduct = (id: string) => {
