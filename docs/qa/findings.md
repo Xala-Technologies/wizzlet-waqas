@@ -21,7 +21,7 @@ Prior IDs from [docs/convex-audit/findings.md](../convex-audit/findings.md) reus
 | F-009 | P2 | **PASS (W16)** | Balance helper + UI: Paid out ≠ reserved; request uses ConvexError |
 | F-010 | P2 | **PASS (code) / E2E NOT_RUN** | Stripe + webhook path present; soak not run |
 | F-011 | P2 | **PASS** | Public Convex APIs have `returns` validators (Waves 9–12; migrations/internal excluded) |
-| F-012 | P2 | **PARTIAL** | Admin lists capped at 500 newest rows; cursor pagination + exact aggregates still open |
+| F-012 | P2 | **PARTIAL (W19)** | Users/Creators/Payout history cursor-paginated; other admin + dashboardStats still capped at 500 |
 | F-013 | P1 data | **INSUFFICIENT** | Not re-validated via MCP data dump this wave |
 | F-014 | P3 | **PASS (fixed W7)** | Client passes `fromMs`/`toMs`; query has no clock |
 | F-015 | P3 | **OPEN** | Full `tsc` app project not re-run this wave; lint errors remain |
@@ -385,13 +385,24 @@ J2 closed for launch-monthly product pricing. Remaining journeys: J4–J8.
 | Browser | Cancelled member `qa.member.w3.1101` on `/dashboard/subscriptions-billing`: CANCELLED row, **no Message button** |
 | Support channel | Admin/creator `supportMessages` remains separate (not subscription-gated by design) |
 
-## Gate (after Wave 18)
+## Gate (after Wave 19)
 
 ```text
 NOT READY
 ```
 
-Remaining journey: J8 (BLOCKED — no approved migration snapshot). Referral cash commission not productized.
+Remaining: J8 BLOCKED; residual admin join pages + exact dashboardStats; referral cash commission.
+
+## QA-W19-F012 — Admin cursor pagination
+
+| | |
+|--|--|
+| Category | Scale / admin |
+| Severity | **P2** |
+| Layer | Convex + UI |
+| Finding | Wave 13 capped takes at 500; list UIs still loaded full arrays client-side |
+| Fix | `listUsersPage` / `listCreatorsPage` / `listPayoutsPage` + `usePaginatedQuery` on Admin Users, Creators, Payouts history |
+| Residual | Other admin pages + `dashboardStats` still use `adminTakeNewest` |
 
 ## QA-W18-J7 — Identity cross-device continuity
 

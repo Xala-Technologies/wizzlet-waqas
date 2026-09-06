@@ -4,9 +4,8 @@ import type { TableNames } from "../_generated/dataModel";
 type Ctx = QueryCtx | MutationCtx;
 
 /**
- * Hard ceiling for admin full-table reads (F-012 interim).
- * Prefer cursor pagination + usePaginatedQuery for true scale; this prevents
- * unbounded `.collect()` memory/latency blowups while admin UIs still expect arrays.
+ * Hard ceiling for admin full-table reads (F-012 interim join/aggregate paths).
+ * Prefer cursor pagination (`admin/paginatedLists` + `usePaginatedQuery`) for list UIs.
  */
 export const ADMIN_LIST_LIMIT = 500;
 
@@ -23,3 +22,6 @@ export async function adminTakeNewest<TableName extends TableNames>(
 export function adminListTruncated(rowCount: number, limit: number = ADMIN_LIST_LIMIT): boolean {
   return rowCount >= limit;
 }
+
+/** Default page size for admin Load More UIs. */
+export const ADMIN_PAGE_SIZE = 25;
