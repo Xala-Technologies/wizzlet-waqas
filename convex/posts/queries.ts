@@ -10,9 +10,17 @@ import {
 } from "../lib/auth";
 import { canViewPostContent, redactPostContent } from "../lib/entitlements";
 import { normalizePickResult } from "../lib/results";
+import type { Id } from "../_generated/dataModel";
+import {
+  memberFeedItemValidator,
+  postDocValidator,
+  postPreviewValidator,
+  savedPostDetailedValidator,
+} from "../lib/validators";
 
 export const listPreviewsByCreator = query({
   args: { creatorId: v.id("creators") },
+  returns: v.array(postPreviewValidator),
   handler: async (ctx, args) => {
     const viewerUserId = await getAuthUserId(ctx);
     const posts = await ctx.db
@@ -41,6 +49,7 @@ export const listPreviewsByCreator = query({
 /** Creator's own posts (full content). */
 export const listMine = query({
   args: {},
+  returns: v.array(postDocValidator),
   handler: async (ctx) => {
     const user = await requireAppUser(ctx);
     const creator = await getCreatorForUser(ctx, user._id);
@@ -56,6 +65,7 @@ export const listMine = query({
 /** Member feed: posts from creators the user actively subscribes to. */
 export const memberFeed = query({
   args: {},
+  returns: v.array(memberFeedItemValidator),
   handler: async (ctx) => {
     const user = await requireAppUser(ctx);
     const subs = await ctx.db
@@ -64,11 +74,11 @@ export const memberFeed = query({
       .collect();
     const activeCreatorIds = subs.filter((s) => s.status === "active").map((s) => s.creatorId);
     const out: Array<{
-      _id: string;
+      _id: Id<"posts">;
       title: string;
       content: string | null;
       isPremium: boolean;
-      result: string | undefined;
+      result: "pending" | "won" | "lost" | "push" | undefined;
       createdAt: number;
       creator: {
         username: string;
@@ -117,6 +127,7 @@ export const upsert = mutation({
     result: v.optional(v.string()),
     trackingMode: v.optional(v.string()),
   },
+  returns: v.id("posts"),
   handler: async (ctx, args) => {
     const { user } = await requireCreatorOwner(ctx, args.creatorId);
     const now = Date.now();
@@ -159,6 +170,7 @@ export const setResult = mutation({
     postId: v.id("posts"),
     result: v.string(),
   },
+  returns: v.null(),
   handler: async (ctx, args) => {
     const post = await ctx.db.get(args.postId);
     if (!post) throw new Error("NOT_FOUND");
@@ -167,22 +179,26 @@ export const setResult = mutation({
       result: normalizePickResult(args.result),
       updatedAt: Date.now(),
     });
+    return null;
   },
 });
 
 export const remove = mutation({
   args: { postId: v.id("posts") },
+  returns: v.null(),
   handler: async (ctx, args) => {
     const post = await ctx.db.get(args.postId);
     if (!post) throw new Error("NOT_FOUND");
     await requireCreatorOwner(ctx, post.creatorId);
     await ctx.db.delete(args.postId);
+    return null;
   },
 });
 
 /** Saved posts with joined post + creator for library UI. */
 export const listSavedDetailed = query({
   args: {},
+  returns: v.array(savedPostDetailedValidator),
   handler: async (ctx) => {
     const user = await requireAppUser(ctx);
     const saved = await ctx.db
@@ -205,7 +221,7 @@ export const listSavedDetailed = query({
         post: {
           _id: post._id,
           title: post.title,
-          content: allowed ? post.content : null,
+          content: allowed ? (post.content ?? null) : null,
           isPremium: post.isPremium,
           result: post.result,
           createdAt: post.createdAt,
