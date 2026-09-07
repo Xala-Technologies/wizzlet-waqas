@@ -21,6 +21,7 @@ import {
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 import { americanToDecimal, decimalToAmerican } from '@/lib/odds';
+import { computeWinRate } from '../../convex/lib/results';
 
 const PAGE_SIZE = 25;
 
@@ -164,8 +165,10 @@ const CreatorPosts = () => {
     try {
       await setResultMut({ postId: postId as Id<'posts'>, result: newResult });
       toast.success(`Marked as ${newResult}`);
-    } catch {
-      toast.error('Failed to update result');
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : '';
+      if (msg.includes('RESULT_LOCKED')) toast.error('Settled results are locked and cannot be changed');
+      else toast.error('Failed to update result');
     }
   };
 
@@ -304,9 +307,7 @@ const CreatorPosts = () => {
   }
 
   // LIST MODE
-  const settled = posts.filter(p => p.result !== 'pending');
-  const wins = settled.filter(p => p.result === 'won').length;
-  const winRate = settled.length > 0 ? Math.round((wins / settled.length) * 100) : 0;
+  const { winRatePct: winRate, wins, losses } = computeWinRate(posts.map((p) => p.result));
 
   return (
     <DashboardLayout type="creator">
@@ -335,7 +336,7 @@ const CreatorPosts = () => {
         {[
           { label: 'Total Picks', value: posts.length, color: 'text-foreground' },
           { label: 'Wins', value: wins, color: 'text-emerald-500' },
-          { label: 'Losses', value: settled.filter(p => p.result === 'lost').length, color: 'text-red-500' },
+          { label: 'Losses', value: losses, color: 'text-red-500' },
           { label: 'Win Rate', value: `${winRate}%`, color: 'text-primary' },
         ].map(s => (
           <div key={s.label} className="rounded-lg border border-border bg-card p-3">
@@ -399,10 +400,9 @@ const CreatorPosts = () => {
                       </div>
                     )}
                     {post.result !== 'pending' && (
-                      <Button variant="ghost" size="sm" className="h-7 text-[10px] text-muted-foreground mr-1"
-                        onClick={() => handleResultChange(post.id, 'pending')}>
-                        Reset
-                      </Button>
+                      <span className="text-[10px] text-muted-foreground mr-1 px-1.5 py-0.5 rounded border border-border">
+                        Settled · locked
+                      </span>
                     )}
                     <Button variant="ghost" size="icon" className="h-8 w-8 md:opacity-0 md:group-hover:opacity-100 transition-opacity" onClick={() => openEdit(post)}><Pencil className="h-3.5 w-3.5" /></Button>
                     <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive md:opacity-0 md:group-hover:opacity-100 transition-opacity" onClick={() => handleDelete(post.id)}><Trash2 className="h-3.5 w-3.5" /></Button>

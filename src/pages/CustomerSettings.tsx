@@ -14,9 +14,14 @@ const CustomerSettings = () => {
   const me = useQuery(api.users.queries.me, user ? {} : 'skip');
   const updateProfile = useMutation(api.users.queries.updateProfile);
   const changePasswordAction = useAction(api.users.queries.changePassword);
+  const requestEmailChange = useMutation(api.accountRequests.requestEmailChange);
+  const myAccountRequests = useQuery(api.accountRequests.listMine, user ? {} : 'skip');
   const [fullName, setFullName] = useState('');
   const [username, setUsername] = useState('');
   const [email, setEmail] = useState('');
+  const [requestedEmail, setRequestedEmail] = useState('');
+  const [emailRequestReason, setEmailRequestReason] = useState('');
+  const [savingEmailRequest, setSavingEmailRequest] = useState(false);
   const [savingProfile, setSavingProfile] = useState(false);
   const [password, setPassword] = useState('');
   const [currentPassword, setCurrentPassword] = useState('');
@@ -111,9 +116,61 @@ const CustomerSettings = () => {
                 <Input id="username" value={username} onChange={(e) => setUsername(e.target.value)} placeholder="username" />
               </div>
               <div>
-                <label htmlFor="email" className="text-xs text-muted-foreground mb-1 block">Email</label>
+                <label htmlFor="email" className="text-xs text-muted-foreground mb-1 block">Sign-in email</label>
                 <Input id="email" value={email} type="email" disabled />
-                <p className="text-[10px] text-muted-foreground mt-1">Contact support to change your sign-in email.</p>
+                <p className="text-[10px] text-muted-foreground mt-1">
+                  Sign-in email cannot be changed in-app. Submit a request for support to fulfill manually.
+                </p>
+                {myAccountRequests?.some((r) => r.category === 'email_change' && r.status === 'open') ? (
+                  <p className="text-xs text-amber-600 mt-2">
+                    You already have an open email-change request.
+                    {myAccountRequests.find((r) => r.category === 'email_change' && r.status === 'open')?.requestedEmail
+                      ? ` Requested: ${myAccountRequests.find((r) => r.category === 'email_change' && r.status === 'open')!.requestedEmail}`
+                      : ''}
+                  </p>
+                ) : (
+                  <div className="mt-3 space-y-2 max-w-sm">
+                    <Input
+                      type="email"
+                      placeholder="New email address"
+                      value={requestedEmail}
+                      onChange={(e) => setRequestedEmail(e.target.value)}
+                    />
+                    <Input
+                      placeholder="Reason (optional)"
+                      value={emailRequestReason}
+                      onChange={(e) => setEmailRequestReason(e.target.value)}
+                    />
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      disabled={savingEmailRequest || !requestedEmail.trim()}
+                      onClick={async () => {
+                        setSavingEmailRequest(true);
+                        try {
+                          await requestEmailChange({
+                            requestedEmail: requestedEmail.trim(),
+                            reason: emailRequestReason.trim() || undefined,
+                          });
+                          toast.success('Email change request submitted. Support will follow up.');
+                          setRequestedEmail('');
+                          setEmailRequestReason('');
+                        } catch (e) {
+                          const msg = e instanceof Error ? e.message : 'Request failed';
+                          if (msg.includes('REQUEST_ALREADY_OPEN')) toast.error('You already have an open request');
+                          else if (msg.includes('EMAIL_UNCHANGED')) toast.error('That is already your email');
+                          else if (msg.includes('INVALID_EMAIL')) toast.error('Enter a valid email');
+                          else toast.error(msg);
+                        } finally {
+                          setSavingEmailRequest(false);
+                        }
+                      }}
+                    >
+                      {savingEmailRequest && <Loader2 className="mr-2 h-3 w-3 animate-spin" />}
+                      Request email change
+                    </Button>
+                  </div>
+                )}
               </div>
               <Button size="sm" className="w-fit mt-1" onClick={saveProfile} disabled={savingProfile || !me}>
                 {savingProfile && <Loader2 className="mr-2 h-3 w-3 animate-spin" />}

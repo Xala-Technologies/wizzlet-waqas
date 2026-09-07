@@ -115,6 +115,7 @@ export const upsertOnboarding = mutation({
     avatarUrl: v.optional(v.string()),
     bannerUrl: v.optional(v.string()),
     monthlyPriceCents: v.optional(v.number()),
+    onboardingStep: v.optional(v.number()),
   },
   returns: v.id("creators"),
   handler: async (ctx, args) => {
@@ -132,6 +133,10 @@ export const upsertOnboarding = mutation({
       throw new Error("USERNAME_TAKEN");
     }
     const now = Date.now();
+    const step =
+      args.onboardingStep !== undefined
+        ? Math.max(0, Math.min(2, Math.floor(args.onboardingStep)))
+        : undefined;
     if (existing) {
       await ctx.db.patch(existing._id, {
         username,
@@ -140,6 +145,7 @@ export const upsertOnboarding = mutation({
         avatarUrl: args.avatarUrl,
         bannerUrl: args.bannerUrl,
         monthlyPriceCents: args.monthlyPriceCents,
+        ...(step !== undefined ? { onboardingStep: step } : {}),
         updatedAt: now,
       });
       return existing._id;
@@ -154,6 +160,7 @@ export const upsertOnboarding = mutation({
       monthlyPriceCents: args.monthlyPriceCents,
       isPublished: false,
       messagingEnabled: true,
+      onboardingStep: step ?? 0,
       createdAt: now,
       updatedAt: now,
     });

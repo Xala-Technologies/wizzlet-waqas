@@ -10,7 +10,7 @@ import {
   logMutation,
 } from "../lib/auth";
 import { canViewPostContent, redactPostContent } from "../lib/entitlements";
-import { normalizePickResult } from "../lib/results";
+import { normalizePickResult, isSettledPickResult } from "../lib/results";
 import type { Id } from "../_generated/dataModel";
 import {
   memberFeedItemValidator,
@@ -196,6 +196,9 @@ export const setResult = mutation({
     const post = await ctx.db.get(args.postId);
     if (!post) throw new Error("NOT_FOUND");
     await requireCreatorOwner(ctx, post.creatorId);
+    if (isSettledPickResult(post.result)) {
+      throw new Error("RESULT_LOCKED");
+    }
     await ctx.db.patch(args.postId, {
       result: normalizePickResult(args.result),
       updatedAt: Date.now(),

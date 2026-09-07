@@ -1,10 +1,10 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { useConvex, useMutation } from 'convex/react';
+import { useConvex, useMutation, useQuery } from 'convex/react';
 import { api } from '../../convex/_generated/api';
 import { useAuth } from '@/contexts/AuthContext';
 import { uploadToConvexStorage } from '@/lib/upload';
@@ -19,10 +19,12 @@ const CreatorOnboarding = () => {
   const navigate = useNavigate();
   const { user, roles, switchRole } = useAuth();
   const convex = useConvex();
+  const existing = useQuery(api.creators.queries.myCreator, user ? {} : 'skip');
   const upsertOnboarding = useMutation(api.creators.queries.upsertOnboarding);
   const setPublished = useMutation(api.creators.queries.setPublished);
   const [step, setStep] = useState(0);
   const [loading, setLoading] = useState(false);
+  const [hydrated, setHydrated] = useState(false);
 
   const [displayName, setDisplayName] = useState('');
   const [username, setUsername] = useState('');
@@ -33,11 +35,37 @@ const CreatorOnboarding = () => {
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
   const [bannerFile, setBannerFile] = useState<File | null>(null);
   const [bannerPreview, setBannerPreview] = useState<string | null>(null);
+  /** Server URLs already saved (survive device switch; local File picks do not). */
+  const [savedAvatarUrl, setSavedAvatarUrl] = useState<string | undefined>();
+  const [savedBannerUrl, setSavedBannerUrl] = useState<string | undefined>();
 
   const avatarRef = useRef<HTMLInputElement>(null);
   const bannerRef = useRef<HTMLInputElement>(null);
 
-  /** Leave setup without finishing — member home if available, else public home. */
+  useEffect(() => {
+    if (hydrated || existing === undefined) return;
+    if (existing) {
+      setDisplayName(existing.displayName ?? '');
+      setUsername(existing.username ?? '');
+      setBio(existing.bio ?? '');
+      if (existing.monthlyPriceCents != null) {
+        setPrice((existing.monthlyPriceCents / 100).toFixed(2));
+      }
+      if (existing.avatarUrl) {
+        setAvatarPreview(existing.avatarUrl);
+        setSavedAvatarUrl(existing.avatarUrl);
+      }
+      if (existing.bannerUrl) {
+        setBannerPreview(existing.bannerUrl);
+        setSavedBannerUrl(existing.bannerUrl);
+      }
+      if (typeof existing.onboardingStep === 'number') {
+        setStep(Math.max(0, Math.min(STEPS.length - 1, existing.onboardingStep)));
+      }
+    }
+    setHydrated(true);
+  }, [existing, hydrated]);
+
   const exitSetup = () => {
     if (roles.includes('subscriber')) {
       switchRole('subscriber');
@@ -79,20 +107,17 @@ const CreatorOnboarding = () => {
   };
 
   const canAdvance = () => {
-    if (step === 0) return displayName.trim() && username.trim();
+    if (step === 0) return displayName.trim() && username.trim().length >= 3;
     return true;
   };
 
-  const handleFinish = async () => {
+  const persistDraft = async (nextStep: number, opts?: { publish?: boolean }) => {
     if (!user) return;
     setLoading(true);
-
-    // Upload images in parallel
     const [avatarUrl, bannerUrl] = await Promise.all([
-      avatarFile ? uploadImage(avatarFile) : Promise.resolve(null),
-      bannerFile ? uploadImage(bannerFile) : Promise.resolve(null),
+      avatarFile ? uploadImage(avatarFile) : Promise.resolve(savedAvatarUrl ?? null),
+      bannerFile ? uploadImage(bannerFile) : Promise.resolve(savedBannerUrl ?? null),
     ]);
-
     try {
       const cleanUsername = username.toLowerCase().replace(/[^a-z0-9_]/g, '');
       const creatorId = await upsertOnboarding({
@@ -102,15 +127,31 @@ const CreatorOnboarding = () => {
         avatarUrl: avatarUrl ?? undefined,
         bannerUrl: bannerUrl ?? undefined,
         monthlyPriceCents: Math.round((parseFloat(price) || 9.99) * 100),
+        onboardingStep: nextStep,
       });
-      await setPublished({ creatorId, isPublished: true });
-      await queryClient.invalidateQueries({ queryKey: ['creator-profile-exists'] });
-      toast.success('Your creator profile is live!');
-      navigate('/creator');
+      if (avatarUrl) {
+        setSavedAvatarUrl(avatarUrl);
+        setAvatarFile(null);
+      }
+      if (bannerUrl) {
+        setSavedBannerUrl(bannerUrl);
+        setBannerFile(null);
+      }
+      if (opts?.publish) {
+        await setPublished({ creatorId, isPublished: true });
+        await queryClient.invalidateQueries({ queryKey: ['creator-profile-exists'] });
+        toast.success('Your creator profile is live!');
+        navigate('/creator');
+        return;
+      }
+      toast.success('Draft saved');
+      setStep(nextStep);
     } catch (error) {
-      const message = error instanceof Error ? error.message : 'Failed to create profile';
-      if (message.includes('unique') || message.includes('already')) {
+      const message = error instanceof Error ? error.message : 'Failed to save';
+      if (message.includes('USERNAME_TAKEN') || message.includes('unique') || message.includes('already')) {
         toast.error('That username is already taken');
+      } else if (message.includes('INVALID_USERNAME')) {
+        toast.error('Username must be 3–32 characters (a-z, 0-9, _)');
       } else {
         toast.error(message);
       }
@@ -119,10 +160,31 @@ const CreatorOnboarding = () => {
     }
   };
 
+  const handleContinue = () => {
+    void persistDraft(Math.min(step + 1, STEPS.length - 1));
+  };
+
+  const handleSaveDraft = () => {
+    void persistDraft(step);
+  };
+
+  const handlePublish = () => {
+    void persistDraft(step, { publish: true });
+  };
+
+  if (user && existing === undefined) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <Loader2 className="h-5 w-5 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  const alreadyPublished = existing?.isPublished === true;
+
   return (
     <div className="min-h-screen flex items-center justify-center px-4 py-12">
       <div className="w-full max-w-md">
-        {/* Header */}
         <div className="text-center mb-8">
           <Link to="/" className="inline-flex items-center gap-2 font-bold text-lg mb-6">
             <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary">
@@ -130,13 +192,15 @@ const CreatorOnboarding = () => {
             </div>
             Wizzlet
           </Link>
-          <h1 className="text-2xl font-bold">Set up your creator profile</h1>
+          <h1 className="text-2xl font-bold">
+            {alreadyPublished ? 'Update your creator profile' : 'Set up your creator profile'}
+          </h1>
           <p className="text-sm text-muted-foreground mt-1">
             Step {step + 1} of {STEPS.length} · {STEPS[step]}
+            {existing && !alreadyPublished ? ' · Draft resumes on this device and others after save' : ''}
           </p>
         </div>
 
-        {/* Progress bar */}
         <div className="flex gap-2 mb-8">
           {STEPS.map((_, i) => (
             <div
@@ -148,7 +212,6 @@ const CreatorOnboarding = () => {
           ))}
         </div>
 
-        {/* Step 1: Profile info */}
         {step === 0 && (
           <div className="space-y-4">
             <div className="space-y-2">
@@ -193,10 +256,8 @@ const CreatorOnboarding = () => {
           </div>
         )}
 
-        {/* Step 2: Images */}
         {step === 1 && (
           <div className="space-y-6">
-            {/* Avatar */}
             <div className="space-y-2">
               <Label>Profile Photo</Label>
               <div className="flex items-center gap-4">
@@ -216,7 +277,7 @@ const CreatorOnboarding = () => {
                 </button>
                 <div>
                   <p className="text-sm font-medium">{avatarPreview ? 'Change photo' : 'Upload a photo'}</p>
-                  <p className="text-xs text-muted-foreground">JPG, PNG. Max 5MB.</p>
+                  <p className="text-xs text-muted-foreground">JPG, PNG. Max 5MB. Local picks upload only when you save.</p>
                 </div>
               </div>
               <input
@@ -228,7 +289,6 @@ const CreatorOnboarding = () => {
               />
             </div>
 
-            {/* Banner */}
             <div className="space-y-2">
               <Label>Banner Image</Label>
               <button
@@ -260,12 +320,11 @@ const CreatorOnboarding = () => {
             </div>
 
             <p className="text-xs text-muted-foreground text-center">
-              Images are optional — you can add them later too.
+              Images are optional. A file chosen on this device is not available on another device until you save and it uploads.
             </p>
           </div>
         )}
 
-        {/* Step 3: Pricing */}
         {step === 2 && (
           <div className="space-y-6">
             <div className="space-y-2">
@@ -287,7 +346,6 @@ const CreatorOnboarding = () => {
               <p className="text-xs text-muted-foreground">You can change this anytime from your dashboard.</p>
             </div>
 
-            {/* Fee info */}
             <div className="rounded-xl border border-primary/20 bg-primary/5 p-4">
               <p className="text-sm font-semibold">Platform fee</p>
               <p className="text-xs text-muted-foreground mt-1">
@@ -295,7 +353,6 @@ const CreatorOnboarding = () => {
               </p>
             </div>
 
-            {/* Preview card */}
             <div className="rounded-xl border border-border bg-card overflow-hidden">
               {bannerPreview && (
                 <div className="h-20 w-full overflow-hidden">
@@ -328,29 +385,39 @@ const CreatorOnboarding = () => {
           </div>
         )}
 
-        {/* Navigation */}
-        <div className="flex justify-between mt-8">
+        <div className="flex flex-wrap justify-between gap-2 mt-8">
           {step > 0 ? (
-            <Button variant="ghost" onClick={() => setStep(step - 1)}>
+            <Button variant="ghost" onClick={() => setStep(step - 1)} disabled={loading}>
               <ArrowLeft className="mr-1 h-4 w-4" />
               Back
             </Button>
           ) : (
-            <Button variant="ghost" onClick={exitSetup}>
+            <Button variant="ghost" onClick={exitSetup} disabled={loading}>
               <ArrowLeft className="mr-1 h-4 w-4" />
               {roles.includes('subscriber') ? 'Back to dashboard' : 'Back to home'}
             </Button>
           )}
-          {step < STEPS.length - 1 ? (
-            <Button variant="hero" onClick={() => setStep(step + 1)} disabled={!canAdvance()}>
-              Continue <ArrowRight className="ml-1 h-4 w-4" />
-            </Button>
-          ) : (
-            <Button variant="hero" onClick={handleFinish} disabled={loading || !canAdvance()}>
+          <div className="flex gap-2 ml-auto">
+            <Button variant="outline" onClick={handleSaveDraft} disabled={loading || !canAdvance()}>
               {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              Launch Profile <ArrowRight className="ml-1 h-4 w-4" />
+              Save draft
             </Button>
-          )}
+            {step < STEPS.length - 1 ? (
+              <Button variant="hero" onClick={handleContinue} disabled={loading || !canAdvance()}>
+                Continue <ArrowRight className="ml-1 h-4 w-4" />
+              </Button>
+            ) : alreadyPublished ? (
+              <Button variant="hero" onClick={handleSaveDraft} disabled={loading || !canAdvance()}>
+                {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                Save changes
+              </Button>
+            ) : (
+              <Button variant="hero" onClick={handlePublish} disabled={loading || !canAdvance()}>
+                {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                Publish profile <ArrowRight className="ml-1 h-4 w-4" />
+              </Button>
+            )}
+          </div>
         </div>
       </div>
     </div>

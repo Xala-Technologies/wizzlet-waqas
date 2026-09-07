@@ -174,6 +174,7 @@ export const creatorDocValidator = v.object({
   referralCode: v.optional(v.string()),
   messagingEnabled: v.boolean(),
   verificationStatus: v.optional(verificationStatusValidator),
+  onboardingStep: v.optional(v.number()),
   createdAt: v.number(),
   updatedAt: v.number(),
 });

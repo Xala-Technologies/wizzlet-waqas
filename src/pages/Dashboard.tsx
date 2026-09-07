@@ -21,10 +21,14 @@ import { openCustomerPortal } from '@/lib/stripe';
 import { formatDistanceToNowStrict } from 'date-fns';
 import { toast } from 'sonner';
 import { trackPostView } from '@/lib/analytics';
+import { computeWinRate } from '../../convex/lib/results';
+import { subscriptionGrantsContentAccess } from '../../convex/lib/contentAccess';
 
 interface Subscription {
   id: string;
   status: string;
+  billingStatus?: string | null;
+  cancelAtPeriodEnd?: boolean | null;
   created_at: string;
   creator: {
     id: string;
@@ -91,6 +95,8 @@ const Dashboard = () => {
   const feedRaw = useQuery(api.posts.queries.memberFeed, user ? {} : 'skip');
   const subsRaw = useQuery(api.subscriptions.mutations.mySubscriptionsDetailed, user ? {} : 'skip');
   const savedRaw = useQuery(api.bookmarks.mutations.listSavedPosts, user ? {} : 'skip');
+  const notifUnread = useQuery(api.notifications.mutations.unreadCount, user ? {} : 'skip');
+  const dmInbox = useQuery(api.messaging.mutations.mySubscriberInbox, user ? {} : 'skip');
   const toggleSavedPost = useMutation(api.bookmarks.mutations.toggleSavedPost);
   const upsertPick = useMutation(api.picks.mutations.upsert);
 
@@ -110,6 +116,8 @@ const Dashboard = () => {
       (subsRaw ?? []).map((s) => ({
         id: s._id,
         status: s.status,
+        billingStatus: s.billingStatus,
+        cancelAtPeriodEnd: s.cancelAtPeriodEnd,
         created_at: new Date(s.createdAt).toISOString(),
         creator: {
           id: s.creator._id,
@@ -167,7 +175,27 @@ const Dashboard = () => {
     }
   };
 
-  const activeSubs = subs.filter(s => s.status === 'active');
+  const activeSubs = subs.filter((s) =>
+    subscriptionGrantsContentAccess(
+      {
+        status: s.status,
+        billingStatus: s.billingStatus,
+        cancelAtPeriodEnd: s.cancelAtPeriodEnd,
+      },
+      Date.now(),
+    ),
+  );
+
+  const pastDueSubs = (subsRaw ?? []).filter(
+    (s) =>
+      s.status === 'past_due' ||
+      s.billingStatus === 'past_due' ||
+      s.billingStatus === 'unpaid',
+  );
+  const cancelPendingSubs = (subsRaw ?? []).filter(
+    (s) => s.billingStatus === 'cancel_pending' || s.cancelAtPeriodEnd,
+  );
+  const unreadDms = (dmInbox ?? []).filter((m) => !m.read && m.senderRole === 'creator').length;
 
   const feedPosts = posts;
   const visiblePosts = feedPosts.slice(0, visibleCount);
@@ -181,9 +209,8 @@ const Dashboard = () => {
     }
   }, [visiblePosts]);
 
-  const wonPicks = posts.filter(p => p.result === 'won').length;
-  const settledPicks = posts.filter(p => p.result !== 'pending').length;
-  const winRate = settledPicks > 0 ? Math.round((wonPicks / settledPicks) * 100) : 0;
+  const { winRatePct: winRate, decided: settledPicks } = computeWinRate(posts.map((p) => p.result));
+  const wonPicks = posts.filter((p) => p.result === 'won').length;
 
   const openTracker = (post: FeedPost) => {
     const pick = parsePick(post.content);
@@ -383,7 +410,7 @@ const Dashboard = () => {
           </p>
         </div>
         <div className="flex items-center gap-2">
-          {activeSubs.length > 0 && (
+          {(activeSubs.length > 0 || pastDueSubs.length > 0) && (
             <Button variant="outline" size="sm" onClick={() => openCustomerPortal()}>
               <CreditCard className="mr-1.5 h-3.5 w-3.5" /> Billing
             </Button>
@@ -395,6 +422,53 @@ const Dashboard = () => {
           </Link>
         </div>
       </div>
+
+      {(pastDueSubs.length > 0 ||
+        cancelPendingSubs.length > 0 ||
+        (notifUnread ?? 0) > 0 ||
+        unreadDms > 0 ||
+        activeSubs.length === 0) && (
+        <div className="rounded-xl border border-border bg-card p-4 mb-6">
+          <h2 className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-3">Next up</h2>
+          <ul className="space-y-2 text-sm">
+            {pastDueSubs.length > 0 && (
+              <li>
+                <Link to="/dashboard/subscriptions-billing" className="text-destructive hover:underline">
+                  {pastDueSubs.length} subscription{pastDueSubs.length === 1 ? '' : 's'} past due — review billing
+                </Link>
+              </li>
+            )}
+            {cancelPendingSubs.length > 0 && (
+              <li>
+                <Link to="/dashboard/subscriptions-billing" className="text-primary hover:underline">
+                  Cancellation pending on {cancelPendingSubs.length} subscription{cancelPendingSubs.length === 1 ? '' : 's'}
+                </Link>
+              </li>
+            )}
+            {(notifUnread ?? 0) > 0 && (
+              <li>
+                <Link to="/dashboard/notifications" className="text-primary hover:underline">
+                  {notifUnread} unread notification{notifUnread === 1 ? '' : 's'}
+                </Link>
+              </li>
+            )}
+            {unreadDms > 0 && (
+              <li>
+                <Link to="/dashboard/messages" className="text-primary hover:underline">
+                  {unreadDms} unread message{unreadDms === 1 ? '' : 's'}
+                </Link>
+              </li>
+            )}
+            {activeSubs.length === 0 && (
+              <li>
+                <Link to="/dashboard/discover" className="text-primary hover:underline">
+                  No active access — discover creators
+                </Link>
+              </li>
+            )}
+          </ul>
+        </div>
+      )}
 
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
         {[

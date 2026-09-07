@@ -83,10 +83,14 @@ export async function requireCreatorOwner(ctx: Ctx, creatorId: Id<"creators">) {
   return { user, creator };
 }
 
-export async function hasActiveSubscription(
+import { subscriptionGrantsContentAccess } from "./contentAccess";
+
+/** True if the member may access this creator's paid content / DM eligibility. */
+export async function hasContentAccess(
   ctx: Ctx,
   userId: Id<"users">,
   creatorId: Id<"creators">,
+  nowMs: number = Date.now(),
 ) {
   const subs = await ctx.db
     .query("subscriptions")
@@ -94,7 +98,16 @@ export async function hasActiveSubscription(
       q.eq("userId", userId).eq("creatorId", creatorId),
     )
     .collect();
-  return subs.some((s) => s.status === "active");
+  return subs.some((s) => subscriptionGrantsContentAccess(s, nowMs));
+}
+
+/** @deprecated Prefer hasContentAccess — kept as alias for existing call sites. */
+export async function hasActiveSubscription(
+  ctx: Ctx,
+  userId: Id<"users">,
+  creatorId: Id<"creators">,
+) {
+  return hasContentAccess(ctx, userId, creatorId);
 }
 
 export async function logMutation(

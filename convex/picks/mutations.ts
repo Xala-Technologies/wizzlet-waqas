@@ -1,7 +1,7 @@
 import { mutation, query } from "../_generated/server";
 import { v } from "convex/values";
 import { requireAppUser, logMutation } from "../lib/auth";
-import { normalizePickResult } from "../lib/results";
+import { normalizePickResult, isSettledPickResult } from "../lib/results";
 import { pickTrackerDocValidator } from "../lib/validators";
 
 export const listMine = query({
@@ -39,6 +39,9 @@ export const upsert = mutation({
     if (args.pickId) {
       const existing = await ctx.db.get(args.pickId);
       if (!existing || existing.userId !== user._id) throw new Error("FORBIDDEN");
+      if (isSettledPickResult(existing.result) && result !== normalizePickResult(existing.result)) {
+        throw new Error("RESULT_LOCKED");
+      }
       await ctx.db.patch(args.pickId, {
         postId: args.postId,
         date: args.date,
@@ -49,7 +52,9 @@ export const upsert = mutation({
         usOdds: args.usOdds,
         unitsRisked: args.unitsRisked,
         unitsWonLost: args.unitsWonLost,
-        result,
+        result: isSettledPickResult(existing.result)
+          ? normalizePickResult(existing.result)
+          : result,
         notes: args.notes,
       });
       return args.pickId;

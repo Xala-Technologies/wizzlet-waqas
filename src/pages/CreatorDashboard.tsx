@@ -11,6 +11,7 @@ import {
   ShieldCheck, Lightbulb, BarChart3, Target, Zap, Flame,
 } from 'lucide-react';
 import { format } from 'date-fns';
+import { computeWinRate } from '../../convex/lib/results';
 
 interface PickEntry {
   id: string; result: string; units_won_lost: number | null; units_risked: number; sport: string; date: string;
@@ -75,13 +76,12 @@ const CreatorDashboard = () => {
   const isVerified = creator?.verificationStatus === 'verified';
 
   const perfStats = useMemo(() => {
-    const settled = picks.filter(p => p.result !== 'pending');
-    const wins = settled.filter(p => p.result === 'win').length;
+    const { wins, winRatePct, decided } = computeWinRate(picks.map((p) => p.result));
     const totalWonLost = picks.reduce((s, p) => s + (p.units_won_lost || 0), 0);
-    const totalRisked = settled.reduce((s, p) => s + (p.units_risked || 0), 0);
-    const winRate = settled.length > 0 ? Math.round((wins / settled.length) * 100) : 0;
+    const decidedPicks = picks.filter((p) => p.result === 'win' || p.result === 'loss');
+    const totalRisked = decidedPicks.reduce((s, p) => s + (p.units_risked || 0), 0);
     const roi = totalRisked > 0 ? Math.round((totalWonLost / totalRisked) * 100) : 0;
-    return { totalPicks: picks.length, wins, totalWonLost, winRate, roi, settled: settled.length };
+    return { totalPicks: picks.length, wins, totalWonLost, winRate: winRatePct, roi, settled: decided };
   }, [picks]);
 
   const verification = useMemo(() => {
@@ -169,6 +169,36 @@ const CreatorDashboard = () => {
           </p>
         </div>
       </div>
+
+      {(() => {
+        const pendingPosts = (postsRaw ?? []).filter((p) => !p.result || p.result === 'pending').length;
+        const tasks: { href: string; label: string }[] = [];
+        if (!creator.isPublished) {
+          tasks.push({ href: '/creator/onboarding', label: 'Finish setup and publish your profile' });
+        }
+        if (!creator.monthlyPriceCents && productCount === 0) {
+          tasks.push({ href: '/creator/products', label: 'Set a subscription price or product' });
+        }
+        if (pendingPosts > 0) {
+          tasks.push({ href: '/creator/posts', label: `${pendingPosts} published pick${pendingPosts === 1 ? '' : 's'} still pending settlement` });
+        }
+        if (!creator.stripeAccountId) {
+          tasks.push({ href: '/creator/payouts', label: 'Complete payout setup' });
+        }
+        if (tasks.length === 0) return null;
+        return (
+          <div className="rounded-xl border border-border bg-card p-4 mb-6">
+            <h2 className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-3">Next up</h2>
+            <ul className="space-y-2 text-sm">
+              {tasks.map((t) => (
+                <li key={t.href + t.label}>
+                  <Link to={t.href} className="text-primary hover:underline">{t.label}</Link>
+                </li>
+              ))}
+            </ul>
+          </div>
+        );
+      })()}
 
       <div className="grid grid-cols-2 lg:grid-cols-5 gap-4 mb-6">
         {stats.map((stat) => (
