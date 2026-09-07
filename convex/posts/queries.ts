@@ -100,6 +100,7 @@ export const memberFeed = query({
       result: "pending" | "won" | "lost" | "push" | undefined;
       createdAt: number;
       creator: {
+        _id: Id<"creators">;
         username: string;
         displayName: string | undefined;
         avatarUrl: string | undefined;
@@ -125,6 +126,7 @@ export const memberFeed = query({
           result: redacted.result,
           createdAt: redacted.createdAt,
           creator: {
+            _id: creator._id,
             username: creator.username,
             displayName: creator.displayName,
             avatarUrl: creator.avatarUrl,
@@ -214,7 +216,7 @@ export const remove = mutation({
   },
 });
 
-/** Saved posts with joined post + creator for library UI. */
+/** Saved posts with joined post + creator for library UI. Bounded for secondary callers. */
 export const listSavedDetailed = query({
   args: {},
   returns: v.array(savedPostDetailedValidator),
@@ -223,7 +225,8 @@ export const listSavedDetailed = query({
     const saved = await ctx.db
       .query("savedPosts")
       .withIndex("by_userId", (q) => q.eq("userId", user._id))
-      .collect();
+      .order("desc")
+      .take(200);
     const out = [];
     for (const s of saved) {
       const post = await ctx.db.get(s.postId);
@@ -254,5 +257,50 @@ export const listSavedDetailed = query({
       });
     }
     return out;
+  },
+});
+
+/** Cursor-paginated saved posts with post + creator joins. */
+export const listSavedDetailedPage = query({
+  args: { paginationOpts: paginationOptsValidator },
+  returns: paginationResultValidator(savedPostDetailedValidator),
+  handler: async (ctx, args) => {
+    const user = await requireAppUser(ctx);
+    const result = await ctx.db
+      .query("savedPosts")
+      .withIndex("by_userId", (q) => q.eq("userId", user._id))
+      .order("desc")
+      .paginate(args.paginationOpts);
+
+    const page = [];
+    for (const s of result.page) {
+      const post = await ctx.db.get(s.postId);
+      if (!post) continue;
+      const creator = await ctx.db.get(post.creatorId);
+      if (!creator) continue;
+      const allowed =
+        !post.isPremium ||
+        creator.userId === user._id ||
+        (await hasActiveSubscription(ctx, user._id, creator._id));
+      page.push({
+        savedId: s._id,
+        savedAt: s.createdAt,
+        post: {
+          _id: post._id,
+          title: post.title,
+          content: allowed ? (post.content ?? null) : null,
+          isPremium: post.isPremium,
+          result: post.result,
+          createdAt: post.createdAt,
+        },
+        creator: {
+          _id: creator._id,
+          username: creator.username,
+          displayName: creator.displayName,
+          avatarUrl: creator.avatarUrl,
+        },
+      });
+    }
+    return { ...result, page };
   },
 });

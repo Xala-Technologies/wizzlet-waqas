@@ -1,8 +1,10 @@
+import { paginationOptsValidator, paginationResultValidator } from "convex/server";
 import { mutation, query } from "../_generated/server";
 import { ConvexError, v } from "convex/values";
 import { requireAdmin, requireAppUser, logMutation } from "../lib/auth";
 import { notificationDocValidator } from "../lib/validators";
 
+/** Bounded list for secondary callers; prefer listMinePage for the Notifications UI. */
 export const listMine = query({
   args: {},
   returns: v.array(notificationDocValidator),
@@ -12,7 +14,20 @@ export const listMine = query({
       .query("notifications")
       .withIndex("by_userId", (q) => q.eq("userId", user._id))
       .order("desc")
-      .collect();
+      .take(200);
+  },
+});
+
+export const listMinePage = query({
+  args: { paginationOpts: paginationOptsValidator },
+  returns: paginationResultValidator(notificationDocValidator),
+  handler: async (ctx, args) => {
+    const user = await requireAppUser(ctx);
+    return ctx.db
+      .query("notifications")
+      .withIndex("by_userId", (q) => q.eq("userId", user._id))
+      .order("desc")
+      .paginate(args.paginationOpts);
   },
 });
 

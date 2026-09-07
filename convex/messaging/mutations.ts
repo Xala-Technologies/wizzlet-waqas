@@ -124,6 +124,27 @@ export const markReadCreator = mutation({
   },
 });
 
+/** Member marks creator messages as read when opening a thread. */
+export const markReadSubscriber = mutation({
+  args: {
+    messageIds: v.array(v.id("directMessages")),
+  },
+  returns: v.number(),
+  handler: async (ctx, args) => {
+    const user = await requireAppUser(ctx);
+    let updated = 0;
+    for (const id of args.messageIds) {
+      const msg = await ctx.db.get(id);
+      if (!msg || msg.subscriberId !== user._id || msg.read) continue;
+      if (msg.senderRole !== "creator") continue;
+      await ctx.db.patch(id, { read: true });
+      updated += 1;
+    }
+    return updated;
+  },
+});
+
+/** Bounded subscriber inbox; prefer mySubscriberInboxPage for the Messages UI. */
 export const mySubscriberInbox = query({
   args: {},
   returns: v.array(directMessageDocValidator),
@@ -132,7 +153,22 @@ export const mySubscriberInbox = query({
     return ctx.db
       .query("directMessages")
       .withIndex("by_subscriberId", (q) => q.eq("subscriberId", user._id))
-      .collect();
+      .order("desc")
+      .take(500);
+  },
+});
+
+/** Cursor-paginated member DM inbox. */
+export const mySubscriberInboxPage = query({
+  args: { paginationOpts: paginationOptsValidator },
+  returns: paginationResultValidator(directMessageDocValidator),
+  handler: async (ctx, args) => {
+    const user = await requireAppUser(ctx);
+    return ctx.db
+      .query("directMessages")
+      .withIndex("by_subscriberId", (q) => q.eq("subscriberId", user._id))
+      .order("desc")
+      .paginate(args.paginationOpts);
   },
 });
 

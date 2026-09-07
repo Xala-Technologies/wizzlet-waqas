@@ -241,6 +241,7 @@ export const memberFeedItemValidator = v.object({
   result: v.optional(pickResultValidator),
   createdAt: v.number(),
   creator: v.object({
+    _id: v.id("creators"),
     username: v.string(),
     displayName: v.optional(v.string()),
     avatarUrl: v.optional(v.string()),

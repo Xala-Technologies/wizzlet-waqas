@@ -1,5 +1,5 @@
 import { parsePickOdds as parseOdds, americanToDecimal, decimalToAmerican } from '@/lib/odds';
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { useQuery, useMutation } from 'convex/react';
 import { DashboardLayout } from '@/components/dashboard/DashboardLayout';
@@ -9,7 +9,6 @@ import type { Id } from '@convex/_generated/dataModel';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
-import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
 } from '@/components/ui/dialog';
@@ -21,6 +20,7 @@ import {
 import { openCustomerPortal } from '@/lib/stripe';
 import { formatDistanceToNowStrict } from 'date-fns';
 import { toast } from 'sonner';
+import { trackPostView } from '@/lib/analytics';
 
 interface Subscription {
   id: string;
@@ -43,6 +43,7 @@ interface FeedPost {
   created_at: string;
   result: string;
   creator: {
+    id: string;
     username: string;
     display_name: string | null;
     avatar_url: string | null;
@@ -96,7 +97,6 @@ const Dashboard = () => {
   const [visibleCount, setVisibleCount] = useState(10);
   const [trackOpen, setTrackOpen] = useState(false);
   const [trackSaving, setTrackSaving] = useState(false);
-  const [feedTab, setFeedTab] = useState('following');
   const [optimisticSaved, setOptimisticSaved] = useState<Set<string> | null>(null);
 
   const [trackForm, setTrackForm] = useState<TrackForm>({
@@ -133,6 +133,7 @@ const Dashboard = () => {
         created_at: new Date(p.createdAt).toISOString(),
         result: p.result ?? 'pending',
         creator: {
+          id: p.creator._id,
           username: p.creator.username,
           display_name: p.creator.displayName ?? null,
           avatar_url: p.creator.avatarUrl ?? null,
@@ -168,15 +169,17 @@ const Dashboard = () => {
 
   const activeSubs = subs.filter(s => s.status === 'active');
 
-  const feedPosts = useMemo(() => {
-    if (feedTab === 'following') return posts;
-    if (feedTab === 'trending') {
-      return [...posts].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
-    }
-    return [...posts].sort(() => Math.random() - 0.5);
-  }, [posts, feedTab]);
-
+  const feedPosts = posts;
   const visiblePosts = feedPosts.slice(0, visibleCount);
+  const trackedViews = useRef<Set<string>>(new Set());
+
+  useEffect(() => {
+    for (const post of visiblePosts) {
+      if (trackedViews.current.has(post.id)) continue;
+      trackedViews.current.add(post.id);
+      void trackPostView(post.id, post.creator.id);
+    }
+  }, [visiblePosts]);
 
   const wonPicks = posts.filter(p => p.result === 'won').length;
   const settledPicks = posts.filter(p => p.result !== 'pending').length;
@@ -397,8 +400,8 @@ const Dashboard = () => {
         {[
           { label: 'Active Subs', value: String(activeSubs.length), icon: Crown, color: 'text-primary' },
           { label: 'Picks Available', value: String(posts.length), icon: FileText, color: 'text-primary' },
-          { label: 'Wins', value: String(wonPicks), icon: Trophy, color: 'text-emerald-500' },
-          { label: 'Win Rate', value: settledPicks > 0 ? `${winRate}%` : '—', icon: Star, color: 'text-amber-500' },
+          { label: 'Creator Wins', value: String(wonPicks), icon: Trophy, color: 'text-emerald-500' },
+          { label: 'Creator Win Rate', value: settledPicks > 0 ? `${winRate}%` : '—', icon: Star, color: 'text-amber-500' },
         ].map(stat => (
           <div key={stat.label} className="rounded-xl border border-border bg-card p-4">
             <stat.icon className={`h-4 w-4 ${stat.color} mb-2`} />
@@ -408,13 +411,9 @@ const Dashboard = () => {
         ))}
       </div>
 
-      <Tabs value={feedTab} onValueChange={setFeedTab} className="mb-4">
-        <TabsList className="grid w-full grid-cols-3 max-w-sm">
-          <TabsTrigger value="following">Following</TabsTrigger>
-          <TabsTrigger value="foryou">For You</TabsTrigger>
-          <TabsTrigger value="trending">Trending</TabsTrigger>
-        </TabsList>
-      </Tabs>
+      <p className="text-xs text-muted-foreground mb-4">
+        Latest picks from creators you subscribe to. Win rate is from those creator posts — your personal log is My Bet Tracker.
+      </p>
 
       {visiblePosts.length > 0 ? (
         <div className="space-y-4">
@@ -435,7 +434,7 @@ const Dashboard = () => {
           <p className="text-sm text-muted-foreground max-w-xs mx-auto mb-5">
             Subscribe to creators to start receiving premium picks in your feed.
           </p>
-          <Link to="/creators"><Button size="sm"><Crown className="mr-1.5 h-4 w-4" /> Browse Creators</Button></Link>
+          <Link to="/dashboard/discover"><Button size="sm"><Crown className="mr-1.5 h-4 w-4" /> Browse Creators</Button></Link>
         </div>
       ) : (
         <div className="rounded-xl border border-border bg-card p-10 text-center">

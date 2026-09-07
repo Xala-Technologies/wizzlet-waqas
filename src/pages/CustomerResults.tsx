@@ -398,8 +398,10 @@ const CustomerResults = () => {
       {/* Header */}
       <div className="mb-5 flex items-center justify-between flex-wrap gap-3">
         <div>
-          <h1 className="text-2xl font-bold">My Results</h1>
-          <p className="text-muted-foreground text-sm mt-0.5">Advanced pick tracker & performance analytics</p>
+          <h1 className="text-2xl font-bold">My Bet Tracker</h1>
+          <p className="text-muted-foreground text-sm mt-0.5">
+            Your personal pick log — separate from creator results on Feed
+          </p>
         </div>
         <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
           <input ref={importInputRef} type="file" accept=".csv,text/csv" className="hidden" onChange={e => handleImportCSV(e.target.files?.[0])} />

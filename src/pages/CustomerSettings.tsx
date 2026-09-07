@@ -3,36 +3,11 @@ import { useQuery, useMutation, useAction } from 'convex/react';
 import { DashboardLayout } from '@/components/dashboard/DashboardLayout';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Switch } from '@/components/ui/switch';
 import { Skeleton } from '@/components/ui/skeleton';
 import { User, Bell, Shield, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAuth } from '@/contexts/AuthContext';
 import { api } from '@convex/_generated/api';
-
-interface Prefs {
-  new_posts: boolean;
-  price_changes: boolean;
-  promotions: boolean;
-}
-
-const defaultPrefs: Prefs = { new_posts: true, price_changes: true, promotions: true };
-
-const prefLabels: { key: keyof Prefs; label: string }[] = [
-  { key: 'new_posts', label: 'New posts from creators' },
-  { key: 'price_changes', label: 'Price changes' },
-  { key: 'promotions', label: 'Promotions & deals' },
-];
-
-function normalizePrefs(raw: unknown): Prefs {
-  if (!raw || typeof raw !== 'object') return defaultPrefs;
-  const p = raw as Partial<Prefs>;
-  return {
-    new_posts: p.new_posts ?? defaultPrefs.new_posts,
-    price_changes: p.price_changes ?? defaultPrefs.price_changes,
-    promotions: p.promotions ?? defaultPrefs.promotions,
-  };
-}
 
 const CustomerSettings = () => {
   const { user } = useAuth();
@@ -42,7 +17,6 @@ const CustomerSettings = () => {
   const [fullName, setFullName] = useState('');
   const [username, setUsername] = useState('');
   const [email, setEmail] = useState('');
-  const [prefs, setPrefs] = useState<Prefs>(defaultPrefs);
   const [savingProfile, setSavingProfile] = useState(false);
   const [password, setPassword] = useState('');
   const [currentPassword, setCurrentPassword] = useState('');
@@ -57,7 +31,6 @@ const CustomerSettings = () => {
       setFullName(me.fullName ?? '');
       setUsername(me.username ?? '');
       setEmail(me.email ?? user?.email ?? '');
-      setPrefs(normalizePrefs(me.notificationPrefs));
       setInitialized(true);
       return;
     }
@@ -85,19 +58,6 @@ const CustomerSettings = () => {
       toast.error(message.includes('duplicate') ? 'That username is already taken' : 'Could not save your profile');
     } finally {
       setSavingProfile(false);
-    }
-  };
-
-  const updatePrefs = async (key: keyof Prefs, value: boolean) => {
-    const previous = prefs;
-    const next = { ...prefs, [key]: value };
-    setPrefs(next);
-    if (!me) return;
-    try {
-      await updateProfile({ notificationPrefs: next });
-    } catch {
-      setPrefs(previous);
-      toast.error('Could not save preference');
     }
   };
 
@@ -163,22 +123,13 @@ const CustomerSettings = () => {
           </section>
 
           <section className="rounded-xl border border-border bg-card p-5">
-            <div className="flex items-center gap-3 mb-4">
+            <div className="flex items-center gap-3 mb-2">
               <Bell className="h-4 w-4 text-primary" />
               <h2 className="text-sm font-semibold">Notifications</h2>
             </div>
-            <div className="space-y-3">
-              {prefLabels.map(({ key, label }) => (
-                <div key={key} className="flex items-center justify-between">
-                  <span className="text-sm">{label}</span>
-                  <Switch
-                    checked={prefs[key]}
-                    onCheckedChange={(value) => updatePrefs(key, value)}
-                    aria-label={label}
-                  />
-                </div>
-              ))}
-            </div>
+            <p className="text-sm text-muted-foreground">
+              In-app alerts for billing and platform announcements appear under Notifications. Channel preference controls will return when those channels are productized.
+            </p>
           </section>
 
           <section className="rounded-xl border border-border bg-card p-5">

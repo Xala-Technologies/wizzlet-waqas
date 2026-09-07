@@ -68,7 +68,9 @@ const CustomerActivity = () => {
     <DashboardLayout type="member">
       <div className="mb-6">
         <h1 className="text-2xl font-bold">My Activity</h1>
-        <p className="text-muted-foreground text-sm mt-0.5">Your recent browsing and engagement history</p>
+        <p className="text-muted-foreground text-sm mt-0.5">
+          Recent post views and engagement we recorded for your account
+        </p>
       </div>
 
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
@@ -90,8 +92,8 @@ const CustomerActivity = () => {
       ) : recent.length === 0 ? (
         <div className="rounded-xl border border-dashed border-border bg-card/50 p-12 text-center">
           <CalendarDays className="h-10 w-10 text-muted-foreground/40 mx-auto mb-3" />
-          <h3 className="text-sm font-medium mb-1">No activity yet</h3>
-          <p className="text-xs text-muted-foreground">Browse the feed and your history will build up here.</p>
+          <h3 className="text-sm font-medium mb-1">No tracked views yet</h3>
+          <p className="text-xs text-muted-foreground">Open picks in your feed or creator profiles to build history here.</p>
         </div>
       ) : (
         <div className="rounded-xl border border-border overflow-hidden">

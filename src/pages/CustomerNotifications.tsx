@@ -1,16 +1,18 @@
 import { useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useQuery, useMutation } from 'convex/react';
+import { useMutation, usePaginatedQuery } from 'convex/react';
 import { DashboardLayout } from '@/components/dashboard/DashboardLayout';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
-import { FileText, DollarSign, Megaphone, Info, CheckCircle2, BellOff } from 'lucide-react';
+import { FileText, DollarSign, Megaphone, Info, CheckCircle2, BellOff, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { formatDistanceToNowStrict } from 'date-fns';
 import { useAuth } from '@/contexts/AuthContext';
 import { api } from '@convex/_generated/api';
 import type { Id } from '@convex/_generated/dataModel';
+
+const PAGE_SIZE = 25;
 
 interface NotificationRow {
   id: string;
@@ -33,15 +35,19 @@ const typeConfig: Record<string, { icon: typeof FileText; color: string; bg: str
 const CustomerNotifications = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
-  const itemsRaw = useQuery(api.notifications.mutations.listMine, user ? {} : 'skip');
+  const { results, status, loadMore } = usePaginatedQuery(
+    api.notifications.mutations.listMinePage,
+    user ? {} : 'skip',
+    { initialNumItems: PAGE_SIZE },
+  );
   const markReadMutation = useMutation(api.notifications.mutations.markRead);
   const markAllReadMutation = useMutation(api.notifications.mutations.markAllRead);
 
-  const loading = user ? itemsRaw === undefined : false;
+  const loading = user ? status === 'LoadingFirstPage' : false;
 
   const items: NotificationRow[] = useMemo(
     () =>
-      (itemsRaw ?? []).map((n) => ({
+      results.map((n) => ({
         id: n._id,
         type: n.type,
         title: n.title,
@@ -50,7 +56,7 @@ const CustomerNotifications = () => {
         read: n.read,
         created_at: new Date(n.createdAt).toISOString(),
       })),
-    [itemsRaw],
+    [results],
   );
 
   const unreadCount = items.filter((n) => !n.read).length;
@@ -89,7 +95,7 @@ const CustomerNotifications = () => {
               </Badge>
             )}
           </h1>
-          <p className="text-muted-foreground text-sm mt-0.5">Stay updated on new picks, promos, and platform news</p>
+          <p className="text-muted-foreground text-sm mt-0.5">Billing updates and platform announcements</p>
         </div>
         <Button variant="outline" size="sm" className="text-xs" onClick={markAllRead} disabled={unreadCount === 0}>
           <CheckCircle2 className="mr-1 h-3 w-3" /> Mark all read
@@ -104,7 +110,7 @@ const CustomerNotifications = () => {
         <div className="rounded-xl border border-dashed border-border bg-card/50 p-12 text-center">
           <BellOff className="h-10 w-10 text-muted-foreground/40 mx-auto mb-3" />
           <h3 className="text-sm font-medium mb-1">You're all caught up</h3>
-          <p className="text-xs text-muted-foreground">New picks and platform updates will show up here.</p>
+          <p className="text-xs text-muted-foreground">Billing and platform updates will show up here.</p>
         </div>
       ) : (
         <div className="space-y-2">
@@ -113,6 +119,7 @@ const CustomerNotifications = () => {
             return (
               <button
                 key={n.id}
+                type="button"
                 onClick={() => markRead(n)}
                 className={`w-full text-left rounded-xl border bg-card p-4 flex items-start gap-3 transition-colors hover:border-primary/20 ${
                   n.read ? 'border-border opacity-70' : 'border-primary/10'
@@ -134,6 +141,14 @@ const CustomerNotifications = () => {
               </button>
             );
           })}
+          {(status === 'CanLoadMore' || status === 'LoadingMore') && (
+            <div className="flex justify-center pt-2">
+              <Button variant="outline" size="sm" disabled={status === 'LoadingMore'} onClick={() => loadMore(PAGE_SIZE)}>
+                {status === 'LoadingMore' ? <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" /> : null}
+                Load more
+              </Button>
+            </div>
+          )}
         </div>
       )}
     </DashboardLayout>

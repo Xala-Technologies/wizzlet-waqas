@@ -35,6 +35,7 @@ import CustomerNotifications from "./pages/CustomerNotifications";
 import CustomerDiscover from "./pages/CustomerDiscover";
 import CustomerSettings from "./pages/CustomerSettings";
 import CustomerActivity from "./pages/CustomerActivity";
+import CustomerMessages from "./pages/CustomerMessages";
 import CreatorDashboard from "./pages/CreatorDashboard";
 import CreatorPosts from "./pages/CreatorPosts";
 import CreatorProducts from "./pages/CreatorProducts";
@@ -145,6 +146,7 @@ const App = () => (
             <Route path="/dashboard/discover" element={<ProtectedRoute allowedRoles={['subscriber']}><CustomerDiscover /></ProtectedRoute>} />
             <Route path="/dashboard/activity" element={<ProtectedRoute allowedRoles={['subscriber']}><CustomerActivity /></ProtectedRoute>} />
             <Route path="/dashboard/settings" element={<ProtectedRoute allowedRoles={['subscriber']}><CustomerSettings /></ProtectedRoute>} />
+            <Route path="/dashboard/messages" element={<ProtectedRoute allowedRoles={['subscriber']}><CustomerMessages /></ProtectedRoute>} />
             <Route path="/creator" element={<ProtectedRoute allowedRoles={['creator']}><CreatorDashboard /></ProtectedRoute>} />
             <Route path="/creator/posts" element={<ProtectedRoute allowedRoles={['creator']}><CreatorPosts /></ProtectedRoute>} />
             <Route path="/creator/products" element={<ProtectedRoute allowedRoles={['creator']}><CreatorProducts /></ProtectedRoute>} />

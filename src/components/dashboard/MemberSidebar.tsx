@@ -13,11 +13,12 @@ import {
   Bookmark,
   Bell,
   Activity,
+  MessageSquare,
 } from 'lucide-react';
 import { api } from '@convex/_generated/api';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { RoleSwitcher } from './RoleSwitcher';
-import { demoMemberUnread, useDemoMemberStoreOptional } from '@/components/demo/demoMemberStore';
+import { useDemoMemberStoreOptional } from '@/components/demo/demoMemberStore';
 
 
 interface NavItem {
@@ -27,28 +28,84 @@ interface NavItem {
   badge?: string;
 }
 
-const memberItems: NavItem[] = [
-  { label: 'Feed', href: '/dashboard', icon: LayoutGrid },
-  { label: 'Subscriptions & Billing', href: '/dashboard/subscriptions-billing', icon: CreditCard },
-  { label: 'My Results', href: '/dashboard/results', icon: Trophy },
-  { label: 'Saved', href: '/dashboard/saved', icon: Bookmark },
-  { label: 'Notifications', href: '/dashboard/notifications', icon: Bell },
-  { label: 'Discover', href: '/dashboard/discover', icon: Compass },
-  { label: 'Activity', href: '/dashboard/activity', icon: Activity },
-  { label: 'Settings', href: '/dashboard/settings', icon: Settings },
+interface NavSection {
+  label: string;
+  items: NavItem[];
+}
+
+const memberSections: NavSection[] = [
+  {
+    label: 'Main',
+    items: [
+      { label: 'Feed', href: '/dashboard', icon: LayoutGrid },
+      { label: 'Discover', href: '/dashboard/discover', icon: Compass },
+      { label: 'Messages', href: '/dashboard/messages', icon: MessageSquare },
+    ],
+  },
+  {
+    label: 'Library',
+    items: [
+      { label: 'My Bet Tracker', href: '/dashboard/results', icon: Trophy },
+      { label: 'Saved', href: '/dashboard/saved', icon: Bookmark },
+      { label: 'Activity', href: '/dashboard/activity', icon: Activity },
+    ],
+  },
+  {
+    label: 'Account',
+    items: [
+      { label: 'Subscriptions & Billing', href: '/dashboard/subscriptions-billing', icon: CreditCard },
+      { label: 'Notifications', href: '/dashboard/notifications', icon: Bell },
+      { label: 'Settings', href: '/dashboard/settings', icon: Settings },
+    ],
+  },
 ];
 
+/** Flat list kept for demo mode; no Messages — demo has no `/demo/member/messages` route. */
 export const demoMemberItems: NavItem[] = [
   { label: 'Feed', href: '/demo/member', icon: LayoutGrid },
-  { label: 'Subscriptions & Billing', href: '/demo/member/subscriptions-billing', icon: CreditCard },
-  { label: 'My Results', href: '/demo/member/results', icon: Trophy },
-  { label: 'Saved', href: '/demo/member/saved', icon: Bookmark },
-  { label: 'Notifications', href: '/demo/member/notifications', icon: Bell },
   { label: 'Discover', href: '/demo/member/discover', icon: Compass },
+  { label: 'My Bet Tracker', href: '/demo/member/results', icon: Trophy },
+  { label: 'Saved', href: '/demo/member/saved', icon: Bookmark },
   { label: 'Activity', href: '/demo/member/activity', icon: Activity },
+  { label: 'Subscriptions & Billing', href: '/demo/member/subscriptions-billing', icon: CreditCard },
+  { label: 'Notifications', href: '/demo/member/notifications', icon: Bell },
   { label: 'Settings', href: '/demo/member/settings', icon: Settings },
 ];
 
+const demoMemberSections: NavSection[] = [
+  {
+    label: 'Main',
+    items: [
+      { label: 'Feed', href: '/demo/member', icon: LayoutGrid },
+      { label: 'Discover', href: '/demo/member/discover', icon: Compass },
+    ],
+  },
+  {
+    label: 'Library',
+    items: [
+      { label: 'My Bet Tracker', href: '/demo/member/results', icon: Trophy },
+      { label: 'Saved', href: '/demo/member/saved', icon: Bookmark },
+      { label: 'Activity', href: '/demo/member/activity', icon: Activity },
+    ],
+  },
+  {
+    label: 'Account',
+    items: [
+      { label: 'Subscriptions & Billing', href: '/demo/member/subscriptions-billing', icon: CreditCard },
+      { label: 'Notifications', href: '/demo/member/notifications', icon: Bell },
+      { label: 'Settings', href: '/demo/member/settings', icon: Settings },
+    ],
+  },
+];
+
+
+function SectionLabel({ children }: { children: React.ReactNode }) {
+  return (
+    <span className="px-3 text-[10px] font-semibold uppercase tracking-widest text-muted-foreground/50 select-none">
+      {children}
+    </span>
+  );
+}
 
 function NavItemLink({ item, active }: { item: NavItem; active: boolean }) {
   return (
@@ -86,7 +143,7 @@ export function MemberSidebar({ demo = false, mobile = false }: { demo?: boolean
   const location = useLocation();
   const navigate = useNavigate();
   const pathname = location.pathname;
-  const items = demo ? demoMemberItems : memberItems;
+  const sections = demo ? demoMemberSections : memberSections;
   const baseRoute = demo ? '/demo/member' : '/dashboard';
 
   const handleSignOut = async () => {
@@ -94,6 +151,11 @@ export function MemberSidebar({ demo = false, mobile = false }: { demo?: boolean
     await signOut();
     navigate('/');
   };
+
+  const withBadge = (item: NavItem): NavItem =>
+    item.href.endsWith('/notifications') && unread > 0
+      ? { ...item, badge: unread > 9 ? '9+' : String(unread) }
+      : item;
 
   return (
     <aside className={mobile ? 'flex h-full min-h-0 w-full flex-col bg-card' : 'hidden md:flex w-[220px] flex-col border-r border-border bg-card/80 backdrop-blur-sm'}>
@@ -103,17 +165,20 @@ export function MemberSidebar({ demo = false, mobile = false }: { demo?: boolean
         </div>
       )}
 
-      <nav className={`flex-1 overflow-y-auto px-3 pb-4 space-y-0.5 ${mobile ? 'pt-4' : ''}`}>
-        {items.map((item) => (
-          <NavItemLink
-            key={item.href}
-            item={
-              item.href.endsWith('/notifications') && unread > 0
-                ? { ...item, badge: unread > 9 ? '9+' : String(unread) }
-                : item
-            }
-            active={item.href === baseRoute ? pathname === baseRoute : pathname.startsWith(item.href)}
-          />
+      <nav className={`flex-1 overflow-y-auto px-3 pb-4 space-y-5 ${mobile ? 'pt-4' : ''}`}>
+        {sections.map((section) => (
+          <div key={section.label} className="space-y-0.5">
+            <SectionLabel>{section.label}</SectionLabel>
+            <div className="mt-1.5 space-y-0.5">
+              {section.items.map((item) => (
+                <NavItemLink
+                  key={item.href}
+                  item={withBadge(item)}
+                  active={item.href === baseRoute ? pathname === baseRoute : pathname.startsWith(item.href)}
+                />
+              ))}
+            </div>
+          </div>
         ))}
       </nav>
 

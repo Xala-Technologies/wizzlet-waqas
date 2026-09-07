@@ -130,6 +130,44 @@ export const mySubscriptionsDetailed = query({
   },
 });
 
+/** Settled payment events for the signed-in member (billing history). */
+export const myPaymentEvents = query({
+  args: {},
+  returns: v.array(
+    v.object({
+      _id: v.id("paymentEvents"),
+      type: v.string(),
+      amountCents: v.number(),
+      status: v.string(),
+      createdAt: v.number(),
+      creatorName: v.string(),
+    }),
+  ),
+  handler: async (ctx) => {
+    const user = await requireAppUser(ctx);
+    const events = await ctx.db
+      .query("paymentEvents")
+      .withIndex("by_userId", (q) => q.eq("userId", user._id))
+      .order("desc")
+      .take(100);
+    const out = [];
+    for (const e of events) {
+      if (e.status !== "settled") continue;
+      if (e.amountCents <= 0 && e.type === "subscription_cancel") continue;
+      const creator = await ctx.db.get(e.creatorId);
+      out.push({
+        _id: e._id,
+        type: e.type,
+        amountCents: e.amountCents,
+        status: e.status,
+        createdAt: e.createdAt,
+        creatorName: creator?.displayName || creator?.username || "Creator",
+      });
+    }
+    return out;
+  },
+});
+
 /** Creator view: subscribers with user profile. Bounded for name maps / secondary UIs. */
 export const listSubscribersDetailed = query({
   args: {},
