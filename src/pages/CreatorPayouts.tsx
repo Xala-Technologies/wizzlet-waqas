@@ -14,7 +14,6 @@ const CreatorPayouts = () => {
   const creator = useQuery(api.creators.queries.myCreator);
   const payoutRows = useQuery(api.payouts.mutations.listMine);
   const settingsRow = useQuery(api.payouts.mutations.getMySettings);
-  const earnings = useQuery(api.creators.earnings.myEarnings);
   const balance = useQuery(api.payouts.mutations.availableBalance);
   const upsertSettings = useMutation(api.payouts.mutations.upsertSettings);
   const requestPayoutMut = useMutation(api.payouts.mutations.requestPayout);
@@ -37,7 +36,6 @@ const CreatorPayouts = () => {
   const loading =
     creator === undefined ||
     payoutRows === undefined ||
-    earnings === undefined ||
     balance === undefined;
 
   const payouts = useMemo(
@@ -53,12 +51,14 @@ const CreatorPayouts = () => {
     [payoutRows],
   );
 
-  const lifetimeEarnings = (balance?.earnedCents ?? earnings?.netCents ?? 0) / 100;
-  const paidOut = (balance?.reservedCents ?? 0) / 100;
+  const paidOut = payouts
+    .filter((p) => p.status === 'completed' || p.status === 'paid')
+    .reduce((a, b) => a + b.amount, 0);
   const pending = payouts
-    .filter((p) => p.status === 'pending' || p.status === 'processing' || p.status === 'requested')
+    .filter((p) => p.status === 'pending' || p.status === 'processing' || p.status === 'requested' || p.status === 'approved')
     .reduce((a, b) => a + b.amount, 0);
   const available = (balance?.availableCents ?? 0) / 100;
+  const earned = (balance?.earnedCents ?? 0) / 100;
 
   const saveSettings = async () => {
     setSavingSettings(true);
@@ -119,7 +119,12 @@ const CreatorPayouts = () => {
         <p className="text-muted-foreground text-sm mt-0.5">Manage withdrawals and payout settings</p>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+        <div className="rounded-xl border border-border bg-card p-5">
+          <TrendingUp className="h-4 w-4 text-blue-400 mb-2" />
+          <p className="text-2xl font-bold">${earned.toFixed(2)}</p>
+          <p className="text-xs text-muted-foreground">Lifetime earned</p>
+        </div>
         <div className="rounded-xl border border-border bg-card p-5">
           <Wallet className="h-4 w-4 text-emerald-400 mb-2" />
           <p className="text-2xl font-bold">${available.toFixed(2)}</p>
@@ -131,7 +136,7 @@ const CreatorPayouts = () => {
           <p className="text-xs text-muted-foreground">Pending / requested</p>
         </div>
         <div className="rounded-xl border border-border bg-card p-5">
-          <TrendingUp className="h-4 w-4 text-blue-400 mb-2" />
+          <CheckCircle2 className="h-4 w-4 text-muted-foreground mb-2" />
           <p className="text-2xl font-bold">${paidOut.toFixed(2)}</p>
           <p className="text-xs text-muted-foreground">Paid out</p>
         </div>

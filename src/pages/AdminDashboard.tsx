@@ -1,11 +1,12 @@
 import { useQuery } from 'convex/react';
 import { api } from '../../convex/_generated/api';
 import { DashboardLayout } from '@/components/dashboard/DashboardLayout';
-import { Users, Crown, DollarSign, CreditCard, Loader2, TrendingUp, Activity, UserPlus, BarChart3, Wallet, Percent, FileWarning } from 'lucide-react';
+import { scanTruncationNote } from '@/lib/adminTruncation';
+import { Users, Crown, DollarSign, CreditCard, Loader2, TrendingUp, Activity, UserPlus, Percent, FileWarning } from 'lucide-react';
 import { BarChart, Bar, LineChart, Line, AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts';
 import { format } from 'date-fns';
 
-const AdminDashboard = () => {
+const AdminDashboardInner = () => {
   const stats = useQuery(api.admin.queries.dashboardStats);
 
   if (stats === undefined) {
@@ -16,17 +17,17 @@ const AdminDashboard = () => {
     );
   }
 
+  const truncation = scanTruncationNote(stats.truncated, stats.listLimit);
+
   const kpi = [
-    { label: 'Total Platform Revenue', value: `$${(stats.totalRevenueCents / 100).toFixed(0)}`, icon: DollarSign, color: 'text-emerald-400' },
-    { label: 'Platform Fee Revenue', value: `$${(stats.platformFeesCents / 100).toFixed(0)}`, icon: Percent, color: 'text-purple-400' },
-    { label: 'Available Balance', value: `$${(stats.availableBalanceCents / 100).toFixed(0)}`, icon: Wallet, color: 'text-emerald-400' },
-    { label: 'Pending Balance', value: `$${(stats.pendingBalanceCents / 100).toFixed(0)}`, icon: BarChart3, color: 'text-amber-400' },
-    { label: 'Paid Out Total', value: `$${(stats.paidOutCents / 100).toFixed(0)}`, icon: TrendingUp, color: 'text-blue-400' },
-    { label: 'Monthly Recurring', value: `$${(stats.mrrCents / 100).toFixed(0)}`, icon: DollarSign, color: 'text-cyan-400' },
-    { label: 'Total Creators', value: stats.creatorCount.toString(), icon: Crown, color: 'text-purple-400' },
-    { label: 'Total Customers', value: stats.userCount.toString(), icon: Users, color: 'text-blue-400' },
-    { label: 'Active Subscriptions', value: stats.activeSubscriptionCount.toString(), icon: CreditCard, color: 'text-emerald-400' },
-    { label: 'Open Resolution Cases', value: stats.openCases.toString(), icon: FileWarning, color: 'text-destructive' },
+    { label: 'Active sub volume', value: `$${(stats.totalRevenueCents / 100).toFixed(0)}`, icon: DollarSign, color: 'text-emerald-400' },
+    { label: 'Platform fee revenue', value: `$${(stats.platformFeesCents / 100).toFixed(0)}`, icon: Percent, color: 'text-purple-400' },
+    { label: 'Creator paid out', value: `$${(stats.paidOutCents / 100).toFixed(0)}`, icon: TrendingUp, color: 'text-blue-400' },
+    { label: 'Active sub volume (MRR proxy)', value: `$${(stats.mrrCents / 100).toFixed(0)}`, icon: DollarSign, color: 'text-cyan-400' },
+    { label: 'Creators', value: stats.creatorCount.toString(), icon: Crown, color: 'text-purple-400' },
+    { label: 'Accounts', value: stats.userCount.toString(), icon: Users, color: 'text-blue-400' },
+    { label: 'Active subscriptions', value: stats.activeSubscriptionCount.toString(), icon: CreditCard, color: 'text-emerald-400' },
+    { label: 'Open resolution cases', value: stats.openCases.toString(), icon: FileWarning, color: 'text-destructive' },
   ];
 
   const monthlyRevenue = stats.monthly;
@@ -37,6 +38,12 @@ const AdminDashboard = () => {
       <div className="mb-8">
         <h1 className="text-2xl font-bold">Platform Overview</h1>
         <p className="text-muted-foreground text-sm mt-0.5">Executive dashboard — live Convex aggregates</p>
+        {truncation && (
+          <p className="text-amber-600 text-xs mt-2">{truncation}</p>
+        )}
+        <p className="text-muted-foreground text-xs mt-1">
+          Fee revenue and paid-out come from subscription and payout records. See Finance for detail — these are not Stripe cash balances.
+        </p>
       </div>
 
       <div className="grid grid-cols-2 lg:grid-cols-5 gap-4 mb-8">
@@ -168,5 +175,7 @@ const AdminDashboard = () => {
     </DashboardLayout>
   );
 };
+
+const AdminDashboard = () => <AdminDashboardInner />;
 
 export default AdminDashboard;

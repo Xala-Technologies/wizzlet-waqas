@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { useQuery } from 'convex/react';
+import { usePaginatedQuery } from 'convex/react';
 import { api } from '../../convex/_generated/api';
 import { DashboardLayout } from '@/components/dashboard/DashboardLayout';
 import { DesktopTableRegion, MobileRecordCards } from '@/components/dashboard/MobileRecordList';
@@ -12,6 +12,8 @@ import { useNavigate } from 'react-router-dom';
 import { downloadCsv } from '@/lib/csv';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
+
+const PAGE_SIZE = 25;
 
 interface Customer {
   id: string;
@@ -30,60 +32,47 @@ const AdminCustomers = () => {
   const [selected, setSelected] = useState<Customer | null>(null);
   const [search, setSearch] = useState('');
 
-  const usersRaw = useQuery(api.admin.queries.listUsers);
-  const subsRaw = useQuery(api.subscriptions.mutations.listAllAdmin);
+  const { results, status, loadMore } = usePaginatedQuery(
+    api.admin.paginatedLists.listCustomersPage,
+    {},
+    { initialNumItems: PAGE_SIZE },
+  );
 
-  const loading = usersRaw === undefined || subsRaw === undefined;
+  const loading = status === 'LoadingFirstPage';
 
   const customers = useMemo((): Customer[] => {
-    if (!usersRaw || !subsRaw) return [];
+    return (results ?? []).map((c) => ({
+      id: c.id,
+      email: c.email,
+      full_name: c.fullName,
+      created_at: c.createdAt,
+      subCount: c.subCount,
+      activeCount: c.activeCount,
+      canceledCount: c.canceledCount,
+      totalSpent: c.totalSpent,
+      lastActivity: c.lastActivity,
+    }));
+  }, [results]);
 
-    const subsByUser = new Map<string, typeof subsRaw>();
-    subsRaw.forEach(s => {
-      const arr = subsByUser.get(s.userId) ?? [];
-      arr.push(s);
-      subsByUser.set(s.userId, arr);
-    });
-
-    return usersRaw.map(u => {
-      const userSubs = subsByUser.get(u._id) ?? [];
-      const active = userSubs.filter(s => s.status === 'active');
-      const canceled = userSubs.filter(s => s.status !== 'active');
-      const totalSpent = userSubs.reduce((a, b) => a + b.amountCents / 100, 0);
-      const lastSub = [...userSubs].sort((a, b) => b.createdAt - a.createdAt)[0];
-      return {
-        id: u._id,
-        email: u.email,
-        full_name: u.fullName ?? null,
-        created_at: u.createdAt,
-        subCount: userSubs.length,
-        activeCount: active.length,
-        canceledCount: canceled.length,
-        totalSpent,
-        lastActivity: lastSub?.createdAt ?? u.createdAt,
-      };
-    }).sort((a, b) => b.created_at - a.created_at);
-  }, [usersRaw, subsRaw]);
-
-  const filtered = customers.filter(c => {
+  const filtered = customers.filter((c) => {
     const q = search.toLowerCase();
     return !q || (c.full_name?.toLowerCase().includes(q)) || c.email.toLowerCase().includes(q);
   });
 
-  const atRisk = customers.filter(c => c.activeCount === 1 && c.canceledCount > 0).length;
-  const recentlyChurned = customers.filter(c => c.canceledCount > 0 && c.activeCount === 0).length;
+  const atRisk = customers.filter((c) => c.activeCount === 1 && c.canceledCount > 0).length;
+  const recentlyChurned = customers.filter((c) => c.canceledCount > 0 && c.activeCount === 0).length;
 
   const handleExport = () => {
     if (filtered.length === 0) { toast.error('Nothing to export'); return; }
     downloadCsv(
       `customers-${new Date().toISOString().split('T')[0]}.csv`,
       ['Name', 'Email', 'Subscriptions', 'Active', 'Canceled', 'Total Spent', 'Joined', 'Last Activity'],
-      filtered.map(c => [
+      filtered.map((c) => [
         c.full_name ?? 'Unknown', c.email, c.subCount, c.activeCount, c.canceledCount,
         c.totalSpent.toFixed(2), format(new Date(c.created_at), 'yyyy-MM-dd'), format(new Date(c.lastActivity), 'yyyy-MM-dd'),
       ]),
     );
-    toast.success(`Exported ${filtered.length} customers`);
+    toast.success(`Exported ${filtered.length} loaded customers`);
   };
 
   return (
@@ -91,12 +80,15 @@ const AdminCustomers = () => {
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
         <div>
           <h1 className="text-2xl font-bold">Customers</h1>
-          <p className="text-muted-foreground text-sm mt-0.5">{customers.length} total customers</p>
+          <p className="text-muted-foreground text-sm mt-0.5">
+            People with subscriptions · {customers.length} loaded
+            {status === 'CanLoadMore' || status === 'LoadingMore' ? ' (more available)' : ''}
+          </p>
         </div>
         <div className="flex flex-col sm:flex-row flex-wrap items-stretch sm:items-center gap-2 w-full sm:w-auto">
           <div className="relative w-full sm:w-64">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
-            <Input placeholder="Search customers…" value={search} onChange={e => setSearch(e.target.value)} className="pl-9 h-11 sm:h-9" />
+            <Input placeholder="Search loaded customers…" value={search} onChange={(e) => setSearch(e.target.value)} className="pl-9 h-11 sm:h-9" />
           </div>
           <Button variant="outline" size="sm" className="h-11 sm:h-9 text-xs w-full sm:w-auto" onClick={handleExport}>
             <Download className="mr-1.5 h-3.5 w-3.5" /> Export
@@ -106,7 +98,7 @@ const AdminCustomers = () => {
 
       <div className="grid grid-cols-2 lg:grid-cols-5 gap-4 mb-6">
         <div className="rounded-xl border border-border bg-card p-4">
-          <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1">Total</p>
+          <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1">Loaded</p>
           <p className="text-xl font-bold">{customers.length}</p>
         </div>
         <div className="rounded-xl border border-border bg-card p-4">
@@ -114,15 +106,15 @@ const AdminCustomers = () => {
           <p className="text-xl font-bold text-emerald-400">{customers.reduce((a, c) => a + c.activeCount, 0)}</p>
         </div>
         <div className="rounded-xl border border-border bg-card p-4">
-          <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1">Total Revenue</p>
+          <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1">Revenue (loaded)</p>
           <p className="text-xl font-bold">${customers.reduce((a, c) => a + c.totalSpent, 0).toFixed(0)}</p>
         </div>
         <div className="rounded-xl border border-amber-500/20 bg-amber-500/5 p-4">
-          <div className="flex items-center gap-1 mb-1"><AlertTriangle className="h-3 w-3 text-amber-400" /><p className="text-xs text-muted-foreground uppercase tracking-wider">At Risk</p></div>
+          <div className="flex items-center gap-1 mb-1"><AlertTriangle className="h-3 w-3 text-amber-400" /><p className="text-xs text-muted-foreground uppercase tracking-wider">At Risk (loaded)</p></div>
           <p className="text-xl font-bold text-amber-400">{atRisk}</p>
         </div>
         <div className="rounded-xl border border-destructive/20 bg-destructive/5 p-4">
-          <div className="flex items-center gap-1 mb-1"><TrendingDown className="h-3 w-3 text-destructive" /><p className="text-xs text-muted-foreground uppercase tracking-wider">Churned</p></div>
+          <div className="flex items-center gap-1 mb-1"><TrendingDown className="h-3 w-3 text-destructive" /><p className="text-xs text-muted-foreground uppercase tracking-wider">Churned (loaded)</p></div>
           <p className="text-xl font-bold text-destructive">{recentlyChurned}</p>
         </div>
       </div>
@@ -156,7 +148,7 @@ const AdminCustomers = () => {
                 <p className="text-xs text-muted-foreground">Last activity {format(new Date(c.lastActivity), 'MMM d, yyyy')}</p>
                 <div className="flex gap-2">
                   <Button variant="outline" size="sm" className="h-11 flex-1 text-xs" onClick={() => setSelected(c)}><Eye className="mr-1.5 h-3.5 w-3.5" /> Details</Button>
-                  <Button variant="outline" size="sm" className="h-11 flex-1 text-xs" onClick={() => navigate('/admin/customer-email')}><Mail className="mr-1.5 h-3.5 w-3.5" /> Email</Button>
+                  <Button variant="outline" size="sm" className="h-11 flex-1 text-xs" onClick={() => navigate('/admin/customer-email?audience=active')}><Mail className="mr-1.5 h-3.5 w-3.5" /> Announce</Button>
                 </div>
               </li>
             ))}
@@ -176,7 +168,7 @@ const AdminCustomers = () => {
                 </tr>
               </thead>
               <tbody>
-                {filtered.map(c => (
+                {filtered.map((c) => (
                   <tr key={c.id} className="border-b border-border last:border-0 hover:bg-muted/20 transition-colors">
                     <td className="p-4 font-medium">{c.full_name ?? 'Unknown'}</td>
                     <td className="p-4 text-muted-foreground text-xs">{c.email}</td>
@@ -195,7 +187,7 @@ const AdminCustomers = () => {
                     <td className="p-4">
                       <div className="flex items-center justify-end gap-1">
                         <Button variant="ghost" size="sm" className="h-9 w-9 px-0 text-xs" onClick={() => setSelected(c)} title="View details" aria-label="View details"><Eye className="h-3.5 w-3.5" /></Button>
-                        <Button variant="ghost" size="sm" className="h-9 w-9 px-0 text-xs" onClick={() => navigate('/admin/customer-email')} title="Email customers" aria-label="Email customers"><Mail className="h-3.5 w-3.5" /></Button>
+                        <Button variant="ghost" size="sm" className="h-9 w-9 px-0 text-xs" onClick={() => navigate('/admin/customer-email?audience=active')} title="Announce to customers" aria-label="Announce to customers"><Mail className="h-3.5 w-3.5" /></Button>
                       </div>
                     </td>
                   </tr>
@@ -203,9 +195,18 @@ const AdminCustomers = () => {
               </tbody>
             </table>
           </DesktopTableRegion>
+
+          {(status === 'CanLoadMore' || status === 'LoadingMore') && (
+            <div className="flex justify-center mt-4">
+              <Button variant="outline" size="sm" disabled={status === 'LoadingMore'} onClick={() => loadMore(PAGE_SIZE)}>
+                {status === 'LoadingMore' ? <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" /> : null}
+                Load more
+              </Button>
+            </div>
+          )}
         </>
       )}
-      <Dialog open={!!selected} onOpenChange={open => !open && setSelected(null)}>
+      <Dialog open={!!selected} onOpenChange={(open) => !open && setSelected(null)}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader><DialogTitle>{selected?.full_name ?? 'Customer'}</DialogTitle></DialogHeader>
           {selected && (

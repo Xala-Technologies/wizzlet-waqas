@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { useMutation, useQuery } from 'convex/react';
+import { useMutation, usePaginatedQuery, useQuery } from 'convex/react';
 import { api } from '../../convex/_generated/api';
 import type { Id } from '../../convex/_generated/dataModel';
 import { DashboardLayout } from '@/components/dashboard/DashboardLayout';
@@ -8,6 +8,9 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Wallet, Clock, CheckCircle2, XCircle, TrendingUp, Calendar, Loader2, Crown, Send } from 'lucide-react';
 import { toast } from 'sonner';
+import { scanTruncationNote } from '@/lib/adminTruncation';
+
+const PAGE_SIZE = 25;
 
 interface PayoutRow {
   id: string;
@@ -18,6 +21,7 @@ interface PayoutRow {
   reference: string | null;
   processed_at: number | null;
   created_at: number;
+  creator_name?: string;
 }
 
 interface CreatorBalance {
@@ -43,84 +47,88 @@ const fmtDate = (d: number | null) =>
 const AdminPayouts = () => {
   const [busyId, setBusyId] = useState<string | null>(null);
 
-  const subsRaw = useQuery(api.subscriptions.mutations.listAllAdmin);
-  const creatorsRaw = useQuery(api.creators.queries.listAllAdmin);
-  const payoutsRaw = useQuery(api.payouts.mutations.listAllAdmin);
+  const overview = useQuery(api.admin.snapshots.payoutsOverview);
+  const {
+    results: payoutResults,
+    status: payoutStatus,
+    loadMore: loadMorePayouts,
+  } = usePaginatedQuery(
+    api.admin.paginatedLists.listPayoutsPage,
+    {},
+    { initialNumItems: PAGE_SIZE },
+  );
   const createPayoutMutation = useMutation(api.payouts.mutations.createAdmin);
   const setStatusMutation = useMutation(api.payouts.mutations.setStatusAdmin);
+  const platformSettings = useQuery(api.platform.mutations.get);
 
-  const loading = subsRaw === undefined || creatorsRaw === undefined || payoutsRaw === undefined;
+  const payoutDefaults = (platformSettings?.payoutDefaults ?? {}) as Record<string, unknown>;
+  const minPayoutDollars = Number(payoutDefaults.minPayoutAmount ?? payoutDefaults.min_payout_amount ?? 0);
+
+  const loading = overview === undefined || payoutStatus === 'LoadingFirstPage';
 
   const payouts = useMemo((): PayoutRow[] => {
-    if (!payoutsRaw) return [];
-    return [...payoutsRaw]
-      .sort((a, b) => b.createdAt - a.createdAt)
-      .map(p => ({
-        id: p._id,
-        creator_id: p.creatorId,
-        amount: p.amountCents / 100,
-        status: p.status,
-        method: p.method ?? 'bank_transfer',
-        reference: p.reference ?? null,
-        processed_at: p.processedAt ?? null,
-        created_at: p.createdAt,
-      }));
-  }, [payoutsRaw]);
+    return (payoutResults ?? []).map((p) => ({
+      id: p.id,
+      creator_id: p.creatorId,
+      amount: p.amountCents / 100,
+      status: p.status,
+      method: p.method ?? 'bank_transfer',
+      reference: p.reference ?? null,
+      processed_at: p.processedAt ?? null,
+      created_at: p.createdAt,
+      creator_name: p.creatorName,
+    }));
+  }, [payoutResults]);
 
   const balances = useMemo((): CreatorBalance[] => {
-    if (!subsRaw || !creatorsRaw) return [];
-
-    const earnedBy = new Map<string, number>();
-    subsRaw
-      .filter(s => s.status === 'active')
-      .forEach(s => earnedBy.set(s.creatorId, (earnedBy.get(s.creatorId) ?? 0) + s.creatorEarningsCents / 100));
-
-    const paidBy = new Map<string, number>();
-    const inFlightBy = new Map<string, number>();
-    payouts.forEach(p => {
-      if (p.status === 'completed') paidBy.set(p.creator_id, (paidBy.get(p.creator_id) ?? 0) + p.amount);
-      else if (p.status === 'pending' || p.status === 'processing')
-        inFlightBy.set(p.creator_id, (inFlightBy.get(p.creator_id) ?? 0) + p.amount);
-    });
-
-    return creatorsRaw
-      .map(c => {
-        const earned = earnedBy.get(c._id) ?? 0;
-        const paid = paidBy.get(c._id) ?? 0;
-        const inFlight = inFlightBy.get(c._id) ?? 0;
-        return {
-          creatorId: c._id,
-          name: c.displayName || `@${c.username ?? 'unknown'}`,
-          earned,
-          paid,
-          inFlight,
-          available: Math.max(0, earned - paid - inFlight),
-        };
-      })
-      .filter(r => r.earned > 0 || r.paid > 0 || r.inFlight > 0)
-      .sort((a, b) => b.available - a.available);
-  }, [subsRaw, creatorsRaw, payouts]);
+    return (overview?.balances ?? []).map((b) => ({
+      creatorId: b.creatorId,
+      name: b.name,
+      earned: b.earned,
+      paid: b.paid,
+      inFlight: b.inFlight,
+      available: b.available,
+    }));
+  }, [overview]);
 
   const totals = useMemo(() => {
-    const totalPaidOut = payouts.filter(p => p.status === 'completed').reduce((a, b) => a + b.amount, 0);
-    const pending = payouts.filter(p => p.status === 'pending' || p.status === 'processing').reduce((a, b) => a + b.amount, 0);
-    const owed = balances.reduce((a, b) => a + b.available, 0);
-    const lastPayout = payouts.find(p => p.status === 'completed');
+    if (!overview) {
+      return {
+        totalPaidOut: 0,
+        pending: 0,
+        owed: 0,
+        lastPayoutDate: 'No payouts yet',
+        processing: 0,
+        completed: 0,
+        failed: 0,
+      };
+    }
     return {
-      totalPaidOut,
-      pending,
-      owed,
-      lastPayoutDate: lastPayout ? fmtDate(lastPayout.processed_at ?? lastPayout.created_at) : 'No payouts yet',
-      processing: payouts.filter(p => p.status === 'processing' || p.status === 'pending').length,
-      completed: payouts.filter(p => p.status === 'completed').length,
-      failed: payouts.filter(p => p.status === 'failed').length,
+      totalPaidOut: overview.totalPaidOut,
+      pending: overview.pending,
+      owed: overview.owed,
+      lastPayoutDate: overview.lastPayoutAt
+        ? fmtDate(overview.lastPayoutAt)
+        : 'No payouts yet',
+      processing: overview.processingCount,
+      completed: overview.completedCount,
+      failed: overview.failedCount,
     };
-  }, [payouts, balances]);
+  }, [overview]);
 
-  const creatorName = (id: string) => balances.find(b => b.creatorId === id)?.name ?? 'Unknown creator';
+  const truncation = overview
+    ? scanTruncationNote(overview.truncated, overview.listLimit)
+    : null;
+
+  const creatorName = (p: PayoutRow) =>
+    p.creator_name ?? balances.find((b) => b.creatorId === p.creator_id)?.name ?? 'Unknown creator';
 
   const createPayout = async (row: CreatorBalance) => {
     if (row.available <= 0) return;
+    if (Number.isFinite(minPayoutDollars) && minPayoutDollars > 0 && row.available < minPayoutDollars) {
+      toast.error(`Payout must be at least $${minPayoutDollars.toFixed(2)} (platform minimum)`);
+      return;
+    }
     setBusyId(row.creatorId);
     const now = new Date();
     try {
@@ -167,6 +175,10 @@ const AdminPayouts = () => {
       <div className="mb-8">
         <h1 className="text-2xl font-bold">Payouts &amp; Treasury</h1>
         <p className="text-muted-foreground text-sm mt-0.5">Creator earnings, queued payouts, and payment history</p>
+        {Number.isFinite(minPayoutDollars) && minPayoutDollars > 0 && (
+          <p className="text-xs text-muted-foreground mt-1">Minimum payout: ${minPayoutDollars.toFixed(2)}</p>
+        )}
+        {truncation && <p className="text-amber-600 text-xs mt-2">{truncation}</p>}
       </div>
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
@@ -236,7 +248,7 @@ const AdminPayouts = () => {
                   </tr>
                 </thead>
                 <tbody>
-                  {balances.map(b => (
+                  {balances.map((b) => (
                     <tr key={b.creatorId} className="border-b border-border last:border-0 hover:bg-muted/20 transition-colors">
                       <td className="p-4 font-medium text-xs">{b.name}</td>
                       <td className="p-4 text-xs text-muted-foreground">{fmt(b.earned)}</td>
@@ -291,7 +303,7 @@ const AdminPayouts = () => {
                 <li key={p.id} className="mx-3 mb-3 rounded-xl border border-border bg-card p-4 space-y-3">
                   <div className="flex items-start justify-between gap-2">
                     <div className="min-w-0">
-                      <p className="text-sm font-medium truncate">{creatorName(p.creator_id)}</p>
+                      <p className="text-sm font-medium truncate">{creatorName(p)}</p>
                       <p className="text-xs text-muted-foreground mt-0.5">{fmtDate(p.created_at)}</p>
                     </div>
                     <Badge variant="outline" className={`text-[10px] shrink-0 ${statusStyles[p.status] ?? ''}`}>
@@ -334,9 +346,9 @@ const AdminPayouts = () => {
                   </tr>
                 </thead>
                 <tbody>
-                  {payouts.map(p => (
+                  {payouts.map((p) => (
                     <tr key={p.id} className="border-b border-border last:border-0 hover:bg-muted/20 transition-colors">
-                      <td className="p-4 font-medium text-xs">{creatorName(p.creator_id)}</td>
+                      <td className="p-4 font-medium text-xs">{creatorName(p)}</td>
                       <td className="p-4 text-xs text-muted-foreground">{fmtDate(p.created_at)}</td>
                       <td className="p-4 text-xs text-muted-foreground">{fmtDate(p.processed_at)}</td>
                       <td className="p-4 font-medium text-emerald-400">{fmt(p.amount)}</td>
@@ -370,6 +382,19 @@ const AdminPayouts = () => {
               </table>
             </DesktopTableRegion>
           </>
+        )}
+        {(payoutStatus === 'CanLoadMore' || payoutStatus === 'LoadingMore') && (
+          <div className="flex justify-center p-4 border-t border-border">
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={payoutStatus === 'LoadingMore'}
+              onClick={() => loadMorePayouts(PAGE_SIZE)}
+            >
+              {payoutStatus === 'LoadingMore' ? <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" /> : null}
+              Load more history
+            </Button>
+          </div>
         )}
       </div>
     </DashboardLayout>

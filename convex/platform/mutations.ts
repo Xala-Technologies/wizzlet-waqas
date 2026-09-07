@@ -1,9 +1,11 @@
 import { mutation, query } from "../_generated/server";
 import { v } from "convex/values";
 import { requireAdmin, requireAppUser } from "../lib/auth";
+import { platformSettingsDocValidator } from "../lib/validators";
 
 export const get = query({
   args: {},
+  returns: v.union(platformSettingsDocValidator, v.null()),
   handler: async (ctx) => {
     await requireAppUser(ctx);
     return ctx.db
@@ -22,6 +24,7 @@ export const upsert = mutation({
     payoutDefaults: v.optional(v.any()),
     featureFlags: v.optional(v.any()),
   },
+  returns: v.id("platformSettings"),
   handler: async (ctx, args) => {
     await requireAdmin(ctx);
     const existing = await ctx.db

@@ -5,38 +5,65 @@ import { Navigate, useNavigate } from 'react-router-dom';
 import { useMutation } from 'convex/react';
 import { useAuth } from '@/contexts/AuthContext';
 import { api } from '@convex/_generated/api';
+import { homePathForRole } from '@/lib/roles';
 import { Crown, Users, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 
 const SelectRole = () => {
-  const { user, loading, refreshRole } = useAuth();
+  const {
+    user,
+    loading,
+    role: activeRole,
+    roles: heldRoles,
+    roleLoading,
+    acceptAssignedRole,
+    clearDevBypass,
+    refreshRole,
+  } = useAuth();
   const navigate = useNavigate();
   const [selected, setSelected] = useState<'creator' | 'subscriber' | null>(null);
   const [saving, setSaving] = useState(false);
   const assignSelfRole = useMutation(api.roles.mutations.assignSelfRole);
 
-  if (!loading && !user) {
+  if (loading || roleLoading) {
+    return (
+      <main id="main-content" className="min-h-screen flex items-center justify-center px-4">
+        <Loader2 className="h-6 w-6 animate-spin text-primary" />
+      </main>
+    );
+  }
+
+  if (!user) {
     return <Navigate to="/login" replace />;
+  }
+
+  // Cross-device / re-login: already have DB roles — do not force re-pick.
+  if (heldRoles.length > 0) {
+    return <Navigate to={homePathForRole(activeRole)} replace />;
   }
 
   const handleContinue = async () => {
     if (!selected || !user) return;
     setSaving(true);
+    clearDevBypass();
 
     try {
       await assignSelfRole({ role: selected });
+      acceptAssignedRole(selected);
+      const active = await refreshRole(selected);
+      if (!active) {
+        // Optimistic state still allows ProtectedRoute through.
+        toast.message('Role saved — continuing…');
+      }
+      navigate(selected === 'creator' ? '/creator/onboarding' : '/dashboard', { replace: true });
     } catch {
       toast.error('Failed to set role. Please try again.');
+    } finally {
       setSaving(false);
-      return;
     }
-
-    await refreshRole();
-    setSaving(false);
-    navigate(selected === 'creator' ? '/creator/onboarding' : '/dashboard');
   };
 
-  const roles = [
+  const roleOptions = [
     {
       id: 'creator' as const,
       icon: Crown,
@@ -62,36 +89,39 @@ const SelectRole = () => {
         </div>
 
         <div className="grid gap-4">
-          {roles.map((role) => (
+          {roleOptions.map((option) => {
+            const Icon = option.icon;
+            return (
             <button
-              key={role.id}
+              key={option.id}
               type="button"
-              onClick={() => setSelected(role.id)}
+              onClick={() => setSelected(option.id)}
               className={`flex items-start gap-4 rounded-xl border p-5 text-left transition-all ${
-                selected === role.id
+                selected === option.id
                   ? 'border-primary bg-primary/5 ring-1 ring-primary'
                   : 'border-border bg-card hover:border-muted-foreground/30'
               }`}
             >
               <div
                 className={`mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-lg ${
-                  selected === role.id ? 'bg-primary text-primary-foreground' : 'bg-secondary text-muted-foreground'
+                  selected === option.id ? 'bg-primary text-primary-foreground' : 'bg-secondary text-muted-foreground'
                 }`}
               >
-                <role.icon className="h-5 w-5" />
+                <Icon className="h-5 w-5" />
               </div>
               <div>
-                <p className="font-semibold">{role.title}</p>
-                <p className="text-sm text-muted-foreground mt-1">{role.description}</p>
+                <p className="font-semibold">{option.title}</p>
+                <p className="text-sm text-muted-foreground mt-1">{option.description}</p>
               </div>
             </button>
-          ))}
+            );
+          })}
         </div>
 
         <button
           type="button"
-          onClick={handleContinue}
-          disabled={!selected || saving}
+          onClick={() => void handleContinue()}
+          disabled={!selected || saving || loading}
           className="mt-6 w-full rounded-lg bg-primary px-4 py-3 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed"
         >
           {saving && <Loader2 className="mr-2 inline h-4 w-4 animate-spin" />}

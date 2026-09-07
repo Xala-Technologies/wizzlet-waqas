@@ -8,7 +8,10 @@
  * @module
  */
 
+import type * as admin_exportReports from "../admin/exportReports.js";
+import type * as admin_paginatedLists from "../admin/paginatedLists.js";
 import type * as admin_queries from "../admin/queries.js";
+import type * as admin_snapshots from "../admin/snapshots.js";
 import type * as analytics_mutations from "../analytics/mutations.js";
 import type * as auth from "../auth.js";
 import type * as bookmarks_mutations from "../bookmarks/mutations.js";
@@ -18,15 +21,21 @@ import type * as creators_queries from "../creators/queries.js";
 import type * as events_queries from "../events/queries.js";
 import type * as files_storage from "../files/storage.js";
 import type * as http from "../http.js";
+import type * as lib_adminLists from "../lib/adminLists.js";
 import type * as lib_auth from "../lib/auth.js";
 import type * as lib_commerceIdentity from "../lib/commerceIdentity.js";
 import type * as lib_credentialOwnership from "../lib/credentialOwnership.js";
+import type * as lib_devAdminGrant from "../lib/devAdminGrant.js";
 import type * as lib_entitlements from "../lib/entitlements.js";
+import type * as lib_growthAttribution from "../lib/growthAttribution.js";
+import type * as lib_messagingAccess from "../lib/messagingAccess.js";
 import type * as lib_money from "../lib/money.js";
 import type * as lib_payoutBalance from "../lib/payoutBalance.js";
+import type * as lib_promoCodes from "../lib/promoCodes.js";
 import type * as lib_results from "../lib/results.js";
 import type * as lib_sandbox from "../lib/sandbox.js";
 import type * as lib_subscriptions from "../lib/subscriptions.js";
+import type * as lib_validators from "../lib/validators.js";
 import type * as messaging_mutations from "../messaging/mutations.js";
 import type * as migrations_importBatch from "../migrations/importBatch.js";
 import type * as migrations_load from "../migrations/load.js";
@@ -52,7 +61,10 @@ import type {
 } from "convex/server";
 
 declare const fullApi: ApiFromModules<{
+  "admin/exportReports": typeof admin_exportReports;
+  "admin/paginatedLists": typeof admin_paginatedLists;
   "admin/queries": typeof admin_queries;
+  "admin/snapshots": typeof admin_snapshots;
   "analytics/mutations": typeof analytics_mutations;
   auth: typeof auth;
   "bookmarks/mutations": typeof bookmarks_mutations;
@@ -62,15 +74,21 @@ declare const fullApi: ApiFromModules<{
   "events/queries": typeof events_queries;
   "files/storage": typeof files_storage;
   http: typeof http;
+  "lib/adminLists": typeof lib_adminLists;
   "lib/auth": typeof lib_auth;
   "lib/commerceIdentity": typeof lib_commerceIdentity;
   "lib/credentialOwnership": typeof lib_credentialOwnership;
+  "lib/devAdminGrant": typeof lib_devAdminGrant;
   "lib/entitlements": typeof lib_entitlements;
+  "lib/growthAttribution": typeof lib_growthAttribution;
+  "lib/messagingAccess": typeof lib_messagingAccess;
   "lib/money": typeof lib_money;
   "lib/payoutBalance": typeof lib_payoutBalance;
+  "lib/promoCodes": typeof lib_promoCodes;
   "lib/results": typeof lib_results;
   "lib/sandbox": typeof lib_sandbox;
   "lib/subscriptions": typeof lib_subscriptions;
+  "lib/validators": typeof lib_validators;
   "messaging/mutations": typeof messaging_mutations;
   "migrations/importBatch": typeof migrations_importBatch;
   "migrations/load": typeof migrations_load;

@@ -10,7 +10,7 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue
 } from '@/components/ui/select';
 import { Search, Loader2, Star, Clock, Filter, Zap } from 'lucide-react';
-import { mapConvexSportEvent, getEventsBySport, SPORT_ICONS, formatEventTime, getTimeUntil, type SportEvent, type EventStatus } from '@/lib/events';
+import { mapConvexSportEvent, getEventsBySport, SPORT_ICONS, formatEventTime, getTimeUntil, todayBoundsMs, type SportEvent, type EventStatus } from '@/lib/events';
 
 const statusConfig: Record<EventStatus, { label: string; class: string }> = {
   featured: { label: 'Featured', class: 'bg-primary/15 text-primary border-primary/20' },
@@ -61,7 +61,8 @@ function EventRow({ event }: { event: SportEvent }) {
 }
 
 const TodaysEvents = () => {
-  const rows = useQuery(api.events.queries.listPublishedToday, {});
+  const dayBounds = useMemo(() => todayBoundsMs(), []);
+  const rows = useQuery(api.events.queries.listPublishedToday, dayBounds);
   const allEvents = useMemo(() => (rows ?? []).map(mapConvexSportEvent), [rows]);
   const [search, setSearch] = useState('');
   const [sportFilter, setSportFilter] = useState('All Sports');

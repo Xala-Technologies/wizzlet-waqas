@@ -9,7 +9,6 @@ import {
   LayoutGrid,
   Users,
   UserCog,
-
   Crown,
   CreditCard,
   Banknote,
@@ -18,7 +17,7 @@ import {
   LogOut,
   Shield,
   MessageSquare,
-  Mail,
+  Megaphone,
   Inbox,
   FileWarning,
   Wallet,
@@ -32,23 +31,50 @@ interface NavItem {
   icon: React.ElementType;
 }
 
-const adminItems: NavItem[] = [
-  { label: 'Overview', href: '/admin', icon: LayoutGrid },
-  { label: 'Creators', href: '/admin/creators', icon: Crown },
-  { label: 'Customers', href: '/admin/customers', icon: Users },
-  { label: 'All Accounts', href: '/admin/users', icon: UserCog },
+interface NavSection {
+  title: string;
+  items: NavItem[];
+}
 
-  { label: 'Finance', href: '/admin/finance', icon: Banknote },
-  { label: 'Transactions', href: '/admin/transactions', icon: CreditCard },
-  { label: 'Platform Fees', href: '/admin/fees', icon: Percent },
-  { label: 'Payouts', href: '/admin/payouts', icon: Wallet },
-  { label: 'Creator Messaging', href: '/admin/creator-messaging', icon: MessageSquare },
-  { label: 'Customer Email', href: '/admin/customer-email', icon: Mail },
-  { label: 'Growth Inbox', href: '/admin/growth-manager-inbox', icon: Inbox },
-  { label: 'Resolution Cases', href: '/admin/resolution-cases', icon: FileWarning },
-  { label: 'Alerts', href: '/admin/alerts', icon: Bell },
-  { label: 'Reports', href: '/admin/reports', icon: FileText },
-  { label: 'Settings', href: '/admin/settings', icon: Settings },
+const adminSections: NavSection[] = [
+  {
+    title: 'Overview',
+    items: [{ label: 'Overview', href: '/admin', icon: LayoutGrid }],
+  },
+  {
+    title: 'People',
+    items: [
+      { label: 'Creators', href: '/admin/creators', icon: Crown },
+      { label: 'Customers', href: '/admin/customers', icon: Users },
+      { label: 'All Accounts', href: '/admin/users', icon: UserCog },
+    ],
+  },
+  {
+    title: 'Money',
+    items: [
+      { label: 'Finance', href: '/admin/finance', icon: Banknote },
+      { label: 'Transactions', href: '/admin/transactions', icon: CreditCard },
+      { label: 'Platform Fees', href: '/admin/fees', icon: Percent },
+      { label: 'Payouts', href: '/admin/payouts', icon: Wallet },
+    ],
+  },
+  {
+    title: 'Support',
+    items: [
+      { label: 'Creator Messaging', href: '/admin/creator-messaging', icon: MessageSquare },
+      { label: 'Growth Inbox', href: '/admin/growth-manager-inbox', icon: Inbox },
+      { label: 'Announcements', href: '/admin/customer-email', icon: Megaphone },
+      { label: 'Resolution Cases', href: '/admin/resolution-cases', icon: FileWarning },
+      { label: 'Alerts', href: '/admin/alerts', icon: Bell },
+    ],
+  },
+  {
+    title: 'Platform',
+    items: [
+      { label: 'Reports', href: '/admin/reports', icon: FileText },
+      { label: 'Settings', href: '/admin/settings', icon: Settings },
+    ],
+  },
 ];
 
 function NavItemLink({ item, active }: { item: NavItem; active: boolean }) {
@@ -97,16 +123,28 @@ export function AdminSidebar({ mobile = false }: { mobile?: boolean } = {}) {
         </div>
       </div>
 
-      <nav className="flex-1 overflow-y-auto px-3 pb-4 space-y-0.5">
-        {adminItems.map((item) => (
-          <NavItemLink key={item.href} item={item} active={item.href === '/admin' ? pathname === '/admin' : pathname.startsWith(item.href)} />
+      <nav className="flex-1 overflow-y-auto px-3 pb-4 space-y-4">
+        {adminSections.map((section) => (
+          <div key={section.title}>
+            <p className="px-3 mb-1 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/80">
+              {section.title}
+            </p>
+            <div className="space-y-0.5">
+              {section.items.map((item) => (
+                <NavItemLink
+                  key={item.href}
+                  item={item}
+                  active={item.href === '/admin' ? pathname === '/admin' : pathname.startsWith(item.href)}
+                />
+              ))}
+            </div>
+          </div>
         ))}
       </nav>
 
       <div className="shrink-0 px-3 py-4 border-t border-border space-y-2">
         <RoleSwitcher />
         <div className="flex items-center justify-between px-3">
-
           <span className="text-[11px] text-muted-foreground">Theme</span>
           <ThemeToggle />
         </div>

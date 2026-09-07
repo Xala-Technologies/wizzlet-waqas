@@ -7,6 +7,7 @@ import { mutation } from "../_generated/server";
 import { ConvexError, v } from "convex/values";
 import { logMutation, requireAppUser } from "../lib/auth";
 import { calculatePlatformFee } from "../lib/money";
+import { applySubscribeGrowthAttribution } from "../lib/growthAttribution";
 import { assertSandboxEnabled } from "../lib/sandbox";
 
 export const sandboxSubscribe = mutation({
@@ -14,6 +15,18 @@ export const sandboxSubscribe = mutation({
     creatorId: v.id("creators"),
     productId: v.optional(v.id("products")),
   },
+  returns: v.union(
+    v.object({
+      alreadySubscribed: v.literal(true),
+      subscriptionId: v.id("subscriptions"),
+    }),
+    v.object({
+      ok: v.literal(true),
+      subscriptionId: v.id("subscriptions"),
+      amountCents: v.number(),
+      sandbox: v.literal(true),
+    }),
+  ),
   handler: async (ctx, args) => {
     assertSandboxEnabled();
     const user = await requireAppUser(ctx);
@@ -45,7 +58,7 @@ export const sandboxSubscribe = mutation({
       .collect();
     const active = existing.find((s) => s.status === "active");
     if (active) {
-      return { alreadySubscribed: true, subscriptionId: active._id };
+      return { alreadySubscribed: true as const, subscriptionId: active._id };
     }
 
     const settingsRow = await ctx.db
@@ -119,6 +132,12 @@ export const sandboxSubscribe = mutation({
       createdAt: now,
     });
 
+    await applySubscribeGrowthAttribution(ctx, {
+      userId: user._id,
+      creatorId: creator._id,
+      nowMs: now,
+    });
+
     await logMutation(ctx, {
       table: "subscriptions",
       documentId: subscriptionId,
@@ -126,7 +145,7 @@ export const sandboxSubscribe = mutation({
       actorExternalAuthId: user.externalAuthId,
     });
 
-    return { ok: true, subscriptionId, amountCents, sandbox: true };
+    return { ok: true as const, subscriptionId, amountCents, sandbox: true as const };
   },
 });
 
@@ -134,6 +153,11 @@ export const sandboxCancel = mutation({
   args: {
     creatorId: v.id("creators"),
   },
+  returns: v.object({
+    ok: v.literal(true),
+    status: v.literal("cancelled"),
+    sandbox: v.literal(true),
+  }),
   handler: async (ctx, args) => {
     assertSandboxEnabled();
     const user = await requireAppUser(ctx);
@@ -146,6 +170,6 @@ export const sandboxCancel = mutation({
     const sub = subs[0];
     if (!sub) throw new ConvexError("NOT_FOUND");
     await ctx.db.patch(sub._id, { status: "cancelled", updatedAt: Date.now() });
-    return { ok: true, status: "cancelled", sandbox: true };
+    return { ok: true as const, status: "cancelled" as const, sandbox: true as const };
   },
 });

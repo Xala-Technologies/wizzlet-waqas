@@ -7,6 +7,7 @@ interface Props {
 
 interface State {
   hasError: boolean;
+  message?: string;
 }
 
 /**
@@ -15,8 +16,11 @@ interface State {
 export class ErrorBoundary extends Component<Props, State> {
   state: State = { hasError: false };
 
-  static getDerivedStateFromError(): State {
-    return { hasError: true };
+  static getDerivedStateFromError(error: Error): State {
+    return {
+      hasError: true,
+      message: error instanceof Error ? error.message : 'Unexpected error',
+    };
   }
 
   componentDidCatch(error: Error, info: ErrorInfo) {
@@ -24,7 +28,7 @@ export class ErrorBoundary extends Component<Props, State> {
   }
 
   private handleReload = () => {
-    this.setState({ hasError: false });
+    this.setState({ hasError: false, message: undefined });
     window.location.assign('/');
   };
 
@@ -36,6 +40,9 @@ export class ErrorBoundary extends Component<Props, State> {
           <p className="text-sm text-muted-foreground max-w-md">
             An unexpected error occurred. You can return home and try again.
           </p>
+          {import.meta.env.DEV && this.state.message ? (
+            <p className="text-xs text-destructive max-w-lg font-mono break-words">{this.state.message}</p>
+          ) : null}
           <Button type="button" onClick={this.handleReload}>
             Go home
           </Button>

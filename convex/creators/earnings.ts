@@ -1,10 +1,13 @@
 import { query } from "../_generated/server";
 import { getCreatorForUser, requireAppUser } from "../lib/auth";
 import { yearMonthKey } from "../lib/commerceIdentity";
+import { creatorEarningsValidator } from "../lib/validators";
+import type { Id } from "../_generated/dataModel";
 
 /** Creator earnings dashboard — real subscriptions + paymentEvents (no fake names). */
 export const myEarnings = query({
   args: {},
+  returns: creatorEarningsValidator,
   handler: async (ctx) => {
     const user = await requireAppUser(ctx);
     const creator = await getCreatorForUser(ctx, user._id);
@@ -17,7 +20,7 @@ export const myEarnings = query({
         activeCount: 0,
         monthly: [] as { month: string; revenueCents: number }[],
         recentPayments: [] as {
-          id: string;
+          id: Id<"paymentEvents">;
           label: string;
           amountCents: number;
           createdAt: number;
@@ -54,7 +57,12 @@ export const myEarnings = query({
         revenueCents,
       }));
 
-    const recentPayments = [];
+    const recentPayments: Array<{
+      id: Id<"paymentEvents">;
+      label: string;
+      amountCents: number;
+      createdAt: number;
+    }> = [];
     for (const e of sorted.slice(0, 20)) {
       let label = e.type;
       if (e.userId) {

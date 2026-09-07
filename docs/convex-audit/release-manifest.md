@@ -9,7 +9,7 @@
 | Product periods | Monthly recurring only |
 | Cancellation | Immediate after Stripe success |
 | Payouts | Manual |
-| Promo/referral commercial | Unavailable |
+| Promo/referral commercial | Promo discount at Checkout **available**; referral cash commission still pending |
 | Campaigns | In-app announcements only |
 
 ## Required before production promote

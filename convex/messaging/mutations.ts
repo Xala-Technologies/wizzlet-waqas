@@ -1,12 +1,15 @@
 import { mutation, query } from "../_generated/server";
 import { ConvexError, v } from "convex/values";
 import { getCreatorForUser, requireAppUser, hasActiveSubscription } from "../lib/auth";
+import { canSendDirectMessage } from "../lib/messagingAccess";
+import { directMessageDocValidator } from "../lib/validators";
 
 export const listThread = query({
   args: {
     creatorId: v.id("creators"),
     subscriberId: v.id("users"),
   },
+  returns: v.array(directMessageDocValidator),
   handler: async (ctx, args) => {
     const user = await requireAppUser(ctx);
     const creator = await ctx.db.get(args.creatorId);
@@ -30,28 +33,34 @@ export const send = mutation({
     body: v.string(),
     senderRole: v.union(v.literal("creator"), v.literal("subscriber")),
   },
+  returns: v.id("directMessages"),
   handler: async (ctx, args) => {
     const user = await requireAppUser(ctx);
     const creator = await ctx.db.get(args.creatorId);
     if (!creator) throw new ConvexError("NOT_FOUND");
-    if (!creator.messagingEnabled) {
-      throw new ConvexError("MESSAGING_DISABLED");
+
+    const subscriberHasActiveSub = await hasActiveSubscription(
+      ctx,
+      args.subscriberId,
+      args.creatorId,
+    );
+    const decision = canSendDirectMessage({
+      messagingEnabled: creator.messagingEnabled,
+      senderRole: args.senderRole,
+      callerIsCreatorOwner: creator.userId === user._id,
+      callerIsNamedSubscriber: user._id === args.subscriberId,
+      subscriberHasActiveSub,
+      body: args.body,
+    });
+    if (!decision.ok) {
+      throw new ConvexError(decision.reason);
     }
-    if (args.senderRole === "creator" && creator.userId !== user._id) {
-      throw new ConvexError("FORBIDDEN");
-    }
-    if (args.senderRole === "subscriber" && user._id !== args.subscriberId) {
-      throw new ConvexError("FORBIDDEN");
-    }
-    if (args.senderRole === "subscriber") {
-      const ok = await hasActiveSubscription(ctx, user._id, args.creatorId);
-      if (!ok) throw new ConvexError("FORBIDDEN");
-    }
+
     return ctx.db.insert("directMessages", {
       creatorId: args.creatorId,
       subscriberId: args.subscriberId,
       senderRole: args.senderRole,
-      body: args.body,
+      body: args.body.trim(),
       read: false,
       createdAt: Date.now(),
     });
@@ -60,6 +69,7 @@ export const send = mutation({
 
 export const myCreatorInbox = query({
   args: {},
+  returns: v.array(directMessageDocValidator),
   handler: async (ctx) => {
     const user = await requireAppUser(ctx);
     const creator = await getCreatorForUser(ctx, user._id);
@@ -73,6 +83,7 @@ export const myCreatorInbox = query({
 
 export const mySubscriberInbox = query({
   args: {},
+  returns: v.array(directMessageDocValidator),
   handler: async (ctx) => {
     const user = await requireAppUser(ctx);
     return ctx.db
@@ -84,6 +95,7 @@ export const mySubscriberInbox = query({
 
 export const setMessagingEnabled = mutation({
   args: { enabled: v.boolean() },
+  returns: v.null(),
   handler: async (ctx, args) => {
     const user = await requireAppUser(ctx);
     const creator = await getCreatorForUser(ctx, user._id);
@@ -92,5 +104,6 @@ export const setMessagingEnabled = mutation({
       messagingEnabled: args.enabled,
       updatedAt: Date.now(),
     });
+    return null;
   },
 });

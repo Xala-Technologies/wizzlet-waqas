@@ -20,7 +20,10 @@ export async function trackEvent({ eventType, creatorId, postId }: TrackEventPar
       postId: postId ? (postId as Id<'posts'>) : undefined,
     });
   } catch (err) {
-    console.warn('[Analytics] Failed to track event:', err);
+    // Soft-fail: never block UX (includes signed-out / race during signOut).
+    if (import.meta.env.DEV) {
+      console.warn('[Analytics] Failed to track event:', err);
+    }
   }
 }
 

@@ -1,5 +1,6 @@
 import { internalMutation } from "../_generated/server";
 import { v } from "convex/values";
+import type { AppRole } from "../lib/auth";
 
 const MIGRATION_VERSION = "1.0.0";
 
@@ -101,7 +102,7 @@ export const upsertRoleByLegacy = internalMutation({
     const byPair = await ctx.db
       .query("userRoles")
       .withIndex("by_userId_role", (q) =>
-        q.eq("userId", user._id).eq("role", args.role as any),
+        q.eq("userId", user._id).eq("role", args.role as AppRole),
       )
       .unique();
     if (byPair) {
@@ -111,7 +112,7 @@ export const upsertRoleByLegacy = internalMutation({
     return ctx.db.insert("userRoles", {
       legacyId: args.legacyId,
       userId: user._id,
-      role: args.role as any,
+      role: args.role as AppRole,
       createdAt: args.createdAt,
     });
   },

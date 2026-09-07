@@ -26,11 +26,20 @@ export function sortRoles(roles: AppRole[]): AppRole[] {
 /**
  * Pick the active role deterministically: a previously chosen role wins when the
  * user still holds it, otherwise fall back to the highest-privilege role.
+ * Empty preferred (new device / cleared storage) → priority fallback.
  */
 export function resolveActiveRole(roles: AppRole[], preferred?: string | null): AppRole | null {
   if (roles.length === 0) return null;
   if (isAppRole(preferred) && roles.includes(preferred)) return preferred;
-  return sortRoles(roles)[0];
+  return sortRoles(roles)[0] ?? null;
+}
+
+/** Post-login destination from server-held roles (not localStorage alone). */
+export function postLoginPath(
+  roles: AppRole[],
+  preferred?: string | null,
+): string {
+  return homePathForRole(resolveActiveRole(roles, preferred));
 }
 
 export function homePathForRole(role: AppRole | null): string {

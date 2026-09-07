@@ -1,34 +1,48 @@
 import { describe, expect, it } from "vitest";
+import {
+  computeAvailableBalanceCents,
+  isPaidOutPayoutStatus,
+  isReservedPayoutStatus,
+  isSettledEarningEvent,
+} from "../../convex/lib/payoutBalance";
 
-/** Mirrors reserved payout statuses used in convex/lib/payoutBalance.ts */
-const RESERVED = new Set([
-  "requested",
-  "pending",
-  "processing",
-  "approved",
-  "completed",
-  "paid",
-]);
-
-function availableBalance(earned: number, payouts: { status: string; amountCents: number }[]) {
-  const reserved = payouts
-    .filter((p) => RESERVED.has(p.status))
-    .reduce((s, p) => s + p.amountCents, 0);
-  return Math.max(0, earned - reserved);
-}
-
-describe("payout available balance", () => {
-  it("subtracts requested and completed payouts", () => {
+describe("payout available balance (J5)", () => {
+  it("includes Stripe test settled earnings and excludes sandbox", () => {
     expect(
-      availableBalance(10_000, [
-        { status: "requested", amountCents: 3_000 },
-        { status: "completed", amountCents: 2_000 },
-        { status: "rejected", amountCents: 1_000 },
-      ]),
-    ).toBe(5_000);
+      isSettledEarningEvent({ status: "settled", paymentMode: "test" }),
+    ).toBe(true);
+    expect(
+      isSettledEarningEvent({ status: "settled", paymentMode: "live" }),
+    ).toBe(true);
+    expect(
+      isSettledEarningEvent({ status: "settled", paymentMode: "sandbox" }),
+    ).toBe(false);
+    expect(isSettledEarningEvent({ status: "failed", paymentMode: "test" })).toBe(
+      false,
+    );
   });
 
-  it("never goes negative", () => {
-    expect(availableBalance(100, [{ status: "requested", amountCents: 500 }])).toBe(0);
+  it("reserves in-flight and completed payouts", () => {
+    expect(isReservedPayoutStatus("requested")).toBe(true);
+    expect(isReservedPayoutStatus("completed")).toBe(true);
+    expect(isReservedPayoutStatus("rejected")).toBe(false);
+    expect(isReservedPayoutStatus("cancelled")).toBe(false);
+  });
+
+  it("treats only completed/paid as paid-out for UI", () => {
+    expect(isPaidOutPayoutStatus("completed")).toBe(true);
+    expect(isPaidOutPayoutStatus("paid")).toBe(true);
+    expect(isPaidOutPayoutStatus("requested")).toBe(false);
+  });
+
+  it("subtracts reserved from earned and never goes negative", () => {
+    expect(computeAvailableBalanceCents(10_000, 5_000)).toBe(5_000);
+    expect(computeAvailableBalanceCents(100, 500)).toBe(0);
+  });
+
+  it("rejects over-available requests by math (server uses same formula)", () => {
+    const available = computeAvailableBalanceCents(1_898, 0);
+    expect(available).toBe(1_898);
+    expect(2_000 > available).toBe(true);
   });
 });

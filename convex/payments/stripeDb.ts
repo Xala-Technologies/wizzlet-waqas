@@ -7,6 +7,7 @@ import {
   LAUNCH_BILLING_PERIOD,
   normalizeBillingPeriod,
 } from "../lib/commerceIdentity";
+import { applySubscribeGrowthAttribution } from "../lib/growthAttribution";
 import type { Id } from "../_generated/dataModel";
 
 async function loadFeeSettings(ctx: MutationCtx) {
@@ -112,6 +113,7 @@ export const fulfillCheckout = internalMutation({
     /** Optional delivery receipt (Stripe event id); not used for ledger dedupe. */
     deliveryRef: v.optional(v.string()),
     paymentMode: v.optional(v.union(v.literal("test"), v.literal("live"), v.literal("sandbox"))),
+    promoId: v.optional(v.id("promoCodes")),
   },
   handler: async (ctx, args) => {
     const commercialRef = commercialRefForCheckout(args.checkoutSessionId);
@@ -219,6 +221,13 @@ export const fulfillCheckout = internalMutation({
       read: false,
       link: "/dashboard/subscriptions-billing",
       createdAt: now,
+    });
+
+    await applySubscribeGrowthAttribution(ctx, {
+      userId: args.userId,
+      creatorId: args.creatorId,
+      promoId: args.promoId,
+      nowMs: now,
     });
 
     return { ok: true as const, duplicate: false, subscriptionId };
@@ -432,6 +441,45 @@ export const getSubscriptionForCancel = internalQuery({
       )
       .collect();
     return rows.find((s) => s.status === "active" || s.status === "past_due") ?? rows[0] ?? null;
+  },
+});
+
+/** Resolve Stripe customer for Billing Portal (stored id or any subscription with Stripe id). */
+export const getBillingPortalContext = internalQuery({
+  args: { userId: v.id("users") },
+  returns: v.object({
+    stripeCustomerId: v.union(v.string(), v.null()),
+    stripeSubscriptionId: v.union(v.string(), v.null()),
+    email: v.optional(v.string()),
+  }),
+  handler: async (ctx, args) => {
+    const user = await ctx.db.get(args.userId);
+    if (!user) throw new ConvexError("USER_NOT_FOUND");
+    const subs = await ctx.db
+      .query("subscriptions")
+      .withIndex("by_userId", (q) => q.eq("userId", args.userId))
+      .collect();
+    const withStripe = subs.find((s) => !!s.stripeSubscriptionId);
+    return {
+      stripeCustomerId: user.stripeCustomerId ?? null,
+      stripeSubscriptionId: withStripe?.stripeSubscriptionId ?? null,
+      email: user.email ?? undefined,
+    };
+  },
+});
+
+export const setStripeCustomerId = internalMutation({
+  args: {
+    userId: v.id("users"),
+    stripeCustomerId: v.string(),
+  },
+  returns: v.null(),
+  handler: async (ctx, args) => {
+    await ctx.db.patch(args.userId, {
+      stripeCustomerId: args.stripeCustomerId,
+      updatedAt: Date.now(),
+    });
+    return null;
   },
 });
 

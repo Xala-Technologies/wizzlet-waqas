@@ -1,10 +1,17 @@
 import { mutation, query } from "../_generated/server";
-import { v } from "convex/values";
+import { ConvexError, v } from "convex/values";
 import { getCreatorForUser, requireAdmin, requireAppUser } from "../lib/auth";
 import { getCreatorAvailableBalanceCents } from "../lib/payoutBalance";
+import {
+  availableBalanceValidator,
+  creatorPayoutSettingsDocValidator,
+  payoutDocValidator,
+} from "../lib/validators";
+import { adminTakeNewest } from "../lib/adminLists";
 
 export const listMine = query({
   args: {},
+  returns: v.array(payoutDocValidator),
   handler: async (ctx) => {
     const user = await requireAppUser(ctx);
     const creator = await getCreatorForUser(ctx, user._id);
@@ -18,6 +25,7 @@ export const listMine = query({
 
 export const availableBalance = query({
   args: {},
+  returns: availableBalanceValidator,
   handler: async (ctx) => {
     const user = await requireAppUser(ctx);
     const creator = await getCreatorForUser(ctx, user._id);
@@ -30,9 +38,10 @@ export const availableBalance = query({
 
 export const listAllAdmin = query({
   args: {},
+  returns: v.array(payoutDocValidator),
   handler: async (ctx) => {
     await requireAdmin(ctx);
-    return ctx.db.query("payouts").collect();
+    return adminTakeNewest(ctx, "payouts");
   },
 });
 
@@ -44,8 +53,26 @@ export const createAdmin = mutation({
     method: v.optional(v.string()),
     reference: v.optional(v.string()),
   },
+  returns: v.id("payouts"),
   handler: async (ctx, args) => {
     await requireAdmin(ctx);
+    if (args.amountCents <= 0) {
+      throw new Error("Payout amount must be greater than zero");
+    }
+    const settings = await ctx.db
+      .query("platformSettings")
+      .withIndex("by_singletonKey", (q) => q.eq("singletonKey", "default"))
+      .unique();
+    const payoutDefaults = (settings?.payoutDefaults ?? {}) as Record<string, unknown>;
+    const minDollars = Number(
+      payoutDefaults.minPayoutAmount ?? payoutDefaults.min_payout_amount ?? 0,
+    );
+    if (Number.isFinite(minDollars) && minDollars > 0) {
+      const minCents = Math.round(minDollars * 100);
+      if (args.amountCents < minCents) {
+        throw new Error(`Payout must be at least $${minDollars.toFixed(2)} (platform minimum)`);
+      }
+    }
     const now = Date.now();
     return ctx.db.insert("payouts", {
       creatorId: args.creatorId,
@@ -65,6 +92,7 @@ export const setStatusAdmin = mutation({
     status: v.string(),
     reference: v.optional(v.string()),
   },
+  returns: v.null(),
   handler: async (ctx, args) => {
     await requireAdmin(ctx);
     const now = Date.now();
@@ -74,11 +102,13 @@ export const setStatusAdmin = mutation({
       processedAt: args.status === "completed" ? now : undefined,
       updatedAt: now,
     });
+    return null;
   },
 });
 
 export const getMySettings = query({
   args: {},
+  returns: v.union(creatorPayoutSettingsDocValidator, v.null()),
   handler: async (ctx) => {
     const user = await requireAppUser(ctx);
     const creator = await getCreatorForUser(ctx, user._id);
@@ -97,10 +127,11 @@ export const upsertSettings = mutation({
     schedule: v.string(),
     minimumPayoutCents: v.number(),
   },
+  returns: v.id("creatorPayoutSettings"),
   handler: async (ctx, args) => {
     const user = await requireAppUser(ctx);
     const creator = await getCreatorForUser(ctx, user._id);
-    if (!creator) throw new Error("NOT_FOUND");
+    if (!creator) throw new ConvexError("NOT_FOUND");
     const existing = await ctx.db
       .query("creatorPayoutSettings")
       .withIndex("by_creatorId", (q) => q.eq("creatorId", creator._id))
@@ -125,12 +156,13 @@ export const requestPayout = mutation({
     amountCents: v.number(),
     method: v.optional(v.string()),
   },
+  returns: v.id("payouts"),
   handler: async (ctx, args) => {
     const user = await requireAppUser(ctx);
     const creator = await getCreatorForUser(ctx, user._id);
-    if (!creator) throw new Error("NOT_FOUND");
+    if (!creator) throw new ConvexError("NOT_FOUND");
     if (!Number.isFinite(args.amountCents) || args.amountCents <= 0) {
-      throw new Error("INVALID_AMOUNT");
+      throw new ConvexError("INVALID_AMOUNT");
     }
 
     const settings = await ctx.db
@@ -139,12 +171,12 @@ export const requestPayout = mutation({
       .unique();
     const min = settings?.minimumPayoutCents ?? 5000;
     if (args.amountCents < min) {
-      throw new Error("BELOW_MINIMUM");
+      throw new ConvexError("BELOW_MINIMUM");
     }
 
     const balance = await getCreatorAvailableBalanceCents(ctx, creator._id);
     if (args.amountCents > balance.availableCents) {
-      throw new Error("INSUFFICIENT_BALANCE");
+      throw new ConvexError("INSUFFICIENT_BALANCE");
     }
 
     const now = Date.now();

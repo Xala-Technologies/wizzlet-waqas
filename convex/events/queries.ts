@@ -1,25 +1,21 @@
 import { mutation, query } from "../_generated/server";
 import { v } from "convex/values";
 import { requireAdmin } from "../lib/auth";
+import { sportEventDocValidator } from "../lib/validators";
 
 export const listPublishedToday = query({
   args: {
-    fromMs: v.optional(v.number()),
-    toMs: v.optional(v.number()),
+    fromMs: v.number(),
+    toMs: v.number(),
   },
+  returns: v.array(sportEventDocValidator),
   handler: async (ctx, args) => {
-    const start = args.fromMs ?? (() => {
-      const d = new Date();
-      d.setHours(0, 0, 0, 0);
-      return d.getTime();
-    })();
-    const end = args.toMs ?? start + 24 * 60 * 60 * 1000;
     const rows = await ctx.db
       .query("sportEvents")
       .withIndex("by_published_startsAt", (q) => q.eq("isPublished", true))
       .collect();
     return rows
-      .filter((e) => e.startsAt >= start && e.startsAt < end)
+      .filter((e) => e.startsAt >= args.fromMs && e.startsAt < args.toMs)
       .sort((a, b) => b.priority - a.priority || a.startsAt - b.startsAt);
   },
 });
@@ -39,6 +35,7 @@ export const upsertAdmin = mutation({
     priority: v.number(),
     isPublished: v.boolean(),
   },
+  returns: v.id("sportEvents"),
   handler: async (ctx, args) => {
     await requireAdmin(ctx);
     const now = Date.now();
@@ -57,8 +54,10 @@ export const upsertAdmin = mutation({
 
 export const removeAdmin = mutation({
   args: { eventId: v.id("sportEvents") },
+  returns: v.null(),
   handler: async (ctx, args) => {
     await requireAdmin(ctx);
     await ctx.db.delete(args.eventId);
+    return null;
   },
 });

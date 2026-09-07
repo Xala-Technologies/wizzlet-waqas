@@ -38,6 +38,17 @@ npm run dev
 
 App: [http://localhost:8080](http://localhost:8080)
 
+### Local platform owner
+
+On development builds, sign in at `/login` with:
+
+| | |
+|--|--|
+| Email | `admin@wizzlet.dev` |
+| Password | `AdminWizzlet1!` |
+
+Or use **Sign in as platform owner** on the login page. That account receives the Convex `admin` role and opens `/admin`.
+
 > Use `npx convex dev` for local development. Reserve `npx convex deploy` for production only.
 
 ## Environment
@@ -63,6 +74,7 @@ Configure under **Settings → Environment Variables**:
 | `STRIPE_WEBHOOK_SECRET` | Webhook signing secret (`whsec_…`) for `POST /stripe/webhook` |
 | `SITE_URL` | Public app origin (e.g. `http://localhost:8080`) |
 | `ALLOW_SANDBOX_CHECKOUT` | Non-production sandbox only |
+| `ALLOW_DEV_ADMIN_GRANT` | Dev only — required for `grantTestAdmin` / platform-owner bootstrap. **Never set in production.** |
 
 See [`.env.example`](.env.example) for a full annotated template.
 
