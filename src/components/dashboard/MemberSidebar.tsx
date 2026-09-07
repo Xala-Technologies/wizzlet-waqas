@@ -101,7 +101,7 @@ const demoMemberSections: NavSection[] = [
 
 function SectionLabel({ children }: { children: React.ReactNode }) {
   return (
-    <span className="px-3 text-[10px] font-semibold uppercase tracking-widest text-muted-foreground/50 select-none">
+    <span className="px-3 text-[10px] font-semibold uppercase tracking-widest text-muted-foreground/50 dark:text-muted-foreground/70 select-none">
       {children}
     </span>
   );

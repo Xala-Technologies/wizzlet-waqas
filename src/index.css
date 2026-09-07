@@ -62,20 +62,20 @@
     --background: 0 0% 4%;
     --foreground: 0 0% 96%;
 
-    --card: 0 0% 7%;
+    --card: 0 0% 8%;
     --card-foreground: 0 0% 96%;
 
-    --popover: 0 0% 7%;
+    --popover: 0 0% 8%;
     --popover-foreground: 0 0% 96%;
 
     --primary: 36 90% 50%;
     --primary-foreground: 0 0% 4%;
 
     --secondary: 0 0% 10%;
-    --secondary-foreground: 0 0% 55%;
+    --secondary-foreground: 0 0% 68%;
 
     --muted: 0 0% 12%;
-    --muted-foreground: 0 0% 50%;
+    --muted-foreground: 0 0% 64%;
 
     --accent: 270 60% 50%;
     --accent-foreground: 0 0% 96%;
@@ -83,17 +83,17 @@
     --destructive: 0 65% 52%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 0 0% 14%;
-    --input: 0 0% 14%;
+    --border: 0 0% 22%;
+    --input: 0 0% 22%;
     --ring: 36 90% 50%;
 
     --sidebar-background: 0 0% 6%;
-    --sidebar-foreground: 0 0% 50%;
+    --sidebar-foreground: 0 0% 64%;
     --sidebar-primary: 36 90% 50%;
     --sidebar-primary-foreground: 0 0% 4%;
     --sidebar-accent: 0 0% 10%;
-    --sidebar-accent-foreground: 0 0% 55%;
-    --sidebar-border: 0 0% 14%;
+    --sidebar-accent-foreground: 0 0% 72%;
+    --sidebar-border: 0 0% 22%;
     --sidebar-ring: 36 90% 50%;
 
     /* Custom tokens */
@@ -164,6 +164,20 @@
   .bg-noise {
     background-color: hsl(var(--background));
     background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
+  }
+
+  /* Dark-only opacity floors for low-contrast muted stacks (light unchanged) */
+  .dark .text-muted-foreground\/30 {
+    color: hsl(var(--muted-foreground) / 0.55);
+  }
+  .dark .text-muted-foreground\/40 {
+    color: hsl(var(--muted-foreground) / 0.55);
+  }
+  .dark .text-muted-foreground\/50 {
+    color: hsl(var(--muted-foreground) / 0.7);
+  }
+  .dark .placeholder\:text-muted-foreground\/40::placeholder {
+    color: hsl(var(--muted-foreground) / 0.55);
   }
 }
 
