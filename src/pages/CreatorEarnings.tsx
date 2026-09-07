@@ -57,14 +57,14 @@ const CreatorEarnings = () => {
           ) : (
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={chartData}>
-                <CartesianGrid strokeDasharray="3 3" stroke="hsl(220, 30%, 18%)" />
-                <XAxis dataKey="month" tick={{ fill: 'hsl(220, 9%, 66%)', fontSize: 12 }} axisLine={false} tickLine={false} />
-                <YAxis tick={{ fill: 'hsl(220, 9%, 66%)', fontSize: 12 }} axisLine={false} tickLine={false} tickFormatter={v => `$${v}`} />
+                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                <XAxis dataKey="month" tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 12 }} axisLine={false} tickLine={false} />
+                <YAxis tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 12 }} axisLine={false} tickLine={false} tickFormatter={v => `$${v}`} />
                 <Tooltip
-                  contentStyle={{ backgroundColor: 'hsl(220, 41%, 10%)', border: '1px solid hsl(220, 30%, 18%)', borderRadius: '8px', fontSize: 12 }}
+                  contentStyle={{ backgroundColor: 'hsl(var(--card))', border: '1px solid hsl(var(--border))', borderRadius: '8px', fontSize: 12, color: 'hsl(var(--foreground))' }}
                   formatter={(value: number) => [`$${value}`, 'Revenue']}
                 />
-                <Bar dataKey="revenue" fill="hsl(243, 75%, 59%)" radius={[4, 4, 0, 0]} />
+                <Bar dataKey="revenue" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
           )}

@@ -199,7 +199,7 @@ const CreatorPosts = () => {
           <div className="rounded-xl border border-border bg-card p-4">
             <Label className="text-xs font-medium text-muted-foreground mb-1.5 block">Title *</Label>
             <Input placeholder="e.g. Lakers ML +150" value={title} onChange={e => setTitle(e.target.value)}
-              className="text-base font-medium border-0 bg-transparent px-0 h-auto focus-visible:ring-0 placeholder:text-muted-foreground/40" maxLength={200} />
+              className="text-base font-medium border-0 bg-transparent px-0 h-auto focus-visible:ring-0 placeholder:text-muted-foreground/40 dark:placeholder:text-muted-foreground/55" maxLength={200} />
           </div>
 
           <div className="rounded-xl border border-border bg-card p-4 space-y-4">
@@ -253,7 +253,7 @@ const CreatorPosts = () => {
           <div className="rounded-xl border border-border bg-card p-4">
             <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2 block">Notes (optional)</Label>
             <Textarea placeholder="Why do you like this play?" value={notes} onChange={e => setNotes(e.target.value)} rows={3}
-              className="resize-none border-0 bg-transparent px-0 focus-visible:ring-0 placeholder:text-muted-foreground/40" />
+              className="resize-none border-0 bg-transparent px-0 focus-visible:ring-0 placeholder:text-muted-foreground/40 dark:placeholder:text-muted-foreground/55" />
           </div>
 
           <div className="rounded-xl border border-border bg-card p-4 space-y-4">
