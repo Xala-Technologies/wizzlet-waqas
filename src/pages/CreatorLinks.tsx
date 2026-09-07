@@ -50,12 +50,20 @@ const CreatorLinks = () => {
   const rows = links ?? [];
   const totalClicks = rows.reduce((a, b) => a + b.clicks, 0);
   const totalConversions = rows.reduce((a, b) => a + b.conversions, 0);
+  const trackingUrl = (id: string) => `${window.location.origin}/go/${id}`;
+
+  const copyTracking = (id: string) => {
+    void navigator.clipboard.writeText(trackingUrl(id));
+    toast.success('Tracking link copied');
+  };
 
   return (
     <DashboardLayout type="creator">
       <div className="mb-6">
         <h1 className="text-2xl font-bold">Links</h1>
-        <p className="text-muted-foreground text-sm mt-0.5">Track link performance and conversions</p>
+        <p className="text-muted-foreground text-sm mt-0.5">
+          Share tracking URLs (`/go/…`) so clicks are counted. Destination opens after redirect.
+        </p>
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">

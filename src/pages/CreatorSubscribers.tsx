@@ -1,14 +1,21 @@
-import { useQuery } from 'convex/react';
+import { usePaginatedQuery } from 'convex/react';
 import { api } from '../../convex/_generated/api';
 import { DashboardLayout } from '@/components/dashboard/DashboardLayout';
 import { DesktopTableRegion, MobileRecordCards } from '@/components/dashboard/MobileRecordList';
+import { Button } from '@/components/ui/button';
 import { Users, Loader2, CheckCircle2, XCircle } from 'lucide-react';
 import { format } from 'date-fns';
 
-const CreatorSubscribers = () => {
-  const rows = useQuery(api.subscriptions.mutations.listSubscribersDetailed);
+const PAGE_SIZE = 25;
 
-  const loading = rows === undefined;
+const CreatorSubscribers = () => {
+  const { results: rows, status, loadMore } = usePaginatedQuery(
+    api.subscriptions.mutations.listSubscribersDetailedPage,
+    {},
+    { initialNumItems: PAGE_SIZE },
+  );
+
+  const loading = status === 'LoadingFirstPage';
   const subscribers = (rows ?? []).map((s) => ({
     id: s._id,
     status: s.status,
@@ -31,12 +38,27 @@ const CreatorSubscribers = () => {
       </span>
     );
 
+  const loadMoreButton =
+    status === 'CanLoadMore' || status === 'LoadingMore' ? (
+      <div className="flex justify-center mt-4">
+        <Button
+          variant="outline"
+          size="sm"
+          disabled={status === 'LoadingMore'}
+          onClick={() => loadMore(PAGE_SIZE)}
+        >
+          {status === 'LoadingMore' ? <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" /> : null}
+          Load more
+        </Button>
+      </div>
+    ) : null;
+
   return (
     <DashboardLayout type="creator">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
         <div>
           <h1 className="text-2xl font-bold">Subscribers</h1>
-          <p className="text-muted-foreground text-sm mt-0.5">{activeCount} active · {subscribers.length} total</p>
+          <p className="text-muted-foreground text-sm mt-0.5">{activeCount} active · {subscribers.length} loaded</p>
         </div>
       </div>
 
@@ -92,6 +114,8 @@ const CreatorSubscribers = () => {
               </tbody>
             </table>
           </DesktopTableRegion>
+
+          {loadMoreButton}
         </>
       )}
     </DashboardLayout>

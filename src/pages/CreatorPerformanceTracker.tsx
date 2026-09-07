@@ -104,6 +104,7 @@ const CreatorPerformanceTracker = () => {
   const [filterSport, setFilterSport] = useState('all');
   const [filterResult, setFilterResult] = useState('all');
   const [quickAddOpen, setQuickAddOpen] = useState(false);
+  const [savingPick, setSavingPick] = useState(false);
 
   const picks = useMemo(() => (picksRaw ?? []).map(fromConvexPick).sort((a, b) => a.date.localeCompare(b.date)), [picksRaw]);
   const posts = useMemo(
@@ -129,14 +130,17 @@ const CreatorPerformanceTracker = () => {
   const isLoading = picksRaw === undefined;
 
   const upsertMutation = {
-    isPending: false,
+    isPending: savingPick,
     mutate: async (entry: Omit<PickEntry, 'id'> & { id?: string }) => {
+      setSavingPick(true);
       try {
         await upsertPick(toConvexPick(entry));
         toast.success(editId ? 'Updated' : 'Added');
         resetForm();
       } catch {
         toast.error('Failed to save');
+      } finally {
+        setSavingPick(false);
       }
     },
   };
@@ -231,15 +235,14 @@ const CreatorPerformanceTracker = () => {
     }
   };
 
-  // Verification status
-  const verificationStatus = useMemo(() => {
+  // Platform verification (DB) + tracker eligibility progress (local stats only)
+  const isVerified = creatorProfile?.verificationStatus === 'verified';
+  const trackerEligibility = useMemo(() => {
     const settled = picks.filter(p => p.result !== 'pending');
     const minPicks = 50;
-    const minWinRate = 52;
     const currentWinRate = settled.length > 0 ? Math.round((settled.filter(p => p.result === 'win').length / settled.length) * 100) : 0;
-    const isVerified = settled.length >= minPicks && currentWinRate >= minWinRate;
     const progress = Math.min(100, Math.round((settled.length / minPicks) * 100));
-    return { isVerified, settled: settled.length, minPicks, currentWinRate, minWinRate, progress };
+    return { settled: settled.length, minPicks, currentWinRate, progress };
   }, [picks]);
 
   const handleEuChange = useCallback((val: string) => {
@@ -476,13 +479,15 @@ const CreatorPerformanceTracker = () => {
         <div>
           <h1 className="text-2xl font-bold flex items-center gap-2">
             Performance Tracker
-            {verificationStatus.isVerified && (
+            {isVerified && (
               <span className="inline-flex items-center gap-1 text-xs font-medium text-emerald-400 bg-emerald-500/10 rounded-full px-2.5 py-0.5 border border-emerald-500/20">
                 <ShieldCheck className="h-3 w-3" /> Verified
               </span>
             )}
           </h1>
-          <p className="text-muted-foreground text-sm mt-0.5">Track, analyze, and optimize your picks</p>
+          <p className="text-muted-foreground text-sm mt-0.5">
+            Practice pick ledger — separate from Create Post settled results. Verified badge is platform-granted.
+          </p>
         </div>
         <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
           <input ref={importInputRef} type="file" accept=".csv,text/csv" className="hidden" onChange={e => handleImportCSV(e.target.files?.[0])} />
@@ -493,22 +498,20 @@ const CreatorPerformanceTracker = () => {
         </div>
       </div>
 
-      {/* Verification Progress */}
-      {!verificationStatus.isVerified && (
+      {/* Tracker volume progress (not auto-Verified) */}
+      {!isVerified && (
         <div className="rounded-lg border border-border bg-card p-3 mb-5 flex items-center gap-3">
           <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-muted">
-            <ShieldCheck className="h-4 w-4 text-muted-foreground" />
+            <Target className="h-4 w-4 text-muted-foreground" />
           </div>
           <div className="flex-1 min-w-0">
             <div className="flex items-center justify-between mb-1">
-              <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-medium">Verified Performance Progress</p>
-              <p className="text-[10px] text-muted-foreground">{verificationStatus.settled}/{verificationStatus.minPicks} picks · {verificationStatus.currentWinRate}% win rate (need {verificationStatus.minWinRate}%)</p>
+              <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-medium">Tracker eligibility progress</p>
+              <p className="text-[10px] text-muted-foreground">{trackerEligibility.settled}/{trackerEligibility.minPicks} settled · {trackerEligibility.currentWinRate}% win rate</p>
             </div>
-            <Progress value={verificationStatus.progress} className="h-1.5" />
+            <Progress value={trackerEligibility.progress} className="h-1.5" />
             <p className="text-[9px] text-muted-foreground mt-1">
-              {verificationStatus.settled < verificationStatus.minPicks
-                ? `Track ${verificationStatus.minPicks - verificationStatus.settled} more picks to become verified`
-                : `Improve win rate to ${verificationStatus.minWinRate}%+ to become verified`}
+              Track more settled picks for your own analysis. Platform Verified is granted separately by admins.
             </p>
           </div>
         </div>

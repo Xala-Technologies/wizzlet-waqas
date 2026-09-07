@@ -8,7 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Progress } from '@/components/ui/progress';
 import { useCreatorProfile } from '@/hooks/useCreatorProfile';
 import {
-  Send, Bot, User, Circle, TrendingUp, TrendingDown, BarChart3, Target, Zap, ArrowUpRight, Loader2,
+  Send, Bot, User, TrendingUp, TrendingDown, BarChart3, Target, Zap, ArrowUpRight, Loader2,
 } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { toast } from 'sonner';
@@ -174,12 +174,7 @@ const CreatorPersonalGrowth = () => {
                 <Bot className="h-5 w-5 text-primary" />
               </div>
               <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2">
-                  <h2 className="font-semibold text-sm">Wizzlet Growth Team</h2>
-                  <span className="flex items-center gap-1 text-[10px] font-medium text-emerald-500">
-                    <Circle className="h-1.5 w-1.5 fill-current" /> Online
-                  </span>
-                </div>
+                <h2 className="font-semibold text-sm">Wizzlet Growth Team</h2>
                 <p className="text-[11px] text-muted-foreground mt-0.5">
                   Ask about pricing, retention or content — replies arrive in this thread.
                 </p>
@@ -250,7 +245,7 @@ const CreatorPersonalGrowth = () => {
           <div className="space-y-4">
             <div className="rounded-xl border border-border bg-card p-5">
               <div className="flex items-center justify-between mb-3">
-                <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Performance Score</h3>
+                <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Performance Score (estimate)</h3>
                 <span className={`text-[10px] font-bold uppercase tracking-wider ${scoreColor(metrics.score)}`}>
                   {scoreLevel(metrics.score)}
                 </span>
@@ -266,6 +261,7 @@ const CreatorPersonalGrowth = () => {
                 <div className="text-xs text-muted-foreground space-y-1">
                   <p><span className="text-foreground font-medium">{metrics.activeSubs}</span> active subscribers</p>
                   <p className="flex items-center gap-1"><ArrowUpRight className="h-3 w-3" /> {metrics.newSubs30} new in 30 days</p>
+                  <p className="text-[10px] text-muted-foreground/80">Heuristic estimate from recent activity — not a platform rating.</p>
                 </div>
               </div>
               <div className="space-y-2">

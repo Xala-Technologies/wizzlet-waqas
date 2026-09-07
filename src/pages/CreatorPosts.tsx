@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react';
-import { useMutation, useQuery } from 'convex/react';
+import { useMutation, usePaginatedQuery, useQuery } from 'convex/react';
 import { api } from '../../convex/_generated/api';
 import type { Id } from '../../convex/_generated/dataModel';
 import { DashboardLayout } from '@/components/dashboard/DashboardLayout';
@@ -8,7 +8,6 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
-import { Checkbox } from '@/components/ui/checkbox';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import {
@@ -16,12 +15,14 @@ import {
 } from '@/components/ui/dialog';
 import {
   FileText, Plus, Loader2, Pencil, Trash2, Lock, Globe,
-  CheckCircle2, ArrowRight, Zap, Mail, Smartphone, Flame,
+  CheckCircle2, ArrowRight, Zap, Flame,
   Clock, Trophy, XCircle, Minus,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 import { americanToDecimal, decimalToAmerican } from '@/lib/odds';
+
+const PAGE_SIZE = 25;
 
 interface Post {
   id: string;
@@ -31,12 +32,6 @@ interface Post {
   created_at: string;
   result: string;
   tracking_mode: string;
-}
-
-interface Product {
-  id: string;
-  name: string;
-  subCount: number;
 }
 
 const SPORTS = ['NBA', 'NFL', 'Soccer', 'Tennis', 'MLB', 'NHL', 'MMA', 'Boxing', 'Golf', 'Other'];
@@ -51,17 +46,18 @@ const resultConfig = {
 
 const CreatorPosts = () => {
   const creator = useQuery(api.creators.queries.myCreator);
-  const postsRaw = useQuery(api.posts.queries.listMine);
-  const productsRaw = useQuery(
-    api.products.mutations.listByCreator,
-    creator ? { creatorId: creator._id, activeOnly: true } : 'skip',
+  const { results: postsRaw, status: postsStatus, loadMore } = usePaginatedQuery(
+    api.posts.queries.listMinePage,
+    {},
+    { initialNumItems: PAGE_SIZE },
   );
   const subs = useQuery(api.subscriptions.mutations.listForMyCreator);
   const upsertPost = useMutation(api.posts.queries.upsert);
   const removePost = useMutation(api.posts.queries.remove);
   const setResultMut = useMutation(api.posts.queries.setResult);
 
-  const loading = creator === undefined || postsRaw === undefined || productsRaw === undefined || subs === undefined;
+  const loading =
+    creator === undefined || postsStatus === 'LoadingFirstPage' || subs === undefined;
   const creatorId = creator?._id ?? null;
   const subCount = (subs ?? []).filter((s) => s.status === 'active').length;
 
@@ -76,11 +72,6 @@ const CreatorPosts = () => {
       tracking_mode: p.trackingMode ?? '',
     })),
     [postsRaw],
-  );
-
-  const products = useMemo(
-    () => (productsRaw ?? []).map((p) => ({ id: p._id, name: p.name, subCount })),
-    [productsRaw, subCount],
   );
 
   // Create/Edit state
@@ -100,15 +91,12 @@ const CreatorPosts = () => {
   const [units, setUnits] = useState('1');
   const [notes, setNotes] = useState('');
   const [isPremium, setIsPremium] = useState(true);
-  const [selectedProducts, setSelectedProducts] = useState<string[]>([]);
-  const [sendApp, setSendApp] = useState(true);
-  const [sendEmail, setSendEmail] = useState(false);
   const [oddsSource, setOddsSource] = useState<'us' | 'eu' | null>(null);
 
   const resetForm = () => {
     setEditId(null); setTitle(''); setSport(''); setEvent(''); setPickType('');
     setPick(''); setUsOdds(''); setEuOdds(''); setUnits('1'); setNotes('');
-    setIsPremium(true); setSelectedProducts([]); setSendApp(true); setSendEmail(false); setOddsSource(null);
+    setIsPremium(true); setOddsSource(null);
   };
 
   const openCreate = () => { resetForm(); setMode('create'); };
@@ -179,10 +167,6 @@ const CreatorPosts = () => {
     } catch {
       toast.error('Failed to update result');
     }
-  };
-
-  const toggleProduct = (id: string) => {
-    setSelectedProducts(prev => prev.includes(id) ? prev.filter(p => p !== id) : [...prev, id]);
   };
 
   // Streak calculation
@@ -281,34 +265,6 @@ const CreatorPosts = () => {
               </div>
               <Switch aria-label="Premium only" checked={isPremium} onCheckedChange={setIsPremium} />
             </div>
-            {products.length > 0 && (
-              <div>
-                <p className="text-xs text-muted-foreground mb-2">Send to products</p>
-                <div className="space-y-2">
-                  {products.map(p => (
-                    <label key={p.id} className="flex items-center gap-3 rounded-lg bg-muted/20 p-3 cursor-pointer hover:bg-muted/30 transition-colors">
-                      <Checkbox checked={selectedProducts.includes(p.id)} onCheckedChange={() => toggleProduct(p.id)} />
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium">{p.name}</p>
-                        <p className="text-xs text-muted-foreground">{p.subCount} subscribers</p>
-                      </div>
-                    </label>
-                  ))}
-                </div>
-              </div>
-            )}
-            <div className="flex items-center gap-4">
-              <label className="flex items-center gap-2 cursor-pointer">
-                <Checkbox checked={sendApp} onCheckedChange={(v) => setSendApp(v === true)} />
-                <Smartphone className="h-3.5 w-3.5 text-muted-foreground" />
-                <span className="text-xs">Push notification</span>
-              </label>
-              <label className="flex items-center gap-2 cursor-pointer">
-                <Checkbox checked={sendEmail} onCheckedChange={(v) => setSendEmail(v === true)} />
-                <Mail className="h-3.5 w-3.5 text-muted-foreground" />
-                <span className="text-xs">Email notification</span>
-              </label>
-            </div>
           </div>
 
           <div className="md:hidden fixed bottom-0 left-0 right-0 p-4 bg-background/95 backdrop-blur-sm border-t border-border z-50">
@@ -365,6 +321,9 @@ const CreatorPosts = () => {
             )}
           </h1>
           <p className="text-muted-foreground text-sm mt-1">{posts.length} post{posts.length !== 1 ? 's' : ''} · {winRate}% win rate</p>
+          <p className="text-xs text-muted-foreground mt-1">
+            Settled post results here are separate from Performance Tracker practice picks.
+          </p>
         </div>
         <Button size="sm" onClick={openCreate}>
           <Plus className="mr-1.5 h-4 w-4" /> New Pick
@@ -445,13 +404,26 @@ const CreatorPosts = () => {
                         Reset
                       </Button>
                     )}
-                    <Button variant="ghost" size="icon" className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity" onClick={() => openEdit(post)}><Pencil className="h-3.5 w-3.5" /></Button>
-                    <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive opacity-0 group-hover:opacity-100 transition-opacity" onClick={() => handleDelete(post.id)}><Trash2 className="h-3.5 w-3.5" /></Button>
+                    <Button variant="ghost" size="icon" className="h-8 w-8 md:opacity-0 md:group-hover:opacity-100 transition-opacity" onClick={() => openEdit(post)}><Pencil className="h-3.5 w-3.5" /></Button>
+                    <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive md:opacity-0 md:group-hover:opacity-100 transition-opacity" onClick={() => handleDelete(post.id)}><Trash2 className="h-3.5 w-3.5" /></Button>
                   </div>
                 </div>
               </div>
             );
           })}
+          {(postsStatus === 'CanLoadMore' || postsStatus === 'LoadingMore') && (
+            <div className="flex justify-center pt-2">
+              <Button
+                variant="outline"
+                size="sm"
+                disabled={postsStatus === 'LoadingMore'}
+                onClick={() => loadMore(PAGE_SIZE)}
+              >
+                {postsStatus === 'LoadingMore' ? <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" /> : null}
+                Load more
+              </Button>
+            </div>
+          )}
         </div>
       )}
     </DashboardLayout>

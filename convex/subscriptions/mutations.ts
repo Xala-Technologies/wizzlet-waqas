@@ -1,3 +1,4 @@
+import { paginationOptsValidator, paginationResultValidator } from "convex/server";
 import { internalMutation, mutation, query, type MutationCtx } from "../_generated/server";
 import { ConvexError, v } from "convex/values";
 import {
@@ -129,7 +130,7 @@ export const mySubscriptionsDetailed = query({
   },
 });
 
-/** Creator view: subscribers with user profile. */
+/** Creator view: subscribers with user profile. Bounded for name maps / secondary UIs. */
 export const listSubscribersDetailed = query({
   args: {},
   returns: v.array(subscriptionWithUserValidator),
@@ -140,7 +141,8 @@ export const listSubscribersDetailed = query({
     const subs = await ctx.db
       .query("subscriptions")
       .withIndex("by_creatorId", (q) => q.eq("creatorId", creator._id))
-      .collect();
+      .order("desc")
+      .take(500);
     const out = [];
     for (const s of subs) {
       const u = await ctx.db.get(s.userId);
@@ -152,6 +154,36 @@ export const listSubscribersDetailed = query({
       });
     }
     return out.sort((a, b) => b.createdAt - a.createdAt);
+  },
+});
+
+/** Cursor-paginated creator subscribers with user profile. */
+export const listSubscribersDetailedPage = query({
+  args: { paginationOpts: paginationOptsValidator },
+  returns: paginationResultValidator(subscriptionWithUserValidator),
+  handler: async (ctx, args) => {
+    const user = await requireAppUser(ctx);
+    const creator = await getCreatorForUser(ctx, user._id);
+    if (!creator) {
+      return { page: [], isDone: true, continueCursor: "" };
+    }
+    const result = await ctx.db
+      .query("subscriptions")
+      .withIndex("by_creatorId", (q) => q.eq("creatorId", creator._id))
+      .order("desc")
+      .paginate(args.paginationOpts);
+
+    const page = [];
+    for (const s of result.page) {
+      const u = await ctx.db.get(s.userId);
+      page.push({
+        ...s,
+        user: u
+          ? { _id: u._id, email: u.email, fullName: u.fullName, username: u.username }
+          : null,
+      });
+    }
+    return { ...result, page };
   },
 });
 

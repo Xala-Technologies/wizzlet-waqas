@@ -39,6 +39,7 @@ const AdminCreators = () => {
     { initialNumItems: PAGE_SIZE },
   );
   const setPublished = useMutation(api.creators.queries.setPublished);
+  const setVerificationStatus = useMutation(api.creators.queries.setVerificationStatus);
 
   const loading = status === 'LoadingFirstPage';
 
@@ -72,6 +73,19 @@ const AdminCreators = () => {
       toast.success(creator.is_published ? 'Creator disabled' : 'Creator enabled');
     } catch (e) {
       toast.error(e instanceof Error ? e.message : 'Failed to update creator');
+    }
+  };
+
+  const toggleVerified = async (creator: Creator) => {
+    const next = creator.verificationStatus === 'verified' ? 'none' : 'verified';
+    try {
+      await setVerificationStatus({
+        creatorId: creator.id as Id<'creators'>,
+        verificationStatus: next,
+      });
+      toast.success(next === 'verified' ? 'Creator verified' : 'Verification removed');
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : 'Failed to update verification');
     }
   };
 
@@ -170,6 +184,13 @@ const AdminCreators = () => {
                   <Button variant="outline" size="sm" className="h-11 flex-1 min-w-[7rem] text-xs" onClick={() => navigate(`/admin/creator-messaging?creatorId=${c.id}`)}>
                     <MessageSquare className="mr-1.5 h-3.5 w-3.5" /> Message
                   </Button>
+                  <Button variant="outline" size="sm" className="h-11 flex-1 min-w-[7rem] text-xs" onClick={() => void toggleVerified(c)}>
+                    {c.verificationStatus === 'verified' ? (
+                      <><ShieldCheck className="mr-1.5 h-3.5 w-3.5 text-emerald-400" /> Unverify</>
+                    ) : (
+                      <><ShieldCheck className="mr-1.5 h-3.5 w-3.5" /> Verify</>
+                    )}
+                  </Button>
                   <Button variant="outline" size="sm" className="h-11 flex-1 min-w-[7rem] text-xs" onClick={() => void togglePublish(c)}>
                     {c.is_published ? <><Ban className="mr-1.5 h-3.5 w-3.5 text-destructive" /> Disable</> : <><CheckCircle2 className="mr-1.5 h-3.5 w-3.5 text-primary" /> Enable</>}
                   </Button>
@@ -225,6 +246,16 @@ const AdminCreators = () => {
                           </Link>
                         )}
                         <Button variant="ghost" size="sm" className="h-9 w-9 px-0 text-xs" onClick={() => navigate(`/admin/creator-messaging?creatorId=${c.id}`)} title="Message creator" aria-label="Message creator"><MessageSquare className="h-3.5 w-3.5" /></Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-9 w-9 px-0 text-xs"
+                          onClick={() => void toggleVerified(c)}
+                          title={c.verificationStatus === 'verified' ? 'Remove verification' : 'Mark verified'}
+                          aria-label={c.verificationStatus === 'verified' ? 'Remove verification' : 'Mark verified'}
+                        >
+                          <ShieldCheck className={`h-3.5 w-3.5 ${c.verificationStatus === 'verified' ? 'text-emerald-400' : ''}`} />
+                        </Button>
                         <Button variant="ghost" size="sm" className="h-9 w-9 px-0 text-xs" onClick={() => void togglePublish(c)} title={c.is_published ? 'Disable' : 'Enable'} aria-label={c.is_published ? 'Disable' : 'Enable'}>
                           {c.is_published ? <Ban className="h-3.5 w-3.5 text-destructive" /> : <CheckCircle2 className="h-3.5 w-3.5 text-primary" />}
                         </Button>

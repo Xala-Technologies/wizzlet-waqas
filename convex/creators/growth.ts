@@ -93,6 +93,23 @@ export const recordLinkClick = mutation({
   },
 });
 
+/** Public destination lookup for `/go/:linkId` tracking redirects. */
+export const getLinkPublic = query({
+  args: { linkId: v.id("creatorLinks") },
+  returns: v.union(
+    v.object({
+      url: v.string(),
+      name: v.string(),
+    }),
+    v.null(),
+  ),
+  handler: async (ctx, args) => {
+    const link = await ctx.db.get(args.linkId);
+    if (!link) return null;
+    return { url: link.url, name: link.name };
+  },
+});
+
 export const listMyPromos = query({
   args: {},
   returns: v.array(promoCodeDocValidator),
