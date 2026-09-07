@@ -7,6 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { DollarSign, Percent, TrendingUp, Wallet, Loader2, Crown, ArrowUpRight } from 'lucide-react';
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Legend } from 'recharts';
+import { scanTruncationNote } from '@/lib/adminTruncation';
 
 const fmt = (n: number) => `$${n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 
@@ -30,10 +31,8 @@ const AdminFinance = () => {
         <div>
           <h1 className="text-2xl font-bold">Finance</h1>
           <p className="text-muted-foreground text-sm mt-0.5">Live revenue, fees, creator earnings and payout liability</p>
-          {stats.truncated && (
-            <p className="text-amber-600 text-xs mt-2">
-              Showing up to {stats.listLimit.toLocaleString()} rows per table — totals may be incomplete at this scale.
-            </p>
+          {scanTruncationNote(stats.truncated, stats.listLimit) && (
+            <p className="text-amber-600 text-xs mt-2">{scanTruncationNote(stats.truncated, stats.listLimit)}</p>
           )}
         </div>
         <div className="flex gap-2">

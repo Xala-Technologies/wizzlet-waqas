@@ -197,7 +197,14 @@ const AdminResolutionCases = () => {
                 {selected === c.id && (
                   <div className="mt-4 border-t border-border pt-4">
                     <div className="space-y-2 max-h-64 overflow-y-auto mb-3">
-                      {messages.length === 0 && <p className="text-xs text-muted-foreground">No messages yet.</p>}
+                      {messagesRaw === undefined && (
+                        <div className="flex justify-center py-6">
+                          <Loader2 className="h-4 w-4 animate-spin text-primary" />
+                        </div>
+                      )}
+                      {messagesRaw !== undefined && messages.length === 0 && (
+                        <p className="text-xs text-muted-foreground">No messages yet.</p>
+                      )}
                       {messages.map((m) => (
                         <div key={m.id} className={`rounded-lg p-3 text-xs ${m.sender_role === 'admin' ? 'bg-primary/10 ml-8' : 'bg-muted/40 mr-8'}`}>
                           <p className="font-medium mb-1 capitalize">{m.sender_role}</p>

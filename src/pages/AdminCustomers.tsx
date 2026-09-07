@@ -81,7 +81,8 @@ const AdminCustomers = () => {
         <div>
           <h1 className="text-2xl font-bold">Customers</h1>
           <p className="text-muted-foreground text-sm mt-0.5">
-            {customers.length} loaded{status === 'CanLoadMore' || status === 'LoadingMore' ? ' (more available)' : ''}
+            People with subscriptions · {customers.length} loaded
+            {status === 'CanLoadMore' || status === 'LoadingMore' ? ' (more available)' : ''}
           </p>
         </div>
         <div className="flex flex-col sm:flex-row flex-wrap items-stretch sm:items-center gap-2 w-full sm:w-auto">
@@ -109,11 +110,11 @@ const AdminCustomers = () => {
           <p className="text-xl font-bold">${customers.reduce((a, c) => a + c.totalSpent, 0).toFixed(0)}</p>
         </div>
         <div className="rounded-xl border border-amber-500/20 bg-amber-500/5 p-4">
-          <div className="flex items-center gap-1 mb-1"><AlertTriangle className="h-3 w-3 text-amber-400" /><p className="text-xs text-muted-foreground uppercase tracking-wider">At Risk</p></div>
+          <div className="flex items-center gap-1 mb-1"><AlertTriangle className="h-3 w-3 text-amber-400" /><p className="text-xs text-muted-foreground uppercase tracking-wider">At Risk (loaded)</p></div>
           <p className="text-xl font-bold text-amber-400">{atRisk}</p>
         </div>
         <div className="rounded-xl border border-destructive/20 bg-destructive/5 p-4">
-          <div className="flex items-center gap-1 mb-1"><TrendingDown className="h-3 w-3 text-destructive" /><p className="text-xs text-muted-foreground uppercase tracking-wider">Churned</p></div>
+          <div className="flex items-center gap-1 mb-1"><TrendingDown className="h-3 w-3 text-destructive" /><p className="text-xs text-muted-foreground uppercase tracking-wider">Churned (loaded)</p></div>
           <p className="text-xl font-bold text-destructive">{recentlyChurned}</p>
         </div>
       </div>
@@ -147,7 +148,7 @@ const AdminCustomers = () => {
                 <p className="text-xs text-muted-foreground">Last activity {format(new Date(c.lastActivity), 'MMM d, yyyy')}</p>
                 <div className="flex gap-2">
                   <Button variant="outline" size="sm" className="h-11 flex-1 text-xs" onClick={() => setSelected(c)}><Eye className="mr-1.5 h-3.5 w-3.5" /> Details</Button>
-                  <Button variant="outline" size="sm" className="h-11 flex-1 text-xs" onClick={() => navigate('/admin/customer-email')}><Mail className="mr-1.5 h-3.5 w-3.5" /> Email</Button>
+                  <Button variant="outline" size="sm" className="h-11 flex-1 text-xs" onClick={() => navigate('/admin/customer-email?audience=active')}><Mail className="mr-1.5 h-3.5 w-3.5" /> Announce</Button>
                 </div>
               </li>
             ))}
@@ -186,7 +187,7 @@ const AdminCustomers = () => {
                     <td className="p-4">
                       <div className="flex items-center justify-end gap-1">
                         <Button variant="ghost" size="sm" className="h-9 w-9 px-0 text-xs" onClick={() => setSelected(c)} title="View details" aria-label="View details"><Eye className="h-3.5 w-3.5" /></Button>
-                        <Button variant="ghost" size="sm" className="h-9 w-9 px-0 text-xs" onClick={() => navigate('/admin/customer-email')} title="Email customers" aria-label="Email customers"><Mail className="h-3.5 w-3.5" /></Button>
+                        <Button variant="ghost" size="sm" className="h-9 w-9 px-0 text-xs" onClick={() => navigate('/admin/customer-email?audience=active')} title="Announce to customers" aria-label="Announce to customers"><Mail className="h-3.5 w-3.5" /></Button>
                       </div>
                     </td>
                   </tr>

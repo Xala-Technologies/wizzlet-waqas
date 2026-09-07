@@ -3,6 +3,7 @@ import { CreatorSidebar } from './CreatorSidebar';
 import { AdminSidebar } from './AdminSidebar';
 import { MemberSidebar } from './MemberSidebar';
 import { MobileTopBar } from './MobileTopBar';
+import { AdminQueryBoundary } from './AdminQueryBoundary';
 
 interface DashboardLayoutProps {
   children: ReactNode;
@@ -18,7 +19,7 @@ const CONTENT_WIDTH: Record<DashboardLayoutProps['type'], string> = {
 export function DashboardLayout({ children, type }: DashboardLayoutProps) {
   const Sidebar = type === 'creator' ? CreatorSidebar : type === 'admin' ? AdminSidebar : MemberSidebar;
 
-  return (
+  const body = (
     <div className="min-h-screen flex bg-background">
       <Sidebar />
       <main className="flex-1 min-w-0 overflow-x-hidden overflow-y-auto">
@@ -33,4 +34,6 @@ export function DashboardLayout({ children, type }: DashboardLayoutProps) {
       </main>
     </div>
   );
+
+  return type === 'admin' ? <AdminQueryBoundary>{body}</AdminQueryBoundary> : body;
 }

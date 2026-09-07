@@ -1,60 +1,21 @@
-import { useEffect, useState } from 'react';
-import { useMutation, useQuery } from 'convex/react';
+import { Link } from 'react-router-dom';
+import { useQuery } from 'convex/react';
 import { api } from '../../convex/_generated/api';
 import { DashboardLayout } from '@/components/dashboard/DashboardLayout';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Button } from '@/components/ui/button';
-import { Percent, DollarSign, TrendingUp, Loader2, Crown, Save } from 'lucide-react';
+import { Percent, DollarSign, TrendingUp, Loader2, Crown, Settings } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts';
-import { toast } from 'sonner';
+import { scanTruncationNote } from '@/lib/adminTruncation';
+import { useState } from 'react';
 
 const AdminFees = () => {
-  const [introFee, setIntroFee] = useState('5');
-  const [introDays, setIntroDays] = useState('30');
-  const [standardFee, setStandardFee] = useState('10');
-  const [savingFees, setSavingFees] = useState(false);
   const [nowMs] = useState(() => Date.now());
 
   const platformSettings = useQuery(api.platform.mutations.get);
   const overview = useQuery(api.admin.snapshots.feesOverview, { nowMs });
-  const upsertSettings = useMutation(api.platform.mutations.upsert);
 
   const loading = platformSettings === undefined || overview === undefined;
-
-  useEffect(() => {
-    if (platformSettings) {
-      setIntroFee(String(platformSettings.introFeePercent));
-      setIntroDays(String(platformSettings.introFeeDays));
-      setStandardFee(String(platformSettings.standardFeePercent));
-    }
-  }, [platformSettings]);
-
-  const saveFeeSettings = async () => {
-    const intro = Number(introFee);
-    const standard = Number(standardFee);
-    const days = Number(introDays);
-    if ([intro, standard, days].some((n) => Number.isNaN(n)) || intro < 0 || standard < 0 || standard > 50 || days < 1) {
-      toast.error('Enter valid fee percentages and an intro period of at least 1 day');
-      return;
-    }
-    setSavingFees(true);
-    try {
-      await upsertSettings({
-        introFeePercent: intro,
-        standardFeePercent: standard,
-        introFeeDays: days,
-        branding: platformSettings?.branding,
-        payoutDefaults: platformSettings?.payoutDefaults,
-        featureFlags: platformSettings?.featureFlags,
-      });
-      toast.success('Fee rules saved — applied to new subscriptions');
-    } catch (e) {
-      toast.error(e instanceof Error ? e.message : 'Failed to save fee settings');
-    } finally {
-      setSavingFees(false);
-    }
-  };
+  const introPct = platformSettings?.introFeePercent ?? 5;
+  const standardPct = platformSettings?.standardFeePercent ?? 10;
 
   if (loading || !overview) {
     return (
@@ -68,11 +29,14 @@ const AdminFees = () => {
     <DashboardLayout type="admin">
       <div className="mb-6">
         <h1 className="text-2xl font-bold">Platform Fees</h1>
-        <p className="text-muted-foreground text-sm mt-0.5">Revenue from platform commission</p>
-        {overview.truncated && (
-          <p className="text-amber-600 text-xs mt-2">
-            Showing up to {overview.listLimit.toLocaleString()} rows per table — totals may be incomplete at this scale.
-          </p>
+        <p className="text-muted-foreground text-sm mt-0.5">
+          Fee revenue analytics.{' '}
+          <Link to="/admin/settings" className="text-primary hover:underline inline-flex items-center gap-1">
+            <Settings className="h-3.5 w-3.5" /> Edit fee rules in Settings
+          </Link>
+        </p>
+        {scanTruncationNote(overview.truncated, overview.listLimit) && (
+          <p className="text-amber-600 text-xs mt-2">{scanTruncationNote(overview.truncated, overview.listLimit)}</p>
         )}
       </div>
 
@@ -116,12 +80,12 @@ const AdminFees = () => {
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
         <div className="rounded-xl border border-emerald-500/20 bg-emerald-500/5 p-5">
-          <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1">Intro Fee (5%)</p>
+          <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1">Intro Fee ({introPct}%)</p>
           <p className="text-2xl font-bold text-emerald-400">{overview.introFeeCount}</p>
           <p className="text-xs text-muted-foreground mt-1">subscriptions at intro rate</p>
         </div>
         <div className="rounded-xl border border-amber-500/20 bg-amber-500/5 p-5">
-          <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1">Standard Fee (10%)</p>
+          <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1">Standard Fee ({standardPct}%)</p>
           <p className="text-2xl font-bold text-amber-400">{overview.standardFeeCount}</p>
           <p className="text-xs text-muted-foreground mt-1">subscriptions at standard rate</p>
         </div>
@@ -146,7 +110,7 @@ const AdminFees = () => {
                   </div>
                 </div>
                 <div className="flex items-center gap-3 shrink-0">
-                  <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide ${cf.feePercent <= 5 ? 'bg-emerald-500/10 text-emerald-400' : 'bg-amber-500/10 text-amber-400'}`}>
+                  <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide ${cf.feePercent <= introPct ? 'bg-emerald-500/10 text-emerald-400' : 'bg-amber-500/10 text-amber-400'}`}>
                     {cf.feePercent}%
                   </span>
                   <span className="text-sm font-medium text-emerald-400 w-20 text-right">${cf.feeEarned.toFixed(2)}</span>
@@ -155,30 +119,6 @@ const AdminFees = () => {
             ))}
           </div>
         )}
-      </div>
-
-      <div className="rounded-xl border border-border bg-card p-6">
-        <h2 className="text-sm font-medium mb-4">Fee Rule Settings</h2>
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-4">
-          <div>
-            <Label className="text-xs">Intro Fee (%)</Label>
-            <Input type="number" value={introFee} onChange={(e) => setIntroFee(e.target.value)} className="mt-1" min="0" max="50" step="0.5" />
-          </div>
-          <div>
-            <Label className="text-xs">Intro Duration (days)</Label>
-            <Input type="number" value={introDays} onChange={(e) => setIntroDays(e.target.value)} className="mt-1" min="1" max="365" />
-          </div>
-          <div>
-            <Label className="text-xs">Standard Fee (%)</Label>
-            <Input type="number" value={standardFee} onChange={(e) => setStandardFee(e.target.value)} className="mt-1" min="1" max="50" step="0.5" />
-          </div>
-        </div>
-        <div className="flex items-center justify-between">
-          <p className="text-xs text-muted-foreground">Applied automatically to every new subscription</p>
-          <Button size="sm" onClick={saveFeeSettings} disabled={savingFees}>
-            {savingFees ? <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" /> : <Save className="mr-1.5 h-3.5 w-3.5" />} Save
-          </Button>
-        </div>
       </div>
     </DashboardLayout>
   );

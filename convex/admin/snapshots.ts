@@ -356,3 +356,219 @@ export const alertsOverview = query({
     };
   },
 });
+
+const payoutBalanceRowValidator = v.object({
+  creatorId: v.id("creators"),
+  name: v.string(),
+  earned: v.number(),
+  paid: v.number(),
+  inFlight: v.number(),
+  available: v.number(),
+});
+
+/**
+ * Exact-ish payout balances for Admin Payouts (D1).
+ * Does not use paginated history pages for paid/in-flight totals.
+ */
+export const payoutsOverview = query({
+  args: {},
+  returns: v.object({
+    balances: v.array(payoutBalanceRowValidator),
+    totalPaidOut: v.number(),
+    pending: v.number(),
+    owed: v.number(),
+    lastPayoutAt: v.union(v.number(), v.null()),
+    processingCount: v.number(),
+    completedCount: v.number(),
+    failedCount: v.number(),
+    truncated: v.boolean(),
+    listLimit: v.number(),
+  }),
+  handler: async (ctx) => {
+    await requireAdmin(ctx);
+    const subsScan = await adminScanAll(ctx, "subscriptions");
+    const payoutsScan = await adminScanAll(ctx, "payouts");
+    const creatorsScan = await adminScanAll(ctx, "creators");
+    const truncated =
+      subsScan.truncated || payoutsScan.truncated || creatorsScan.truncated;
+
+    const earnedBy = new Map<string, number>();
+    for (const s of subsScan.docs) {
+      if (s.status !== "active") continue;
+      earnedBy.set(
+        s.creatorId,
+        (earnedBy.get(s.creatorId) ?? 0) + s.creatorEarningsCents / 100,
+      );
+    }
+
+    const paidBy = new Map<string, number>();
+    const inFlightBy = new Map<string, number>();
+    let totalPaidOut = 0;
+    let pending = 0;
+    let processingCount = 0;
+    let completedCount = 0;
+    let failedCount = 0;
+    let lastPayoutAt: number | null = null;
+
+    for (const p of payoutsScan.docs) {
+      const amount = p.amountCents / 100;
+      if (isPaidOutPayoutStatus(p.status)) {
+        paidBy.set(p.creatorId, (paidBy.get(p.creatorId) ?? 0) + amount);
+        totalPaidOut += amount;
+        completedCount += 1;
+        const at = p.processedAt ?? p.createdAt;
+        if (lastPayoutAt === null || at > lastPayoutAt) lastPayoutAt = at;
+      } else if (
+        p.status === "pending" ||
+        p.status === "processing" ||
+        p.status === "requested"
+      ) {
+        inFlightBy.set(p.creatorId, (inFlightBy.get(p.creatorId) ?? 0) + amount);
+        pending += amount;
+        processingCount += 1;
+      } else if (p.status === "failed") {
+        failedCount += 1;
+      }
+    }
+
+    const balances = creatorsScan.docs
+      .map((c) => {
+        const earned = earnedBy.get(c._id) ?? 0;
+        const paid = paidBy.get(c._id) ?? 0;
+        const inFlight = inFlightBy.get(c._id) ?? 0;
+        return {
+          creatorId: c._id,
+          name: c.displayName || `@${c.username ?? "unknown"}`,
+          earned,
+          paid,
+          inFlight,
+          available: Math.max(0, earned - paid - inFlight),
+        };
+      })
+      .filter((r) => r.earned > 0 || r.paid > 0 || r.inFlight > 0)
+      .sort((a, b) => b.available - a.available);
+
+    const owed = balances.reduce((a, b) => a + b.available, 0);
+
+    return {
+      balances,
+      totalPaidOut,
+      pending,
+      owed,
+      lastPayoutAt,
+      processingCount,
+      completedCount,
+      failedCount,
+      truncated,
+      listLimit: ADMIN_SCAN_MAX_DOCS,
+    };
+  },
+});
+
+/**
+ * Scanned source tables for Admin Reports CSV (D2) — honest truncation.
+ */
+export const reportSourceData = query({
+  args: {},
+  returns: v.object({
+    creators: v.array(
+      v.object({
+        _id: v.id("creators"),
+        displayName: v.union(v.string(), v.null()),
+        username: v.union(v.string(), v.null()),
+        isPublished: v.boolean(),
+        monthlyPriceCents: v.union(v.number(), v.null()),
+        createdAt: v.number(),
+      }),
+    ),
+    users: v.array(
+      v.object({
+        _id: v.id("users"),
+        fullName: v.union(v.string(), v.null()),
+        username: v.optional(v.string()),
+        email: v.optional(v.string()),
+        createdAt: v.union(v.number(), v.null()),
+      }),
+    ),
+    subscriptions: v.array(
+      v.object({
+        _id: v.id("subscriptions"),
+        userId: v.id("users"),
+        creatorId: v.id("creators"),
+        status: v.string(),
+        amountCents: v.number(),
+        platformFeeCents: v.number(),
+        creatorEarningsCents: v.number(),
+        feePercentage: v.number(),
+        createdAt: v.number(),
+      }),
+    ),
+    payouts: v.array(
+      v.object({
+        _id: v.id("payouts"),
+        creatorId: v.id("creators"),
+        amountCents: v.number(),
+        status: v.string(),
+        method: v.union(v.string(), v.null()),
+        reference: v.union(v.string(), v.null()),
+        processedAt: v.union(v.number(), v.null()),
+        createdAt: v.number(),
+      }),
+    ),
+    truncated: v.boolean(),
+    listLimit: v.number(),
+  }),
+  handler: async (ctx) => {
+    await requireAdmin(ctx);
+    const creatorsScan = await adminScanAll(ctx, "creators");
+    const usersScan = await adminScanAll(ctx, "users");
+    const subsScan = await adminScanAll(ctx, "subscriptions");
+    const payoutsScan = await adminScanAll(ctx, "payouts");
+    const truncated =
+      creatorsScan.truncated ||
+      usersScan.truncated ||
+      subsScan.truncated ||
+      payoutsScan.truncated;
+
+    return {
+      creators: creatorsScan.docs.map((c) => ({
+        _id: c._id,
+        displayName: c.displayName ?? null,
+        username: c.username ?? null,
+        isPublished: c.isPublished,
+        monthlyPriceCents: c.monthlyPriceCents ?? null,
+        createdAt: c.createdAt,
+      })),
+      users: usersScan.docs.map((u) => ({
+        _id: u._id,
+        fullName: u.fullName ?? null,
+        username: u.username,
+        email: u.email,
+        createdAt: u.createdAt ?? null,
+      })),
+      subscriptions: subsScan.docs.map((s) => ({
+        _id: s._id,
+        userId: s.userId,
+        creatorId: s.creatorId,
+        status: s.status,
+        amountCents: s.amountCents,
+        platformFeeCents: s.platformFeeCents,
+        creatorEarningsCents: s.creatorEarningsCents,
+        feePercentage: s.feePercentage,
+        createdAt: s.createdAt,
+      })),
+      payouts: payoutsScan.docs.map((p) => ({
+        _id: p._id,
+        creatorId: p.creatorId,
+        amountCents: p.amountCents,
+        status: p.status,
+        method: p.method ?? null,
+        reference: p.reference ?? null,
+        processedAt: p.processedAt ?? null,
+        createdAt: p.createdAt,
+      })),
+      truncated,
+      listLimit: ADMIN_SCAN_MAX_DOCS,
+    };
+  },
+});

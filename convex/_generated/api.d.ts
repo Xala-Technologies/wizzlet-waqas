@@ -8,6 +8,7 @@
  * @module
  */
 
+import type * as admin_exportReports from "../admin/exportReports.js";
 import type * as admin_paginatedLists from "../admin/paginatedLists.js";
 import type * as admin_queries from "../admin/queries.js";
 import type * as admin_snapshots from "../admin/snapshots.js";
@@ -60,6 +61,7 @@ import type {
 } from "convex/server";
 
 declare const fullApi: ApiFromModules<{
+  "admin/exportReports": typeof admin_exportReports;
   "admin/paginatedLists": typeof admin_paginatedLists;
   "admin/queries": typeof admin_queries;
   "admin/snapshots": typeof admin_snapshots;

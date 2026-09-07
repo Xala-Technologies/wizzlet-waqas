@@ -56,6 +56,23 @@ export const createAdmin = mutation({
   returns: v.id("payouts"),
   handler: async (ctx, args) => {
     await requireAdmin(ctx);
+    if (args.amountCents <= 0) {
+      throw new Error("Payout amount must be greater than zero");
+    }
+    const settings = await ctx.db
+      .query("platformSettings")
+      .withIndex("by_singletonKey", (q) => q.eq("singletonKey", "default"))
+      .unique();
+    const payoutDefaults = (settings?.payoutDefaults ?? {}) as Record<string, unknown>;
+    const minDollars = Number(
+      payoutDefaults.minPayoutAmount ?? payoutDefaults.min_payout_amount ?? 0,
+    );
+    if (Number.isFinite(minDollars) && minDollars > 0) {
+      const minCents = Math.round(minDollars * 100);
+      if (args.amountCents < minCents) {
+        throw new Error(`Payout must be at least $${minDollars.toFixed(2)} (platform minimum)`);
+      }
+    }
     const now = Date.now();
     return ctx.db.insert("payouts", {
       creatorId: args.creatorId,

@@ -25,8 +25,7 @@ interface Creator {
   email: string;
   subCount: number;
   revenue: number;
-  feePercent: number;
-  verified: boolean;
+  verificationStatus: string;
   daysSinceSignup: number;
 }
 
@@ -58,8 +57,7 @@ const AdminCreators = () => {
         email: c.email,
         subCount: c.subCount,
         revenue: c.revenue,
-        feePercent: days < 30 ? 5 : 10,
-        verified: c.verificationStatus === 'verified' || days > 14,
+        verificationStatus: c.verificationStatus ?? 'none',
         daysSinceSignup: days,
       };
     });
@@ -159,10 +157,9 @@ const AdminCreators = () => {
                     <span className="inline-flex items-center gap-1 text-xs font-medium text-destructive shrink-0"><XCircle className="h-3.5 w-3.5" /> Disabled</span>
                   )}
                 </div>
-                <div className="grid grid-cols-3 gap-2 text-xs">
+                <div className="grid grid-cols-2 gap-2 text-xs">
                   <div><span className="text-muted-foreground">Subs</span><p className="font-medium mt-0.5">{c.subCount}</p></div>
                   <div><span className="text-muted-foreground">Revenue</span><p className="font-medium mt-0.5 text-emerald-400">${c.revenue.toFixed(0)}</p></div>
-                  <div><span className="text-muted-foreground">Fee</span><p className="font-medium mt-0.5">{c.feePercent}%</p></div>
                 </div>
                 <div className="flex flex-wrap gap-2">
                   {c.username && (
@@ -170,7 +167,7 @@ const AdminCreators = () => {
                       <Button variant="outline" size="sm" className="h-11 w-full text-xs"><ExternalLink className="mr-1.5 h-3.5 w-3.5" /> Profile</Button>
                     </Link>
                   )}
-                  <Button variant="outline" size="sm" className="h-11 flex-1 min-w-[7rem] text-xs" onClick={() => navigate('/admin/creator-messaging')}>
+                  <Button variant="outline" size="sm" className="h-11 flex-1 min-w-[7rem] text-xs" onClick={() => navigate(`/admin/creator-messaging?creatorId=${c.id}`)}>
                     <MessageSquare className="mr-1.5 h-3.5 w-3.5" /> Message
                   </Button>
                   <Button variant="outline" size="sm" className="h-11 flex-1 min-w-[7rem] text-xs" onClick={() => void togglePublish(c)}>
@@ -189,7 +186,6 @@ const AdminCreators = () => {
                   <th className="text-left text-xs font-medium text-muted-foreground p-4">Email</th>
                   <th className="text-left text-xs font-medium text-muted-foreground p-4">Subs</th>
                   <th className="text-left text-xs font-medium text-muted-foreground p-4">Revenue</th>
-                  <th className="text-left text-xs font-medium text-muted-foreground p-4">Fee</th>
                   <th className="text-left text-xs font-medium text-muted-foreground p-4">Verified</th>
                   <th className="text-left text-xs font-medium text-muted-foreground p-4">Status</th>
                   <th className="text-left text-xs font-medium text-muted-foreground p-4">Joined</th>
@@ -207,15 +203,10 @@ const AdminCreators = () => {
                     <td className="p-4 font-medium">{c.subCount}</td>
                     <td className="p-4 font-medium text-emerald-400">${c.revenue.toFixed(0)}</td>
                     <td className="p-4">
-                      <Badge variant="outline" className={`text-[10px] ${c.feePercent <= 5 ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' : 'bg-amber-500/10 text-amber-400 border-amber-500/20'}`}>
-                        {c.feePercent}%
-                      </Badge>
-                    </td>
-                    <td className="p-4">
-                      {c.verified ? (
+                      {c.verificationStatus === 'verified' ? (
                         <Badge variant="outline" className="text-[10px] bg-emerald-500/10 text-emerald-400 border-emerald-500/20"><ShieldCheck className="h-2.5 w-2.5 mr-1" />Verified</Badge>
                       ) : (
-                        <Badge variant="outline" className="text-[10px] bg-muted text-muted-foreground">Pending</Badge>
+                        <span className="text-xs text-muted-foreground">—</span>
                       )}
                     </td>
                     <td className="p-4">
@@ -233,7 +224,7 @@ const AdminCreators = () => {
                             <Button variant="ghost" size="sm" className="h-9 w-9 px-0 text-xs" title="View profile" aria-label="View profile"><ExternalLink className="h-3.5 w-3.5" /></Button>
                           </Link>
                         )}
-                        <Button variant="ghost" size="sm" className="h-9 w-9 px-0 text-xs" onClick={() => navigate('/admin/creator-messaging')} title="Message creator" aria-label="Message creator"><MessageSquare className="h-3.5 w-3.5" /></Button>
+                        <Button variant="ghost" size="sm" className="h-9 w-9 px-0 text-xs" onClick={() => navigate(`/admin/creator-messaging?creatorId=${c.id}`)} title="Message creator" aria-label="Message creator"><MessageSquare className="h-3.5 w-3.5" /></Button>
                         <Button variant="ghost" size="sm" className="h-9 w-9 px-0 text-xs" onClick={() => void togglePublish(c)} title={c.is_published ? 'Disable' : 'Enable'} aria-label={c.is_published ? 'Disable' : 'Enable'}>
                           {c.is_published ? <Ban className="h-3.5 w-3.5 text-destructive" /> : <CheckCircle2 className="h-3.5 w-3.5 text-primary" />}
                         </Button>

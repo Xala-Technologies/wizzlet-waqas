@@ -6,6 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { CreditCard, UserX, Inbox, FileWarning, Wallet, ShieldCheck, ArrowRight, Loader2, CheckCircle2 } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { scanTruncationNote } from '@/lib/adminTruncation';
 
 interface AlertItem {
   id: string;
@@ -42,7 +43,7 @@ const AdminAlerts = () => {
         title: 'Failed Payments',
         description: `${overview.failedPayments} subscriptions are past due or failed`,
         type: 'critical', icon: CreditCard, count: overview.failedPayments,
-        link: '/admin/transactions', linkLabel: 'View Transactions',
+        link: '/admin/transactions?status=failed', linkLabel: 'View Transactions',
       },
       {
         id: 'open-cases',
@@ -91,9 +92,9 @@ const AdminAlerts = () => {
       <div className="mb-8">
         <h1 className="text-2xl font-bold">Alerts & Attention Center</h1>
         <p className="text-muted-foreground text-sm mt-0.5">Items requiring your attention right now</p>
-        {overview?.truncated && (
+        {scanTruncationNote(!!overview?.truncated, overview?.listLimit) && (
           <p className="text-amber-600 text-xs mt-2">
-            Showing up to {overview.listLimit.toLocaleString()} rows per table — counts may be incomplete at this scale.
+            {scanTruncationNote(!!overview?.truncated, overview?.listLimit)}
           </p>
         )}
       </div>

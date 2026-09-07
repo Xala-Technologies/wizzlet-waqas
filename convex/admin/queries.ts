@@ -138,8 +138,9 @@ export const dashboardStats = query({
       activeSubscriptionCount: active.length,
       totalRevenueCents,
       platformFeesCents,
-      availableBalanceCents: Math.round(platformFeesCents * 0.85),
-      pendingBalanceCents: Math.round(platformFeesCents * 0.15),
+      // Deprecated synthetic fields — kept for schema compat; not real cash position (D4).
+      availableBalanceCents: 0,
+      pendingBalanceCents: 0,
       paidOutCents,
       openCases,
       mrrCents: totalRevenueCents,

@@ -1,26 +1,28 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useMutation, usePaginatedQuery, useQuery } from 'convex/react';
+import { useSearchParams } from 'react-router-dom';
 import { api } from '../../convex/_generated/api';
 import type { Id } from '../../convex/_generated/dataModel';
 import { DashboardLayout } from '@/components/dashboard/DashboardLayout';
-import { AdminQueryBoundary } from '@/components/dashboard/AdminQueryBoundary';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
-import { Mail, Send, Users, Eye, Clock, Loader2 } from 'lucide-react';
+import { Megaphone, Send, Users, Eye, Clock, Loader2 } from 'lucide-react';
 import { format } from 'date-fns';
 import { toast } from 'sonner';
 
 const PAGE_SIZE = 25;
 
-const AdminCustomerEmailInner = () => {
+const AdminCustomerEmail = () => {
+  const [searchParams] = useSearchParams();
   const [subject, setSubject] = useState('');
   const [body, setBody] = useState('');
   const [audience, setAudience] = useState<'all' | 'active' | 'canceled' | 'specific'>('all');
   const [creatorId, setCreatorId] = useState<string>('');
   const [sending, setSending] = useState(false);
+  const [prefillDone, setPrefillDone] = useState(false);
 
   const {
     results: creatorResults,
@@ -49,6 +51,25 @@ const AdminCustomerEmailInner = () => {
   });
   const sendAnnouncement = useMutation(api.admin.queries.sendAnnouncement);
 
+  useEffect(() => {
+    if (prefillDone) return;
+    const audienceParam = searchParams.get('audience');
+    const creatorParam = searchParams.get('creatorId');
+    if (
+      audienceParam === 'active' ||
+      audienceParam === 'canceled' ||
+      audienceParam === 'all' ||
+      audienceParam === 'specific'
+    ) {
+      setAudience(audienceParam);
+    }
+    if (creatorParam) {
+      setAudience('specific');
+      setCreatorId(creatorParam);
+    }
+    setPrefillDone(true);
+  }, [searchParams, prefillDone]);
+
   const creators = (creatorResults ?? []).map((c) => ({
     id: c.id,
     label: c.displayName || c.username || 'Unnamed creator',
@@ -68,7 +89,7 @@ const AdminCustomerEmailInner = () => {
 
   const handleSend = async () => {
     if (!subject.trim() || !body.trim()) {
-      toast.error('Please fill in both subject and email content');
+      toast.error('Please fill in both subject and message content');
       return;
     }
     if (audience === 'specific' && !creatorId) {
@@ -101,7 +122,7 @@ const AdminCustomerEmailInner = () => {
   return (
     <DashboardLayout type="admin">
       <div className="mb-6">
-        <h1 className="text-2xl font-bold">In-app announcements</h1>
+        <h1 className="text-2xl font-bold">Announcements</h1>
         <p className="text-muted-foreground text-sm mt-0.5">
           Delivers notifications in the app. Email outbox is not enabled yet.
         </p>
@@ -109,7 +130,7 @@ const AdminCustomerEmailInner = () => {
 
       <div className="rounded-xl border border-border bg-card p-6 mb-8">
         <h2 className="text-sm font-semibold mb-4 flex items-center gap-2">
-          <Mail className="h-4 w-4 text-primary" /> Compose Message
+          <Megaphone className="h-4 w-4 text-primary" /> Compose announcement
         </h2>
         <div className="space-y-4">
           <div className="flex flex-col sm:flex-row gap-4">
@@ -157,14 +178,14 @@ const AdminCustomerEmailInner = () => {
           </p>
 
           <div>
-            <label className="text-xs font-medium text-muted-foreground mb-1.5 block">Subject Line</label>
+            <label className="text-xs font-medium text-muted-foreground mb-1.5 block">Subject</label>
             <Input placeholder="Enter subject…" value={subject} onChange={(e) => setSubject(e.target.value)} />
           </div>
           <div>
             <label className="text-xs font-medium text-muted-foreground mb-1.5 block">Content</label>
             <Textarea placeholder="Write your message…" value={body} onChange={(e) => setBody(e.target.value)} rows={8} className="resize-none" />
           </div>
-          <Button onClick={handleSend} disabled={sending || previewLoading}>
+          <Button onClick={() => void handleSend()} disabled={sending || previewLoading}>
             {sending ? <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" /> : <Send className="mr-1.5 h-3.5 w-3.5" />}
             Send to {recipientCount} customer{recipientCount === 1 ? '' : 's'}
           </Button>
@@ -179,7 +200,7 @@ const AdminCustomerEmailInner = () => {
           </div>
         ) : campaigns.length === 0 ? (
           <div className="rounded-xl border border-border bg-card p-10 text-center">
-            <Mail className="h-8 w-8 text-muted-foreground/40 mx-auto mb-3" />
+            <Megaphone className="h-8 w-8 text-muted-foreground/40 mx-auto mb-3" />
             <p className="text-sm text-muted-foreground">No announcements yet.</p>
           </div>
         ) : (
@@ -220,11 +241,5 @@ const AdminCustomerEmailInner = () => {
     </DashboardLayout>
   );
 };
-
-const AdminCustomerEmail = () => (
-  <AdminQueryBoundary>
-    <AdminCustomerEmailInner />
-  </AdminQueryBoundary>
-);
 
 export default AdminCustomerEmail;

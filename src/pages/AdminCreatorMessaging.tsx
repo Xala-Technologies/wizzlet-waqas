@@ -1,8 +1,10 @@
-import { useMemo, useState } from 'react';
-import { useMutation, usePaginatedQuery } from 'convex/react';
+import { useEffect, useMemo, useState } from 'react';
+import { useMutation, usePaginatedQuery, useQuery } from 'convex/react';
+import { useSearchParams } from 'react-router-dom';
 import { api } from '../../convex/_generated/api';
 import type { Id } from '../../convex/_generated/dataModel';
 import { DashboardLayout } from '@/components/dashboard/DashboardLayout';
+import { AdminSupportTabs } from '@/components/dashboard/AdminSupportTabs';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
@@ -29,10 +31,13 @@ interface SentMessage {
 }
 
 const AdminCreatorMessaging = () => {
+  const [searchParams] = useSearchParams();
+  const prefillCreatorId = searchParams.get('creatorId');
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [search, setSearch] = useState('');
   const [body, setBody] = useState('');
   const [sending, setSending] = useState(false);
+  const [prefillApplied, setPrefillApplied] = useState(false);
 
   const {
     results: creatorResults,
@@ -52,7 +57,12 @@ const AdminCreatorMessaging = () => {
     {},
     { initialNumItems: MSG_PAGE },
   );
+  const platformSettings = useQuery(api.platform.mutations.get);
   const sendMessage = useMutation(api.support.mutations.send);
+
+  const flags = (platformSettings?.featureFlags ?? {}) as Record<string, unknown>;
+  const messagingEnabled =
+    flags.creatorMessagingEnabled !== false && flags.creator_messaging_enabled !== false;
 
   const loading = creatorStatus === 'LoadingFirstPage';
 
@@ -60,6 +70,14 @@ const AdminCreatorMessaging = () => {
     id: c.id,
     name: c.displayName || c.username || 'Unnamed creator',
   })), [creatorResults]);
+
+  useEffect(() => {
+    if (prefillApplied || !prefillCreatorId || creators.length === 0) return;
+    if (creators.some((c) => c.id === prefillCreatorId)) {
+      setSelected(new Set([prefillCreatorId]));
+      setPrefillApplied(true);
+    }
+  }, [prefillCreatorId, creators, prefillApplied]);
 
   const recent = useMemo((): SentMessage[] => (supportResults ?? [])
     .filter((m) => m.senderRole === 'admin' && m.channel === 'support')
@@ -87,6 +105,10 @@ const AdminCreatorMessaging = () => {
   };
 
   const send = async () => {
+    if (!messagingEnabled) {
+      toast.error('Creator messaging is disabled in Settings');
+      return;
+    }
     if (selected.size === 0) { toast.error('Select at least one creator'); return; }
     if (!body.trim()) { toast.error('Write a message'); return; }
     setSending(true);
@@ -111,12 +133,16 @@ const AdminCreatorMessaging = () => {
 
   return (
     <DashboardLayout type="admin">
+      <AdminSupportTabs />
       <div className="mb-6">
         <h1 className="text-2xl font-bold">Creator Messaging</h1>
         <p className="text-muted-foreground text-sm mt-0.5">
-          Send announcements and direct messages to creators · {creators.length} loaded
+          Broadcast to creators · {creators.length} loaded
           {creatorStatus === 'CanLoadMore' || creatorStatus === 'LoadingMore' ? ' (more available)' : ''}
         </p>
+        {!messagingEnabled && (
+          <p className="text-amber-600 text-xs mt-2">Creator messaging is disabled in Settings — send is blocked.</p>
+        )}
       </div>
 
       {loading ? (
@@ -156,8 +182,15 @@ const AdminCreatorMessaging = () => {
           <div className="rounded-xl border border-border bg-card p-6">
             <h2 className="text-sm font-semibold mb-3 flex items-center gap-2"><MessageSquare className="h-4 w-4 text-primary" /> Message</h2>
             <Label className="text-xs text-muted-foreground">Body</Label>
-            <Textarea rows={7} className="mt-1.5" placeholder="Write your message…" value={body} onChange={(e) => setBody(e.target.value)} />
-            <Button variant="hero" size="sm" className="mt-4" onClick={send} disabled={sending}>
+            <Textarea
+              rows={7}
+              className="mt-1.5"
+              placeholder={messagingEnabled ? 'Write your message…' : 'Disabled in Settings'}
+              value={body}
+              onChange={(e) => setBody(e.target.value)}
+              disabled={!messagingEnabled}
+            />
+            <Button variant="hero" size="sm" className="mt-4" onClick={() => void send()} disabled={sending || !messagingEnabled}>
               {sending ? <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" /> : <Send className="mr-1.5 h-3.5 w-3.5" />}
               Send to {selected.size} creator{selected.size === 1 ? '' : 's'}
             </Button>
