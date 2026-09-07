@@ -1,15 +1,17 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useQuery, useMutation } from 'convex/react';
 import { DashboardLayout } from '@/components/dashboard/DashboardLayout';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Skeleton } from '@/components/ui/skeleton';
-import { TrendingUp, Users, Search, Bookmark, FileText } from 'lucide-react';
+import { TrendingUp, Users, Search, Bookmark, FileText, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAuth } from '@/contexts/AuthContext';
 import { api } from '@convex/_generated/api';
 import type { Id } from '@convex/_generated/dataModel';
+
+const PAGE_SIZE = 24;
 
 interface CreatorRow {
   id: string;
@@ -19,6 +21,7 @@ interface CreatorRow {
   avatar_url: string | null;
   monthly_price: number | null;
   created_at: string;
+  postCount: number;
 }
 
 type SortKey = 'popular' | 'newest' | 'price';
@@ -32,34 +35,51 @@ const sortOptions: { key: SortKey; label: string }[] = [
 const CustomerDiscover = () => {
   const { user } = useAuth();
   const [query, setQuery] = useState('');
+  const [debouncedSearch, setDebouncedSearch] = useState('');
   const [sort, setSort] = useState<SortKey>('popular');
-  const creatorsRaw = useQuery(api.creators.queries.listPublished, {});
+  const [cursor, setCursor] = useState<string | undefined>(undefined);
+  const [creators, setCreators] = useState<CreatorRow[]>([]);
+
+  useEffect(() => {
+    const t = window.setTimeout(() => setDebouncedSearch(query.trim()), 250);
+    return () => window.clearTimeout(t);
+  }, [query]);
+
+  useEffect(() => {
+    setCursor(undefined);
+    setCreators([]);
+  }, [debouncedSearch]);
+
+  const creatorsRaw = useQuery(api.creators.queries.listPublished, {
+    limit: PAGE_SIZE,
+    cursor,
+    search: debouncedSearch || undefined,
+  });
   const bookmarkRows = useQuery(api.bookmarks.mutations.listCreatorBookmarks, user ? {} : 'skip');
   const toggleCreatorBookmark = useMutation(api.bookmarks.mutations.toggleCreatorBookmark);
 
-  const loading = creatorsRaw === undefined || (user ? bookmarkRows === undefined : false);
+  useEffect(() => {
+    if (!creatorsRaw) return;
+    const page: CreatorRow[] = creatorsRaw.items.map((c) => ({
+      id: c._id,
+      username: c.username,
+      display_name: c.displayName ?? null,
+      bio: c.bio ?? null,
+      avatar_url: c.avatarUrl ?? null,
+      monthly_price: c.monthlyPriceCents != null ? c.monthlyPriceCents / 100 : null,
+      created_at: new Date(c.createdAt).toISOString(),
+      postCount: c.postCount ?? 0,
+    }));
+    setCreators((prev) => {
+      if (!cursor) return page;
+      const seen = new Set(prev.map((c) => c.id));
+      return [...prev, ...page.filter((c) => !seen.has(c.id))];
+    });
+  }, [creatorsRaw, cursor]);
 
-  const creators: CreatorRow[] = useMemo(
-    () =>
-      (creatorsRaw?.items ?? []).map((c) => ({
-        id: c._id,
-        username: c.username,
-        display_name: c.displayName ?? null,
-        bio: c.bio ?? null,
-        avatar_url: c.avatarUrl ?? null,
-        monthly_price: c.monthlyPriceCents != null ? c.monthlyPriceCents / 100 : null,
-        created_at: new Date(c.createdAt).toISOString(),
-      })),
-    [creatorsRaw],
-  );
-
-  const postCounts = useMemo(() => {
-    const counts: Record<string, number> = {};
-    for (const c of creatorsRaw?.items ?? []) {
-      counts[c._id] = c.postCount ?? 0;
-    }
-    return counts;
-  }, [creatorsRaw]);
+  const loading =
+    (creatorsRaw === undefined && creators.length === 0) ||
+    (user ? bookmarkRows === undefined : false);
 
   const bookmarks = useMemo(() => {
     const marks: Record<string, string> = {};
@@ -70,22 +90,14 @@ const CustomerDiscover = () => {
   }, [bookmarkRows]);
 
   const visible = useMemo(() => {
-    const q = query.trim().toLowerCase();
-    const filtered = creators.filter((c) => {
-      if (!q) return true;
-      return (
-        (c.display_name ?? '').toLowerCase().includes(q) ||
-        (c.username ?? '').toLowerCase().includes(q) ||
-        (c.bio ?? '').toLowerCase().includes(q)
-      );
-    });
-
-    return [...filtered].sort((a, b) => {
+    return [...creators].sort((a, b) => {
       if (sort === 'newest') return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
       if (sort === 'price') return Number(a.monthly_price ?? 0) - Number(b.monthly_price ?? 0);
-      return (postCounts[b.id] ?? 0) - (postCounts[a.id] ?? 0);
+      return b.postCount - a.postCount;
     });
-  }, [creators, query, sort, postCounts]);
+  }, [creators, sort]);
+
+  const canLoadMore = Boolean(creatorsRaw && !creatorsRaw.isDone && creatorsRaw.continueCursor);
 
   const toggleBookmark = async (creatorId: string) => {
     if (!user) return;
@@ -102,7 +114,7 @@ const CustomerDiscover = () => {
     <DashboardLayout type="member">
       <div className="mb-6">
         <h1 className="text-2xl font-bold">Discover Creators</h1>
-        <p className="text-muted-foreground text-sm mt-0.5">Find top-performing creators to follow</p>
+        <p className="text-muted-foreground text-sm mt-0.5">Find creators to subscribe to</p>
       </div>
 
       <div className="flex flex-col gap-3 mb-6 sm:flex-row sm:flex-wrap sm:items-center">
@@ -171,7 +183,7 @@ const CustomerDiscover = () => {
                     {c.username && <p className="text-xs text-muted-foreground mb-2">@{c.username}</p>}
                     <p className="text-xs text-muted-foreground line-clamp-2 mb-2">{c.bio || 'No bio yet.'}</p>
                     <span className="flex items-center gap-1 text-[10px] text-muted-foreground">
-                      <FileText className="h-3 w-3" /> {postCounts[c.id] ?? 0} posts published
+                      <FileText className="h-3 w-3" /> {c.postCount} posts published
                     </span>
                   </div>
                   <div className="flex flex-col items-end gap-2 shrink-0">
@@ -201,6 +213,21 @@ const CustomerDiscover = () => {
               </div>
             );
           })}
+          {canLoadMore && (
+            <div className="flex justify-center pt-2">
+              <Button
+                variant="outline"
+                size="sm"
+                disabled={creatorsRaw === undefined}
+                onClick={() => {
+                  if (creatorsRaw?.continueCursor) setCursor(creatorsRaw.continueCursor);
+                }}
+              >
+                {creatorsRaw === undefined ? <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" /> : null}
+                Load more
+              </Button>
+            </div>
+          )}
         </div>
       )}
     </DashboardLayout>

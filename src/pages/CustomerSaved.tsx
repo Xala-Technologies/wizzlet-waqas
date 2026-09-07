@@ -1,10 +1,10 @@
 import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { useQuery, useMutation } from 'convex/react';
+import { useMutation, usePaginatedQuery, useQuery } from 'convex/react';
 import { DashboardLayout } from '@/components/dashboard/DashboardLayout';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Bookmark, Trash2, Lock, Globe } from 'lucide-react';
+import { Bookmark, Trash2, Lock, Globe, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 import { useAuth } from '@/contexts/AuthContext';
@@ -37,17 +37,23 @@ interface BookmarkedCreator {
 const CustomerSaved = () => {
   const { user } = useAuth();
   const [tab, setTab] = useState<'posts' | 'creators'>('posts');
-  const savedDetailed = useQuery(api.posts.queries.listSavedDetailed, user ? {} : 'skip');
-  const bookmarkRows = useQuery(api.bookmarks.mutations.listCreatorBookmarks, user ? {} : 'skip');
-  const publishedCreators = useQuery(api.creators.queries.listPublished, user ? {} : 'skip');
+  const savedDetailed = usePaginatedQuery(
+    api.posts.queries.listSavedDetailedPage,
+    user ? {} : 'skip',
+    { initialNumItems: 25 },
+  );
+  const bookmarkDetailed = useQuery(api.bookmarks.mutations.listCreatorBookmarksDetailed, user ? {} : 'skip');
   const toggleSavedPost = useMutation(api.bookmarks.mutations.toggleSavedPost);
   const toggleCreatorBookmark = useMutation(api.bookmarks.mutations.toggleCreatorBookmark);
 
-  const loading = user ? savedDetailed === undefined || bookmarkRows === undefined || publishedCreators === undefined : false;
+  const loading =
+    user
+      ? savedDetailed.status === 'LoadingFirstPage' || bookmarkDetailed === undefined
+      : false;
 
   const posts: SavedPost[] = useMemo(
     () =>
-      (savedDetailed ?? []).map((row) => ({
+      savedDetailed.results.map((row) => ({
         id: row.savedId,
         created_at: new Date(row.savedAt).toISOString(),
         post: {
@@ -61,28 +67,23 @@ const CustomerSaved = () => {
           },
         },
       })),
-    [savedDetailed],
+    [savedDetailed.results],
   );
 
-  const creators: BookmarkedCreator[] = useMemo(() => {
-    const byId = new Map((publishedCreators?.items ?? []).map((c) => [c._id, c]));
-    return (bookmarkRows ?? [])
-      .map((row) => {
-        const c = byId.get(row.creatorId);
-        if (!c) return null;
-        return {
-          id: row._id,
-          creator: {
-            id: c._id,
-            username: c.username,
-            display_name: c.displayName ?? null,
-            bio: c.bio ?? null,
-            monthly_price: c.monthlyPriceCents != null ? c.monthlyPriceCents / 100 : null,
-          },
-        };
-      })
-      .filter((row): row is BookmarkedCreator => row !== null);
-  }, [bookmarkRows, publishedCreators]);
+  const creators: BookmarkedCreator[] = useMemo(
+    () =>
+      (bookmarkDetailed ?? []).map((row) => ({
+        id: row.bookmarkId,
+        creator: {
+          id: row.creator._id,
+          username: row.creator.username,
+          display_name: row.creator.displayName ?? null,
+          bio: row.creator.bio ?? null,
+          monthly_price: row.creator.monthlyPriceCents != null ? row.creator.monthlyPriceCents / 100 : null,
+        },
+      })),
+    [bookmarkDetailed],
+  );
 
   const removePost = async (row: SavedPost) => {
     if (!row.post) return;
@@ -188,6 +189,19 @@ const CustomerSaved = () => {
                 </article>
               );
             })}
+            {(savedDetailed.status === 'CanLoadMore' || savedDetailed.status === 'LoadingMore') && (
+              <div className="flex justify-center pt-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  disabled={savedDetailed.status === 'LoadingMore'}
+                  onClick={() => savedDetailed.loadMore(25)}
+                >
+                  {savedDetailed.status === 'LoadingMore' ? <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" /> : null}
+                  Load more
+                </Button>
+              </div>
+            )}
           </div>
         )
       ) : creators.length === 0 ? (
