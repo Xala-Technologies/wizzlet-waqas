@@ -1,5 +1,5 @@
 import { mutation, query } from "../_generated/server";
-import { v } from "convex/values";
+import { ConvexError, v } from "convex/values";
 import {
   getCreatorForUser,
   logMutation,
@@ -11,6 +11,7 @@ import {
   creatorDocValidator,
   creatorPublicValidator,
   creatorPublishedPageValidator,
+  verificationStatusValidator,
 } from "../lib/validators";
 import { adminTakeNewest } from "../lib/adminLists";
 
@@ -173,6 +174,25 @@ export const setPublished = mutation({
     await requireCreatorOwner(ctx, args.creatorId);
     await ctx.db.patch(args.creatorId, {
       isPublished: args.isPublished,
+      updatedAt: Date.now(),
+    });
+    return null;
+  },
+});
+
+/** Admin-only: set creator verification badge (DB source of truth for public/creator UI). */
+export const setVerificationStatus = mutation({
+  args: {
+    creatorId: v.id("creators"),
+    verificationStatus: verificationStatusValidator,
+  },
+  returns: v.null(),
+  handler: async (ctx, args) => {
+    await requireAdmin(ctx);
+    const creator = await ctx.db.get(args.creatorId);
+    if (!creator) throw new ConvexError("NOT_FOUND");
+    await ctx.db.patch(args.creatorId, {
+      verificationStatus: args.verificationStatus,
       updatedAt: Date.now(),
     });
     return null;

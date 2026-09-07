@@ -47,7 +47,6 @@ const CreatorReferrals = () => {
 
   const referralLink = code ? `${window.location.origin}/signup?ref=${code}` : '';
   const converted = referralRows.filter(r => r.converted).length;
-  const earnings = referralRows.reduce((a, b) => a + b.commission_earned, 0);
 
   return (
     <DashboardLayout type="creator">
@@ -69,8 +68,8 @@ const CreatorReferrals = () => {
         </div>
         <div className="rounded-xl border border-border bg-card p-5">
           <DollarSign className="h-4 w-4 text-amber-400 mb-2" />
-          <p className="text-2xl font-bold">${earnings.toFixed(2)}</p>
-          <p className="text-xs text-muted-foreground">Commission (pending productization)</p>
+          <p className="text-2xl font-bold">—</p>
+          <p className="text-xs text-muted-foreground">Cash commission (not enabled)</p>
         </div>
       </div>
 
@@ -117,7 +116,7 @@ const CreatorReferrals = () => {
                     {r.converted ? 'Converted' : 'Pending'}
                   </span>
                 </div>
-                <p className="text-sm font-bold mt-3">${r.commission_earned.toFixed(2)}</p>
+                <p className="text-sm font-medium mt-3 text-muted-foreground">Commission —</p>
               </li>
             ))}
           </MobileRecordCards>
@@ -142,7 +141,7 @@ const CreatorReferrals = () => {
                         {r.converted ? 'Converted' : 'Pending'}
                       </span>
                     </td>
-                    <td className="p-4 text-sm font-bold text-right">${r.commission_earned.toFixed(2)}</td>
+                    <td className="p-4 text-sm text-muted-foreground text-right">—</td>
                   </tr>
                 ))}
               </tbody>

@@ -1,5 +1,5 @@
-import { useEffect, useMemo, useState } from 'react';
-import { useMutation, useQuery } from 'convex/react';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { useMutation, usePaginatedQuery, useQuery } from 'convex/react';
 import { api } from '../../convex/_generated/api';
 import type { Id } from '../../convex/_generated/dataModel';
 import { DashboardLayout } from '@/components/dashboard/DashboardLayout';
@@ -12,6 +12,8 @@ import { MessageSquare, User, Power, Loader2, Send, ArrowLeft } from 'lucide-rea
 import { formatDistanceToNow } from 'date-fns';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
+
+const PAGE_SIZE = 25;
 
 interface DirectMessage {
   id: string;
@@ -32,17 +34,22 @@ interface Thread {
 
 const CreatorMessages = () => {
   const { creator, loading: creatorLoading } = useCreatorProfile();
-  const inbox = useQuery(api.messaging.mutations.myCreatorInbox);
+  const { results: inbox, status: inboxStatus, loadMore } = usePaginatedQuery(
+    api.messaging.mutations.myCreatorInboxPage,
+    {},
+    { initialNumItems: PAGE_SIZE },
+  );
   const subscribers = useQuery(api.subscriptions.mutations.listSubscribersDetailed);
   const setMessagingEnabledMut = useMutation(api.messaging.mutations.setMessagingEnabled);
   const sendMessage = useMutation(api.messaging.mutations.send);
+  const markRead = useMutation(api.messaging.mutations.markReadCreator);
 
   const [activeId, setActiveId] = useState<string | null>(null);
   const [reply, setReply] = useState('');
   const [sending, setSending] = useState(false);
   const [messagingEnabled, setMessagingEnabled] = useState(true);
   const [savingToggle, setSavingToggle] = useState(false);
-  const [readLocally, setReadLocally] = useState<Set<string>>(new Set());
+  const markedRef = useRef<Set<string>>(new Set());
 
   useEffect(() => {
     if (creator) setMessagingEnabled(creator.messaging_enabled ?? true);
@@ -59,7 +66,7 @@ const CreatorMessages = () => {
   );
 
   const threads = useMemo(() => {
-    if (!inbox) return [] as Thread[];
+    if (inboxStatus === 'LoadingFirstPage') return [] as Thread[];
     const nameMap = new Map(
       (subscribers ?? []).map((s) => [
         s.userId,
@@ -73,7 +80,7 @@ const CreatorMessages = () => {
         subscriber_id: r.subscriberId,
         sender_role: r.senderRole,
         body: r.body,
-        read: r.read || readLocally.has(r._id),
+        read: r.read,
         created_at: new Date(r.createdAt).toISOString(),
       };
       grouped.set(r.subscriberId, [...(grouped.get(r.subscriberId) ?? []), msg]);
@@ -87,7 +94,7 @@ const CreatorMessages = () => {
         lastAt: messages[messages.length - 1]?.created_at ?? '',
       }))
       .sort((a, b) => b.lastAt.localeCompare(a.lastAt));
-  }, [inbox, subscribers, readLocally]);
+  }, [inbox, inboxStatus, subscribers]);
 
   useEffect(() => {
     // Auto-select first thread only on desktop so phones stay on the list first.
@@ -108,13 +115,25 @@ const CreatorMessages = () => {
           subscriber_id: m.subscriberId,
           sender_role: m.senderRole,
           body: m.body,
-          read: m.read || readLocally.has(m._id),
+          read: m.read,
           created_at: new Date(m.createdAt).toISOString(),
         })),
       };
     }
     return base;
-  }, [threads, activeId, activeThreadMessages, readLocally]);
+  }, [threads, activeId, activeThreadMessages]);
+
+  useEffect(() => {
+    if (!active) return;
+    const unreadIds = active.messages
+      .filter((m) => m.sender_role === 'subscriber' && !m.read && !markedRef.current.has(m.id))
+      .map((m) => m.id);
+    if (unreadIds.length === 0) return;
+    unreadIds.forEach((id) => markedRef.current.add(id));
+    void markRead({ messageIds: unreadIds as Id<'directMessages'>[] }).catch(() => {
+      unreadIds.forEach((id) => markedRef.current.delete(id));
+    });
+  }, [active, markRead]);
 
   const toggleMessaging = async (next: boolean) => {
     setMessagingEnabled(next);
@@ -132,10 +151,6 @@ const CreatorMessages = () => {
 
   const openThread = (thread: Thread) => {
     setActiveId(thread.subscriberId);
-    const unreadIds = thread.messages.filter((m) => m.sender_role === 'subscriber' && !m.read).map((m) => m.id);
-    if (unreadIds.length > 0) {
-      setReadLocally((prev) => new Set([...prev, ...unreadIds]));
-    }
   };
 
   const send = async () => {
@@ -156,7 +171,7 @@ const CreatorMessages = () => {
     }
   };
 
-  const busy = creatorLoading || inbox === undefined || subscribers === undefined;
+  const busy = creatorLoading || inboxStatus === 'LoadingFirstPage' || subscribers === undefined;
 
   return (
     <DashboardLayout type="creator">
@@ -228,6 +243,19 @@ const CreatorMessages = () => {
                 </div>
               </button>
             ))}
+            {(inboxStatus === 'CanLoadMore' || inboxStatus === 'LoadingMore') && (
+              <div className="flex justify-center pt-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  disabled={inboxStatus === 'LoadingMore'}
+                  onClick={() => loadMore(PAGE_SIZE)}
+                >
+                  {inboxStatus === 'LoadingMore' ? <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" /> : null}
+                  Load more
+                </Button>
+              </div>
+            )}
           </div>
 
           <div

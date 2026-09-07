@@ -47,6 +47,7 @@ import CreatorAccessControl from "./pages/CreatorAccessControl";
 import CreatorPerformanceTracker from "./pages/CreatorPerformanceTracker";
 import CreatorMessages from "./pages/CreatorMessages";
 import CreatorLinks from "./pages/CreatorLinks";
+import CreatorLinkRedirect from "./pages/CreatorLinkRedirect";
 import CreatorReferrals from "./pages/CreatorReferrals";
 import CreatorEarnings from "./pages/CreatorEarnings";
 import CreatorPayouts from "./pages/CreatorPayouts";
@@ -178,6 +179,7 @@ const App = () => (
             <Route path="/admin/settings" element={<ProtectedRoute allowedRoles={['admin']}><AdminSettings /></ProtectedRoute>} />
             <Route path="/subscription/success" element={<SubscriptionSuccess />} />
             <Route path="/subscription/cancel" element={<SubscriptionCancel />} />
+            <Route path="/go/:linkId" element={<CreatorLinkRedirect />} />
             <Route path="/:username" element={<CreatorProfile />} />
             <Route path="*" element={<NotFound />} />
           </Routes>

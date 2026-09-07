@@ -32,7 +32,13 @@ const CreatorDashboard = () => {
   );
   const picksRaw = useQuery(api.picks.mutations.listMine);
 
-  const loading = creator === undefined || subs === undefined || postsRaw === undefined || picksRaw === undefined;
+  const earnings = useQuery(api.creators.earnings.myEarnings);
+  const loading =
+    creator === undefined ||
+    subs === undefined ||
+    postsRaw === undefined ||
+    picksRaw === undefined ||
+    earnings === undefined;
 
   const posts = useMemo(
     () => (postsRaw ?? []).slice(0, 5).map((p) => ({
@@ -61,11 +67,12 @@ const CreatorDashboard = () => {
   );
 
   const subCount = (subs ?? []).filter((s) => s.status === 'active').length;
-  const monthlyPrice = (creator?.monthlyPriceCents ?? 999) / 100;
-  const revenue = subCount * monthlyPrice;
+  const listPriceMrr = ((creator?.monthlyPriceCents ?? 999) / 100) * subCount;
+  const activeMrrNet = (earnings?.netCents ?? 0) / 100;
   const postCount = postsRaw?.length ?? 0;
   const productCount = products?.length ?? 0;
   const creatorUsername = creator?.username ?? null;
+  const isVerified = creator?.verificationStatus === 'verified';
 
   const perfStats = useMemo(() => {
     const settled = picks.filter(p => p.result !== 'pending');
@@ -79,10 +86,8 @@ const CreatorDashboard = () => {
 
   const verification = useMemo(() => {
     const minPicks = 50;
-    const minWinRate = 52;
-    const isVerified = perfStats.settled >= minPicks && perfStats.winRate >= minWinRate;
     const progress = Math.min(100, Math.round((perfStats.settled / minPicks) * 100));
-    return { isVerified, progress, settled: perfStats.settled, minPicks };
+    return { progress, settled: perfStats.settled, minPicks };
   }, [perfStats]);
 
   const revenueInsights = useMemo(() => {
@@ -135,7 +140,8 @@ const CreatorDashboard = () => {
 
   const stats = [
     { label: 'Subscribers', value: subCount.toString(), icon: Users, color: 'text-blue-400' },
-    { label: 'Est. Revenue', value: `$${revenue.toFixed(0)}`, icon: DollarSign, color: 'text-emerald-400' },
+    { label: 'Active MRR net', value: `$${activeMrrNet.toFixed(0)}`, icon: DollarSign, color: 'text-emerald-400' },
+    { label: 'List-price MRR est.', value: `$${listPriceMrr.toFixed(0)}`, icon: TrendingUp, color: 'text-muted-foreground' },
     { label: 'Total Posts', value: postCount.toString(), icon: FileText, color: 'text-purple-400' },
     { label: 'Products', value: productCount.toString(), icon: Package, color: 'text-amber-400' },
   ];
@@ -148,7 +154,7 @@ const CreatorDashboard = () => {
         <div>
           <h1 className="text-2xl font-bold flex items-center gap-2">
             Overview
-            {verification.isVerified && (
+            {isVerified && (
               <span className="inline-flex items-center gap-1 text-xs font-medium text-emerald-400 bg-emerald-500/10 rounded-full px-2.5 py-0.5 border border-emerald-500/20">
                 <ShieldCheck className="h-3 w-3" /> Verified
               </span>
@@ -156,11 +162,15 @@ const CreatorDashboard = () => {
           </h1>
           <p className="text-muted-foreground text-sm mt-0.5">
             Welcome back{creatorUsername ? `, @${creatorUsername}` : ''}
+            {' · '}
+            <Link to="/creator/earnings" className="text-primary hover:underline">Earnings</Link>
+            {' · '}
+            <Link to="/creator/payouts" className="text-primary hover:underline">Payouts</Link>
           </p>
         </div>
       </div>
 
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+      <div className="grid grid-cols-2 lg:grid-cols-5 gap-4 mb-6">
         {stats.map((stat) => (
           <div key={stat.label} className="rounded-xl border border-border bg-card p-5 transition-colors hover:border-primary/20">
             <div className="flex items-center justify-between mb-3">
@@ -176,9 +186,14 @@ const CreatorDashboard = () => {
       {picks.length > 0 && (
         <div className="rounded-xl border border-border bg-card p-4 mb-6">
           <div className="flex items-center justify-between mb-3">
-            <h2 className="text-xs font-medium text-muted-foreground uppercase tracking-wider flex items-center gap-1.5"><BarChart3 className="h-3 w-3" /> Performance Summary</h2>
+            <h2 className="text-xs font-medium text-muted-foreground uppercase tracking-wider flex items-center gap-1.5">
+              <BarChart3 className="h-3 w-3" /> Tracker performance (practice picks)
+            </h2>
             <Link to="/creator/performance-tracker" className="text-xs text-primary hover:underline flex items-center gap-1">Full tracker <ArrowRight className="h-3 w-3" /></Link>
           </div>
+          <p className="text-[10px] text-muted-foreground mb-3">
+            Win rate here uses Performance Tracker picks. Settled results on Create Post are tracked separately.
+          </p>
           <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
             <div className="rounded-lg bg-muted/30 p-2.5">
               <p className="text-[9px] text-muted-foreground uppercase">Net Profit</p>
@@ -204,15 +219,17 @@ const CreatorDashboard = () => {
         </div>
       )}
 
-      {!verification.isVerified && picks.length > 0 && (
+      {!isVerified && picks.length > 0 && (
         <div className="rounded-xl border border-border bg-card p-4 mb-6">
           <div className="flex items-center gap-2 mb-2">
-            <ShieldCheck className="h-4 w-4 text-muted-foreground" />
-            <p className="text-xs font-medium">Verified Performance Progress</p>
-            <span className="text-[10px] text-muted-foreground ml-auto">{verification.settled}/{verification.minPicks} picks</span>
+            <Target className="h-4 w-4 text-muted-foreground" />
+            <p className="text-xs font-medium">Tracker eligibility progress</p>
+            <span className="text-[10px] text-muted-foreground ml-auto">{verification.settled}/{verification.minPicks} settled picks</span>
           </div>
           <Progress value={verification.progress} className="h-1.5 mb-1.5" />
-          <p className="text-[10px] text-muted-foreground">Track {Math.max(0, verification.minPicks - verification.settled)} more picks with 52%+ win rate to earn your Verified badge.</p>
+          <p className="text-[10px] text-muted-foreground">
+            Track more settled picks in Performance Tracker. The Verified badge is granted by the platform, not automatically.
+          </p>
         </div>
       )}
 

@@ -45,14 +45,17 @@ const mainItems: NavItem[] = [
   { label: 'Performance Tracker', href: '/creator/performance-tracker', icon: TrendingUp },
 ];
 
-const growthItems: NavItem[] = [
+const growthPrimaryItems: NavItem[] = [
   { label: 'Growth Manager', href: '/creator/personal-growth-manager', icon: Brain },
-  { label: 'Smart Pricing', href: '/creator/smart-pricing', icon: TrendingUp },
-  { label: 'Promo', href: '/creator/promo', icon: Megaphone },
-  { label: 'Access Control', href: '/creator/access-control', icon: Lock },
   { label: 'Messages', href: '/creator/messages', icon: MessageSquare },
+];
+
+const growthToolItems: NavItem[] = [
+  { label: 'Promo', href: '/creator/promo', icon: Megaphone },
   { label: 'Links', href: '/creator/links', icon: Link2 },
   { label: 'Referrals', href: '/creator/referrals', icon: UserPlus },
+  { label: 'Access Control', href: '/creator/access-control', icon: Lock },
+  { label: 'Smart Pricing', href: '/creator/smart-pricing', icon: TrendingUp },
 ];
 
 const financeItems: NavItem[] = [
@@ -94,13 +97,16 @@ function CollapsibleSection({
   items,
   pathname,
   defaultOpen = false,
+  nestedTools,
 }: {
   label: string;
   items: NavItem[];
   pathname: string;
   defaultOpen?: boolean;
+  nestedTools?: NavItem[];
 }) {
-  const hasActive = items.some((i) => pathname === i.href);
+  const allItems = nestedTools ? [...items, ...nestedTools] : items;
+  const hasActive = allItems.some((i) => pathname === i.href);
   const [open, setOpen] = useState(defaultOpen || hasActive);
 
   return (
@@ -117,6 +123,16 @@ function CollapsibleSection({
         {items.map((item) => (
           <NavItemLink key={item.href} item={item} active={pathname === item.href} />
         ))}
+        {nestedTools && nestedTools.length > 0 && (
+          <div className="pt-2 mt-1.5 space-y-0.5">
+            <SectionLabel>Tools</SectionLabel>
+            <div className="mt-1 space-y-0.5">
+              {nestedTools.map((item) => (
+                <NavItemLink key={item.href} item={item} active={pathname === item.href} />
+              ))}
+            </div>
+          </div>
+        )}
       </CollapsibleContent>
     </Collapsible>
   );
@@ -154,8 +170,14 @@ export function CreatorSidebar({ mobile = false }: { mobile?: boolean } = {}) {
           </div>
         </div>
 
-        {/* Growth - Collapsible */}
-        <CollapsibleSection label="Growth" items={growthItems} pathname={pathname} defaultOpen />
+        {/* Growth - Collapsible, with Tools nest */}
+        <CollapsibleSection
+          label="Growth"
+          items={growthPrimaryItems}
+          nestedTools={growthToolItems}
+          pathname={pathname}
+          defaultOpen
+        />
 
         {/* Finance - Collapsible */}
         <CollapsibleSection label="Finance" items={financeItems} pathname={pathname} />

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useConvex, useMutation, useQuery } from 'convex/react';
 import { api } from '../../convex/_generated/api';
 import { uploadToConvexStorage } from '@/lib/upload';
@@ -7,19 +7,25 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { Loader2, Upload, Link as LinkIcon } from 'lucide-react';
+import { Camera, ImageIcon, Loader2, Upload, Link as LinkIcon } from 'lucide-react';
 import { toast } from 'sonner';
+
+const MAX_IMAGE_BYTES = 5 * 1024 * 1024;
 
 const CreatorSettings = () => {
   const creator = useQuery(api.creators.queries.myCreator);
   const updateSettings = useMutation(api.creators.queries.updateSettings);
   const convex = useConvex();
+  const bannerRef = useRef<HTMLInputElement>(null);
 
   const [saving, setSaving] = useState(false);
+  const [uploadingAvatar, setUploadingAvatar] = useState(false);
+  const [uploadingBanner, setUploadingBanner] = useState(false);
   const [displayName, setDisplayName] = useState('');
   const [username, setUsername] = useState('');
   const [bio, setBio] = useState('');
   const [avatarUrl, setAvatarUrl] = useState('');
+  const [bannerUrl, setBannerUrl] = useState('');
 
   useEffect(() => {
     if (!creator) return;
@@ -27,6 +33,7 @@ const CreatorSettings = () => {
     setUsername(creator.username ?? '');
     setBio(creator.bio ?? '');
     setAvatarUrl(creator.avatarUrl ?? '');
+    setBannerUrl(creator.bannerUrl ?? '');
   }, [creator]);
 
   const handleSave = async () => {
@@ -37,6 +44,7 @@ const CreatorSettings = () => {
         displayName: displayName.trim() || undefined,
         bio: bio.trim() || undefined,
         avatarUrl: avatarUrl.trim() || undefined,
+        bannerUrl: bannerUrl.trim() || undefined,
       });
       toast.success('Settings saved');
     } catch (e) {
@@ -46,15 +54,45 @@ const CreatorSettings = () => {
     }
   };
 
+  const validateImageFile = (file: File): boolean => {
+    if (file.size > MAX_IMAGE_BYTES) {
+      toast.error('File must be under 5MB');
+      return false;
+    }
+    return true;
+  };
+
   const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
+    e.target.value = '';
     if (!file || !creator) return;
+    if (!validateImageFile(file)) return;
+    setUploadingAvatar(true);
     try {
       const publicUrl = await uploadToConvexStorage(convex, file);
       setAvatarUrl(publicUrl);
       toast.success('Avatar uploaded');
     } catch {
       toast.error('Upload failed');
+    } finally {
+      setUploadingAvatar(false);
+    }
+  };
+
+  const handleBannerUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = '';
+    if (!file || !creator) return;
+    if (!validateImageFile(file)) return;
+    setUploadingBanner(true);
+    try {
+      const publicUrl = await uploadToConvexStorage(convex, file);
+      setBannerUrl(publicUrl);
+      toast.success('Banner uploaded');
+    } catch {
+      toast.error('Upload failed');
+    } finally {
+      setUploadingBanner(false);
     }
   };
 
@@ -97,12 +135,58 @@ const CreatorSettings = () => {
             <div>
               <Label htmlFor="avatar-upload" className="cursor-pointer">
                 <div className="flex items-center gap-2 text-sm text-primary hover:underline">
-                  <Upload className="h-3.5 w-3.5" /> Upload Photo
+                  {uploadingAvatar ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Upload className="h-3.5 w-3.5" />}
+                  {uploadingAvatar ? 'Uploading…' : 'Upload Photo'}
                 </div>
               </Label>
-              <input id="avatar-upload" type="file" accept="image/*" className="hidden" onChange={handleAvatarUpload} />
-              <p className="text-xs text-muted-foreground mt-0.5">JPG, PNG, max 2MB</p>
+              <input
+                id="avatar-upload"
+                type="file"
+                accept="image/jpeg,image/png,image/webp"
+                className="hidden"
+                onChange={handleAvatarUpload}
+                disabled={uploadingAvatar}
+              />
+              <p className="text-xs text-muted-foreground mt-0.5">JPG, PNG. Max 5MB.</p>
             </div>
+          </div>
+
+          <div className="space-y-2">
+            <Label className="text-xs">Banner Image</Label>
+            <button
+              type="button"
+              onClick={() => bannerRef.current?.click()}
+              disabled={uploadingBanner}
+              className="relative w-full h-32 rounded-xl border-2 border-dashed border-border bg-muted/30 hover:border-primary/50 transition-colors overflow-hidden flex items-center justify-center disabled:opacity-60"
+            >
+              {bannerUrl ? (
+                <img src={bannerUrl} alt="Banner" className="h-full w-full object-cover" />
+              ) : (
+                <div className="text-center px-4">
+                  {uploadingBanner ? (
+                    <Loader2 className="h-6 w-6 text-muted-foreground mx-auto mb-1 animate-spin" />
+                  ) : (
+                    <ImageIcon className="h-6 w-6 text-muted-foreground mx-auto mb-1" />
+                  )}
+                  <p className="text-xs text-muted-foreground">
+                    {uploadingBanner ? 'Uploading…' : 'Upload banner (1200×400 recommended)'}
+                  </p>
+                </div>
+              )}
+              {bannerUrl && !uploadingBanner && (
+                <div className="absolute inset-0 flex items-center justify-center bg-background/60 opacity-0 hover:opacity-100 transition-opacity">
+                  <Camera className="h-5 w-5 text-foreground" />
+                </div>
+              )}
+            </button>
+            <input
+              ref={bannerRef}
+              type="file"
+              accept="image/jpeg,image/png,image/webp"
+              className="hidden"
+              onChange={handleBannerUpload}
+            />
+            <p className="text-xs text-muted-foreground">JPG, PNG. Max 5MB.</p>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -154,7 +238,7 @@ const CreatorSettings = () => {
       </div>
 
       <div className="flex justify-end">
-        <Button variant="hero" onClick={handleSave} disabled={saving}>
+        <Button variant="hero" onClick={handleSave} disabled={saving || uploadingAvatar || uploadingBanner}>
           {saving && <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />} Save Changes
         </Button>
       </div>

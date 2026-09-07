@@ -25,29 +25,32 @@ const CreatorEarnings = () => {
     <DashboardLayout type="creator">
       <div className="mb-6">
         <h1 className="text-2xl font-bold">Earnings</h1>
-        <p className="text-muted-foreground text-sm mt-0.5">Track your revenue and payments</p>
+        <p className="text-muted-foreground text-sm mt-0.5">
+          Active subscription MRR vs collected payment events. See Payouts for withdrawable balance.
+        </p>
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
         <div className="rounded-xl border border-border bg-card p-5">
           <DollarSign className="h-4 w-4 text-emerald-400 mb-2" />
           <p className="text-2xl font-bold">${(earnings.grossCents / 100).toFixed(2)}</p>
-          <p className="text-xs text-muted-foreground">Gross Revenue ({earnings.activeCount} active)</p>
+          <p className="text-xs text-muted-foreground">Active MRR gross ({earnings.activeCount} active)</p>
         </div>
         <div className="rounded-xl border border-border bg-card p-5">
           <TrendingUp className="h-4 w-4 text-blue-400 mb-2" />
           <p className="text-2xl font-bold">${(earnings.netCents / 100).toFixed(2)}</p>
-          <p className="text-xs text-muted-foreground">Net Revenue</p>
+          <p className="text-xs text-muted-foreground">Active MRR net (after fees)</p>
         </div>
         <div className="rounded-xl border border-border bg-card p-5">
           <CreditCard className="h-4 w-4 text-purple-400 mb-2" />
           <p className="text-2xl font-bold">${(earnings.perSubCents / 100).toFixed(2)}</p>
-          <p className="text-xs text-muted-foreground">Per Subscriber</p>
+          <p className="text-xs text-muted-foreground">Featured price / subscriber</p>
         </div>
       </div>
 
       <div className="rounded-xl border border-border bg-card p-4 sm:p-6 mb-6 min-w-0">
-        <h2 className="text-sm font-medium mb-4">Monthly Revenue</h2>
+        <h2 className="text-sm font-medium mb-4">Collected revenue by month</h2>
+        <p className="text-xs text-muted-foreground mb-4">From settled payment events (not list-price MRR).</p>
         <div className="h-64 min-w-0 w-full">
           {chartData.length === 0 ? (
             <p className="text-sm text-muted-foreground py-20 text-center">No payment events yet.</p>

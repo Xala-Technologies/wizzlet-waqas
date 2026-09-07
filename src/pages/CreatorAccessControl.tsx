@@ -33,7 +33,7 @@ const CreatorAccessControl = () => {
       max_spots: draftSpots[p._id] ?? p.maxSpots ?? null,
       is_limited: p.isLimited,
       is_closed: p.isClosed,
-      taken: activeSubs.filter((s) => s.amountCents === p.priceCents).length,
+      taken: activeSubs.filter((s) => s.productId === p._id).length,
       raw: p,
     }));
   }, [products, subs, draftSpots]);

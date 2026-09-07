@@ -73,7 +73,7 @@ const ProductsSection = ({ creatorId }: ProductsSectionProps) => {
     setName(product.name);
     setDescription(product.description ?? '');
     setPrice((product.priceCents / 100).toFixed(2));
-    setBillingPeriod('monthly');
+    setBillingPeriod(product.billingPeriod);
     setIsFeatured(product.isFeatured);
     setDialogOpen(true);
   };

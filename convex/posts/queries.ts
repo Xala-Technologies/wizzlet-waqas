@@ -1,3 +1,4 @@
+import { paginationOptsValidator, paginationResultValidator } from "convex/server";
 import { mutation, query } from "../_generated/server";
 import { v } from "convex/values";
 import { getAuthUserId } from "@convex-dev/auth/server";
@@ -46,7 +47,7 @@ export const listPreviewsByCreator = query({
   },
 });
 
-/** Creator's own posts (full content). */
+/** Creator's own posts (full content). Bounded for dashboard / secondary UIs. */
 export const listMine = query({
   args: {},
   returns: v.array(postDocValidator),
@@ -58,7 +59,25 @@ export const listMine = query({
       .query("posts")
       .withIndex("by_creatorId_createdAt", (q) => q.eq("creatorId", creator._id))
       .order("desc")
-      .collect();
+      .take(200);
+  },
+});
+
+/** Cursor-paginated creator posts for the Posts list UI. */
+export const listMinePage = query({
+  args: { paginationOpts: paginationOptsValidator },
+  returns: paginationResultValidator(postDocValidator),
+  handler: async (ctx, args) => {
+    const user = await requireAppUser(ctx);
+    const creator = await getCreatorForUser(ctx, user._id);
+    if (!creator) {
+      return { page: [], isDone: true, continueCursor: "" };
+    }
+    return ctx.db
+      .query("posts")
+      .withIndex("by_creatorId_createdAt", (q) => q.eq("creatorId", creator._id))
+      .order("desc")
+      .paginate(args.paginationOpts);
   },
 });
 

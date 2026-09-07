@@ -1,3 +1,4 @@
+import { paginationOptsValidator, paginationResultValidator } from "convex/server";
 import { mutation, query } from "../_generated/server";
 import { ConvexError, v } from "convex/values";
 import { getCreatorForUser, requireAppUser, hasActiveSubscription } from "../lib/auth";
@@ -67,6 +68,7 @@ export const send = mutation({
   },
 });
 
+/** Bounded inbox for secondary callers; prefer myCreatorInboxPage for the Messages UI. */
 export const myCreatorInbox = query({
   args: {},
   returns: v.array(directMessageDocValidator),
@@ -77,7 +79,48 @@ export const myCreatorInbox = query({
     return ctx.db
       .query("directMessages")
       .withIndex("by_creatorId", (q) => q.eq("creatorId", creator._id))
-      .collect();
+      .order("desc")
+      .take(500);
+  },
+});
+
+/** Cursor-paginated creator DM inbox. */
+export const myCreatorInboxPage = query({
+  args: { paginationOpts: paginationOptsValidator },
+  returns: paginationResultValidator(directMessageDocValidator),
+  handler: async (ctx, args) => {
+    const user = await requireAppUser(ctx);
+    const creator = await getCreatorForUser(ctx, user._id);
+    if (!creator) {
+      return { page: [], isDone: true, continueCursor: "" };
+    }
+    return ctx.db
+      .query("directMessages")
+      .withIndex("by_creatorId", (q) => q.eq("creatorId", creator._id))
+      .order("desc")
+      .paginate(args.paginationOpts);
+  },
+});
+
+/** Creator marks subscriber messages as read when opening a thread. */
+export const markReadCreator = mutation({
+  args: {
+    messageIds: v.array(v.id("directMessages")),
+  },
+  returns: v.number(),
+  handler: async (ctx, args) => {
+    const user = await requireAppUser(ctx);
+    const creator = await getCreatorForUser(ctx, user._id);
+    if (!creator) throw new ConvexError("NOT_FOUND");
+    let updated = 0;
+    for (const id of args.messageIds) {
+      const msg = await ctx.db.get(id);
+      if (!msg || msg.creatorId !== creator._id || msg.read) continue;
+      if (msg.senderRole !== "subscriber") continue;
+      await ctx.db.patch(id, { read: true });
+      updated += 1;
+    }
+    return updated;
   },
 });
 

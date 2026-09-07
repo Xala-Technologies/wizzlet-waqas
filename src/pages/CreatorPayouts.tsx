@@ -116,7 +116,9 @@ const CreatorPayouts = () => {
     <DashboardLayout type="creator">
       <div className="mb-6">
         <h1 className="text-2xl font-bold">Payouts</h1>
-        <p className="text-muted-foreground text-sm mt-0.5">Manage withdrawals and payout settings</p>
+        <p className="text-muted-foreground text-sm mt-0.5">
+          Available = settled payments minus reserved payouts. Requests are manual — schedule is an ops preference only.
+        </p>
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
@@ -168,7 +170,7 @@ const CreatorPayouts = () => {
             <Input value={accountLabel} onChange={(e) => setAccountLabel(e.target.value)} placeholder="Ending in 1234" />
           </div>
           <div>
-            <Label>Schedule</Label>
+            <Label>Preferred schedule (ops preference)</Label>
             <Select value={schedule} onValueChange={setSchedule}>
               <SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent>
@@ -177,6 +179,9 @@ const CreatorPayouts = () => {
                 <SelectItem value="monthly">Monthly</SelectItem>
               </SelectContent>
             </Select>
+            <p className="text-[10px] text-muted-foreground mt-1">
+              Saved for operators — payouts are not automatic. Use Request payout above.
+            </p>
           </div>
           <div>
             <Label>Minimum payout ($)</Label>
