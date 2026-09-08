@@ -21,10 +21,14 @@ import { format } from 'date-fns';
 import { useAppUser } from '@/hooks/useAppUser';
 import { api } from '@convex/_generated/api';
 import { cancelSubscription, openCustomerPortal } from '@/lib/stripe';
+import { describeSubscriptionAccess } from '@/lib/billingAccess';
+import { subscriptionGrantsContentAccess } from '../../convex/lib/contentAccess';
 
 interface SubscriptionRow {
   id: string;
   status: string;
+  billingStatus: string | null;
+  cancelAtPeriodEnd: boolean;
   amount: number;
   created_at: string;
   currentPeriodEnd: number | null;
@@ -64,6 +68,8 @@ const CustomerSubscriptionsBilling = () => {
       (subsRaw ?? []).map((s) => ({
         id: s._id,
         status: s.status,
+        billingStatus: s.billingStatus ?? null,
+        cancelAtPeriodEnd: s.cancelAtPeriodEnd === true,
         amount: s.amountCents / 100,
         created_at: new Date(s.createdAt).toISOString(),
         currentPeriodEnd: s.currentPeriodEnd ?? null,
@@ -77,13 +83,38 @@ const CustomerSubscriptionsBilling = () => {
     [subsRaw],
   );
 
-  const active = subs.filter((s) => s.status === 'active');
+  const now = Date.now();
+  const active = subs.filter((s) =>
+    subscriptionGrantsContentAccess(
+      {
+        status: s.status,
+        billingStatus: s.billingStatus,
+        currentPeriodEnd: s.currentPeriodEnd,
+        cancelAtPeriodEnd: s.cancelAtPeriodEnd,
+      },
+      now,
+    ),
+  );
   const filtered = subs.filter((s) => {
-    if (statusFilter === 'active') return s.status === 'active';
-    if (statusFilter === 'cancelled') return s.status !== 'active';
+    const access = subscriptionGrantsContentAccess(
+      {
+        status: s.status,
+        billingStatus: s.billingStatus,
+        currentPeriodEnd: s.currentPeriodEnd,
+        cancelAtPeriodEnd: s.cancelAtPeriodEnd,
+      },
+      now,
+    );
+    if (statusFilter === 'active') return access;
+    if (statusFilter === 'cancelled') return !access;
     return true;
   });
   const listPriceTotal = active.reduce((sum, s) => sum + (Number(s.amount) || 0), 0);
+  const pastDueCount = subs.filter((s) => {
+    const b = (s.billingStatus ?? '').toLowerCase();
+    const st = s.status.toLowerCase();
+    return st === 'past_due' || b === 'past_due' || b === 'unpaid' || st === 'unpaid';
+  }).length;
   const busy = loading;
 
   const manageBilling = async () => {
@@ -111,16 +142,32 @@ const CustomerSubscriptionsBilling = () => {
       <div className="mb-6 flex flex-wrap items-start justify-between gap-3">
         <div>
           <h1 className="text-2xl font-bold">Subscriptions &amp; Billing</h1>
-          <p className="text-muted-foreground text-sm mt-0.5">Manage subscriptions, charges, and payment methods</p>
+          <p className="text-muted-foreground text-sm mt-0.5">
+            Manage subscriptions, charges, and payment methods. Access and billing status are shown separately when they differ.
+          </p>
         </div>
         {active.length > 0 && (
           <div className="rounded-lg border border-border bg-card px-4 py-2">
-            <p className="text-[10px] uppercase tracking-wide text-muted-foreground">Active list-price total</p>
+            <p className="text-[10px] uppercase tracking-wide text-muted-foreground">Active access list-price total</p>
             <p className="text-lg font-bold">{currency(listPriceTotal)}</p>
           </div>
         )}
       </div>
 
+      {pastDueCount > 0 && (
+        <div className="mb-4 rounded-xl border border-destructive/30 bg-destructive/5 px-4 py-3 text-sm">
+          <p className="font-medium text-destructive">
+            {pastDueCount} subscription{pastDueCount === 1 ? '' : 's'} past due
+          </p>
+          <p className="text-xs text-muted-foreground mt-1">
+            Premium access is paused until payment succeeds. Use Open Billing Portal to update your card.
+          </p>
+          <Button variant="outline" size="sm" className="mt-2 h-7 text-[11px]" onClick={manageBilling} disabled={portalLoading}>
+            {portalLoading && <Loader2 className="mr-2 h-3 w-3 animate-spin" />}
+            Open Billing Portal
+          </Button>
+        </div>
+      )}
       <Tabs defaultValue="subscriptions" className="space-y-4">
         <TabsList className="bg-muted/50">
           <TabsTrigger value="subscriptions" className="text-xs">Subscriptions</TabsTrigger>
@@ -164,11 +211,23 @@ const CustomerSubscriptionsBilling = () => {
               ) : (
                 filtered.map((sub) => {
                   const name = sub.creator?.display_name || sub.creator?.username || 'Creator';
-                  const isActive = sub.status === 'active';
-                  const periodEnd =
-                    sub.currentPeriodEnd != null
-                      ? format(new Date(sub.currentPeriodEnd), 'MMM d, yyyy')
-                      : null;
+                  const access = describeSubscriptionAccess(
+                    {
+                      status: sub.status,
+                      billingStatus: sub.billingStatus,
+                      currentPeriodEnd: sub.currentPeriodEnd,
+                      cancelAtPeriodEnd: sub.cancelAtPeriodEnd,
+                    },
+                    now,
+                  );
+                  const toneClass =
+                    access.tone === 'ok'
+                      ? 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20'
+                      : access.tone === 'warn'
+                        ? 'bg-amber-500/10 text-amber-600 border-amber-500/20'
+                        : access.tone === 'danger'
+                          ? 'bg-destructive/10 text-destructive border-destructive/20'
+                          : 'bg-muted text-muted-foreground';
                   return (
                     <div key={sub.id} className="rounded-xl border border-border bg-card p-4 flex flex-wrap items-center gap-4">
                       <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10">
@@ -178,20 +237,15 @@ const CustomerSubscriptionsBilling = () => {
                         <p className="text-sm font-medium truncate">{name}</p>
                         <p className="text-[11px] text-muted-foreground">
                           Started {format(new Date(sub.created_at), 'MMM d, yyyy')}
-                          {isActive && periodEnd ? ` · Current period ends ${periodEnd}` : ''}
-                          {isActive && !periodEnd ? ' · Next invoice date in Billing Portal' : ''}
+                          {' · '}
+                          {access.detail}
                         </p>
                       </div>
                       <p className="text-sm font-semibold">{currency(Number(sub.amount) || 0)}</p>
-                      <Badge
-                        variant="outline"
-                        className={`text-[9px] ${isActive
-                          ? 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20'
-                          : 'bg-muted text-muted-foreground'}`}
-                      >
-                        {sub.status.toUpperCase()}
+                      <Badge variant="outline" className={`text-[9px] ${toneClass}`}>
+                        {access.badge.toUpperCase()}
                       </Badge>
-                      {isActive && sub.creator && (
+                      {access.hasAccess && sub.creator && (
                         <Button
                           variant="outline"
                           size="sm"
@@ -203,7 +257,7 @@ const CustomerSubscriptionsBilling = () => {
                           Cancel
                         </Button>
                       )}
-                      {isActive && sub.creator && (sub.creator.messaging_enabled ?? true) && (
+                      {access.hasAccess && sub.creator && (sub.creator.messaging_enabled ?? true) && (
                         <Button
                           variant="outline"
                           size="sm"
@@ -211,6 +265,17 @@ const CustomerSubscriptionsBilling = () => {
                           onClick={() => navigate(`/dashboard/messages?creatorId=${sub.creator!.id}`)}
                         >
                           <MessageSquare className="mr-1 h-3 w-3" /> Message
+                        </Button>
+                      )}
+                      {!access.hasAccess && (access.tone === 'danger' || access.tone === 'warn') && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="h-7 text-[11px]"
+                          onClick={manageBilling}
+                          disabled={portalLoading}
+                        >
+                          <CreditCard className="mr-1 h-3 w-3" /> Fix billing
                         </Button>
                       )}
                       {sub.creator?.username && (
@@ -229,7 +294,8 @@ const CustomerSubscriptionsBilling = () => {
                 })
               )}
               <p className="text-[11px] text-muted-foreground pt-1">
-                Cancel ends Stripe billing and premium access for that creator immediately. Use Open Billing Portal for cards and invoices.
+                Cancel ends Stripe billing and premium access for that creator immediately after confirmation.
+                Past-due subscriptions keep the record visible but block access until payment succeeds. Use Open Billing Portal for cards and invoices.
               </p>
             </div>
           )}
