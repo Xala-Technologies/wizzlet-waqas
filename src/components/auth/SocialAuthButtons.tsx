@@ -1,7 +1,7 @@
 import { Button } from '@/components/ui/button';
 import { useAuthActions } from '@convex-dev/auth/react';
 import { useQuery } from 'convex/react';
-import { api } from '../../convex/_generated/api';
+import { api } from '@convex/_generated/api';
 import { Loader2 } from 'lucide-react';
 import { useState } from 'react';
 import { toast } from 'sonner';
