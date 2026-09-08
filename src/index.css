@@ -135,6 +135,11 @@
     @apply border-border;
   }
 
+  /* ~110% of browser default — scales rem-based Tailwind type/spacing globally */
+  html {
+    font-size: 110%;
+  }
+
   body {
     @apply bg-background text-foreground antialiased text-ui;
     font-family: 'DM Sans', system-ui, -apple-system, sans-serif;
