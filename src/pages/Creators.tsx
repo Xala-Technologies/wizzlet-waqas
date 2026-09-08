@@ -135,7 +135,7 @@ const Creators = () => {
                             {price}
                           </span>
                         )}
-                        <span className="text-[12px] font-medium text-primary opacity-0 transition-opacity group-hover:opacity-100">
+                        <span className="hover-reveal text-[12px] font-medium text-primary transition-opacity">
                           View profile →
                         </span>
                       </div>

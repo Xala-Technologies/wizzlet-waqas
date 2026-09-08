@@ -132,13 +132,13 @@ const TodaysEvents = () => {
               />
             </div>
             <Select value={sportFilter} onValueChange={setSportFilter}>
-              <SelectTrigger className="w-[140px] h-9 text-xs"><SelectValue /></SelectTrigger>
+              <SelectTrigger className="w-[140px] h-9 text-base md:text-sm"><SelectValue /></SelectTrigger>
               <SelectContent>
                 {SPORTS_FILTER.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
               </SelectContent>
             </Select>
             <Select value={timeFilter} onValueChange={setTimeFilter}>
-              <SelectTrigger className="w-[140px] h-9 text-xs"><SelectValue /></SelectTrigger>
+              <SelectTrigger className="w-[140px] h-9 text-base md:text-sm"><SelectValue /></SelectTrigger>
               <SelectContent>
                 {TIME_FILTER.map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}
               </SelectContent>

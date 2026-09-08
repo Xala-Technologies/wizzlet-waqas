@@ -21,6 +21,7 @@ import { openCustomerPortal } from '@/lib/stripe';
 import { formatDistanceToNowStrict } from 'date-fns';
 import { toast } from 'sonner';
 import { trackPostView } from '@/lib/analytics';
+import { copyToClipboard } from '@/lib/clipboard';
 import { computeWinRate } from '../../convex/lib/results';
 import { subscriptionGrantsContentAccess } from '../../convex/lib/contentAccess';
 
@@ -259,13 +260,14 @@ const Dashboard = () => {
     }
   };
 
-  const copyPick = (post: FeedPost) => {
+  const copyPick = async (post: FeedPost) => {
     const pick = parsePick(post.content);
     const text = pick
       ? `${post.title}${pick.pick ? ` | ${pick.pick}` : ''}${pick.odds ? ` | ${pick.odds}` : ''}`
       : post.title;
-    navigator.clipboard.writeText(text);
-    toast.success('Pick copied to clipboard');
+    const ok = await copyToClipboard(text);
+    if (ok) toast.success('Pick copied to clipboard');
+    else toast.error('Could not copy — try selecting the text manually');
   };
 
   if (loading) {
