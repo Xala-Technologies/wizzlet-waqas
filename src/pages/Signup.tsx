@@ -13,7 +13,7 @@ import { ACTIVE_ROLE_STORAGE_KEY } from '@/lib/roles';
 import { useConvexAuthReady, waitForAuthenticated, withAuthRetry } from '@/lib/authSession';
 import { Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
-import { SocialAuthButtons } from '@/components/auth/SocialAuthButtons';
+import { SocialAuthSection } from '@/components/auth/SocialAuthButtons';
 
 const Signup = () => {
   const navigate = useNavigate();
@@ -110,16 +110,7 @@ const Signup = () => {
           </Button>
         </form>
 
-        <div className="relative my-6">
-          <div className="absolute inset-0 flex items-center">
-            <span className="w-full border-t border-border" />
-          </div>
-          <div className="relative flex justify-center text-[11px] uppercase tracking-wide">
-            <span className="bg-background px-2 text-muted-foreground">Or</span>
-          </div>
-        </div>
-
-        <SocialAuthButtons redirectTo="/auth/callback" mode="signup" />
+        <SocialAuthSection redirectTo="/auth/callback" mode="signup" />
 
         <p className="text-center text-[13px] text-muted-foreground mt-8">
           Already have an account?{' '}
