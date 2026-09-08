@@ -11,5 +11,6 @@
 | Settled result rewrite | Creator public record | `posts.setResult`, `picks.upsert`, CreatorPosts UI, `computeWinRate` | Non-pending results locked (`RESULT_LOCKED`); win rate excludes push |
 | Onboarding one-shot publish | Creator | `CreatorOnboarding.tsx`, `upsertOnboarding`, schema `onboardingStep` | Draft save/resume; explicit publish; already-published preserved |
 | Homes lack next tasks | All roles | Dashboard / CreatorDashboard / AdminDashboard | Real-state “Next up” links only |
+| Billing clarity + access labels (Phase 2 start) | Member | `src/lib/billingAccess.ts`, `CustomerSubscriptionsBilling.tsx` | Badges/details match entitlement matrix; past_due CTA to portal |
 
 Later phases (out of scope): discover rewrite, Playwright matrix, notification digests, MFA, Vercel promote.

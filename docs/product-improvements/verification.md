@@ -1,22 +1,33 @@
-# Product improvements — verification (Phase 1)
+# Product improvements — verification (Phase 1 + Phase 2 start)
 
-**Scope gate:** declared Phase 1 only (not whole-product readiness).
+**Scope gate:** Phase 1 declared scope + Phase 2 billing clarity slice.
+
+## Phase 1
 
 | Check | Method | Result |
 |-------|--------|--------|
-| Baseline branch/commit recorded | git | PASS — `2c2ef56` → `fix/product-excellence-phase1` |
-| `subscriptionGrantsContentAccess` unit cases | vitest `src/lib/contentAccess.test.ts` | PASS |
-| Result lock helpers + win rate excludes push | vitest `src/lib/contentAccess.test.ts` / `results.test.ts` | PASS |
-| Onboarding draft ≠ auto-publish | code review (`CreatorOnboarding` Save draft / Publish) | PASS (static) |
-| Email change request mutation + settings UI | code review (`accountRequests` + `CustomerSettings`) | PASS (static) |
-| Task rails use real query state | code review (member/creator/admin homes) | PASS (static) |
-| Stripe webhook duplicate soak | staging | BLOCKED — no approved isolated Stripe+Convex soak target this wave |
+| Baseline branch/commit recorded | git | PASS — merged as PR #29 (`39a2902`) |
+| `subscriptionGrantsContentAccess` unit cases | vitest | PASS |
+| Result lock helpers + win rate excludes push | vitest | PASS |
+| Onboarding draft ≠ auto-publish | code review | PASS (static) |
+| Email change request + settings UI | code review | PASS (static) |
+| Task rails use real query state | code review | PASS (static) |
+| Production landing + login load | browser (vercel.app) | PASS |
+| Authenticated homes / settings / onboarding / locked results | browser | NOT_RUN — production login has no bootstrap; no test credentials in session |
+| Stripe webhook duplicate soak | staging | BLOCKED |
 | Cancel + billing portal E2E | staging | NOT_RUN |
 | axe / Lighthouse | — | NOT_RUN |
-| Production deploy / Vercel promote | — | NOT_APPLICABLE (not authorized) |
+| Vercel production promote | CLI | PASS — promoted after PR #29 |
 
-## Final gate
+## Phase 2 (in progress on `fix/product-excellence-phase2-billing`)
 
-**VERIFIED FOR THE DECLARED SCOPE** for local code + unit tests covering entitlements, result lock helpers, and win-rate formula.
+| Check | Method | Result |
+|-------|--------|--------|
+| Member billing labels match access matrix | vitest `billingAccess.test.ts` | PASS |
+| Billing UI shows past_due / canceling / access copy | code (`CustomerSubscriptionsBilling`) | PASS (static) |
 
-Remaining: Stripe soak **BLOCKED**; browser smoke of onboarding/settings/homes **NOT_RUN** in this session (no interactive auth soak). Whole-product readiness is **not** claimed.
+## Final gate (Phase 1)
+
+**VERIFIED FOR THE DECLARED SCOPE** for shipped Phase 1 code + units + public production smoke.
+
+Authenticated browser smoke remains **NOT_RUN**. Stripe soak remains **BLOCKED**.

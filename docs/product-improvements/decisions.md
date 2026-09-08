@@ -40,3 +40,9 @@ Notes:
 
 - `ALLOW_SANDBOX_CHECKOUT`
 - `ALLOW_DEV_ADMIN_GRANT`
+
+## Phase 2 — member billing clarity
+
+- UI labels come from `describeSubscriptionAccess` (same rules as `subscriptionGrantsContentAccess`).
+- Member cancel action uses Stripe `subscriptions.cancel` (immediate end) after `cancel_pending` marker; copy must say access ends after confirmed cancel, not “at period end”, unless Stripe returns `cancel_at_period_end` from another path.
+- “Active” filter means **has content access**, not raw `status === "active"` (so past_due is excluded).
