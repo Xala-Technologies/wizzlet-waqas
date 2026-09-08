@@ -9,6 +9,7 @@ import { Label } from '@/components/ui/label';
 import { useCreatorProfile } from '@/hooks/useCreatorProfile';
 import { Link2, Plus, Copy, Trash2, MousePointerClick, TrendingUp, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
+import { copyToClipboard } from '@/lib/clipboard';
 
 const CreatorLinks = () => {
   const { creator, loading: creatorLoading } = useCreatorProfile();
@@ -52,9 +53,10 @@ const CreatorLinks = () => {
   const totalConversions = rows.reduce((a, b) => a + b.conversions, 0);
   const trackingUrl = (id: string) => `${window.location.origin}/go/${id}`;
 
-  const copyTracking = (id: string) => {
-    void navigator.clipboard.writeText(trackingUrl(id));
-    toast.success('Tracking link copied');
+  const copyTracking = async (id: string) => {
+    const ok = await copyToClipboard(trackingUrl(id));
+    if (ok) toast.success('Tracking link copied');
+    else toast.error('Could not copy — try selecting the text manually');
   };
 
   return (
@@ -128,7 +130,13 @@ const CreatorLinks = () => {
                   <p className="text-sm font-bold">{link.conversions}</p>
                   <p className="text-caption text-muted-foreground">conv.</p>
                 </div>
-                <Button variant="ghost" size="sm" onClick={() => { navigator.clipboard.writeText(link.url); toast.success('Copied!'); }}>
+                <Button variant="ghost" size="sm" onClick={() => {
+                  void (async () => {
+                    const ok = await copyToClipboard(link.url);
+                    if (ok) toast.success('Copied!');
+                    else toast.error('Could not copy — try selecting the text manually');
+                  })();
+                }}>
                   <Copy className="h-3.5 w-3.5" />
                 </Button>
                 <Button variant="ghost" size="sm" onClick={() => handleDelete(link._id)}>

@@ -16,6 +16,7 @@ import { format, formatDistanceToNowStrict } from 'date-fns';
 import PricingCards from '@/components/creator/PricingCards';
 import { ResponsiveContainer, AreaChart, Area, XAxis, YAxis, Tooltip } from 'recharts';
 import { toast } from 'sonner';
+import { copyToClipboard } from '@/lib/clipboard';
 
 interface Creator {
   id: string;
@@ -453,10 +454,13 @@ const CreatorProfile = () => {
                     <div className="pt-2 mt-2 border-t border-border">
                       <Button variant="ghost" size="sm" className="h-7 text-caption text-muted-foreground hover:text-foreground"
                         onClick={() => {
-                          const p = parsePick(post.content);
-                          const text = p ? `${post.title}${p.pick ? ` | ${p.pick}` : ''}${p.odds ? ` | ${p.odds}` : ''}` : post.title;
-                          navigator.clipboard.writeText(text);
-                          toast.success('Pick copied to clipboard');
+                          void (async () => {
+                            const p = parsePick(post.content);
+                            const text = p ? `${post.title}${p.pick ? ` | ${p.pick}` : ''}${p.odds ? ` | ${p.odds}` : ''}` : post.title;
+                            const ok = await copyToClipboard(text);
+                            if (ok) toast.success('Pick copied to clipboard');
+                            else toast.error('Could not copy — try selecting the text manually');
+                          })();
                         }}>
                         <Copy className="h-3 w-3 mr-1" /> Copy Pick
                       </Button>

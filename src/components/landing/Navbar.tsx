@@ -43,7 +43,7 @@ export function Navbar() {
     >
       Skip to main content
     </a>
-    <nav className="fixed top-0 left-0 right-0 z-50 border-b border-border bg-card/70 backdrop-blur-2xl">
+    <nav className="fixed top-0 left-0 right-0 z-50 border-b border-border bg-card/95 backdrop-blur-2xl">
 
       <div className="container flex h-16 items-center justify-between">
         {/* LEFT: Logo */}

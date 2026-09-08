@@ -9,6 +9,7 @@ import {
   isAppRole,
   resolveActiveRole,
 } from '@/lib/roles';
+import { safeGetItem, safeRemoveItem, safeSetItem } from '@/lib/safeStorage';
 
 const DEV_BYPASS_ALLOWED = import.meta.env.DEV;
 
@@ -58,21 +59,13 @@ const AuthContext = createContext<AuthContextType>({
 export const useAuth = () => useContext(AuthContext);
 
 function readStoredRole(): AppRole | null {
-  try {
-    const stored = localStorage.getItem(ACTIVE_ROLE_STORAGE_KEY);
-    return isAppRole(stored) ? stored : null;
-  } catch {
-    return null;
-  }
+  const stored = safeGetItem(ACTIVE_ROLE_STORAGE_KEY);
+  return isAppRole(stored) ? stored : null;
 }
 
 function persistRole(role: AppRole | null) {
-  try {
-    if (role) localStorage.setItem(ACTIVE_ROLE_STORAGE_KEY, role);
-    else localStorage.removeItem(ACTIVE_ROLE_STORAGE_KEY);
-  } catch {
-    /* ignore */
-  }
+  if (role) safeSetItem(ACTIVE_ROLE_STORAGE_KEY, role);
+  else safeRemoveItem(ACTIVE_ROLE_STORAGE_KEY);
 }
 
 function AuthProviderInner({ children }: { children: ReactNode }) {

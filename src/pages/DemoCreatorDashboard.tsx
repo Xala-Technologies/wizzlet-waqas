@@ -214,7 +214,7 @@ function CreatePost({ store, go }: { store: DemoStore; go: (t: TabKey) => void }
             <div>
               <Label className="text-caption">Sport</Label>
               <select
-                className="mt-1 h-10 w-full rounded-md border border-input bg-background px-3 text-sm"
+                className="mt-1 h-10 w-full rounded-md border border-input bg-background px-3 text-base md:text-sm"
                 value={sport}
                 onChange={e => setSport(e.target.value)}
               >
@@ -465,7 +465,7 @@ function Products({ store }: { store: DemoStore }) {
             <div><Label className="text-caption" htmlFor="tier-price">Price ($)</Label><Input id="tier-price" className="mt-1" type="number" value={price} onChange={e => setPrice(e.target.value)} /></div>
             <div>
               <Label className="text-caption" htmlFor="tier-billing">Billing</Label>
-              <select id="tier-billing" className="mt-1 h-10 w-full rounded-md border border-input bg-background px-3 text-sm" value={period} onChange={e => setPeriod(e.target.value as typeof period)}>
+              <select id="tier-billing" className="mt-1 h-10 w-full rounded-md border border-input bg-background px-3 text-base md:text-ui" value={period} onChange={e => setPeriod(e.target.value as typeof period)}>
                 <option value="monthly">Monthly</option>
                 <option value="quarterly">Quarterly</option>
                 <option value="yearly">Yearly</option>
