@@ -45,7 +45,7 @@ const Creators = () => {
             Creators who publish with an edge
           </h1>
           <p className="mt-4 max-w-xl text-ui leading-relaxed text-muted-foreground">
-            Live profiles from the Prizelet network. Subscribe for gated picks — no algorithm,
+            Live profiles from the Prizelet network. Subscribe for gated content — no algorithm,
             no public feed noise.
           </p>
 

@@ -68,13 +68,13 @@ const SelectRole = () => {
       id: 'creator' as const,
       icon: Crown,
       title: 'Become a Creator',
-      description: 'Share your sports picks, build an audience, and earn from subscriptions.',
+      description: 'Publish premium content, build an audience, and earn from subscriptions.',
     },
     {
       id: 'subscriber' as const,
       icon: Users,
       title: 'Continue as Subscriber',
-      description: 'Follow top creators and access premium sports picks and content.',
+      description: 'Follow top creators and access their premium content.',
     },
   ];
 

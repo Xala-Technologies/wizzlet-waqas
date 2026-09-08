@@ -5,7 +5,7 @@ const features = [
   {
     icon: Lock,
     title: 'Gated Content',
-    description: 'Lock premium picks behind paid tiers. Control what\'s free and what\'s exclusive.',
+    description: 'Lock premium content behind paid tiers. Control what\'s free and what\'s exclusive.',
   },
   {
     icon: CreditCard,
@@ -29,7 +29,7 @@ export function FeaturesSection() {
             Everything you need to grow
           </h2>
           <p className="text-muted-foreground text-sm max-w-md mx-auto">
-            Built for sports creators who want to build a real business.
+            Built for creators who want to build a real business.
           </p>
         </div>
 

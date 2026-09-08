@@ -30,8 +30,8 @@ export function Footer() {
           <div className="max-w-sm">
             <PrizeletLogo size="md" />
             <p className="mt-4 text-ui leading-relaxed text-muted-foreground">
-              Private betting infrastructure for creators who treat their edge like a business —
-              subscriptions, gated picks, and payouts in one place.
+              Private creator infrastructure for people who treat their work like a business —
+              subscriptions, gated content, and payouts in one place.
             </p>
             <p className="mt-6 text-caption uppercase tracking-[0.18em] text-muted-foreground/60">
               Invite-only · Manually reviewed
