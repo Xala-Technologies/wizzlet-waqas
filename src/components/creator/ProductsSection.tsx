@@ -342,7 +342,7 @@ const ProductsSection = ({ creatorId }: ProductsSectionProps) => {
                   </SelectContent>
                 </Select>
                 <p className="text-[11px] text-muted-foreground mt-1">
-                  Launch supports monthly recurring only.
+                  Creators can only sell monthly subscriptions for now.
                 </p>
               </div>
             </div>

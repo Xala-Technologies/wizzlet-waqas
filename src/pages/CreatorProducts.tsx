@@ -11,7 +11,7 @@ const CreatorProducts = () => {
     <DashboardLayout type="creator">
       <div className="mb-6">
         <h1 className="text-2xl font-bold">Products</h1>
-        <p className="text-muted-foreground text-sm mt-0.5">Manage your pricing plans and products</p>
+        <p className="text-muted-foreground text-sm mt-0.5">Manage monthly pricing plans (monthly only)</p>
       </div>
       {creator === undefined ? (
         <div className="flex justify-center py-20"><Loader2 className="h-5 w-5 animate-spin text-primary" /></div>

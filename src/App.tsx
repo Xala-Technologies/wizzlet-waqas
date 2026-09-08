@@ -26,6 +26,7 @@ import DemoMemberResults from "./pages/DemoMemberResults";
 import DemoMemberSaved from "./pages/DemoMemberSaved";
 import DemoMemberNotifications from "./pages/DemoMemberNotifications";
 import Signup from "./pages/Signup";
+import AuthCallback from "./pages/AuthCallback";
 import SelectRole from "./pages/SelectRole";
 import Dashboard from "./pages/Dashboard";
 import CustomerResults from "./pages/CustomerResults";
@@ -114,6 +115,7 @@ const App = () => (
             <Route path="/community" element={<Community />} />
             <Route path="/login" element={<Login />} />
             <Route path="/signup" element={<Signup />} />
+            <Route path="/auth/callback" element={<AuthCallback />} />
             <Route path="/select-role" element={<SelectRole />} />
 
             {/* Demo routes — no auth required */}

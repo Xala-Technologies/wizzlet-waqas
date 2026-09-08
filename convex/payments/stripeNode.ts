@@ -7,6 +7,7 @@ import { getAuthUserId } from "@convex-dev/auth/server";
 import { internal } from "../_generated/api";
 import type { Id } from "../_generated/dataModel";
 import { isStripeAlreadyCanceledError } from "../lib/commerceIdentity";
+import { stripeCouponDuration } from "../lib/promoCodes";
 
 function requireStripe(): Stripe {
   const key = process.env.STRIPE_SECRET_KEY;
@@ -79,6 +80,7 @@ export const createCheckoutSession = action({
       promoId: Id<"promoCodes">;
       code: string;
       discountPercent: number;
+      discountDuration: "once" | "forever";
     } | null = null;
     if (args.promoCode?.trim()) {
       promo = await ctx.runQuery(internal.creators.growth.resolvePromoForCheckout, {
@@ -96,9 +98,10 @@ export const createCheckoutSession = action({
 
     let discountCouponId: string | undefined;
     if (promo) {
+      const duration = stripeCouponDuration(promo.discountDuration);
       const coupon = await stripe.coupons.create({
         percent_off: promo.discountPercent,
-        duration: "once",
+        duration: duration.duration,
         name: `Wizzlet ${promo.code}`,
         max_redemptions: 1,
       });
