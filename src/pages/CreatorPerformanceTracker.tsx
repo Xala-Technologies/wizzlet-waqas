@@ -465,11 +465,11 @@ const CreatorPerformanceTracker = () => {
     <>
       <div className={compact ? 'w-full sm:w-[75px]' : ''}>
         <label className={`text-muted-foreground mb-0.5 block ${compact ? 'text-[10px]' : 'text-xs mb-1'}`}>EU Odds</label>
-        <Input type="number" step="0.01" min="1.01" placeholder="1.91" className={compact ? 'h-8 text-xs' : ''} value={form.eu_odds} onChange={e => handleEuChange(e.target.value)} />
+        <Input type="number" step="0.01" min="1.01" placeholder="1.91" className={compact ? 'h-8 text-base md:text-sm' : ''} value={form.eu_odds} onChange={e => handleEuChange(e.target.value)} />
       </div>
       <div className={compact ? 'w-full sm:w-[75px]' : ''}>
         <label className={`text-muted-foreground mb-0.5 block ${compact ? 'text-[10px]' : 'text-xs mb-1'}`}>US Odds</label>
-        <Input placeholder="-110" className={compact ? 'h-8 text-xs' : ''} value={form.us_odds} onChange={e => handleUsChange(e.target.value)} />
+        <Input placeholder="-110" className={compact ? 'h-8 text-base md:text-sm' : ''} value={form.us_odds} onChange={e => handleUsChange(e.target.value)} />
       </div>
     </>
   );
@@ -597,13 +597,13 @@ const CreatorPerformanceTracker = () => {
       {quickAddOpen && (
         <div className="rounded-lg border border-primary/20 bg-card p-3 mb-4">
           <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-4 xl:flex xl:flex-wrap xl:items-end">
-            <div className="w-full sm:w-auto xl:w-[100px]"><label className="text-[10px] text-muted-foreground mb-0.5 block">Date</label><Input type="date" className="h-9 text-xs" value={form.date} onChange={e => setForm(f => ({ ...f, date: e.target.value }))} /></div>
-            <div className="w-full sm:col-span-2 xl:flex-1 xl:min-w-[120px]"><label className="text-[10px] text-muted-foreground mb-0.5 block">Pick / Event</label><Input className="h-9 text-xs" placeholder="Chiefs -3.5" value={form.pick_event} onChange={e => setForm(f => ({ ...f, pick_event: e.target.value }))} /></div>
-            <div className="w-full sm:w-auto xl:w-[80px]"><label className="text-[10px] text-muted-foreground mb-0.5 block">Sport</label><Select value={form.sport} onValueChange={v => setForm(f => ({ ...f, sport: v }))}><SelectTrigger className="h-9 text-xs"><SelectValue /></SelectTrigger><SelectContent>{SPORTS.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}</SelectContent></Select></div>
+            <div className="w-full sm:w-auto xl:w-[100px]"><label className="text-[10px] text-muted-foreground mb-0.5 block">Date</label><Input type="date" className="h-9 text-base md:text-sm" value={form.date} onChange={e => setForm(f => ({ ...f, date: e.target.value }))} /></div>
+            <div className="w-full sm:col-span-2 xl:flex-1 xl:min-w-[120px]"><label className="text-[10px] text-muted-foreground mb-0.5 block">Pick / Event</label><Input className="h-9 text-base md:text-sm" placeholder="Chiefs -3.5" value={form.pick_event} onChange={e => setForm(f => ({ ...f, pick_event: e.target.value }))} /></div>
+            <div className="w-full sm:w-auto xl:w-[80px]"><label className="text-[10px] text-muted-foreground mb-0.5 block">Sport</label><Select value={form.sport} onValueChange={v => setForm(f => ({ ...f, sport: v }))}><SelectTrigger className="h-9 text-base md:text-sm"><SelectValue /></SelectTrigger><SelectContent>{SPORTS.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}</SelectContent></Select></div>
             <OddsFields compact />
-            <div className="w-full sm:w-auto xl:w-[72px]"><label className="text-[10px] text-muted-foreground mb-0.5 block">Risked</label><Input type="number" step="0.5" className="h-9 text-xs" value={form.units_risked} onChange={e => setForm(f => ({ ...f, units_risked: e.target.value }))} /></div>
-            <div className="w-full sm:w-auto xl:w-[85px]"><label className="text-[10px] text-muted-foreground mb-0.5 block">Result</label><Select value={form.result} onValueChange={v => setForm(f => ({ ...f, result: v }))}><SelectTrigger className="h-9 text-xs"><SelectValue /></SelectTrigger><SelectContent>{RESULTS.map(r => <SelectItem key={r} value={r}>{r.charAt(0).toUpperCase() + r.slice(1)}</SelectItem>)}</SelectContent></Select></div>
-            <div className="w-full sm:w-auto xl:w-[72px]"><label className="text-[10px] text-muted-foreground mb-0.5 block">+/−</label><Input type="number" step="0.5" className="h-9 text-xs" value={form.units_won_lost} onChange={e => setForm(f => ({ ...f, units_won_lost: e.target.value }))} /></div>
+            <div className="w-full sm:w-auto xl:w-[72px]"><label className="text-[10px] text-muted-foreground mb-0.5 block">Risked</label><Input type="number" step="0.5" className="h-9 text-base md:text-sm" value={form.units_risked} onChange={e => setForm(f => ({ ...f, units_risked: e.target.value }))} /></div>
+            <div className="w-full sm:w-auto xl:w-[85px]"><label className="text-[10px] text-muted-foreground mb-0.5 block">Result</label><Select value={form.result} onValueChange={v => setForm(f => ({ ...f, result: v }))}><SelectTrigger className="h-9 text-base md:text-sm"><SelectValue /></SelectTrigger><SelectContent>{RESULTS.map(r => <SelectItem key={r} value={r}>{r.charAt(0).toUpperCase() + r.slice(1)}</SelectItem>)}</SelectContent></Select></div>
+            <div className="w-full sm:w-auto xl:w-[72px]"><label className="text-[10px] text-muted-foreground mb-0.5 block">+/−</label><Input type="number" step="0.5" className="h-9 text-base md:text-sm" value={form.units_won_lost} onChange={e => setForm(f => ({ ...f, units_won_lost: e.target.value }))} /></div>
             <div className="flex gap-2 w-full sm:w-auto xl:w-auto">
               <Button size="sm" className="h-9 min-h-9 text-xs px-3 flex-1 sm:flex-none" onClick={handleSubmit} disabled={upsertMutation.isPending}>Add</Button>
               <Button variant="ghost" size="sm" className="h-9 min-h-9 text-xs px-3" onClick={() => setQuickAddOpen(false)}>✕</Button>

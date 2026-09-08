@@ -8,6 +8,7 @@ import { buildReferralCode, useCreatorProfile } from '@/hooks/useCreatorProfile'
 import { UserPlus, Users, DollarSign, Copy, Gift, Loader2 } from 'lucide-react';
 import { format } from 'date-fns';
 import { toast } from 'sonner';
+import { copyToClipboard } from '@/lib/clipboard';
 
 const CreatorReferrals = () => {
   const { creator, loading: creatorLoading } = useCreatorProfile();
@@ -87,7 +88,13 @@ const CreatorReferrals = () => {
             size="sm"
             className="h-11 min-h-11 w-full sm:w-auto shrink-0"
             disabled={!referralLink}
-            onClick={() => { navigator.clipboard.writeText(referralLink); toast.success('Referral link copied!'); }}
+            onClick={() => {
+              void (async () => {
+                const ok = await copyToClipboard(referralLink);
+                if (ok) toast.success('Referral link copied!');
+                else toast.error('Could not copy — try selecting the text manually');
+              })();
+            }}
           >
             <Copy className="mr-1.5 h-3.5 w-3.5" /> Copy
           </Button>

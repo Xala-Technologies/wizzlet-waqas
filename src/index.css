@@ -2,8 +2,6 @@
 @tailwind components;
 @tailwind utilities;
 
-@import url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;0,9..40,800&family=JetBrains+Mono:wght@400;500&display=swap');
-
 @layer base {
   :root {
     --background: 0 0% 100%;
@@ -178,6 +176,30 @@
   }
   .dark .placeholder\:text-muted-foreground\/40::placeholder {
     color: hsl(var(--muted-foreground) / 0.55);
+  }
+
+  /* svh fallbacks for browsers without small viewport units */
+  .min-h-svh {
+    min-height: 100vh;
+    min-height: 100svh;
+  }
+  .h-svh {
+    height: 100vh;
+    height: 100svh;
+  }
+
+  /* Touch devices: keep hover-reveal affordances visible without hover */
+  .hover-reveal {
+    opacity: 1;
+  }
+  @media (hover: hover) and (pointer: fine) {
+    .hover-reveal {
+      opacity: 0;
+    }
+    .group:hover .hover-reveal,
+    .group:focus-within .hover-reveal {
+      opacity: 1;
+    }
   }
 }
 
