@@ -19,6 +19,8 @@ import type * as bookmarks_mutations from "../bookmarks/mutations.js";
 import type * as creators_earnings from "../creators/earnings.js";
 import type * as creators_growth from "../creators/growth.js";
 import type * as creators_queries from "../creators/queries.js";
+import type * as discord_queries from "../discord/queries.js";
+import type * as discord_roles from "../discord/roles.js";
 import type * as events_queries from "../events/queries.js";
 import type * as files_storage from "../files/storage.js";
 import type * as http from "../http.js";
@@ -74,6 +76,8 @@ declare const fullApi: ApiFromModules<{
   "creators/earnings": typeof creators_earnings;
   "creators/growth": typeof creators_growth;
   "creators/queries": typeof creators_queries;
+  "discord/queries": typeof discord_queries;
+  "discord/roles": typeof discord_roles;
   "events/queries": typeof events_queries;
   "files/storage": typeof files_storage;
   http: typeof http;

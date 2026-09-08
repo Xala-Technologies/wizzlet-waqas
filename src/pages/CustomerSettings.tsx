@@ -180,6 +180,35 @@ const CustomerSettings = () => {
           </section>
 
           <section className="rounded-xl border border-border bg-card p-5">
+            <div className="flex items-center gap-3 mb-3">
+              <Shield className="h-4 w-4 text-[#5865F2]" />
+              <h2 className="text-sm font-semibold">Discord</h2>
+            </div>
+            {me?.discordId ? (
+              <p className="text-sm text-muted-foreground">
+                Connected as <span className="font-medium text-foreground">{me.discordUsername ?? me.discordId}</span>.
+                Active subscriptions can grant Discord roles when the creator has roles configured.
+              </p>
+            ) : (
+              <div className="space-y-2">
+                <p className="text-sm text-muted-foreground">
+                  To receive Discord roles, create/sign in with Discord (or continue with Discord on the login page) so your Discord user id is stored on this account.
+                </p>
+                <Button size="sm" variant="outline" asChild>
+                  <a href="/login">Continue with Discord</a>
+                </Button>
+              </div>
+            )}
+            {me?.image || me?.username ? (
+              <p className="text-xs text-muted-foreground mt-3">
+                Profile from social sign-in
+                {me.username ? <> · @{me.username}</> : null}
+                {me.image ? ' · photo synced' : null}
+              </p>
+            ) : null}
+          </section>
+
+          <section className="rounded-xl border border-border bg-card p-5">
             <div className="flex items-center gap-3 mb-2">
               <Bell className="h-4 w-4 text-primary" />
               <h2 className="text-sm font-semibold">Notifications</h2>

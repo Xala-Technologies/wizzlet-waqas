@@ -524,6 +524,10 @@ export const promoCodeDocValidator = v.object({
   creatorId: v.id("creators"),
   code: v.string(),
   discountPercent: v.number(),
+  discountDuration: v.optional(
+    v.union(v.literal("once"), v.literal("forever")),
+  ),
+  durationInPayments: v.optional(v.number()),
   maxUses: v.optional(v.number()),
   usedCount: v.number(),
   expiresAt: v.optional(v.number()),

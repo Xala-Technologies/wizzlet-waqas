@@ -26,6 +26,7 @@ import { ResponsiveContainer, AreaChart, Area, XAxis, YAxis, Tooltip, PieChart, 
 import { downloadCsv, readFileAsText } from '@/lib/csv';
 import { PICK_CSV_HEADERS, parsePickCsv } from '@/lib/pickCsv';
 import { americanToDecimal, decimalToAmerican } from '@/lib/odds';
+import { DesktopTableRegion, MobileRecordCards } from '@/components/dashboard/MobileRecordList';
 
 // --- Types ---
 interface PickEntry {
@@ -593,71 +594,121 @@ const CustomerResults = () => {
           <Button size="sm" onClick={() => { resetForm(); setQuickAddOpen(true); }} className="gap-1.5"><Plus className="h-3.5 w-3.5" /> Add First Pick</Button>
         </div>
       ) : (
-        <div
-          role="region"
-          aria-label="My results picks table"
-          tabIndex={0}
-          className="rounded-lg border border-border overflow-x-auto overflow-y-auto max-h-[420px] mb-5 max-w-full"
-        >
-          <Table className="min-w-[720px]">
-            <TableHeader className="sticky top-0 z-10">
-              <TableRow className="bg-muted/60 hover:bg-muted/60">
-                <TableHead className="text-[9px] font-semibold uppercase tracking-wider py-1.5 px-2 w-[78px] sticky left-0 z-[1] bg-muted/95">Date</TableHead>
-                <TableHead className="text-[9px] font-semibold uppercase tracking-wider py-1.5 px-2">Pick / Event</TableHead>
-                <TableHead className="text-[9px] font-semibold uppercase tracking-wider py-1.5 px-2 w-[55px]">Sport</TableHead>
-                <TableHead className="text-[9px] font-semibold uppercase tracking-wider py-1.5 px-2 w-[52px] text-right">EU</TableHead>
-                <TableHead className="text-[9px] font-semibold uppercase tracking-wider py-1.5 px-2 w-[52px] text-right">US</TableHead>
-                <TableHead className="text-[9px] font-semibold uppercase tracking-wider py-1.5 px-2 w-[52px] text-right">Risk</TableHead>
-                <TableHead className="text-[9px] font-semibold uppercase tracking-wider py-1.5 px-2 w-[48px]">Res</TableHead>
-                <TableHead className="text-[9px] font-semibold uppercase tracking-wider py-1.5 px-2 w-[52px] text-right">+/−</TableHead>
-                <TableHead className="text-[9px] font-semibold uppercase tracking-wider py-1.5 px-2 w-[56px] text-right">Net</TableHead>
-                <TableHead className="text-[9px] font-semibold uppercase tracking-wider py-1.5 px-2 w-[80px]">Notes</TableHead>
-                <TableHead className="py-1.5 px-1 w-[48px]"></TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {displayPicks.map((pick, i) => (
-                <TableRow key={pick.id} className={`hover:bg-muted/30 transition-colors ${i % 2 === 0 ? '' : 'bg-muted/8'}`}>
-                  <TableCell className="text-[10px] py-1 px-2 font-mono text-muted-foreground sticky left-0 z-[1] bg-card">{pick.date}</TableCell>
-                  <TableCell className="text-[10px] py-1 px-2 font-medium">{pick.pick_event}</TableCell>
-                  <TableCell className="py-1 px-2"><span className="text-[8px] font-medium text-muted-foreground bg-muted/50 rounded px-1 py-0.5">{pick.sport}</span></TableCell>
-                  <TableCell className="text-[10px] py-1 px-2 text-right font-mono text-muted-foreground">{pick.eu_odds || '—'}</TableCell>
-                  <TableCell className="text-[10px] py-1 px-2 text-right font-mono text-muted-foreground">{pick.us_odds || '—'}</TableCell>
-                  <TableCell className="text-[10px] py-1 px-2 text-right font-mono">{pick.units_risked}u</TableCell>
-                  <TableCell className="py-1 px-2">
-                    <span className={`text-[9px] font-bold uppercase ${
-                      pick.result === 'win' ? 'text-emerald-400' : pick.result === 'loss' ? 'text-destructive' : 'text-muted-foreground'
-                    }`}>
-                      {pick.result === 'win' ? '✓ W' : pick.result === 'loss' ? '✗ L' : pick.result === 'push' ? '— P' : '⏳'}
-                    </span>
-                  </TableCell>
-                  <TableCell className={`text-[10px] py-1 px-2 text-right font-mono font-medium ${valColor(pick.units_won_lost || 0)}`}>
-                    {fmtUnit(pick.units_won_lost || 0)}
-                  </TableCell>
-                  <TableCell className={`text-[10px] py-1 px-2 text-right font-mono font-semibold ${valColor(pick.runningTotal)}`}>
-                    {fmtUnit(pick.runningTotal)}
-                  </TableCell>
-                  <TableCell className="text-[9px] py-1 px-2 text-muted-foreground/60 max-w-[80px] truncate">{pick.notes || ''}</TableCell>
-                  <TableCell className="py-1 px-1">
-                    <div className="flex gap-0.5">
-                      <Button variant="ghost" size="icon" className="h-9 w-9 opacity-60 hover:opacity-100" onClick={() => handleEdit(pick)} aria-label="Edit pick"><Pencil className="h-3.5 w-3.5" /></Button>
-                      <Button variant="ghost" size="icon" className="h-9 w-9 opacity-60 hover:opacity-100 text-destructive" onClick={() => handleDelete(pick.id)} disabled={deletingId === pick.id} aria-label="Delete pick"><Trash2 className="h-3.5 w-3.5" /></Button>
-                    </div>
-                  </TableCell>
+        <div className="mb-5 space-y-3">
+          <MobileRecordCards>
+            {displayPicks.map((pick) => (
+              <li key={pick.id} className="rounded-xl border border-border bg-card p-4">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <p className="text-sm font-medium leading-snug">{pick.pick_event}</p>
+                    <p className="text-[11px] text-muted-foreground mt-1 font-mono">
+                      {pick.date} · {pick.sport}
+                    </p>
+                  </div>
+                  <span className={`text-[11px] font-bold uppercase shrink-0 ${
+                    pick.result === 'win' ? 'text-emerald-400' : pick.result === 'loss' ? 'text-destructive' : 'text-muted-foreground'
+                  }`}>
+                    {pick.result === 'win' ? 'Win' : pick.result === 'loss' ? 'Loss' : pick.result === 'push' ? 'Push' : 'Pending'}
+                  </span>
+                </div>
+                <div className="mt-3 grid grid-cols-3 gap-2 text-[11px]">
+                  <div>
+                    <p className="text-muted-foreground">Risk</p>
+                    <p className="font-mono font-medium">{pick.units_risked}u</p>
+                  </div>
+                  <div>
+                    <p className="text-muted-foreground">+/−</p>
+                    <p className={`font-mono font-medium ${valColor(pick.units_won_lost || 0)}`}>{fmtUnit(pick.units_won_lost || 0)}</p>
+                  </div>
+                  <div>
+                    <p className="text-muted-foreground">Net</p>
+                    <p className={`font-mono font-semibold ${valColor(pick.runningTotal)}`}>{fmtUnit(pick.runningTotal)}</p>
+                  </div>
+                </div>
+                {(pick.eu_odds || pick.us_odds) && (
+                  <p className="text-[11px] text-muted-foreground mt-2 font-mono">
+                    Odds {pick.eu_odds ?? '—'} / {pick.us_odds ?? '—'}
+                  </p>
+                )}
+                <div className="flex gap-1 mt-3 -ml-2">
+                  <Button variant="ghost" size="sm" className="h-9 gap-1.5 text-xs" onClick={() => handleEdit(pick)}>
+                    <Pencil className="h-3.5 w-3.5" /> Edit
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-9 gap-1.5 text-xs text-destructive"
+                    onClick={() => handleDelete(pick.id)}
+                    disabled={deletingId === pick.id}
+                  >
+                    <Trash2 className="h-3.5 w-3.5" /> Delete
+                  </Button>
+                </div>
+              </li>
+            ))}
+          </MobileRecordCards>
+
+          <DesktopTableRegion label="My results picks table" className="overflow-y-auto max-h-[420px]">
+            <Table className="min-w-[720px]">
+              <TableHeader className="sticky top-0 z-10">
+                <TableRow className="bg-muted/60 hover:bg-muted/60">
+                  <TableHead className="text-[9px] font-semibold uppercase tracking-wider py-1.5 px-2 w-[78px] sticky left-0 z-[1] bg-muted/95">Date</TableHead>
+                  <TableHead className="text-[9px] font-semibold uppercase tracking-wider py-1.5 px-2">Pick / Event</TableHead>
+                  <TableHead className="text-[9px] font-semibold uppercase tracking-wider py-1.5 px-2 w-[55px]">Sport</TableHead>
+                  <TableHead className="text-[9px] font-semibold uppercase tracking-wider py-1.5 px-2 w-[52px] text-right">EU</TableHead>
+                  <TableHead className="text-[9px] font-semibold uppercase tracking-wider py-1.5 px-2 w-[52px] text-right">US</TableHead>
+                  <TableHead className="text-[9px] font-semibold uppercase tracking-wider py-1.5 px-2 w-[52px] text-right">Risk</TableHead>
+                  <TableHead className="text-[9px] font-semibold uppercase tracking-wider py-1.5 px-2 w-[48px]">Res</TableHead>
+                  <TableHead className="text-[9px] font-semibold uppercase tracking-wider py-1.5 px-2 w-[52px] text-right">+/−</TableHead>
+                  <TableHead className="text-[9px] font-semibold uppercase tracking-wider py-1.5 px-2 w-[56px] text-right">Net</TableHead>
+                  <TableHead className="text-[9px] font-semibold uppercase tracking-wider py-1.5 px-2 w-[80px]">Notes</TableHead>
+                  <TableHead className="py-1.5 px-1 w-[48px]"></TableHead>
                 </TableRow>
-              ))}
-            </TableBody>
-            <TableFooter>
-              <TableRow className="bg-muted/40 hover:bg-muted/40 border-t-2 border-border">
-                <TableCell colSpan={5} className="text-[9px] font-semibold uppercase tracking-wider py-1.5 px-2">Totals</TableCell>
-                <TableCell className="text-[10px] py-1.5 px-2 text-right font-mono font-bold">{totals.risked.toFixed(1)}u</TableCell>
-                <TableCell className="py-1.5 px-2"></TableCell>
-                <TableCell className={`text-[10px] py-1.5 px-2 text-right font-mono font-bold ${valColor(totals.wonLost)}`}>{fmtUnit(totals.wonLost)}</TableCell>
-                <TableCell className={`text-[10px] py-1.5 px-2 text-right font-mono font-bold ${valColor(totals.wonLost)}`}>{fmtUnit(totals.wonLost)}</TableCell>
-                <TableCell colSpan={2} className="py-1.5 px-2"></TableCell>
-              </TableRow>
-            </TableFooter>
-          </Table>
+              </TableHeader>
+              <TableBody>
+                {displayPicks.map((pick, i) => (
+                  <TableRow key={pick.id} className={`hover:bg-muted/30 transition-colors ${i % 2 === 0 ? '' : 'bg-muted/8'}`}>
+                    <TableCell className="text-[10px] py-1 px-2 font-mono text-muted-foreground sticky left-0 z-[1] bg-card">{pick.date}</TableCell>
+                    <TableCell className="text-[10px] py-1 px-2 font-medium">{pick.pick_event}</TableCell>
+                    <TableCell className="py-1 px-2"><span className="text-[8px] font-medium text-muted-foreground bg-muted/50 rounded px-1 py-0.5">{pick.sport}</span></TableCell>
+                    <TableCell className="text-[10px] py-1 px-2 text-right font-mono text-muted-foreground">{pick.eu_odds || '—'}</TableCell>
+                    <TableCell className="text-[10px] py-1 px-2 text-right font-mono text-muted-foreground">{pick.us_odds || '—'}</TableCell>
+                    <TableCell className="text-[10px] py-1 px-2 text-right font-mono">{pick.units_risked}u</TableCell>
+                    <TableCell className="py-1 px-2">
+                      <span className={`text-[9px] font-bold uppercase ${
+                        pick.result === 'win' ? 'text-emerald-400' : pick.result === 'loss' ? 'text-destructive' : 'text-muted-foreground'
+                      }`}>
+                        {pick.result === 'win' ? '✓ W' : pick.result === 'loss' ? '✗ L' : pick.result === 'push' ? '— P' : '⏳'}
+                      </span>
+                    </TableCell>
+                    <TableCell className={`text-[10px] py-1 px-2 text-right font-mono font-medium ${valColor(pick.units_won_lost || 0)}`}>
+                      {fmtUnit(pick.units_won_lost || 0)}
+                    </TableCell>
+                    <TableCell className={`text-[10px] py-1 px-2 text-right font-mono font-semibold ${valColor(pick.runningTotal)}`}>
+                      {fmtUnit(pick.runningTotal)}
+                    </TableCell>
+                    <TableCell className="text-[9px] py-1 px-2 text-muted-foreground/60 max-w-[80px] truncate">{pick.notes || ''}</TableCell>
+                    <TableCell className="py-1 px-1">
+                      <div className="flex gap-0.5">
+                        <Button variant="ghost" size="icon" className="h-9 w-9 opacity-60 hover:opacity-100" onClick={() => handleEdit(pick)} aria-label="Edit pick"><Pencil className="h-3.5 w-3.5" /></Button>
+                        <Button variant="ghost" size="icon" className="h-9 w-9 opacity-60 hover:opacity-100 text-destructive" onClick={() => handleDelete(pick.id)} disabled={deletingId === pick.id} aria-label="Delete pick"><Trash2 className="h-3.5 w-3.5" /></Button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+              <TableFooter>
+                <TableRow className="bg-muted/40 hover:bg-muted/40 border-t-2 border-border">
+                  <TableCell colSpan={5} className="text-[9px] font-semibold uppercase tracking-wider py-1.5 px-2">Totals</TableCell>
+                  <TableCell className="text-[10px] py-1.5 px-2 text-right font-mono font-bold">{totals.risked.toFixed(1)}u</TableCell>
+                  <TableCell className="py-1.5 px-2"></TableCell>
+                  <TableCell className={`text-[10px] py-1.5 px-2 text-right font-mono font-bold ${valColor(totals.wonLost)}`}>{fmtUnit(totals.wonLost)}</TableCell>
+                  <TableCell className={`text-[10px] py-1.5 px-2 text-right font-mono font-bold ${valColor(totals.wonLost)}`}>{fmtUnit(totals.wonLost)}</TableCell>
+                  <TableCell colSpan={2} className="py-1.5 px-2"></TableCell>
+                </TableRow>
+              </TableFooter>
+            </Table>
+          </DesktopTableRegion>
         </div>
       )}
 

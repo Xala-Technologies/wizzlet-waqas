@@ -1,9 +1,12 @@
 import { describe, expect, it } from "vitest";
 import {
   isPromoRedeemable,
+  isValidDiscountDuration,
   isValidDiscountPercent,
   isValidPromoCodeFormat,
   normalizePromoCode,
+  resolveDiscountDuration,
+  stripeCouponDuration,
 } from "../../convex/lib/promoCodes";
 
 describe("promo codes (J6)", () => {
@@ -14,11 +17,24 @@ describe("promo codes (J6)", () => {
     expect(isValidPromoCodeFormat("WELCOME_20")).toBe(true);
   });
 
-  it("accepts discount percent 1–90", () => {
+  it("accepts discount percent 1–100", () => {
     expect(isValidDiscountPercent(1)).toBe(true);
     expect(isValidDiscountPercent(90)).toBe(true);
+    expect(isValidDiscountPercent(100)).toBe(true);
     expect(isValidDiscountPercent(0)).toBe(false);
-    expect(isValidDiscountPercent(91)).toBe(false);
+    expect(isValidDiscountPercent(101)).toBe(false);
+    expect(isValidDiscountPercent(15.5)).toBe(false);
+  });
+
+  it("supports once and forever durations like Whop", () => {
+    expect(isValidDiscountDuration("once")).toBe(true);
+    expect(isValidDiscountDuration("forever")).toBe(true);
+    expect(isValidDiscountDuration("repeating")).toBe(false);
+    expect(stripeCouponDuration("once")).toEqual({ duration: "once" });
+    expect(stripeCouponDuration("forever")).toEqual({ duration: "forever" });
+    expect(resolveDiscountDuration({ discountDuration: "forever" })).toBe("forever");
+    expect(resolveDiscountDuration({})).toBe("once");
+    expect(resolveDiscountDuration({ durationInPayments: 3 })).toBe("forever");
   });
 
   it("blocks inactive, expired, or exhausted promos", () => {

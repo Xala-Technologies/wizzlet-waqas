@@ -26,6 +26,8 @@ const CreatorSettings = () => {
   const [bio, setBio] = useState('');
   const [avatarUrl, setAvatarUrl] = useState('');
   const [bannerUrl, setBannerUrl] = useState('');
+  const [discordServerId, setDiscordServerId] = useState('');
+  const [discordRoleId, setDiscordRoleId] = useState('');
 
   useEffect(() => {
     if (!creator) return;
@@ -34,6 +36,8 @@ const CreatorSettings = () => {
     setBio(creator.bio ?? '');
     setAvatarUrl(creator.avatarUrl ?? '');
     setBannerUrl(creator.bannerUrl ?? '');
+    setDiscordServerId(creator.discordServerId ?? '');
+    setDiscordRoleId(creator.discordRoleId ?? '');
   }, [creator]);
 
   const handleSave = async () => {
@@ -45,6 +49,8 @@ const CreatorSettings = () => {
         bio: bio.trim() || undefined,
         avatarUrl: avatarUrl.trim() || undefined,
         bannerUrl: bannerUrl.trim() || undefined,
+        discordServerId: discordServerId.trim() || null,
+        discordRoleId: discordRoleId.trim() || null,
       });
       toast.success('Settings saved');
     } catch (e) {
@@ -209,30 +215,55 @@ const CreatorSettings = () => {
 
       <div className="rounded-xl border border-border bg-card p-6 mb-6">
         <h2 className="text-sm font-medium mb-4">Integrations</h2>
-        <div className="space-y-3">
-          <div className="flex items-center justify-between py-3 border-b border-border">
+        <div className="space-y-4">
+          <div className="space-y-3">
             <div className="flex items-center gap-3">
               <div className="h-9 w-9 rounded-lg bg-[#5865F2]/10 flex items-center justify-center">
                 <LinkIcon className="h-4 w-4 text-[#5865F2]" />
               </div>
               <div>
-                <p className="text-sm font-medium">Discord</p>
-                <p className="text-xs text-muted-foreground">Auto-assign roles to subscribers</p>
+                <p className="text-sm font-medium">Discord subscriber roles</p>
+                <p className="text-xs text-muted-foreground">
+                  When a member signs in with Discord and subscribes, the bot assigns this role.
+                </p>
               </div>
             </div>
-            <Button variant="outline" size="sm" disabled title="Not available yet">Not available</Button>
+            <div className="grid sm:grid-cols-2 gap-3 pl-0 sm:pl-12">
+              <div>
+                <Label className="text-xs">Server (guild) ID</Label>
+                <Input
+                  className="mt-1 font-mono text-xs"
+                  value={discordServerId}
+                  onChange={(e) => setDiscordServerId(e.target.value)}
+                  placeholder="123456789012345678"
+                />
+              </div>
+              <div>
+                <Label className="text-xs">Role ID</Label>
+                <Input
+                  className="mt-1 font-mono text-xs"
+                  value={discordRoleId}
+                  onChange={(e) => setDiscordRoleId(e.target.value)}
+                  placeholder="123456789012345678"
+                />
+              </div>
+            </div>
+            <p className="text-[11px] text-muted-foreground pl-0 sm:pl-12">
+              Requires platform env <span className="font-mono">DISCORD_BOT_TOKEN</span> and the bot invited with Manage Roles.
+            </p>
           </div>
-          <div className="flex items-center justify-between py-3">
+          <div className="flex items-center justify-between py-3 border-t border-border">
             <div className="flex items-center gap-3">
               <div className="h-9 w-9 rounded-lg bg-foreground/10 flex items-center justify-center">
                 <LinkIcon className="h-4 w-4" />
               </div>
               <div>
                 <p className="text-sm font-medium">X / Twitter</p>
-                <p className="text-xs text-muted-foreground">Link your X account for cross-promotion</p>
+                <p className="text-xs text-muted-foreground">
+                  Members and creators can sign in with X to pull username and profile photo.
+                </p>
               </div>
             </div>
-            <Button variant="outline" size="sm" disabled title="Not available yet">Not available</Button>
           </div>
         </div>
       </div>

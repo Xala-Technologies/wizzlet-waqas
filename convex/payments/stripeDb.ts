@@ -9,6 +9,7 @@ import {
 } from "../lib/commerceIdentity";
 import { applySubscribeGrowthAttribution } from "../lib/growthAttribution";
 import type { Id } from "../_generated/dataModel";
+import { internal } from "../_generated/api";
 
 async function loadFeeSettings(ctx: MutationCtx) {
   const row = await ctx.db
@@ -230,6 +231,12 @@ export const fulfillCheckout = internalMutation({
       nowMs: now,
     });
 
+    await ctx.scheduler.runAfter(0, internal.discord.roles.syncSubscriberRole, {
+      userId: args.userId,
+      creatorId: args.creatorId,
+      assign: true,
+    });
+
     return { ok: true as const, duplicate: false, subscriptionId };
   },
 });
@@ -305,6 +312,11 @@ export const markSubscriptionCancelled = internalMutation({
       externalRef: args.deliveryRef,
       commercialRef: `cancel:${args.stripeSubscriptionId}`,
       createdAt: now,
+    });
+    await ctx.scheduler.runAfter(0, internal.discord.roles.syncSubscriberRole, {
+      userId: sub.userId,
+      creatorId: sub.creatorId,
+      assign: false,
     });
     return { ok: true as const, duplicate: false };
   },
@@ -532,6 +544,11 @@ export const cancelBySubscriptionId = internalMutation({
       externalRef: args.deliveryRef,
       commercialRef: `cancel_local:${sub._id}`,
       createdAt: now,
+    });
+    await ctx.scheduler.runAfter(0, internal.discord.roles.syncSubscriberRole, {
+      userId: sub.userId,
+      creatorId: sub.creatorId,
+      assign: false,
     });
     return { ok: true as const, duplicate: false };
   },

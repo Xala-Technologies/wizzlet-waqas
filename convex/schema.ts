@@ -321,6 +321,12 @@ export default defineSchema({
     creatorId: v.id("creators"),
     code: v.string(),
     discountPercent: v.number(),
+    /** Stripe-style: first payment only, or every renewal. */
+    discountDuration: v.optional(
+      v.union(v.literal("once"), v.literal("forever")),
+    ),
+    /** @deprecated Prefer discountDuration. Kept for older rows. */
+    durationInPayments: v.optional(v.number()),
     maxUses: v.optional(v.number()),
     usedCount: v.number(),
     expiresAt: v.optional(v.number()),

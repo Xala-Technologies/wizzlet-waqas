@@ -3,9 +3,11 @@ import { ConvexError, v } from "convex/values";
 import { getCreatorForUser, requireAppUser, requireCreatorOwner } from "../lib/auth";
 import {
   isPromoRedeemable,
+  isValidDiscountDuration,
   isValidDiscountPercent,
   isValidPromoCodeFormat,
   normalizePromoCode,
+  resolveDiscountDuration,
 } from "../lib/promoCodes";
 import {
   creatorLinkDocValidator,
@@ -129,6 +131,9 @@ export const upsertPromo = mutation({
     promoId: v.optional(v.id("promoCodes")),
     code: v.string(),
     discountPercent: v.number(),
+    discountDuration: v.optional(
+      v.union(v.literal("once"), v.literal("forever")),
+    ),
     maxUses: v.optional(v.number()),
     expiresAt: v.optional(v.number()),
     isActive: v.boolean(),
@@ -146,6 +151,10 @@ export const upsertPromo = mutation({
     }
     if (!isValidDiscountPercent(args.discountPercent)) {
       throw new ConvexError("INVALID_DISCOUNT");
+    }
+    const discountDuration = args.discountDuration ?? "once";
+    if (!isValidDiscountDuration(discountDuration)) {
+      throw new ConvexError("INVALID_DURATION");
     }
     if (
       args.maxUses !== undefined &&
@@ -171,6 +180,7 @@ export const upsertPromo = mutation({
       await ctx.db.patch(args.promoId, {
         code,
         discountPercent: args.discountPercent,
+        discountDuration,
         maxUses: args.maxUses,
         expiresAt: args.expiresAt,
         isActive: args.isActive,
@@ -183,6 +193,7 @@ export const upsertPromo = mutation({
       creatorId: creator._id,
       code,
       discountPercent: args.discountPercent,
+      discountDuration,
       maxUses: args.maxUses,
       usedCount: 0,
       expiresAt: args.expiresAt,
@@ -217,6 +228,7 @@ export const resolvePromoForCheckout = internalQuery({
       promoId: v.id("promoCodes"),
       code: v.string(),
       discountPercent: v.number(),
+      discountDuration: v.union(v.literal("once"), v.literal("forever")),
     }),
     v.null(),
   ),
@@ -233,6 +245,7 @@ export const resolvePromoForCheckout = internalQuery({
       promoId: promo._id,
       code: promo.code,
       discountPercent: promo.discountPercent,
+      discountDuration: resolveDiscountDuration(promo),
     };
   },
 });

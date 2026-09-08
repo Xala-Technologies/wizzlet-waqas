@@ -346,13 +346,6 @@ const CreatorOnboarding = () => {
               <p className="text-xs text-muted-foreground">You can change this anytime from your dashboard.</p>
             </div>
 
-            <div className="rounded-xl border border-primary/20 bg-primary/5 p-4">
-              <p className="text-sm font-semibold">Platform fee</p>
-              <p className="text-xs text-muted-foreground mt-1">
-                5% fee for your first 30 days, then 10%. You keep the rest.
-              </p>
-            </div>
-
             <div className="rounded-xl border border-border bg-card overflow-hidden">
               {bannerPreview && (
                 <div className="h-20 w-full overflow-hidden">
