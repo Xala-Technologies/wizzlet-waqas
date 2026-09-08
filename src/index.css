@@ -189,10 +189,12 @@
 
   .btn-glow {
     background-image: var(--gradient-primary);
+    color: hsl(var(--primary-foreground));
     box-shadow: 0 0 24px -4px var(--glow-gold), 0 0 40px -8px var(--glow-purple);
   }
 
   .btn-glow:hover {
+    color: hsl(var(--primary-foreground));
     box-shadow: 0 0 32px -2px var(--glow-gold), 0 0 56px -6px var(--glow-purple);
   }
 
