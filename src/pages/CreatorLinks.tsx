@@ -70,12 +70,12 @@ const CreatorLinks = () => {
         <div className="rounded-xl border border-border bg-card p-5">
           <MousePointerClick className="h-4 w-4 text-blue-400 mb-2" />
           <p className="text-2xl font-bold">{totalClicks}</p>
-          <p className="text-xs text-muted-foreground">Total Clicks</p>
+          <p className="text-caption text-muted-foreground">Total Clicks</p>
         </div>
         <div className="rounded-xl border border-border bg-card p-5">
           <TrendingUp className="h-4 w-4 text-emerald-400 mb-2" />
           <p className="text-2xl font-bold">{totalConversions}</p>
-          <p className="text-xs text-muted-foreground">Conversions</p>
+          <p className="text-caption text-muted-foreground">Conversions</p>
         </div>
       </div>
 
@@ -83,11 +83,11 @@ const CreatorLinks = () => {
         <h2 className="text-sm font-medium mb-4 flex items-center gap-2"><Plus className="h-4 w-4 text-primary" /> Create Trackable Link</h2>
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <div>
-            <Label className="text-xs">Link Name</Label>
+            <Label className="text-caption">Link Name</Label>
             <Input placeholder="e.g. Instagram Bio" value={name} onChange={e => setName(e.target.value)} className="mt-1" />
           </div>
           <div>
-            <Label className="text-xs">Destination URL</Label>
+            <Label className="text-caption">Destination URL</Label>
             <Input placeholder="https://..." value={url} onChange={e => setUrl(e.target.value)} className="mt-1" />
           </div>
           <div className="flex items-end">
@@ -116,17 +116,17 @@ const CreatorLinks = () => {
                 </div>
                 <div className="min-w-0">
                   <p className="font-semibold text-sm">{link.name}</p>
-                  <p className="text-xs text-muted-foreground truncate">{link.url}</p>
+                  <p className="text-caption text-muted-foreground truncate">{link.url}</p>
                 </div>
               </div>
               <div className="flex items-center gap-4 shrink-0">
                 <div className="text-right">
                   <p className="text-sm font-bold">{link.clicks}</p>
-                  <p className="text-[10px] text-muted-foreground">clicks</p>
+                  <p className="text-caption text-muted-foreground">clicks</p>
                 </div>
                 <div className="text-right">
                   <p className="text-sm font-bold">{link.conversions}</p>
-                  <p className="text-[10px] text-muted-foreground">conv.</p>
+                  <p className="text-caption text-muted-foreground">conv.</p>
                 </div>
                 <Button variant="ghost" size="sm" onClick={() => { navigator.clipboard.writeText(link.url); toast.success('Copied!'); }}>
                   <Copy className="h-3.5 w-3.5" />

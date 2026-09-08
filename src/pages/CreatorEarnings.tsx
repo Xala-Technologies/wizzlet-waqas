@@ -34,23 +34,23 @@ const CreatorEarnings = () => {
         <div className="rounded-xl border border-border bg-card p-5">
           <DollarSign className="h-4 w-4 text-emerald-400 mb-2" />
           <p className="text-2xl font-bold">${(earnings.grossCents / 100).toFixed(2)}</p>
-          <p className="text-xs text-muted-foreground">Active MRR gross ({earnings.activeCount} active)</p>
+          <p className="text-caption text-muted-foreground">Active MRR gross ({earnings.activeCount} active)</p>
         </div>
         <div className="rounded-xl border border-border bg-card p-5">
           <TrendingUp className="h-4 w-4 text-blue-400 mb-2" />
           <p className="text-2xl font-bold">${(earnings.netCents / 100).toFixed(2)}</p>
-          <p className="text-xs text-muted-foreground">Active MRR net (after fees)</p>
+          <p className="text-caption text-muted-foreground">Active MRR net (after fees)</p>
         </div>
         <div className="rounded-xl border border-border bg-card p-5">
           <CreditCard className="h-4 w-4 text-purple-400 mb-2" />
           <p className="text-2xl font-bold">${(earnings.perSubCents / 100).toFixed(2)}</p>
-          <p className="text-xs text-muted-foreground">Featured price / subscriber</p>
+          <p className="text-caption text-muted-foreground">Featured price / subscriber</p>
         </div>
       </div>
 
       <div className="rounded-xl border border-border bg-card p-4 sm:p-6 mb-6 min-w-0">
         <h2 className="text-sm font-medium mb-4">Collected revenue by month</h2>
-        <p className="text-xs text-muted-foreground mb-4">From settled payment events (not list-price MRR).</p>
+        <p className="text-caption text-muted-foreground mb-4">From settled payment events (not list-price MRR).</p>
         <div className="h-64 min-w-0 w-full">
           {chartData.length === 0 ? (
             <p className="text-sm text-muted-foreground py-20 text-center">No payment events yet.</p>
@@ -58,10 +58,10 @@ const CreatorEarnings = () => {
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={chartData}>
                 <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                <XAxis dataKey="month" tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 12 }} axisLine={false} tickLine={false} />
-                <YAxis tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 12 }} axisLine={false} tickLine={false} tickFormatter={v => `$${v}`} />
+                <XAxis dataKey="month" tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 14 }} axisLine={false} tickLine={false} />
+                <YAxis tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 14 }} axisLine={false} tickLine={false} tickFormatter={v => `$${v}`} />
                 <Tooltip
-                  contentStyle={{ backgroundColor: 'hsl(var(--card))', border: '1px solid hsl(var(--border))', borderRadius: '8px', fontSize: 12, color: 'hsl(var(--foreground))' }}
+                  contentStyle={{ backgroundColor: 'hsl(var(--card))', border: '1px solid hsl(var(--border))', borderRadius: '8px', fontSize: 14, color: 'hsl(var(--foreground))' }}
                   formatter={(value: number) => [`$${value}`, 'Revenue']}
                 />
                 <Bar dataKey="revenue" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
@@ -82,7 +82,7 @@ const CreatorEarnings = () => {
                 <ArrowUpRight className="h-4 w-4 text-emerald-400" />
                 <div>
                   <p className="text-sm font-medium">{p.label}</p>
-                  <p className="text-xs text-muted-foreground">{format(p.createdAt, 'MMM d, yyyy')}</p>
+                  <p className="text-caption text-muted-foreground">{format(p.createdAt, 'MMM d, yyyy')}</p>
                 </div>
               </div>
               <p className="text-sm font-bold text-emerald-400">+${(p.amountCents / 100).toFixed(2)}</p>

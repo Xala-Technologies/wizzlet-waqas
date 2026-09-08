@@ -40,16 +40,16 @@ const AdminDashboardInner = () => {
         <h1 className="text-2xl font-bold">Platform Overview</h1>
         <p className="text-muted-foreground text-sm mt-0.5">Executive dashboard — live Convex aggregates</p>
         {truncation && (
-          <p className="text-amber-600 text-xs mt-2">{truncation}</p>
+          <p className="text-amber-600 text-caption mt-2">{truncation}</p>
         )}
-        <p className="text-muted-foreground text-xs mt-1">
+        <p className="text-muted-foreground text-caption mt-1">
           Fee revenue and paid-out come from subscription and payout records. See Finance for detail — these are not Stripe cash balances.
         </p>
       </div>
 
       {(stats.openCases > 0 || stats.activeSubscriptionCount >= 0) && (
         <div className="rounded-xl border border-border bg-card p-4 mb-6">
-          <h2 className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-3">Next up</h2>
+          <h2 className="text-caption font-medium text-muted-foreground uppercase tracking-wider mb-3">Next up</h2>
           <ul className="space-y-2 text-sm">
             {stats.openCases > 0 && (
               <li>
@@ -79,7 +79,7 @@ const AdminDashboardInner = () => {
               <stat.icon className={`h-4 w-4 ${stat.color}`} />
             </div>
             <p className="text-xl font-bold">{stat.value}</p>
-            <p className="text-[11px] text-muted-foreground mt-0.5">{stat.label}</p>
+            <p className="text-caption text-muted-foreground mt-0.5">{stat.label}</p>
           </div>
         ))}
       </div>
@@ -94,9 +94,9 @@ const AdminDashboardInner = () => {
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={monthlyRevenue}>
                   <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
-                  <XAxis dataKey="month" tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 12 }} axisLine={false} tickLine={false} />
-                  <YAxis tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 12 }} axisLine={false} tickLine={false} tickFormatter={v => `$${v}`} />
-                  <Tooltip contentStyle={{ backgroundColor: 'hsl(var(--card))', border: '1px solid hsl(var(--border))', borderRadius: '8px', fontSize: 12, color: 'hsl(var(--foreground))' }} />
+                  <XAxis dataKey="month" tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 14 }} axisLine={false} tickLine={false} />
+                  <YAxis tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 14 }} axisLine={false} tickLine={false} tickFormatter={v => `$${v}`} />
+                  <Tooltip contentStyle={{ backgroundColor: 'hsl(var(--card))', border: '1px solid hsl(var(--border))', borderRadius: '8px', fontSize: 14, color: 'hsl(var(--foreground))' }} />
                   <Bar dataKey="revenue" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
                 </BarChart>
               </ResponsiveContainer>
@@ -112,9 +112,9 @@ const AdminDashboardInner = () => {
               <ResponsiveContainer width="100%" height="100%">
                 <AreaChart data={monthlyRevenue}>
                   <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
-                  <XAxis dataKey="month" tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 12 }} axisLine={false} tickLine={false} />
-                  <YAxis tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 12 }} axisLine={false} tickLine={false} tickFormatter={v => `$${v}`} />
-                  <Tooltip contentStyle={{ backgroundColor: 'hsl(var(--card))', border: '1px solid hsl(var(--border))', borderRadius: '8px', fontSize: 12, color: 'hsl(var(--foreground))' }} />
+                  <XAxis dataKey="month" tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 14 }} axisLine={false} tickLine={false} />
+                  <YAxis tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 14 }} axisLine={false} tickLine={false} tickFormatter={v => `$${v}`} />
+                  <Tooltip contentStyle={{ backgroundColor: 'hsl(var(--card))', border: '1px solid hsl(var(--border))', borderRadius: '8px', fontSize: 14, color: 'hsl(var(--foreground))' }} />
                   <Area type="monotone" dataKey="fees" stroke="hsl(var(--primary))" fill="hsl(var(--primary) / 0.2)" />
                 </AreaChart>
               </ResponsiveContainer>
@@ -133,9 +133,9 @@ const AdminDashboardInner = () => {
               <ResponsiveContainer width="100%" height="100%">
                 <LineChart data={creatorGrowth}>
                   <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
-                  <XAxis dataKey="month" tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 12 }} axisLine={false} tickLine={false} />
-                  <YAxis tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 12 }} axisLine={false} tickLine={false} />
-                  <Tooltip contentStyle={{ backgroundColor: 'hsl(var(--card))', border: '1px solid hsl(var(--border))', borderRadius: '8px', fontSize: 12, color: 'hsl(var(--foreground))' }} />
+                  <XAxis dataKey="month" tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 14 }} axisLine={false} tickLine={false} />
+                  <YAxis tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 14 }} axisLine={false} tickLine={false} />
+                  <Tooltip contentStyle={{ backgroundColor: 'hsl(var(--card))', border: '1px solid hsl(var(--border))', borderRadius: '8px', fontSize: 14, color: 'hsl(var(--foreground))' }} />
                   <Line type="monotone" dataKey="creators" stroke="hsl(var(--primary))" strokeWidth={2} dot={false} />
                   <Line type="monotone" dataKey="customers" stroke="hsl(var(--muted-foreground))" strokeWidth={2} dot={false} />
                 </LineChart>
@@ -153,7 +153,7 @@ const AdminDashboardInner = () => {
                 <li key={s.id} className="flex items-center justify-between text-sm">
                   <div>
                     <p className="font-medium">{s.userName}</p>
-                    <p className="text-xs text-muted-foreground">{s.creatorName} · {format(s.createdAt, 'MMM d, yyyy')}</p>
+                    <p className="text-caption text-muted-foreground">{s.creatorName} · {format(s.createdAt, 'MMM d, yyyy')}</p>
                   </div>
                   <span className="font-semibold">${(s.amountCents / 100).toFixed(2)}</span>
                 </li>
@@ -189,7 +189,7 @@ const AdminDashboardInner = () => {
                 <li key={i} className="flex justify-between text-sm">
                   <div>
                     <p>{u.name}</p>
-                    <p className="text-xs text-muted-foreground">{u.email}</p>
+                    <p className="text-caption text-muted-foreground">{u.email}</p>
                   </div>
                   <span className="text-muted-foreground">{format(u.date, 'MMM d')}</span>
                 </li>

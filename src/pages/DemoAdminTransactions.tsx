@@ -79,7 +79,7 @@ const DemoAdminTransactions = () => {
   };
 
   const exportCsv = () => {
-    downloadCsv('wizzlet-transactions.csv', [
+    downloadCsv('prizelet-transactions.csv', [
       ['Date', 'Customer', 'Creator', 'Amount', 'Creator earnings', 'Platform fee', 'Fee %', 'Status'],
       ...filtered.map(t => [format(t.date, 'yyyy-MM-dd'), t.customer, t.creatorName, t.amount.toFixed(2), t.earnings.toFixed(2), t.fee.toFixed(2), `${t.feePercent}%`, t.status]),
     ]);
@@ -101,7 +101,7 @@ const DemoAdminTransactions = () => {
   };
 
   const SortHeader = ({ label, k }: { label: string; k: SortKey }) => (
-    <th className="text-left text-xs font-medium text-muted-foreground p-4">
+    <th className="text-left text-caption font-medium text-muted-foreground p-4">
       <button type="button" className="inline-flex items-center gap-1 py-1.5 -my-1.5 hover:text-foreground transition-colors" onClick={() => toggleSort(k)}>
         {label}
         {sortKey === k
@@ -123,7 +123,7 @@ const DemoAdminTransactions = () => {
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
             <Input placeholder="Search transactions…" value={search} onChange={e => { setSearch(e.target.value); setPage(0); }} className="pl-9 h-9" />
           </div>
-          <Button variant="outline" size="sm" className="text-xs h-9" onClick={exportCsv}><Download className="mr-1.5 h-3.5 w-3.5" /> Export</Button>
+          <Button variant="outline" size="sm" className="text-caption h-9" onClick={exportCsv}><Download className="mr-1.5 h-3.5 w-3.5" /> Export</Button>
         </div>
       </div>
 
@@ -135,7 +135,7 @@ const DemoAdminTransactions = () => {
           { icon: AlertTriangle, label: 'Refunded', value: `$${metrics.refunded.toFixed(2)}`, cls: 'text-destructive' },
         ].map(s => (
           <div key={s.label} className="rounded-xl border border-border bg-card p-4">
-            <div className="flex items-center gap-2 text-xs text-muted-foreground mb-1.5"><s.icon className="h-3.5 w-3.5" />{s.label}</div>
+            <div className="flex items-center gap-2 text-caption text-muted-foreground mb-1.5"><s.icon className="h-3.5 w-3.5" />{s.label}</div>
             <div className={`text-xl font-bold ${s.cls}`}>{s.value}</div>
           </div>
         ))}
@@ -146,18 +146,18 @@ const DemoAdminTransactions = () => {
           <button
             key={s}
             onClick={() => { setStatus(s); setPage(0); }}
-            className={`px-3 py-1.5 rounded-lg text-xs font-medium capitalize transition-colors inline-flex items-center gap-1.5 ${
+            className={`px-3 py-1.5 rounded-lg text-caption font-medium capitalize transition-colors inline-flex items-center gap-1.5 ${
               status === s ? 'bg-primary/10 text-primary' : 'text-muted-foreground hover:text-foreground hover:bg-muted/60'
             }`}
           >
             {s}
-            <span className="text-[10px] opacity-60">{counts[s]}</span>
+            <span className="text-caption opacity-60">{counts[s]}</span>
           </button>
         ))}
         <select
           value={creatorId}
           onChange={e => { setCreatorId(e.target.value); setPage(0); }}
-          className="ml-auto h-8 rounded-lg border border-border bg-background px-2 text-xs text-foreground"
+          className="ml-auto h-8 rounded-lg border border-border bg-background px-2 text-caption text-foreground"
           aria-label="Filter by creator"
         >
           <option value="all">All creators</option>
@@ -176,11 +176,11 @@ const DemoAdminTransactions = () => {
                 <SortHeader label="Customer" k="customer" />
                 <SortHeader label="Creator" k="creator" />
                 <SortHeader label="Amount" k="amount" />
-                <th className="text-left text-xs font-medium text-muted-foreground p-4">Creator Earnings</th>
+                <th className="text-left text-caption font-medium text-muted-foreground p-4">Creator Earnings</th>
                 <SortHeader label="Platform Fee" k="fee" />
-                <th className="text-left text-xs font-medium text-muted-foreground p-4">Fee %</th>
-                <th className="text-left text-xs font-medium text-muted-foreground p-4">Status</th>
-                <th className="text-right text-xs font-medium text-muted-foreground p-4">Actions</th>
+                <th className="text-left text-caption font-medium text-muted-foreground p-4">Fee %</th>
+                <th className="text-left text-caption font-medium text-muted-foreground p-4">Status</th>
+                <th className="text-right text-caption font-medium text-muted-foreground p-4">Actions</th>
               </tr>
             </thead>
             <tbody>
@@ -193,23 +193,23 @@ const DemoAdminTransactions = () => {
                   onClick={() => setSelected(t)}
                   className="border-b border-border last:border-0 hover:bg-muted/20 transition-colors cursor-pointer"
                 >
-                  <td className="p-4 text-xs text-muted-foreground">{format(t.date, 'MMM d, yyyy')}</td>
+                  <td className="p-4 text-caption text-muted-foreground">{format(t.date, 'MMM d, yyyy')}</td>
                   <td className="p-4 font-medium">{t.customer}</td>
                   <td className="p-4 text-muted-foreground">{t.creatorName}</td>
                   <td className="p-4 font-medium">${t.amount.toFixed(2)}</td>
                   <td className="p-4">${t.earnings.toFixed(2)}</td>
                   <td className="p-4 text-primary">${t.fee.toFixed(2)}</td>
-                  <td className="p-4"><Badge variant="outline" className="text-[10px]">{t.feePercent}%</Badge></td>
+                  <td className="p-4"><Badge variant="outline" className="text-caption">{t.feePercent}%</Badge></td>
                   <td className="p-4">
-                    <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide ${statusCls[t.status]}`}>{t.status}</span>
+                    <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-caption font-medium uppercase tracking-wide ${statusCls[t.status]}`}>{t.status}</span>
                   </td>
                   <td className="p-4 text-right" onClick={e => e.stopPropagation()}>
                     {t.status === 'refunded' ? (
-                      <Button variant="ghost" size="sm" className="h-7 px-2 text-xs" title="Undo refund" onClick={() => undoRefund(t)}>
+                      <Button variant="ghost" size="sm" className="h-7 px-2 text-caption" title="Undo refund" onClick={() => undoRefund(t)}>
                         <RotateCcw className="h-3 w-3" />
                       </Button>
                     ) : (
-                      <Button variant="ghost" size="sm" className="h-7 px-2 text-xs text-destructive hover:text-destructive" title="Refund" onClick={() => setRefundTarget(t)}>
+                      <Button variant="ghost" size="sm" className="h-7 px-2 text-caption text-destructive hover:text-destructive" title="Refund" onClick={() => setRefundTarget(t)}>
                         <Undo2 className="h-3 w-3" />
                       </Button>
                     )}
@@ -223,10 +223,10 @@ const DemoAdminTransactions = () => {
 
       {pages > 1 && (
         <div className="flex items-center justify-between mt-4">
-          <p className="text-xs text-muted-foreground">Page {current + 1} of {pages}</p>
+          <p className="text-caption text-muted-foreground">Page {current + 1} of {pages}</p>
           <div className="flex gap-2">
-            <Button variant="outline" size="sm" className="text-xs" disabled={current === 0} onClick={() => setPage(current - 1)}>Previous</Button>
-            <Button variant="outline" size="sm" className="text-xs" disabled={current >= pages - 1} onClick={() => setPage(current + 1)}>Next</Button>
+            <Button variant="outline" size="sm" className="text-caption" disabled={current === 0} onClick={() => setPage(current - 1)}>Previous</Button>
+            <Button variant="outline" size="sm" className="text-caption" disabled={current >= pages - 1} onClick={() => setPage(current + 1)}>Next</Button>
           </div>
         </div>
       )}
@@ -239,7 +239,7 @@ const DemoAdminTransactions = () => {
               <DialogHeader>
                 <DialogTitle className="flex items-center gap-2">
                   ${selected.amount.toFixed(2)}
-                  <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide ${statusCls[selected.status]}`}>{selected.status}</span>
+                  <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-caption font-medium uppercase tracking-wide ${statusCls[selected.status]}`}>{selected.status}</span>
                 </DialogTitle>
                 <DialogDescription>{selected.customer} → {selected.creatorName} · {format(selected.date, 'MMMM d, yyyy')}</DialogDescription>
               </DialogHeader>
@@ -248,20 +248,20 @@ const DemoAdminTransactions = () => {
                 <div className="flex justify-between px-4 py-2.5"><span className="text-muted-foreground">Gross amount</span><span className="font-medium">${selected.amount.toFixed(2)}</span></div>
                 <div className="flex justify-between px-4 py-2.5"><span className="text-muted-foreground">Platform fee ({selected.feePercent}%)</span><span className="font-medium text-primary">−${selected.fee.toFixed(2)}</span></div>
                 <div className="flex justify-between px-4 py-2.5"><span className="text-muted-foreground">Creator earnings</span><span className="font-medium">${selected.earnings.toFixed(2)}</span></div>
-                <div className="flex justify-between px-4 py-2.5"><span className="text-muted-foreground">Transaction ID</span><span className="font-mono text-xs">{selected.id}</span></div>
+                <div className="flex justify-between px-4 py-2.5"><span className="text-muted-foreground">Transaction ID</span><span className="font-mono text-caption">{selected.id}</span></div>
               </div>
 
-              <p className="text-[11px] text-muted-foreground">
+              <p className="text-caption text-muted-foreground">
                 Fee tier is locked at billing time — a {selected.feePercent}% {selected.feePercent === store.state.settings.introFeePercent ? 'intro' : 'standard'} rate applied to this charge.
               </p>
 
               <div className="flex justify-end mt-2">
                 {selected.status === 'refunded' ? (
-                  <Button variant="outline" size="sm" className="text-xs" onClick={() => undoRefund(selected)}>
+                  <Button variant="outline" size="sm" className="text-caption" onClick={() => undoRefund(selected)}>
                     <RotateCcw className="mr-1.5 h-3.5 w-3.5" /> Undo refund
                   </Button>
                 ) : (
-                  <Button variant="destructive" size="sm" className="text-xs" onClick={() => setRefundTarget(selected)}>
+                  <Button variant="destructive" size="sm" className="text-caption" onClick={() => setRefundTarget(selected)}>
                     <Undo2 className="mr-1.5 h-3.5 w-3.5" /> Refund customer
                   </Button>
                 )}

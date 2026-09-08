@@ -1,4 +1,4 @@
-# Wizzlet
+# Prizelet
 
 Private betting infrastructure for sports creators — subscriptions, gated content, performance tracking, and payouts in one product.
 
@@ -44,8 +44,8 @@ On development builds, sign in at `/login` with:
 
 | | |
 |--|--|
-| Email | `admin@wizzlet.dev` |
-| Password | `AdminWizzlet1!` |
+| Email | `admin@prizelet.dev` |
+| Password | `AdminPrizelet1!` |
 
 Or use **Sign in as platform owner** on the login page. That account receives the Convex `admin` role and opens `/admin`.
 

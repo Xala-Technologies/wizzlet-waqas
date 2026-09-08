@@ -1,4 +1,4 @@
-# Wizzlet QA artifacts
+# Prizelet QA artifacts
 
 Audit mode: **AUDIT_AND_TEST** (Wave 1). Application remediations are **not** applied here unless separately authorized.
 

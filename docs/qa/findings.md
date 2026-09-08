@@ -37,7 +37,7 @@ Prior IDs from [docs/convex-audit/findings.md](../convex-audit/findings.md) reus
 | Confidence | High |
 | Layer | Static |
 | Role / API | Authenticated caller → `roles/mutations:grantTestAdmin` |
-| Preconditions | Account email is `admin@wizzlet.dev` or `test@wizzlet.dev`, or `ALLOW_DEV_ADMIN_GRANT=true` |
+| Preconditions | Account email is `admin@prizelet.dev` or `test@prizelet.dev`, or `ALLOW_DEV_ADMIN_GRANT=true` |
 | Expected | Admin minting only via existing admin (`grantRole`) or strictly deployment-scoped secret |
 | Actual | Any session for allowlisted emails can mint `userRoles.role=admin` on that account |
 | Evidence | `convex/roles/mutations.ts` `grantTestAdmin`; login bootstrap in dirty tree |
@@ -133,7 +133,7 @@ No confirmed untouched P0 from prior list remains open in code review, but criti
 | Confidence | High |
 | Layer | Browser |
 | Route | `/select-role` → `/creator/onboarding` |
-| Preconditions | Fresh signup `qa.creator.w2.20260906@wizzlet.test` / `qacreator926` |
+| Preconditions | Fresh signup `qa.creator.w2.20260906@prizelet.test` / `qacreator926` |
 | Expected | After choosing Creator, land on onboarding and stay authenticated with `creator` role |
 | Actual | Continue disables briefly then user remains on `/select-role` (or briefly hits admin via contaminated DEV bypass). Direct `/creator/onboarding` redirects back to select-role while roles query lags |
 | Evidence | Browser session 2026-09-06; `SelectRole` calls `refreshRole()` which is a **noop** in `AuthContext` |
@@ -179,7 +179,7 @@ Confirmed P1 **QA-W2-01** blocks creator onboarding / J1 completion. Prior **QA-
 - `acceptAssignedRole` + non-noop `refreshRole(expectRole)` in `AuthContext`
 - `SelectRole` clears DEV bypass, assigns role, waits, then navigates
 - Signup clears stored active role + DEV bypass
-- Browser verify: `qa.creator.fix.1101@wizzlet.test` → `/creator/onboarding` PASS
+- Browser verify: `qa.creator.fix.1101@prizelet.test` → `/creator/onboarding` PASS
 
 ---
 
@@ -189,9 +189,9 @@ Confirmed P1 **QA-W2-01** blocks creator onboarding / J1 completion. Prior **QA-
 
 | Step | Result | Evidence |
 |------|--------|----------|
-| Creator signup + select Creator | PASS | `qa.creator.fix.1101@wizzlet.test` / `@qacreator1101` |
+| Creator signup + select Creator | PASS | `qa.creator.fix.1101@prizelet.test` / `@qacreator1101` |
 | Onboarding + publish | PASS | Public `/qacreator1101` with Subscribe CTA |
-| Member signup + select Subscriber | PASS | `qa.member.w3.1101@wizzlet.test` → `/dashboard` |
+| Member signup + select Subscriber | PASS | `qa.member.w3.1101@prizelet.test` → `/dashboard` |
 | Stripe Checkout redirect | PASS | `checkout.stripe.com` session `cs_test_a1aEIEGYNK6Xu8B30IUZeYTVJFANfnBziyN2TnEihyv9w7WolOfvWOvBwP` |
 | Test card pay + success page | PASS | `/subscription/success` “Subscription Confirmed!” |
 | Access / billing ACTIVE | PASS | Dashboard **1 ACTIVE SUBS**; `/dashboard/subscriptions-billing` shows QA Creator W3 **ACTIVE** $9.99 |
@@ -436,7 +436,7 @@ Remaining: J8 BLOCKED; Admin Reports + residual payout joins; referral cash comm
 | Finding | Login destination depended on localStorage preferred; empty storage → `/select-role` even with DB roles |
 | Fix | `refreshRole` returns active role; login uses `homePathForRole(active)`; SelectRole redirects when roles exist |
 | Unit | `roles.test.ts` — 4 PASS |
-| Browser | Cleared `wizzlet.activeRole` → creator login lands `/creator`; `/select-role` redirects to creator home |
+| Browser | Cleared `prizelet.activeRole` → creator login lands `/creator`; `/select-role` redirects to creator home |
 
 ## QA-W17-J6 — Promo / referral attribution
 

@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useMutation, usePaginatedQuery, useQuery } from 'convex/react';
+import { useSearchParams } from 'react-router-dom';
 import { api } from '../../convex/_generated/api';
 import type { Id } from '../../convex/_generated/dataModel';
 import { DashboardLayout } from '@/components/dashboard/DashboardLayout';
@@ -12,6 +13,7 @@ import { MessageSquare, User, Power, Loader2, Send, ArrowLeft } from 'lucide-rea
 import { formatDistanceToNow } from 'date-fns';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
+import { MessageSeenReceipt } from '@/components/messaging/MessageSeenReceipt';
 
 const PAGE_SIZE = 25;
 
@@ -34,6 +36,9 @@ interface Thread {
 
 const CreatorMessages = () => {
   const { creator, loading: creatorLoading } = useCreatorProfile();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const subscriberIdParam = searchParams.get('subscriberId');
+
   const { results: inbox, status: inboxStatus, loadMore } = usePaginatedQuery(
     api.messaging.mutations.myCreatorInboxPage,
     {},
@@ -44,12 +49,16 @@ const CreatorMessages = () => {
   const sendMessage = useMutation(api.messaging.mutations.send);
   const markRead = useMutation(api.messaging.mutations.markReadCreator);
 
-  const [activeId, setActiveId] = useState<string | null>(null);
+  const [activeId, setActiveId] = useState<string | null>(subscriberIdParam);
   const [reply, setReply] = useState('');
   const [sending, setSending] = useState(false);
   const [messagingEnabled, setMessagingEnabled] = useState(true);
   const [savingToggle, setSavingToggle] = useState(false);
   const markedRef = useRef<Set<string>>(new Set());
+
+  useEffect(() => {
+    if (subscriberIdParam) setActiveId(subscriberIdParam);
+  }, [subscriberIdParam]);
 
   useEffect(() => {
     if (creator) setMessagingEnabled(creator.messaging_enabled ?? true);
@@ -151,6 +160,7 @@ const CreatorMessages = () => {
 
   const openThread = (thread: Thread) => {
     setActiveId(thread.subscriberId);
+    setSearchParams({ subscriberId: thread.subscriberId }, { replace: true });
   };
 
   const send = async () => {
@@ -233,10 +243,10 @@ const CreatorMessages = () => {
                     <div className="flex items-center justify-between gap-2">
                       <p className="text-sm font-medium truncate">{thread.name}</p>
                       {thread.unread > 0 && (
-                        <Badge className="text-[10px] shrink-0">{thread.unread}</Badge>
+                        <Badge className="text-caption shrink-0">{thread.unread}</Badge>
                       )}
                     </div>
-                    <p className="text-xs text-muted-foreground truncate mt-0.5">
+                    <p className="text-caption text-muted-foreground truncate mt-0.5">
                       {thread.messages[thread.messages.length - 1].body}
                     </p>
                   </div>
@@ -284,9 +294,12 @@ const CreatorMessages = () => {
                         msg.sender_role === 'creator' ? 'bg-primary text-primary-foreground' : 'bg-muted/60'
                       }`}>
                         <p className="whitespace-pre-line">{msg.body}</p>
-                        <p className={`text-[10px] mt-1 ${msg.sender_role === 'creator' ? 'text-primary-foreground/60' : 'text-muted-foreground'}`}>
-                          {formatDistanceToNow(new Date(msg.created_at), { addSuffix: true })}
-                        </p>
+                        <div className={`mt-1 flex items-center justify-between gap-2 text-caption ${msg.sender_role === 'creator' ? 'text-primary-foreground/60' : 'text-muted-foreground'}`}>
+                          <span>{formatDistanceToNow(new Date(msg.created_at), { addSuffix: true })}</span>
+                          {msg.sender_role === 'creator' && (
+                            <MessageSeenReceipt seen={msg.read} light />
+                          )}
+                        </div>
                       </div>
                     </div>
                   ))}

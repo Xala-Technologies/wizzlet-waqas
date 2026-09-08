@@ -120,7 +120,7 @@ const CustomerSaved = () => {
           <button
             key={t.key}
             onClick={() => setTab(t.key)}
-            className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
+            className={`px-3 py-1.5 rounded-lg text-caption font-medium transition-colors ${
               tab === t.key ? 'bg-primary/10 text-primary' : 'text-muted-foreground hover:text-foreground hover:bg-muted/60'
             }`}
           >
@@ -138,7 +138,7 @@ const CustomerSaved = () => {
           <div className="rounded-xl border border-dashed border-border bg-card/50 p-12 text-center">
             <Bookmark className="h-10 w-10 text-muted-foreground/40 mx-auto mb-3" />
             <h3 className="text-sm font-medium mb-1">Nothing saved yet</h3>
-            <p className="text-xs text-muted-foreground mb-4">Tap Save on any pick in your feed to keep it here.</p>
+            <p className="text-caption text-muted-foreground mb-4">Tap Save on any pick in your feed to keep it here.</p>
             <Link to="/dashboard"><Button size="sm">Go to Feed</Button></Link>
           </div>
         ) : (
@@ -150,38 +150,38 @@ const CustomerSaved = () => {
                 <article key={row.id} className="rounded-xl border border-border bg-card p-5 transition-colors hover:border-primary/20">
                   <div className="flex items-center gap-2.5 mb-2">
                     <div className="h-7 w-7 rounded-full bg-primary/20 flex items-center justify-center">
-                      <span className="text-[10px] font-bold text-primary">{name[0]?.toUpperCase()}</span>
+                      <span className="text-caption font-bold text-primary">{name[0]?.toUpperCase()}</span>
                     </div>
                     <span className="text-sm font-medium">{name}</span>
-                    <span className="text-xs text-muted-foreground">
+                    <span className="text-caption text-muted-foreground">
                       Saved {format(new Date(row.created_at), 'MMM d')}
                     </span>
                     {post.is_premium ? (
-                      <span className="ml-auto inline-flex items-center gap-1 rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-medium text-primary">
+                      <span className="ml-auto inline-flex items-center gap-1 rounded-full bg-primary/10 px-2 py-0.5 text-caption font-medium text-primary">
                         <Lock className="h-2.5 w-2.5" /> Premium
                       </span>
                     ) : (
-                      <span className="ml-auto inline-flex items-center gap-1 rounded-full bg-muted px-2 py-0.5 text-[10px] font-medium text-muted-foreground">
+                      <span className="ml-auto inline-flex items-center gap-1 rounded-full bg-muted px-2 py-0.5 text-caption font-medium text-muted-foreground">
                         <Globe className="h-2.5 w-2.5" /> Free
                       </span>
                     )}
                   </div>
                   <h3 className="font-semibold text-sm mb-1">{post.title}</h3>
-                  <p className="text-xs text-muted-foreground line-clamp-2 mb-3">
+                  <p className="text-caption text-muted-foreground line-clamp-2 mb-3">
                     {post.content ?? 'Subscribe to unlock this content.'}
                   </p>
                   <div className="flex items-center gap-3">
                     {post.creator?.username && (
                       <Link
                         to={`/${post.creator.username}`}
-                        className="text-xs text-muted-foreground hover:text-primary transition-colors"
+                        className="text-caption text-muted-foreground hover:text-primary transition-colors"
                       >
                         View creator
                       </Link>
                     )}
                     <button
                       onClick={() => removePost(row)}
-                      className="flex items-center gap-1 text-xs text-muted-foreground hover:text-destructive transition-colors"
+                      className="flex items-center gap-1 text-caption text-muted-foreground hover:text-destructive transition-colors"
                     >
                       <Trash2 className="h-3.5 w-3.5" /> Remove
                     </button>
@@ -208,7 +208,7 @@ const CustomerSaved = () => {
         <div className="rounded-xl border border-dashed border-border bg-card/50 p-12 text-center">
           <Bookmark className="h-10 w-10 text-muted-foreground/40 mx-auto mb-3" />
           <h3 className="text-sm font-medium mb-1">No bookmarked creators</h3>
-          <p className="text-xs text-muted-foreground mb-4">Bookmark creators from Discover to follow them here.</p>
+          <p className="text-caption text-muted-foreground mb-4">Bookmark creators from Discover to follow them here.</p>
           <Link to="/dashboard/discover"><Button size="sm">Discover Creators</Button></Link>
         </div>
       ) : (
@@ -224,7 +224,7 @@ const CustomerSaved = () => {
                   </div>
                   <div className="min-w-0 flex-1">
                     <p className="font-semibold text-sm truncate">{name}</p>
-                    {c.username && <p className="text-xs text-muted-foreground truncate">@{c.username}</p>}
+                    {c.username && <p className="text-caption text-muted-foreground truncate">@{c.username}</p>}
                   </div>
                   <button
                     onClick={() => removeCreator(row)}
@@ -234,14 +234,14 @@ const CustomerSaved = () => {
                     <Bookmark className="h-4 w-4 fill-current" />
                   </button>
                 </div>
-                <p className="text-xs text-muted-foreground mb-3 line-clamp-2">{c.bio || 'No bio yet.'}</p>
+                <p className="text-caption text-muted-foreground mb-3 line-clamp-2">{c.bio || 'No bio yet.'}</p>
                 <div className="flex items-center justify-between">
                   <span className="text-sm font-bold text-primary">
                     ${Number(c.monthly_price ?? 0).toFixed(2)}/mo
                   </span>
                   {c.username && (
                     <Link to={`/${c.username}`}>
-                      <Button size="sm" className="h-7 text-xs">View Profile</Button>
+                      <Button size="sm" className="h-7 text-caption">View Profile</Button>
                     </Link>
                   )}
                 </div>

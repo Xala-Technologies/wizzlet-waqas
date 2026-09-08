@@ -41,7 +41,7 @@ export class ErrorBoundary extends Component<Props, State> {
             An unexpected error occurred. You can return home and try again.
           </p>
           {import.meta.env.DEV && this.state.message ? (
-            <p className="text-xs text-destructive max-w-lg font-mono break-words">{this.state.message}</p>
+            <p className="text-caption text-destructive max-w-lg font-mono break-words">{this.state.message}</p>
           ) : null}
           <Button type="button" onClick={this.handleReload}>
             Go home

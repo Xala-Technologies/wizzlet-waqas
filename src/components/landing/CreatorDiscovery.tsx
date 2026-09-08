@@ -5,6 +5,7 @@ import { api } from '../../../convex/_generated/api';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Search, TrendingUp, Star, Sparkles, Loader2 } from 'lucide-react';
+import { LandingSection } from '@/components/landing/LandingSection';
 
 const filters = [
   { label: 'Trending', icon: TrendingUp },
@@ -30,10 +31,10 @@ export function CreatorDiscovery() {
   }, [creators, activeFilter]);
 
   return (
-    <section id="creators" className="py-24 bg-background">
+    <LandingSection id="creators" className="bg-background">
       <div className="container">
         <div className="text-center mb-12">
-          <p className="text-[12px] font-medium uppercase tracking-widest text-primary mb-3">
+          <p className="text-support font-medium uppercase tracking-widest text-primary mb-3">
             Network
           </p>
           <h2 className="text-2xl sm:text-3xl font-bold tracking-tight mb-3 text-foreground">
@@ -59,7 +60,7 @@ export function CreatorDiscovery() {
               <button
                 key={f.label}
                 onClick={() => setActiveFilter(f.label)}
-                className={`inline-flex items-center gap-1.5 rounded-full px-4 py-1.5 text-[13px] font-medium transition-all duration-200 ${
+                className={`inline-flex items-center gap-1.5 rounded-full px-4 py-1.5 text-support font-medium transition-all duration-200 ${
                   activeFilter === f.label
                     ? 'bg-primary/10 text-primary border border-primary/20'
                     : 'bg-card text-muted-foreground border border-border hover:border-border hover:text-foreground'
@@ -94,14 +95,14 @@ export function CreatorDiscovery() {
                         )}
                       </div>
                       <div className="min-w-0">
-                        <h3 className="font-semibold text-[14px] leading-tight truncate text-foreground">
+                        <h3 className="font-semibold text-ui leading-tight truncate text-foreground">
                           {name}
                         </h3>
-                        <p className="text-[12px] text-muted-foreground">@{creator.username}</p>
+                        <p className="text-support text-muted-foreground">@{creator.username}</p>
                       </div>
                     </div>
-                    <p className="text-[13px] text-muted-foreground leading-relaxed mb-5 line-clamp-2">
-                      {creator.bio || 'Sports creator on Wizzlet.'}
+                    <p className="text-support text-muted-foreground leading-relaxed mb-5 line-clamp-2">
+                      {creator.bio || 'Sports creator on Prizelet.'}
                     </p>
                     <Button asChild variant="outline" size="sm" className="w-full group-hover:border-primary/30 group-hover:text-primary transition-colors">
                       <Link to={`/c/${creator.username}`}>View profile</Link>
@@ -119,6 +120,6 @@ export function CreatorDiscovery() {
           </>
         )}
       </div>
-    </section>
+    </LandingSection>
   );
 }

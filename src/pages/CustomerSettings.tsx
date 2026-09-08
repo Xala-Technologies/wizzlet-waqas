@@ -108,21 +108,21 @@ const CustomerSettings = () => {
             </div>
             <div className="grid gap-3 max-w-sm">
               <div>
-                <label htmlFor="displayName" className="text-xs text-muted-foreground mb-1 block">Display Name</label>
+                <label htmlFor="displayName" className="text-caption text-muted-foreground mb-1 block">Display Name</label>
                 <Input id="displayName" value={fullName} onChange={(e) => setFullName(e.target.value)} placeholder="Your name" />
               </div>
               <div>
-                <label htmlFor="username" className="text-xs text-muted-foreground mb-1 block">Username</label>
+                <label htmlFor="username" className="text-caption text-muted-foreground mb-1 block">Username</label>
                 <Input id="username" value={username} onChange={(e) => setUsername(e.target.value)} placeholder="username" />
               </div>
               <div>
-                <label htmlFor="email" className="text-xs text-muted-foreground mb-1 block">Sign-in email</label>
+                <label htmlFor="email" className="text-caption text-muted-foreground mb-1 block">Sign-in email</label>
                 <Input id="email" value={email} type="email" disabled />
-                <p className="text-[10px] text-muted-foreground mt-1">
+                <p className="text-caption text-muted-foreground mt-1">
                   Sign-in email cannot be changed in-app. Submit a request for support to fulfill manually.
                 </p>
                 {myAccountRequests?.some((r) => r.category === 'email_change' && r.status === 'open') ? (
-                  <p className="text-xs text-amber-600 mt-2">
+                  <p className="text-caption text-amber-600 mt-2">
                     You already have an open email-change request.
                     {myAccountRequests.find((r) => r.category === 'email_change' && r.status === 'open')?.requestedEmail
                       ? ` Requested: ${myAccountRequests.find((r) => r.category === 'email_change' && r.status === 'open')!.requestedEmail}`
@@ -200,7 +200,7 @@ const CustomerSettings = () => {
               </div>
             )}
             {me?.image || me?.username ? (
-              <p className="text-xs text-muted-foreground mt-3">
+              <p className="text-caption text-muted-foreground mt-3">
                 Profile from social sign-in
                 {me.username ? <> · @{me.username}</> : null}
                 {me.image ? ' · photo synced' : null}
@@ -225,7 +225,7 @@ const CustomerSettings = () => {
             </div>
             <div className="grid gap-3 max-w-sm">
               <div>
-                <label htmlFor="currentPassword" className="text-xs text-muted-foreground mb-1 block">Current Password</label>
+                <label htmlFor="currentPassword" className="text-caption text-muted-foreground mb-1 block">Current Password</label>
                 <Input
                   id="currentPassword"
                   type="password"
@@ -235,7 +235,7 @@ const CustomerSettings = () => {
                 />
               </div>
               <div>
-                <label htmlFor="newPassword" className="text-xs text-muted-foreground mb-1 block">New Password</label>
+                <label htmlFor="newPassword" className="text-caption text-muted-foreground mb-1 block">New Password</label>
                 <Input
                   id="newPassword"
                   type="password"

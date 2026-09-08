@@ -134,7 +134,7 @@ const CustomerDiscover = () => {
               key={o.key}
               type="button"
               onClick={() => setSort(o.key)}
-              className={`min-h-11 sm:min-h-0 px-3 py-2 sm:py-1.5 rounded-lg text-xs font-medium transition-colors ${
+              className={`min-h-11 sm:min-h-0 px-3 py-2 sm:py-1.5 rounded-lg text-caption font-medium transition-colors ${
                 sort === o.key ? 'bg-primary/10 text-primary' : 'text-muted-foreground hover:text-foreground hover:bg-muted/60'
               }`}
             >
@@ -156,7 +156,7 @@ const CustomerDiscover = () => {
         <div className="rounded-xl border border-dashed border-border bg-card/50 p-12 text-center">
           <Users className="h-10 w-10 text-muted-foreground/40 mx-auto mb-3" />
           <h3 className="text-sm font-medium mb-1">No creators found</h3>
-          <p className="text-xs text-muted-foreground">
+          <p className="text-caption text-muted-foreground">
             {query ? 'Try a different search term.' : 'New creators appear here as soon as they publish.'}
           </p>
         </div>
@@ -169,7 +169,7 @@ const CustomerDiscover = () => {
               <div key={c.id} className="rounded-xl border border-border bg-card p-5 transition-colors hover:border-primary/20">
                 <div className="flex items-start gap-4">
                   <div className="flex flex-col items-center gap-1 shrink-0">
-                    <span className="text-xs font-bold text-muted-foreground">#{index + 1}</span>
+                    <span className="text-caption font-bold text-muted-foreground">#{index + 1}</span>
                     {c.avatar_url ? (
                       <img src={c.avatar_url} alt={`${name} avatar`} className="h-12 w-12 rounded-full object-cover" />
                     ) : (
@@ -180,9 +180,9 @@ const CustomerDiscover = () => {
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="font-semibold text-sm truncate">{name}</p>
-                    {c.username && <p className="text-xs text-muted-foreground mb-2">@{c.username}</p>}
-                    <p className="text-xs text-muted-foreground line-clamp-2 mb-2">{c.bio || 'No bio yet.'}</p>
-                    <span className="flex items-center gap-1 text-[10px] text-muted-foreground">
+                    {c.username && <p className="text-caption text-muted-foreground mb-2">@{c.username}</p>}
+                    <p className="text-caption text-muted-foreground line-clamp-2 mb-2">{c.bio || 'No bio yet.'}</p>
+                    <span className="flex items-center gap-1 text-caption text-muted-foreground">
                       <FileText className="h-3 w-3" /> {c.postCount} posts published
                     </span>
                   </div>
@@ -204,7 +204,7 @@ const CustomerDiscover = () => {
                       )}
                       {c.username && (
                         <Link to={`/${c.username}`}>
-                          <Button size="sm" className="h-7 text-xs">View Profile</Button>
+                          <Button size="sm" className="h-7 text-caption">View Profile</Button>
                         </Link>
                       )}
                     </div>

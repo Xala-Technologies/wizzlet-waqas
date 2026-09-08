@@ -1,4 +1,5 @@
 import { Zap, CreditCard, BarChart3, Lock, Globe, Bell } from 'lucide-react';
+import { LandingSection } from '@/components/landing/LandingSection';
 
 const features = [
   { icon: Zap, title: 'Instant delivery', impact: 'Reach your audience without delay' },
@@ -11,7 +12,7 @@ const features = [
 
 export function ToolsSection() {
   return (
-    <section className="relative py-24 md:py-32 overflow-hidden">
+    <LandingSection className="overflow-hidden">
       <div className="pointer-events-none absolute bottom-0 left-1/2 -translate-x-1/2 h-[400px] w-[800px] rounded-full opacity-[0.04] blur-[160px] bg-primary" />
 
       <div className="container relative z-10">
@@ -33,17 +34,17 @@ export function ToolsSection() {
                 <f.icon className="h-[18px] w-[18px]" />
               </div>
 
-              <h3 className="text-[15px] font-bold text-foreground mb-1.5 tracking-tight">
+              <h3 className="text-ui font-bold text-foreground mb-1.5 tracking-tight">
                 {f.title}
               </h3>
 
-              <p className="text-[13px] text-muted-foreground leading-snug">
+              <p className="text-support text-muted-foreground leading-snug">
                 {f.impact}
               </p>
             </div>
           ))}
         </div>
       </div>
-    </section>
+    </LandingSection>
   );
 }

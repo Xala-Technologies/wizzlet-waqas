@@ -102,7 +102,7 @@ export const createCheckoutSession = action({
       const coupon = await stripe.coupons.create({
         percent_off: promo.discountPercent,
         duration: duration.duration,
-        name: `Wizzlet ${promo.code}`,
+        name: `Prizelet ${promo.code}`,
         max_redemptions: 1,
       });
       discountCouponId = coupon.id;

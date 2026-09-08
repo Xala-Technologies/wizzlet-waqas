@@ -198,7 +198,7 @@ const AdminReports = () => {
         <p className="text-muted-foreground text-sm mt-0.5">
           Generate CSV exports from Convex admin scans (newest-first).
         </p>
-        <p className="text-amber-600 text-xs mt-2">
+        <p className="text-amber-600 text-caption mt-2">
           {capNote ?? `Exports include up to ${ADMIN_SCAN_MAX_DOCS.toLocaleString()} newest rows per source table.`}
         </p>
       </div>
@@ -212,10 +212,10 @@ const AdminReports = () => {
               </div>
               <div className="min-w-0">
                 <p className="text-sm font-semibold">{report.title}</p>
-                <p className="text-xs text-muted-foreground mt-1">{report.description}</p>
+                <p className="text-caption text-muted-foreground mt-1">{report.description}</p>
               </div>
             </div>
-            <Button variant="outline" size="sm" className="h-9 text-xs shrink-0" disabled={busy === report.key} onClick={() => handleExport(report)}>
+            <Button variant="outline" size="sm" className="h-9 text-caption shrink-0" disabled={busy === report.key} onClick={() => handleExport(report)}>
               {busy === report.key ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <><Download className="mr-1.5 h-3.5 w-3.5" /> CSV</>}
             </Button>
           </div>
@@ -235,20 +235,20 @@ const AdminReports = () => {
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-border bg-muted/20">
-                  <th className="text-left text-xs font-medium text-muted-foreground p-4">File Name</th>
-                  <th className="text-left text-xs font-medium text-muted-foreground p-4">Generated</th>
-                  <th className="text-left text-xs font-medium text-muted-foreground p-4">Size</th>
-                  <th className="text-right text-xs font-medium text-muted-foreground p-4">Actions</th>
+                  <th className="text-left text-caption font-medium text-muted-foreground p-4">File Name</th>
+                  <th className="text-left text-caption font-medium text-muted-foreground p-4">Generated</th>
+                  <th className="text-left text-caption font-medium text-muted-foreground p-4">Size</th>
+                  <th className="text-right text-caption font-medium text-muted-foreground p-4">Actions</th>
                 </tr>
               </thead>
               <tbody>
                 {recentExports.map((file, i) => (
                   <tr key={i} className="border-b border-border last:border-0 hover:bg-muted/20 transition-colors">
-                    <td className="p-4 font-medium text-xs">{file.name}</td>
-                    <td className="p-4 text-xs text-muted-foreground">{file.date}</td>
-                    <td className="p-4 text-xs text-muted-foreground">{file.size}</td>
+                    <td className="p-4 font-medium text-caption">{file.name}</td>
+                    <td className="p-4 text-caption text-muted-foreground">{file.date}</td>
+                    <td className="p-4 text-caption text-muted-foreground">{file.size}</td>
                     <td className="p-4 text-right">
-                      <Button variant="ghost" size="sm" className="h-7 px-2 text-xs" onClick={() => download(file.name, file.csv)}>
+                      <Button variant="ghost" size="sm" className="h-7 px-2 text-caption" onClick={() => download(file.name, file.csv)}>
                         <Download className="h-3 w-3" />
                       </Button>
                     </td>

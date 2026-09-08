@@ -29,7 +29,7 @@ export function RoleSwitcher() {
 
   return (
     <DropdownMenu>
-      <DropdownMenuTrigger className="flex w-full items-center justify-between gap-2 rounded-lg border border-border bg-background px-3 py-2 text-[12px] text-foreground transition-colors hover:bg-muted/60">
+      <DropdownMenuTrigger className="flex w-full items-center justify-between gap-2 rounded-lg border border-border bg-background px-3 py-2 text-support text-foreground transition-colors hover:bg-muted/60">
         <span className="flex items-center gap-2 min-w-0">
           <span className="text-muted-foreground">Viewing as</span>
           <span className="font-medium truncate">{ROLE_LABEL[role]}</span>
@@ -37,12 +37,12 @@ export function RoleSwitcher() {
         <ChevronsUpDown className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
       </DropdownMenuTrigger>
       <DropdownMenuContent align="start" className="w-[196px]">
-        <DropdownMenuLabel className="text-[11px] font-normal text-muted-foreground">
+        <DropdownMenuLabel className="text-caption font-normal text-muted-foreground">
           Switch workspace
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
         {roles.map((r) => (
-          <DropdownMenuItem key={r} onSelect={() => handleSelect(r)} className="text-[13px]">
+          <DropdownMenuItem key={r} onSelect={() => handleSelect(r)} className="text-ui">
             <span className="flex-1">{ROLE_LABEL[r]}</span>
             {r === role && <Check className="h-3.5 w-3.5 text-primary" />}
           </DropdownMenuItem>

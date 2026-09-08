@@ -67,9 +67,9 @@ const DemoMemberDashboard = () => {
           </div>
           <div className="flex-1">
             <p className="text-sm font-semibold">{todaysPicks.length} new {todaysPicks.length === 1 ? 'play' : 'plays'} available today</p>
-            <p className="text-xs text-muted-foreground">Fresh from your creators — track them before the lines move</p>
+            <p className="text-caption text-muted-foreground">Fresh from your creators — track them before the lines move</p>
           </div>
-          <Badge variant="outline" className="text-[9px] bg-primary/10 text-primary border-primary/20 shrink-0">NEW</Badge>
+          <Badge variant="outline" className="text-caption bg-primary/10 text-primary border-primary/20 shrink-0">NEW</Badge>
         </div>
       )}
 
@@ -84,7 +84,7 @@ const DemoMemberDashboard = () => {
           <div key={stat.label} className="rounded-xl border border-border bg-card p-4">
             <stat.icon className={`h-4 w-4 ${stat.color} mb-2`} />
             <p className="text-2xl font-bold">{stat.value}</p>
-            <p className="text-[10px] text-muted-foreground uppercase">{stat.label}</p>
+            <p className="text-caption text-muted-foreground uppercase">{stat.label}</p>
           </div>
         ))}
       </div>
@@ -103,22 +103,22 @@ const DemoMemberDashboard = () => {
                 <div key={pick.id} className="rounded-xl border border-primary/20 bg-card p-5 relative overflow-hidden">
                   <div className="flex items-center gap-2 mb-2">
                     <div className="h-6 w-6 rounded-full bg-primary/20 flex items-center justify-center">
-                      <span className="text-[9px] font-bold text-primary">{creator?.name[0]}</span>
+                      <span className="text-caption font-bold text-primary">{creator?.name[0]}</span>
                     </div>
-                    <span className="text-xs font-medium">{creator?.name}</span>
-                    <Badge variant="outline" className="text-[8px] bg-primary/10 text-primary border-primary/20 ml-auto">HOT</Badge>
+                    <span className="text-caption font-medium">{creator?.name}</span>
+                    <Badge variant="outline" className="text-caption bg-primary/10 text-primary border-primary/20 ml-auto">HOT</Badge>
                   </div>
                   <h3 className={`font-semibold text-sm mb-2 ${locked ? 'blur-[3px] select-none' : ''}`}>{pick.title}</h3>
-                  <div className="flex items-center gap-3 text-[10px] text-muted-foreground">
+                  <div className="flex items-center gap-3 text-caption text-muted-foreground">
                     <span>{format(new Date(pick.createdAt), 'h:mm a')}</span>
                     <span>{pick.sport} · {pick.units}u @ {pick.usOdds}</span>
                   </div>
                   {locked ? (
-                    <Button size="sm" className="h-7 text-xs mt-3" onClick={() => store.subscribe(pick.creatorId)}>
+                    <Button size="sm" className="h-7 text-caption mt-3" onClick={() => store.subscribe(pick.creatorId)}>
                       <Lock className="mr-1 h-3 w-3" /> Subscribe to unlock
                     </Button>
                   ) : (
-                    <Button size="sm" variant="outline" className="h-7 text-xs mt-3" onClick={() => openTrack(pick)}>
+                    <Button size="sm" variant="outline" className="h-7 text-caption mt-3" onClick={() => openTrack(pick)}>
                       <Plus className="mr-1 h-3 w-3" /> Track
                     </Button>
                   )}
@@ -133,7 +133,7 @@ const DemoMemberDashboard = () => {
       <div className="mb-8">
         <div className="flex items-center justify-between mb-3">
           <h2 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">Your Creators</h2>
-          <Link to="/demo/member/subscriptions-billing" className="text-xs text-primary hover:underline flex items-center gap-1">
+          <Link to="/demo/member/subscriptions-billing" className="text-caption text-primary hover:underline flex items-center gap-1">
             View all <ArrowRight className="h-3 w-3" />
           </Link>
         </div>
@@ -153,7 +153,7 @@ const DemoMemberDashboard = () => {
                   </div>
                   <div className="min-w-0 flex-1">
                     <p className="font-semibold text-sm truncate">{c.name}</p>
-                    <p className="text-[10px] text-muted-foreground">
+                    <p className="text-caption text-muted-foreground">
                       ${c.price}/mo{last ? ` · ${formatDistanceToNow(new Date(last.createdAt), { addSuffix: true })}` : ''}
                     </p>
                   </div>
@@ -173,14 +173,14 @@ const DemoMemberDashboard = () => {
               <button
                 key={f}
                 onClick={() => setSort(f)}
-                className={`px-2.5 py-1 rounded-lg text-[10px] font-medium capitalize transition-colors ${
+                className={`px-2.5 py-1 rounded-lg text-caption font-medium capitalize transition-colors ${
                   sort === f ? 'bg-primary/10 text-primary' : 'text-muted-foreground hover:text-foreground hover:bg-muted/60'
                 }`}
               >{f}</button>
             ))}
           </div>
         </div>
-        <span className="text-[10px] text-muted-foreground">{metrics.lockedPosts} locked</span>
+        <span className="text-caption text-muted-foreground">{metrics.lockedPosts} locked</span>
       </div>
 
       <div className="space-y-3">
@@ -194,11 +194,11 @@ const DemoMemberDashboard = () => {
             <article key={post.id} className="rounded-xl border border-border bg-card p-5">
               <div className="flex items-center gap-2.5 mb-2">
                 <div className="h-7 w-7 rounded-full bg-primary/20 flex items-center justify-center">
-                  <span className="text-[10px] font-bold text-primary">{creator?.name[0]}</span>
+                  <span className="text-caption font-bold text-primary">{creator?.name[0]}</span>
                 </div>
                 <span className="text-sm font-medium">{creator?.name}</span>
-                <span className="text-[10px] text-muted-foreground">{formatDistanceToNow(new Date(post.createdAt), { addSuffix: true })}</span>
-                <span className={`ml-auto inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-medium ${
+                <span className="text-caption text-muted-foreground">{formatDistanceToNow(new Date(post.createdAt), { addSuffix: true })}</span>
+                <span className={`ml-auto inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-caption font-medium ${
                   post.isPremium ? 'bg-primary/10 text-primary' : 'bg-muted text-muted-foreground'
                 }`}>
                   {post.isPremium ? <><Lock className="h-2.5 w-2.5" /> Premium</> : <><Globe className="h-2.5 w-2.5" /> Free</>}
@@ -206,17 +206,17 @@ const DemoMemberDashboard = () => {
               </div>
 
               <h3 className="font-semibold text-sm mb-1">{post.title}</h3>
-              <p className={`text-xs text-muted-foreground mb-3 ${locked ? 'blur-[3px] select-none' : ''}`}>
+              <p className={`text-caption text-muted-foreground mb-3 ${locked ? 'blur-[3px] select-none' : ''}`}>
                 {locked ? post.preview : post.content}
               </p>
 
               {post.usOdds && (
                 <div className="flex flex-wrap gap-2 mb-3">
-                  <Badge variant="outline" className="text-[9px]">{post.sport}</Badge>
-                  <Badge variant="outline" className="text-[9px]">{post.event}</Badge>
-                  <Badge variant="outline" className="text-[9px]">{post.usOdds} · {dec?.toFixed(2)}</Badge>
-                  <Badge variant="outline" className="text-[9px]">{post.units}u</Badge>
-                  <Badge variant="outline" className={`text-[9px] ${
+                  <Badge variant="outline" className="text-caption">{post.sport}</Badge>
+                  <Badge variant="outline" className="text-caption">{post.event}</Badge>
+                  <Badge variant="outline" className="text-caption">{post.usOdds} · {dec?.toFixed(2)}</Badge>
+                  <Badge variant="outline" className="text-caption">{post.units}u</Badge>
+                  <Badge variant="outline" className={`text-caption ${
                     post.result === 'won' ? 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20'
                       : post.result === 'lost' ? 'bg-destructive/10 text-destructive border-destructive/20'
                       : 'bg-muted text-muted-foreground'
@@ -225,11 +225,11 @@ const DemoMemberDashboard = () => {
               )}
 
               {locked ? (
-                <Button size="sm" className="h-7 text-xs" onClick={() => { store.subscribe(post.creatorId); toast.success(`Subscribed to ${creator?.name}`); }}>
+                <Button size="sm" className="h-7 text-caption" onClick={() => { store.subscribe(post.creatorId); toast.success(`Subscribed to ${creator?.name}`); }}>
                   <Crown className="mr-1 h-3 w-3" /> Subscribe ${creator?.price}/mo to unlock
                 </Button>
               ) : (
-                <div className="flex items-center gap-4 text-xs text-muted-foreground">
+                <div className="flex items-center gap-4 text-caption text-muted-foreground">
                   <button onClick={() => store.toggleLike(post.id)} aria-pressed={liked} aria-label={liked ? 'Unlike post' : 'Like post'} className={`flex items-center gap-1 py-2 -my-2 transition-colors hover:text-primary ${liked ? 'text-primary' : ''}`}>
                     <Heart className={`h-3.5 w-3.5 ${liked ? 'fill-current' : ''}`} /> {post.likes}
                   </button>
@@ -253,14 +253,14 @@ const DemoMemberDashboard = () => {
         <DialogContent className="sm:max-w-sm">
           <DialogHeader><DialogTitle>Add to My Results</DialogTitle></DialogHeader>
           <div className="space-y-3">
-            <p className="text-xs text-muted-foreground">{trackTarget?.event} · {trackTarget?.sport}</p>
+            <p className="text-caption text-muted-foreground">{trackTarget?.event} · {trackTarget?.sport}</p>
             <div>
-              <Label className="text-xs">US odds</Label>
+              <Label className="text-caption">US odds</Label>
               <Input value={trackOdds} onChange={e => setTrackOdds(e.target.value)} className="mt-1" placeholder="-110" />
-              <p className="text-[10px] text-muted-foreground mt-1">EU odds: {usToDecimal(trackOdds)?.toFixed(2) ?? '—'}</p>
+              <p className="text-caption text-muted-foreground mt-1">EU odds: {usToDecimal(trackOdds)?.toFixed(2) ?? '—'}</p>
             </div>
             <div>
-              <Label className="text-xs">Units</Label>
+              <Label className="text-caption">Units</Label>
               <Input type="number" min="0.5" step="0.5" value={trackUnits} onChange={e => setTrackUnits(e.target.value)} className="mt-1" />
             </div>
           </div>

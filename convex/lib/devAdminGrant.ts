@@ -3,8 +3,8 @@
  * Production deployments must leave `ALLOW_DEV_ADMIN_GRANT` unset.
  */
 export const DEV_ADMIN_GRANT_EMAILS = [
-  "admin@wizzlet.dev",
-  "test@wizzlet.dev",
+  "admin@prizelet.dev",
+  "test@prizelet.dev",
 ] as const;
 
 export function isDevAdminGrantAllowed(

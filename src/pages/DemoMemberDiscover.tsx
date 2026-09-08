@@ -29,7 +29,7 @@ const DemoMemberDiscover = () => {
     store.isSubscribed(id) ? (
       <CancelSubButton creatorId={id} variant="status" />
     ) : (
-      <Button size="sm" className="h-7 text-xs" onClick={() => { store.subscribe(id); toast.success(`Subscribed to ${name}`); }}>
+      <Button size="sm" className="h-7 text-caption" onClick={() => { store.subscribe(id); toast.success(`Subscribed to ${name}`); }}>
         <Crown className="mr-1 h-3 w-3" /> Subscribe
       </Button>
     );
@@ -44,8 +44,8 @@ const DemoMemberDiscover = () => {
           {trending.map((c, i) => (
             <div key={c.id} className="rounded-xl border border-primary/20 bg-card p-5">
               <div className="flex items-center gap-2 mb-2">
-                <span className="flex h-6 w-6 items-center justify-center rounded-full bg-primary/20 text-[10px] font-bold text-primary">#{i + 1}</span>
-                <Badge variant="outline" className="text-[8px] bg-emerald-500/10 text-emerald-500 border-emerald-500/20">
+                <span className="flex h-6 w-6 items-center justify-center rounded-full bg-primary/20 text-caption font-bold text-primary">#{i + 1}</span>
+                <Badge variant="outline" className="text-caption bg-emerald-500/10 text-emerald-500 border-emerald-500/20">
                   <TrendingUp className="h-2 w-2 mr-0.5" /> {c.growth}
                 </Badge>
                 <button onClick={() => store.toggleBookmark(c.id)} aria-label={`${state.bookmarkedCreatorIds.includes(c.id) ? 'Remove' : 'Save'} ${c.name}`} className="ml-auto p-2 -m-2 text-muted-foreground hover:text-primary">
@@ -60,10 +60,10 @@ const DemoMemberDiscover = () => {
                   <p className="font-semibold text-sm truncate flex items-center gap-1">
                     {c.name} <Star className="h-3 w-3 text-amber-500 fill-amber-500" />
                   </p>
-                  <p className="text-[10px] text-muted-foreground">{c.subs} subscribers · {c.winRate}% win rate</p>
+                  <p className="text-caption text-muted-foreground">{c.subs} subscribers · {c.winRate}% win rate</p>
                 </div>
               </div>
-              <p className="text-xs text-muted-foreground line-clamp-2 mb-3">{c.bio}</p>
+              <p className="text-caption text-muted-foreground line-clamp-2 mb-3">{c.bio}</p>
               <div className="flex items-center justify-between">
                 <span className="text-sm font-bold text-primary">${c.price}/mo</span>
                 <SubButton id={c.id} name={c.name} />
@@ -83,7 +83,7 @@ const DemoMemberDiscover = () => {
             <button
               key={cat}
               onClick={() => setCategory(cat)}
-              className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
+              className={`px-3 py-1.5 rounded-lg text-caption font-medium transition-colors ${
                 category === cat ? 'bg-primary/10 text-primary' : 'text-muted-foreground hover:text-foreground hover:bg-muted/60'
               }`}
             >{cat}</button>
@@ -105,13 +105,13 @@ const DemoMemberDiscover = () => {
                 </div>
                 <div className="min-w-0 flex-1">
                   <p className="font-semibold text-sm truncate">{c.name}</p>
-                  <p className="text-[10px] text-muted-foreground">@{c.username} · {c.subs} subs · {c.winRate}% win rate</p>
+                  <p className="text-caption text-muted-foreground">@{c.username} · {c.subs} subs · {c.winRate}% win rate</p>
                 </div>
                 <button onClick={() => store.toggleBookmark(c.id)} aria-label={`${state.bookmarkedCreatorIds.includes(c.id) ? 'Remove' : 'Save'} ${c.name}`} className="p-2 -m-2 text-muted-foreground hover:text-primary">
                   <Bookmark className={`h-4 w-4 ${state.bookmarkedCreatorIds.includes(c.id) ? 'fill-current text-primary' : ''}`} />
                 </button>
               </div>
-              <p className="text-xs text-muted-foreground line-clamp-2 mb-3">{c.bio}</p>
+              <p className="text-caption text-muted-foreground line-clamp-2 mb-3">{c.bio}</p>
               <div className="flex items-center justify-between">
                 <span className="text-sm font-bold text-primary">${c.price}/mo</span>
                 <SubButton id={c.id} name={c.name} />

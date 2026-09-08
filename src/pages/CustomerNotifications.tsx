@@ -1,11 +1,13 @@
 import { useMemo } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { useMutation, usePaginatedQuery } from 'convex/react';
 import { DashboardLayout } from '@/components/dashboard/DashboardLayout';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
-import { FileText, DollarSign, Megaphone, Info, CheckCircle2, BellOff, Loader2 } from 'lucide-react';
+import {
+  FileText, DollarSign, Megaphone, Info, CheckCircle2, BellOff, Loader2, MessageSquare, Brain,
+} from 'lucide-react';
 import { toast } from 'sonner';
 import { formatDistanceToNowStrict } from 'date-fns';
 import { useAuth } from '@/contexts/AuthContext';
@@ -30,11 +32,30 @@ const typeConfig: Record<string, { icon: typeof FileText; color: string; bg: str
   price: { icon: DollarSign, color: 'text-amber-500', bg: 'bg-amber-500/10' },
   promo: { icon: Megaphone, color: 'text-primary', bg: 'bg-primary/10' },
   announcement: { icon: Info, color: 'text-emerald-500', bg: 'bg-emerald-500/10' },
+  subscription: { icon: DollarSign, color: 'text-emerald-500', bg: 'bg-emerald-500/10' },
+  message: { icon: MessageSquare, color: 'text-primary', bg: 'bg-primary/10' },
+  growth_message: { icon: Brain, color: 'text-primary', bg: 'bg-primary/10' },
+  support_message: { icon: MessageSquare, color: 'text-primary', bg: 'bg-primary/10' },
+  resolution_case: { icon: FileText, color: 'text-amber-500', bg: 'bg-amber-500/10' },
+  resolution_message: { icon: FileText, color: 'text-amber-500', bg: 'bg-amber-500/10' },
+  payout_request: { icon: DollarSign, color: 'text-amber-500', bg: 'bg-amber-500/10' },
 };
 
+type LayoutType = 'member' | 'creator' | 'admin';
+
+function layoutFromPath(pathname: string): LayoutType {
+  if (pathname.startsWith('/admin')) return 'admin';
+  if (pathname.startsWith('/creator')) return 'creator';
+  return 'member';
+}
+
+/** In-app notification center — shared by member, creator, and admin dashboards. */
 const CustomerNotifications = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
+  const { pathname } = useLocation();
+  const layoutType = layoutFromPath(pathname);
+
   const { results, status, loadMore } = usePaginatedQuery(
     api.notifications.mutations.listMinePage,
     user ? {} : 'skip',
@@ -77,27 +98,28 @@ const CustomerNotifications = () => {
     if (!user || unreadCount === 0) return;
     try {
       await markAllReadMutation({});
-      toast.success('All marked as read');
     } catch {
       toast.error('Could not update notifications');
     }
   };
 
   return (
-    <DashboardLayout type="member">
+    <DashboardLayout type={layoutType}>
       <div className="flex items-center justify-between mb-6 gap-3 flex-wrap">
         <div>
           <h1 className="text-2xl font-bold flex items-center gap-2">
             Notifications
             {unreadCount > 0 && (
-              <Badge variant="outline" className="text-[9px] bg-primary/10 text-primary border-primary/20">
+              <Badge variant="outline" className="text-caption bg-primary/10 text-primary border-primary/20">
                 {unreadCount} new
               </Badge>
             )}
           </h1>
-          <p className="text-muted-foreground text-sm mt-0.5">Billing updates and platform announcements</p>
+          <p className="text-muted-foreground text-sm mt-0.5">
+            Messages, billing updates, and platform announcements
+          </p>
         </div>
-        <Button variant="outline" size="sm" className="text-xs" onClick={markAllRead} disabled={unreadCount === 0}>
+        <Button variant="outline" size="sm" className="text-caption" onClick={markAllRead} disabled={unreadCount === 0}>
           <CheckCircle2 className="mr-1 h-3 w-3" /> Mark all read
         </Button>
       </div>
@@ -110,7 +132,7 @@ const CustomerNotifications = () => {
         <div className="rounded-xl border border-dashed border-border bg-card/50 p-12 text-center">
           <BellOff className="h-10 w-10 text-muted-foreground/40 mx-auto mb-3" />
           <h3 className="text-sm font-medium mb-1">You're all caught up</h3>
-          <p className="text-xs text-muted-foreground">Billing and platform updates will show up here.</p>
+          <p className="text-caption text-muted-foreground">New messages and updates will show up here.</p>
         </div>
       ) : (
         <div className="space-y-2">
@@ -120,7 +142,7 @@ const CustomerNotifications = () => {
               <button
                 key={n.id}
                 type="button"
-                onClick={() => markRead(n)}
+                onClick={() => void markRead(n)}
                 className={`w-full text-left rounded-xl border bg-card p-4 flex items-start gap-3 transition-colors hover:border-primary/20 ${
                   n.read ? 'border-border opacity-70' : 'border-primary/10'
                 }`}
@@ -133,8 +155,8 @@ const CustomerNotifications = () => {
                     <p className="text-sm font-medium truncate">{n.title}</p>
                     {!n.read && <span className="h-1.5 w-1.5 rounded-full bg-primary shrink-0" />}
                   </div>
-                  {n.description && <p className="text-xs text-muted-foreground line-clamp-2">{n.description}</p>}
-                  <p className="text-[10px] text-muted-foreground mt-1">
+                  {n.description && <p className="text-caption text-muted-foreground line-clamp-2">{n.description}</p>}
+                  <p className="text-caption text-muted-foreground mt-1">
                     {formatDistanceToNowStrict(new Date(n.created_at), { addSuffix: true })}
                   </p>
                 </div>

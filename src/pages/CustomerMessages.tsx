@@ -12,6 +12,7 @@ import { MessageSquare, User, Loader2, Send, ArrowLeft } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
+import { MessageSeenReceipt } from '@/components/messaging/MessageSeenReceipt';
 
 const PAGE_SIZE = 25;
 
@@ -228,10 +229,10 @@ const CustomerMessages = () => {
                       <div className="flex items-center justify-between gap-2">
                         <p className="text-sm font-medium truncate">{thread.name}</p>
                         {thread.unread > 0 && (
-                          <Badge className="text-[10px] shrink-0">{thread.unread}</Badge>
+                          <Badge className="text-caption shrink-0">{thread.unread}</Badge>
                         )}
                       </div>
-                      <p className="text-xs text-muted-foreground truncate mt-0.5">
+                      <p className="text-caption text-muted-foreground truncate mt-0.5">
                         {thread.messages[thread.messages.length - 1]?.body}
                       </p>
                     </div>
@@ -292,15 +293,18 @@ const CustomerMessages = () => {
                           }`}
                         >
                           <p className="whitespace-pre-line">{msg.body}</p>
-                          <p
-                            className={`text-[10px] mt-1 ${
+                          <div
+                            className={`mt-1 flex items-center justify-between gap-2 text-caption ${
                               msg.sender_role === 'subscriber'
                                 ? 'text-primary-foreground/60'
                                 : 'text-muted-foreground'
                             }`}
                           >
-                            {formatDistanceToNow(new Date(msg.created_at), { addSuffix: true })}
-                          </p>
+                            <span>{formatDistanceToNow(new Date(msg.created_at), { addSuffix: true })}</span>
+                            {msg.sender_role === 'subscriber' && (
+                              <MessageSeenReceipt seen={msg.read} light />
+                            )}
+                          </div>
                         </div>
                       </div>
                     ))

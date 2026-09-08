@@ -1,8 +1,8 @@
-# Executive Summary — Supabase → Convex (Wizzlet)
+# Executive Summary — Supabase → Convex (Prizelet)
 
 ## Goal
 
-Migrate Wizzlet’s **application database** from Supabase PostgreSQL to Convex while:
+Migrate Prizelet’s **application database** from Supabase PostgreSQL to Convex while:
 
 - Keeping **Supabase Auth** and **Supabase Storage**
 - Preserving product behavior, security, and money invariants

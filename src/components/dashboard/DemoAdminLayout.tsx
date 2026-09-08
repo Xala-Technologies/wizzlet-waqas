@@ -13,7 +13,7 @@ export default function DemoAdminLayout() {
         <main className="flex-1 min-w-0 overflow-auto">
           <MobileTopBar
             badge={
-              <span className="inline-flex items-center gap-1.5 rounded-lg bg-destructive/10 px-2 py-1 text-[10px] font-medium text-destructive">
+              <span className="inline-flex items-center gap-1.5 rounded-lg bg-destructive/10 px-2 py-1 text-caption font-medium text-destructive">
                 <Shield className="h-3 w-3" /> Admin
               </span>
             }

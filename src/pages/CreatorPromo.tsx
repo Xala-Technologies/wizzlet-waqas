@@ -131,11 +131,11 @@ const CreatorPromo = () => {
                   <div className="min-w-0">
                     <div className="flex items-center gap-2 flex-wrap">
                       <p className="font-mono font-medium text-sm">{p.code}</p>
-                      <span className="text-[10px] uppercase tracking-wide text-muted-foreground">
+                      <span className="text-caption uppercase tracking-wide text-muted-foreground">
                         {p.isActive ? 'Active' : 'Disabled'}
                       </span>
                     </div>
-                    <p className="text-xs text-muted-foreground mt-1">
+                    <p className="text-caption text-muted-foreground mt-1">
                       {p.discountPercent}% off · {dur === 'forever' ? 'forever' : 'first month'} · used {p.usedCount}
                       {p.maxUses != null ? `/${p.maxUses}` : ''} times
                     </p>
@@ -174,7 +174,7 @@ const CreatorPromo = () => {
             <Plus className="h-4 w-4 text-primary" /> New code
           </p>
           <div>
-            <Label className="text-xs">Code</Label>
+            <Label className="text-caption">Code</Label>
             <Input
               className="mt-1 font-mono uppercase"
               value={code}
@@ -183,7 +183,7 @@ const CreatorPromo = () => {
             />
           </div>
           <div>
-            <Label className="text-xs">Discount % (1–100)</Label>
+            <Label className="text-caption">Discount % (1–100)</Label>
             <Input
               className="mt-1"
               type="number"
@@ -195,7 +195,7 @@ const CreatorPromo = () => {
             />
           </div>
           <fieldset className="space-y-2">
-            <Legend className="text-xs font-medium text-foreground">Discount duration</Legend>
+            <Legend className="text-caption font-medium text-foreground">Discount duration</Legend>
             <label className="flex items-start gap-2.5 cursor-pointer rounded-lg border border-border p-3 has-[:checked]:border-primary/50 has-[:checked]:bg-primary/5">
               <input
                 type="radio"
@@ -206,7 +206,7 @@ const CreatorPromo = () => {
               />
               <span>
                 <span className="text-sm font-medium block">Once</span>
-                <span className="text-[11px] text-muted-foreground">Applies to the first month only</span>
+                <span className="text-caption text-muted-foreground">Applies to the first month only</span>
               </span>
             </label>
             <label className="flex items-start gap-2.5 cursor-pointer rounded-lg border border-border p-3 has-[:checked]:border-primary/50 has-[:checked]:bg-primary/5">
@@ -219,12 +219,12 @@ const CreatorPromo = () => {
               />
               <span>
                 <span className="text-sm font-medium block">Forever</span>
-                <span className="text-[11px] text-muted-foreground">Applies to every renewal</span>
+                <span className="text-caption text-muted-foreground">Applies to every renewal</span>
               </span>
             </label>
           </fieldset>
           <div>
-            <Label className="text-xs">Max redemptions (optional)</Label>
+            <Label className="text-caption">Max redemptions (optional)</Label>
             <Input
               className="mt-1"
               type="number"

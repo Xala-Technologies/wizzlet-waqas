@@ -5,7 +5,7 @@
 | Branch | `fix/mobile-first-shells` |
 | Base tip | `85000f6` (creators footer / onboarding exit) |
 | Wave | 1 — shells + trackers + admin transactions |
-| Brief | `wizzlet-mobile-first-responsive-agent.md` |
+| Brief | `prizelet-mobile-first-responsive-agent.md` |
 
 ## Viewport matrix (CSS px)
 

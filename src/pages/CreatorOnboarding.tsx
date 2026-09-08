@@ -190,7 +190,7 @@ const CreatorOnboarding = () => {
             <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary">
               <Zap className="h-4 w-4 text-primary-foreground" />
             </div>
-            Wizzlet
+            Prizelet
           </Link>
           <h1 className="text-2xl font-bold">
             {alreadyPublished ? 'Update your creator profile' : 'Set up your creator profile'}
@@ -238,7 +238,7 @@ const CreatorOnboarding = () => {
                   maxLength={30}
                 />
               </div>
-              <p className="text-xs text-muted-foreground">wizzlet.com/@{username || 'you'}</p>
+              <p className="text-caption text-muted-foreground">prizelet.com/@{username || 'you'}</p>
             </div>
             <div className="space-y-2">
               <Label htmlFor="bio">Bio</Label>
@@ -251,7 +251,7 @@ const CreatorOnboarding = () => {
                 rows={3}
                 maxLength={300}
               />
-              <p className="text-xs text-muted-foreground text-right">{bio.length}/300</p>
+              <p className="text-caption text-muted-foreground text-right">{bio.length}/300</p>
             </div>
           </div>
         )}
@@ -277,7 +277,7 @@ const CreatorOnboarding = () => {
                 </button>
                 <div>
                   <p className="text-sm font-medium">{avatarPreview ? 'Change photo' : 'Upload a photo'}</p>
-                  <p className="text-xs text-muted-foreground">JPG, PNG. Max 5MB. Local picks upload only when you save.</p>
+                  <p className="text-caption text-muted-foreground">JPG, PNG. Max 5MB. Local picks upload only when you save.</p>
                 </div>
               </div>
               <input
@@ -301,7 +301,7 @@ const CreatorOnboarding = () => {
                 ) : (
                   <div className="text-center">
                     <ImageIcon className="h-6 w-6 text-muted-foreground mx-auto mb-1" />
-                    <p className="text-xs text-muted-foreground">Upload banner (1200×400 recommended)</p>
+                    <p className="text-caption text-muted-foreground">Upload banner (1200×400 recommended)</p>
                   </div>
                 )}
                 {bannerPreview && (
@@ -319,7 +319,7 @@ const CreatorOnboarding = () => {
               />
             </div>
 
-            <p className="text-xs text-muted-foreground text-center">
+            <p className="text-caption text-muted-foreground text-center">
               Images are optional. A file chosen on this device is not available on another device until you save and it uploads.
             </p>
           </div>
@@ -343,7 +343,7 @@ const CreatorOnboarding = () => {
                   className="bg-surface border-border pl-7 text-lg font-semibold"
                 />
               </div>
-              <p className="text-xs text-muted-foreground">You can change this anytime from your dashboard.</p>
+              <p className="text-caption text-muted-foreground">You can change this anytime from your dashboard.</p>
             </div>
 
             <div className="rounded-xl border border-border bg-card overflow-hidden">
@@ -365,12 +365,12 @@ const CreatorOnboarding = () => {
                   )}
                   <div className="min-w-0">
                     <p className="font-semibold text-sm truncate">{displayName || 'Your Name'}</p>
-                    <p className="text-xs text-muted-foreground">@{username || 'username'}</p>
+                    <p className="text-caption text-muted-foreground">@{username || 'username'}</p>
                   </div>
                 </div>
-                {bio && <p className="text-xs text-muted-foreground line-clamp-2 mb-3">{bio}</p>}
+                {bio && <p className="text-caption text-muted-foreground line-clamp-2 mb-3">{bio}</p>}
                 <div className="flex items-center justify-between">
-                  <span className="text-xs text-muted-foreground">Monthly</span>
+                  <span className="text-caption text-muted-foreground">Monthly</span>
                   <span className="font-bold text-primary">${parseFloat(price || '0').toFixed(2)}/mo</span>
                 </div>
               </div>

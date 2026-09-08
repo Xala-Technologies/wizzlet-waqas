@@ -4,8 +4,8 @@
  * Server gate: `ALLOW_DEV_ADMIN_GRANT=true` + email allowlist in `convex/lib/devAdminGrant.ts`.
  */
 export const ADMIN_BOOTSTRAP = {
-  email: "admin@wizzlet.dev",
-  password: "AdminWizzlet1!",
+  email: "admin@prizelet.dev",
+  password: "AdminPrizelet1!",
   username: "platformowner",
   fullName: "Platform Owner",
 } as const;
