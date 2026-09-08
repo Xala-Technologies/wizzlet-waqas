@@ -18,7 +18,7 @@ INSUFFICIENT EVIDENCE: REQUIRED CHECKS BLOCKED OR NOT RUN
 
 | Item | Value |
 |------|--------|
-| App | Wizzlet — sports creator subscription SPA |
+| App | Prizelet — sports creator subscription SPA |
 | Stack | Vite 5 + React 18 + Convex `^1.45.0` + `@convex-dev/auth` `^0.0.95` |
 | Package manager | npm |
 | Dev deployment | `https://combative-mongoose-559.convex.cloud` |

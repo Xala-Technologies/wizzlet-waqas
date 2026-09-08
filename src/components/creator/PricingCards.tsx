@@ -35,7 +35,7 @@ const PricingCards = ({ products, creatorId, creatorUsername }: PricingCardsProp
   return (
     <div className="space-y-4">
       <div className="max-w-sm mx-auto space-y-1.5">
-        <Label htmlFor="promo-code" className="text-xs text-muted-foreground">
+        <Label htmlFor="promo-code" className="text-caption text-muted-foreground">
           Promo code (optional)
         </Label>
         <Input
@@ -59,13 +59,13 @@ const PricingCards = ({ products, creatorId, creatorUsername }: PricingCardsProp
             }`}
           >
             {product.is_featured && (
-              <span className="absolute -top-3 left-1/2 -translate-x-1/2 inline-flex items-center gap-1 rounded-full bg-primary px-3 py-1 text-[11px] font-semibold text-primary-foreground uppercase tracking-wide">
+              <span className="absolute -top-3 left-1/2 -translate-x-1/2 inline-flex items-center gap-1 rounded-full bg-primary px-3 py-1 text-caption font-semibold text-primary-foreground uppercase tracking-wide">
                 <Star className="h-3 w-3" /> Most Popular
               </span>
             )}
 
             <div className="mt-2">
-              <span className="text-[11px] font-medium text-muted-foreground uppercase tracking-wide rounded-full bg-secondary px-2.5 py-0.5">
+              <span className="text-caption font-medium text-muted-foreground uppercase tracking-wide rounded-full bg-secondary px-2.5 py-0.5">
                 {product.billing_period}
               </span>
             </div>

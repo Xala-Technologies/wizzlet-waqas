@@ -204,7 +204,7 @@ const CreatorProfile = () => {
   if (!creator) {
     return (
       <div className="min-h-screen">
-        <Seo title="Creator not found — Wizzlet" description="This creator profile doesn't exist or isn't published yet." noindex />
+        <Seo title="Creator not found — Prizelet" description="This creator profile doesn't exist or isn't published yet." noindex />
         <Navbar />
         <main id="main-content" className="pt-32 text-center">
           <h1 className="text-2xl font-bold mb-2">Creator not found</h1>
@@ -231,8 +231,8 @@ const CreatorProfile = () => {
   return (
     <div className="min-h-screen">
       <Seo
-        title={`${creator.display_name ?? creator.username} (@${creator.username}) — Picks & Subscriptions | Wizzlet`}
-        description={(creator.bio?.trim() || `Follow @${creator.username} on Wizzlet for verified sports picks, results and subscription access from $${price}/mo.`).slice(0, 155)}
+        title={`${creator.display_name ?? creator.username} (@${creator.username}) — Picks & Subscriptions | Prizelet`}
+        description={(creator.bio?.trim() || `Follow @${creator.username} on Prizelet for verified sports picks, results and subscription access from $${price}/mo.`).slice(0, 155)}
         canonicalPath={`/${creator.username}`}
       />
       <Navbar />
@@ -265,7 +265,7 @@ const CreatorProfile = () => {
             {creator.display_name ?? creator.username}
             <CheckCircle className="h-5 w-5 text-primary shrink-0" />
             {stats.streak >= 3 && (
-              <span className="inline-flex items-center gap-1 rounded-full bg-amber-500/10 px-2.5 py-1 text-xs font-bold text-amber-500">
+              <span className="inline-flex items-center gap-1 rounded-full bg-amber-500/10 px-2.5 py-1 text-caption font-bold text-amber-500">
                 <Flame className="h-3.5 w-3.5" /> {stats.streak}W
               </span>
             )}
@@ -291,14 +291,14 @@ const CreatorProfile = () => {
             <div key={s.label} className="rounded-xl border border-border bg-card p-3 text-center">
               <s.icon className={`h-4 w-4 ${s.color} mx-auto mb-1`} />
               <p className={`text-lg font-bold ${s.color}`}>{s.value}</p>
-              <p className="text-[9px] text-muted-foreground uppercase tracking-wider">{s.label}</p>
+              <p className="text-caption text-muted-foreground uppercase tracking-wider">{s.label}</p>
             </div>
           ))}
         </div>
 
         {/* Performance chart from settled picks */}
         <div className="mt-6 rounded-xl border border-border bg-card p-4">
-          <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">Performance</h3>
+          <h3 className="text-caption font-semibold text-muted-foreground uppercase tracking-wider mb-3">Performance</h3>
           {chartData.length === 0 ? (
             <p className="text-sm text-muted-foreground py-8 text-center">No settled picks yet to chart.</p>
           ) : (
@@ -310,8 +310,8 @@ const CreatorProfile = () => {
                     <stop offset="100%" stopColor="hsl(var(--primary))" stopOpacity={0} />
                   </linearGradient>
                 </defs>
-                <XAxis dataKey="date" tick={{ fontSize: 10 }} stroke="hsl(var(--muted-foreground))" tickLine={false} axisLine={false} interval="preserveStartEnd" />
-                <YAxis tick={{ fontSize: 10 }} stroke="hsl(var(--muted-foreground))" tickLine={false} axisLine={false} width={30} />
+                <XAxis dataKey="date" tick={{ fontSize: 14 }} stroke="hsl(var(--muted-foreground))" tickLine={false} axisLine={false} interval="preserveStartEnd" />
+                <YAxis tick={{ fontSize: 14 }} stroke="hsl(var(--muted-foreground))" tickLine={false} axisLine={false} width={30} />
                 <Tooltip contentStyle={{ background: 'hsl(var(--card))', border: '1px solid hsl(var(--border))', borderRadius: '8px', fontSize: '12px' }} />
                 <Area type="monotone" dataKey="units" stroke="hsl(var(--primary))" fill="url(#profitGrad)" strokeWidth={2} />
               </AreaChart>
@@ -366,23 +366,23 @@ const CreatorProfile = () => {
                 <div className="p-5 sm:p-6">
                   <div className="flex items-center gap-2 mb-2.5 flex-wrap">
                     {post.is_premium && !post.content ? (
-                      <Badge variant="outline" className="text-[9px] bg-primary/10 text-primary border-primary/20">
+                      <Badge variant="outline" className="text-caption bg-primary/10 text-primary border-primary/20">
                         <Lock className="h-2.5 w-2.5 mr-0.5" /> PREMIUM
                       </Badge>
                     ) : post.is_premium ? (
-                      <Badge variant="outline" className="text-[9px] bg-primary/10 text-primary border-primary/20">
+                      <Badge variant="outline" className="text-caption bg-primary/10 text-primary border-primary/20">
                         <Lock className="h-2.5 w-2.5 mr-0.5" /> PREMIUM
                       </Badge>
                     ) : (
-                      <span className="inline-flex items-center rounded-full bg-secondary px-2 py-0.5 text-[10px] font-medium text-muted-foreground uppercase tracking-wide">Free</span>
+                      <span className="inline-flex items-center rounded-full bg-secondary px-2 py-0.5 text-caption font-medium text-muted-foreground uppercase tracking-wide">Free</span>
                     )}
                     {pick?.sport && (
-                      <Badge variant="outline" className="text-[9px] font-semibold bg-primary/5 text-primary border-primary/15">{pick.sport}</Badge>
+                      <Badge variant="outline" className="text-caption font-semibold bg-primary/5 text-primary border-primary/15">{pick.sport}</Badge>
                     )}
-                    <Badge variant="outline" className={`text-[9px] font-semibold uppercase ${rc.className}`}>
+                    <Badge variant="outline" className={`text-caption font-semibold uppercase ${rc.className}`}>
                       <ResultIcon className="h-2.5 w-2.5 mr-0.5" /> {rc.label}
                     </Badge>
-                    <span className="text-xs text-muted-foreground">{format(new Date(post.created_at), 'MMM d, yyyy')}</span>
+                    <span className="text-caption text-muted-foreground">{format(new Date(post.created_at), 'MMM d, yyyy')}</span>
                   </div>
 
                   <h3 className="font-semibold text-sm sm:text-base mb-2">{pick?.pick || post.title}</h3>
@@ -391,14 +391,14 @@ const CreatorProfile = () => {
                   {(odds.us || odds.eu) && (
                     <div className="flex items-center gap-2 mb-2">
                       <div className="inline-flex items-center gap-1.5 rounded-lg bg-muted/50 px-2.5 py-1">
-                        <span className="text-[10px] text-muted-foreground">Odds:</span>
-                        {odds.us && <span className="text-xs font-bold">{odds.us}</span>}
-                        {odds.us && odds.eu && <span className="text-[10px] text-muted-foreground">/</span>}
-                        {odds.eu && <span className="text-xs font-semibold text-muted-foreground">{odds.eu}</span>}
+                        <span className="text-caption text-muted-foreground">Odds:</span>
+                        {odds.us && <span className="text-caption font-bold">{odds.us}</span>}
+                        {odds.us && odds.eu && <span className="text-caption text-muted-foreground">/</span>}
+                        {odds.eu && <span className="text-caption font-semibold text-muted-foreground">{odds.eu}</span>}
                       </div>
                       {pick?.units && (
                         <div className="inline-flex items-center rounded-lg bg-muted/50 px-2.5 py-1">
-                          <span className="text-xs font-bold">{pick.units}</span>
+                          <span className="text-caption font-bold">{pick.units}</span>
                         </div>
                       )}
                     </div>
@@ -421,11 +421,11 @@ const CreatorProfile = () => {
                         </div>
                         <p className="text-sm font-medium mb-1">Premium Content</p>
                         {isSubscribed ? (
-                          <p className="text-xs text-muted-foreground mb-3">Content will appear when the creator unlocks this pick.</p>
+                          <p className="text-caption text-muted-foreground mb-3">Content will appear when the creator unlocks this pick.</p>
                         ) : (
                           <>
-                            <p className="text-xs text-muted-foreground mb-3">Subscribe to unlock this pick</p>
-                            <Button variant="hero" size="sm" className="text-xs px-5"
+                            <p className="text-caption text-muted-foreground mb-3">Subscribe to unlock this pick</p>
+                            <Button variant="hero" size="sm" className="text-caption px-5"
                               onClick={(e) => {
                                 e.stopPropagation();
                                 trackSubscribeClick(creator.id);
@@ -451,7 +451,7 @@ const CreatorProfile = () => {
                   {/* Copy button */}
                   {post.content && (
                     <div className="pt-2 mt-2 border-t border-border">
-                      <Button variant="ghost" size="sm" className="h-7 text-xs text-muted-foreground hover:text-foreground"
+                      <Button variant="ghost" size="sm" className="h-7 text-caption text-muted-foreground hover:text-foreground"
                         onClick={() => {
                           const p = parsePick(post.content);
                           const text = p ? `${post.title}${p.pick ? ` | ${p.pick}` : ''}${p.odds ? ` | ${p.odds}` : ''}` : post.title;

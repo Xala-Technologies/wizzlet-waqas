@@ -1,10 +1,11 @@
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
+import { LandingSection } from '@/components/landing/LandingSection';
 import { ArrowRight, Play } from 'lucide-react';
 
 export function HeroSection() {
   return (
-    <section className="relative min-h-[92vh] flex items-center pt-16 overflow-hidden bg-background">
+    <LandingSection variant="hero" className="bg-background">
       {/* Theme-aware glow accents */}
       <div className="pointer-events-none absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 h-[500px] w-[700px] rounded-full opacity-[0.10] blur-[140px] bg-primary" />
       <div className="pointer-events-none absolute -bottom-20 -left-40 h-[400px] w-[400px] rounded-full opacity-[0.06] blur-[120px] bg-primary" />
@@ -19,12 +20,12 @@ export function HeroSection() {
       <div className="container relative z-10">
         <div className="mx-auto max-w-[700px] text-center">
           {/* Badge */}
-          <div className="inline-flex items-center gap-3 rounded-full border border-primary/20 bg-primary/[0.06] px-5 py-2 text-[11px] uppercase tracking-[0.2em] text-primary mb-10 animate-fade-in backdrop-blur-sm">
+          <div className="inline-flex items-center gap-3 rounded-full border border-primary/20 bg-primary/[0.06] px-5 py-2 text-caption uppercase tracking-[0.2em] text-primary mb-8 animate-fade-in backdrop-blur-sm">
             <span className="h-1.5 w-1.5 rounded-full bg-primary animate-pulse" />
             Private access&nbsp;&nbsp;•&nbsp;&nbsp;Limited onboarding
           </div>
 
-          <h1 className="text-[2.5rem] sm:text-[3.5rem] md:text-[4.5rem] font-extrabold tracking-[-0.05em] leading-[1] mb-6 animate-fade-in-up">
+          <h1 className="text-display font-extrabold tracking-[-0.05em] mb-3 animate-fade-in-up">
             <span className="text-foreground">NOT BUILT</span>
             <br />
             <span className="text-foreground">FOR </span>
@@ -34,24 +35,24 @@ export function HeroSection() {
             </span>
           </h1>
 
-          <p className="text-[15px] sm:text-[17px] text-muted-foreground max-w-[480px] mx-auto mb-12 leading-relaxed opacity-0 animate-fade-in-up" style={{ animationDelay: '0.1s' }}>
+          <p className="text-body text-muted-foreground max-w-[480px] mx-auto mb-8 opacity-0 animate-fade-in-up" style={{ animationDelay: '0.1s' }}>
             A platform designed for creators who actually want to scale, not just post.
           </p>
 
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4 opacity-0 animate-fade-in-up" style={{ animationDelay: '0.2s' }}>
             <Link to="/signup">
-              <Button variant="hero" size="lg" className="w-full sm:w-auto h-13 px-10 text-[15px]">
+              <Button variant="hero" size="lg" className="w-full sm:w-auto h-13 px-10 text-ui">
                 Get Access <ArrowRight className="ml-1 h-4 w-4" />
               </Button>
             </Link>
             <a href="#how-it-works">
-              <Button variant="hero-outline" size="lg" className="w-full sm:w-auto h-13 px-8 text-[15px]">
+              <Button variant="hero-outline" size="lg" className="w-full sm:w-auto h-13 px-8 text-ui">
                 <Play className="mr-1.5 h-3.5 w-3.5" /> See How It Works
               </Button>
             </a>
           </div>
         </div>
       </div>
-    </section>
+    </LandingSection>
   );
 }

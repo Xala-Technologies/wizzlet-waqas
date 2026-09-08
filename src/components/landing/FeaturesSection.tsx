@@ -1,10 +1,11 @@
 import { Lock, CreditCard, Globe } from 'lucide-react';
+import { LandingSection } from '@/components/landing/LandingSection';
 
 const features = [
   {
     icon: Lock,
     title: 'Gated Content',
-    description: 'Lock premium picks behind paid tiers. Control what\'s free and what\'s exclusive.',
+    description: 'Lock premium content behind paid tiers. Control what\'s free and what\'s exclusive.',
   },
   {
     icon: CreditCard,
@@ -20,15 +21,15 @@ const features = [
 
 export function FeaturesSection() {
   return (
-    <section id="features" className="py-28">
+    <LandingSection id="features">
       <div className="container max-w-3xl">
         <div className="text-center mb-16">
-          <p className="text-[12px] font-medium uppercase tracking-widest text-primary mb-3">Features</p>
+          <p className="text-support font-medium uppercase tracking-widest text-primary mb-3">Features</p>
           <h2 className="text-2xl sm:text-3xl font-bold tracking-tight mb-3">
             Everything you need to grow
           </h2>
           <p className="text-muted-foreground text-sm max-w-md mx-auto">
-            Built for sports creators who want to build a real business.
+            Built for creators who want to build a real business.
           </p>
         </div>
 
@@ -41,12 +42,12 @@ export function FeaturesSection() {
               <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/8 mb-5 transition-colors group-hover:bg-primary/12">
                 <f.icon className="h-[18px] w-[18px] text-primary" />
               </div>
-              <h3 className="font-semibold text-[14px] mb-2">{f.title}</h3>
-              <p className="text-[13px] text-muted-foreground leading-relaxed">{f.description}</p>
+              <h3 className="font-semibold text-ui mb-2">{f.title}</h3>
+              <p className="text-support text-muted-foreground leading-relaxed">{f.description}</p>
             </div>
           ))}
         </div>
       </div>
-    </section>
+    </LandingSection>
   );
 }

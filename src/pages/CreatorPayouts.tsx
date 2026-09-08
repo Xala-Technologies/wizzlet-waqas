@@ -125,22 +125,22 @@ const CreatorPayouts = () => {
         <div className="rounded-xl border border-border bg-card p-5">
           <TrendingUp className="h-4 w-4 text-blue-400 mb-2" />
           <p className="text-2xl font-bold">${earned.toFixed(2)}</p>
-          <p className="text-xs text-muted-foreground">Lifetime earned</p>
+          <p className="text-caption text-muted-foreground">Lifetime earned</p>
         </div>
         <div className="rounded-xl border border-border bg-card p-5">
           <Wallet className="h-4 w-4 text-emerald-400 mb-2" />
           <p className="text-2xl font-bold">${available.toFixed(2)}</p>
-          <p className="text-xs text-muted-foreground">Available</p>
+          <p className="text-caption text-muted-foreground">Available</p>
         </div>
         <div className="rounded-xl border border-border bg-card p-5">
           <Clock className="h-4 w-4 text-amber-400 mb-2" />
           <p className="text-2xl font-bold">${pending.toFixed(2)}</p>
-          <p className="text-xs text-muted-foreground">Pending / requested</p>
+          <p className="text-caption text-muted-foreground">Pending / requested</p>
         </div>
         <div className="rounded-xl border border-border bg-card p-5">
           <CheckCircle2 className="h-4 w-4 text-muted-foreground mb-2" />
           <p className="text-2xl font-bold">${paidOut.toFixed(2)}</p>
-          <p className="text-xs text-muted-foreground">Paid out</p>
+          <p className="text-caption text-muted-foreground">Paid out</p>
         </div>
       </div>
 
@@ -179,7 +179,7 @@ const CreatorPayouts = () => {
                 <SelectItem value="monthly">Monthly</SelectItem>
               </SelectContent>
             </Select>
-            <p className="text-[10px] text-muted-foreground mt-1">
+            <p className="text-caption text-muted-foreground mt-1">
               Saved for operators — payouts are not automatic. Use Request payout above.
             </p>
           </div>
@@ -204,7 +204,7 @@ const CreatorPayouts = () => {
                 <CheckCircle2 className="h-4 w-4 text-muted-foreground" />
                 <div>
                   <p className="text-sm font-medium">${p.amount.toFixed(2)} · {p.status}</p>
-                  <p className="text-xs text-muted-foreground">{p.method} · {format(p.created_at, 'MMM d, yyyy')}</p>
+                  <p className="text-caption text-muted-foreground">{p.method} · {format(p.created_at, 'MMM d, yyyy')}</p>
                 </div>
               </div>
             </div>

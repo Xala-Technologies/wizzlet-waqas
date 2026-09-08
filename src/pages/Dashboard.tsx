@@ -297,7 +297,7 @@ const Dashboard = () => {
             <img src={post.creator.avatar_url} alt="" className="h-9 w-9 rounded-full object-cover shrink-0" />
           ) : (
             <div className="h-9 w-9 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
-              <span className="text-xs font-bold text-primary">
+              <span className="text-caption font-bold text-primary">
                 {(post.creator.display_name?.[0] ?? post.creator.username[0]).toUpperCase()}
               </span>
             </div>
@@ -308,22 +308,22 @@ const Dashboard = () => {
                 {post.creator.display_name ?? post.creator.username}
               </Link>
               {streak >= 3 && (
-                <span className="inline-flex items-center gap-0.5 text-[10px] font-bold text-amber-500">
+                <span className="inline-flex items-center gap-0.5 text-caption font-bold text-amber-500">
                   <Flame className="h-3 w-3" /> {streak}W
                 </span>
               )}
             </div>
-            <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
+            <div className="flex items-center gap-1.5 text-caption text-muted-foreground">
               <Clock className="h-3 w-3" />
               <span>{formatDistanceToNowStrict(new Date(post.created_at), { addSuffix: true })}</span>
             </div>
           </div>
           {post.is_premium ? (
-            <Badge variant="outline" className="text-[9px] bg-primary/10 text-primary border-primary/20 shrink-0">
+            <Badge variant="outline" className="text-caption bg-primary/10 text-primary border-primary/20 shrink-0">
               <Lock className="h-2.5 w-2.5 mr-0.5" /> PREMIUM
             </Badge>
           ) : (
-            <Badge variant="outline" className="text-[9px] bg-muted text-muted-foreground shrink-0">
+            <Badge variant="outline" className="text-caption bg-muted text-muted-foreground shrink-0">
               <Globe className="h-2.5 w-2.5 mr-0.5" /> FREE
             </Badge>
           )}
@@ -333,11 +333,11 @@ const Dashboard = () => {
           {pick && (pick.sport || pick.event) && (
             <div className="flex items-center gap-2 mb-3">
               {pick.sport && (
-                <Badge variant="outline" className="text-[10px] font-semibold bg-primary/5 text-primary border-primary/15">
+                <Badge variant="outline" className="text-caption font-semibold bg-primary/5 text-primary border-primary/15">
                   {pick.sport}
                 </Badge>
               )}
-              {pick.event && <span className="text-xs text-muted-foreground truncate">{pick.event}</span>}
+              {pick.event && <span className="text-caption text-muted-foreground truncate">{pick.event}</span>}
             </div>
           )}
 
@@ -348,9 +348,9 @@ const Dashboard = () => {
           <div className="flex flex-wrap items-center gap-2 mb-3">
             {(odds.us || odds.eu) && (
               <div className="inline-flex items-center gap-1.5 rounded-lg bg-muted/50 px-3 py-1.5">
-                <span className="text-xs font-medium text-muted-foreground">Odds:</span>
+                <span className="text-caption font-medium text-muted-foreground">Odds:</span>
                 {odds.us && <span className="text-sm font-bold">{odds.us}</span>}
-                {odds.us && odds.eu && <span className="text-xs text-muted-foreground">/</span>}
+                {odds.us && odds.eu && <span className="text-caption text-muted-foreground">/</span>}
                 {odds.eu && <span className="text-sm font-semibold text-muted-foreground">{odds.eu}</span>}
               </div>
             )}
@@ -359,7 +359,7 @@ const Dashboard = () => {
                 <span className="text-sm font-bold">{pick.units}</span>
               </div>
             )}
-            <Badge variant="outline" className={`text-[10px] font-semibold uppercase ${rs.className}`}>
+            <Badge variant="outline" className={`text-caption font-semibold uppercase ${rs.className}`}>
               <ResultIcon className="h-2.5 w-2.5 mr-0.5" />
               {rs.label}
             </Badge>
@@ -381,17 +381,17 @@ const Dashboard = () => {
             <Button
               variant="ghost"
               size="sm"
-              className={`h-8 text-xs ${savedIds.has(post.id) ? 'text-primary' : 'text-muted-foreground hover:text-foreground'}`}
+              className={`h-8 text-caption ${savedIds.has(post.id) ? 'text-primary' : 'text-muted-foreground hover:text-foreground'}`}
               onClick={() => toggleSave(post.id)}
             >
               <Bookmark className={`h-3.5 w-3.5 mr-1 ${savedIds.has(post.id) ? 'fill-current' : ''}`} />
               {savedIds.has(post.id) ? 'Saved' : 'Save'}
             </Button>
 
-            <Button variant="ghost" size="sm" className="h-8 text-xs text-muted-foreground hover:text-foreground" onClick={() => openTracker(post)}>
+            <Button variant="ghost" size="sm" className="h-8 text-caption text-muted-foreground hover:text-foreground" onClick={() => openTracker(post)}>
               <PlusCircle className="h-3.5 w-3.5 mr-1" /> Track
             </Button>
-            <Button variant="ghost" size="sm" className="h-8 text-xs text-muted-foreground hover:text-foreground" onClick={() => copyPick(post)}>
+            <Button variant="ghost" size="sm" className="h-8 text-caption text-muted-foreground hover:text-foreground" onClick={() => copyPick(post)}>
               <Copy className="h-3.5 w-3.5 mr-1" /> Copy
             </Button>
           </div>
@@ -429,7 +429,7 @@ const Dashboard = () => {
         unreadDms > 0 ||
         activeSubs.length === 0) && (
         <div className="rounded-xl border border-border bg-card p-4 mb-6">
-          <h2 className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-3">Next up</h2>
+          <h2 className="text-caption font-medium text-muted-foreground uppercase tracking-wider mb-3">Next up</h2>
           <ul className="space-y-2 text-sm">
             {pastDueSubs.length > 0 && (
               <li>
@@ -480,12 +480,12 @@ const Dashboard = () => {
           <div key={stat.label} className="rounded-xl border border-border bg-card p-4">
             <stat.icon className={`h-4 w-4 ${stat.color} mb-2`} />
             <p className="text-2xl font-bold">{stat.value}</p>
-            <p className="text-[10px] text-muted-foreground uppercase tracking-wider">{stat.label}</p>
+            <p className="text-caption text-muted-foreground uppercase tracking-wider">{stat.label}</p>
           </div>
         ))}
       </div>
 
-      <p className="text-xs text-muted-foreground mb-4">
+      <p className="text-caption text-muted-foreground mb-4">
         Latest picks from creators you subscribe to. Win rate is from those creator posts — your personal log is My Bet Tracker.
       </p>
 
@@ -530,24 +530,24 @@ const Dashboard = () => {
           </DialogHeader>
           <div className="space-y-4 py-2">
             <div className="rounded-lg bg-muted/50 p-3">
-              <p className="text-[10px] text-muted-foreground uppercase tracking-wider mb-0.5">Pick</p>
+              <p className="text-caption text-muted-foreground uppercase tracking-wider mb-0.5">Pick</p>
               <p className="text-sm font-semibold">{trackForm.pick_event}</p>
               {trackForm.sport && (
-                <Badge variant="outline" className="mt-1 text-[9px] bg-primary/5 text-primary border-primary/15">{trackForm.sport}</Badge>
+                <Badge variant="outline" className="mt-1 text-caption bg-primary/5 text-primary border-primary/15">{trackForm.sport}</Badge>
               )}
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
-                <label className="text-xs text-muted-foreground mb-1 block">US Odds</label>
+                <label className="text-caption text-muted-foreground mb-1 block">US Odds</label>
                 <Input placeholder="+150" value={trackForm.us_odds} onChange={e => handleTrackUsChange(e.target.value)} />
               </div>
               <div>
-                <label className="text-xs text-muted-foreground mb-1 block">EU Odds</label>
+                <label className="text-caption text-muted-foreground mb-1 block">EU Odds</label>
                 <Input type="number" step="0.01" min="1.01" placeholder="2.50" value={trackForm.eu_odds} onChange={e => handleTrackEuChange(e.target.value)} />
               </div>
             </div>
             <div>
-              <label className="text-xs text-muted-foreground mb-1 block">Units Placed</label>
+              <label className="text-caption text-muted-foreground mb-1 block">Units Placed</label>
               <Input type="number" step="0.5" min="0.5" placeholder="1" value={trackForm.units_risked}
                 onChange={e => setTrackForm(f => ({ ...f, units_risked: e.target.value }))} />
             </div>

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { WizzletLogo } from '@/components/WizzletLogo';
+import { PrizeletLogo } from '@/components/PrizeletLogo';
 import { Seo } from '@/components/Seo';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -80,28 +80,28 @@ const Signup = () => {
 
   return (
     <main id="main-content" className="min-h-screen flex items-center justify-center px-4 bg-background">
-      <Seo title="Create your Wizzlet account" description="Join the Wizzlet private network — create an account to follow creators or apply as a creator." noindex />
+      <Seo title="Create your Prizelet account" description="Join the Prizelet private network — create an account to follow creators or apply as a creator." noindex />
       <div className="w-full max-w-[380px]">
         <div className="text-center mb-10">
-          <WizzletLogo size="md" className="justify-center mb-8" />
+          <PrizeletLogo size="md" className="justify-center mb-8" />
           <h1 className="text-xl font-bold tracking-tight mt-4 text-foreground">Create your account</h1>
-          <p className="text-[13px] text-muted-foreground mt-1.5">Start monetizing your expertise</p>
+          <p className="text-support text-muted-foreground mt-1.5">Start monetizing your expertise</p>
           {referralCode ? (
-            <p className="text-[12px] text-primary mt-2">Referred via code {referralCode}</p>
+            <p className="text-support text-primary mt-2">Referred via code {referralCode}</p>
           ) : null}
         </div>
 
         <form onSubmit={(e) => void handleSignup(e)} className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="username" className="text-[13px]">Username</Label>
+            <Label htmlFor="username" className="text-support">Username</Label>
             <Input id="username" placeholder="Choose a username" value={username} onChange={(e) => setUsername(e.target.value)} required className="bg-card border-border h-10" />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="email" className="text-[13px]">Email</Label>
+            <Label htmlFor="email" className="text-support">Email</Label>
             <Input id="email" type="email" placeholder="you@example.com" value={email} onChange={(e) => setEmail(e.target.value)} required className="bg-card border-border h-10" />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="password" className="text-[13px]">Password</Label>
+            <Label htmlFor="password" className="text-support">Password</Label>
             <Input id="password" type="password" placeholder="••••••••" value={password} onChange={(e) => setPassword(e.target.value)} required className="bg-card border-border h-10" />
           </div>
           <Button type="submit" variant="default" className="w-full" disabled={loading}>
@@ -112,7 +112,7 @@ const Signup = () => {
 
         <SocialAuthSection redirectTo="/auth/callback" mode="signup" />
 
-        <p className="text-center text-[13px] text-muted-foreground mt-8">
+        <p className="text-center text-support text-muted-foreground mt-8">
           Already have an account?{' '}
           <Link to="/login" className="text-primary hover:underline font-medium">Sign in</Link>
         </p>

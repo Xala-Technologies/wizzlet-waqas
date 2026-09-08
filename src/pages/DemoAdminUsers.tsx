@@ -80,7 +80,7 @@ const DemoAdminUsers = () => {
   };
 
   const exportCsv = () => {
-    downloadCsv('wizzlet-users.csv', [
+    downloadCsv('prizelet-users.csv', [
       ['Name', 'Email', 'Role', 'Subscriptions', 'Lifetime Spend', 'Status', 'Joined'],
       ...filtered.map(u => [
         u.name, u.email, u.role, u.subs, spendOf(u).toFixed(2),
@@ -108,7 +108,7 @@ const DemoAdminUsers = () => {
   const totalSpend = +state.users.reduce((s, u) => s + spendOf(u), 0).toFixed(2);
 
   const SortHeader = ({ label, k, className = '' }: { label: string; k: SortKey; className?: string }) => (
-    <th className={`text-left text-xs font-medium text-muted-foreground p-4 ${className}`}>
+    <th className={`text-left text-caption font-medium text-muted-foreground p-4 ${className}`}>
       <button type="button" className="inline-flex items-center gap-1 py-1.5 -my-1.5 hover:text-foreground transition-colors" onClick={() => toggleSort(k)}>
         {label}
         {sortKey === k
@@ -132,7 +132,7 @@ const DemoAdminUsers = () => {
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
             <Input placeholder="Search users…" value={search} onChange={e => setSearch(e.target.value)} className="pl-9 h-9" />
           </div>
-          <Button variant="outline" size="sm" className="text-xs h-9" onClick={exportCsv}><Download className="mr-1.5 h-3.5 w-3.5" /> Export</Button>
+          <Button variant="outline" size="sm" className="text-caption h-9" onClick={exportCsv}><Download className="mr-1.5 h-3.5 w-3.5" /> Export</Button>
         </div>
       </div>
 
@@ -145,9 +145,9 @@ const DemoAdminUsers = () => {
           { icon: CheckCircle2, label: 'Active subscriptions', value: String(state.users.reduce((s, u) => s + u.subs, 0)), sub: 'across all subscribers' },
         ].map(s => (
           <div key={s.label} className="rounded-xl border border-border bg-card p-4">
-            <div className="flex items-center gap-2 text-xs text-muted-foreground mb-1.5"><s.icon className="h-3.5 w-3.5" />{s.label}</div>
+            <div className="flex items-center gap-2 text-caption text-muted-foreground mb-1.5"><s.icon className="h-3.5 w-3.5" />{s.label}</div>
             <div className="text-xl font-bold">{s.value}</div>
-            <div className="text-[11px] text-muted-foreground mt-0.5">{s.sub}</div>
+            <div className="text-caption text-muted-foreground mt-0.5">{s.sub}</div>
           </div>
         ))}
       </div>
@@ -158,12 +158,12 @@ const DemoAdminUsers = () => {
           <button
             key={r}
             onClick={() => setRole(r)}
-            className={`px-3 py-1.5 rounded-lg text-xs font-medium capitalize transition-colors inline-flex items-center gap-1.5 ${
+            className={`px-3 py-1.5 rounded-lg text-caption font-medium capitalize transition-colors inline-flex items-center gap-1.5 ${
               role === r ? 'bg-primary/10 text-primary' : 'text-muted-foreground hover:text-foreground hover:bg-muted/60'
             }`}
           >
             {r}
-            <span className="text-[10px] opacity-60">{counts[r]}</span>
+            <span className="text-caption opacity-60">{counts[r]}</span>
           </button>
         ))}
       </div>
@@ -174,13 +174,13 @@ const DemoAdminUsers = () => {
             <thead>
               <tr className="border-b border-border bg-muted/30">
                 <SortHeader label="User" k="name" />
-                <th className="text-left text-xs font-medium text-muted-foreground p-4">Email</th>
-                <th className="text-left text-xs font-medium text-muted-foreground p-4">Role</th>
+                <th className="text-left text-caption font-medium text-muted-foreground p-4">Email</th>
+                <th className="text-left text-caption font-medium text-muted-foreground p-4">Role</th>
                 <SortHeader label="Subscriptions" k="subs" />
                 <SortHeader label="Spend" k="spend" />
-                <th className="text-left text-xs font-medium text-muted-foreground p-4">Status</th>
+                <th className="text-left text-caption font-medium text-muted-foreground p-4">Status</th>
                 <SortHeader label="Joined" k="joined" />
-                <th className="text-right text-xs font-medium text-muted-foreground p-4">Actions</th>
+                <th className="text-right text-caption font-medium text-muted-foreground p-4">Actions</th>
               </tr>
             </thead>
             <tbody>
@@ -197,22 +197,22 @@ const DemoAdminUsers = () => {
                     className={`border-b border-border last:border-0 hover:bg-muted/20 transition-colors cursor-pointer ${u.active ? '' : 'opacity-60'}`}
                   >
                     <td className="p-4 font-medium">{u.name}</td>
-                    <td className="p-4 text-muted-foreground text-xs">{u.email}</td>
-                    <td className="p-4"><span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide ${r.cls}`}>{r.label}</span></td>
-                    <td className="p-4">{u.subs > 0 ? <span className="text-sm font-medium">{u.subs} active</span> : <span className="text-xs text-muted-foreground">None</span>}</td>
-                    <td className="p-4 text-sm">{spend > 0 ? `$${spend.toFixed(2)}` : <span className="text-xs text-muted-foreground">—</span>}</td>
+                    <td className="p-4 text-muted-foreground text-caption">{u.email}</td>
+                    <td className="p-4"><span className={`inline-flex items-center rounded-full px-2 py-0.5 text-caption font-medium uppercase tracking-wide ${r.cls}`}>{r.label}</span></td>
+                    <td className="p-4">{u.subs > 0 ? <span className="text-sm font-medium">{u.subs} active</span> : <span className="text-caption text-muted-foreground">None</span>}</td>
+                    <td className="p-4 text-sm">{spend > 0 ? `$${spend.toFixed(2)}` : <span className="text-caption text-muted-foreground">—</span>}</td>
                     <td className="p-4">
                       {u.active
-                        ? <span className="inline-flex items-center gap-1 text-xs font-medium text-emerald-500"><CheckCircle2 className="h-3 w-3" /> Active</span>
-                        : <span className="inline-flex items-center gap-1 text-xs font-medium text-destructive"><UserX className="h-3 w-3" /> Deactivated</span>}
+                        ? <span className="inline-flex items-center gap-1 text-caption font-medium text-emerald-500"><CheckCircle2 className="h-3 w-3" /> Active</span>
+                        : <span className="inline-flex items-center gap-1 text-caption font-medium text-destructive"><UserX className="h-3 w-3" /> Deactivated</span>}
                     </td>
-                    <td className="p-4 text-xs text-muted-foreground">{format(joinedDate(u.joinedDaysAgo), 'MMM d, yyyy')}</td>
+                    <td className="p-4 text-caption text-muted-foreground">{format(joinedDate(u.joinedDaysAgo), 'MMM d, yyyy')}</td>
                     <td className="p-4" onClick={e => e.stopPropagation()}>
                       <div className="flex items-center justify-end">
                         {u.active ? (
                           <Button
                             variant="ghost" size="sm"
-                            className="h-7 px-2 text-xs text-destructive hover:text-destructive"
+                            className="h-7 px-2 text-caption text-destructive hover:text-destructive"
                             disabled={u.role === 'admin'}
                             title={u.role === 'admin' ? 'Admin accounts cannot be deactivated' : 'Deactivate'}
                             onClick={() => setConfirmUser(u)}
@@ -222,7 +222,7 @@ const DemoAdminUsers = () => {
                         ) : (
                           <Button
                             variant="ghost" size="sm"
-                            className="h-7 px-2 text-xs text-emerald-500"
+                            className="h-7 px-2 text-caption text-emerald-500"
                             title="Reactivate"
                             onClick={() => reactivate(u)}
                           >
@@ -247,10 +247,10 @@ const DemoAdminUsers = () => {
               <DialogHeader>
                 <DialogTitle className="flex items-center gap-2">
                   {selected.name}
-                  <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide ${(roleStyle[selected.role] ?? roleStyle.subscriber).cls}`}>
+                  <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-caption font-medium uppercase tracking-wide ${(roleStyle[selected.role] ?? roleStyle.subscriber).cls}`}>
                     {(roleStyle[selected.role] ?? roleStyle.subscriber).label}
                   </span>
-                  {!selected.active && <Badge variant="destructive" className="text-[10px]">Deactivated</Badge>}
+                  {!selected.active && <Badge variant="destructive" className="text-caption">Deactivated</Badge>}
                 </DialogTitle>
                 <DialogDescription>{selected.email} · joined {format(joinedDate(selected.joinedDaysAgo), 'MMM d, yyyy')}</DialogDescription>
               </DialogHeader>
@@ -258,24 +258,24 @@ const DemoAdminUsers = () => {
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 my-2">
                 <div className="rounded-lg border border-border p-3 text-center">
                   <div className="text-lg font-bold">{selected.subs}</div>
-                  <div className="text-[10px] text-muted-foreground uppercase tracking-wide">Subscriptions</div>
+                  <div className="text-caption text-muted-foreground uppercase tracking-wide">Subscriptions</div>
                 </div>
                 <div className="rounded-lg border border-border p-3 text-center">
                   <div className="text-lg font-bold">${spendOf(selected).toFixed(2)}</div>
-                  <div className="text-[10px] text-muted-foreground uppercase tracking-wide">Lifetime spend</div>
+                  <div className="text-caption text-muted-foreground uppercase tracking-wide">Lifetime spend</div>
                 </div>
                 <div className="rounded-lg border border-border p-3 text-center">
                   <div className="text-lg font-bold">{spendByUser.get(selected.name)?.txs.length ?? 0}</div>
-                  <div className="text-[10px] text-muted-foreground uppercase tracking-wide">Transactions</div>
+                  <div className="text-caption text-muted-foreground uppercase tracking-wide">Transactions</div>
                 </div>
               </div>
 
               {selectedTxs.length > 0 ? (
                 <div className="rounded-lg border border-border overflow-hidden">
-                  <div className="px-3 py-2 text-xs font-medium text-muted-foreground bg-muted/30 border-b border-border">Recent transactions</div>
+                  <div className="px-3 py-2 text-caption font-medium text-muted-foreground bg-muted/30 border-b border-border">Recent transactions</div>
                   <div className="max-h-48 overflow-y-auto divide-y divide-border">
                     {selectedTxs.map(t => (
-                      <div key={t.id} className="flex items-center justify-between px-3 py-2 text-xs">
+                      <div key={t.id} className="flex items-center justify-between px-3 py-2 text-caption">
                         <div>
                           <div className="font-medium">{t.creatorName}</div>
                           <div className="text-muted-foreground">{format(t.date, 'MMM d, yyyy')}</div>
@@ -289,17 +289,17 @@ const DemoAdminUsers = () => {
                   </div>
                 </div>
               ) : (
-                <p className="text-xs text-muted-foreground text-center py-3">No transactions recorded for this account.</p>
+                <p className="text-caption text-muted-foreground text-center py-3">No transactions recorded for this account.</p>
               )}
 
               <div className="flex justify-end gap-2 mt-2">
                 {selected.role !== 'admin' && (
                   selected.active ? (
-                    <Button variant="destructive" size="sm" className="text-xs" onClick={() => { setConfirmUser(selected); }}>
+                    <Button variant="destructive" size="sm" className="text-caption" onClick={() => { setConfirmUser(selected); }}>
                       <UserX className="mr-1.5 h-3.5 w-3.5" /> Deactivate account
                     </Button>
                   ) : (
-                    <Button variant="outline" size="sm" className="text-xs text-emerald-500" onClick={() => reactivate(selected)}>
+                    <Button variant="outline" size="sm" className="text-caption text-emerald-500" onClick={() => reactivate(selected)}>
                       <UserCheck className="mr-1.5 h-3.5 w-3.5" /> Reactivate account
                     </Button>
                   )

@@ -76,7 +76,7 @@ export function SocialAuthButtons({
           {pending === 'discord' ? (
             <Loader2 className="mr-2 h-4 w-4 animate-spin" />
           ) : (
-            <span className="mr-2 inline-flex h-4 w-4 items-center justify-center rounded-sm bg-[#5865F2] text-[9px] font-bold text-white">
+            <span className="mr-2 inline-flex h-4 w-4 items-center justify-center rounded-sm bg-[#5865F2] text-caption font-bold text-white">
               D
             </span>
           )}
@@ -99,7 +99,7 @@ export function SocialAuthSection(props: SocialAuthButtonsProps) {
         <div className="absolute inset-0 flex items-center">
           <span className="w-full border-t border-border" />
         </div>
-        <div className="relative flex justify-center text-[11px] uppercase tracking-wide">
+        <div className="relative flex justify-center text-caption uppercase tracking-wide">
           <span className="bg-background px-2 text-muted-foreground">Or</span>
         </div>
       </div>

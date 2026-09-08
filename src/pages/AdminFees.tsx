@@ -36,7 +36,7 @@ const AdminFees = () => {
           </Link>
         </p>
         {scanTruncationNote(overview.truncated, overview.listLimit) && (
-          <p className="text-amber-600 text-xs mt-2">{scanTruncationNote(overview.truncated, overview.listLimit)}</p>
+          <p className="text-amber-600 text-caption mt-2">{scanTruncationNote(overview.truncated, overview.listLimit)}</p>
         )}
       </div>
 
@@ -44,22 +44,22 @@ const AdminFees = () => {
         <div className="rounded-xl border border-border bg-card p-5">
           <DollarSign className="h-4 w-4 text-emerald-400 mb-2" />
           <p className="text-2xl font-bold">${overview.totalRevenue.toFixed(2)}</p>
-          <p className="text-xs text-muted-foreground mt-1">Total Volume</p>
+          <p className="text-caption text-muted-foreground mt-1">Total Volume</p>
         </div>
         <div className="rounded-xl border border-border bg-card p-5">
           <Percent className="h-4 w-4 text-purple-400 mb-2" />
           <p className="text-2xl font-bold text-emerald-400">${overview.totalFees.toFixed(2)}</p>
-          <p className="text-xs text-muted-foreground mt-1">Fees Earned</p>
+          <p className="text-caption text-muted-foreground mt-1">Fees Earned</p>
         </div>
         <div className="rounded-xl border border-border bg-card p-5">
           <TrendingUp className="h-4 w-4 text-blue-400 mb-2" />
           <p className="text-2xl font-bold">${overview.totalCreatorEarnings.toFixed(2)}</p>
-          <p className="text-xs text-muted-foreground mt-1">Creator Payouts</p>
+          <p className="text-caption text-muted-foreground mt-1">Creator Payouts</p>
         </div>
         <div className="rounded-xl border border-border bg-card p-5">
           <Crown className="h-4 w-4 text-amber-400 mb-2" />
           <p className="text-2xl font-bold">{overview.introFeeCount + overview.standardFeeCount}</p>
-          <p className="text-xs text-muted-foreground mt-1">Active Subscriptions</p>
+          <p className="text-caption text-muted-foreground mt-1">Active Subscriptions</p>
         </div>
       </div>
 
@@ -69,9 +69,9 @@ const AdminFees = () => {
           <ResponsiveContainer width="100%" height="100%">
             <BarChart data={overview.monthlyFees}>
               <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
-              <XAxis dataKey="month" tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 12 }} axisLine={false} tickLine={false} />
-              <YAxis tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 12 }} axisLine={false} tickLine={false} tickFormatter={(v) => `$${v}`} />
-              <Tooltip contentStyle={{ backgroundColor: 'hsl(var(--card))', border: '1px solid hsl(var(--border))', borderRadius: '8px', fontSize: 12, color: 'hsl(var(--foreground))' }} formatter={(value: number) => [`$${value}`, 'Fee Revenue']} />
+              <XAxis dataKey="month" tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 14 }} axisLine={false} tickLine={false} />
+              <YAxis tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 14 }} axisLine={false} tickLine={false} tickFormatter={(v) => `$${v}`} />
+              <Tooltip contentStyle={{ backgroundColor: 'hsl(var(--card))', border: '1px solid hsl(var(--border))', borderRadius: '8px', fontSize: 14, color: 'hsl(var(--foreground))' }} formatter={(value: number) => [`$${value}`, 'Fee Revenue']} />
               <Bar dataKey="fees" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
             </BarChart>
           </ResponsiveContainer>
@@ -80,14 +80,14 @@ const AdminFees = () => {
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
         <div className="rounded-xl border border-emerald-500/20 bg-emerald-500/5 p-5">
-          <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1">Intro Fee ({introPct}%)</p>
+          <p className="text-caption text-muted-foreground uppercase tracking-wider mb-1">Intro Fee ({introPct}%)</p>
           <p className="text-2xl font-bold text-emerald-400">{overview.introFeeCount}</p>
-          <p className="text-xs text-muted-foreground mt-1">subscriptions at intro rate</p>
+          <p className="text-caption text-muted-foreground mt-1">subscriptions at intro rate</p>
         </div>
         <div className="rounded-xl border border-amber-500/20 bg-amber-500/5 p-5">
-          <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1">Standard Fee ({standardPct}%)</p>
+          <p className="text-caption text-muted-foreground uppercase tracking-wider mb-1">Standard Fee ({standardPct}%)</p>
           <p className="text-2xl font-bold text-amber-400">{overview.standardFeeCount}</p>
-          <p className="text-xs text-muted-foreground mt-1">subscriptions at standard rate</p>
+          <p className="text-caption text-muted-foreground mt-1">subscriptions at standard rate</p>
         </div>
       </div>
 
@@ -103,14 +103,14 @@ const AdminFees = () => {
             {overview.creatorFees.map((cf, i) => (
               <div key={`${cf.name}-${i}`} className="flex items-center justify-between gap-4 rounded-lg px-3 py-2.5 hover:bg-muted/20 transition-colors">
                 <div className="flex items-center gap-3 min-w-0">
-                  <span className="text-xs text-muted-foreground font-medium w-5">{i + 1}</span>
+                  <span className="text-caption text-muted-foreground font-medium w-5">{i + 1}</span>
                   <div>
                     <p className="text-sm font-medium">{cf.name}</p>
-                    <p className="text-xs text-muted-foreground">{cf.subCount} subscriber{cf.subCount !== 1 ? 's' : ''}</p>
+                    <p className="text-caption text-muted-foreground">{cf.subCount} subscriber{cf.subCount !== 1 ? 's' : ''}</p>
                   </div>
                 </div>
                 <div className="flex items-center gap-3 shrink-0">
-                  <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide ${cf.feePercent <= introPct ? 'bg-emerald-500/10 text-emerald-400' : 'bg-amber-500/10 text-amber-400'}`}>
+                  <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-caption font-medium uppercase tracking-wide ${cf.feePercent <= introPct ? 'bg-emerald-500/10 text-emerald-400' : 'bg-amber-500/10 text-amber-400'}`}>
                     {cf.feePercent}%
                   </span>
                   <span className="text-sm font-medium text-emerald-400 w-20 text-right">${cf.feeEarned.toFixed(2)}</span>

@@ -95,20 +95,20 @@ const CreatorAccessControl = () => {
                     <div className="flex items-center gap-2 mb-1">
                       <h3 className="font-semibold text-sm">{product.name}</h3>
                       {product.is_closed && (
-                        <Badge variant="outline" className="text-[9px] bg-destructive/10 text-destructive border-destructive/20">
+                        <Badge variant="outline" className="text-caption bg-destructive/10 text-destructive border-destructive/20">
                           <Lock className="h-2.5 w-2.5 mr-1" /> Closed
                         </Badge>
                       )}
                       {isUrgent && !product.is_closed && (
-                        <Badge variant="outline" className="text-[9px] bg-amber-500/10 text-amber-500 border-amber-500/20">
+                        <Badge variant="outline" className="text-caption bg-amber-500/10 text-amber-500 border-amber-500/20">
                           <AlertTriangle className="h-2.5 w-2.5 mr-1" /> {spotsLeft} spots left
                         </Badge>
                       )}
                       {!product.is_limited && (
-                        <Badge variant="outline" className="text-[9px] bg-muted text-muted-foreground border-border">Unlimited</Badge>
+                        <Badge variant="outline" className="text-caption bg-muted text-muted-foreground border-border">Unlimited</Badge>
                       )}
                     </div>
-                    <div className="flex items-center gap-3 text-xs text-muted-foreground">
+                    <div className="flex items-center gap-3 text-caption text-muted-foreground">
                       <span className="flex items-center gap-1"><Users className="h-3 w-3" /> {product.taken} subscribers</span>
                       {product.is_limited && product.max_spots && <span>of {product.max_spots} spots</span>}
                       <span>${product.price.toFixed(2)}/mo</span>
@@ -117,7 +117,7 @@ const CreatorAccessControl = () => {
                   <Button
                     variant={product.is_closed ? 'hero' : 'outline'}
                     size="sm"
-                    className="text-xs"
+                    className="text-caption"
                     onClick={() => patch(product.id, { isClosed: !product.is_closed }, product.is_closed ? 'Product reopened' : 'Product closed')}
                   >
                     {product.is_closed ? <><Unlock className="mr-1 h-3 w-3" /> Reopen</> : <><Lock className="mr-1 h-3 w-3" /> Close</>}
@@ -126,13 +126,13 @@ const CreatorAccessControl = () => {
 
                 {product.is_limited && product.max_spots && (
                   <div>
-                    <div className="flex items-center justify-between text-[10px] text-muted-foreground mb-1.5">
+                    <div className="flex items-center justify-between text-caption text-muted-foreground mb-1.5">
                       <span>{product.taken} / {product.max_spots} filled</span>
                       <span>{Math.round(fillPercent)}%</span>
                     </div>
                     <Progress value={fillPercent} className="h-2" />
                     {spotsLeft !== null && spotsLeft > 0 && spotsLeft <= 10 && (
-                      <p className="text-[11px] text-amber-500 mt-2 flex items-center gap-1">
+                      <p className="text-caption text-amber-500 mt-2 flex items-center gap-1">
                         <Zap className="h-3 w-3" /> Only {spotsLeft} spots remaining — high demand
                       </p>
                     )}
@@ -150,11 +150,11 @@ const CreatorAccessControl = () => {
                         'Access limit updated',
                       )}
                     />
-                    <span className="text-xs text-muted-foreground">Limit subscriber count</span>
+                    <span className="text-caption text-muted-foreground">Limit subscriber count</span>
                   </div>
                   {product.is_limited && (
                     <div className="flex items-center gap-2">
-                      <span className="text-xs text-muted-foreground">Max spots</span>
+                      <span className="text-caption text-muted-foreground">Max spots</span>
                       <Input
                         type="number"
                         min="1"

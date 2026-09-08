@@ -121,7 +121,7 @@ const AdminTransactions = () => {
               <SelectItem value="trialing">Trialing</SelectItem>
             </SelectContent>
           </Select>
-          <Button variant="outline" size="sm" className="h-9 min-h-9 text-xs w-full sm:w-auto" onClick={handleExport}>
+          <Button variant="outline" size="sm" className="h-9 min-h-9 text-caption w-full sm:w-auto" onClick={handleExport}>
             <Download className="mr-1.5 h-3.5 w-3.5" /> Export
           </Button>
         </div>
@@ -129,19 +129,19 @@ const AdminTransactions = () => {
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
         <div className="rounded-xl border border-border bg-card p-5">
-          <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1">Volume (loaded)</p>
+          <p className="text-caption text-muted-foreground uppercase tracking-wider mb-1">Volume (loaded)</p>
           <p className="text-xl font-bold">${totalAmount.toFixed(2)}</p>
         </div>
         <div className="rounded-xl border border-border bg-card p-5">
-          <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1">Fees (loaded)</p>
+          <p className="text-caption text-muted-foreground uppercase tracking-wider mb-1">Fees (loaded)</p>
           <p className="text-xl font-bold text-emerald-400">${totalFees.toFixed(2)}</p>
         </div>
         <div className="rounded-xl border border-border bg-card p-5">
-          <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1">Creator (loaded)</p>
+          <p className="text-caption text-muted-foreground uppercase tracking-wider mb-1">Creator (loaded)</p>
           <p className="text-xl font-bold">${totalCreatorEarnings.toFixed(2)}</p>
         </div>
         <div className="rounded-xl border border-border bg-card p-5">
-          <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1">Active (loaded)</p>
+          <p className="text-caption text-muted-foreground uppercase tracking-wider mb-1">Active (loaded)</p>
           <p className="text-xl font-bold">{active.length}</p>
         </div>
       </div>
@@ -164,24 +164,24 @@ const AdminTransactions = () => {
               <table className="w-full min-w-[720px] text-sm">
                 <thead>
                   <tr className="border-b border-border bg-muted/30">
-                    <th className="text-left text-xs font-medium text-muted-foreground p-4">Date</th>
-                    <th className="text-left text-xs font-medium text-muted-foreground p-4">Customer</th>
-                    <th className="text-left text-xs font-medium text-muted-foreground p-4">Creator</th>
-                    <th className="text-left text-xs font-medium text-muted-foreground p-4">Amount</th>
-                    <th className="text-left text-xs font-medium text-muted-foreground p-4">Fee</th>
-                    <th className="text-left text-xs font-medium text-muted-foreground p-4">Status</th>
+                    <th className="text-left text-caption font-medium text-muted-foreground p-4">Date</th>
+                    <th className="text-left text-caption font-medium text-muted-foreground p-4">Customer</th>
+                    <th className="text-left text-caption font-medium text-muted-foreground p-4">Creator</th>
+                    <th className="text-left text-caption font-medium text-muted-foreground p-4">Amount</th>
+                    <th className="text-left text-caption font-medium text-muted-foreground p-4">Fee</th>
+                    <th className="text-left text-caption font-medium text-muted-foreground p-4">Status</th>
                   </tr>
                 </thead>
                 <tbody>
                   {filtered.map((t) => (
                     <tr key={t.id} className="border-b border-border last:border-0 hover:bg-muted/20">
-                      <td className="p-4 text-xs text-muted-foreground">{format(new Date(t.created_at), 'MMM d, yyyy')}</td>
+                      <td className="p-4 text-caption text-muted-foreground">{format(new Date(t.created_at), 'MMM d, yyyy')}</td>
                       <td className="p-4">{t.userName}</td>
                       <td className="p-4">{t.creatorName}</td>
                       <td className="p-4 font-medium">${t.amount.toFixed(2)}</td>
                       <td className="p-4 text-emerald-400">${t.platformFee.toFixed(2)} ({t.feePercentage}%)</td>
                       <td className="p-4">
-                        <Badge variant="outline" className={`text-[10px] ${t.status === 'active' ? 'bg-primary/10 text-primary border-primary/20' : 'bg-destructive/10 text-destructive border-destructive/20'}`}>
+                        <Badge variant="outline" className={`text-caption ${t.status === 'active' ? 'bg-primary/10 text-primary border-primary/20' : 'bg-destructive/10 text-destructive border-destructive/20'}`}>
                           {t.status}
                         </Badge>
                       </td>

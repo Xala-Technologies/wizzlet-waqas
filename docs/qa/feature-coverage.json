@@ -1,5 +1,5 @@
 {
-  "campaign": "wizzlet-full-application-qa",
+  "campaign": "prizelet-full-application-qa",
   "wave": "1+2",
   "auditedAt": "2026-09-06",
   "branch": "fix/login-ensureuser-auth-race",

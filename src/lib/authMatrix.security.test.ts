@@ -45,16 +45,16 @@ describe("auth matrix: sandbox env gate", () => {
 
 describe("auth matrix: grantTestAdmin gate (QA-W1-01)", () => {
   it("denies when ALLOW_DEV_ADMIN_GRANT is unset even for allowlisted email", () => {
-    expect(isDevAdminGrantAllowed("admin@wizzlet.dev", undefined)).toBe(false);
-    expect(isDevAdminGrantAllowed("admin@wizzlet.dev", "false")).toBe(false);
+    expect(isDevAdminGrantAllowed("admin@prizelet.dev", undefined)).toBe(false);
+    expect(isDevAdminGrantAllowed("admin@prizelet.dev", "false")).toBe(false);
   });
 
   it("denies non-allowlisted email even when env is true", () => {
-    expect(isDevAdminGrantAllowed("qa.member.w3.1101@wizzlet.test", "true")).toBe(false);
+    expect(isDevAdminGrantAllowed("qa.member.w3.1101@prizelet.test", "true")).toBe(false);
   });
 
   it("allows only allowlisted emails when env is true", () => {
-    expect(isDevAdminGrantAllowed("admin@wizzlet.dev", "true")).toBe(true);
-    expect(isDevAdminGrantAllowed("test@wizzlet.dev", "true")).toBe(true);
+    expect(isDevAdminGrantAllowed("admin@prizelet.dev", "true")).toBe(true);
+    expect(isDevAdminGrantAllowed("test@prizelet.dev", "true")).toBe(true);
   });
 });

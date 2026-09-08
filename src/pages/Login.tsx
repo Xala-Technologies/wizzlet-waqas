@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { WizzletLogo } from '@/components/WizzletLogo';
+import { PrizeletLogo } from '@/components/PrizeletLogo';
 import { Seo } from '@/components/Seo';
 import { Link, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -107,21 +107,21 @@ const Login = () => {
 
   return (
     <main id="main-content" className="min-h-screen flex items-center justify-center px-4 bg-background">
-      <Seo title="Sign in — Wizzlet" description="Sign in to your Wizzlet account to manage picks, subscriptions and payouts." noindex />
+      <Seo title="Sign in — Prizelet" description="Sign in to your Prizelet account to manage picks, subscriptions and payouts." noindex />
       <div className="w-full max-w-[380px]">
         <div className="text-center mb-10">
-          <WizzletLogo size="md" className="justify-center mb-8" />
+          <PrizeletLogo size="md" className="justify-center mb-8" />
           <h1 className="text-xl font-bold tracking-tight mt-4 text-foreground">Welcome back</h1>
-          <p className="text-[13px] text-muted-foreground mt-1.5">Sign in to your account</p>
+          <p className="text-support text-muted-foreground mt-1.5">Sign in to your account</p>
         </div>
 
         <form onSubmit={(e) => void handleLogin(e)} className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="email" className="text-[13px]">Email</Label>
+            <Label htmlFor="email" className="text-support">Email</Label>
             <Input id="email" type="email" placeholder="you@example.com" value={email} onChange={(e) => setEmail(e.target.value)} required className="bg-card border-border h-10" />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="password" className="text-[13px]">Password</Label>
+            <Label htmlFor="password" className="text-support">Password</Label>
             <Input id="password" type="password" placeholder="••••••••" value={password} onChange={(e) => setPassword(e.target.value)} required className="bg-card border-border h-10" />
           </div>
           <Button type="submit" variant="default" className="w-full" disabled={loading}>
@@ -132,15 +132,15 @@ const Login = () => {
 
         <SocialAuthSection redirectTo="/auth/callback" mode="signin" />
 
-        <p className="text-center text-[13px] text-muted-foreground mt-6">
+        <p className="text-center text-support text-muted-foreground mt-6">
           Don&apos;t have an account?{' '}
           <Link to="/signup" className="text-primary hover:underline">Sign up</Link>
         </p>
 
         {isDevBuild && (
           <div className="mt-6 space-y-3 rounded-xl border border-border bg-muted/30 p-4">
-            <p className="text-[12px] font-medium text-foreground">Platform owner (local)</p>
-            <p className="text-[11px] text-muted-foreground font-mono leading-relaxed">
+            <p className="text-support font-medium text-foreground">Platform owner (local)</p>
+            <p className="text-caption text-muted-foreground font-mono leading-relaxed">
               {ADMIN_BOOTSTRAP.email}
               <br />
               {ADMIN_BOOTSTRAP.password}

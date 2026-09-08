@@ -231,25 +231,25 @@ const ProductsSection = ({ creatorId }: ProductsSectionProps) => {
               }`}
             >
               {product.isFeatured && (
-                <span className="absolute -top-2.5 left-4 inline-flex items-center gap-1 rounded-full bg-primary px-2.5 py-0.5 text-[10px] font-medium text-primary-foreground uppercase tracking-wide">
+                <span className="absolute -top-2.5 left-4 inline-flex items-center gap-1 rounded-full bg-primary px-2.5 py-0.5 text-caption font-medium text-primary-foreground uppercase tracking-wide">
                   <Star className="h-2.5 w-2.5" /> Featured
                 </span>
               )}
               <div className="mb-3 mt-1">
-                <span className="text-[10px] font-medium text-muted-foreground uppercase tracking-wide rounded-full bg-secondary px-2 py-0.5">
+                <span className="text-caption font-medium text-muted-foreground uppercase tracking-wide rounded-full bg-secondary px-2 py-0.5">
                   {PERIOD_LABELS[product.billingPeriod]}
                 </span>
               </div>
               <h3 className="font-semibold text-sm mb-1">{product.name}</h3>
               {product.description && (
-                <p className="text-xs text-muted-foreground mb-3 line-clamp-2">
+                <p className="text-caption text-muted-foreground mb-3 line-clamp-2">
                   {product.description}
                 </p>
               )}
               <p className="text-xl font-bold mb-4">
                 ${(product.priceCents / 100).toFixed(2)}
                 {product.billingPeriod !== 'one-time' && (
-                  <span className="text-xs font-normal text-muted-foreground">
+                  <span className="text-caption font-normal text-muted-foreground">
                     /{product.billingPeriod === 'daily' ? 'day' : product.billingPeriod === 'weekly' ? 'wk' : product.billingPeriod === 'monthly' ? 'mo' : 'yr'}
                   </span>
                 )}
@@ -259,7 +259,7 @@ const ProductsSection = ({ creatorId }: ProductsSectionProps) => {
                   <Button
                     variant="ghost"
                     size="sm"
-                    className="text-xs h-7 px-2"
+                    className="text-caption h-7 px-2"
                     onClick={() => handleSetFeatured(product._id)}
                     title="Set as featured"
                   >
@@ -269,7 +269,7 @@ const ProductsSection = ({ creatorId }: ProductsSectionProps) => {
                 <Button
                   variant="ghost"
                   size="sm"
-                  className="text-xs h-7 px-2"
+                  className="text-caption h-7 px-2"
                   onClick={() => openEdit(product)}
                 >
                   <Pencil className="h-3 w-3" />
@@ -277,7 +277,7 @@ const ProductsSection = ({ creatorId }: ProductsSectionProps) => {
                 <Button
                   variant="ghost"
                   size="sm"
-                  className="text-xs h-7 px-2 text-destructive hover:text-destructive"
+                  className="text-caption h-7 px-2 text-destructive hover:text-destructive"
                   onClick={() => handleDelete(product._id)}
                 >
                   <Trash2 className="h-3 w-3" />
@@ -295,7 +295,7 @@ const ProductsSection = ({ creatorId }: ProductsSectionProps) => {
           </DialogHeader>
           <div className="space-y-4 mt-2">
             <div>
-              <label className="text-xs font-medium text-muted-foreground mb-1.5 block">
+              <label className="text-caption font-medium text-muted-foreground mb-1.5 block">
                 Product Name
               </label>
               <Input
@@ -305,7 +305,7 @@ const ProductsSection = ({ creatorId }: ProductsSectionProps) => {
               />
             </div>
             <div>
-              <label className="text-xs font-medium text-muted-foreground mb-1.5 block">
+              <label className="text-caption font-medium text-muted-foreground mb-1.5 block">
                 Description (optional)
               </label>
               <Textarea
@@ -317,7 +317,7 @@ const ProductsSection = ({ creatorId }: ProductsSectionProps) => {
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
-                <label className="text-xs font-medium text-muted-foreground mb-1.5 block">
+                <label className="text-caption font-medium text-muted-foreground mb-1.5 block">
                   Price ($)
                 </label>
                 <Input
@@ -330,7 +330,7 @@ const ProductsSection = ({ creatorId }: ProductsSectionProps) => {
                 />
               </div>
               <div>
-                <label className="text-xs font-medium text-muted-foreground mb-1.5 block">
+                <label className="text-caption font-medium text-muted-foreground mb-1.5 block">
                   Billing Period
                 </label>
                 <Select value={billingPeriod} onValueChange={setBillingPeriod} disabled>
@@ -341,7 +341,7 @@ const ProductsSection = ({ creatorId }: ProductsSectionProps) => {
                     <SelectItem value="monthly">Monthly</SelectItem>
                   </SelectContent>
                 </Select>
-                <p className="text-[11px] text-muted-foreground mt-1">
+                <p className="text-caption text-muted-foreground mt-1">
                   Creators can only sell monthly subscriptions for now.
                 </p>
               </div>

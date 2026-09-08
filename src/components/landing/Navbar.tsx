@@ -2,10 +2,12 @@ import { Link, useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { useState } from 'react';
 import { Menu, X, Bell } from 'lucide-react';
+import { useQuery } from 'convex/react';
 import { useAuth } from '@/contexts/AuthContext';
 import { cn } from '@/lib/utils';
 import { ThemeToggle } from '@/components/ThemeToggle';
-import { WizzletLogo } from '@/components/WizzletLogo';
+import { PrizeletLogo } from '@/components/PrizeletLogo';
+import { api } from '@convex/_generated/api';
 
 const navLinks = [
   { label: 'Home', path: '/' },
@@ -18,9 +20,20 @@ export function Navbar() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const { user, role } = useAuth();
   const { pathname } = useLocation();
+  const notifUnread = useQuery(
+    api.notifications.mutations.unreadCount,
+    user ? {} : 'skip',
+  );
 
   const dashboardPath = role === 'creator' ? '/creator' : role === 'admin' ? '/admin' : '/dashboard';
-  const notificationsPath = role === 'creator' ? '/creator' : '/dashboard/notifications';
+  const notificationsPath =
+    role === 'creator'
+      ? '/creator/notifications'
+      : role === 'admin'
+        ? '/admin/notifications'
+        : '/dashboard/notifications';
+
+  const showNotifDot = (notifUnread ?? 0) > 0;
 
   return (
     <>
@@ -34,7 +47,7 @@ export function Navbar() {
 
       <div className="container flex h-16 items-center justify-between">
         {/* LEFT: Logo */}
-        <WizzletLogo size="md" />
+        <PrizeletLogo size="md" />
 
         {/* CENTER: Nav links */}
         <div className="hidden lg:flex items-center gap-1">
@@ -46,7 +59,7 @@ export function Navbar() {
                 to={path}
                 aria-current={isActive ? 'page' : undefined}
                 className={cn(
-                  'relative px-3.5 py-2 text-[13px] font-medium rounded-lg transition-all duration-200',
+                  'relative px-3.5 py-2 text-support font-medium rounded-lg transition-all duration-200',
                   isActive
                     ? 'text-foreground'
                     : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'
@@ -65,9 +78,11 @@ export function Navbar() {
         <div className="hidden lg:flex items-center gap-3 shrink-0">
           <ThemeToggle />
           {user && (
-            <Link to={notificationsPath} className="relative p-2 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors">
+            <Link to={notificationsPath} className="relative p-2 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors" aria-label="Notifications">
               <Bell className="h-4.5 w-4.5" />
-              <span className="absolute top-1 right-1 h-2 w-2 rounded-full bg-primary" />
+              {showNotifDot && (
+                <span className="absolute top-1 right-1 h-2 w-2 rounded-full bg-primary" />
+              )}
             </Link>
           )}
           {user ? (
@@ -95,7 +110,9 @@ export function Navbar() {
               className="relative inline-flex h-11 w-11 items-center justify-center rounded-lg text-muted-foreground hover:bg-muted/50 hover:text-foreground transition-colors"
             >
               <Bell className="h-4 w-4" />
-              <span className="absolute top-2.5 right-2.5 h-1.5 w-1.5 rounded-full bg-primary" />
+              {showNotifDot && (
+                <span className="absolute top-2.5 right-2.5 h-1.5 w-1.5 rounded-full bg-primary" />
+              )}
             </Link>
           )}
           <ThemeToggle />

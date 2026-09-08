@@ -117,33 +117,33 @@ const AdminCreators = () => {
       {!loading && (
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
           <div className="rounded-xl border border-border bg-card p-4">
-            <div className="flex items-center gap-2 mb-2"><Star className="h-3.5 w-3.5 text-amber-400" /><span className="text-xs font-medium text-muted-foreground">Top (loaded)</span></div>
+            <div className="flex items-center gap-2 mb-2"><Star className="h-3.5 w-3.5 text-amber-400" /><span className="text-caption font-medium text-muted-foreground">Top (loaded)</span></div>
             {topCreators.slice(0, 3).map((c) => (
               <div key={c.id} className="flex items-center justify-between py-1">
-                <span className="text-xs font-medium truncate">{c.display_name ?? `@${c.username}`}</span>
-                <span className="text-xs text-emerald-400">${c.revenue.toFixed(0)}</span>
+                <span className="text-caption font-medium truncate">{c.display_name ?? `@${c.username}`}</span>
+                <span className="text-caption text-emerald-400">${c.revenue.toFixed(0)}</span>
               </div>
             ))}
           </div>
           <div className="rounded-xl border border-border bg-card p-4">
-            <div className="flex items-center gap-2 mb-2"><TrendingDown className="h-3.5 w-3.5 text-blue-400" /><span className="text-xs font-medium text-muted-foreground">Growing (loaded)</span></div>
+            <div className="flex items-center gap-2 mb-2"><TrendingDown className="h-3.5 w-3.5 text-blue-400" /><span className="text-caption font-medium text-muted-foreground">Growing (loaded)</span></div>
             {fastestGrowing.slice(0, 3).map((c) => (
               <div key={c.id} className="flex items-center justify-between py-1">
-                <span className="text-xs font-medium truncate">{c.display_name ?? `@${c.username}`}</span>
-                <span className="text-xs text-blue-400">{c.subCount} subs</span>
+                <span className="text-caption font-medium truncate">{c.display_name ?? `@${c.username}`}</span>
+                <span className="text-caption text-blue-400">{c.subCount} subs</span>
               </div>
             ))}
-            {fastestGrowing.length === 0 && <p className="text-xs text-muted-foreground py-2">No data</p>}
+            {fastestGrowing.length === 0 && <p className="text-caption text-muted-foreground py-2">No data</p>}
           </div>
           <div className="rounded-xl border border-amber-500/20 bg-amber-500/5 p-4">
-            <div className="flex items-center gap-2 mb-2"><Crown className="h-3.5 w-3.5 text-amber-400" /><span className="text-xs font-medium text-muted-foreground">At Risk</span></div>
+            <div className="flex items-center gap-2 mb-2"><Crown className="h-3.5 w-3.5 text-amber-400" /><span className="text-caption font-medium text-muted-foreground">At Risk</span></div>
             <p className="text-xl font-bold text-amber-400">{atRisk.length}</p>
-            <p className="text-[10px] text-muted-foreground">Among loaded · &lt;3 subscribers</p>
+            <p className="text-caption text-muted-foreground">Among loaded · &lt;3 subscribers</p>
           </div>
           <div className="rounded-xl border border-border bg-card p-4">
-            <div className="flex items-center gap-2 mb-2"><UserX className="h-3.5 w-3.5 text-muted-foreground" /><span className="text-xs font-medium text-muted-foreground">Inactive</span></div>
+            <div className="flex items-center gap-2 mb-2"><UserX className="h-3.5 w-3.5 text-muted-foreground" /><span className="text-caption font-medium text-muted-foreground">Inactive</span></div>
             <p className="text-xl font-bold">{inactive.length}</p>
-            <p className="text-[10px] text-muted-foreground">Among loaded · 30d / 0 subs</p>
+            <p className="text-caption text-muted-foreground">Among loaded · 30d / 0 subs</p>
           </div>
         </div>
       )}
@@ -163,35 +163,35 @@ const AdminCreators = () => {
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0">
                     <p className="text-sm font-medium truncate">{c.display_name ?? 'Unnamed'}</p>
-                    <p className="text-xs text-muted-foreground truncate">@{c.username ?? '—'} · {c.email}</p>
+                    <p className="text-caption text-muted-foreground truncate">@{c.username ?? '—'} · {c.email}</p>
                   </div>
                   {c.is_published ? (
-                    <span className="inline-flex items-center gap-1 text-xs font-medium text-emerald-400 shrink-0"><CheckCircle2 className="h-3.5 w-3.5" /> Active</span>
+                    <span className="inline-flex items-center gap-1 text-caption font-medium text-emerald-400 shrink-0"><CheckCircle2 className="h-3.5 w-3.5" /> Active</span>
                   ) : (
-                    <span className="inline-flex items-center gap-1 text-xs font-medium text-destructive shrink-0"><XCircle className="h-3.5 w-3.5" /> Disabled</span>
+                    <span className="inline-flex items-center gap-1 text-caption font-medium text-destructive shrink-0"><XCircle className="h-3.5 w-3.5" /> Disabled</span>
                   )}
                 </div>
-                <div className="grid grid-cols-2 gap-2 text-xs">
+                <div className="grid grid-cols-2 gap-2 text-caption">
                   <div><span className="text-muted-foreground">Subs</span><p className="font-medium mt-0.5">{c.subCount}</p></div>
                   <div><span className="text-muted-foreground">Revenue</span><p className="font-medium mt-0.5 text-emerald-400">${c.revenue.toFixed(0)}</p></div>
                 </div>
                 <div className="flex flex-wrap gap-2">
                   {c.username && (
                     <Link to={`/${c.username}`} className="flex-1 min-w-[7rem]">
-                      <Button variant="outline" size="sm" className="h-11 w-full text-xs"><ExternalLink className="mr-1.5 h-3.5 w-3.5" /> Profile</Button>
+                      <Button variant="outline" size="sm" className="h-11 w-full text-caption"><ExternalLink className="mr-1.5 h-3.5 w-3.5" /> Profile</Button>
                     </Link>
                   )}
-                  <Button variant="outline" size="sm" className="h-11 flex-1 min-w-[7rem] text-xs" onClick={() => navigate(`/admin/creator-messaging?creatorId=${c.id}`)}>
+                  <Button variant="outline" size="sm" className="h-11 flex-1 min-w-[7rem] text-caption" onClick={() => navigate(`/admin/creator-messaging?creatorId=${c.id}`)}>
                     <MessageSquare className="mr-1.5 h-3.5 w-3.5" /> Message
                   </Button>
-                  <Button variant="outline" size="sm" className="h-11 flex-1 min-w-[7rem] text-xs" onClick={() => void toggleVerified(c)}>
+                  <Button variant="outline" size="sm" className="h-11 flex-1 min-w-[7rem] text-caption" onClick={() => void toggleVerified(c)}>
                     {c.verificationStatus === 'verified' ? (
                       <><ShieldCheck className="mr-1.5 h-3.5 w-3.5 text-emerald-400" /> Unverify</>
                     ) : (
                       <><ShieldCheck className="mr-1.5 h-3.5 w-3.5" /> Verify</>
                     )}
                   </Button>
-                  <Button variant="outline" size="sm" className="h-11 flex-1 min-w-[7rem] text-xs" onClick={() => void togglePublish(c)}>
+                  <Button variant="outline" size="sm" className="h-11 flex-1 min-w-[7rem] text-caption" onClick={() => void togglePublish(c)}>
                     {c.is_published ? <><Ban className="mr-1.5 h-3.5 w-3.5 text-destructive" /> Disable</> : <><CheckCircle2 className="mr-1.5 h-3.5 w-3.5 text-primary" /> Enable</>}
                   </Button>
                 </div>
@@ -203,14 +203,14 @@ const AdminCreators = () => {
             <table className="w-full min-w-[720px] text-sm">
               <thead>
                 <tr className="border-b border-border bg-muted/30">
-                  <th className="text-left text-xs font-medium text-muted-foreground p-4">Creator</th>
-                  <th className="text-left text-xs font-medium text-muted-foreground p-4">Email</th>
-                  <th className="text-left text-xs font-medium text-muted-foreground p-4">Subs</th>
-                  <th className="text-left text-xs font-medium text-muted-foreground p-4">Revenue</th>
-                  <th className="text-left text-xs font-medium text-muted-foreground p-4">Verified</th>
-                  <th className="text-left text-xs font-medium text-muted-foreground p-4">Status</th>
-                  <th className="text-left text-xs font-medium text-muted-foreground p-4">Joined</th>
-                  <th className="text-right text-xs font-medium text-muted-foreground p-4">Actions</th>
+                  <th className="text-left text-caption font-medium text-muted-foreground p-4">Creator</th>
+                  <th className="text-left text-caption font-medium text-muted-foreground p-4">Email</th>
+                  <th className="text-left text-caption font-medium text-muted-foreground p-4">Subs</th>
+                  <th className="text-left text-caption font-medium text-muted-foreground p-4">Revenue</th>
+                  <th className="text-left text-caption font-medium text-muted-foreground p-4">Verified</th>
+                  <th className="text-left text-caption font-medium text-muted-foreground p-4">Status</th>
+                  <th className="text-left text-caption font-medium text-muted-foreground p-4">Joined</th>
+                  <th className="text-right text-caption font-medium text-muted-foreground p-4">Actions</th>
                 </tr>
               </thead>
               <tbody>
@@ -218,45 +218,45 @@ const AdminCreators = () => {
                   <tr key={c.id} className="border-b border-border last:border-0 hover:bg-muted/20 transition-colors">
                     <td className="p-4">
                       <p className="font-medium">{c.display_name ?? 'Unnamed'}</p>
-                      <p className="text-xs text-muted-foreground">@{c.username ?? '—'}</p>
+                      <p className="text-caption text-muted-foreground">@{c.username ?? '—'}</p>
                     </td>
-                    <td className="p-4 text-muted-foreground text-xs">{c.email}</td>
+                    <td className="p-4 text-muted-foreground text-caption">{c.email}</td>
                     <td className="p-4 font-medium">{c.subCount}</td>
                     <td className="p-4 font-medium text-emerald-400">${c.revenue.toFixed(0)}</td>
                     <td className="p-4">
                       {c.verificationStatus === 'verified' ? (
-                        <Badge variant="outline" className="text-[10px] bg-emerald-500/10 text-emerald-400 border-emerald-500/20"><ShieldCheck className="h-2.5 w-2.5 mr-1" />Verified</Badge>
+                        <Badge variant="outline" className="text-caption bg-emerald-500/10 text-emerald-400 border-emerald-500/20"><ShieldCheck className="h-2.5 w-2.5 mr-1" />Verified</Badge>
                       ) : (
-                        <span className="text-xs text-muted-foreground">—</span>
+                        <span className="text-caption text-muted-foreground">—</span>
                       )}
                     </td>
                     <td className="p-4">
                       {c.is_published ? (
-                        <span className="inline-flex items-center gap-1 text-xs font-medium text-emerald-400"><CheckCircle2 className="h-3 w-3" /> Active</span>
+                        <span className="inline-flex items-center gap-1 text-caption font-medium text-emerald-400"><CheckCircle2 className="h-3 w-3" /> Active</span>
                       ) : (
-                        <span className="inline-flex items-center gap-1 text-xs font-medium text-destructive"><XCircle className="h-3 w-3" /> Disabled</span>
+                        <span className="inline-flex items-center gap-1 text-caption font-medium text-destructive"><XCircle className="h-3 w-3" /> Disabled</span>
                       )}
                     </td>
-                    <td className="p-4 text-xs text-muted-foreground">{format(new Date(c.created_at), 'MMM d, yyyy')}</td>
+                    <td className="p-4 text-caption text-muted-foreground">{format(new Date(c.created_at), 'MMM d, yyyy')}</td>
                     <td className="p-4">
                       <div className="flex items-center justify-end gap-1">
                         {c.username && (
                           <Link to={`/${c.username}`}>
-                            <Button variant="ghost" size="sm" className="h-9 w-9 px-0 text-xs" title="View profile" aria-label="View profile"><ExternalLink className="h-3.5 w-3.5" /></Button>
+                            <Button variant="ghost" size="sm" className="h-9 w-9 px-0 text-caption" title="View profile" aria-label="View profile"><ExternalLink className="h-3.5 w-3.5" /></Button>
                           </Link>
                         )}
-                        <Button variant="ghost" size="sm" className="h-9 w-9 px-0 text-xs" onClick={() => navigate(`/admin/creator-messaging?creatorId=${c.id}`)} title="Message creator" aria-label="Message creator"><MessageSquare className="h-3.5 w-3.5" /></Button>
+                        <Button variant="ghost" size="sm" className="h-9 w-9 px-0 text-caption" onClick={() => navigate(`/admin/creator-messaging?creatorId=${c.id}`)} title="Message creator" aria-label="Message creator"><MessageSquare className="h-3.5 w-3.5" /></Button>
                         <Button
                           variant="ghost"
                           size="sm"
-                          className="h-9 w-9 px-0 text-xs"
+                          className="h-9 w-9 px-0 text-caption"
                           onClick={() => void toggleVerified(c)}
                           title={c.verificationStatus === 'verified' ? 'Remove verification' : 'Mark verified'}
                           aria-label={c.verificationStatus === 'verified' ? 'Remove verification' : 'Mark verified'}
                         >
                           <ShieldCheck className={`h-3.5 w-3.5 ${c.verificationStatus === 'verified' ? 'text-emerald-400' : ''}`} />
                         </Button>
-                        <Button variant="ghost" size="sm" className="h-9 w-9 px-0 text-xs" onClick={() => void togglePublish(c)} title={c.is_published ? 'Disable' : 'Enable'} aria-label={c.is_published ? 'Disable' : 'Enable'}>
+                        <Button variant="ghost" size="sm" className="h-9 w-9 px-0 text-caption" onClick={() => void togglePublish(c)} title={c.is_published ? 'Disable' : 'Enable'} aria-label={c.is_published ? 'Disable' : 'Enable'}>
                           {c.is_published ? <Ban className="h-3.5 w-3.5 text-destructive" /> : <CheckCircle2 className="h-3.5 w-3.5 text-primary" />}
                         </Button>
                       </div>

@@ -380,6 +380,7 @@ export const resolutionCaseMessageDocValidator = v.object({
   caseId: v.id("resolutionCases"),
   senderRole: v.string(),
   body: v.string(),
+  read: v.optional(v.boolean()),
   createdAt: v.number(),
 });
 

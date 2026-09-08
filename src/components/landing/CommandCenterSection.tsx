@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { ArrowRight, BarChart3, Bell, Settings, Zap, TrendingUp, Shield } from 'lucide-react';
+import { LandingSection } from '@/components/landing/LandingSection';
 
 function FloatingCard({ children, className }: { children: React.ReactNode; className: string }) {
   return (
@@ -12,7 +13,7 @@ function FloatingCard({ children, className }: { children: React.ReactNode; clas
 
 export function CommandCenterSection() {
   return (
-    <section className="relative py-28 md:py-36 overflow-hidden">
+    <LandingSection variant="band" className="overflow-hidden">
       {/* Grid background */}
       <div className="pointer-events-none absolute inset-0 opacity-[0.04]" style={{
         backgroundImage: `
@@ -37,11 +38,11 @@ export function CommandCenterSection() {
           <FloatingCard className="top-4 left-[8%] p-3 animate-[float-1_6s_ease-in-out_infinite]">
             <div className="flex items-center gap-2 mb-2">
               <BarChart3 className="h-3.5 w-3.5 text-primary" />
-              <span className="text-[10px] text-muted-foreground uppercase tracking-wider">Revenue</span>
+              <span className="text-caption text-muted-foreground uppercase tracking-wider">Revenue</span>
             </div>
             <div className="flex items-baseline gap-1.5">
               <span className="text-sm font-bold text-foreground">$——,———</span>
-              <span className="text-[10px] text-emerald-500 dark:text-emerald-400 flex items-center"><TrendingUp className="h-2.5 w-2.5 mr-0.5" />+—%</span>
+              <span className="text-caption text-emerald-500 dark:text-emerald-400 flex items-center"><TrendingUp className="h-2.5 w-2.5 mr-0.5" />+—%</span>
             </div>
           </FloatingCard>
 
@@ -51,8 +52,8 @@ export function CommandCenterSection() {
                 <Bell className="h-3.5 w-3.5 text-primary" />
               </div>
               <div>
-                <p className="text-[11px] text-foreground font-medium">New subscriber</p>
-                <p className="text-[10px] text-muted-foreground">Just now</p>
+                <p className="text-caption text-foreground font-medium">New subscriber</p>
+                <p className="text-caption text-muted-foreground">Just now</p>
               </div>
               <span className="h-2 w-2 rounded-full bg-primary animate-pulse ml-1" />
             </div>
@@ -61,15 +62,15 @@ export function CommandCenterSection() {
           <FloatingCard className="bottom-12 left-[12%] p-3 animate-[float-3_8s_ease-in-out_infinite]">
             <div className="flex items-center gap-2">
               <Settings className="h-3.5 w-3.5 text-muted-foreground" />
-              <span className="text-[11px] text-muted-foreground">Payouts</span>
-              <span className="text-[10px] text-emerald-500 dark:text-emerald-400 font-medium ml-2">Active</span>
+              <span className="text-caption text-muted-foreground">Payouts</span>
+              <span className="text-caption text-emerald-500 dark:text-emerald-400 font-medium ml-2">Active</span>
             </div>
           </FloatingCard>
 
           <FloatingCard className="bottom-16 right-[8%] p-3 animate-[float-1_9s_ease-in-out_infinite_1s]">
             <div className="flex items-center gap-2">
               <Shield className="h-3.5 w-3.5 text-primary/70" />
-              <span className="text-[11px] text-muted-foreground">Gated content</span>
+              <span className="text-caption text-muted-foreground">Gated content</span>
               <Zap className="h-3 w-3 text-primary ml-1" />
             </div>
           </FloatingCard>
@@ -77,7 +78,7 @@ export function CommandCenterSection() {
           <FloatingCard className="top-1/2 -translate-y-1/2 left-[4%] p-3 animate-[float-2_7.5s_ease-in-out_infinite_0.5s]">
             <div className="text-center">
               <p className="text-lg font-bold text-foreground">——</p>
-              <p className="text-[9px] text-muted-foreground uppercase tracking-wider">Active subs</p>
+              <p className="text-caption text-muted-foreground uppercase tracking-wider">Active subs</p>
             </div>
           </FloatingCard>
         </div>
@@ -91,17 +92,17 @@ export function CommandCenterSection() {
             <span className="text-gradient">ONE PLACE</span>
           </h2>
 
-          <p className="text-[15px] sm:text-base text-muted-foreground max-w-[400px] mx-auto mb-10 leading-relaxed">
+          <p className="text-ui sm:text-base text-muted-foreground max-w-[400px] mx-auto mb-10 leading-relaxed">
             No switching tools. No chaos. Just control.
           </p>
 
           <Link to="/signup">
-            <Button variant="hero" size="lg" className="h-13 px-10 text-[15px]">
+            <Button variant="hero" size="lg" className="h-13 px-10 text-ui">
               Request Access <ArrowRight className="ml-1 h-4 w-4" />
             </Button>
           </Link>
         </div>
       </div>
-    </section>
+    </LandingSection>
   );
 }

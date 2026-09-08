@@ -36,8 +36,8 @@ function EventRow({ event }: { event: SportEvent }) {
       {/* Match info */}
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2 mb-0.5">
-          <span className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider">{event.league}</span>
-          <span className={`inline-flex items-center gap-0.5 text-[8px] font-semibold uppercase tracking-wider rounded-full px-1.5 py-0.5 border ${cfg.class}`}>
+          <span className="text-caption font-medium text-muted-foreground uppercase tracking-wider">{event.league}</span>
+          <span className={`inline-flex items-center gap-0.5 text-caption font-semibold uppercase tracking-wider rounded-full px-1.5 py-0.5 border ${cfg.class}`}>
             {cfg.label}
           </span>
         </div>
@@ -46,15 +46,15 @@ function EventRow({ event }: { event: SportEvent }) {
 
       {/* Odds */}
       <div className="hidden sm:flex items-center gap-2 shrink-0">
-        {event.homeOdds && <span className="text-[10px] font-mono text-muted-foreground bg-muted/50 rounded px-2 py-1">{event.homeOdds.toFixed(2)}</span>}
-        {event.drawOdds && <span className="text-[10px] font-mono text-muted-foreground/50 bg-muted/30 rounded px-2 py-1">{event.drawOdds.toFixed(2)}</span>}
-        {event.awayOdds && <span className="text-[10px] font-mono text-muted-foreground bg-muted/50 rounded px-2 py-1">{event.awayOdds.toFixed(2)}</span>}
+        {event.homeOdds && <span className="text-caption font-mono text-muted-foreground bg-muted/50 rounded px-2 py-1">{event.homeOdds.toFixed(2)}</span>}
+        {event.drawOdds && <span className="text-caption font-mono text-muted-foreground/50 bg-muted/30 rounded px-2 py-1">{event.drawOdds.toFixed(2)}</span>}
+        {event.awayOdds && <span className="text-caption font-mono text-muted-foreground bg-muted/50 rounded px-2 py-1">{event.awayOdds.toFixed(2)}</span>}
       </div>
 
       {/* Time */}
       <div className="text-right shrink-0 min-w-[70px]">
-        <p className="text-xs font-medium">{formatEventTime(event.startTime)}</p>
-        <p className="text-[10px] text-muted-foreground">{until}</p>
+        <p className="text-caption font-medium">{formatEventTime(event.startTime)}</p>
+        <p className="text-caption text-muted-foreground">{until}</p>
       </div>
     </div>
   );
@@ -106,13 +106,13 @@ const TodaysEvents = () => {
 
   return (
     <div className="min-h-screen bg-noise">
-      <Seo title="Today's Events — Live Matchups & Picks | Wizzlet" description="Every matchup happening today with live status, start times, and the Wizzlet creators posting picks on each game." />
+      <Seo title="Today's Events — Live Matchups & Picks | Prizelet" description="Every matchup happening today with live status, start times, and the Prizelet creators posting picks on each game." />
       <Navbar />
       <main id="main-content" className="pt-24 pb-20">
         <div className="container">
           {/* Header */}
           <div className="mb-8">
-            <div className="inline-flex items-center gap-2 text-primary text-xs font-semibold uppercase tracking-widest mb-3">
+            <div className="inline-flex items-center gap-2 text-primary text-caption font-semibold uppercase tracking-widest mb-3">
               <Zap className="h-3.5 w-3.5" />
               {new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
             </div>
@@ -126,24 +126,24 @@ const TodaysEvents = () => {
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
               <Input
                 placeholder="Search teams, leagues..."
-                className="pl-9 h-9 text-xs"
+                className="pl-9 h-9 text-caption"
                 value={search}
                 onChange={e => setSearch(e.target.value)}
               />
             </div>
             <Select value={sportFilter} onValueChange={setSportFilter}>
-              <SelectTrigger className="w-[140px] h-9 text-xs"><SelectValue /></SelectTrigger>
+              <SelectTrigger className="w-[140px] h-9 text-caption"><SelectValue /></SelectTrigger>
               <SelectContent>
                 {SPORTS_FILTER.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
               </SelectContent>
             </Select>
             <Select value={timeFilter} onValueChange={setTimeFilter}>
-              <SelectTrigger className="w-[140px] h-9 text-xs"><SelectValue /></SelectTrigger>
+              <SelectTrigger className="w-[140px] h-9 text-caption"><SelectValue /></SelectTrigger>
               <SelectContent>
                 {TIME_FILTER.map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}
               </SelectContent>
             </Select>
-            <span className="text-[10px] text-muted-foreground ml-auto">{filtered.length} event{filtered.length !== 1 ? 's' : ''}</span>
+            <span className="text-caption text-muted-foreground ml-auto">{filtered.length} event{filtered.length !== 1 ? 's' : ''}</span>
           </div>
 
           {rows === undefined ? (
@@ -182,7 +182,7 @@ const TodaysEvents = () => {
               <div className="flex items-center gap-2 mb-4">
                 <span className="text-sm">{SPORT_ICONS[sport] || '🏆'}</span>
                 <h2 className="text-sm font-semibold uppercase tracking-wider">{sport}</h2>
-                <span className="text-[10px] text-muted-foreground">{events.length} event{events.length !== 1 ? 's' : ''}</span>
+                <span className="text-caption text-muted-foreground">{events.length} event{events.length !== 1 ? 's' : ''}</span>
               </div>
               <div className="space-y-2">
                 {events.map(e => <EventRow key={e.id} event={e} />)}

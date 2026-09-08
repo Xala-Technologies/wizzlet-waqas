@@ -10,7 +10,7 @@
 |-------|-------|
 | Branch | `fix/login-ensureuser-auth-race` |
 | Tip ancestry | `bafb16a` (dev merge cutover stack) |
-| Dirty tree | Yes — login auth race, admin bootstrap (`admin@wizzlet.dev`), ErrorBoundary/AdminQueryBoundary, README local-owner docs |
+| Dirty tree | Yes — login auth race, admin bootstrap (`admin@prizelet.dev`), ErrorBoundary/AdminQueryBoundary, README local-owner docs |
 | Vite | `http://localhost:8080` → HTTP 200 |
 | Convex | `combative-mongoose-559` (prizelet/dev) |
 | Stripe publishable | `pk_test_*` |
@@ -44,7 +44,7 @@
 - Unit business-rule suite green.
 - Production client build succeeds.
 - Prior P0 subscription/sandbox invent-billing issues appear fixed in code + units.
-- Local platform owner login (`admin@wizzlet.dev`) reaches live admin dashboard without FORBIDDEN ErrorBoundary.
+- Local platform owner login (`admin@prizelet.dev`) reaches live admin dashboard without FORBIDDEN ErrorBoundary.
 
 ## What fails / residual
 
@@ -89,8 +89,8 @@ Mandatory critical journeys and authorization runtime matrix remain NOT_RUN. No 
 
 | Account | Purpose | Cleanup |
 |---------|---------|---------|
-| `qa.creator.w2.20260906@wizzlet.test` | J1 creator signup | Leave in dev DB; username `qacreator926` |
-| `admin@wizzlet.dev` | Prior owner | Unchanged |
+| `qa.creator.w2.20260906@prizelet.test` | J1 creator signup | Leave in dev DB; username `qacreator926` |
+| `admin@prizelet.dev` | Prior owner | Unchanged |
 
 ## Gate after Wave 2
 
@@ -124,8 +124,8 @@ Authorized **QA-W2-01** remediation already on branch `fix/select-role-nav-race`
 
 | Account | Purpose |
 |---------|---------|
-| `qa.creator.fix.1101@wizzlet.test` | J1 creator |
-| `qa.member.w3.1101@wizzlet.test` | J1 member + paid sub |
+| `qa.creator.fix.1101@prizelet.test` | J1 creator |
+| `qa.member.w3.1101@prizelet.test` | J1 member + paid sub |
 | Session | `cs_test_a1aEIEGYNK6Xu8B30IUZeYTVJFANfnBziyN2TnEihyv9w7WolOfvWOvBwP` |
 
 ## Gate after Wave 3
