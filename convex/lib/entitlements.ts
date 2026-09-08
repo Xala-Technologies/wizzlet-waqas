@@ -1,6 +1,6 @@
 import type { Doc, Id } from "../_generated/dataModel";
 import type { QueryCtx } from "../_generated/server";
-import { hasActiveSubscription, userHasRole } from "./auth";
+import { hasContentAccess, userHasRole } from "./auth";
 
 /**
  * Premium post entitlement.
@@ -23,7 +23,7 @@ export async function canViewPostContent(
   if (!creator) return false;
   if (creator.userId === user._id) return true;
 
-  return hasActiveSubscription(ctx, user._id, post.creatorId as Id<"creators">);
+  return hasContentAccess(ctx, user._id, post.creatorId as Id<"creators">);
 }
 
 export function redactPostContent<T extends { content?: string | null; isPremium: boolean }>(

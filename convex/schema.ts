@@ -81,6 +81,8 @@ export default defineSchema({
     referralCode: v.optional(v.string()),
     messagingEnabled: v.boolean(),
     verificationStatus: v.optional(verificationStatus),
+    /** Wizard step index for resumable creator setup (0-based). */
+    onboardingStep: v.optional(v.number()),
     createdAt: v.number(),
     updatedAt: v.number(),
   })
@@ -464,4 +466,18 @@ export default defineSchema({
     actorExternalAuthId: v.optional(v.string()),
     createdAt: v.number(),
   }).index("by_createdAt", ["createdAt"]),
+
+  /** Authenticated account change requests (e.g. email) — manual admin fulfillment. */
+  accountRequests: defineTable({
+    userId: v.id("users"),
+    category: v.string(),
+    reason: v.string(),
+    requestedEmail: v.optional(v.string()),
+    status: v.string(),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  })
+    .index("by_userId", ["userId"])
+    .index("by_status", ["status"])
+    .index("by_userId_category", ["userId", "category"]),
 });

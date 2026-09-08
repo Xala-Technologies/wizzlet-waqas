@@ -2,7 +2,8 @@ import { useQuery } from 'convex/react';
 import { api } from '../../convex/_generated/api';
 import { DashboardLayout } from '@/components/dashboard/DashboardLayout';
 import { scanTruncationNote } from '@/lib/adminTruncation';
-import { Users, Crown, DollarSign, CreditCard, Loader2, TrendingUp, Activity, UserPlus, Percent, FileWarning } from 'lucide-react';
+import { Users, Crown, DollarSign, CreditCard, Loader2, TrendingUp, Activity, UserPlus, Percent, FileWarning, ArrowRight } from 'lucide-react';
+import { Link } from 'react-router-dom';
 import { BarChart, Bar, LineChart, Line, AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts';
 import { format } from 'date-fns';
 
@@ -45,6 +46,31 @@ const AdminDashboardInner = () => {
           Fee revenue and paid-out come from subscription and payout records. See Finance for detail — these are not Stripe cash balances.
         </p>
       </div>
+
+      {(stats.openCases > 0 || stats.activeSubscriptionCount >= 0) && (
+        <div className="rounded-xl border border-border bg-card p-4 mb-6">
+          <h2 className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-3">Next up</h2>
+          <ul className="space-y-2 text-sm">
+            {stats.openCases > 0 && (
+              <li>
+                <Link to="/admin/resolution-cases" className="text-primary hover:underline inline-flex items-center gap-1">
+                  {stats.openCases} open resolution case{stats.openCases === 1 ? '' : 's'} <ArrowRight className="h-3 w-3" />
+                </Link>
+              </li>
+            )}
+            <li>
+              <Link to="/admin/alerts" className="text-primary hover:underline inline-flex items-center gap-1">
+                Review ops alerts <ArrowRight className="h-3 w-3" />
+              </Link>
+            </li>
+            <li>
+              <Link to="/admin/payouts" className="text-primary hover:underline inline-flex items-center gap-1">
+                Review payout requests <ArrowRight className="h-3 w-3" />
+              </Link>
+            </li>
+          </ul>
+        </div>
+      )}
 
       <div className="grid grid-cols-2 lg:grid-cols-5 gap-4 mb-8">
         {kpi.map((stat) => (

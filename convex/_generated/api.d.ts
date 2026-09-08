@@ -8,6 +8,7 @@
  * @module
  */
 
+import type * as accountRequests from "../accountRequests.js";
 import type * as admin_exportReports from "../admin/exportReports.js";
 import type * as admin_paginatedLists from "../admin/paginatedLists.js";
 import type * as admin_queries from "../admin/queries.js";
@@ -24,6 +25,7 @@ import type * as http from "../http.js";
 import type * as lib_adminLists from "../lib/adminLists.js";
 import type * as lib_auth from "../lib/auth.js";
 import type * as lib_commerceIdentity from "../lib/commerceIdentity.js";
+import type * as lib_contentAccess from "../lib/contentAccess.js";
 import type * as lib_credentialOwnership from "../lib/credentialOwnership.js";
 import type * as lib_devAdminGrant from "../lib/devAdminGrant.js";
 import type * as lib_entitlements from "../lib/entitlements.js";
@@ -61,6 +63,7 @@ import type {
 } from "convex/server";
 
 declare const fullApi: ApiFromModules<{
+  accountRequests: typeof accountRequests;
   "admin/exportReports": typeof admin_exportReports;
   "admin/paginatedLists": typeof admin_paginatedLists;
   "admin/queries": typeof admin_queries;
@@ -77,6 +80,7 @@ declare const fullApi: ApiFromModules<{
   "lib/adminLists": typeof lib_adminLists;
   "lib/auth": typeof lib_auth;
   "lib/commerceIdentity": typeof lib_commerceIdentity;
+  "lib/contentAccess": typeof lib_contentAccess;
   "lib/credentialOwnership": typeof lib_credentialOwnership;
   "lib/devAdminGrant": typeof lib_devAdminGrant;
   "lib/entitlements": typeof lib_entitlements;

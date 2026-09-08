@@ -204,8 +204,10 @@ const CustomerResults = () => {
       });
       toast.success(editId ? 'Pick updated' : 'Pick added');
       resetForm();
-    } catch {
-      toast.error('Failed to save pick');
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : '';
+      if (msg.includes('RESULT_LOCKED')) toast.error('Settled results are locked and cannot be changed');
+      else toast.error('Failed to save pick');
     } finally {
       setSaving(false);
     }
@@ -244,7 +246,8 @@ const CustomerResults = () => {
     const pushes = settled.filter(p => p.result === 'push').length;
     const totalRisked = settled.reduce((s, p) => s + (p.units_risked || 0), 0);
     const totalWonLost = picks.reduce((s, p) => s + (p.units_won_lost || 0), 0);
-    const winRate = settled.length > 0 ? Math.round((wins / settled.length) * 100) : 0;
+    const decided = wins + losses;
+    const winRate = decided > 0 ? Math.round((wins / decided) * 100) : 0;
     const roi = totalRisked > 0 ? Math.round((totalWonLost / totalRisked) * 100) : 0;
     const avgRisked = settled.length > 0 ? totalRisked / settled.length : 0;
 
@@ -291,39 +294,47 @@ const CustomerResults = () => {
 
   // --- Sport Breakdown ---
   const sportBreakdown = useMemo(() => {
-    const map: Record<string, { picks: number; wins: number; profit: number; risked: number }> = {};
+    const map: Record<string, { picks: number; wins: number; losses: number; profit: number; risked: number }> = {};
     picks.forEach(p => {
-      if (!map[p.sport]) map[p.sport] = { picks: 0, wins: 0, profit: 0, risked: 0 };
+      if (!map[p.sport]) map[p.sport] = { picks: 0, wins: 0, losses: 0, profit: 0, risked: 0 };
       map[p.sport].picks++;
       if (p.result === 'win') map[p.sport].wins++;
+      if (p.result === 'loss') map[p.sport].losses++;
       map[p.sport].profit += (p.units_won_lost || 0);
-      if (p.result !== 'pending') map[p.sport].risked += (p.units_risked || 0);
+      if (p.result === 'win' || p.result === 'loss') map[p.sport].risked += (p.units_risked || 0);
     });
-    return Object.entries(map).map(([sport, d]) => ({
-      sport, ...d,
-      winRate: d.picks > 0 ? Math.round((d.wins / d.picks) * 100) : 0,
-      roi: d.risked > 0 ? Math.round((d.profit / d.risked) * 100) : 0,
-    })).sort((a, b) => b.profit - a.profit);
+    return Object.entries(map).map(([sport, d]) => {
+      const decided = d.wins + d.losses;
+      return {
+        sport, ...d,
+        winRate: decided > 0 ? Math.round((d.wins / decided) * 100) : 0,
+        roi: d.risked > 0 ? Math.round((d.profit / d.risked) * 100) : 0,
+      };
+    }).sort((a, b) => b.profit - a.profit);
   }, [picks]);
 
   // --- Monthly Breakdown ---
   const monthlyBreakdown = useMemo(() => {
-    const map: Record<string, { picks: number; wins: number; profit: number; risked: number }> = {};
+    const map: Record<string, { picks: number; wins: number; losses: number; profit: number; risked: number }> = {};
     picks.forEach(p => {
       const m = p.date.substring(0, 7); // YYYY-MM
-      if (!map[m]) map[m] = { picks: 0, wins: 0, profit: 0, risked: 0 };
+      if (!map[m]) map[m] = { picks: 0, wins: 0, losses: 0, profit: 0, risked: 0 };
       map[m].picks++;
       if (p.result === 'win') map[m].wins++;
+      if (p.result === 'loss') map[m].losses++;
       map[m].profit += (p.units_won_lost || 0);
-      if (p.result !== 'pending') map[m].risked += (p.units_risked || 0);
+      if (p.result === 'win' || p.result === 'loss') map[m].risked += (p.units_risked || 0);
     });
-    return Object.entries(map).map(([month, d]) => ({
-      month,
-      label: new Date(month + '-01').toLocaleDateString('en-US', { month: 'short', year: 'numeric' }),
-      ...d,
-      winRate: d.picks > 0 ? Math.round((d.wins / d.picks) * 100) : 0,
-      roi: d.risked > 0 ? Math.round((d.profit / d.risked) * 100) : 0,
-    })).sort((a, b) => b.month.localeCompare(a.month));
+    return Object.entries(map).map(([month, d]) => {
+      const decided = d.wins + d.losses;
+      return {
+        month,
+        label: new Date(month + '-01').toLocaleDateString('en-US', { month: 'short', year: 'numeric' }),
+        ...d,
+        winRate: decided > 0 ? Math.round((d.wins / decided) * 100) : 0,
+        roi: d.risked > 0 ? Math.round((d.profit / d.risked) * 100) : 0,
+      };
+    }).sort((a, b) => b.month.localeCompare(a.month));
   }, [picks]);
 
   // --- Performance Insights ---
