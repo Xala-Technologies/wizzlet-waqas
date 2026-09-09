@@ -53,28 +53,34 @@ Or use **Sign in as platform owner** on the login page. That account receives th
 
 ## Environment
 
+Full map, precedence, and variable inventory: [`docs/environments.md`](docs/environments.md).  
+Findings and drift: [`docs/environment-findings.md`](docs/environment-findings.md).  
+Promotion / hotfix / recovery: [`docs/release-process.md`](docs/release-process.md).
+
 ### Client (`.env` / `.env.local`)
 
 | Variable | Required | Description |
 |----------|----------|-------------|
-| `VITE_CONVEX_URL` | Yes | Convex deployment URL |
+| `VITE_APP_ENV` | Yes | `local` \| `development` \| `preview` \| `staging` \| `production` (independent of Vite mode) |
+| `VITE_CONVEX_URL` | Yes | Convex deployment URL for **this** environment |
 | `VITE_CONVEX_SITE_URL` | No | Convex Auth HTTP site URL |
 | `VITE_STRIPE_PUBLISHABLE_KEY` | For Checkout | Stripe publishable key (`pk_…`) |
-| `VITE_ALLOW_SANDBOX_CHECKOUT` | No | Client gate for sandbox checkout UI |
+| `VITE_ALLOW_SANDBOX_CHECKOUT` | No | Client UI gate only (`true`); server still requires `ALLOW_SANDBOX_CHECKOUT` |
 
-Never put Stripe **secret** keys in Vite env files.
+Never put Stripe **secret** keys in Vite env files. Validate with `npm run env:validate`.
 
 ### Convex dashboard env
 
-Configure under **Settings → Environment Variables**:
+Configure under **Settings → Environment Variables** on the target deployment (not via Vite files):
 
 | Variable | Description |
 |----------|-------------|
 | `STRIPE_SECRET_KEY` | Stripe secret key (`sk_…`) |
 | `STRIPE_WEBHOOK_SECRET` | Webhook signing secret (`whsec_…`) for `POST /stripe/webhook` |
-| `SITE_URL` | Public app origin (e.g. `http://localhost:8080`) |
-| `ALLOW_SANDBOX_CHECKOUT` | Non-production sandbox only |
-| `ALLOW_DEV_ADMIN_GRANT` | Dev only — required for `grantTestAdmin` / platform-owner bootstrap. **Never set in production.** |
+| `SITE_URL` | Public app origin (local: `http://localhost:8080`; production: `https://www.prizelet.com`) |
+| `ALLOW_SANDBOX_CHECKOUT` | Non-production sandbox only — **never** `true` in production |
+| `ALLOW_DEV_ADMIN_GRANT` | Dev only — required for `grantTestAdmin`. **Never** set in production |
+| `MIGRATION_SECRET` | ETL gate — prefer unset after cutover |
 
 See [`.env.example`](.env.example) for a full annotated template.
 
@@ -88,19 +94,24 @@ See [`.env.example`](.env.example) for a full annotated template.
 | `npm test` | Unit tests (Vitest) |
 | `npm run test:watch` | Vitest watch mode |
 | `npm run lint` | ESLint |
+| `npm run env:validate` | Fail closed on dangerous env combinations |
+| `npm run release:manifest` | Print nonsecret release manifest JSON |
+| `npm run release:verify-build` | Build and verify baked public bindings |
 | `npm run convex:dev` | Convex development sync |
-| `npm run convex:deploy` | **Production** Convex deploy |
+| `npm run convex:deploy` | **Production** Convex deploy (authorized operators only) |
 
 ## Branching
 
 | Branch | Purpose |
 |--------|---------|
 | `dev` | Day-to-day integration |
-| `production` | Stable releases |
-| Feature / fix branches | Cut from the agreed base (`dev` or the active cutover branch); one PR per task |
+| `production` | Approved release tip (GitHub default) |
+| `main` | Legacy alias of the production tip — keep in sync; do not delete without approval |
+| Feature / fix / chore branches | Cut from `dev` (or intentional stack); one PR per task |
 
-Merge to `production` only after review and testing on `dev` (or the stacked cutover path).
+Path: focused branch → reviewed PR into `dev` → identified release candidate SHA → isolated verification → merge into `production` → deploy frontend and Convex for that SHA together. Details: [`docs/release-process.md`](docs/release-process.md).
 
+Do **not** treat ad-hoc Vercel promotes of feature-branch previews as the normal production release path.
 ## Architecture notes
 
 - **Auth & data** live in Convex — no Supabase path in this codebase.

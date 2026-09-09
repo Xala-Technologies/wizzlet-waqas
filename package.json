@@ -3,6 +3,9 @@
   "private": true,
   "version": "0.0.0",
   "type": "module",
+  "engines": {
+    "node": ">=20"
+  },
   "scripts": {
     "dev": "vite",
     "build": "vite build",
@@ -12,7 +15,10 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "convex:dev": "convex dev",
-    "convex:deploy": "convex deploy"
+    "convex:deploy": "convex deploy",
+    "env:validate": "tsx scripts/env-validate.ts",
+    "release:manifest": "tsx scripts/release-manifest.ts",
+    "release:verify-build": "tsx scripts/release-verify-build.ts"
   },
   "dependencies": {
     "@auth/core": "^0.41.1",

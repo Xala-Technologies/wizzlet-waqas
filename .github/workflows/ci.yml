@@ -1,0 +1,56 @@
+# CI — checks only. Does not deploy, publish, or use production secrets.
+name: CI
+
+on:
+  pull_request:
+    branches: [dev, production]
+  push:
+    branches: [dev, production]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    name: Lint, typecheck, test, build
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+
+      - name: Install
+        run: npm ci
+
+      - name: Validate environment (CI fixture)
+        env:
+          CI: "true"
+          VITE_APP_ENV: development
+          VITE_CONVEX_URL: https://ci-fixture.convex.cloud
+        run: npm run env:validate
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Typecheck
+        run: npx tsc --noEmit -p tsconfig.app.json
+
+      - name: Unit tests
+        run: npm test -- --run
+
+      - name: Production build
+        env:
+          VITE_APP_ENV: development
+          VITE_CONVEX_URL: https://ci-fixture.convex.cloud
+          VITE_RELEASE_CHANNEL: ci
+        run: npm run build

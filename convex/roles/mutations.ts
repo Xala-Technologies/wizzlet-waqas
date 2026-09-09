@@ -9,6 +9,7 @@ import {
   type AppRole,
 } from "../lib/auth";
 import { isDevAdminGrantAllowed } from "../lib/devAdminGrant";
+import { assertProductionSafeEnv } from "../lib/envGuards";
 import { appRoleValidator } from "../lib/validators";
 
 const assignableRole = v.union(v.literal("creator"), v.literal("subscriber"));
@@ -86,6 +87,7 @@ export const grantTestAdmin = mutation({
   args: {},
   returns: v.null(),
   handler: async (ctx) => {
+    assertProductionSafeEnv();
     const user = await requireAppUser(ctx);
     if (!isDevAdminGrantAllowed(user.email, process.env.ALLOW_DEV_ADMIN_GRANT)) {
       throw new ConvexError("FORBIDDEN");

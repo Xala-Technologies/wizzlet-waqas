@@ -32,6 +32,7 @@ import type * as lib_contentAccess from "../lib/contentAccess.js";
 import type * as lib_credentialOwnership from "../lib/credentialOwnership.js";
 import type * as lib_devAdminGrant from "../lib/devAdminGrant.js";
 import type * as lib_entitlements from "../lib/entitlements.js";
+import type * as lib_envGuards from "../lib/envGuards.js";
 import type * as lib_growthAttribution from "../lib/growthAttribution.js";
 import type * as lib_messagingAccess from "../lib/messagingAccess.js";
 import type * as lib_money from "../lib/money.js";
@@ -91,6 +92,7 @@ declare const fullApi: ApiFromModules<{
   "lib/credentialOwnership": typeof lib_credentialOwnership;
   "lib/devAdminGrant": typeof lib_devAdminGrant;
   "lib/entitlements": typeof lib_entitlements;
+  "lib/envGuards": typeof lib_envGuards;
   "lib/growthAttribution": typeof lib_growthAttribution;
   "lib/messagingAccess": typeof lib_messagingAccess;
   "lib/money": typeof lib_money;
