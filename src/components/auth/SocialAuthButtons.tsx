@@ -5,6 +5,7 @@ import { api } from '@convex/_generated/api';
 import { Loader2 } from 'lucide-react';
 import { useState } from 'react';
 import { toast } from 'sonner';
+import { authCallbackUrl } from '@/lib/authSession';
 
 type SocialProvider = 'twitter' | 'discord';
 
@@ -25,7 +26,8 @@ export function SocialAuthButtons({
   const start = async (provider: SocialProvider) => {
     setPending(provider);
     try {
-      await signIn(provider, { redirectTo });
+      // Must match Convex SITE_URL origin (dev deploy uses http://127.0.0.1:8080 locally).
+      await signIn(provider, { redirectTo: authCallbackUrl(redirectTo) });
     } catch (err) {
       toast.error(
         err instanceof Error

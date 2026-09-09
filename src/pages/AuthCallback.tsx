@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { useMutation } from 'convex/react';
+import { useConvexAuth, useMutation } from 'convex/react';
 import { api } from '../../convex/_generated/api';
 import { useAuth } from '@/contexts/AuthContext';
 import { homePathForRole } from '@/lib/roles';
@@ -17,6 +17,7 @@ import { toast } from 'sonner';
 const AuthCallback = () => {
   const navigate = useNavigate();
   const { refreshRole, clearDevBypass } = useAuth();
+  const { isLoading: authLoading } = useConvexAuth();
   const authReady = useConvexAuthReady();
   const ensureUser = useMutation(api.users.queries.ensureUser);
   const [error, setError] = useState<string | null>(null);
@@ -47,11 +48,14 @@ const AuthCallback = () => {
     }
   }, [authReady, clearDevBypass, ensureUser, navigate, refreshRole]);
 
+  // Wait until Convex Auth finishes the initial OAuth code exchange before starting
+  // (avoids racing an empty session on first paint).
   useEffect(() => {
     if (autoStarted.current) return;
+    if (authLoading) return;
     autoStarted.current = true;
     void finishSignIn();
-  }, [finishSignIn]);
+  }, [authLoading, finishSignIn]);
 
   return (
     <main id="main-content" className="min-h-screen flex items-center justify-center bg-background px-4">
