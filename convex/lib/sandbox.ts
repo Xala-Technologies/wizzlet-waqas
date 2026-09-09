@@ -1,15 +1,29 @@
 import { ConvexError } from "convex/values";
+import {
+  assertProductionSafeEnv,
+  isSandboxFlagEnabled,
+} from "./envGuards";
 
 /**
  * Server-side sandbox gate. Never trust a client boolean.
- * Set ALLOW_SANDBOX_CHECKOUT=true on the Convex deployment for non-prod.
+ * Set ALLOW_SANDBOX_CHECKOUT=true on the Convex deployment for non-prod only.
  */
 export function assertSandboxEnabled(): void {
-  if (process.env.ALLOW_SANDBOX_CHECKOUT !== "true") {
+  assertProductionSafeEnv();
+  if (!isSandboxFlagEnabled()) {
     throw new ConvexError("SANDBOX_DISABLED");
   }
 }
 
 export function isSandboxEnabled(): boolean {
-  return process.env.ALLOW_SANDBOX_CHECKOUT === "true";
+  if (isSandboxFlagEnabled()) {
+    // Still refuse if production-shaped (assert would throw; treat as disabled for reads).
+    try {
+      assertProductionSafeEnv();
+      return true;
+    } catch {
+      return false;
+    }
+  }
+  return false;
 }

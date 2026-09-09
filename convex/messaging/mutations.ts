@@ -53,7 +53,7 @@ export const send = mutation({
       subscriberHasActiveSub,
       body: args.body,
     });
-    if (!decision.ok) {
+    if (decision.ok === false) {
       throw new ConvexError(decision.reason);
     }
 

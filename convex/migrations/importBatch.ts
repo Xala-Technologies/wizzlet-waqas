@@ -4,8 +4,10 @@ import type { Id } from "../_generated/dataModel";
 import type { AppRole } from "../lib/auth";
 import { dollarsToCents } from "../lib/money";
 import { normalizePickResult } from "../lib/results";
+import { assertProductionSafeEnv } from "../lib/envGuards";
 
 function assertMigrationSecret(secret: string) {
+  assertProductionSafeEnv();
   const expected = process.env.MIGRATION_SECRET;
   if (!expected || secret !== expected) {
     throw new Error("FORBIDDEN_MIGRATION");

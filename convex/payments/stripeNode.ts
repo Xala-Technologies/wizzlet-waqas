@@ -8,6 +8,7 @@ import { internal } from "../_generated/api";
 import type { Id } from "../_generated/dataModel";
 import { isStripeAlreadyCanceledError } from "../lib/commerceIdentity";
 import { stripeCouponDuration } from "../lib/promoCodes";
+import { resolveSiteUrl } from "../lib/envGuards";
 
 function requireStripe(): Stripe {
   const key = process.env.STRIPE_SECRET_KEY;
@@ -16,7 +17,7 @@ function requireStripe(): Stripe {
 }
 
 function siteUrl(): string {
-  return (process.env.SITE_URL || "http://localhost:8080").replace(/\/$/, "");
+  return resolveSiteUrl();
 }
 
 function extractStripeSubscriptionId(obj: {
