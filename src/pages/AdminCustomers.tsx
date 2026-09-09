@@ -90,7 +90,7 @@ const AdminCustomers = () => {
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
             <Input placeholder="Search loaded customers…" value={search} onChange={(e) => setSearch(e.target.value)} className="pl-9 h-11 sm:h-9" />
           </div>
-          <Button variant="outline" size="sm" className="h-11 sm:h-9 text-xs w-full sm:w-auto" onClick={handleExport}>
+          <Button variant="outline" size="sm" className="h-11 sm:h-9 text-caption w-full sm:w-auto" onClick={handleExport}>
             <Download className="mr-1.5 h-3.5 w-3.5" /> Export
           </Button>
         </div>
@@ -98,23 +98,23 @@ const AdminCustomers = () => {
 
       <div className="grid grid-cols-2 lg:grid-cols-5 gap-4 mb-6">
         <div className="rounded-xl border border-border bg-card p-4">
-          <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1">Loaded</p>
+          <p className="text-caption text-muted-foreground uppercase tracking-wider mb-1">Loaded</p>
           <p className="text-xl font-bold">{customers.length}</p>
         </div>
         <div className="rounded-xl border border-border bg-card p-4">
-          <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1">Active Subs</p>
+          <p className="text-caption text-muted-foreground uppercase tracking-wider mb-1">Active Subs</p>
           <p className="text-xl font-bold text-emerald-400">{customers.reduce((a, c) => a + c.activeCount, 0)}</p>
         </div>
         <div className="rounded-xl border border-border bg-card p-4">
-          <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1">Revenue (loaded)</p>
+          <p className="text-caption text-muted-foreground uppercase tracking-wider mb-1">Revenue (loaded)</p>
           <p className="text-xl font-bold">${customers.reduce((a, c) => a + c.totalSpent, 0).toFixed(0)}</p>
         </div>
         <div className="rounded-xl border border-amber-500/20 bg-amber-500/5 p-4">
-          <div className="flex items-center gap-1 mb-1"><AlertTriangle className="h-3 w-3 text-amber-400" /><p className="text-xs text-muted-foreground uppercase tracking-wider">At Risk (loaded)</p></div>
+          <div className="flex items-center gap-1 mb-1"><AlertTriangle className="h-3 w-3 text-amber-400" /><p className="text-caption text-muted-foreground uppercase tracking-wider">At Risk (loaded)</p></div>
           <p className="text-xl font-bold text-amber-400">{atRisk}</p>
         </div>
         <div className="rounded-xl border border-destructive/20 bg-destructive/5 p-4">
-          <div className="flex items-center gap-1 mb-1"><TrendingDown className="h-3 w-3 text-destructive" /><p className="text-xs text-muted-foreground uppercase tracking-wider">Churned (loaded)</p></div>
+          <div className="flex items-center gap-1 mb-1"><TrendingDown className="h-3 w-3 text-destructive" /><p className="text-caption text-muted-foreground uppercase tracking-wider">Churned (loaded)</p></div>
           <p className="text-xl font-bold text-destructive">{recentlyChurned}</p>
         </div>
       </div>
@@ -133,22 +133,22 @@ const AdminCustomers = () => {
               <li key={c.id} className="rounded-xl border border-border bg-card p-4 space-y-3">
                 <div className="min-w-0">
                   <p className="text-sm font-medium truncate">{c.full_name ?? 'Unknown'}</p>
-                  <p className="text-xs text-muted-foreground truncate mt-0.5">{c.email}</p>
+                  <p className="text-caption text-muted-foreground truncate mt-0.5">{c.email}</p>
                 </div>
                 <div className="flex flex-wrap items-center gap-2">
                   {c.activeCount > 0 ? (
-                    <Badge variant="outline" className="text-[10px] bg-emerald-500/10 text-emerald-400 border-emerald-500/20"><CheckCircle2 className="h-2.5 w-2.5 mr-1" />Active</Badge>
+                    <Badge variant="outline" className="text-caption bg-emerald-500/10 text-emerald-400 border-emerald-500/20"><CheckCircle2 className="h-2.5 w-2.5 mr-1" />Active</Badge>
                   ) : c.canceledCount > 0 ? (
-                    <Badge variant="outline" className="text-[10px] bg-destructive/10 text-destructive border-destructive/20"><XCircle className="h-2.5 w-2.5 mr-1" />Canceled</Badge>
+                    <Badge variant="outline" className="text-caption bg-destructive/10 text-destructive border-destructive/20"><XCircle className="h-2.5 w-2.5 mr-1" />Canceled</Badge>
                   ) : (
-                    <span className="text-xs text-muted-foreground">No subs</span>
+                    <span className="text-caption text-muted-foreground">No subs</span>
                   )}
-                  <span className="text-xs text-muted-foreground">{c.subCount} subs · ${c.totalSpent.toFixed(2)}</span>
+                  <span className="text-caption text-muted-foreground">{c.subCount} subs · ${c.totalSpent.toFixed(2)}</span>
                 </div>
-                <p className="text-xs text-muted-foreground">Last activity {format(new Date(c.lastActivity), 'MMM d, yyyy')}</p>
+                <p className="text-caption text-muted-foreground">Last activity {format(new Date(c.lastActivity), 'MMM d, yyyy')}</p>
                 <div className="flex gap-2">
-                  <Button variant="outline" size="sm" className="h-11 flex-1 text-xs" onClick={() => setSelected(c)}><Eye className="mr-1.5 h-3.5 w-3.5" /> Details</Button>
-                  <Button variant="outline" size="sm" className="h-11 flex-1 text-xs" onClick={() => navigate('/admin/customer-email?audience=active')}><Mail className="mr-1.5 h-3.5 w-3.5" /> Announce</Button>
+                  <Button variant="outline" size="sm" className="h-11 flex-1 text-caption" onClick={() => setSelected(c)}><Eye className="mr-1.5 h-3.5 w-3.5" /> Details</Button>
+                  <Button variant="outline" size="sm" className="h-11 flex-1 text-caption" onClick={() => navigate('/admin/customer-email?audience=active')}><Mail className="mr-1.5 h-3.5 w-3.5" /> Announce</Button>
                 </div>
               </li>
             ))}
@@ -158,36 +158,36 @@ const AdminCustomers = () => {
             <table className="w-full min-w-[640px] text-sm">
               <thead>
                 <tr className="border-b border-border bg-muted/30">
-                  <th className="text-left text-xs font-medium text-muted-foreground p-4">Name</th>
-                  <th className="text-left text-xs font-medium text-muted-foreground p-4">Email</th>
-                  <th className="text-left text-xs font-medium text-muted-foreground p-4">Subs</th>
-                  <th className="text-left text-xs font-medium text-muted-foreground p-4">Status</th>
-                  <th className="text-left text-xs font-medium text-muted-foreground p-4">Total Spent</th>
-                  <th className="text-left text-xs font-medium text-muted-foreground p-4">Last Activity</th>
-                  <th className="text-right text-xs font-medium text-muted-foreground p-4">Actions</th>
+                  <th className="text-left text-caption font-medium text-muted-foreground p-4">Name</th>
+                  <th className="text-left text-caption font-medium text-muted-foreground p-4">Email</th>
+                  <th className="text-left text-caption font-medium text-muted-foreground p-4">Subs</th>
+                  <th className="text-left text-caption font-medium text-muted-foreground p-4">Status</th>
+                  <th className="text-left text-caption font-medium text-muted-foreground p-4">Total Spent</th>
+                  <th className="text-left text-caption font-medium text-muted-foreground p-4">Last Activity</th>
+                  <th className="text-right text-caption font-medium text-muted-foreground p-4">Actions</th>
                 </tr>
               </thead>
               <tbody>
                 {filtered.map((c) => (
                   <tr key={c.id} className="border-b border-border last:border-0 hover:bg-muted/20 transition-colors">
                     <td className="p-4 font-medium">{c.full_name ?? 'Unknown'}</td>
-                    <td className="p-4 text-muted-foreground text-xs">{c.email}</td>
+                    <td className="p-4 text-muted-foreground text-caption">{c.email}</td>
                     <td className="p-4 font-medium">{c.subCount}</td>
                     <td className="p-4">
                       {c.activeCount > 0 ? (
-                        <Badge variant="outline" className="text-[10px] bg-emerald-500/10 text-emerald-400 border-emerald-500/20"><CheckCircle2 className="h-2.5 w-2.5 mr-1" />Active</Badge>
+                        <Badge variant="outline" className="text-caption bg-emerald-500/10 text-emerald-400 border-emerald-500/20"><CheckCircle2 className="h-2.5 w-2.5 mr-1" />Active</Badge>
                       ) : c.canceledCount > 0 ? (
-                        <Badge variant="outline" className="text-[10px] bg-destructive/10 text-destructive border-destructive/20"><XCircle className="h-2.5 w-2.5 mr-1" />Canceled</Badge>
+                        <Badge variant="outline" className="text-caption bg-destructive/10 text-destructive border-destructive/20"><XCircle className="h-2.5 w-2.5 mr-1" />Canceled</Badge>
                       ) : (
-                        <span className="text-xs text-muted-foreground">No subs</span>
+                        <span className="text-caption text-muted-foreground">No subs</span>
                       )}
                     </td>
                     <td className="p-4 font-medium">${c.totalSpent.toFixed(2)}</td>
-                    <td className="p-4 text-xs text-muted-foreground">{format(new Date(c.lastActivity), 'MMM d, yyyy')}</td>
+                    <td className="p-4 text-caption text-muted-foreground">{format(new Date(c.lastActivity), 'MMM d, yyyy')}</td>
                     <td className="p-4">
                       <div className="flex items-center justify-end gap-1">
-                        <Button variant="ghost" size="sm" className="h-9 w-9 px-0 text-xs" onClick={() => setSelected(c)} title="View details" aria-label="View details"><Eye className="h-3.5 w-3.5" /></Button>
-                        <Button variant="ghost" size="sm" className="h-9 w-9 px-0 text-xs" onClick={() => navigate('/admin/customer-email?audience=active')} title="Announce to customers" aria-label="Announce to customers"><Mail className="h-3.5 w-3.5" /></Button>
+                        <Button variant="ghost" size="sm" className="h-9 w-9 px-0 text-caption" onClick={() => setSelected(c)} title="View details" aria-label="View details"><Eye className="h-3.5 w-3.5" /></Button>
+                        <Button variant="ghost" size="sm" className="h-9 w-9 px-0 text-caption" onClick={() => navigate('/admin/customer-email?audience=active')} title="Announce to customers" aria-label="Announce to customers"><Mail className="h-3.5 w-3.5" /></Button>
                       </div>
                     </td>
                   </tr>

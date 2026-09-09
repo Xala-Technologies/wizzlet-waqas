@@ -1,4 +1,4 @@
-# Wizzlet Roadmap
+# Prizelet Roadmap
 
 ## Open Tasks
 - [ ] Non-functional controls left: Admin Users/Customers row actions, Creator Settings Discord/X connect, CSV import buttons (creator tracker + My Results), 2FA setup.

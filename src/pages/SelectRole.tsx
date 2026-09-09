@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { WizzletLogo } from '@/components/WizzletLogo';
+import { PrizeletLogo } from '@/components/PrizeletLogo';
 import { Seo } from '@/components/Seo';
 import { Navigate, useNavigate } from 'react-router-dom';
 import { useMutation } from 'convex/react';
@@ -68,23 +68,23 @@ const SelectRole = () => {
       id: 'creator' as const,
       icon: Crown,
       title: 'Become a Creator',
-      description: 'Share your sports picks, build an audience, and earn from subscriptions.',
+      description: 'Publish premium content, build an audience, and earn from subscriptions.',
     },
     {
       id: 'subscriber' as const,
       icon: Users,
       title: 'Continue as Subscriber',
-      description: 'Follow top creators and access premium sports picks and content.',
+      description: 'Follow top creators and access their premium content.',
     },
   ];
 
   return (
     <main id="main-content" className="min-h-screen flex items-center justify-center px-4">
-      <Seo title="Choose your role — Wizzlet" description="Choose whether to join Wizzlet as a creator or subscriber." noindex />
+      <Seo title="Choose your role — Prizelet" description="Choose whether to join Prizelet as a creator or subscriber." noindex />
       <div className="w-full max-w-lg">
         <div className="text-center mb-10">
-          <WizzletLogo size="lg" linkTo="" className="justify-center mb-6" />
-          <h1 className="text-2xl font-bold mt-4">How do you want to use Wizzlet?</h1>
+          <PrizeletLogo size="lg" linkTo="" className="justify-center mb-6" />
+          <h1 className="text-2xl font-bold mt-4">How do you want to use Prizelet?</h1>
           <p className="text-sm text-muted-foreground mt-2">You can always change this later</p>
         </div>
 

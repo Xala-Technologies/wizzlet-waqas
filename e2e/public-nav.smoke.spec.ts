@@ -16,7 +16,7 @@ test.describe("J9 public navigation smoke", () => {
   test("login shows platform owner bootstrap in DEV", async ({ page }) => {
     await page.goto("/login");
     await expect(page.getByRole("heading", { name: /welcome back/i })).toBeVisible();
-    await expect(page.getByText("admin@wizzlet.dev")).toBeVisible();
+    await expect(page.getByText("admin@prizelet.dev")).toBeVisible();
     await expect(page.getByRole("button", { name: /sign in as platform owner/i })).toBeVisible();
   });
 });

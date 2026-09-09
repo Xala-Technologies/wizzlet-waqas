@@ -12,6 +12,7 @@ import {
 } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { toast } from 'sonner';
+import { MessageSeenReceipt } from '@/components/messaging/MessageSeenReceipt';
 
 interface Metrics {
   revenue30: number;
@@ -40,10 +41,12 @@ const CreatorPersonalGrowth = () => {
   const analytics = useQuery(api.analytics.mutations.listForMyCreator);
   const supportRows = useQuery(api.support.mutations.listForMyCreator);
   const sendSupport = useMutation(api.support.mutations.send);
+  const markReadSupport = useMutation(api.support.mutations.markReadCreator);
 
   const [input, setInput] = useState('');
   const [sending, setSending] = useState(false);
   const endRef = useRef<HTMLDivElement>(null);
+  const markedRef = useRef<Set<string>>(new Set());
 
   const sinceMs = Date.now() - 30 * 24 * 60 * 60 * 1000;
 
@@ -55,10 +58,22 @@ const CreatorPersonalGrowth = () => {
         id: m._id,
         sender_role: m.senderRole,
         body: m.body,
+        read: m.read,
         created_at: new Date(m.createdAt).toISOString(),
       })),
     [supportRows],
   );
+
+  useEffect(() => {
+    const unreadIds = messages
+      .filter((m) => m.sender_role === 'admin' && !m.read && !markedRef.current.has(m.id))
+      .map((m) => m.id);
+    if (unreadIds.length === 0) return;
+    unreadIds.forEach((id) => markedRef.current.add(id));
+    void markReadSupport({ messageIds: unreadIds as Id<'supportMessages'>[] }).catch(() => {
+      unreadIds.forEach((id) => markedRef.current.delete(id));
+    });
+  }, [messages, markReadSupport]);
 
   const metrics = useMemo(() => {
     if (!subs || !posts || !analytics) return EMPTY;
@@ -153,7 +168,7 @@ const CreatorPersonalGrowth = () => {
     <DashboardLayout type="creator">
       <div className="mb-6">
         <h1 className="text-2xl font-bold">Personal Growth Manager</h1>
-        <p className="text-muted-foreground text-sm mt-0.5">Live performance coaching from your Wizzlet growth team</p>
+        <p className="text-muted-foreground text-sm mt-0.5">Live performance coaching from your Prizelet growth team</p>
       </div>
 
       {busy ? (
@@ -174,8 +189,8 @@ const CreatorPersonalGrowth = () => {
                 <Bot className="h-5 w-5 text-primary" />
               </div>
               <div className="flex-1 min-w-0">
-                <h2 className="font-semibold text-sm">Wizzlet Growth Team</h2>
-                <p className="text-[11px] text-muted-foreground mt-0.5">
+                <h2 className="font-semibold text-sm">Prizelet Growth Team</h2>
+                <p className="text-caption text-muted-foreground mt-0.5">
                   Ask about pricing, retention or content — replies arrive in this thread.
                 </p>
               </div>
@@ -201,9 +216,12 @@ const CreatorPersonalGrowth = () => {
                       msg.sender_role === 'creator' ? 'bg-primary text-primary-foreground' : 'bg-muted/60 text-foreground'
                     }`}>
                       <p className="whitespace-pre-line">{msg.body}</p>
-                      <p className={`text-[10px] mt-1 ${msg.sender_role === 'creator' ? 'text-primary-foreground/60' : 'text-muted-foreground'}`}>
-                        {formatDistanceToNow(new Date(msg.created_at), { addSuffix: true })}
-                      </p>
+                      <div className={`mt-1 flex items-center justify-between gap-2 text-caption ${msg.sender_role === 'creator' ? 'text-primary-foreground/60' : 'text-muted-foreground'}`}>
+                        <span>{formatDistanceToNow(new Date(msg.created_at), { addSuffix: true })}</span>
+                        {msg.sender_role === 'creator' && (
+                          <MessageSeenReceipt seen={msg.read === true} light />
+                        )}
+                      </div>
                     </div>
                     {msg.sender_role === 'creator' && (
                       <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-secondary mt-0.5">
@@ -220,7 +238,7 @@ const CreatorPersonalGrowth = () => {
                   <button
                     key={q}
                     onClick={() => setInput(q)}
-                    className="px-2.5 py-1 rounded-lg text-[11px] font-medium text-muted-foreground hover:text-foreground hover:bg-muted/60 transition-colors border border-border"
+                    className="px-2.5 py-1 rounded-lg text-caption font-medium text-muted-foreground hover:text-foreground hover:bg-muted/60 transition-colors border border-border"
                   >
                     {q}
                   </button>
@@ -245,8 +263,8 @@ const CreatorPersonalGrowth = () => {
           <div className="space-y-4">
             <div className="rounded-xl border border-border bg-card p-5">
               <div className="flex items-center justify-between mb-3">
-                <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Performance Score (estimate)</h3>
-                <span className={`text-[10px] font-bold uppercase tracking-wider ${scoreColor(metrics.score)}`}>
+                <h3 className="text-caption font-semibold uppercase tracking-wider text-muted-foreground">Performance Score (estimate)</h3>
+                <span className={`text-caption font-bold uppercase tracking-wider ${scoreColor(metrics.score)}`}>
                   {scoreLevel(metrics.score)}
                 </span>
               </div>
@@ -258,10 +276,10 @@ const CreatorPersonalGrowth = () => {
                   </svg>
                   <span className={`absolute text-xl font-bold ${scoreColor(metrics.score)}`}>{metrics.score}</span>
                 </div>
-                <div className="text-xs text-muted-foreground space-y-1">
+                <div className="text-caption text-muted-foreground space-y-1">
                   <p><span className="text-foreground font-medium">{metrics.activeSubs}</span> active subscribers</p>
                   <p className="flex items-center gap-1"><ArrowUpRight className="h-3 w-3" /> {metrics.newSubs30} new in 30 days</p>
-                  <p className="text-[10px] text-muted-foreground/80">Heuristic estimate from recent activity — not a platform rating.</p>
+                  <p className="text-caption text-muted-foreground/80">Heuristic estimate from recent activity — not a platform rating.</p>
                 </div>
               </div>
               <div className="space-y-2">
@@ -271,16 +289,16 @@ const CreatorPersonalGrowth = () => {
                   { label: 'Revenue', value: metrics.revenueScore },
                 ].map(m => (
                   <div key={m.label} className="flex items-center gap-3">
-                    <span className="text-[11px] text-muted-foreground w-20">{m.label}</span>
+                    <span className="text-caption text-muted-foreground w-20">{m.label}</span>
                     <Progress value={m.value} className="flex-1 h-1.5" />
-                    <span className="text-[11px] font-medium w-8 text-right">{m.value}</span>
+                    <span className="text-caption font-medium w-8 text-right">{m.value}</span>
                   </div>
                 ))}
               </div>
             </div>
 
             <div className="rounded-xl border border-border bg-card p-5">
-              <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-3">Last 30 Days</h3>
+              <h3 className="text-caption font-semibold uppercase tracking-wider text-muted-foreground mb-3">Last 30 Days</h3>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 {[
                   { label: 'Earnings', value: `$${metrics.revenue30.toFixed(2)}` },
@@ -289,7 +307,7 @@ const CreatorPersonalGrowth = () => {
                   { label: 'New Subs', value: `${metrics.newSubs30}` },
                 ].map(m => (
                   <div key={m.label} className="p-3 rounded-lg bg-muted/30">
-                    <p className="text-[10px] text-muted-foreground uppercase">{m.label}</p>
+                    <p className="text-caption text-muted-foreground uppercase">{m.label}</p>
                     <p className="text-lg font-bold mt-0.5">{m.value}</p>
                   </div>
                 ))}
@@ -297,15 +315,15 @@ const CreatorPersonalGrowth = () => {
             </div>
 
             <div className="rounded-xl border border-border bg-card p-5">
-              <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-3 flex items-center gap-2">
+              <h3 className="text-caption font-semibold uppercase tracking-wider text-muted-foreground mb-3 flex items-center gap-2">
                 <Zap className="h-3 w-3 text-primary" /> Growth Insights
               </h3>
               {insights.length === 0 ? (
-                <p className="text-xs text-muted-foreground">Publish picks and gather subscribers to unlock insights.</p>
+                <p className="text-caption text-muted-foreground">Publish picks and gather subscribers to unlock insights.</p>
               ) : (
                 <div className="space-y-2.5">
                   {insights.map((insight, i) => (
-                    <div key={i} className="flex items-start gap-2.5 text-xs">
+                    <div key={i} className="flex items-start gap-2.5 text-caption">
                       <insight.icon className={`h-3.5 w-3.5 mt-0.5 shrink-0 ${insight.trend === 'up' ? 'text-emerald-500' : 'text-amber-500'}`} />
                       <span className="text-muted-foreground">{insight.text}</span>
                     </div>

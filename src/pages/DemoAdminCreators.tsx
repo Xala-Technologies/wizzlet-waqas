@@ -72,7 +72,7 @@ const DemoAdminCreators = () => {
     sortKey !== k ? <ArrowUpDown className="h-3 w-3 opacity-40" /> : sortDir === 'asc' ? <ArrowUp className="h-3 w-3" /> : <ArrowDown className="h-3 w-3" />;
 
   const exportCsv = () => {
-    downloadCsv('wizzlet-creators.csv', [
+    downloadCsv('prizelet-creators.csv', [
       ['Creator', 'Username', 'Email', 'Subscribers', 'Volume', 'Fees', 'Fee %', 'Transactions', 'Status'],
       ...filtered.map(({ creator, row }) => [
         creator.name, creator.username, creator.email, creator.subs,
@@ -108,7 +108,7 @@ const DemoAdminCreators = () => {
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
             <Input placeholder="Search creators…" value={search} onChange={e => setSearch(e.target.value)} className="pl-9 h-9" />
           </div>
-          <Button variant="outline" size="sm" className="text-xs h-9" onClick={exportCsv}><Download className="mr-1.5 h-3.5 w-3.5" /> Export</Button>
+          <Button variant="outline" size="sm" className="text-caption h-9" onClick={exportCsv}><Download className="mr-1.5 h-3.5 w-3.5" /> Export</Button>
         </div>
       </div>
 
@@ -116,10 +116,10 @@ const DemoAdminCreators = () => {
         {statCards.map(({ icon: Icon, label, value, sub }) => (
           <div key={label} className="rounded-xl border border-border bg-card p-4">
             <div className="flex items-center gap-2 text-muted-foreground mb-1">
-              <Icon className="h-3.5 w-3.5" /><span className="text-xs">{label}</span>
+              <Icon className="h-3.5 w-3.5" /><span className="text-caption">{label}</span>
             </div>
             <p className="text-lg font-bold">{value}</p>
-            <p className="text-[11px] text-muted-foreground">{sub}</p>
+            <p className="text-caption text-muted-foreground">{sub}</p>
           </div>
         ))}
       </div>
@@ -128,18 +128,18 @@ const DemoAdminCreators = () => {
         <div className="rounded-xl border border-primary/20 bg-card p-5 mb-6">
           <h2 className="text-sm font-medium mb-3 flex items-center gap-2">
             <UserPlus className="h-4 w-4 text-primary" /> Pending Applications
-            <Badge variant="outline" className="text-[10px]">{state.applications.length}</Badge>
+            <Badge variant="outline" className="text-caption">{state.applications.length}</Badge>
           </h2>
           <div className="space-y-2">
             {state.applications.map(a => (
               <div key={a.id} className="flex flex-wrap items-center gap-3 rounded-lg border border-border p-3">
                 <div className="min-w-0 flex-1">
-                  <p className="text-sm font-medium">{a.name} <span className="text-xs text-muted-foreground">@{a.username}</span></p>
-                  <p className="text-xs text-muted-foreground">{a.pitch}</p>
-                  <p className="text-[10px] text-muted-foreground mt-0.5">Applied {a.appliedDaysAgo}d ago · {a.email}</p>
+                  <p className="text-sm font-medium">{a.name} <span className="text-caption text-muted-foreground">@{a.username}</span></p>
+                  <p className="text-caption text-muted-foreground">{a.pitch}</p>
+                  <p className="text-caption text-muted-foreground mt-0.5">Applied {a.appliedDaysAgo}d ago · {a.email}</p>
                 </div>
-                <Button size="sm" className="h-7 text-xs" onClick={() => { store.approveApplication(a.id); toast.success(`${a.name} approved — now an active creator`); }}>Approve</Button>
-                <Button size="sm" variant="outline" className="h-7 text-xs" onClick={() => { store.rejectApplication(a.id); toast.info(`${a.name} rejected`); }}>Reject</Button>
+                <Button size="sm" className="h-7 text-caption" onClick={() => { store.approveApplication(a.id); toast.success(`${a.name} approved — now an active creator`); }}>Approve</Button>
+                <Button size="sm" variant="outline" className="h-7 text-caption" onClick={() => { store.rejectApplication(a.id); toast.info(`${a.name} rejected`); }}>Reject</Button>
               </div>
             ))}
           </div>
@@ -151,7 +151,7 @@ const DemoAdminCreators = () => {
           <button
             key={s}
             onClick={() => setStatus(s)}
-            className={`px-3 py-1.5 rounded-lg text-xs font-medium capitalize transition-colors ${
+            className={`px-3 py-1.5 rounded-lg text-caption font-medium capitalize transition-colors ${
               status === s ? 'bg-primary/10 text-primary' : 'text-muted-foreground hover:text-foreground hover:bg-muted/60'
             }`}
           >{s} ({counts[s]})</button>
@@ -163,22 +163,22 @@ const DemoAdminCreators = () => {
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-border bg-muted/30">
-                <th className="text-left text-xs font-medium text-muted-foreground p-4">
+                <th className="text-left text-caption font-medium text-muted-foreground p-4">
                   <button className="inline-flex items-center gap-1 py-1.5 -my-1.5" onClick={() => toggleSort('name')}>Creator <SortIcon k="name" /></button>
                 </th>
-                <th className="text-left text-xs font-medium text-muted-foreground p-4">
+                <th className="text-left text-caption font-medium text-muted-foreground p-4">
                   <button className="inline-flex items-center gap-1 py-1.5 -my-1.5" onClick={() => toggleSort('subs')}>Subscribers <SortIcon k="subs" /></button>
                 </th>
-                <th className="text-left text-xs font-medium text-muted-foreground p-4">
+                <th className="text-left text-caption font-medium text-muted-foreground p-4">
                   <button className="inline-flex items-center gap-1 py-1.5 -my-1.5" onClick={() => toggleSort('volume')}>Volume <SortIcon k="volume" /></button>
                 </th>
-                <th className="text-left text-xs font-medium text-muted-foreground p-4">
+                <th className="text-left text-caption font-medium text-muted-foreground p-4">
                   <button className="inline-flex items-center gap-1 py-1.5 -my-1.5" onClick={() => toggleSort('fees')}>Fees <SortIcon k="fees" /></button>
                 </th>
-                <th className="text-left text-xs font-medium text-muted-foreground p-4">Fee tier</th>
-                <th className="text-left text-xs font-medium text-muted-foreground p-4">Status</th>
-                <th className="text-left text-xs font-medium text-muted-foreground p-4">Joined</th>
-                <th className="text-right text-xs font-medium text-muted-foreground p-4">Actions</th>
+                <th className="text-left text-caption font-medium text-muted-foreground p-4">Fee tier</th>
+                <th className="text-left text-caption font-medium text-muted-foreground p-4">Status</th>
+                <th className="text-left text-caption font-medium text-muted-foreground p-4">Joined</th>
+                <th className="text-right text-caption font-medium text-muted-foreground p-4">Actions</th>
               </tr>
             </thead>
             <tbody>
@@ -192,34 +192,34 @@ const DemoAdminCreators = () => {
                       {c.name}
                       {c.featured && <Star className="h-3 w-3 text-amber-500 fill-amber-500" />}
                     </p>
-                    <p className="text-xs text-muted-foreground">@{c.username} · {c.email}</p>
+                    <p className="text-caption text-muted-foreground">@{c.username} · {c.email}</p>
                   </td>
                   <td className="p-4 font-medium">{c.subs}</td>
                   <td className="p-4 font-medium">{money(row?.volume ?? 0)}</td>
                   <td className="p-4 font-medium">{money(row?.fees ?? 0)}</td>
                   <td className="p-4">
-                    <Badge variant="outline" className="text-[10px]">{feeTierLabel(c)}</Badge>
+                    <Badge variant="outline" className="text-caption">{feeTierLabel(c)}</Badge>
                   </td>
                   <td className="p-4">
                     {c.active
-                      ? <span className="inline-flex items-center gap-1 text-xs font-medium text-emerald-500"><CheckCircle2 className="h-3 w-3" /> Active</span>
-                      : <span className="inline-flex items-center gap-1 text-xs font-medium text-destructive"><XCircle className="h-3 w-3" /> Disabled</span>}
+                      ? <span className="inline-flex items-center gap-1 text-caption font-medium text-emerald-500"><CheckCircle2 className="h-3 w-3" /> Active</span>
+                      : <span className="inline-flex items-center gap-1 text-caption font-medium text-destructive"><XCircle className="h-3 w-3" /> Disabled</span>}
                   </td>
-                  <td className="p-4 text-xs text-muted-foreground">{format(new Date(Date.now() - c.joinedDaysAgo * 86400000), 'MMM d, yyyy')}</td>
+                  <td className="p-4 text-caption text-muted-foreground">{format(new Date(Date.now() - c.joinedDaysAgo * 86400000), 'MMM d, yyyy')}</td>
                   <td className="p-4">
                     <div className="flex items-center justify-end gap-1">
-                      <Button variant="ghost" size="sm" className="h-7 px-2 text-xs" title="View details" onClick={() => setDetailId(c.id)}>
+                      <Button variant="ghost" size="sm" className="h-7 px-2 text-caption" title="View details" onClick={() => setDetailId(c.id)}>
                         <Eye className="h-3 w-3" />
                       </Button>
                       <Button
-                        variant="ghost" size="sm" className="h-7 px-2 text-xs"
+                        variant="ghost" size="sm" className="h-7 px-2 text-caption"
                         title={c.featured ? 'Unfeature' : 'Feature'}
                         onClick={() => { store.toggleCreatorFeatured(c.id); toast.success(c.featured ? `${c.name} unfeatured` : `${c.name} featured`); }}
                       >
                         <Star className={`h-3 w-3 ${c.featured ? 'text-amber-500 fill-amber-500' : 'text-muted-foreground'}`} />
                       </Button>
                       <Button
-                        variant="ghost" size="sm" className="h-7 px-2 text-xs"
+                        variant="ghost" size="sm" className="h-7 px-2 text-caption"
                         title={c.active ? 'Disable' : 'Re-enable'}
                         onClick={() => setConfirmCreator(c)}
                       >
@@ -244,8 +244,8 @@ const DemoAdminCreators = () => {
                   {detail.name}
                   {detail.featured && <Star className="h-4 w-4 text-amber-500 fill-amber-500" />}
                   {detail.active
-                    ? <Badge variant="outline" className="text-[10px] text-emerald-500 border-emerald-500/30">Active</Badge>
-                    : <Badge variant="outline" className="text-[10px] text-destructive border-destructive/30">Disabled</Badge>}
+                    ? <Badge variant="outline" className="text-caption text-emerald-500 border-emerald-500/30">Active</Badge>
+                    : <Badge variant="outline" className="text-caption text-destructive border-destructive/30">Disabled</Badge>}
                 </DialogTitle>
                 <DialogDescription>@{detail.username} · {detail.email} · joined {format(new Date(Date.now() - detail.joinedDaysAgo * 86400000), 'MMM d, yyyy')}</DialogDescription>
               </DialogHeader>
@@ -257,26 +257,26 @@ const DemoAdminCreators = () => {
                   { label: 'Fee tier', value: `${detailRow?.feePercent ?? 0}%` },
                 ].map(({ label, value }) => (
                   <div key={label} className="rounded-lg border border-border p-3">
-                    <p className="text-[10px] text-muted-foreground">{label}</p>
+                    <p className="text-caption text-muted-foreground">{label}</p>
                     <p className="text-sm font-semibold mt-0.5">{value}</p>
                   </div>
                 ))}
               </div>
               <div>
-                <p className="text-xs font-medium text-muted-foreground mb-2">Recent transactions</p>
+                <p className="text-caption font-medium text-muted-foreground mb-2">Recent transactions</p>
                 {detailTx.length === 0 ? (
-                  <p className="text-xs text-muted-foreground py-4 text-center">No transactions yet.</p>
+                  <p className="text-caption text-muted-foreground py-4 text-center">No transactions yet.</p>
                 ) : (
                   <div className="space-y-1.5 max-h-48 overflow-y-auto pr-1">
                     {detailTx.map(t => (
-                      <div key={t.id} className="flex items-center justify-between rounded-lg border border-border px-3 py-2 text-xs">
+                      <div key={t.id} className="flex items-center justify-between rounded-lg border border-border px-3 py-2 text-caption">
                         <div>
                           <p className="font-medium">{t.customer}</p>
-                          <p className="text-[10px] text-muted-foreground">{format(t.date, 'MMM d, yyyy')} · fee {money(t.fee)}</p>
+                          <p className="text-caption text-muted-foreground">{format(t.date, 'MMM d, yyyy')} · fee {money(t.fee)}</p>
                         </div>
                         <div className="text-right">
                           <p className="font-medium">{money(t.amount)}</p>
-                          <p className={`text-[10px] capitalize ${t.status === 'active' ? 'text-emerald-500' : t.status === 'refunded' ? 'text-destructive' : 'text-muted-foreground'}`}>{t.status}</p>
+                          <p className={`text-caption capitalize ${t.status === 'active' ? 'text-emerald-500' : t.status === 'refunded' ? 'text-destructive' : 'text-muted-foreground'}`}>{t.status}</p>
                         </div>
                       </div>
                     ))}

@@ -18,6 +18,17 @@ export default {
         sans: ['"DM Sans"', "system-ui", "-apple-system", "sans-serif"],
         mono: ['"JetBrains Mono"', "monospace"],
       },
+      fontSize: {
+        body: ["var(--text-body)", { lineHeight: "var(--leading-body)" }],
+        ui: ["var(--text-ui)", { lineHeight: "var(--leading-ui)" }],
+        support: ["var(--text-support)", { lineHeight: "var(--leading-support)" }],
+        caption: ["var(--text-caption)", { lineHeight: "var(--leading-caption)" }],
+        title: ["var(--text-title)", { lineHeight: "var(--leading-title)" }],
+        "title-lg": ["var(--text-title-lg)", { lineHeight: "var(--leading-title-lg)" }],
+        heading: ["var(--text-heading)", { lineHeight: "var(--leading-heading)" }],
+        "heading-lg": ["var(--text-heading-lg)", { lineHeight: "var(--leading-heading-lg)" }],
+        display: ["var(--text-display)", { lineHeight: "var(--leading-display)" }],
+      },
       colors: {
         border: "hsl(var(--border))",
         input: "hsl(var(--input))",

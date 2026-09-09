@@ -124,7 +124,7 @@ const CreatorSmartPricing = () => {
           </div>
           <div className="min-w-0">
             <p className="text-sm font-medium">Edit sellable product prices in Products</p>
-            <p className="text-xs text-muted-foreground mt-0.5">
+            <p className="text-caption text-muted-foreground mt-0.5">
               Subscription tiers and product pricing live on the Products page. Use the control below only for your featured / list monthly price.
             </p>
           </div>
@@ -138,20 +138,20 @@ const CreatorSmartPricing = () => {
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
         <div className="rounded-xl border border-border bg-card p-5">
-          <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-semibold mb-2">Current List Price</p>
+          <p className="text-caption text-muted-foreground uppercase tracking-wider font-semibold mb-2">Current List Price</p>
           <p className="text-3xl font-bold">${data.price.toFixed(2)}</p>
-          <p className="text-xs text-muted-foreground mt-1">{data.activeSubs} active subscribers</p>
+          <p className="text-caption text-muted-foreground mt-1">{data.activeSubs} active subscribers</p>
         </div>
         <div className="rounded-xl border border-primary/30 bg-card p-5 ring-1 ring-primary/10">
           <div className="flex items-center justify-between mb-2">
-            <p className="text-[10px] text-primary uppercase tracking-wider font-semibold">Suggested Range</p>
+            <p className="text-caption text-primary uppercase tracking-wider font-semibold">Suggested Range</p>
             <Zap className="h-3.5 w-3.5 text-primary" />
           </div>
           <p className="text-3xl font-bold text-primary">${suggestion.suggested.toFixed(2)}</p>
-          <p className="text-xs text-muted-foreground mt-1">Heuristic from win rate, demand and market data</p>
+          <p className="text-caption text-muted-foreground mt-1">Heuristic from win rate, demand and market data</p>
         </div>
         <div className="rounded-xl border border-border bg-card p-5">
-          <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-semibold mb-2">Illustrative Impact</p>
+          <p className="text-caption text-muted-foreground uppercase tracking-wider font-semibold mb-2">Illustrative Impact</p>
           <p className="text-lg font-semibold leading-snug mt-1">
             {suggestion.direction === 'higher'
               ? 'Exploring a higher list price'
@@ -159,7 +159,7 @@ const CreatorSmartPricing = () => {
                 ? 'Exploring a lower list price'
                 : 'Current price looks aligned'}
           </p>
-          <p className="text-xs text-muted-foreground mt-2">
+          <p className="text-caption text-muted-foreground mt-2">
             Directional only — not a projected revenue %. Actual results depend on demand and product mix.
           </p>
         </div>
@@ -167,12 +167,12 @@ const CreatorSmartPricing = () => {
 
       <div className="rounded-xl border border-border bg-card p-6 mb-6">
         <h2 className="text-sm font-medium mb-1 flex items-center gap-2"><DollarSign className="h-4 w-4 text-primary" /> Update Featured / List Price</h2>
-        <p className="text-xs text-muted-foreground mb-4">
+        <p className="text-caption text-muted-foreground mb-4">
           Applies your monthly featured price shown on your public profile and creator list. For sellable product prices, use Products.
         </p>
         <div className="flex flex-wrap items-end gap-3">
           <div>
-            <label className="text-xs text-muted-foreground">Monthly price ($)</label>
+            <label className="text-caption text-muted-foreground">Monthly price ($)</label>
             <Input type="number" min="1" step="0.01" value={priceInput} onChange={e => setPriceInput(e.target.value)} className="mt-1.5 w-40" />
           </div>
           <Button variant="hero" size="sm" onClick={savePrice} disabled={saving}>
@@ -196,7 +196,7 @@ const CreatorSmartPricing = () => {
               ['Win rate', `${data.winRate.toFixed(1)}%`],
             ].map(([label, value]) => (
               <div key={label} className="flex items-center justify-between border-b border-border last:border-0 pb-2 last:pb-0">
-                <span className="text-muted-foreground text-xs">{label}</span>
+                <span className="text-muted-foreground text-caption">{label}</span>
                 <span className="font-semibold">{value}</span>
               </div>
             ))}
@@ -208,8 +208,8 @@ const CreatorSmartPricing = () => {
           <div className="space-y-3">
             {insights.map((text, i) => (
               <div key={i} className="flex gap-3">
-                <Badge variant="outline" className="h-5 shrink-0 text-[10px]">{i + 1}</Badge>
-                <p className="text-xs text-muted-foreground leading-relaxed">{text}</p>
+                <Badge variant="outline" className="h-5 shrink-0 text-caption">{i + 1}</Badge>
+                <p className="text-caption text-muted-foreground leading-relaxed">{text}</p>
               </div>
             ))}
           </div>

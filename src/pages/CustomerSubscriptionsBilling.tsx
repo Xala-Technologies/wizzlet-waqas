@@ -148,7 +148,7 @@ const CustomerSubscriptionsBilling = () => {
         </div>
         {active.length > 0 && (
           <div className="rounded-lg border border-border bg-card px-4 py-2">
-            <p className="text-[10px] uppercase tracking-wide text-muted-foreground">Active access list-price total</p>
+            <p className="text-caption uppercase tracking-wide text-muted-foreground">Active access list-price total</p>
             <p className="text-lg font-bold">{currency(listPriceTotal)}</p>
           </div>
         )}
@@ -159,10 +159,10 @@ const CustomerSubscriptionsBilling = () => {
           <p className="font-medium text-destructive">
             {pastDueCount} subscription{pastDueCount === 1 ? '' : 's'} past due
           </p>
-          <p className="text-xs text-muted-foreground mt-1">
+          <p className="text-caption text-muted-foreground mt-1">
             Premium access is paused until payment succeeds. Use Open Billing Portal to update your card.
           </p>
-          <Button variant="outline" size="sm" className="mt-2 h-7 text-[11px]" onClick={manageBilling} disabled={portalLoading}>
+          <Button variant="outline" size="sm" className="mt-2 h-7 text-caption" onClick={manageBilling} disabled={portalLoading}>
             {portalLoading && <Loader2 className="mr-2 h-3 w-3 animate-spin" />}
             Open Billing Portal
           </Button>
@@ -170,9 +170,9 @@ const CustomerSubscriptionsBilling = () => {
       )}
       <Tabs defaultValue="subscriptions" className="space-y-4">
         <TabsList className="bg-muted/50">
-          <TabsTrigger value="subscriptions" className="text-xs">Subscriptions</TabsTrigger>
-          <TabsTrigger value="billing" className="text-xs">Charges</TabsTrigger>
-          <TabsTrigger value="payment" className="text-xs">Payment Method</TabsTrigger>
+          <TabsTrigger value="subscriptions" className="text-caption">Subscriptions</TabsTrigger>
+          <TabsTrigger value="billing" className="text-caption">Charges</TabsTrigger>
+          <TabsTrigger value="payment" className="text-caption">Payment Method</TabsTrigger>
         </TabsList>
 
         <TabsContent value="subscriptions">
@@ -184,7 +184,7 @@ const CustomerSubscriptionsBilling = () => {
             <div className="rounded-xl border border-dashed border-border bg-card/50 p-12 text-center">
               <Crown className="h-10 w-10 text-muted-foreground/40 mx-auto mb-3" />
               <h3 className="text-sm font-medium mb-1">No subscriptions yet</h3>
-              <p className="text-xs text-muted-foreground mb-4">Discover creators and subscribe to get premium picks and content.</p>
+              <p className="text-caption text-muted-foreground mb-4">Discover creators and subscribe to get premium picks and content.</p>
               <Button size="sm" onClick={() => navigate('/dashboard/discover')}>Browse Creators</Button>
             </div>
           ) : (
@@ -199,7 +199,7 @@ const CustomerSubscriptionsBilling = () => {
                     key={opt.key}
                     variant={statusFilter === opt.key ? 'default' : 'outline'}
                     size="sm"
-                    className="h-7 text-[11px]"
+                    className="h-7 text-caption"
                     onClick={() => setStatusFilter(opt.key)}
                   >
                     {opt.label}
@@ -235,21 +235,21 @@ const CustomerSubscriptionsBilling = () => {
                       </div>
                       <div className="flex-1 min-w-0">
                         <p className="text-sm font-medium truncate">{name}</p>
-                        <p className="text-[11px] text-muted-foreground">
+                        <p className="text-caption text-muted-foreground">
                           Started {format(new Date(sub.created_at), 'MMM d, yyyy')}
                           {' · '}
                           {access.detail}
                         </p>
                       </div>
                       <p className="text-sm font-semibold">{currency(Number(sub.amount) || 0)}</p>
-                      <Badge variant="outline" className={`text-[9px] ${toneClass}`}>
+                      <Badge variant="outline" className={`text-caption ${toneClass}`}>
                         {access.badge.toUpperCase()}
                       </Badge>
                       {access.hasAccess && sub.creator && (
                         <Button
                           variant="outline"
                           size="sm"
-                          className="h-7 text-[11px] text-destructive border-destructive/30 hover:bg-destructive/10"
+                          className="h-7 text-caption text-destructive border-destructive/30 hover:bg-destructive/10"
                           disabled={cancellingId === sub.creator.id}
                           onClick={() => setCancelTarget({ id: sub.creator!.id, name })}
                         >
@@ -261,7 +261,7 @@ const CustomerSubscriptionsBilling = () => {
                         <Button
                           variant="outline"
                           size="sm"
-                          className="h-7 text-[11px]"
+                          className="h-7 text-caption"
                           onClick={() => navigate(`/dashboard/messages?creatorId=${sub.creator!.id}`)}
                         >
                           <MessageSquare className="mr-1 h-3 w-3" /> Message
@@ -271,7 +271,7 @@ const CustomerSubscriptionsBilling = () => {
                         <Button
                           variant="outline"
                           size="sm"
-                          className="h-7 text-[11px]"
+                          className="h-7 text-caption"
                           onClick={manageBilling}
                           disabled={portalLoading}
                         >
@@ -293,7 +293,7 @@ const CustomerSubscriptionsBilling = () => {
                   );
                 })
               )}
-              <p className="text-[11px] text-muted-foreground pt-1">
+              <p className="text-caption text-muted-foreground pt-1">
                 Cancel ends Stripe billing and premium access for that creator immediately after confirmation.
                 Past-due subscriptions keep the record visible but block access until payment succeeds. Use Open Billing Portal for cards and invoices.
               </p>
@@ -308,7 +308,7 @@ const CustomerSubscriptionsBilling = () => {
             <div className="rounded-xl border border-dashed border-border bg-card/50 p-12 text-center">
               <FileText className="h-10 w-10 text-muted-foreground/40 mx-auto mb-3" />
               <h3 className="text-sm font-medium mb-1">No settled charges yet</h3>
-              <p className="text-xs text-muted-foreground mb-4">
+              <p className="text-caption text-muted-foreground mb-4">
                 Charges recorded after checkout appear here. Full invoices are in the billing portal.
               </p>
               <Button variant="outline" size="sm" onClick={manageBilling} disabled={portalLoading}>
@@ -318,8 +318,8 @@ const CustomerSubscriptionsBilling = () => {
             </div>
           ) : (
             <div className="space-y-3">
-              <p className="text-[11px] text-muted-foreground">
-                Settled payment events from Wizzlet. For Stripe invoices and receipts, open the billing portal.
+              <p className="text-caption text-muted-foreground">
+                Settled payment events from Prizelet. For Stripe invoices and receipts, open the billing portal.
               </p>
               <div className="rounded-xl border border-border overflow-hidden">
                 {(eventsRaw ?? []).map((item, i, arr) => (
@@ -332,10 +332,10 @@ const CustomerSubscriptionsBilling = () => {
                       <p className="text-sm font-medium truncate">
                         {item.creatorName} — {eventLabel(item.type)}
                       </p>
-                      <p className="text-[10px] text-muted-foreground">{format(new Date(item.createdAt), 'MMM d, yyyy')}</p>
+                      <p className="text-caption text-muted-foreground">{format(new Date(item.createdAt), 'MMM d, yyyy')}</p>
                     </div>
                     <p className="text-sm font-semibold">{currency(item.amountCents / 100)}</p>
-                    <Badge variant="outline" className="text-[9px] bg-emerald-500/10 text-emerald-500 border-emerald-500/20">
+                    <Badge variant="outline" className="text-caption bg-emerald-500/10 text-emerald-500 border-emerald-500/20">
                       {item.status.toUpperCase()}
                     </Badge>
                   </div>
@@ -357,8 +357,8 @@ const CustomerSubscriptionsBilling = () => {
               </div>
               <div>
                 <p className="text-sm font-medium">Payment methods are stored with our payment provider</p>
-                <p className="text-[11px] text-muted-foreground">
-                  Card details never touch Wizzlet — update them in the secure billing portal.
+                <p className="text-caption text-muted-foreground">
+                  Card details never touch Prizelet — update them in the secure billing portal.
                 </p>
               </div>
             </div>

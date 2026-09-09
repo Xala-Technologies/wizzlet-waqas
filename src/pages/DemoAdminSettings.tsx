@@ -43,11 +43,11 @@ const DemoAdminSettings = () => {
           <p className="text-muted-foreground text-sm mt-0.5">Branding, payouts and feature switches</p>
         </div>
         <div className="flex items-center gap-2">
-          {dirty && <span className="text-[11px] text-muted-foreground">Unsaved changes</span>}
+          {dirty && <span className="text-caption text-muted-foreground">Unsaved changes</span>}
           {dirty && (
-            <Button size="sm" variant="ghost" className="text-xs" onClick={() => setForm(settings)}>Discard</Button>
+            <Button size="sm" variant="ghost" className="text-caption" onClick={() => setForm(settings)}>Discard</Button>
           )}
-          <Button size="sm" className="text-xs" disabled={!dirty} onClick={save}>
+          <Button size="sm" className="text-caption" disabled={!dirty} onClick={save}>
             <Save className="mr-1.5 h-3.5 w-3.5" /> Save settings
           </Button>
         </div>
@@ -58,15 +58,15 @@ const DemoAdminSettings = () => {
           <h2 className="text-sm font-medium mb-4 flex items-center gap-2"><Building2 className="h-4 w-4 text-primary" /> Branding</h2>
           <div className="grid sm:grid-cols-2 gap-4">
             <div>
-              <Label htmlFor="set-platform-name" className="text-xs">Platform name</Label>
+              <Label htmlFor="set-platform-name" className="text-caption">Platform name</Label>
 <Input id="set-platform-name" value={form.platformName} onChange={e => setForm({ ...form, platformName: e.target.value })} className="mt-1" />
             </div>
             <div>
-              <Label htmlFor="set-support-email" className="text-xs">Support email</Label>
+              <Label htmlFor="set-support-email" className="text-caption">Support email</Label>
 <Input id="set-support-email" type="email" value={form.supportEmail} onChange={e => setForm({ ...form, supportEmail: e.target.value })} className="mt-1" />
             </div>
             <div className="sm:col-span-2">
-              <Label htmlFor="set-tagline" className="text-xs">Tagline</Label>
+              <Label htmlFor="set-tagline" className="text-caption">Tagline</Label>
 <Input id="set-tagline" value={form.tagline} onChange={e => setForm({ ...form, tagline: e.target.value })} className="mt-1" />
             </div>
           </div>
@@ -76,17 +76,17 @@ const DemoAdminSettings = () => {
           <h2 className="text-sm font-medium mb-4 flex items-center gap-2"><SlidersHorizontal className="h-4 w-4 text-primary" /> Payouts</h2>
           <div className="grid sm:grid-cols-2 gap-4 max-w-lg">
             <div>
-              <Label htmlFor="set-minimum-payout-amount" className="text-xs">Minimum payout amount ($)</Label>
+              <Label htmlFor="set-minimum-payout-amount" className="text-caption">Minimum payout amount ($)</Label>
 <Input id="set-minimum-payout-amount"
                 type="number" min="0" step="5"
                 value={form.minPayoutAmount}
                 onChange={e => setForm({ ...form, minPayoutAmount: Number(e.target.value) || 0 })}
                 className="mt-1"
               />
-              <p className="text-[11px] text-muted-foreground mt-1">Creators can only request a payout above this balance.</p>
+              <p className="text-caption text-muted-foreground mt-1">Creators can only request a payout above this balance.</p>
             </div>
             <div>
-              <Label htmlFor="set-payout-schedule" className="text-xs">Payout schedule</Label>
+              <Label htmlFor="set-payout-schedule" className="text-caption">Payout schedule</Label>
               <select
                 id="set-payout-schedule"
                 value={form.payoutSchedule}
@@ -97,7 +97,7 @@ const DemoAdminSettings = () => {
                 <option value="biweekly">Every two weeks</option>
                 <option value="monthly">Monthly</option>
               </select>
-              <p className="text-[11px] text-muted-foreground mt-1">How often eligible creator balances are paid out.</p>
+              <p className="text-caption text-muted-foreground mt-1">How often eligible creator balances are paid out.</p>
             </div>
           </div>
         </section>
@@ -109,7 +109,7 @@ const DemoAdminSettings = () => {
               <div key={t.key} className="flex items-center justify-between gap-4">
                 <div>
                   <p className="text-sm">{t.label}</p>
-                  <p className="text-[11px] text-muted-foreground">{t.desc}</p>
+                  <p className="text-caption text-muted-foreground">{t.desc}</p>
                 </div>
                 <Switch aria-label={t.label} checked={form[t.key]} onCheckedChange={v => setForm({ ...form, [t.key]: v })} />
               </div>
@@ -120,9 +120,9 @@ const DemoAdminSettings = () => {
         <section className="rounded-xl border border-border bg-card p-5 flex items-center justify-between gap-4">
           <div>
             <p className="text-sm font-medium">Reset demo data</p>
-            <p className="text-[11px] text-muted-foreground">Restore creators, users, transactions and settings to their starting state.</p>
+            <p className="text-caption text-muted-foreground">Restore creators, users, transactions and settings to their starting state.</p>
           </div>
-          <Button variant="outline" size="sm" className="text-xs" onClick={() => setConfirmReset(true)}>
+          <Button variant="outline" size="sm" className="text-caption" onClick={() => setConfirmReset(true)}>
             <RotateCcw className="mr-1.5 h-3.5 w-3.5" /> Reset
           </Button>
         </section>

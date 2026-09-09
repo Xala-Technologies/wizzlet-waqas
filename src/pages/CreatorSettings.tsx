@@ -153,12 +153,12 @@ const CreatorSettings = () => {
                 onChange={handleAvatarUpload}
                 disabled={uploadingAvatar}
               />
-              <p className="text-xs text-muted-foreground mt-0.5">JPG, PNG. Max 5MB.</p>
+              <p className="text-caption text-muted-foreground mt-0.5">JPG, PNG. Max 5MB.</p>
             </div>
           </div>
 
           <div className="space-y-2">
-            <Label className="text-xs">Banner Image</Label>
+            <Label className="text-caption">Banner Image</Label>
             <button
               type="button"
               onClick={() => bannerRef.current?.click()}
@@ -174,7 +174,7 @@ const CreatorSettings = () => {
                   ) : (
                     <ImageIcon className="h-6 w-6 text-muted-foreground mx-auto mb-1" />
                   )}
-                  <p className="text-xs text-muted-foreground">
+                  <p className="text-caption text-muted-foreground">
                     {uploadingBanner ? 'Uploading…' : 'Upload banner (1200×400 recommended)'}
                   </p>
                 </div>
@@ -192,22 +192,22 @@ const CreatorSettings = () => {
               className="hidden"
               onChange={handleBannerUpload}
             />
-            <p className="text-xs text-muted-foreground">JPG, PNG. Max 5MB.</p>
+            <p className="text-caption text-muted-foreground">JPG, PNG. Max 5MB.</p>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-              <Label className="text-xs">Display Name</Label>
+              <Label className="text-caption">Display Name</Label>
               <Input value={displayName} onChange={e => setDisplayName(e.target.value)} className="mt-1" placeholder="Your name" />
             </div>
             <div>
-              <Label className="text-xs">Username</Label>
+              <Label className="text-caption">Username</Label>
               <Input value={username} onChange={e => setUsername(e.target.value)} className="mt-1" placeholder="username" disabled />
             </div>
           </div>
 
           <div>
-            <Label className="text-xs">Bio</Label>
+            <Label className="text-caption">Bio</Label>
             <Textarea value={bio} onChange={e => setBio(e.target.value)} className="mt-1 resize-none" rows={3} placeholder="Tell subscribers about yourself..." />
           </div>
         </div>
@@ -223,32 +223,32 @@ const CreatorSettings = () => {
               </div>
               <div>
                 <p className="text-sm font-medium">Discord subscriber roles</p>
-                <p className="text-xs text-muted-foreground">
+                <p className="text-caption text-muted-foreground">
                   When a member signs in with Discord and subscribes, the bot assigns this role.
                 </p>
               </div>
             </div>
             <div className="grid sm:grid-cols-2 gap-3 pl-0 sm:pl-12">
               <div>
-                <Label className="text-xs">Server (guild) ID</Label>
+                <Label className="text-caption">Server (guild) ID</Label>
                 <Input
-                  className="mt-1 font-mono text-xs"
+                  className="mt-1 font-mono text-caption"
                   value={discordServerId}
                   onChange={(e) => setDiscordServerId(e.target.value)}
                   placeholder="123456789012345678"
                 />
               </div>
               <div>
-                <Label className="text-xs">Role ID</Label>
+                <Label className="text-caption">Role ID</Label>
                 <Input
-                  className="mt-1 font-mono text-xs"
+                  className="mt-1 font-mono text-caption"
                   value={discordRoleId}
                   onChange={(e) => setDiscordRoleId(e.target.value)}
                   placeholder="123456789012345678"
                 />
               </div>
             </div>
-            <p className="text-[11px] text-muted-foreground pl-0 sm:pl-12">
+            <p className="text-caption text-muted-foreground pl-0 sm:pl-12">
               Requires platform env <span className="font-mono">DISCORD_BOT_TOKEN</span> and the bot invited with Manage Roles.
             </p>
           </div>
@@ -259,7 +259,7 @@ const CreatorSettings = () => {
               </div>
               <div>
                 <p className="text-sm font-medium">X / Twitter</p>
-                <p className="text-xs text-muted-foreground">
+                <p className="text-caption text-muted-foreground">
                   Members and creators can sign in with X to pull username and profile photo.
                 </p>
               </div>

@@ -379,22 +379,22 @@ const CustomerResults = () => {
   const OddsFields = ({ compact = false }: { compact?: boolean }) => (
     <>
       <div className={compact ? 'w-full sm:w-[75px]' : ''}>
-        <label className={`text-muted-foreground mb-0.5 block ${compact ? 'text-[10px]' : 'text-xs mb-1'}`}>EU Odds</label>
+        <label className={`text-muted-foreground mb-0.5 block ${compact ? 'text-caption' : 'text-caption mb-1'}`}>EU Odds</label>
         <Input
           type="number"
           step="0.01"
           min="1.01"
           placeholder="1.91"
-          className={compact ? 'h-8 text-xs' : ''}
+          className={compact ? 'h-8 text-base md:text-caption' : ''}
           value={form.eu_odds}
           onChange={e => handleEuChange(e.target.value)}
         />
       </div>
       <div className={compact ? 'w-full sm:w-[75px]' : ''}>
-        <label className={`text-muted-foreground mb-0.5 block ${compact ? 'text-[10px]' : 'text-xs mb-1'}`}>US Odds</label>
+        <label className={`text-muted-foreground mb-0.5 block ${compact ? 'text-caption' : 'text-caption mb-1'}`}>US Odds</label>
         <Input
           placeholder="-110"
-          className={compact ? 'h-8 text-xs' : ''}
+          className={compact ? 'h-8 text-base md:text-caption' : ''}
           value={form.us_odds}
           onChange={e => handleUsChange(e.target.value)}
         />
@@ -417,10 +417,10 @@ const CustomerResults = () => {
         </div>
         <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
           <input ref={importInputRef} type="file" accept=".csv,text/csv" className="hidden" onChange={e => handleImportCSV(e.target.files?.[0])} />
-          <Button variant="outline" size="sm" className="gap-1.5 text-xs h-9 min-h-9 flex-1 sm:flex-none" disabled={importing} onClick={() => importInputRef.current?.click()}>
+          <Button variant="outline" size="sm" className="gap-1.5 text-caption h-9 min-h-9 flex-1 sm:flex-none" disabled={importing} onClick={() => importInputRef.current?.click()}>
             <Upload className="h-3 w-3" /> {importing ? 'Importing…' : 'Import'}
           </Button>
-          <Button variant="outline" size="sm" className="gap-1.5 text-xs h-9 min-h-9 flex-1 sm:flex-none" onClick={handleExportCSV}>
+          <Button variant="outline" size="sm" className="gap-1.5 text-caption h-9 min-h-9 flex-1 sm:flex-none" onClick={handleExportCSV}>
             <Download className="h-3 w-3" /> Export
           </Button>
           <Button size="sm" className="gap-1.5 h-9 min-h-9 w-full sm:w-auto" onClick={() => { resetForm(); setQuickAddOpen(true); }}>
@@ -446,7 +446,7 @@ const CustomerResults = () => {
             <div key={s.label} className="rounded-lg border border-border bg-card p-2.5">
               <div className="flex items-center gap-1 mb-1">
                 <s.icon className="h-2.5 w-2.5 text-muted-foreground" />
-                <span className="text-[9px] text-muted-foreground uppercase tracking-wider">{s.label}</span>
+                <span className="text-caption text-muted-foreground uppercase tracking-wider">{s.label}</span>
               </div>
               <p className={`text-base font-bold leading-none ${color}`}>{s.value}</p>
             </div>
@@ -463,9 +463,9 @@ const CustomerResults = () => {
                 <Award className="h-4 w-4 text-emerald-400" />
               </div>
               <div className="flex-1 min-w-0">
-                <p className="text-[10px] text-emerald-400/70 uppercase tracking-wider font-medium">Biggest Win</p>
+                <p className="text-caption text-emerald-400/70 uppercase tracking-wider font-medium">Biggest Win</p>
                 <p className="text-sm font-semibold truncate">{insights.biggestWin.pick_event}</p>
-                <p className="text-[10px] text-muted-foreground">{insights.biggestWin.date}</p>
+                <p className="text-caption text-muted-foreground">{insights.biggestWin.date}</p>
               </div>
               <p className="text-lg font-bold text-emerald-400">+{(insights.biggestWin.units_won_lost || 0).toFixed(1)}u</p>
             </div>
@@ -476,9 +476,9 @@ const CustomerResults = () => {
                 <TrendingDown className="h-4 w-4 text-destructive" />
               </div>
               <div className="flex-1 min-w-0">
-                <p className="text-[10px] text-destructive/70 uppercase tracking-wider font-medium">Biggest Loss</p>
+                <p className="text-caption text-destructive/70 uppercase tracking-wider font-medium">Biggest Loss</p>
                 <p className="text-sm font-semibold truncate">{insights.biggestLoss.pick_event}</p>
-                <p className="text-[10px] text-muted-foreground">{insights.biggestLoss.date}</p>
+                <p className="text-caption text-muted-foreground">{insights.biggestLoss.date}</p>
               </div>
               <p className="text-lg font-bold text-destructive">{(insights.biggestLoss.units_won_lost || 0).toFixed(1)}u</p>
             </div>
@@ -490,7 +490,7 @@ const CustomerResults = () => {
       {picks.length > 1 && (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-2.5 mb-5">
           <div className="lg:col-span-2 rounded-lg border border-border bg-card p-4">
-            <h3 className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mb-3">Cumulative Profit</h3>
+            <h3 className="text-caption font-semibold text-muted-foreground uppercase tracking-wider mb-3">Cumulative Profit</h3>
             <ResponsiveContainer width="100%" height={150}>
               <AreaChart data={profitChartData}>
                 <defs>
@@ -499,28 +499,28 @@ const CustomerResults = () => {
                     <stop offset="95%" stopColor="hsl(142, 71%, 45%)" stopOpacity={0} />
                   </linearGradient>
                 </defs>
-                <XAxis dataKey="date" tick={{ fontSize: 8, fill: 'hsl(var(--muted-foreground))' }} tickLine={false} axisLine={false} />
-                <YAxis tick={{ fontSize: 8, fill: 'hsl(var(--muted-foreground))' }} tickLine={false} axisLine={false} width={28} />
-                <Tooltip contentStyle={{ background: 'hsl(var(--card))', border: '1px solid hsl(var(--border))', borderRadius: 8, fontSize: 11 }} formatter={(v: number) => [`${v}u`, 'Profit']} />
+                <XAxis dataKey="date" tick={{ fontSize: 14, fill: 'hsl(var(--muted-foreground))' }} tickLine={false} axisLine={false} />
+                <YAxis tick={{ fontSize: 14, fill: 'hsl(var(--muted-foreground))' }} tickLine={false} axisLine={false} width={28} />
+                <Tooltip contentStyle={{ background: 'hsl(var(--card))', border: '1px solid hsl(var(--border))', borderRadius: 8, fontSize: 14 }} formatter={(v: number) => [`${v}u`, 'Profit']} />
                 <Area type="monotone" dataKey="profit" stroke="hsl(142, 71%, 45%)" fill="url(#profitGrad)" strokeWidth={2} />
               </AreaChart>
             </ResponsiveContainer>
           </div>
           <div className="rounded-lg border border-border bg-card p-4">
-            <h3 className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mb-3">Distribution</h3>
+            <h3 className="text-caption font-semibold text-muted-foreground uppercase tracking-wider mb-3">Distribution</h3>
             <ResponsiveContainer width="100%" height={120}>
               <PieChart>
                 <Pie data={pieData} dataKey="value" cx="50%" cy="50%" innerRadius={35} outerRadius={50} paddingAngle={3}>
                   {pieData.map((entry, i) => <Cell key={i} fill={entry.color} />)}
                 </Pie>
-                <Tooltip contentStyle={{ background: 'hsl(var(--card))', border: '1px solid hsl(var(--border))', borderRadius: 8, fontSize: 11 }} />
+                <Tooltip contentStyle={{ background: 'hsl(var(--card))', border: '1px solid hsl(var(--border))', borderRadius: 8, fontSize: 14 }} />
               </PieChart>
             </ResponsiveContainer>
             <div className="flex justify-center gap-3 mt-1">
               {pieData.map(d => (
                 <div key={d.name} className="flex items-center gap-1">
                   <div className="h-2 w-2 rounded-full" style={{ background: d.color }} />
-                  <span className="text-[9px] text-muted-foreground">{d.name} ({d.value})</span>
+                  <span className="text-caption text-muted-foreground">{d.name} ({d.value})</span>
                 </div>
               ))}
             </div>
@@ -533,39 +533,39 @@ const CustomerResults = () => {
         <div className="rounded-lg border border-primary/20 bg-card p-3 mb-4">
           <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-4 xl:flex xl:flex-wrap xl:items-end">
             <div className="w-full sm:w-auto xl:w-[100px]">
-              <label className="text-[10px] text-muted-foreground mb-0.5 block">Date</label>
-              <Input type="date" className="h-9 text-xs" value={form.date} onChange={e => setForm(f => ({ ...f, date: e.target.value }))} />
+              <label className="text-caption text-muted-foreground mb-0.5 block">Date</label>
+              <Input type="date" className="h-9 text-base md:text-caption" value={form.date} onChange={e => setForm(f => ({ ...f, date: e.target.value }))} />
             </div>
             <div className="w-full sm:col-span-2 xl:flex-1 xl:min-w-[120px]">
-              <label className="text-[10px] text-muted-foreground mb-0.5 block">Pick / Event</label>
-              <Input className="h-9 text-xs" placeholder="Chiefs -3.5" value={form.pick_event} onChange={e => setForm(f => ({ ...f, pick_event: e.target.value }))} />
+              <label className="text-caption text-muted-foreground mb-0.5 block">Pick / Event</label>
+              <Input className="h-9 text-base md:text-caption" placeholder="Chiefs -3.5" value={form.pick_event} onChange={e => setForm(f => ({ ...f, pick_event: e.target.value }))} />
             </div>
             <div className="w-full sm:w-auto xl:w-[80px]">
-              <label className="text-[10px] text-muted-foreground mb-0.5 block">Sport</label>
+              <label className="text-caption text-muted-foreground mb-0.5 block">Sport</label>
               <Select value={form.sport} onValueChange={v => setForm(f => ({ ...f, sport: v }))}>
-                <SelectTrigger className="h-9 text-xs"><SelectValue /></SelectTrigger>
+                <SelectTrigger className="h-9 text-base md:text-caption"><SelectValue /></SelectTrigger>
                 <SelectContent>{SPORTS.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}</SelectContent>
               </Select>
             </div>
             <OddsFields compact />
             <div className="w-full sm:w-auto xl:w-[72px]">
-              <label className="text-[10px] text-muted-foreground mb-0.5 block">Risked</label>
-              <Input type="number" step="0.5" className="h-9 text-xs" value={form.units_risked} onChange={e => setForm(f => ({ ...f, units_risked: e.target.value }))} />
+              <label className="text-caption text-muted-foreground mb-0.5 block">Risked</label>
+              <Input type="number" step="0.5" className="h-9 text-base md:text-caption" value={form.units_risked} onChange={e => setForm(f => ({ ...f, units_risked: e.target.value }))} />
             </div>
             <div className="w-full sm:w-auto xl:w-[85px]">
-              <label className="text-[10px] text-muted-foreground mb-0.5 block">Result</label>
+              <label className="text-caption text-muted-foreground mb-0.5 block">Result</label>
               <Select value={form.result} onValueChange={v => setForm(f => ({ ...f, result: v }))}>
-                <SelectTrigger className="h-9 text-xs"><SelectValue /></SelectTrigger>
+                <SelectTrigger className="h-9 text-base md:text-caption"><SelectValue /></SelectTrigger>
                 <SelectContent>{RESULTS.map(r => <SelectItem key={r} value={r}>{r.charAt(0).toUpperCase() + r.slice(1)}</SelectItem>)}</SelectContent>
               </Select>
             </div>
             <div className="w-full sm:w-auto xl:w-[72px]">
-              <label className="text-[10px] text-muted-foreground mb-0.5 block">+/−</label>
-              <Input type="number" step="0.5" className="h-9 text-xs" value={form.units_won_lost} onChange={e => setForm(f => ({ ...f, units_won_lost: e.target.value }))} />
+              <label className="text-caption text-muted-foreground mb-0.5 block">+/−</label>
+              <Input type="number" step="0.5" className="h-9 text-base md:text-caption" value={form.units_won_lost} onChange={e => setForm(f => ({ ...f, units_won_lost: e.target.value }))} />
             </div>
             <div className="flex gap-2 w-full sm:w-auto">
-              <Button size="sm" className="h-9 min-h-9 text-xs px-3 flex-1 sm:flex-none" onClick={handleSubmit} disabled={saving}>Add</Button>
-              <Button variant="ghost" size="sm" className="h-9 min-h-9 text-xs px-3" onClick={() => setQuickAddOpen(false)}>✕</Button>
+              <Button size="sm" className="h-9 min-h-9 text-caption px-3 flex-1 sm:flex-none" onClick={handleSubmit} disabled={saving}>Add</Button>
+              <Button variant="ghost" size="sm" className="h-9 min-h-9 text-caption px-3" onClick={() => setQuickAddOpen(false)}>✕</Button>
             </div>
           </div>
         </div>
@@ -575,14 +575,14 @@ const CustomerResults = () => {
       <div className="flex flex-wrap items-center gap-2 mb-3">
         <ListFilter className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
         <Select value={filterSport} onValueChange={setFilterSport}>
-          <SelectTrigger className="w-full sm:w-[100px] h-9 sm:h-7 text-[11px]"><SelectValue /></SelectTrigger>
+          <SelectTrigger className="w-full sm:w-[100px] h-9 sm:h-7 text-caption"><SelectValue /></SelectTrigger>
           <SelectContent><SelectItem value="all">All Sports</SelectItem>{SPORTS.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}</SelectContent>
         </Select>
         <Select value={filterResult} onValueChange={setFilterResult}>
-          <SelectTrigger className="w-full sm:w-[100px] h-9 sm:h-7 text-[11px]"><SelectValue /></SelectTrigger>
+          <SelectTrigger className="w-full sm:w-[100px] h-9 sm:h-7 text-caption"><SelectValue /></SelectTrigger>
           <SelectContent><SelectItem value="all">All Results</SelectItem>{RESULTS.map(r => <SelectItem key={r} value={r}>{r.charAt(0).toUpperCase() + r.slice(1)}</SelectItem>)}</SelectContent>
         </Select>
-        <span className="text-[10px] text-muted-foreground sm:ml-auto w-full sm:w-auto">{filtered.length} pick{filtered.length !== 1 ? 's' : ''}</span>
+        <span className="text-caption text-muted-foreground sm:ml-auto w-full sm:w-auto">{filtered.length} pick{filtered.length !== 1 ? 's' : ''}</span>
       </div>
 
       {/* Tracker Table */}
@@ -601,17 +601,17 @@ const CustomerResults = () => {
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0">
                     <p className="text-sm font-medium leading-snug">{pick.pick_event}</p>
-                    <p className="text-[11px] text-muted-foreground mt-1 font-mono">
+                    <p className="text-caption text-muted-foreground mt-1 font-mono">
                       {pick.date} · {pick.sport}
                     </p>
                   </div>
-                  <span className={`text-[11px] font-bold uppercase shrink-0 ${
+                  <span className={`text-caption font-bold uppercase shrink-0 ${
                     pick.result === 'win' ? 'text-emerald-400' : pick.result === 'loss' ? 'text-destructive' : 'text-muted-foreground'
                   }`}>
                     {pick.result === 'win' ? 'Win' : pick.result === 'loss' ? 'Loss' : pick.result === 'push' ? 'Push' : 'Pending'}
                   </span>
                 </div>
-                <div className="mt-3 grid grid-cols-3 gap-2 text-[11px]">
+                <div className="mt-3 grid grid-cols-3 gap-2 text-caption">
                   <div>
                     <p className="text-muted-foreground">Risk</p>
                     <p className="font-mono font-medium">{pick.units_risked}u</p>
@@ -626,18 +626,18 @@ const CustomerResults = () => {
                   </div>
                 </div>
                 {(pick.eu_odds || pick.us_odds) && (
-                  <p className="text-[11px] text-muted-foreground mt-2 font-mono">
+                  <p className="text-caption text-muted-foreground mt-2 font-mono">
                     Odds {pick.eu_odds ?? '—'} / {pick.us_odds ?? '—'}
                   </p>
                 )}
                 <div className="flex gap-1 mt-3 -ml-2">
-                  <Button variant="ghost" size="sm" className="h-9 gap-1.5 text-xs" onClick={() => handleEdit(pick)}>
+                  <Button variant="ghost" size="sm" className="h-9 gap-1.5 text-caption" onClick={() => handleEdit(pick)}>
                     <Pencil className="h-3.5 w-3.5" /> Edit
                   </Button>
                   <Button
                     variant="ghost"
                     size="sm"
-                    className="h-9 gap-1.5 text-xs text-destructive"
+                    className="h-9 gap-1.5 text-caption text-destructive"
                     onClick={() => handleDelete(pick.id)}
                     disabled={deletingId === pick.id}
                   >
@@ -652,42 +652,42 @@ const CustomerResults = () => {
             <Table className="min-w-[720px]">
               <TableHeader className="sticky top-0 z-10">
                 <TableRow className="bg-muted/60 hover:bg-muted/60">
-                  <TableHead className="text-[9px] font-semibold uppercase tracking-wider py-1.5 px-2 w-[78px] sticky left-0 z-[1] bg-muted/95">Date</TableHead>
-                  <TableHead className="text-[9px] font-semibold uppercase tracking-wider py-1.5 px-2">Pick / Event</TableHead>
-                  <TableHead className="text-[9px] font-semibold uppercase tracking-wider py-1.5 px-2 w-[55px]">Sport</TableHead>
-                  <TableHead className="text-[9px] font-semibold uppercase tracking-wider py-1.5 px-2 w-[52px] text-right">EU</TableHead>
-                  <TableHead className="text-[9px] font-semibold uppercase tracking-wider py-1.5 px-2 w-[52px] text-right">US</TableHead>
-                  <TableHead className="text-[9px] font-semibold uppercase tracking-wider py-1.5 px-2 w-[52px] text-right">Risk</TableHead>
-                  <TableHead className="text-[9px] font-semibold uppercase tracking-wider py-1.5 px-2 w-[48px]">Res</TableHead>
-                  <TableHead className="text-[9px] font-semibold uppercase tracking-wider py-1.5 px-2 w-[52px] text-right">+/−</TableHead>
-                  <TableHead className="text-[9px] font-semibold uppercase tracking-wider py-1.5 px-2 w-[56px] text-right">Net</TableHead>
-                  <TableHead className="text-[9px] font-semibold uppercase tracking-wider py-1.5 px-2 w-[80px]">Notes</TableHead>
+                  <TableHead className="text-caption font-semibold uppercase tracking-wider py-1.5 px-2 w-[78px] sticky left-0 z-[1] bg-muted/95">Date</TableHead>
+                  <TableHead className="text-caption font-semibold uppercase tracking-wider py-1.5 px-2">Pick / Event</TableHead>
+                  <TableHead className="text-caption font-semibold uppercase tracking-wider py-1.5 px-2 w-[55px]">Sport</TableHead>
+                  <TableHead className="text-caption font-semibold uppercase tracking-wider py-1.5 px-2 w-[52px] text-right">EU</TableHead>
+                  <TableHead className="text-caption font-semibold uppercase tracking-wider py-1.5 px-2 w-[52px] text-right">US</TableHead>
+                  <TableHead className="text-caption font-semibold uppercase tracking-wider py-1.5 px-2 w-[52px] text-right">Risk</TableHead>
+                  <TableHead className="text-caption font-semibold uppercase tracking-wider py-1.5 px-2 w-[48px]">Res</TableHead>
+                  <TableHead className="text-caption font-semibold uppercase tracking-wider py-1.5 px-2 w-[52px] text-right">+/−</TableHead>
+                  <TableHead className="text-caption font-semibold uppercase tracking-wider py-1.5 px-2 w-[56px] text-right">Net</TableHead>
+                  <TableHead className="text-caption font-semibold uppercase tracking-wider py-1.5 px-2 w-[80px]">Notes</TableHead>
                   <TableHead className="py-1.5 px-1 w-[48px]"></TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {displayPicks.map((pick, i) => (
                   <TableRow key={pick.id} className={`hover:bg-muted/30 transition-colors ${i % 2 === 0 ? '' : 'bg-muted/8'}`}>
-                    <TableCell className="text-[10px] py-1 px-2 font-mono text-muted-foreground sticky left-0 z-[1] bg-card">{pick.date}</TableCell>
-                    <TableCell className="text-[10px] py-1 px-2 font-medium">{pick.pick_event}</TableCell>
-                    <TableCell className="py-1 px-2"><span className="text-[8px] font-medium text-muted-foreground bg-muted/50 rounded px-1 py-0.5">{pick.sport}</span></TableCell>
-                    <TableCell className="text-[10px] py-1 px-2 text-right font-mono text-muted-foreground">{pick.eu_odds || '—'}</TableCell>
-                    <TableCell className="text-[10px] py-1 px-2 text-right font-mono text-muted-foreground">{pick.us_odds || '—'}</TableCell>
-                    <TableCell className="text-[10px] py-1 px-2 text-right font-mono">{pick.units_risked}u</TableCell>
+                    <TableCell className="text-caption py-1 px-2 font-mono text-muted-foreground sticky left-0 z-[1] bg-card">{pick.date}</TableCell>
+                    <TableCell className="text-caption py-1 px-2 font-medium">{pick.pick_event}</TableCell>
+                    <TableCell className="py-1 px-2"><span className="text-caption font-medium text-muted-foreground bg-muted/50 rounded px-1 py-0.5">{pick.sport}</span></TableCell>
+                    <TableCell className="text-caption py-1 px-2 text-right font-mono text-muted-foreground">{pick.eu_odds || '—'}</TableCell>
+                    <TableCell className="text-caption py-1 px-2 text-right font-mono text-muted-foreground">{pick.us_odds || '—'}</TableCell>
+                    <TableCell className="text-caption py-1 px-2 text-right font-mono">{pick.units_risked}u</TableCell>
                     <TableCell className="py-1 px-2">
-                      <span className={`text-[9px] font-bold uppercase ${
+                      <span className={`text-caption font-bold uppercase ${
                         pick.result === 'win' ? 'text-emerald-400' : pick.result === 'loss' ? 'text-destructive' : 'text-muted-foreground'
                       }`}>
                         {pick.result === 'win' ? '✓ W' : pick.result === 'loss' ? '✗ L' : pick.result === 'push' ? '— P' : '⏳'}
                       </span>
                     </TableCell>
-                    <TableCell className={`text-[10px] py-1 px-2 text-right font-mono font-medium ${valColor(pick.units_won_lost || 0)}`}>
+                    <TableCell className={`text-caption py-1 px-2 text-right font-mono font-medium ${valColor(pick.units_won_lost || 0)}`}>
                       {fmtUnit(pick.units_won_lost || 0)}
                     </TableCell>
-                    <TableCell className={`text-[10px] py-1 px-2 text-right font-mono font-semibold ${valColor(pick.runningTotal)}`}>
+                    <TableCell className={`text-caption py-1 px-2 text-right font-mono font-semibold ${valColor(pick.runningTotal)}`}>
                       {fmtUnit(pick.runningTotal)}
                     </TableCell>
-                    <TableCell className="text-[9px] py-1 px-2 text-muted-foreground/60 max-w-[80px] truncate">{pick.notes || ''}</TableCell>
+                    <TableCell className="text-caption py-1 px-2 text-muted-foreground/60 max-w-[80px] truncate">{pick.notes || ''}</TableCell>
                     <TableCell className="py-1 px-1">
                       <div className="flex gap-0.5">
                         <Button variant="ghost" size="icon" className="h-9 w-9 opacity-60 hover:opacity-100" onClick={() => handleEdit(pick)} aria-label="Edit pick"><Pencil className="h-3.5 w-3.5" /></Button>
@@ -699,11 +699,11 @@ const CustomerResults = () => {
               </TableBody>
               <TableFooter>
                 <TableRow className="bg-muted/40 hover:bg-muted/40 border-t-2 border-border">
-                  <TableCell colSpan={5} className="text-[9px] font-semibold uppercase tracking-wider py-1.5 px-2">Totals</TableCell>
-                  <TableCell className="text-[10px] py-1.5 px-2 text-right font-mono font-bold">{totals.risked.toFixed(1)}u</TableCell>
+                  <TableCell colSpan={5} className="text-caption font-semibold uppercase tracking-wider py-1.5 px-2">Totals</TableCell>
+                  <TableCell className="text-caption py-1.5 px-2 text-right font-mono font-bold">{totals.risked.toFixed(1)}u</TableCell>
                   <TableCell className="py-1.5 px-2"></TableCell>
-                  <TableCell className={`text-[10px] py-1.5 px-2 text-right font-mono font-bold ${valColor(totals.wonLost)}`}>{fmtUnit(totals.wonLost)}</TableCell>
-                  <TableCell className={`text-[10px] py-1.5 px-2 text-right font-mono font-bold ${valColor(totals.wonLost)}`}>{fmtUnit(totals.wonLost)}</TableCell>
+                  <TableCell className={`text-caption py-1.5 px-2 text-right font-mono font-bold ${valColor(totals.wonLost)}`}>{fmtUnit(totals.wonLost)}</TableCell>
+                  <TableCell className={`text-caption py-1.5 px-2 text-right font-mono font-bold ${valColor(totals.wonLost)}`}>{fmtUnit(totals.wonLost)}</TableCell>
                   <TableCell colSpan={2} className="py-1.5 px-2"></TableCell>
                 </TableRow>
               </TableFooter>
@@ -716,9 +716,9 @@ const CustomerResults = () => {
       {picks.length > 0 && (
         <Tabs defaultValue="sport" className="mt-2">
           <TabsList className="bg-muted/50 h-8">
-            <TabsTrigger value="sport" className="text-[11px] h-6">By Sport</TabsTrigger>
-            <TabsTrigger value="monthly" className="text-[11px] h-6">Monthly</TabsTrigger>
-            <TabsTrigger value="insights" className="text-[11px] h-6">Insights</TabsTrigger>
+            <TabsTrigger value="sport" className="text-caption h-6">By Sport</TabsTrigger>
+            <TabsTrigger value="monthly" className="text-caption h-6">Monthly</TabsTrigger>
+            <TabsTrigger value="insights" className="text-caption h-6">Insights</TabsTrigger>
           </TabsList>
 
           {/* Sport Breakdown */}
@@ -727,20 +727,20 @@ const CustomerResults = () => {
               {sportBreakdown.map(s => (
                 <div key={s.sport} className="rounded-lg border border-border bg-card p-3">
                   <div className="flex items-center justify-between mb-2">
-                    <span className="text-xs font-semibold">{s.sport}</span>
-                    <span className="text-[9px] text-muted-foreground">{s.picks} picks</span>
+                    <span className="text-caption font-semibold">{s.sport}</span>
+                    <span className="text-caption text-muted-foreground">{s.picks} picks</span>
                   </div>
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
                     <div>
-                      <p className="text-[9px] text-muted-foreground uppercase">Win Rate</p>
+                      <p className="text-caption text-muted-foreground uppercase">Win Rate</p>
                       <p className="text-sm font-bold">{s.winRate}%</p>
                     </div>
                     <div>
-                      <p className="text-[9px] text-muted-foreground uppercase">Profit</p>
+                      <p className="text-caption text-muted-foreground uppercase">Profit</p>
                       <p className={`text-sm font-bold ${valColor(s.profit)}`}>{fmtUnit(s.profit)}u</p>
                     </div>
                     <div>
-                      <p className="text-[9px] text-muted-foreground uppercase">ROI</p>
+                      <p className="text-caption text-muted-foreground uppercase">ROI</p>
                       <p className={`text-sm font-bold ${valColor(s.roi)}`}>{s.roi >= 0 ? '+' : ''}{s.roi}%</p>
                     </div>
                   </div>
@@ -755,23 +755,23 @@ const CustomerResults = () => {
               <Table>
                 <TableHeader>
                   <TableRow className="bg-muted/40 hover:bg-muted/40">
-                    <TableHead className="text-[9px] font-semibold uppercase py-1.5 px-3">Month</TableHead>
-                    <TableHead className="text-[9px] font-semibold uppercase py-1.5 px-3 text-right">Picks</TableHead>
-                    <TableHead className="text-[9px] font-semibold uppercase py-1.5 px-3 text-right">Win Rate</TableHead>
-                    <TableHead className="text-[9px] font-semibold uppercase py-1.5 px-3 text-right">Risked</TableHead>
-                    <TableHead className="text-[9px] font-semibold uppercase py-1.5 px-3 text-right">Profit</TableHead>
-                    <TableHead className="text-[9px] font-semibold uppercase py-1.5 px-3 text-right">ROI</TableHead>
+                    <TableHead className="text-caption font-semibold uppercase py-1.5 px-3">Month</TableHead>
+                    <TableHead className="text-caption font-semibold uppercase py-1.5 px-3 text-right">Picks</TableHead>
+                    <TableHead className="text-caption font-semibold uppercase py-1.5 px-3 text-right">Win Rate</TableHead>
+                    <TableHead className="text-caption font-semibold uppercase py-1.5 px-3 text-right">Risked</TableHead>
+                    <TableHead className="text-caption font-semibold uppercase py-1.5 px-3 text-right">Profit</TableHead>
+                    <TableHead className="text-caption font-semibold uppercase py-1.5 px-3 text-right">ROI</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {monthlyBreakdown.map((m, i) => (
                     <TableRow key={m.month} className={i % 2 ? 'bg-muted/8' : ''}>
-                      <TableCell className="text-[11px] py-1.5 px-3 font-medium">{m.label}</TableCell>
-                      <TableCell className="text-[11px] py-1.5 px-3 text-right font-mono">{m.picks}</TableCell>
-                      <TableCell className="text-[11px] py-1.5 px-3 text-right font-mono">{m.winRate}%</TableCell>
-                      <TableCell className="text-[11px] py-1.5 px-3 text-right font-mono">{m.risked.toFixed(1)}u</TableCell>
-                      <TableCell className={`text-[11px] py-1.5 px-3 text-right font-mono font-medium ${valColor(m.profit)}`}>{fmtUnit(m.profit)}u</TableCell>
-                      <TableCell className={`text-[11px] py-1.5 px-3 text-right font-mono font-medium ${valColor(m.roi)}`}>{m.roi >= 0 ? '+' : ''}{m.roi}%</TableCell>
+                      <TableCell className="text-caption py-1.5 px-3 font-medium">{m.label}</TableCell>
+                      <TableCell className="text-caption py-1.5 px-3 text-right font-mono">{m.picks}</TableCell>
+                      <TableCell className="text-caption py-1.5 px-3 text-right font-mono">{m.winRate}%</TableCell>
+                      <TableCell className="text-caption py-1.5 px-3 text-right font-mono">{m.risked.toFixed(1)}u</TableCell>
+                      <TableCell className={`text-caption py-1.5 px-3 text-right font-mono font-medium ${valColor(m.profit)}`}>{fmtUnit(m.profit)}u</TableCell>
+                      <TableCell className={`text-caption py-1.5 px-3 text-right font-mono font-medium ${valColor(m.roi)}`}>{m.roi >= 0 ? '+' : ''}{m.roi}%</TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
@@ -794,9 +794,9 @@ const CustomerResults = () => {
                   { label: 'Longest L Streak', value: `${stats.longestLoss}`, sub: 'consecutive losses' },
                 ].map(item => (
                   <div key={item.label} className="rounded-lg border border-border bg-card p-3">
-                    <p className="text-[9px] text-muted-foreground uppercase tracking-wider mb-1">{item.label}</p>
+                    <p className="text-caption text-muted-foreground uppercase tracking-wider mb-1">{item.label}</p>
                     <p className="text-sm font-bold">{item.value}</p>
-                    {item.sub && <p className="text-[10px] text-muted-foreground mt-0.5">{item.sub}</p>}
+                    {item.sub && <p className="text-caption text-muted-foreground mt-0.5">{item.sub}</p>}
                   </div>
                 ))}
               </div>
@@ -812,11 +812,11 @@ const CustomerResults = () => {
           <div className="grid gap-3 py-2">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
-                <label className="text-xs text-muted-foreground mb-1 block">Date</label>
+                <label className="text-caption text-muted-foreground mb-1 block">Date</label>
                 <Input type="date" value={form.date} onChange={e => setForm(f => ({ ...f, date: e.target.value }))} />
               </div>
               <div>
-                <label className="text-xs text-muted-foreground mb-1 block">Sport</label>
+                <label className="text-caption text-muted-foreground mb-1 block">Sport</label>
                 <Select value={form.sport} onValueChange={v => setForm(f => ({ ...f, sport: v }))}>
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>{SPORTS.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}</SelectContent>
@@ -824,7 +824,7 @@ const CustomerResults = () => {
               </div>
             </div>
             <div>
-              <label className="text-xs text-muted-foreground mb-1 block">Pick / Event</label>
+              <label className="text-caption text-muted-foreground mb-1 block">Pick / Event</label>
               <Input value={form.pick_event} onChange={e => setForm(f => ({ ...f, pick_event: e.target.value }))} />
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -832,23 +832,23 @@ const CustomerResults = () => {
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
               <div>
-                <label className="text-xs text-muted-foreground mb-1 block">Units Risked</label>
+                <label className="text-caption text-muted-foreground mb-1 block">Units Risked</label>
                 <Input type="number" step="0.5" value={form.units_risked} onChange={e => setForm(f => ({ ...f, units_risked: e.target.value }))} />
               </div>
               <div>
-                <label className="text-xs text-muted-foreground mb-1 block">Result</label>
+                <label className="text-caption text-muted-foreground mb-1 block">Result</label>
                 <Select value={form.result} onValueChange={v => setForm(f => ({ ...f, result: v }))}>
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>{RESULTS.map(r => <SelectItem key={r} value={r}>{r.charAt(0).toUpperCase() + r.slice(1)}</SelectItem>)}</SelectContent>
                 </Select>
               </div>
               <div>
-                <label className="text-xs text-muted-foreground mb-1 block">Units Won/Lost</label>
+                <label className="text-caption text-muted-foreground mb-1 block">Units Won/Lost</label>
                 <Input type="number" step="0.5" value={form.units_won_lost} onChange={e => setForm(f => ({ ...f, units_won_lost: e.target.value }))} />
               </div>
             </div>
             <div>
-              <label className="text-xs text-muted-foreground mb-1 block">Notes</label>
+              <label className="text-caption text-muted-foreground mb-1 block">Notes</label>
               <Input value={form.notes} onChange={e => setForm(f => ({ ...f, notes: e.target.value }))} />
             </div>
           </div>

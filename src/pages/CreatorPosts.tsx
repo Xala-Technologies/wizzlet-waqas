@@ -189,7 +189,7 @@ const CreatorPosts = () => {
       <DashboardLayout type="creator">
         <div className="flex items-center justify-between mb-6">
           <div>
-            <button onClick={() => setMode('list')} className="text-xs text-muted-foreground hover:text-foreground transition-colors mb-1 block">← Back to posts</button>
+            <button onClick={() => setMode('list')} className="text-caption text-muted-foreground hover:text-foreground transition-colors mb-1 block">← Back to posts</button>
             <h1 className="text-xl font-bold">{editId ? 'Edit Pick' : 'New Pick'}</h1>
           </div>
           <Button onClick={handleSave} disabled={saving || !title.trim()} size="sm">
@@ -200,23 +200,23 @@ const CreatorPosts = () => {
 
         <div className="max-w-2xl space-y-4">
           <div className="rounded-xl border border-border bg-card p-4">
-            <Label className="text-xs font-medium text-muted-foreground mb-1.5 block">Title *</Label>
+            <Label className="text-caption font-medium text-muted-foreground mb-1.5 block">Title *</Label>
             <Input placeholder="e.g. Lakers ML +150" value={title} onChange={e => setTitle(e.target.value)}
               className="text-base font-medium border-0 bg-transparent px-0 h-auto focus-visible:ring-0 placeholder:text-muted-foreground/40 dark:placeholder:text-muted-foreground/55" maxLength={200} />
           </div>
 
           <div className="rounded-xl border border-border bg-card p-4 space-y-4">
-            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Pick Details</p>
+            <p className="text-caption font-semibold text-muted-foreground uppercase tracking-wider">Pick Details</p>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
-                <Label className="text-xs text-muted-foreground mb-1.5 block">Sport</Label>
+                <Label className="text-caption text-muted-foreground mb-1.5 block">Sport</Label>
                 <Select value={sport} onValueChange={setSport}>
                   <SelectTrigger className="h-10"><SelectValue placeholder="Select sport" /></SelectTrigger>
                   <SelectContent>{SPORTS.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}</SelectContent>
                 </Select>
               </div>
               <div>
-                <Label className="text-xs text-muted-foreground mb-1.5 block">Pick Type</Label>
+                <Label className="text-caption text-muted-foreground mb-1.5 block">Pick Type</Label>
                 <Select value={pickType} onValueChange={setPickType}>
                   <SelectTrigger className="h-10"><SelectValue placeholder="Select type" /></SelectTrigger>
                   <SelectContent>{PICK_TYPES.map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}</SelectContent>
@@ -224,28 +224,28 @@ const CreatorPosts = () => {
               </div>
             </div>
             <div>
-              <Label className="text-xs text-muted-foreground mb-1.5 block">Event</Label>
+              <Label className="text-caption text-muted-foreground mb-1.5 block">Event</Label>
               <Input placeholder="e.g. Lakers vs Warriors" value={event} onChange={e => setEvent(e.target.value)} className="h-10" />
             </div>
             <div>
-              <Label className="text-xs text-muted-foreground mb-1.5 block">Pick</Label>
+              <Label className="text-caption text-muted-foreground mb-1.5 block">Pick</Label>
               <Input placeholder="e.g. Lakers ML, Over 2.5 goals" value={pick} onChange={e => setPick(e.target.value)} className="h-10" />
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
-                <Label className="text-xs text-muted-foreground mb-1.5 block">US Odds</Label>
+                <Label className="text-caption text-muted-foreground mb-1.5 block">US Odds</Label>
                 <Input placeholder="-120 or +150" value={usOdds} onChange={e => handleUsOddsChange(e.target.value)}
                   className={`h-10 ${oddsSource === 'eu' ? 'text-muted-foreground' : ''}`} />
               </div>
               <div>
-                <Label className="text-xs text-muted-foreground mb-1.5 block">EU Odds</Label>
+                <Label className="text-caption text-muted-foreground mb-1.5 block">EU Odds</Label>
                 <Input placeholder="1.85" value={euOdds} onChange={e => handleEuOddsChange(e.target.value)}
                   className={`h-10 ${oddsSource === 'us' ? 'text-muted-foreground' : ''}`} />
               </div>
             </div>
-            {oddsSource && <p className="text-[10px] text-muted-foreground -mt-2">{oddsSource === 'us' ? 'EU odds auto-calculated' : 'US odds auto-calculated'}</p>}
+            {oddsSource && <p className="text-caption text-muted-foreground -mt-2">{oddsSource === 'us' ? 'EU odds auto-calculated' : 'US odds auto-calculated'}</p>}
             <div>
-              <Label className="text-xs text-muted-foreground mb-1.5 block">Units</Label>
+              <Label className="text-caption text-muted-foreground mb-1.5 block">Units</Label>
               <div className="flex items-center gap-2">
                 <Input type="number" value={units} onChange={e => setUnits(e.target.value)} className="h-10 w-24" min="0.5" max="100" step="0.5" />
                 <span className="text-sm text-muted-foreground">units risked</span>
@@ -254,17 +254,17 @@ const CreatorPosts = () => {
           </div>
 
           <div className="rounded-xl border border-border bg-card p-4">
-            <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2 block">Notes (optional)</Label>
+            <Label className="text-caption font-semibold text-muted-foreground uppercase tracking-wider mb-2 block">Notes (optional)</Label>
             <Textarea placeholder="Why do you like this play?" value={notes} onChange={e => setNotes(e.target.value)} rows={3}
               className="resize-none border-0 bg-transparent px-0 focus-visible:ring-0 placeholder:text-muted-foreground/40 dark:placeholder:text-muted-foreground/55" />
           </div>
 
           <div className="rounded-xl border border-border bg-card p-4 space-y-4">
-            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Visibility</p>
+            <p className="text-caption font-semibold text-muted-foreground uppercase tracking-wider">Visibility</p>
             <div className="flex items-center justify-between rounded-lg bg-muted/30 p-3">
               <div>
                 <p className="text-sm font-medium">Premium (subscribers only)</p>
-                <p className="text-xs text-muted-foreground">Only paying subscribers can see this</p>
+                <p className="text-caption text-muted-foreground">Only paying subscribers can see this</p>
               </div>
               <Switch aria-label="Premium only" checked={isPremium} onCheckedChange={setIsPremium} />
             </div>
@@ -316,13 +316,13 @@ const CreatorPosts = () => {
           <h1 className="text-2xl font-bold flex items-center gap-2">
             Posts
             {winStreak >= 3 && (
-              <span className="inline-flex items-center gap-1 rounded-full bg-amber-500/10 px-2.5 py-1 text-xs font-semibold text-amber-500">
+              <span className="inline-flex items-center gap-1 rounded-full bg-amber-500/10 px-2.5 py-1 text-caption font-semibold text-amber-500">
                 <Flame className="h-3.5 w-3.5" /> {winStreak}W Streak
               </span>
             )}
           </h1>
           <p className="text-muted-foreground text-sm mt-1">{posts.length} post{posts.length !== 1 ? 's' : ''} · {winRate}% win rate</p>
-          <p className="text-xs text-muted-foreground mt-1">
+          <p className="text-caption text-muted-foreground mt-1">
             Settled post results here are separate from Performance Tracker practice picks.
           </p>
         </div>
@@ -341,7 +341,7 @@ const CreatorPosts = () => {
         ].map(s => (
           <div key={s.label} className="rounded-lg border border-border bg-card p-3">
             <p className={`text-xl font-bold ${s.color}`}>{s.value}</p>
-            <p className="text-[10px] text-muted-foreground uppercase tracking-wider">{s.label}</p>
+            <p className="text-caption text-muted-foreground uppercase tracking-wider">{s.label}</p>
           </div>
         ))}
       </div>
@@ -366,18 +366,18 @@ const CreatorPosts = () => {
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-2 mb-1.5 flex-wrap">
                       {post.is_premium ? (
-                        <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-medium text-primary uppercase tracking-wide"><Lock className="h-2.5 w-2.5" /> Premium</span>
+                        <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-2 py-0.5 text-caption font-medium text-primary uppercase tracking-wide"><Lock className="h-2.5 w-2.5" /> Premium</span>
                       ) : (
-                        <span className="inline-flex items-center gap-1 rounded-full bg-secondary px-2 py-0.5 text-[10px] font-medium text-muted-foreground uppercase tracking-wide"><Globe className="h-2.5 w-2.5" /> Free</span>
+                        <span className="inline-flex items-center gap-1 rounded-full bg-secondary px-2 py-0.5 text-caption font-medium text-muted-foreground uppercase tracking-wide"><Globe className="h-2.5 w-2.5" /> Free</span>
                       )}
-                      <Badge variant="outline" className={`text-[9px] font-semibold uppercase ${rc.className}`}>
+                      <Badge variant="outline" className={`text-caption font-semibold uppercase ${rc.className}`}>
                         <ResultIcon className="h-2.5 w-2.5 mr-0.5" />
                         {rc.label}
                       </Badge>
-                      <span className="text-xs text-muted-foreground">{format(new Date(post.created_at), 'MMM d, yyyy')}</span>
+                      <span className="text-caption text-muted-foreground">{format(new Date(post.created_at), 'MMM d, yyyy')}</span>
                     </div>
                     <h3 className="font-semibold text-sm">{post.title}</h3>
-                    {post.content && <p className="text-xs text-muted-foreground mt-1 line-clamp-1">{post.content}</p>}
+                    {post.content && <p className="text-caption text-muted-foreground mt-1 line-clamp-1">{post.content}</p>}
                   </div>
 
                   {/* Actions */}
@@ -400,7 +400,7 @@ const CreatorPosts = () => {
                       </div>
                     )}
                     {post.result !== 'pending' && (
-                      <span className="text-[10px] text-muted-foreground mr-1 px-1.5 py-0.5 rounded border border-border">
+                      <span className="text-caption text-muted-foreground mr-1 px-1.5 py-0.5 rounded border border-border">
                         Settled · locked
                       </span>
                     )}

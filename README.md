@@ -1,4 +1,4 @@
-# Wizzlet
+# Prizelet
 
 Private betting infrastructure for sports creators — subscriptions, gated content, performance tracking, and payouts in one product.
 
@@ -44,8 +44,8 @@ On development builds, sign in at `/login` with:
 
 | | |
 |--|--|
-| Email | `admin@wizzlet.dev` |
-| Password | `AdminWizzlet1!` |
+| Email | `admin@prizelet.dev` |
+| Password | `AdminPrizelet1!` |
 
 Or use **Sign in as platform owner** on the login page. That account receives the Convex `admin` role and opens `/admin`.
 
@@ -88,6 +88,7 @@ See [`.env.example`](.env.example) for a full annotated template.
 | `npm test` | Unit tests (Vitest) |
 | `npm run test:watch` | Vitest watch mode |
 | `npm run lint` | ESLint |
+| `npm run test:e2e` | Playwright smoke (Chromium, WebKit, Firefox) |
 | `npm run convex:dev` | Convex development sync |
 | `npm run convex:deploy` | **Production** Convex deploy |
 
@@ -107,6 +108,7 @@ Merge to `production` only after review and testing on `dev` (or the stacked cut
 - **Roles** (`member`, `creator`, `admin`) are enforced server-side; clients cannot self-assign admin.
 - **Checkout** uses Stripe Checkout when publishable + secret keys are configured; webhooks update the payment ledger.
 - Mobile-first shell and tracker notes live under [`docs/mobile-first/`](docs/mobile-first/) when that work is present on the branch.
+- Supported browsers (Safari 16+ / modern Chrome, Firefox, Edge, Opera): [`docs/browser-support.md`](docs/browser-support.md).
 
 ## Security
 

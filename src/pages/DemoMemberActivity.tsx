@@ -34,9 +34,9 @@ const DemoMemberActivity = () => {
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="text-sm">{a.label}</p>
-                  <p className="text-[10px] text-muted-foreground">{formatDistanceToNow(new Date(a.createdAt), { addSuffix: true })}</p>
+                  <p className="text-caption text-muted-foreground">{formatDistanceToNow(new Date(a.createdAt), { addSuffix: true })}</p>
                 </div>
-                <Badge variant="outline" className="text-[9px]">{c.label}</Badge>
+                <Badge variant="outline" className="text-caption">{c.label}</Badge>
               </div>
             );
           })}

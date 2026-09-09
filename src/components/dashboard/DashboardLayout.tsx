@@ -4,6 +4,7 @@ import { AdminSidebar } from './AdminSidebar';
 import { MemberSidebar } from './MemberSidebar';
 import { MobileTopBar } from './MobileTopBar';
 import { AdminQueryBoundary } from './AdminQueryBoundary';
+import { UnreadMessageWatcher } from './UnreadMessageWatcher';
 
 interface DashboardLayoutProps {
   children: ReactNode;
@@ -21,6 +22,7 @@ export function DashboardLayout({ children, type }: DashboardLayoutProps) {
 
   const body = (
     <div className="min-h-screen flex bg-background">
+      <UnreadMessageWatcher />
       <Sidebar />
       <main className="flex-1 min-w-0 overflow-x-hidden overflow-y-auto">
         <MobileTopBar>

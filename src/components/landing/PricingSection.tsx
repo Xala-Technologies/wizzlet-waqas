@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Check } from 'lucide-react';
+import { LandingSection } from '@/components/landing/LandingSection';
 
 const plans = [
   {
@@ -33,10 +34,10 @@ const plans = [
 
 export function PricingSection() {
   return (
-    <section id="pricing" className="py-28">
+    <LandingSection id="pricing">
       <div className="container">
         <div className="text-center mb-16">
-          <p className="text-[12px] font-medium uppercase tracking-widest text-primary mb-3">Pricing</p>
+          <p className="text-support font-medium uppercase tracking-widest text-primary mb-3">Pricing</p>
           <h2 className="text-2xl sm:text-3xl font-bold tracking-tight mb-3">
             Simple, transparent pricing
           </h2>
@@ -56,22 +57,22 @@ export function PricingSection() {
               }`}
             >
               {plan.featured && (
-                <div className="absolute -top-3 left-1/2 -translate-x-1/2 rounded-full bg-primary px-3 py-0.5 text-[11px] font-medium text-primary-foreground tracking-tight">
+                <div className="absolute -top-3 left-1/2 -translate-x-1/2 rounded-full bg-primary px-3 py-0.5 text-caption font-medium text-primary-foreground tracking-tight">
                   Most Popular
                 </div>
               )}
               <div className="mb-6">
-                <h3 className="font-semibold text-[15px] mb-1">{plan.name}</h3>
-                <p className="text-[13px] text-muted-foreground mb-4">{plan.description}</p>
+                <h3 className="font-semibold text-ui mb-1">{plan.name}</h3>
+                <p className="text-support text-muted-foreground mb-4">{plan.description}</p>
                 <div className="flex items-baseline gap-0.5">
                   <span className="text-3xl font-bold tracking-tight">{plan.price}</span>
-                  {plan.period && <span className="text-muted-foreground text-[13px]">{plan.period}</span>}
+                  {plan.period && <span className="text-muted-foreground text-support">{plan.period}</span>}
                 </div>
               </div>
 
               <ul className="space-y-2.5 mb-8 flex-1">
                 {plan.features.map((feature) => (
-                  <li key={feature} className="flex items-center gap-2.5 text-[13px]">
+                  <li key={feature} className="flex items-center gap-2.5 text-support">
                     <Check className="h-3.5 w-3.5 text-primary shrink-0" />
                     <span className="text-muted-foreground">{feature}</span>
                   </li>
@@ -91,6 +92,6 @@ export function PricingSection() {
           ))}
         </div>
       </div>
-    </section>
+    </LandingSection>
   );
 }

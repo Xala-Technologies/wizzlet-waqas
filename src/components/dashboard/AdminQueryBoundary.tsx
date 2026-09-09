@@ -25,7 +25,7 @@ function classifyAdminError(message: string): { authLikely: boolean; summary: st
     return {
       authLikely: true,
       summary:
-        'This page needs a real platform-owner role in Convex. Sign in with admin@wizzlet.dev (local owner credentials on the sign-in page), or open the demo owner UI.',
+        'This page needs a real platform-owner role in Convex. Sign in with admin@prizelet.dev (local owner credentials on the sign-in page), or open the demo owner UI.',
     };
   }
   return {
@@ -70,7 +70,7 @@ export class AdminQueryBoundary extends Component<Props, State> {
             <h1 className="text-xl font-semibold">Admin data unavailable</h1>
             <p className="text-sm text-muted-foreground">{summary}</p>
             {import.meta.env.DEV && this.state.message ? (
-              <p className="text-xs font-mono text-destructive break-words text-left">{this.state.message}</p>
+              <p className="text-caption font-mono text-destructive break-words text-left">{this.state.message}</p>
             ) : null}
             <div className="flex flex-wrap items-center justify-center gap-2">
               <Button type="button" variant="outline" onClick={this.retry}>

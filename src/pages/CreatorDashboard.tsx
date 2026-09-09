@@ -155,7 +155,7 @@ const CreatorDashboard = () => {
           <h1 className="text-2xl font-bold flex items-center gap-2">
             Overview
             {isVerified && (
-              <span className="inline-flex items-center gap-1 text-xs font-medium text-emerald-400 bg-emerald-500/10 rounded-full px-2.5 py-0.5 border border-emerald-500/20">
+              <span className="inline-flex items-center gap-1 text-caption font-medium text-emerald-400 bg-emerald-500/10 rounded-full px-2.5 py-0.5 border border-emerald-500/20">
                 <ShieldCheck className="h-3 w-3" /> Verified
               </span>
             )}
@@ -188,7 +188,7 @@ const CreatorDashboard = () => {
         if (tasks.length === 0) return null;
         return (
           <div className="rounded-xl border border-border bg-card p-4 mb-6">
-            <h2 className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-3">Next up</h2>
+            <h2 className="text-caption font-medium text-muted-foreground uppercase tracking-wider mb-3">Next up</h2>
             <ul className="space-y-2 text-sm">
               {tasks.map((t) => (
                 <li key={t.href + t.label}>
@@ -208,7 +208,7 @@ const CreatorDashboard = () => {
               <TrendingUp className="h-3 w-3 text-muted-foreground/40" />
             </div>
             <p className="text-2xl font-bold">{stat.value}</p>
-            <p className="text-xs text-muted-foreground mt-1">{stat.label}</p>
+            <p className="text-caption text-muted-foreground mt-1">{stat.label}</p>
           </div>
         ))}
       </div>
@@ -216,33 +216,33 @@ const CreatorDashboard = () => {
       {picks.length > 0 && (
         <div className="rounded-xl border border-border bg-card p-4 mb-6">
           <div className="flex items-center justify-between mb-3">
-            <h2 className="text-xs font-medium text-muted-foreground uppercase tracking-wider flex items-center gap-1.5">
+            <h2 className="text-caption font-medium text-muted-foreground uppercase tracking-wider flex items-center gap-1.5">
               <BarChart3 className="h-3 w-3" /> Tracker performance (practice picks)
             </h2>
-            <Link to="/creator/performance-tracker" className="text-xs text-primary hover:underline flex items-center gap-1">Full tracker <ArrowRight className="h-3 w-3" /></Link>
+            <Link to="/creator/performance-tracker" className="text-caption text-primary hover:underline flex items-center gap-1">Full tracker <ArrowRight className="h-3 w-3" /></Link>
           </div>
-          <p className="text-[10px] text-muted-foreground mb-3">
+          <p className="text-caption text-muted-foreground mb-3">
             Win rate here uses Performance Tracker picks. Settled results on Create Post are tracked separately.
           </p>
           <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
             <div className="rounded-lg bg-muted/30 p-2.5">
-              <p className="text-[9px] text-muted-foreground uppercase">Net Profit</p>
+              <p className="text-caption text-muted-foreground uppercase">Net Profit</p>
               <p className={`text-lg font-bold ${valColor(perfStats.totalWonLost)}`}>{perfStats.totalWonLost > 0 ? '+' : ''}{perfStats.totalWonLost.toFixed(1)}u</p>
             </div>
             <div className="rounded-lg bg-muted/30 p-2.5">
-              <p className="text-[9px] text-muted-foreground uppercase">Win Rate</p>
+              <p className="text-caption text-muted-foreground uppercase">Win Rate</p>
               <p className="text-lg font-bold">{perfStats.winRate}%</p>
             </div>
             <div className="rounded-lg bg-muted/30 p-2.5">
-              <p className="text-[9px] text-muted-foreground uppercase">ROI</p>
+              <p className="text-caption text-muted-foreground uppercase">ROI</p>
               <p className={`text-lg font-bold ${valColor(perfStats.roi)}`}>{perfStats.roi >= 0 ? '+' : ''}{perfStats.roi}%</p>
             </div>
             <div className="rounded-lg bg-muted/30 p-2.5">
-              <p className="text-[9px] text-muted-foreground uppercase">Total Picks</p>
+              <p className="text-caption text-muted-foreground uppercase">Total Picks</p>
               <p className="text-lg font-bold">{perfStats.totalPicks}</p>
             </div>
             <div className="rounded-lg bg-muted/30 p-2.5">
-              <p className="text-[9px] text-muted-foreground uppercase">Wins</p>
+              <p className="text-caption text-muted-foreground uppercase">Wins</p>
               <p className="text-lg font-bold text-emerald-400">{perfStats.wins}</p>
             </div>
           </div>
@@ -253,11 +253,11 @@ const CreatorDashboard = () => {
         <div className="rounded-xl border border-border bg-card p-4 mb-6">
           <div className="flex items-center gap-2 mb-2">
             <Target className="h-4 w-4 text-muted-foreground" />
-            <p className="text-xs font-medium">Tracker eligibility progress</p>
-            <span className="text-[10px] text-muted-foreground ml-auto">{verification.settled}/{verification.minPicks} settled picks</span>
+            <p className="text-caption font-medium">Tracker eligibility progress</p>
+            <span className="text-caption text-muted-foreground ml-auto">{verification.settled}/{verification.minPicks} settled picks</span>
           </div>
           <Progress value={verification.progress} className="h-1.5 mb-1.5" />
-          <p className="text-[10px] text-muted-foreground">
+          <p className="text-caption text-muted-foreground">
             Track more settled picks in Performance Tracker. The Verified badge is granted by the platform, not automatically.
           </p>
         </div>
@@ -267,11 +267,11 @@ const CreatorDashboard = () => {
         <div className="rounded-xl border border-primary/15 bg-primary/5 p-4 mb-6">
           <div className="flex items-center gap-2 mb-3">
             <Lightbulb className="h-4 w-4 text-primary" />
-            <h2 className="text-xs font-semibold uppercase tracking-wider">Revenue Insights</h2>
+            <h2 className="text-caption font-semibold uppercase tracking-wider">Revenue Insights</h2>
           </div>
           <div className="space-y-2">
             {revenueInsights.map((insight, i) => (
-              <div key={i} className="flex items-start gap-2 text-xs">
+              <div key={i} className="flex items-start gap-2 text-caption">
                 <span className="text-primary mt-0.5 shrink-0">→</span>
                 <span className="text-muted-foreground">{insight}</span>
               </div>
@@ -286,25 +286,25 @@ const CreatorDashboard = () => {
           <Link to="/creator/posts">
             <Button variant="outline" className="w-full h-auto py-4 flex-col gap-2">
               <Plus className="h-5 w-5 text-primary" />
-              <span className="text-xs">Create Post</span>
+              <span className="text-caption">Create Post</span>
             </Button>
           </Link>
           <Link to="/creator/performance-tracker">
             <Button variant="outline" className="w-full h-auto py-4 flex-col gap-2">
               <Target className="h-5 w-5 text-primary" />
-              <span className="text-xs">Track Pick</span>
+              <span className="text-caption">Track Pick</span>
             </Button>
           </Link>
           <Link to="/creator/products">
             <Button variant="outline" className="w-full h-auto py-4 flex-col gap-2">
               <Package className="h-5 w-5 text-primary" />
-              <span className="text-xs">New Product</span>
+              <span className="text-caption">New Product</span>
             </Button>
           </Link>
           <Link to="/creator/earnings">
             <Button variant="outline" className="w-full h-auto py-4 flex-col gap-2">
               <DollarSign className="h-5 w-5 text-primary" />
-              <span className="text-xs">Earnings</span>
+              <span className="text-caption">Earnings</span>
             </Button>
           </Link>
         </div>
@@ -333,7 +333,7 @@ const CreatorDashboard = () => {
                 <div className={`h-2 w-2 rounded-full shrink-0 ${post.is_premium ? 'bg-primary' : 'bg-muted-foreground/40'}`} />
                 <div>
                   <p className="font-medium text-sm truncate">{post.title}</p>
-                  <p className="text-xs text-muted-foreground">{post.is_premium ? 'Premium' : 'Free'} · {format(new Date(post.created_at), 'MMM d')}</p>
+                  <p className="text-caption text-muted-foreground">{post.is_premium ? 'Premium' : 'Free'} · {format(new Date(post.created_at), 'MMM d')}</p>
                 </div>
               </div>
             </div>

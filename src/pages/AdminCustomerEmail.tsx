@@ -135,7 +135,7 @@ const AdminCustomerEmail = () => {
         <div className="space-y-4">
           <div className="flex flex-col sm:flex-row gap-4">
             <div className="flex-1">
-              <label className="text-xs font-medium text-muted-foreground mb-1.5 block">Audience</label>
+              <label className="text-caption font-medium text-muted-foreground mb-1.5 block">Audience</label>
               <Select value={audience} onValueChange={(v) => setAudience(v as typeof audience)}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
@@ -148,7 +148,7 @@ const AdminCustomerEmail = () => {
             </div>
             {audience === 'specific' && (
               <div className="flex-1">
-                <label className="text-xs font-medium text-muted-foreground mb-1.5 block">Creator</label>
+                <label className="text-caption font-medium text-muted-foreground mb-1.5 block">Creator</label>
                 <Select value={creatorId} onValueChange={setCreatorId}>
                   <SelectTrigger><SelectValue placeholder="Select creator" /></SelectTrigger>
                   <SelectContent>
@@ -159,7 +159,7 @@ const AdminCustomerEmail = () => {
                   <Button
                     variant="ghost"
                     size="sm"
-                    className="mt-2 h-7 text-xs"
+                    className="mt-2 h-7 text-caption"
                     disabled={creatorStatus === 'LoadingMore'}
                     onClick={() => loadMoreCreators(PAGE_SIZE)}
                   >
@@ -170,7 +170,7 @@ const AdminCustomerEmail = () => {
             )}
           </div>
 
-          <p className="text-xs text-muted-foreground flex items-center gap-1.5">
+          <p className="text-caption text-muted-foreground flex items-center gap-1.5">
             <Users className="h-3 w-3" />
             {previewLoading
               ? 'Counting recipients…'
@@ -178,11 +178,11 @@ const AdminCustomerEmail = () => {
           </p>
 
           <div>
-            <label className="text-xs font-medium text-muted-foreground mb-1.5 block">Subject</label>
+            <label className="text-caption font-medium text-muted-foreground mb-1.5 block">Subject</label>
             <Input placeholder="Enter subject…" value={subject} onChange={(e) => setSubject(e.target.value)} />
           </div>
           <div>
-            <label className="text-xs font-medium text-muted-foreground mb-1.5 block">Content</label>
+            <label className="text-caption font-medium text-muted-foreground mb-1.5 block">Content</label>
             <Textarea placeholder="Write your message…" value={body} onChange={(e) => setBody(e.target.value)} rows={8} className="resize-none" />
           </div>
           <Button onClick={() => void handleSend()} disabled={sending || previewLoading}>
@@ -211,15 +211,15 @@ const AdminCustomerEmail = () => {
                   <div className="flex items-start justify-between gap-3 mb-2">
                     <div className="min-w-0 flex-1">
                       <p className="text-sm font-semibold">{c.subject}</p>
-                      <p className="text-xs text-muted-foreground mt-1 line-clamp-2">{c.body}</p>
+                      <p className="text-caption text-muted-foreground mt-1 line-clamp-2">{c.body}</p>
                     </div>
-                    <Badge variant="outline" className="text-[9px] shrink-0">
+                    <Badge variant="outline" className="text-caption shrink-0">
                       {c.status === 'in_app_announcement' || c.status === 'sent'
                         ? 'In-app'
                         : c.status}
                     </Badge>
                   </div>
-                  <div className="flex flex-wrap items-center gap-4 text-xs text-muted-foreground mt-3">
+                  <div className="flex flex-wrap items-center gap-4 text-caption text-muted-foreground mt-3">
                     <span className="flex items-center gap-1"><Clock className="h-3 w-3" /> {format(new Date(c.created_at), 'MMM d, yyyy')}</span>
                     <span className="flex items-center gap-1"><Users className="h-3 w-3" /> {c.recipients} recipients</span>
                     <span className="flex items-center gap-1"><Eye className="h-3 w-3" /> {c.audience}</span>

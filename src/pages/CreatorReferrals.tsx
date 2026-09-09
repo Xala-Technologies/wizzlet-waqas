@@ -8,6 +8,7 @@ import { buildReferralCode, useCreatorProfile } from '@/hooks/useCreatorProfile'
 import { UserPlus, Users, DollarSign, Copy, Gift, Loader2 } from 'lucide-react';
 import { format } from 'date-fns';
 import { toast } from 'sonner';
+import { copyToClipboard } from '@/lib/clipboard';
 
 const CreatorReferrals = () => {
   const { creator, loading: creatorLoading } = useCreatorProfile();
@@ -59,23 +60,23 @@ const CreatorReferrals = () => {
         <div className="rounded-xl border border-border bg-card p-5">
           <Users className="h-4 w-4 text-blue-400 mb-2" />
           <p className="text-2xl font-bold">{referralRows.length}</p>
-          <p className="text-xs text-muted-foreground">Referred Users</p>
+          <p className="text-caption text-muted-foreground">Referred Users</p>
         </div>
         <div className="rounded-xl border border-border bg-card p-5">
           <UserPlus className="h-4 w-4 text-emerald-400 mb-2" />
           <p className="text-2xl font-bold">{converted}</p>
-          <p className="text-xs text-muted-foreground">Attributed conversions</p>
+          <p className="text-caption text-muted-foreground">Attributed conversions</p>
         </div>
         <div className="rounded-xl border border-border bg-card p-5">
           <DollarSign className="h-4 w-4 text-amber-400 mb-2" />
           <p className="text-2xl font-bold">—</p>
-          <p className="text-xs text-muted-foreground">Cash commission (not enabled)</p>
+          <p className="text-caption text-muted-foreground">Cash commission (not enabled)</p>
         </div>
       </div>
 
       <div className="rounded-xl border border-border bg-card p-6 mb-6">
         <h2 className="text-sm font-medium mb-2 flex items-center gap-2"><Gift className="h-4 w-4 text-primary" /> Your Referral Link</h2>
-        <p className="text-xs text-muted-foreground mb-4">
+        <p className="text-caption text-muted-foreground mb-4">
           Share this link to attribute signups. Conversion marks when they subscribe; cash commission payouts are not enabled yet.
         </p>
         <div className="flex flex-col sm:flex-row gap-2">
@@ -87,7 +88,13 @@ const CreatorReferrals = () => {
             size="sm"
             className="h-11 min-h-11 w-full sm:w-auto shrink-0"
             disabled={!referralLink}
-            onClick={() => { navigator.clipboard.writeText(referralLink); toast.success('Referral link copied!'); }}
+            onClick={() => {
+              void (async () => {
+                const ok = await copyToClipboard(referralLink);
+                if (ok) toast.success('Referral link copied!');
+                else toast.error('Could not copy — try selecting the text manually');
+              })();
+            }}
           >
             <Copy className="mr-1.5 h-3.5 w-3.5" /> Copy
           </Button>
@@ -110,9 +117,9 @@ const CreatorReferrals = () => {
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0">
                     <p className="text-sm font-medium truncate">{r.referred_email ?? 'Anonymous signup'}</p>
-                    <p className="text-xs text-muted-foreground mt-0.5">{format(new Date(r.created_at), 'MMM d, yyyy')}</p>
+                    <p className="text-caption text-muted-foreground mt-0.5">{format(new Date(r.created_at), 'MMM d, yyyy')}</p>
                   </div>
-                  <span className={`text-xs font-medium shrink-0 ${r.converted ? 'text-emerald-500' : 'text-muted-foreground'}`}>
+                  <span className={`text-caption font-medium shrink-0 ${r.converted ? 'text-emerald-500' : 'text-muted-foreground'}`}>
                     {r.converted ? 'Converted' : 'Pending'}
                   </span>
                 </div>
@@ -125,10 +132,10 @@ const CreatorReferrals = () => {
             <table className="w-full min-w-[520px]">
               <thead>
                 <tr className="border-b border-border bg-muted/30">
-                  <th className="text-left text-xs font-medium text-muted-foreground p-4">Referred</th>
-                  <th className="text-left text-xs font-medium text-muted-foreground p-4">Date</th>
-                  <th className="text-left text-xs font-medium text-muted-foreground p-4">Status</th>
-                  <th className="text-right text-xs font-medium text-muted-foreground p-4">Commission</th>
+                  <th className="text-left text-caption font-medium text-muted-foreground p-4">Referred</th>
+                  <th className="text-left text-caption font-medium text-muted-foreground p-4">Date</th>
+                  <th className="text-left text-caption font-medium text-muted-foreground p-4">Status</th>
+                  <th className="text-right text-caption font-medium text-muted-foreground p-4">Commission</th>
                 </tr>
               </thead>
               <tbody>
@@ -136,7 +143,7 @@ const CreatorReferrals = () => {
                   <tr key={r.id} className="border-b border-border last:border-0">
                     <td className="p-4 text-sm">{r.referred_email ?? 'Anonymous signup'}</td>
                     <td className="p-4 text-sm text-muted-foreground">{format(new Date(r.created_at), 'MMM d, yyyy')}</td>
-                    <td className="p-4 text-xs font-medium">
+                    <td className="p-4 text-caption font-medium">
                       <span className={r.converted ? 'text-emerald-500' : 'text-muted-foreground'}>
                         {r.converted ? 'Converted' : 'Pending'}
                       </span>

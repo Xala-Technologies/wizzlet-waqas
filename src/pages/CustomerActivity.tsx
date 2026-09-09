@@ -80,7 +80,7 @@ const CustomerActivity = () => {
               <div key={stat.label} className="rounded-xl border border-border bg-card p-4">
                 <stat.icon className="h-3.5 w-3.5 text-muted-foreground mb-2" />
                 <p className="text-xl font-bold">{stat.value}</p>
-                <p className="text-[10px] text-muted-foreground uppercase">{stat.label}</p>
+                <p className="text-caption text-muted-foreground uppercase">{stat.label}</p>
               </div>
             ))}
       </div>
@@ -93,7 +93,7 @@ const CustomerActivity = () => {
         <div className="rounded-xl border border-dashed border-border bg-card/50 p-12 text-center">
           <CalendarDays className="h-10 w-10 text-muted-foreground/40 mx-auto mb-3" />
           <h3 className="text-sm font-medium mb-1">No tracked views yet</h3>
-          <p className="text-xs text-muted-foreground">Open picks in your feed or creator profiles to build history here.</p>
+          <p className="text-caption text-muted-foreground">Open picks in your feed or creator profiles to build history here.</p>
         </div>
       ) : (
         <div className="rounded-xl border border-border overflow-hidden">
@@ -103,13 +103,13 @@ const CustomerActivity = () => {
             const body = (
               <>
                 <div className="h-8 w-8 rounded-full bg-primary/20 flex items-center justify-center shrink-0">
-                  <span className="text-[9px] font-bold text-primary">{name[0]?.toUpperCase()}</span>
+                  <span className="text-caption font-bold text-primary">{name[0]?.toUpperCase()}</span>
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-medium truncate">{post.title}</p>
-                  <p className="text-[10px] text-muted-foreground">{name}</p>
+                  <p className="text-caption text-muted-foreground">{name}</p>
                 </div>
-                <span className="text-[10px] text-muted-foreground shrink-0">
+                <span className="text-caption text-muted-foreground shrink-0">
                   {formatDistanceToNowStrict(new Date(event.created_at), { addSuffix: true })}
                 </span>
               </>

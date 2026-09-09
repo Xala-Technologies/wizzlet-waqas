@@ -63,6 +63,7 @@ export default defineSchema({
   })
     .index("by_userId", ["userId"])
     .index("by_userId_role", ["userId", "role"])
+    .index("by_role", ["role"])
     .index("by_legacyId", ["legacyId"]),
 
   creators: defineTable({
@@ -384,6 +385,8 @@ export default defineSchema({
     caseId: v.id("resolutionCases"),
     senderRole: v.string(),
     body: v.string(),
+    /** Optional for legacy rows; treat missing as unread. */
+    read: v.optional(v.boolean()),
     createdAt: v.number(),
   })
     .index("by_caseId", ["caseId"])
@@ -399,6 +402,7 @@ export default defineSchema({
     createdAt: v.number(),
   })
     .index("by_creatorId", ["creatorId"])
+    .index("by_channel", ["channel"])
     .index("by_legacyId", ["legacyId"]),
 
   platformSettings: defineTable({
