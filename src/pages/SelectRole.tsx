@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { WizzletLogo } from '@/components/WizzletLogo';
+import { PrizeletLogo } from '@/components/PrizeletLogo';
 import { Seo } from '@/components/Seo';
 import { Navigate, useNavigate } from 'react-router-dom';
 import { useMutation } from 'convex/react';
@@ -80,11 +80,11 @@ const SelectRole = () => {
 
   return (
     <main id="main-content" className="min-h-screen flex items-center justify-center px-4">
-      <Seo title="Choose your role — Wizzlet" description="Choose whether to join Wizzlet as a creator or subscriber." noindex />
+      <Seo title="Choose your role — Prizelet" description="Choose whether to join Prizelet as a creator or subscriber." noindex />
       <div className="w-full max-w-lg">
         <div className="text-center mb-10">
-          <WizzletLogo size="lg" linkTo="" className="justify-center mb-6" />
-          <h1 className="text-2xl font-bold mt-4">How do you want to use Wizzlet?</h1>
+          <PrizeletLogo size="lg" linkTo="" className="justify-center mb-6" />
+          <h1 className="text-2xl font-bold mt-4">How do you want to use Prizelet?</h1>
           <p className="text-sm text-muted-foreground mt-2">You can always change this later</p>
         </div>
 

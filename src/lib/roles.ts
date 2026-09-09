@@ -12,7 +12,7 @@ export const ROLE_LABEL: Record<AppRole, string> = {
   subscriber: 'Member',
 };
 
-export const ACTIVE_ROLE_STORAGE_KEY = 'wizzlet.activeRole';
+export const ACTIVE_ROLE_STORAGE_KEY = 'prizelet.activeRole';
 
 export function isAppRole(value: unknown): value is AppRole {
   return value === 'admin' || value === 'creator' || value === 'subscriber';

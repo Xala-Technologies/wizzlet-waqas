@@ -80,7 +80,7 @@ const DemoAdminUsers = () => {
   };
 
   const exportCsv = () => {
-    downloadCsv('wizzlet-users.csv', [
+    downloadCsv('prizelet-users.csv', [
       ['Name', 'Email', 'Role', 'Subscriptions', 'Lifetime Spend', 'Status', 'Joined'],
       ...filtered.map(u => [
         u.name, u.email, u.role, u.subs, spendOf(u).toFixed(2),

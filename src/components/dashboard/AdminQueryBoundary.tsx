@@ -25,7 +25,7 @@ function classifyAdminError(message: string): { authLikely: boolean; summary: st
     return {
       authLikely: true,
       summary:
-        'This page needs a real platform-owner role in Convex. Sign in with admin@wizzlet.dev (local owner credentials on the sign-in page), or open the demo owner UI.',
+        'This page needs a real platform-owner role in Convex. Sign in with admin@prizelet.dev (local owner credentials on the sign-in page), or open the demo owner UI.',
     };
   }
   return {

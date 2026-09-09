@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { WizzletLogo } from '@/components/WizzletLogo';
+import { PrizeletLogo } from '@/components/PrizeletLogo';
 import { Seo } from '@/components/Seo';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -80,10 +80,10 @@ const Signup = () => {
 
   return (
     <main id="main-content" className="min-h-screen flex items-center justify-center px-4 bg-background">
-      <Seo title="Create your Wizzlet account" description="Join the Wizzlet private network — create an account to follow creators or apply as a creator." noindex />
+      <Seo title="Create your Prizelet account" description="Join the Prizelet private network — create an account to follow creators or apply as a creator." noindex />
       <div className="w-full max-w-[380px]">
         <div className="text-center mb-10">
-          <WizzletLogo size="md" className="justify-center mb-8" />
+          <PrizeletLogo size="md" className="justify-center mb-8" />
           <h1 className="text-xl font-bold tracking-tight mt-4 text-foreground">Create your account</h1>
           <p className="text-[13px] text-muted-foreground mt-1.5">Start monetizing your expertise</p>
           {referralCode ? (

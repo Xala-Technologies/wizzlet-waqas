@@ -72,7 +72,7 @@ const DemoAdminCreators = () => {
     sortKey !== k ? <ArrowUpDown className="h-3 w-3 opacity-40" /> : sortDir === 'asc' ? <ArrowUp className="h-3 w-3" /> : <ArrowDown className="h-3 w-3" />;
 
   const exportCsv = () => {
-    downloadCsv('wizzlet-creators.csv', [
+    downloadCsv('prizelet-creators.csv', [
       ['Creator', 'Username', 'Email', 'Subscribers', 'Volume', 'Fees', 'Fee %', 'Transactions', 'Status'],
       ...filtered.map(({ creator, row }) => [
         creator.name, creator.username, creator.email, creator.subs,

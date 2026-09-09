@@ -49,7 +49,7 @@ const DemoAdminDashboard = () => {
   ];
 
   const exportSummary = () => {
-    downloadCsv('wizzlet-demo-platform-summary.csv', [
+    downloadCsv('prizelet-demo-platform-summary.csv', [
       ['Metric', 'Value'],
       ['Gross volume', metrics.volume],
       ['Platform earnings', metrics.fees],

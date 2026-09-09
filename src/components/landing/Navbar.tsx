@@ -5,7 +5,7 @@ import { Menu, X, Bell } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { cn } from '@/lib/utils';
 import { ThemeToggle } from '@/components/ThemeToggle';
-import { WizzletLogo } from '@/components/WizzletLogo';
+import { PrizeletLogo } from '@/components/PrizeletLogo';
 
 const navLinks = [
   { label: 'Home', path: '/' },
@@ -34,7 +34,7 @@ export function Navbar() {
 
       <div className="container flex h-16 items-center justify-between">
         {/* LEFT: Logo */}
-        <WizzletLogo size="md" />
+        <PrizeletLogo size="md" />
 
         {/* CENTER: Nav links */}
         <div className="hidden lg:flex items-center gap-1">

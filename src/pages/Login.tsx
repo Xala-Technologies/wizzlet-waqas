@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { WizzletLogo } from '@/components/WizzletLogo';
+import { PrizeletLogo } from '@/components/PrizeletLogo';
 import { Seo } from '@/components/Seo';
 import { Link, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -107,10 +107,10 @@ const Login = () => {
 
   return (
     <main id="main-content" className="min-h-screen flex items-center justify-center px-4 bg-background">
-      <Seo title="Sign in — Wizzlet" description="Sign in to your Wizzlet account to manage picks, subscriptions and payouts." noindex />
+      <Seo title="Sign in — Prizelet" description="Sign in to your Prizelet account to manage picks, subscriptions and payouts." noindex />
       <div className="w-full max-w-[380px]">
         <div className="text-center mb-10">
-          <WizzletLogo size="md" className="justify-center mb-8" />
+          <PrizeletLogo size="md" className="justify-center mb-8" />
           <h1 className="text-xl font-bold tracking-tight mt-4 text-foreground">Welcome back</h1>
           <p className="text-[13px] text-muted-foreground mt-1.5">Sign in to your account</p>
         </div>

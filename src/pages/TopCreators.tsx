@@ -4,7 +4,7 @@ import { Footer } from '@/components/landing/Footer';
 
 const TopCreators = () => (
   <div className="min-h-screen bg-background">
-    <Seo title={'Top Performing Creators — Wizzlet Leaderboard'} description={'The Wizzlet leaderboard ranks creators by verified win rate and units won across 50+ tracked picks.'} />
+    <Seo title={'Top Performing Creators — Prizelet Leaderboard'} description={'The Prizelet leaderboard ranks creators by verified win rate and units won across 50+ tracked picks.'} />
       <Navbar />
     <main id="main-content" className="container pt-32 pb-20">
       <h1 className="text-3xl font-bold text-foreground mb-4">Top Creators</h1>

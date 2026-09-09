@@ -103,7 +103,7 @@ const CreatorResolutionCase = () => {
     <DashboardLayout type="creator">
       <div className="mb-6">
         <h1 className="text-2xl font-bold">Resolution Center</h1>
-        <p className="text-muted-foreground text-sm mt-0.5">Raise an issue with the Wizzlet team and track its progress</p>
+        <p className="text-muted-foreground text-sm mt-0.5">Raise an issue with the Prizelet team and track its progress</p>
       </div>
 
       <div className="rounded-xl border border-border bg-card p-6 mb-8">
@@ -182,7 +182,7 @@ const CreatorResolutionCase = () => {
                     {messageRows.length === 0 && <p className="text-xs text-muted-foreground">No messages yet.</p>}
                     {messageRows.map(m => (
                       <div key={m.id} className={`rounded-lg p-3 text-xs ${m.sender_role === 'creator' ? 'bg-primary/10 ml-8' : 'bg-muted/40 mr-8'}`}>
-                        <p className="font-medium mb-1 capitalize">{m.sender_role === 'creator' ? 'You' : 'Wizzlet team'}</p>
+                        <p className="font-medium mb-1 capitalize">{m.sender_role === 'creator' ? 'You' : 'Prizelet team'}</p>
                         <p className="text-muted-foreground whitespace-pre-wrap">{m.body}</p>
                         <p className="text-[10px] text-muted-foreground/70 mt-1">{format(new Date(m.created_at), 'MMM d, HH:mm')}</p>
                       </div>

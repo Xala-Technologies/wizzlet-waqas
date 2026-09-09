@@ -204,7 +204,7 @@ const CreatorProfile = () => {
   if (!creator) {
     return (
       <div className="min-h-screen">
-        <Seo title="Creator not found — Wizzlet" description="This creator profile doesn't exist or isn't published yet." noindex />
+        <Seo title="Creator not found — Prizelet" description="This creator profile doesn't exist or isn't published yet." noindex />
         <Navbar />
         <main id="main-content" className="pt-32 text-center">
           <h1 className="text-2xl font-bold mb-2">Creator not found</h1>
@@ -231,8 +231,8 @@ const CreatorProfile = () => {
   return (
     <div className="min-h-screen">
       <Seo
-        title={`${creator.display_name ?? creator.username} (@${creator.username}) — Picks & Subscriptions | Wizzlet`}
-        description={(creator.bio?.trim() || `Follow @${creator.username} on Wizzlet for verified sports picks, results and subscription access from $${price}/mo.`).slice(0, 155)}
+        title={`${creator.display_name ?? creator.username} (@${creator.username}) — Picks & Subscriptions | Prizelet`}
+        description={(creator.bio?.trim() || `Follow @${creator.username} on Prizelet for verified sports picks, results and subscription access from $${price}/mo.`).slice(0, 155)}
         canonicalPath={`/${creator.username}`}
       />
       <Navbar />
