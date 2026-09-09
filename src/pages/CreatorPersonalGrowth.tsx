@@ -153,7 +153,7 @@ const CreatorPersonalGrowth = () => {
     <DashboardLayout type="creator">
       <div className="mb-6">
         <h1 className="text-2xl font-bold">Personal Growth Manager</h1>
-        <p className="text-muted-foreground text-sm mt-0.5">Live performance coaching from your Wizzlet growth team</p>
+        <p className="text-muted-foreground text-sm mt-0.5">Live performance coaching from your Prizelet growth team</p>
       </div>
 
       {busy ? (
@@ -174,7 +174,7 @@ const CreatorPersonalGrowth = () => {
                 <Bot className="h-5 w-5 text-primary" />
               </div>
               <div className="flex-1 min-w-0">
-                <h2 className="font-semibold text-sm">Wizzlet Growth Team</h2>
+                <h2 className="font-semibold text-sm">Prizelet Growth Team</h2>
                 <p className="text-[11px] text-muted-foreground mt-0.5">
                   Ask about pricing, retention or content — replies arrive in this thread.
                 </p>

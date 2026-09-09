@@ -106,7 +106,7 @@ const TodaysEvents = () => {
 
   return (
     <div className="min-h-screen bg-noise">
-      <Seo title="Today's Events — Live Matchups & Picks | Wizzlet" description="Every matchup happening today with live status, start times, and the Wizzlet creators posting picks on each game." />
+      <Seo title="Today's Events — Live Matchups & Picks | Prizelet" description="Every matchup happening today with live status, start times, and the Prizelet creators posting picks on each game." />
       <Navbar />
       <main id="main-content" className="pt-24 pb-20">
         <div className="container">

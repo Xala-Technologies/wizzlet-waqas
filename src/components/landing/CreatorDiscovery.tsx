@@ -101,7 +101,7 @@ export function CreatorDiscovery() {
                       </div>
                     </div>
                     <p className="text-[13px] text-muted-foreground leading-relaxed mb-5 line-clamp-2">
-                      {creator.bio || 'Sports creator on Wizzlet.'}
+                      {creator.bio || 'Sports creator on Prizelet.'}
                     </p>
                     <Button asChild variant="outline" size="sm" className="w-full group-hover:border-primary/30 group-hover:text-primary transition-colors">
                       <Link to={`/c/${creator.username}`}>View profile</Link>

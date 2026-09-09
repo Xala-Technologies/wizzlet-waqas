@@ -15,8 +15,8 @@ export function ToolsSection() {
       <div className="pointer-events-none absolute bottom-0 left-1/2 -translate-x-1/2 h-[400px] w-[800px] rounded-full opacity-[0.04] blur-[160px] bg-primary" />
 
       <div className="container relative z-10">
-        <div className="max-w-4xl mx-auto mb-16">
-          <h2 className="text-3xl sm:text-4xl md:text-[3.25rem] font-extrabold tracking-[-0.04em] leading-[1.05] text-foreground">
+        <div className="max-w-4xl mx-auto mb-16 text-center">
+          <h2 className="text-3xl sm:text-4xl md:text-[3.25rem] font-extrabold tracking-[-0.04em] leading-[1.05] text-foreground text-center">
             TOOLS THAT ACTUALLY
             <br />
             <span className="text-gradient">MOVE NUMBERS</span>

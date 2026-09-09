@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { WizzletLogo } from '@/components/WizzletLogo';
+import { PrizeletLogo } from '@/components/PrizeletLogo';
 
 const explore = [
   { label: 'Home', to: '/' },
@@ -28,10 +28,10 @@ export function Footer() {
       <div className="container relative py-14 md:py-16">
         <div className="grid gap-12 md:grid-cols-[minmax(0,1.4fr)_repeat(2,minmax(0,0.8fr))] md:gap-10">
           <div className="max-w-sm">
-            <WizzletLogo size="md" />
+            <PrizeletLogo size="md" />
             <p className="mt-4 text-[14px] leading-relaxed text-muted-foreground">
-              Private betting infrastructure for creators who treat their edge like a business —
-              subscriptions, gated picks, and payouts in one place.
+              Private creator infrastructure for people who treat their work like a business —
+              subscriptions, gated content, and payouts in one place.
             </p>
             <p className="mt-6 text-[11px] uppercase tracking-[0.18em] text-muted-foreground/60">
               Invite-only · Manually reviewed
@@ -73,7 +73,7 @@ export function Footer() {
               ))}
               <li>
                 <a
-                  href="mailto:support@wizzlet.com"
+                  href="mailto:support@prizelet.com"
                   className="text-[13px] text-muted-foreground transition-colors hover:text-foreground"
                 >
                   Support
@@ -84,7 +84,7 @@ export function Footer() {
         </div>
 
         <div className="mt-12 flex flex-col gap-3 border-t border-border/80 pt-6 sm:flex-row sm:items-center sm:justify-between">
-          <p className="text-[12px] text-muted-foreground">© {new Date().getFullYear()} Wizzlet</p>
+          <p className="text-[12px] text-muted-foreground">© {new Date().getFullYear()} Prizelet</p>
           <p className="text-[12px] text-muted-foreground/70">
             Built for serious creators — not everyone.
           </p>

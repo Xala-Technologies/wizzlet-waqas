@@ -1,5 +1,5 @@
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { WizzletLogo } from '@/components/WizzletLogo';
+import { PrizeletLogo } from '@/components/PrizeletLogo';
 import { Button } from '@/components/ui/button';
 import { useDemoAdminStore } from '@/components/demo/demoAdminStore';
 import {
@@ -67,7 +67,7 @@ export function DemoAdminSidebar({ mobile = false }: { mobile?: boolean } = {}) 
   return (
     <aside className={mobile ? 'flex h-full w-full flex-col bg-card' : 'hidden md:flex w-[220px] flex-col border-r border-border bg-card/80 backdrop-blur-sm'}>
       <div className="px-5 py-5">
-        <WizzletLogo size="md" />
+        <PrizeletLogo size="md" />
       </div>
 
       <div className="px-5 mb-4">

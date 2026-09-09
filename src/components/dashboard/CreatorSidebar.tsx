@@ -1,5 +1,5 @@
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { WizzletLogo } from '@/components/WizzletLogo';
+import { PrizeletLogo } from '@/components/PrizeletLogo';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import {
@@ -154,7 +154,7 @@ export function CreatorSidebar({ mobile = false }: { mobile?: boolean } = {}) {
       {/* Logo — omitted in mobile drawer (shown in MobileTopBar) */}
       {!mobile && (
         <div className="px-5 py-5">
-          <WizzletLogo size="md" />
+          <PrizeletLogo size="md" />
         </div>
       )}
 

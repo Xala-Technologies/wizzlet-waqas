@@ -190,7 +190,7 @@ const CreatorOnboarding = () => {
             <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary">
               <Zap className="h-4 w-4 text-primary-foreground" />
             </div>
-            Wizzlet
+            Prizelet
           </Link>
           <h1 className="text-2xl font-bold">
             {alreadyPublished ? 'Update your creator profile' : 'Set up your creator profile'}
@@ -238,7 +238,7 @@ const CreatorOnboarding = () => {
                   maxLength={30}
                 />
               </div>
-              <p className="text-xs text-muted-foreground">wizzlet.com/@{username || 'you'}</p>
+              <p className="text-xs text-muted-foreground">prizelet.com/@{username || 'you'}</p>
             </div>
             <div className="space-y-2">
               <Label htmlFor="bio">Bio</Label>

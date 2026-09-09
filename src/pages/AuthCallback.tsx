@@ -40,7 +40,7 @@ const AuthCallback = () => {
 
   return (
     <main id="main-content" className="min-h-screen flex items-center justify-center bg-background px-4">
-      <Seo title="Signing in — Wizzlet" description="Completing social sign-in." noindex />
+      <Seo title="Signing in — Prizelet" description="Completing social sign-in." noindex />
       <div className="flex flex-col items-center gap-3 text-muted-foreground">
         <Loader2 className="h-6 w-6 animate-spin text-primary" />
         <p className="text-sm">Finishing sign-in…</p>

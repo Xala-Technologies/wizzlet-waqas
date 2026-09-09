@@ -12,7 +12,7 @@ const NotFound = () => {
 
   return (
     <main id="main-content" className="flex min-h-screen items-center justify-center bg-background px-4">
-      <Seo title="Page not found — Wizzlet" description="The page you were looking for doesn't exist on Wizzlet." noindex />
+      <Seo title="Page not found — Prizelet" description="The page you were looking for doesn't exist on Prizelet." noindex />
       <div className="text-center">
         <p className="font-mono text-sm text-muted-foreground">404</p>
         <h1 className="mt-2 mb-3 text-3xl font-bold tracking-tight">Page not found</h1>

@@ -1,6 +1,6 @@
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useQuery } from 'convex/react';
-import { WizzletLogo } from '@/components/WizzletLogo';
+import { PrizeletLogo } from '@/components/PrizeletLogo';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import {
@@ -161,7 +161,7 @@ export function MemberSidebar({ demo = false, mobile = false }: { demo?: boolean
     <aside className={mobile ? 'flex h-full min-h-0 w-full flex-col bg-card' : 'hidden md:flex w-[220px] flex-col border-r border-border bg-card/80 backdrop-blur-sm'}>
       {!mobile && (
         <div className="px-5 py-5">
-          <WizzletLogo size="md" />
+          <PrizeletLogo size="md" />
         </div>
       )}
 

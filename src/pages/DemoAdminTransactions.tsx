@@ -79,7 +79,7 @@ const DemoAdminTransactions = () => {
   };
 
   const exportCsv = () => {
-    downloadCsv('wizzlet-transactions.csv', [
+    downloadCsv('prizelet-transactions.csv', [
       ['Date', 'Customer', 'Creator', 'Amount', 'Creator earnings', 'Platform fee', 'Fee %', 'Status'],
       ...filtered.map(t => [format(t.date, 'yyyy-MM-dd'), t.customer, t.creatorName, t.amount.toFixed(2), t.earnings.toFixed(2), t.fee.toFixed(2), `${t.feePercent}%`, t.status]),
     ]);

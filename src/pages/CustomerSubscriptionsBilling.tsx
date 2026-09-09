@@ -319,7 +319,7 @@ const CustomerSubscriptionsBilling = () => {
           ) : (
             <div className="space-y-3">
               <p className="text-[11px] text-muted-foreground">
-                Settled payment events from Wizzlet. For Stripe invoices and receipts, open the billing portal.
+                Settled payment events from Prizelet. For Stripe invoices and receipts, open the billing portal.
               </p>
               <div className="rounded-xl border border-border overflow-hidden">
                 {(eventsRaw ?? []).map((item, i, arr) => (
@@ -358,7 +358,7 @@ const CustomerSubscriptionsBilling = () => {
               <div>
                 <p className="text-sm font-medium">Payment methods are stored with our payment provider</p>
                 <p className="text-[11px] text-muted-foreground">
-                  Card details never touch Wizzlet — update them in the secure billing portal.
+                  Card details never touch Prizelet — update them in the secure billing portal.
                 </p>
               </div>
             </div>

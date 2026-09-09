@@ -29,8 +29,8 @@ const Creators = () => {
   return (
     <div className="flex min-h-screen flex-col bg-noise">
       <Seo
-        title="Top Sports Creators on Wizzlet"
-        description="Browse verified creators on Wizzlet, compare win rates and units, and subscribe to the handicappers you trust."
+        title="Top Sports Creators on Prizelet"
+        description="Browse verified creators on Prizelet, compare win rates and units, and subscribe to the handicappers you trust."
       />
       <Navbar />
 
@@ -39,13 +39,13 @@ const Creators = () => {
 
         <section className="container relative pt-28 pb-10 md:pt-32 md:pb-14">
           <p className="mb-4 text-[11px] font-medium uppercase tracking-[0.22em] text-primary">
-            Wizzlet · Creators
+            Prizelet · Creators
           </p>
           <h1 className="max-w-2xl text-4xl font-extrabold tracking-[-0.04em] text-foreground sm:text-5xl">
             Creators who publish with an edge
           </h1>
           <p className="mt-4 max-w-xl text-[15px] leading-relaxed text-muted-foreground">
-            Live profiles from the Wizzlet network. Subscribe for gated picks — no algorithm,
+            Live profiles from the Prizelet network. Subscribe for gated picks — no algorithm,
             no public feed noise.
           </p>
 
@@ -154,7 +154,7 @@ const Creators = () => {
                 Have a record worth selling?
               </h2>
               <p className="mt-2 text-sm text-muted-foreground">
-                Wizzlet is invite-only infrastructure — not another public tip board.
+                Prizelet is invite-only infrastructure — not another public tip board.
               </p>
             </div>
             <Link to="/signup">
