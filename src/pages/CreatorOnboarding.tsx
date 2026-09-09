@@ -8,11 +8,12 @@ import { useConvex, useMutation, useQuery } from 'convex/react';
 import { api } from '../../convex/_generated/api';
 import { useAuth } from '@/contexts/AuthContext';
 import { uploadToConvexStorage } from '@/lib/upload';
-import { Zap, ArrowRight, ArrowLeft, Loader2, Camera, ImageIcon, User } from 'lucide-react';
+import { Zap, ArrowRight, ArrowLeft, Loader2, Camera, ImageIcon, User, Package } from 'lucide-react';
 import { toast } from 'sonner';
 import { useQueryClient } from '@tanstack/react-query';
+import type { Id } from '../../convex/_generated/dataModel';
 
-const STEPS = ['Profile', 'Images', 'Pricing'];
+const STEPS = ['Profile', 'Images', 'Product'];
 
 const CreatorOnboarding = () => {
   const queryClient = useQueryClient();
@@ -20,8 +21,14 @@ const CreatorOnboarding = () => {
   const { user, roles, switchRole } = useAuth();
   const convex = useConvex();
   const existing = useQuery(api.creators.queries.myCreator, user ? {} : 'skip');
+  const me = useQuery(api.users.queries.me, user ? {} : 'skip');
+  const existingProducts = useQuery(
+    api.products.mutations.listByCreator,
+    existing?._id ? { creatorId: existing._id, activeOnly: true } : 'skip',
+  );
   const upsertOnboarding = useMutation(api.creators.queries.upsertOnboarding);
   const setPublished = useMutation(api.creators.queries.setPublished);
+  const upsertProduct = useMutation(api.products.mutations.upsert);
   const [step, setStep] = useState(0);
   const [loading, setLoading] = useState(false);
   const [hydrated, setHydrated] = useState(false);
@@ -29,7 +36,10 @@ const CreatorOnboarding = () => {
   const [displayName, setDisplayName] = useState('');
   const [username, setUsername] = useState('');
   const [bio, setBio] = useState('');
-  const [price, setPrice] = useState('9.99');
+  const [productName, setProductName] = useState('');
+  const [productDescription, setProductDescription] = useState('');
+  const [productPrice, setProductPrice] = useState('9.99');
+  const [productId, setProductId] = useState<Id<'products'> | undefined>();
 
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
@@ -43,17 +53,29 @@ const CreatorOnboarding = () => {
   const bannerRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    if (hydrated || existing === undefined) return;
+    if (hydrated || existing === undefined || me === undefined) return;
+    // Wait for products list when a creator draft already exists.
+    if (existing && existingProducts === undefined) return;
+
+    const socialName = (me.fullName ?? me.name ?? '').trim();
+    const socialUser = (me.username ?? me.discordUsername ?? '')
+      .trim()
+      .toLowerCase()
+      .replace(/[^a-z0-9_]/g, '');
+    const socialBio = (me.bio ?? '').trim().slice(0, 300);
+    const socialAvatar =
+      typeof me.image === 'string' && me.image.length > 0
+        ? me.image.replace('_normal.', '.').replace('_bigger.', '.')
+        : undefined;
+
     if (existing) {
-      setDisplayName(existing.displayName ?? '');
-      setUsername(existing.username ?? '');
-      setBio(existing.bio ?? '');
-      if (existing.monthlyPriceCents != null) {
-        setPrice((existing.monthlyPriceCents / 100).toFixed(2));
-      }
-      if (existing.avatarUrl) {
-        setAvatarPreview(existing.avatarUrl);
-        setSavedAvatarUrl(existing.avatarUrl);
+      setDisplayName(existing.displayName || socialName.slice(0, 50));
+      setUsername(existing.username || socialUser.slice(0, 30));
+      setBio(existing.bio || socialBio);
+      const avatar = existing.avatarUrl || socialAvatar;
+      if (avatar) {
+        setAvatarPreview(avatar);
+        setSavedAvatarUrl(avatar);
       }
       if (existing.bannerUrl) {
         setBannerPreview(existing.bannerUrl);
@@ -62,9 +84,34 @@ const CreatorOnboarding = () => {
       if (typeof existing.onboardingStep === 'number') {
         setStep(Math.max(0, Math.min(STEPS.length - 1, existing.onboardingStep)));
       }
+      const firstProduct =
+        existingProducts?.find((p) => p.isFeatured) ?? existingProducts?.[0];
+      if (firstProduct) {
+        setProductId(firstProduct._id);
+        setProductName(firstProduct.name);
+        setProductDescription(firstProduct.description ?? '');
+        setProductPrice((firstProduct.priceCents / 100).toFixed(2));
+      }
+    } else {
+      if (socialName) setDisplayName(socialName.slice(0, 50));
+      if (socialUser) setUsername(socialUser.slice(0, 30));
+      if (socialBio) setBio(socialBio);
+      if (socialAvatar) {
+        setAvatarPreview(socialAvatar);
+        setSavedAvatarUrl(socialAvatar);
+      }
     }
     setHydrated(true);
-  }, [existing, hydrated]);
+  }, [existing, me, existingProducts, hydrated]);
+
+  // If draft had no avatar (or hydration already ran), still pull the social photo when available.
+  useEffect(() => {
+    if (!me?.image) return;
+    if (avatarPreview || savedAvatarUrl || avatarFile) return;
+    const url = me.image.replace('_normal.', '.').replace('_bigger.', '.');
+    setAvatarPreview(url);
+    setSavedAvatarUrl(url);
+  }, [me, avatarPreview, savedAvatarUrl, avatarFile]);
 
   const exitSetup = () => {
     if (roles.includes('subscriber')) {
@@ -108,6 +155,10 @@ const CreatorOnboarding = () => {
 
   const canAdvance = () => {
     if (step === 0) return displayName.trim() && username.trim().length >= 3;
+    if (step === 2) {
+      const cents = Math.round((parseFloat(productPrice) || 0) * 100);
+      return productName.trim().length >= 2 && cents > 0;
+    }
     return true;
   };
 
@@ -126,7 +177,6 @@ const CreatorOnboarding = () => {
         bio: bio.trim() || undefined,
         avatarUrl: avatarUrl ?? undefined,
         bannerUrl: bannerUrl ?? undefined,
-        monthlyPriceCents: Math.round((parseFloat(price) || 9.99) * 100),
         onboardingStep: nextStep,
       });
       if (avatarUrl) {
@@ -137,6 +187,28 @@ const CreatorOnboarding = () => {
         setSavedBannerUrl(bannerUrl);
         setBannerFile(null);
       }
+
+      // Step 3: create/update the first product — buyers pay for products, not a platform fee.
+      if (step === 2) {
+        const priceCents = Math.round((parseFloat(productPrice) || 0) * 100);
+        if (productName.trim() && priceCents > 0) {
+          const savedProductId = await upsertProduct({
+            productId,
+            creatorId,
+            name: productName.trim(),
+            description: productDescription.trim() || undefined,
+            priceCents,
+            // Checkout currently supports recurring monthly access products.
+            billingPeriod: 'monthly',
+            isFeatured: true,
+            isActive: true,
+            isLimited: false,
+            isClosed: false,
+          });
+          setProductId(savedProductId);
+        }
+      }
+
       if (opts?.publish) {
         await setPublished({ creatorId, isPublished: true });
         await queryClient.invalidateQueries({ queryKey: ['creator-profile-exists'] });
@@ -172,7 +244,13 @@ const CreatorOnboarding = () => {
     void persistDraft(step, { publish: true });
   };
 
-  if (user && existing === undefined) {
+  if (
+    user &&
+    (existing === undefined ||
+      me === undefined ||
+      (existing && existingProducts === undefined) ||
+      !hydrated)
+  ) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <Loader2 className="h-5 w-5 animate-spin text-primary" />
@@ -197,7 +275,11 @@ const CreatorOnboarding = () => {
           </h1>
           <p className="text-sm text-muted-foreground mt-1">
             Step {step + 1} of {STEPS.length} · {STEPS[step]}
-            {existing && !alreadyPublished ? ' · Draft resumes on this device and others after save' : ''}
+            {existing && !alreadyPublished
+              ? ' · Draft resumes on this device and others after save'
+              : !existing
+                ? ' · Prefills from your X or Discord profile when available'
+                : ''}
           </p>
         </div>
 
@@ -267,7 +349,20 @@ const CreatorOnboarding = () => {
                   className="relative flex h-20 w-20 shrink-0 items-center justify-center rounded-full border-2 border-dashed border-border bg-surface hover:border-primary/50 transition-colors overflow-hidden"
                 >
                   {avatarPreview ? (
-                    <img src={avatarPreview} alt="Avatar" className="h-full w-full object-cover" />
+                    <img
+                      src={avatarPreview}
+                      alt="Avatar"
+                      className="h-full w-full object-cover"
+                      referrerPolicy="no-referrer"
+                      onError={() => {
+                        // Fall back to social URL if a stale draft URL fails.
+                        if (me?.image && avatarPreview !== me.image) {
+                          const url = me.image.replace('_normal.', '.').replace('_bigger.', '.');
+                          setAvatarPreview(url);
+                          setSavedAvatarUrl(url);
+                        }
+                      }}
+                    />
                   ) : (
                     <User className="h-6 w-6 text-muted-foreground" />
                   )}
@@ -276,8 +371,18 @@ const CreatorOnboarding = () => {
                   </div>
                 </button>
                 <div>
-                  <p className="text-sm font-medium">{avatarPreview ? 'Change photo' : 'Upload a photo'}</p>
-                  <p className="text-caption text-muted-foreground">JPG, PNG. Max 5MB. Local picks upload only when you save.</p>
+                  <p className="text-sm font-medium">
+                    {avatarPreview
+                      ? avatarFile
+                        ? 'Change photo'
+                        : 'Using your X / Discord photo'
+                      : 'Upload a photo'}
+                  </p>
+                  <p className="text-caption text-muted-foreground">
+                    {avatarPreview && !avatarFile
+                      ? 'Saved with your profile when you continue. Click to replace.'
+                      : 'JPG, PNG. Max 5MB. Local picks upload only when you save.'}
+                  </p>
                 </div>
               </div>
               <input
@@ -327,23 +432,53 @@ const CreatorOnboarding = () => {
 
         {step === 2 && (
           <div className="space-y-6">
+            <p className="text-sm text-muted-foreground">
+              Create your first product. Fans pay for products — you can add more later from your dashboard.
+            </p>
+
             <div className="space-y-2">
-              <Label htmlFor="price">Monthly Subscription Price</Label>
+              <Label htmlFor="productName">Product name</Label>
+              <Input
+                id="productName"
+                placeholder="e.g. VIP Community Access"
+                value={productName}
+                onChange={(e) => setProductName(e.target.value.slice(0, 80))}
+                className="bg-surface border-border"
+                maxLength={80}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="productDescription">Description (optional)</Label>
+              <Textarea
+                id="productDescription"
+                placeholder="What do buyers get?"
+                value={productDescription}
+                onChange={(e) => setProductDescription(e.target.value.slice(0, 500))}
+                className="bg-surface border-border min-h-[80px]"
+                maxLength={500}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="productPrice">Price</Label>
               <div className="relative">
                 <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground font-medium">$</span>
                 <Input
-                  id="price"
+                  id="productPrice"
                   type="number"
                   min="1"
                   max="999"
                   step="0.01"
                   placeholder="9.99"
-                  value={price}
-                  onChange={(e) => setPrice(e.target.value)}
+                  value={productPrice}
+                  onChange={(e) => setProductPrice(e.target.value)}
                   className="bg-surface border-border pl-7 text-lg font-semibold"
                 />
               </div>
-              <p className="text-caption text-muted-foreground">You can change this anytime from your dashboard.</p>
+              <p className="text-caption text-muted-foreground">
+                You can change this anytime from your dashboard.
+              </p>
             </div>
 
             <div className="rounded-xl border border-border bg-card overflow-hidden">
@@ -355,7 +490,12 @@ const CreatorOnboarding = () => {
               <div className={`p-5 ${bannerPreview ? '-mt-6' : ''}`}>
                 <div className="flex items-end gap-3 mb-3">
                   {avatarPreview ? (
-                    <img src={avatarPreview} alt="" className="h-12 w-12 rounded-full border-2 border-card object-cover" />
+                    <img
+                      src={avatarPreview}
+                      alt=""
+                      className="h-12 w-12 rounded-full border-2 border-card object-cover"
+                      referrerPolicy="no-referrer"
+                    />
                   ) : (
                     <div className="h-12 w-12 rounded-full bg-primary/20 flex items-center justify-center border-2 border-card">
                       <span className="text-sm font-bold text-primary">
@@ -368,10 +508,23 @@ const CreatorOnboarding = () => {
                     <p className="text-caption text-muted-foreground">@{username || 'username'}</p>
                   </div>
                 </div>
-                {bio && <p className="text-caption text-muted-foreground line-clamp-2 mb-3">{bio}</p>}
-                <div className="flex items-center justify-between">
-                  <span className="text-caption text-muted-foreground">Monthly</span>
-                  <span className="font-bold text-primary">${parseFloat(price || '0').toFixed(2)}/mo</span>
+                <div className="flex items-start gap-3 rounded-lg bg-surface/80 p-3 border border-border">
+                  <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-primary/15">
+                    <Package className="h-4 w-4 text-primary" />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="font-medium text-sm truncate">
+                      {productName.trim() || 'Your first product'}
+                    </p>
+                    {productDescription.trim() ? (
+                      <p className="text-caption text-muted-foreground line-clamp-2 mt-0.5">
+                        {productDescription.trim()}
+                      </p>
+                    ) : null}
+                    <p className="font-bold text-primary mt-1">
+                      ${parseFloat(productPrice || '0').toFixed(2)}
+                    </p>
+                  </div>
                 </div>
               </div>
             </div>

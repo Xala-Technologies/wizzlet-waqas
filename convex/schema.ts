@@ -41,6 +41,8 @@ export default defineSchema({
     externalAuthId: v.optional(v.string()),
     fullName: v.optional(v.string()),
     username: v.optional(v.string()),
+    /** Optional bio copied from social profile (e.g. X description) for onboarding prefills. */
+    bio: v.optional(v.string()),
     discordId: v.optional(v.string()),
     discordUsername: v.optional(v.string()),
     stripeCustomerId: v.optional(v.string()),

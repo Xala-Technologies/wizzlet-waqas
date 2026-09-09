@@ -48,6 +48,14 @@ const providers = [
   ...(socialConfigured.twitter
     ? [
         Twitter({
+          // Request profile fields needed for creator onboarding prefills.
+          userinfo: {
+            url: "https://api.twitter.com/2/users/me",
+            params: {
+              "user.fields":
+                "profile_image_url,username,name,description,url,confirmed_email",
+            },
+          },
           profile(twitterProfile) {
             const data = twitterProfile as {
               id?: string | number;
@@ -56,6 +64,7 @@ const providers = [
               username?: string;
               screen_name?: string;
               email?: string | null;
+              description?: string | null;
               profile_image_url?: string;
               profile_image_url_https?: string;
               data?: {
@@ -63,6 +72,8 @@ const providers = [
                 name?: string;
                 username?: string;
                 profile_image_url?: string;
+                description?: string | null;
+                confirmed_email?: string | null;
               };
             };
             const nested = data.data;
@@ -79,14 +90,22 @@ const providers = [
                 ? imageRaw.replace("_normal", "")
                 : undefined;
             const name = nested?.name ?? data.name ?? handle ?? "X user";
+            const description = (
+              nested?.description ??
+              data.description ??
+              ""
+            ).trim();
+            const email =
+              nested?.confirmed_email ?? data.email ?? undefined;
             const now = Date.now();
             return {
               id,
               name,
-              email: data.email ?? undefined,
+              email: email || undefined,
               image,
               username: handle,
               fullName: name,
+              bio: description ? description.slice(0, 300) : undefined,
               createdAt: now,
               updatedAt: now,
             };
