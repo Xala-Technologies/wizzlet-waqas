@@ -6,22 +6,10 @@ import { ArrowRight, Play } from 'lucide-react';
 export function HeroSection() {
   return (
     <LandingSection variant="hero" className="bg-background">
-      {/* Theme-aware glow accents */}
-      <div className="pointer-events-none absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 h-[500px] w-[700px] rounded-full opacity-[0.10] blur-[140px] bg-primary" />
-      <div className="pointer-events-none absolute -bottom-20 -left-40 h-[400px] w-[400px] rounded-full opacity-[0.06] blur-[120px] bg-primary" />
-      <div className="pointer-events-none absolute top-20 -right-32 h-[300px] w-[300px] rounded-full opacity-[0.05] blur-[100px] bg-accent" />
-
-      {/* Grain texture overlay */}
-      <div className="pointer-events-none absolute inset-0 opacity-[0.03]" style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E")`, backgroundRepeat: 'repeat' }} />
-
-      {/* Spotlight */}
-      <div className="pointer-events-none absolute top-0 left-1/2 -translate-x-1/2 w-[120%] h-[60%]" style={{ background: 'radial-gradient(ellipse 50% 60% at 50% 0%, hsl(var(--primary) / 0.06), transparent)' }} />
-
       <div className="container relative z-10">
         <div className="mx-auto max-w-[700px] text-center">
-          {/* Badge */}
-          <div className="inline-flex items-center gap-3 rounded-full border border-primary/20 bg-primary/[0.06] px-5 py-2 text-caption uppercase tracking-[0.2em] text-primary mb-8 animate-fade-in backdrop-blur-sm">
-            <span className="h-1.5 w-1.5 rounded-full bg-primary animate-pulse" />
+          <div className="inline-flex items-center gap-3 rounded-full border border-border bg-muted px-5 py-2 text-caption uppercase tracking-[0.2em] text-muted-foreground mb-8 animate-fade-in">
+            <span className="h-1.5 w-1.5 rounded-full bg-primary" />
             Private access&nbsp;&nbsp;•&nbsp;&nbsp;Limited onboarding
           </div>
 
@@ -29,10 +17,7 @@ export function HeroSection() {
             <span className="text-foreground">NOT BUILT</span>
             <br />
             <span className="text-foreground">FOR </span>
-            <span className="relative inline-block">
-              <span className="text-gradient">EVERYONE</span>
-              <span className="pointer-events-none absolute -inset-3 rounded-xl opacity-20 blur-2xl bg-primary" />
-            </span>
+            <span className="text-gradient">EVERYONE</span>
           </h1>
 
           <p className="text-body text-muted-foreground max-w-[480px] mx-auto mb-8 opacity-0 animate-fade-in-up" style={{ animationDelay: '0.1s' }}>

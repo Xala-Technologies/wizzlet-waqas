@@ -22,11 +22,9 @@ const cards = [
 export function WhySwitchSection() {
   return (
     <LandingSection className="overflow-hidden">
-      <div className="pointer-events-none absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 h-[500px] w-[600px] rounded-full opacity-[0.05] blur-[160px] bg-primary" />
-
       <div className="container relative z-10">
         <div className="text-center mb-16">
-          <div className="inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/[0.06] px-4 py-1.5 text-caption uppercase tracking-[0.2em] text-primary mb-6 backdrop-blur-sm">
+          <div className="inline-flex items-center gap-2 rounded-full border border-border bg-muted px-4 py-1.5 text-caption uppercase tracking-[0.2em] text-muted-foreground mb-6">
             <span className="h-1.5 w-1.5 rounded-full bg-primary animate-pulse" />
             Invite-only system
           </div>

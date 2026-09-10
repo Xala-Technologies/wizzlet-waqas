@@ -6,7 +6,6 @@ import { LandingSection } from '@/components/landing/LandingSection';
 export function CTASection() {
   return (
     <LandingSection variant="band" className="overflow-hidden">
-      <div className="pointer-events-none absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 h-[400px] w-[600px] rounded-full opacity-[0.06] blur-[160px] bg-primary" />
 
       <div className="container relative z-10">
         <div className="mx-auto max-w-[540px] text-center">

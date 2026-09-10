@@ -21,18 +21,8 @@ function MiniGraph() {
 
   return (
     <svg viewBox={`0 0 ${w} ${h + 10}`} className="w-full h-full" preserveAspectRatio="none">
-      <defs>
-        <linearGradient id="graphGrad" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" className="[stop-color:hsl(var(--primary))]" stopOpacity="0.3" />
-          <stop offset="100%" className="[stop-color:hsl(var(--primary))]" stopOpacity="0" />
-        </linearGradient>
-        <linearGradient id="lineGrad" x1="0" y1="0" x2="1" y2="0">
-          <stop offset="0%" className="[stop-color:hsl(var(--primary))]" />
-          <stop offset="100%" className="[stop-color:hsl(var(--accent))]" />
-        </linearGradient>
-      </defs>
-      <polygon points={areaPoints} fill="url(#graphGrad)" />
-      <polyline points={points} fill="none" stroke="url(#lineGrad)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+      <polygon points={areaPoints} fill="hsl(var(--primary) / 0.12)" />
+      <polyline points={points} fill="none" stroke="hsl(var(--primary))" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
     </svg>
   );
 }
@@ -40,7 +30,6 @@ function MiniGraph() {
 export function PlatformPreviewSection() {
   return (
     <LandingSection className="overflow-hidden">
-      <div className="pointer-events-none absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 h-[600px] w-[800px] rounded-full opacity-[0.04] blur-[180px] bg-primary" />
 
       <div className="container relative z-10">
         <div className="text-center mb-14">
@@ -53,7 +42,7 @@ export function PlatformPreviewSection() {
 
         <div className="max-w-5xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-4">
           {/* Revenue Graph */}
-          <div className="lg:col-span-7 rounded-2xl border border-border bg-card/70 backdrop-blur-md p-6 card-shadow">
+          <div className="lg:col-span-7 rounded-2xl border border-border bg-card p-6 card-shadow">
             <div className="flex items-center justify-between mb-6">
               <div>
                 <p className="text-caption uppercase tracking-[0.15em] text-muted-foreground mb-1">Revenue</p>
@@ -77,7 +66,7 @@ export function PlatformPreviewSection() {
           {/* Right column */}
           <div className="lg:col-span-5 flex flex-col gap-4">
             {/* Subscribers */}
-            <div className="rounded-2xl border border-border bg-card/70 backdrop-blur-md p-6 card-shadow">
+            <div className="rounded-2xl border border-border bg-card p-6 card-shadow">
               <div className="flex items-center justify-between mb-4">
                 <div className="flex items-center gap-3">
                   <div className="h-9 w-9 rounded-xl bg-primary/[0.08] border border-primary/15 flex items-center justify-center">
@@ -112,7 +101,7 @@ export function PlatformPreviewSection() {
             </div>
 
             {/* Activity feed */}
-            <div className="rounded-2xl border border-border bg-card/70 backdrop-blur-md p-5 card-shadow flex-1">
+            <div className="rounded-2xl border border-border bg-card p-5 card-shadow flex-1">
               <p className="text-caption uppercase tracking-[0.15em] text-muted-foreground mb-4">Activity</p>
               <div className="space-y-3">
                 {activity.map((item, i) => (

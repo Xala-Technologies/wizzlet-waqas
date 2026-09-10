@@ -67,7 +67,6 @@ export function TodaysEventsSection() {
 
   return (
     <LandingSection className="overflow-hidden">
-      <div className="absolute inset-0 bg-gradient-to-b from-transparent via-primary/[0.02] to-transparent" />
       <div className="container relative">
         <div className="flex items-end justify-between mb-10">
           <div>

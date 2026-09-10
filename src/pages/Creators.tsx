@@ -35,8 +35,6 @@ const Creators = () => {
       <Navbar />
 
       <main id="main-content" className="relative flex-1">
-        <div className="pointer-events-none absolute inset-x-0 top-0 h-[28rem] bg-[radial-gradient(ellipse_70%_50%_at_50%_-10%,hsl(var(--primary)/0.10),transparent)]" />
-
         <section className="container relative pt-28 pb-10 md:pt-32 md:pb-14">
           <p className="mb-4 text-caption font-medium uppercase tracking-[0.22em] text-primary">
             Prizelet · Creators

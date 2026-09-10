@@ -53,7 +53,7 @@ export function PricingSection() {
               className={`relative rounded-xl border p-6 flex flex-col transition-all duration-300 ${
                 plan.featured
                   ? 'border-primary/30 bg-card border-gradient'
-                  : 'border-border bg-card/50 hover:border-border hover:bg-card'
+                  : 'border-border bg-card hover:border-border hover:bg-card'
               }`}
             >
               {plan.featured && (
