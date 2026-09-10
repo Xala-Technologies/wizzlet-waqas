@@ -1,10 +1,16 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import { useConvexAuth, useMutation } from 'convex/react';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
+import { useConvex, useConvexAuth, useMutation } from 'convex/react';
 import { api } from '../../convex/_generated/api';
 import { useAuth } from '@/contexts/AuthContext';
-import { homePathForRole } from '@/lib/roles';
+import { isAppRole, type AppRole } from '@/lib/roles';
 import { useConvexAuthReady, waitForAuthenticated, withAuthRetry } from '@/lib/authSession';
+import {
+  clearStoredReturnTo,
+  postAuthDestination,
+  readStoredReturnTo,
+  sanitizeReturnPath,
+} from '@/lib/safeReturnPath';
 import { Seo } from '@/components/Seo';
 import { Button } from '@/components/ui/button';
 import { Loader2 } from 'lucide-react';
@@ -12,10 +18,13 @@ import { toast } from 'sonner';
 
 /**
  * Landing after X / Discord OAuth. Ensures profile fields, then routes by role
- * (or /select-role for first-time social users).
+ * (or /select-role for first-time social users). Honors safe returnTo from
+ * query or sessionStorage (stashed before leaving for the provider).
  */
 const AuthCallback = () => {
   const navigate = useNavigate();
+  const convex = useConvex();
+  const [searchParams] = useSearchParams();
   const { refreshRole, clearDevBypass } = useAuth();
   const { isLoading: authLoading } = useConvexAuth();
   const authReady = useConvexAuthReady();
@@ -37,7 +46,22 @@ const AuthCallback = () => {
       clearDevBypass();
       const active = await refreshRole();
       if (id !== runId.current) return;
-      navigate(homePathForRole(active), { replace: true });
+
+      const latest = await withAuthRetry(() => convex.query(api.users.queries.me, {}));
+      const held = ((latest?.roles ?? []) as unknown[]).filter(isAppRole) as AppRole[];
+
+      const returnTo =
+        sanitizeReturnPath(searchParams.get('returnTo')) ?? readStoredReturnTo();
+      clearStoredReturnTo();
+
+      navigate(
+        postAuthDestination({
+          roles: held,
+          preferred: active,
+          returnTo,
+        }),
+        { replace: true },
+      );
     } catch (err) {
       if (id !== runId.current) return;
       const message =
@@ -46,7 +70,15 @@ const AuthCallback = () => {
       setBusy(false);
       toast.error(message);
     }
-  }, [authReady, clearDevBypass, ensureUser, navigate, refreshRole]);
+  }, [
+    authReady,
+    clearDevBypass,
+    convex,
+    ensureUser,
+    navigate,
+    refreshRole,
+    searchParams,
+  ]);
 
   // Wait until Convex Auth finishes the initial OAuth code exchange before starting
   // (avoids racing an empty session on first paint).
@@ -62,11 +94,11 @@ const AuthCallback = () => {
       <Seo title="Signing in — Prizelet" description="Completing social sign-in." noindex />
       {error ? (
         <div className="flex w-full max-w-sm flex-col items-center gap-4 text-center">
-          <p className="text-base font-medium text-foreground">Sign-in did not complete</p>
-          <p className="text-sm text-muted-foreground">{error}</p>
+          <p className="text-title font-medium text-foreground">Sign-in did not complete</p>
+          <p className="text-support text-muted-foreground">{error}</p>
           <div className="flex w-full flex-col gap-2 sm:flex-row sm:justify-center">
             <Button
-              variant="hero"
+              variant="default"
               className="min-h-11"
               disabled={busy}
               onClick={() => void finishSignIn()}
@@ -82,7 +114,7 @@ const AuthCallback = () => {
       ) : (
         <div className="flex flex-col items-center gap-3 text-muted-foreground">
           <Loader2 className="h-6 w-6 animate-spin text-primary" />
-          <p className="text-sm">Finishing sign-in…</p>
+          <p className="text-support">Finishing sign-in…</p>
         </div>
       )}
     </main>

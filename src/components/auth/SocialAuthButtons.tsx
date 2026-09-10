@@ -6,6 +6,7 @@ import { Loader2 } from 'lucide-react';
 import { useState } from 'react';
 import { toast } from 'sonner';
 import { authCallbackUrl } from '@/lib/authSession';
+import { storeReturnTo } from '@/lib/safeReturnPath';
 
 type SocialProvider = 'twitter' | 'discord';
 
@@ -13,11 +14,14 @@ interface SocialAuthButtonsProps {
   /** Where Convex Auth redirects after OAuth (must be an app route). */
   redirectTo?: string;
   mode?: 'signin' | 'signup';
+  /** Optional deep-link path stashed for AuthCallback after OAuth. */
+  returnTo?: string | null;
 }
 
 export function SocialAuthButtons({
   redirectTo = '/auth/callback',
   mode = 'signin',
+  returnTo = null,
 }: SocialAuthButtonsProps) {
   const { signIn } = useAuthActions();
   const available = useQuery(api.authProviders.socialProviders);
@@ -26,6 +30,7 @@ export function SocialAuthButtons({
   const start = async (provider: SocialProvider) => {
     setPending(provider);
     try {
+      storeReturnTo(returnTo);
       // Must match Convex SITE_URL origin (dev deploy uses http://127.0.0.1:8080 locally).
       await signIn(provider, { redirectTo: authCallbackUrl(redirectTo) });
     } catch (err) {
