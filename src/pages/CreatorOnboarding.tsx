@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -7,13 +7,13 @@ import { Textarea } from '@/components/ui/textarea';
 import { useConvex, useMutation, useQuery } from 'convex/react';
 import { api } from '../../convex/_generated/api';
 import { useAuth } from '@/contexts/AuthContext';
+import { PrizeletLogo } from '@/components/PrizeletLogo';
+import { clampOnboardingStep, ONBOARDING_STEPS, shouldPublishOnSave } from '@/lib/onboardingStep';
 import { uploadToConvexStorage } from '@/lib/upload';
-import { Zap, ArrowRight, ArrowLeft, Loader2, Camera, ImageIcon, User, Package } from 'lucide-react';
+import { ArrowRight, ArrowLeft, Loader2, Camera, ImageIcon, User, Package } from 'lucide-react';
 import { toast } from 'sonner';
 import { useQueryClient } from '@tanstack/react-query';
 import type { Id } from '../../convex/_generated/dataModel';
-
-const STEPS = ['Profile', 'Images', 'Product'];
 
 const CreatorOnboarding = () => {
   const queryClient = useQueryClient();
@@ -32,6 +32,7 @@ const CreatorOnboarding = () => {
   const [step, setStep] = useState(0);
   const [loading, setLoading] = useState(false);
   const [hydrated, setHydrated] = useState(false);
+  const saveInFlight = useRef(false);
 
   const [displayName, setDisplayName] = useState('');
   const [username, setUsername] = useState('');
@@ -82,7 +83,7 @@ const CreatorOnboarding = () => {
         setSavedBannerUrl(existing.bannerUrl);
       }
       if (typeof existing.onboardingStep === 'number') {
-        setStep(Math.max(0, Math.min(STEPS.length - 1, existing.onboardingStep)));
+        setStep(clampOnboardingStep(existing.onboardingStep, ONBOARDING_STEPS.length));
       }
       const firstProduct =
         existingProducts?.find((p) => p.isFeatured) ?? existingProducts?.[0];
@@ -163,12 +164,26 @@ const CreatorOnboarding = () => {
   };
 
   const persistDraft = async (nextStep: number, opts?: { publish?: boolean }) => {
-    if (!user) return;
+    if (!user || saveInFlight.current) return;
+    saveInFlight.current = true;
     setLoading(true);
     const [avatarUrl, bannerUrl] = await Promise.all([
       avatarFile ? uploadImage(avatarFile) : Promise.resolve(savedAvatarUrl ?? null),
       bannerFile ? uploadImage(bannerFile) : Promise.resolve(savedBannerUrl ?? null),
     ]);
+    // Failed uploads must not silently drop existing saved URLs when a new file was chosen.
+    if (avatarFile && !avatarUrl) {
+      toast.error('Profile photo upload failed — draft not saved');
+      saveInFlight.current = false;
+      setLoading(false);
+      return;
+    }
+    if (bannerFile && !bannerUrl) {
+      toast.error('Banner upload failed — draft not saved');
+      saveInFlight.current = false;
+      setLoading(false);
+      return;
+    }
     try {
       const cleanUsername = username.toLowerCase().replace(/[^a-z0-9_]/g, '');
       const creatorId = await upsertOnboarding({
@@ -188,28 +203,31 @@ const CreatorOnboarding = () => {
         setBannerFile(null);
       }
 
-      // Step 3: create/update the first product — buyers pay for products, not a platform fee.
+      // Final step: create/update the first product — buyers pay for products, not a platform fee.
       if (step === 2) {
         const priceCents = Math.round((parseFloat(productPrice) || 0) * 100);
-        if (productName.trim() && priceCents > 0) {
-          const savedProductId = await upsertProduct({
-            productId,
-            creatorId,
-            name: productName.trim(),
-            description: productDescription.trim() || undefined,
-            priceCents,
-            // Checkout currently supports recurring monthly access products.
-            billingPeriod: 'monthly',
-            isFeatured: true,
-            isActive: true,
-            isLimited: false,
-            isClosed: false,
-          });
-          setProductId(savedProductId);
+        if (!productName.trim() || priceCents <= 0) {
+          toast.error('Add a product name and price before continuing');
+          return;
         }
+        const savedProductId = await upsertProduct({
+          productId,
+          creatorId,
+          name: productName.trim(),
+          description: productDescription.trim() || undefined,
+          priceCents,
+          // Checkout currently supports recurring monthly access products.
+          billingPeriod: 'monthly',
+          isFeatured: true,
+          isActive: true,
+          isLimited: false,
+          isClosed: false,
+        });
+        setProductId(savedProductId);
       }
 
-      if (opts?.publish) {
+      if (shouldPublishOnSave(opts)) {
+        // Explicit publish only — draft saves never flip isPublished.
         await setPublished({ creatorId, isPublished: true });
         await queryClient.invalidateQueries({ queryKey: ['creator-profile-exists'] });
         toast.success('Your creator profile is live!');
@@ -228,12 +246,13 @@ const CreatorOnboarding = () => {
         toast.error(message);
       }
     } finally {
+      saveInFlight.current = false;
       setLoading(false);
     }
   };
 
   const handleContinue = () => {
-    void persistDraft(Math.min(step + 1, STEPS.length - 1));
+    void persistDraft(Math.min(step + 1, ONBOARDING_STEPS.length - 1));
   };
 
   const handleSaveDraft = () => {
@@ -261,20 +280,17 @@ const CreatorOnboarding = () => {
   const alreadyPublished = existing?.isPublished === true;
 
   return (
-    <div className="min-h-screen flex items-center justify-center px-4 py-12">
+    <div className="min-h-screen flex items-center justify-center px-4 py-12 bg-background">
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
-          <Link to="/" className="inline-flex items-center gap-2 font-bold text-lg mb-6">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary">
-              <Zap className="h-4 w-4 text-primary-foreground" />
-            </div>
-            Prizelet
-          </Link>
-          <h1 className="text-2xl font-bold">
+          <div className="mb-6 flex justify-center">
+            <PrizeletLogo size="md" linkTo="" />
+          </div>
+          <h1 className="text-heading font-bold text-foreground">
             {alreadyPublished ? 'Update your creator profile' : 'Set up your creator profile'}
           </h1>
-          <p className="text-sm text-muted-foreground mt-1">
-            Step {step + 1} of {STEPS.length} · {STEPS[step]}
+          <p className="text-support text-muted-foreground mt-1">
+            Step {step + 1} of {ONBOARDING_STEPS.length} · {ONBOARDING_STEPS[step]}
             {existing && !alreadyPublished
               ? ' · Draft resumes on this device and others after save'
               : !existing
@@ -283,10 +299,10 @@ const CreatorOnboarding = () => {
           </p>
         </div>
 
-        <div className="flex gap-2 mb-8">
-          {STEPS.map((_, i) => (
+        <div className="flex gap-2 mb-8" aria-hidden>
+          {ONBOARDING_STEPS.map((label, i) => (
             <div
-              key={i}
+              key={label}
               className={`h-1 flex-1 rounded-full transition-colors ${
                 i <= step ? 'bg-primary' : 'bg-border'
               }`}
@@ -310,7 +326,7 @@ const CreatorOnboarding = () => {
             <div className="space-y-2">
               <Label htmlFor="username">Username *</Label>
               <div className="relative">
-                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">@</span>
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-support">@</span>
                 <Input
                   id="username"
                   placeholder="username"
@@ -371,7 +387,7 @@ const CreatorOnboarding = () => {
                   </div>
                 </button>
                 <div>
-                  <p className="text-sm font-medium">
+                  <p className="text-ui font-medium">
                     {avatarPreview
                       ? avatarFile
                         ? 'Change photo'
@@ -432,7 +448,7 @@ const CreatorOnboarding = () => {
 
         {step === 2 && (
           <div className="space-y-6">
-            <p className="text-sm text-muted-foreground">
+            <p className="text-support text-muted-foreground">
               Create your first product. Fans pay for products — you can add more later from your dashboard.
             </p>
 
@@ -477,7 +493,7 @@ const CreatorOnboarding = () => {
                 />
               </div>
               <p className="text-caption text-muted-foreground">
-                You can change this anytime from your dashboard.
+                Billed monthly. You can change price and details anytime from your dashboard.
               </p>
             </div>
 
@@ -504,7 +520,7 @@ const CreatorOnboarding = () => {
                     </div>
                   )}
                   <div className="min-w-0">
-                    <p className="font-semibold text-sm truncate">{displayName || 'Your Name'}</p>
+                    <p className="font-semibold text-ui truncate">{displayName || 'Your Name'}</p>
                     <p className="text-caption text-muted-foreground">@{username || 'username'}</p>
                   </div>
                 </div>
@@ -513,7 +529,7 @@ const CreatorOnboarding = () => {
                     <Package className="h-4 w-4 text-primary" />
                   </div>
                   <div className="min-w-0 flex-1">
-                    <p className="font-medium text-sm truncate">
+                    <p className="font-medium text-ui truncate">
                       {productName.trim() || 'Your first product'}
                     </p>
                     {productDescription.trim() ? (
@@ -548,17 +564,17 @@ const CreatorOnboarding = () => {
               {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               Save draft
             </Button>
-            {step < STEPS.length - 1 ? (
-              <Button variant="hero" onClick={handleContinue} disabled={loading || !canAdvance()}>
+            {step < ONBOARDING_STEPS.length - 1 ? (
+              <Button variant="default" onClick={handleContinue} disabled={loading || !canAdvance()}>
                 Continue <ArrowRight className="ml-1 h-4 w-4" />
               </Button>
             ) : alreadyPublished ? (
-              <Button variant="hero" onClick={handleSaveDraft} disabled={loading || !canAdvance()}>
+              <Button variant="default" onClick={handleSaveDraft} disabled={loading || !canAdvance()}>
                 {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                 Save changes
               </Button>
             ) : (
-              <Button variant="hero" onClick={handlePublish} disabled={loading || !canAdvance()}>
+              <Button variant="default" onClick={handlePublish} disabled={loading || !canAdvance()}>
                 {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                 Publish profile <ArrowRight className="ml-1 h-4 w-4" />
               </Button>

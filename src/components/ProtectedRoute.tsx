@@ -3,6 +3,7 @@ import { Navigate, useLocation } from 'react-router-dom';
 import { useQuery } from 'convex/react';
 import { useAuth } from '@/contexts/AuthContext';
 import { AppRole, homePathForRole } from '@/lib/roles';
+import { buildLoginHref } from '@/lib/safeReturnPath';
 import { api } from '@convex/_generated/api';
 import { Loader2 } from 'lucide-react';
 
@@ -46,7 +47,7 @@ export function ProtectedRoute({ children, allowedRoles }: ProtectedRouteProps) 
   if (loading || roleLoading) return <Spinner />;
 
   if (!user) {
-    return <Navigate to="/login" replace />;
+    return <Navigate to={buildLoginHref(location.pathname, location.search)} replace />;
   }
 
   // Always enforce DB-held roles (no DEV UI bypass).
