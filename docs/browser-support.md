@@ -25,8 +25,8 @@ Build target remains **ES2020** (Vite / `tsconfig.app.json`). No `@vitejs/plugin
 
 ## OAuth notes (Safari / ITP)
 
-- Convex `SITE_URL` must match the public app origin (production: `https://www.prizelet.com`).
-- Client `VITE_CONVEX_SITE_URL` must match the Convex `.site` host used for OAuth callbacks.
+- Convex `SITE_URL` must match the public app origin on that deployment (production: `https://www.prizelet.com` on prod; local: `http://127.0.0.1:8080` on dev). Do not share one deployment for both.
+- Client `VITE_CONVEX_SITE_URL` must match the Convex `.site` host used for OAuth callbacks (www → `ceaseless-weasel-494`; local → `combative-mongoose-559`).
 - `/auth/callback` shows a clear failure state with **Try again** / **Back to login** if the session never arrives (instead of hanging forever).
 
 Verified in this workstream: Convex `SITE_URL=https://www.prizelet.com` and local `VITE_CONVEX_SITE_URL` are set. Manual iOS Safari OAuth (email / X / Discord) should still be spot-checked on device after deploy.
