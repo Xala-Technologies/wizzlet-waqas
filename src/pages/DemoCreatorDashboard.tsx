@@ -972,13 +972,13 @@ const DemoCreatorDashboard = () => {
       className={
         mobile
           ? 'flex h-full w-full flex-col bg-card'
-          : 'hidden md:flex w-[220px] flex-col border-r border-border bg-card/80 backdrop-blur-sm'
+          : 'hidden md:flex w-[220px] flex-col border-r border-border bg-card'
       }
     >
       <div className="px-5 py-5">
         <Link to="/" className="flex items-center gap-2 font-semibold text-ui tracking-tight text-foreground">
           <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-primary text-primary-foreground">
-            <span className="font-bold text-caption">W</span>
+            <span className="font-bold text-caption">P</span>
           </div>
           Prizelet
         </Link>

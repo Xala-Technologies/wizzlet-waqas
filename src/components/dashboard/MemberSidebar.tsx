@@ -168,7 +168,7 @@ export function MemberSidebar({ demo = false, mobile = false }: { demo?: boolean
   };
 
   return (
-    <aside className={mobile ? 'flex h-full min-h-0 w-full flex-col bg-card' : 'hidden md:flex w-[220px] flex-col border-r border-border bg-card/80 backdrop-blur-sm'}>
+    <aside className={mobile ? 'flex h-full min-h-0 w-full flex-col bg-card' : 'hidden md:flex w-[220px] flex-col border-r border-border bg-card'}>
       {!mobile && (
         <div className="px-5 py-5">
           <PrizeletLogo size="md" />

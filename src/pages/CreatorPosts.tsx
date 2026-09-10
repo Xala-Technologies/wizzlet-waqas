@@ -270,7 +270,7 @@ const CreatorPosts = () => {
             </div>
           </div>
 
-          <div className="md:hidden fixed bottom-0 left-0 right-0 p-4 bg-background/95 backdrop-blur-sm border-t border-border z-50">
+          <div className="md:hidden fixed bottom-0 left-0 right-0 p-4 bg-background border-t border-border z-50">
             <Button onClick={handleSave} disabled={saving || !title.trim()} className="w-full h-12 text-sm font-semibold">
               {saving && <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />}
               <Zap className="mr-1.5 h-4 w-4" /> Publish Pick

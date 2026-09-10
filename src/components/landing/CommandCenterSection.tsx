@@ -5,7 +5,7 @@ import { LandingSection } from '@/components/landing/LandingSection';
 
 function FloatingCard({ children, className }: { children: React.ReactNode; className: string }) {
   return (
-    <div className={`absolute rounded-xl border border-border/60 bg-card/80 backdrop-blur-md card-shadow ${className}`}>
+    <div className={`absolute rounded-xl border border-border bg-card card-shadow ${className}`}>
       {children}
     </div>
   );
@@ -14,24 +14,6 @@ function FloatingCard({ children, className }: { children: React.ReactNode; clas
 export function CommandCenterSection() {
   return (
     <LandingSection variant="band" className="overflow-hidden">
-      {/* Grid background */}
-      <div className="pointer-events-none absolute inset-0 opacity-[0.04]" style={{
-        backgroundImage: `
-          linear-gradient(hsl(var(--primary) / 0.3) 1px, transparent 1px),
-          linear-gradient(90deg, hsl(var(--primary) / 0.3) 1px, transparent 1px)
-        `,
-        backgroundSize: '60px 60px',
-        animation: 'grid-drift 20s linear infinite',
-      }} />
-
-      {/* Radial fade */}
-      <div className="pointer-events-none absolute inset-0" style={{
-        background: 'radial-gradient(ellipse 50% 50% at 50% 50%, transparent 30%, hsl(var(--background)) 70%)',
-      }} />
-
-      {/* Glow */}
-      <div className="pointer-events-none absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 h-[500px] w-[500px] rounded-full opacity-[0.06] blur-[140px] bg-primary" />
-
       <div className="container relative z-10">
         {/* Floating elements */}
         <div className="hidden lg:block">

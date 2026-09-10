@@ -24,7 +24,7 @@ export function DevModeBanner() {
   };
 
   return (
-    <div className="fixed top-0 left-0 right-0 z-[100] bg-destructive/95 backdrop-blur-sm text-destructive-foreground">
+    <div className="fixed top-0 left-0 right-0 z-[100] bg-destructive text-destructive-foreground">
       <div className="container flex items-center justify-between h-10 gap-3">
         <div className="flex items-center gap-3">
           <span className="text-caption font-bold uppercase tracking-widest opacity-80">🧪 DEV MODE: FULL ACCESS</span>

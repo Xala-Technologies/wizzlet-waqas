@@ -244,9 +244,9 @@ const CreatorProfile = () => {
         {creator.banner_url ? (
           <img src={creator.banner_url} alt="" className="h-full w-full object-cover" />
         ) : (
-          <div className="h-full w-full bg-gradient-to-br from-primary/10 via-secondary to-secondary" />
+          <div className="h-full w-full bg-secondary" />
         )}
-        <div className="absolute inset-0 bg-gradient-to-t from-background via-background/20 to-transparent" />
+        <div className="absolute inset-0 bg-background/80" />
       </div>
 
       <div className="container max-w-2xl relative -mt-16 z-10 pb-20">
@@ -416,7 +416,7 @@ const CreatorProfile = () => {
                           <div className="h-3 bg-muted-foreground/10 rounded w-3/4" />
                         </div>
                       </div>
-                      <div className="relative z-10 backdrop-blur-[2px]">
+                      <div className="relative z-10">
                         <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-2">
                           <Lock className="h-4 w-4 text-primary" />
                         </div>

@@ -13,7 +13,6 @@ const features = [
 export function ToolsSection() {
   return (
     <LandingSection className="overflow-hidden">
-      <div className="pointer-events-none absolute bottom-0 left-1/2 -translate-x-1/2 h-[400px] w-[800px] rounded-full opacity-[0.04] blur-[160px] bg-primary" />
 
       <div className="container relative z-10">
         <div className="max-w-4xl mx-auto mb-8 text-center">
@@ -28,7 +27,7 @@ export function ToolsSection() {
           {features.map((f) => (
             <div
               key={f.title}
-              className="group relative rounded-2xl border border-border bg-card/60 backdrop-blur-sm p-6 transition-all duration-300 hover:-translate-y-1 hover:border-primary/25 hover:shadow-[0_0_36px_-10px_hsl(var(--primary)/0.18)]"
+              className="group relative rounded-2xl border border-border bg-card p-6 transition-all duration-300 hover:-translate-y-1 hover:border-border"
             >
               <div className="mb-5 inline-flex items-center justify-center h-9 w-9 rounded-lg bg-primary/[0.07] border border-primary/10 text-primary/70 transition-all duration-300 group-hover:text-primary group-hover:bg-primary/[0.12]">
                 <f.icon className="h-[18px] w-[18px]" />

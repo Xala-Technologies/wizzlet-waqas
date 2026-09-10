@@ -27,7 +27,7 @@ export function MobileTopBar({ children, badge, title }: MobileTopBarProps) {
   useEffect(() => setOpen(false), [pathname, search]);
 
   return (
-    <div className="md:hidden sticky top-0 z-30 flex items-center gap-2 border-b border-border bg-card/95 px-4 py-2.5 backdrop-blur pt-[max(0.625rem,env(safe-area-inset-top))]">
+    <div className="md:hidden sticky top-0 z-30 flex items-center gap-2 border-b border-border bg-card px-4 py-2.5 pt-[max(0.625rem,env(safe-area-inset-top))]">
       <PrizeletLogo size="sm" />
       {title ? (
         <p className="min-w-0 flex-1 truncate text-sm font-medium text-foreground">{title}</p>

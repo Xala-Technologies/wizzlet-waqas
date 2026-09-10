@@ -43,7 +43,7 @@ export function Navbar() {
     >
       Skip to main content
     </a>
-    <nav className="fixed top-0 left-0 right-0 z-50 border-b border-border bg-card/95 backdrop-blur-2xl">
+    <nav className="fixed top-0 left-0 right-0 z-50 border-b border-border bg-card">
 
       <div className="container flex h-16 items-center justify-between">
         {/* LEFT: Logo */}
@@ -135,7 +135,7 @@ export function Navbar() {
           id="landing-mobile-nav"
           role="navigation"
           aria-label="Mobile"
-          className="lg:hidden border-t border-border bg-card/95 backdrop-blur-xl px-6 pb-[max(1.5rem,env(safe-area-inset-bottom))] pt-4 space-y-1 animate-fade-in"
+          className="lg:hidden border-t border-border bg-card px-6 pb-[max(1.5rem,env(safe-area-inset-bottom))] pt-4 space-y-1 animate-fade-in"
         >
           {navLinks.map(({ label, path }) => {
             const isActive = pathname === path;

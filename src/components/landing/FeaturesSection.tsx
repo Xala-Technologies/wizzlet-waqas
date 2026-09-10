@@ -37,7 +37,7 @@ export function FeaturesSection() {
           {features.map((f, i) => (
             <div
               key={f.title}
-              className="group rounded-xl border border-border bg-card/50 p-6 transition-all duration-300 hover:border-primary/20 hover:bg-card"
+              className="group rounded-xl border border-border bg-card p-6 transition-all duration-300 hover:border-border hover:bg-card"
             >
               <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/8 mb-5 transition-colors group-hover:bg-primary/12">
                 <f.icon className="h-[18px] w-[18px] text-primary" />

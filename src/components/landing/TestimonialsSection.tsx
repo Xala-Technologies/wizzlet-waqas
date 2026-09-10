@@ -22,7 +22,7 @@ export function TestimonialsSection() {
           {testimonials.map((t) => (
             <div
               key={t.initials}
-              className="rounded-2xl border border-border bg-card/60 backdrop-blur-sm p-6 transition-all duration-300 hover:border-primary/20"
+              className="rounded-2xl border border-border bg-card p-6 transition-all duration-300 hover:border-border"
             >
               <p className="text-ui text-foreground/85 leading-relaxed mb-5">
                 "{t.quote}"

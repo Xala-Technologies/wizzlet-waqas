@@ -20,11 +20,16 @@ export function PrizeletLogo({ size = 'md', className, linkTo = '/', showIcon = 
   const content = (
     <span className={cn('flex items-center gap-2 shrink-0', className)}>
       {showIcon && (
-        <span className={cn('flex items-center justify-center rounded-lg bg-gradient-to-br from-[hsl(250,80%,60%)] to-[hsl(220,90%,55%)] text-white shadow-sm', s.icon)}>
+        <span
+          className={cn(
+            'flex items-center justify-center rounded-lg bg-primary text-primary-foreground shadow-sm',
+            s.icon,
+          )}
+        >
           <span className={cn('font-bold', s.iconText)}>P</span>
         </span>
       )}
-      <span className={cn('font-bold tracking-tight bg-gradient-to-r from-[hsl(250,70%,55%)] to-[hsl(220,80%,50%)] dark:from-[hsl(250,80%,70%)] dark:to-[hsl(220,90%,65%)] bg-clip-text text-transparent', s.text)}>
+      <span className={cn('font-bold tracking-tight text-foreground', s.text)}>
         Prizelet
       </span>
     </span>
