@@ -147,7 +147,7 @@ const CreatorOnboarding = () => {
 
   const uploadImage = async (file: File): Promise<string | null> => {
     try {
-      return await uploadToConvexStorage(convex, file);
+      return await uploadToConvexStorage(convex, file, 'creator-onboarding');
     } catch (e) {
       toast.error(e instanceof Error ? e.message : 'Upload failed');
       return null;
