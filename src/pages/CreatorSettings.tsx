@@ -75,11 +75,11 @@ const CreatorSettings = () => {
     if (!validateImageFile(file)) return;
     setUploadingAvatar(true);
     try {
-      const publicUrl = await uploadToConvexStorage(convex, file);
+      const publicUrl = await uploadToConvexStorage(convex, file, "creator-avatar");
       setAvatarUrl(publicUrl);
       toast.success('Avatar uploaded');
-    } catch {
-      toast.error('Upload failed');
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Upload failed');
     } finally {
       setUploadingAvatar(false);
     }
@@ -92,11 +92,11 @@ const CreatorSettings = () => {
     if (!validateImageFile(file)) return;
     setUploadingBanner(true);
     try {
-      const publicUrl = await uploadToConvexStorage(convex, file);
+      const publicUrl = await uploadToConvexStorage(convex, file, "creator-banner");
       setBannerUrl(publicUrl);
       toast.success('Banner uploaded');
-    } catch {
-      toast.error('Upload failed');
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Upload failed');
     } finally {
       setUploadingBanner(false);
     }
