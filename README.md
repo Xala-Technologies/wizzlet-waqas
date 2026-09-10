@@ -64,17 +64,37 @@ Or use **Sign in as platform owner** on the login page. That account receives th
 
 Never put Stripe **secret** keys in Vite env files.
 
+### Convex deployments (dev vs prod)
+
+Prizelet uses **two** Convex deployments. Do not share one for local and www — `SITE_URL` is a single origin and will break the other environment.
+
+| | Dev (`npx convex dev`) | Production (`npx convex deploy`) |
+|--|------------------------|----------------------------------|
+| Deployment | `combative-mongoose-559` | `ceaseless-weasel-494` |
+| App origin / `SITE_URL` | `http://127.0.0.1:8080` | `https://www.prizelet.com` |
+| Client `VITE_CONVEX_*` | `.env.local` → **dev** | Vercel Production/Preview → **prod** |
+
+- Local OAuth and Vite always target the **dev** deployment.
+- www.prizelet.com always targets the **prod** deployment.
+- Never run `npx convex env set SITE_URL http://127.0.0.1:8080` against prod.
+- After backend changes that must go live: `npx convex deploy` (prod only).
+
 ### Convex dashboard env
 
-Configure under **Settings → Environment Variables**:
+Configure under **Settings → Environment Variables** on the matching deployment:
 
 | Variable | Description |
 |----------|-------------|
 | `STRIPE_SECRET_KEY` | Stripe secret key (`sk_…`) |
 | `STRIPE_WEBHOOK_SECRET` | Webhook signing secret (`whsec_…`) for `POST /stripe/webhook` |
-| `SITE_URL` | Public app origin (e.g. `http://localhost:8080`) |
+| `SITE_URL` | Public app origin for that deployment (see table above) |
 | `ALLOW_SANDBOX_CHECKOUT` | Non-production sandbox only |
 | `ALLOW_DEV_ADMIN_GRANT` | Dev only — required for `grantTestAdmin` / platform-owner bootstrap. **Never set in production.** |
+
+OAuth provider callback URLs (X / Discord) must include each deployment’s  
+`https://<deployment>.convex.site/api/auth/callback/<provider>`.  
+Stripe webhooks for live checkout must hit the **prod** site URL:  
+`https://ceaseless-weasel-494.convex.site/stripe/webhook`.
 
 See [`.env.example`](.env.example) for a full annotated template.
 
