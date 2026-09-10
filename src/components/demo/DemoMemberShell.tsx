@@ -12,10 +12,10 @@ interface Props {
 
 export function DemoMemberShell({ title, subtitle, actions, children }: Props) {
   return (
-    <div className="min-h-screen flex bg-background">
+    <div className="h-dvh flex overflow-hidden bg-background">
       <MemberSidebar demo />
-      <main className="flex-1 min-w-0 overflow-auto">
-        <MobileTopBar>
+      <main className="flex-1 min-h-0 min-w-0 overflow-x-hidden overflow-y-auto">
+        <MobileTopBar homeHref="/demo/member">
           <MemberSidebar demo mobile />
         </MobileTopBar>
         <div className="p-4 sm:p-6 md:p-8 w-full max-w-4xl">

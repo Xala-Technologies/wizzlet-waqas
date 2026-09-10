@@ -17,15 +17,21 @@ const CONTENT_WIDTH: Record<DashboardLayoutProps['type'], string> = {
   member: 'max-w-4xl',
 };
 
+const HOME_HREF: Record<DashboardLayoutProps['type'], string> = {
+  creator: '/creator',
+  admin: '/admin',
+  member: '/dashboard',
+};
+
 export function DashboardLayout({ children, type }: DashboardLayoutProps) {
   const Sidebar = type === 'creator' ? CreatorSidebar : type === 'admin' ? AdminSidebar : MemberSidebar;
 
   const body = (
-    <div className="min-h-screen flex bg-background">
+    <div className="h-dvh flex overflow-hidden bg-background">
       <UnreadMessageWatcher />
       <Sidebar />
-      <main className="flex-1 min-w-0 overflow-x-hidden overflow-y-auto">
-        <MobileTopBar>
+      <main className="flex-1 min-h-0 min-w-0 overflow-x-hidden overflow-y-auto">
+        <MobileTopBar homeHref={HOME_HREF[type]}>
           <Sidebar mobile />
         </MobileTopBar>
         <div

@@ -153,8 +153,9 @@ export function MemberSidebar({ demo = false, mobile = false }: { demo?: boolean
 
   const handleSignOut = async () => {
     if (demo) { navigate('/'); return; }
-    await signOut();
+    // Leave the protected shell first so role-clear during logout cannot flash /select-role.
     navigate('/');
+    await signOut();
   };
 
   const withBadge = (item: NavItem): NavItem => {
@@ -168,10 +169,10 @@ export function MemberSidebar({ demo = false, mobile = false }: { demo?: boolean
   };
 
   return (
-    <aside className={mobile ? 'flex h-full min-h-0 w-full flex-col bg-card' : 'hidden md:flex w-[220px] flex-col border-r border-border bg-card'}>
+    <aside className={mobile ? 'flex h-full min-h-0 w-full flex-col bg-card' : 'hidden md:flex h-full w-[220px] shrink-0 flex-col border-r border-border bg-card'}>
       {!mobile && (
         <div className="px-5 py-5">
-          <PrizeletLogo size="md" />
+          <PrizeletLogo size="md" linkTo={baseRoute} />
         </div>
       )}
 

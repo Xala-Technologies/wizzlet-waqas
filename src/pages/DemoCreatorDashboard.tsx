@@ -972,16 +972,20 @@ const DemoCreatorDashboard = () => {
       className={
         mobile
           ? 'flex h-full w-full flex-col bg-card'
-          : 'hidden md:flex w-[220px] flex-col border-r border-border bg-card'
+          : 'hidden md:flex h-full w-[220px] shrink-0 flex-col border-r border-border bg-card'
       }
     >
       <div className="px-5 py-5">
-        <Link to="/" className="flex items-center gap-2 font-semibold text-ui tracking-tight text-foreground">
+        <button
+          type="button"
+          onClick={() => go('overview')}
+          className="flex items-center gap-2 font-semibold text-ui tracking-tight text-foreground"
+        >
           <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-primary text-primary-foreground">
             <span className="font-bold text-caption">P</span>
           </div>
           Prizelet
-        </Link>
+        </button>
       </div>
       <nav className="flex-1 overflow-y-auto px-3 pb-4 space-y-0.5">
         {sidebarItems.map(item => {
@@ -1016,11 +1020,11 @@ const DemoCreatorDashboard = () => {
   );
 
   return (
-    <div className="min-h-screen flex bg-background">
+    <div className="h-dvh flex overflow-hidden bg-background">
       <SidebarNav />
 
-      <main className="flex-1 min-w-0 overflow-auto">
-        <MobileTopBar>
+      <main className="flex-1 min-h-0 min-w-0 overflow-x-hidden overflow-y-auto">
+        <MobileTopBar homeHref="/demo/creator">
           <SidebarNav mobile />
         </MobileTopBar>
         <div className="p-4 sm:p-6 md:p-8 w-full max-w-5xl">

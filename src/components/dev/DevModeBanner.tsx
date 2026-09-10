@@ -54,7 +54,7 @@ export function DevModeBanner() {
             variant="ghost"
             size="sm"
             className="h-6 text-caption text-destructive-foreground/70 hover:text-destructive-foreground hover:bg-destructive-foreground/10 px-2"
-            onClick={() => { signOut(); navigate('/login'); }}
+            onClick={() => { void signOut().then(() => navigate('/login')); }}
           >
             Exit Dev Mode
           </Button>

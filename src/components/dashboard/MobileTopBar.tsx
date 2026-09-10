@@ -12,6 +12,8 @@ import { PrizeletLogo } from '@/components/PrizeletLogo';
 interface MobileTopBarProps {
   /** Sidebar rendered inside the slide-over drawer. */
   children: ReactNode;
+  /** Dashboard home (overview) — never the marketing landing page. */
+  homeHref: string;
   /** Optional badge/label rendered to the right of the logo. */
   badge?: ReactNode;
   /** Optional page title shown in the center of the bar. */
@@ -19,7 +21,7 @@ interface MobileTopBarProps {
 }
 
 /** Sticky mobile header with a slide-over navigation drawer (hidden from md up). */
-export function MobileTopBar({ children, badge, title }: MobileTopBarProps) {
+export function MobileTopBar({ children, homeHref, badge, title }: MobileTopBarProps) {
   const [open, setOpen] = useState(false);
   const { pathname, search } = useLocation();
 
@@ -28,7 +30,7 @@ export function MobileTopBar({ children, badge, title }: MobileTopBarProps) {
 
   return (
     <div className="md:hidden sticky top-0 z-30 flex items-center gap-2 border-b border-border bg-card px-4 py-2.5 pt-[max(0.625rem,env(safe-area-inset-top))]">
-      <PrizeletLogo size="sm" />
+      <PrizeletLogo size="sm" linkTo={homeHref} />
       {title ? (
         <p className="min-w-0 flex-1 truncate text-sm font-medium text-foreground">{title}</p>
       ) : (
