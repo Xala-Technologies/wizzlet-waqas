@@ -16,6 +16,7 @@ const SelectRole = () => {
     role: activeRole,
     roles: heldRoles,
     roleLoading,
+    signingOut,
     acceptAssignedRole,
     clearDevBypass,
     refreshRole,
@@ -24,6 +25,10 @@ const SelectRole = () => {
   const [selected, setSelected] = useState<'creator' | 'subscriber' | null>(null);
   const [saving, setSaving] = useState(false);
   const assignSelfRole = useMutation(api.roles.mutations.assignSelfRole);
+
+  if (signingOut) {
+    return <Navigate to="/" replace />;
+  }
 
   if (loading || roleLoading) {
     return (
