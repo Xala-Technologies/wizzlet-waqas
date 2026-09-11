@@ -10,6 +10,7 @@ import { toast } from 'sonner';
 import { useAuth } from '@/contexts/AuthContext';
 import { api } from '@convex/_generated/api';
 import type { Id } from '@convex/_generated/dataModel';
+import { segmentedItemClassName, segmentedTrackClassName } from '@/lib/segmentedControl';
 
 const PAGE_SIZE = 24;
 
@@ -131,18 +132,18 @@ const CustomerDiscover = () => {
             aria-label="Search creators"
           />
         </div>
-        <div className="flex flex-wrap gap-1.5 w-full sm:w-auto" role="group" aria-label="Sort creators">
+        <div
+          className={`${segmentedTrackClassName} w-full sm:w-auto`}
+          role="group"
+          aria-label="Sort creators"
+        >
           {sortOptions.map((o) => (
             <button
               key={o.key}
               type="button"
               onClick={() => setSort(o.key)}
               aria-pressed={sort === o.key}
-              className={`min-h-11 px-3 rounded-lg text-support font-medium transition-colors ${
-                sort === o.key
-                  ? 'bg-muted text-foreground'
-                  : 'text-muted-foreground hover:text-foreground hover:bg-muted/60'
-              }`}
+              className={segmentedItemClassName(sort === o.key)}
             >
               {o.label}
             </button>

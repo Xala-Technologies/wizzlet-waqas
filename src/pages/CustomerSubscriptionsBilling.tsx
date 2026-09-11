@@ -252,14 +252,14 @@ const CustomerSubscriptionsBilling = () => {
       )}
 
       <Tabs defaultValue="subscriptions" className="space-y-4">
-        <TabsList className="bg-muted/50 h-10">
-          <TabsTrigger value="subscriptions" className="text-support h-8">
+        <TabsList>
+          <TabsTrigger value="subscriptions">
             Subscriptions ({subs.length})
           </TabsTrigger>
-          <TabsTrigger value="billing" className="text-support h-8">
+          <TabsTrigger value="billing">
             Charges ({(eventsRaw ?? []).length})
           </TabsTrigger>
-          <TabsTrigger value="payment" className="text-support h-8">
+          <TabsTrigger value="payment">
             Payment Method
           </TabsTrigger>
         </TabsList>

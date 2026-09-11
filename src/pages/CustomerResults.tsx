@@ -766,10 +766,10 @@ const CustomerResults = () => {
       {/* Analytics Tabs */}
       {picks.length > 0 && (
         <Tabs defaultValue="sport" className="mt-2">
-          <TabsList className="bg-muted/50 h-10">
-            <TabsTrigger value="sport" className="text-support h-8">By Sport</TabsTrigger>
-            <TabsTrigger value="monthly" className="text-support h-8">Monthly</TabsTrigger>
-            <TabsTrigger value="insights" className="text-support h-8">Insights</TabsTrigger>
+          <TabsList>
+            <TabsTrigger value="sport">By Sport</TabsTrigger>
+            <TabsTrigger value="monthly">Monthly</TabsTrigger>
+            <TabsTrigger value="insights">Insights</TabsTrigger>
           </TabsList>
 
           {/* Sport Breakdown */}

@@ -985,11 +985,11 @@ const CreatorPerformanceTracker = () => {
       {/* Analytics Tabs */}
       {picks.length > 0 && (
         <Tabs defaultValue="content" className="mt-2">
-          <TabsList className="bg-muted/50 h-8">
-            <TabsTrigger value="content" className="text-caption h-6">Content</TabsTrigger>
-            <TabsTrigger value="sport" className="text-caption h-6">By Sport</TabsTrigger>
-            <TabsTrigger value="monthly" className="text-caption h-6">Monthly</TabsTrigger>
-            <TabsTrigger value="insights" className="text-caption h-6">Insights</TabsTrigger>
+          <TabsList>
+            <TabsTrigger value="content">Content</TabsTrigger>
+            <TabsTrigger value="sport">By Sport</TabsTrigger>
+            <TabsTrigger value="monthly">Monthly</TabsTrigger>
+            <TabsTrigger value="insights">Insights</TabsTrigger>
           </TabsList>
 
           {/* Content Performance Tab */}

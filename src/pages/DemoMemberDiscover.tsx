@@ -7,6 +7,7 @@ import { Search, Star, Crown, TrendingUp, Bookmark } from 'lucide-react';
 import DemoMemberShell from '@/components/demo/DemoMemberShell';
 import { useDemoMemberStore } from '@/components/demo/demoMemberStore';
 import CancelSubButton from '@/components/demo/CancelSubButton';
+import { segmentedItemClassName, segmentedTrackClassName } from '@/lib/segmentedControl';
 
 const DemoMemberDiscover = () => {
   const store = useDemoMemberStore();
@@ -78,14 +79,14 @@ const DemoMemberDiscover = () => {
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
           <Input placeholder="Search creators…" value={search} onChange={e => setSearch(e.target.value)} className="pl-9 h-9" />
         </div>
-        <div className="flex gap-1.5 flex-wrap">
+        <div className={segmentedTrackClassName} role="group" aria-label="Filter by category">
           {categories.map(cat => (
             <button
               key={cat}
+              type="button"
               onClick={() => setCategory(cat)}
-              className={`px-3 py-1.5 rounded-lg text-caption font-medium transition-colors ${
-                category === cat ? 'bg-primary/10 text-primary' : 'text-muted-foreground hover:text-foreground hover:bg-muted/60'
-              }`}
+              aria-pressed={category === cat}
+              className={segmentedItemClassName(category === cat)}
             >{cat}</button>
           ))}
         </div>

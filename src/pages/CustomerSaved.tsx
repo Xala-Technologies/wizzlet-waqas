@@ -9,6 +9,7 @@ import { format } from 'date-fns';
 import { useAuth } from '@/contexts/AuthContext';
 import { api } from '@convex/_generated/api';
 import type { Id } from '@convex/_generated/dataModel';
+import { segmentedItemClassName, segmentedTrackClassName } from '@/lib/segmentedControl';
 
 interface SavedPost {
   id: string;
@@ -131,7 +132,7 @@ const CustomerSaved = () => {
         </p>
       </header>
 
-      <div className="flex flex-wrap gap-2 mb-6">
+      <div className={`${segmentedTrackClassName} mb-6`} role="tablist" aria-label="Saved library">
         {[
           { key: 'posts' as const, label: 'Saved Posts', count: posts.length },
           { key: 'creators' as const, label: 'Bookmarked Creators', count: creators.length },
@@ -139,12 +140,10 @@ const CustomerSaved = () => {
           <button
             key={t.key}
             type="button"
+            role="tab"
+            aria-selected={tab === t.key}
             onClick={() => setTab(t.key)}
-            className={`min-h-11 px-3 rounded-lg text-support font-medium transition-colors ${
-              tab === t.key
-                ? 'bg-primary/10 text-primary'
-                : 'text-muted-foreground hover:text-foreground hover:bg-muted/60'
-            }`}
+            className={segmentedItemClassName(tab === t.key)}
           >
             {t.label} ({t.count}
             {t.key === 'posts' && savedDetailed.status === 'CanLoadMore' ? '+' : ''})

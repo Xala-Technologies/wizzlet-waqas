@@ -6,6 +6,7 @@ import { Bookmark, Heart, Trash2, Lock, Globe, Crown } from 'lucide-react';
 import DemoMemberShell from '@/components/demo/DemoMemberShell';
 import { useDemoMemberStore } from '@/components/demo/demoMemberStore';
 import CancelSubButton from '@/components/demo/CancelSubButton';
+import { segmentedItemClassName, segmentedTrackClassName } from '@/lib/segmentedControl';
 
 const DemoMemberSaved = () => {
   const store = useDemoMemberStore();
@@ -21,17 +22,18 @@ const DemoMemberSaved = () => {
 
   return (
     <DemoMemberShell title="Saved" subtitle="Your bookmarked posts and creators">
-      <div className="flex gap-1 mb-6">
+      <div className={`${segmentedTrackClassName} mb-6`} role="tablist" aria-label="Saved library">
         {[
           { key: 'posts' as const, label: 'Saved Posts', count: savedPosts.length },
           { key: 'creators' as const, label: 'Bookmarked Creators', count: bookmarked.length },
         ].map(t => (
           <button
             key={t.key}
+            type="button"
+            role="tab"
+            aria-selected={tab === t.key}
             onClick={() => setTab(t.key)}
-            className={`px-3 py-1.5 rounded-lg text-caption font-medium transition-colors ${
-              tab === t.key ? 'bg-primary/10 text-primary' : 'text-muted-foreground hover:text-foreground hover:bg-muted/60'
-            }`}
+            className={segmentedItemClassName(tab === t.key)}
           >
             {t.label} ({t.count})
           </button>
