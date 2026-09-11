@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import { useMutation, usePaginatedQuery, useQuery } from 'convex/react';
 import { api } from '../../convex/_generated/api';
 import type { Id } from '../../convex/_generated/dataModel';
@@ -54,10 +54,18 @@ const CustomerMessages = () => {
   const [reply, setReply] = useState('');
   const [sending, setSending] = useState(false);
   const markedRef = useRef<Set<string>>(new Set());
+  const prevActiveIdRef = useRef<string | null>(activeId);
 
   useEffect(() => {
     if (creatorIdParam) setActiveId(creatorIdParam);
   }, [creatorIdParam]);
+
+  useEffect(() => {
+    if (prevActiveIdRef.current !== activeId) {
+      setReply('');
+      prevActiveIdRef.current = activeId;
+    }
+  }, [activeId]);
 
   const nameMap = useMemo(() => {
     const map = new Map<string, string>();
@@ -161,7 +169,7 @@ const CustomerMessages = () => {
   };
 
   const send = async () => {
-    if (!appUserId || !active || !reply.trim()) return;
+    if (!appUserId || !active || !reply.trim() || sending) return;
     setSending(true);
     try {
       await sendMessage({
@@ -185,31 +193,64 @@ const CustomerMessages = () => {
 
   const showEmpty = !busy && threads.length === 0 && !activeId;
 
+  const composer = active ? (
+    <div className="border-t border-border p-3 flex gap-2 items-end bg-card pb-[max(0.75rem,env(safe-area-inset-bottom))]">
+      <Textarea
+        placeholder="Write a message…"
+        value={reply}
+        onChange={(e) => setReply(e.target.value)}
+        rows={2}
+        className="resize-none min-w-0 flex-1 min-h-11 text-ui"
+      />
+      <Button
+        type="button"
+        onClick={() => void send()}
+        disabled={sending || !reply.trim() || !appUserId}
+        size="icon"
+        className="h-11 w-11 min-h-11 shrink-0"
+        aria-label="Send message"
+      >
+        {sending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
+      </Button>
+    </div>
+  ) : null;
+
+  if (busy) {
+    return (
+      <DashboardLayout type="member">
+        <div className="flex justify-center py-20">
+          <Loader2 className="h-5 w-5 animate-spin text-primary" />
+        </div>
+      </DashboardLayout>
+    );
+  }
+
   return (
     <DashboardLayout type="member">
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold">Messages</h1>
-        <p className="text-muted-foreground text-sm mt-0.5">Direct conversations with creators you subscribe to</p>
-      </div>
+      <header className="mb-6">
+        <h1 className="text-heading font-bold text-foreground">Messages</h1>
+        <p className="text-support text-muted-foreground mt-0.5">
+          Direct conversations with creators you subscribe to
+        </p>
+      </header>
 
-      {busy ? (
-        <div className="flex items-center justify-center py-24">
-          <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
-        </div>
-      ) : showEmpty ? (
-        <div className="rounded-xl border border-border bg-card p-12 text-center">
-          <MessageSquare className="h-10 w-10 text-muted-foreground/40 mx-auto mb-4" />
-          <h3 className="text-lg font-semibold mb-1">No messages yet</h3>
-          <p className="text-sm text-muted-foreground max-w-sm mx-auto">
+      {showEmpty ? (
+        <div className="rounded-xl border border-border bg-card p-10 text-center">
+          <MessageSquare className="h-10 w-10 text-muted-foreground mx-auto mb-4" />
+          <h3 className="text-ui font-semibold text-foreground mb-2">No messages yet</h3>
+          <p className="text-support text-muted-foreground max-w-sm mx-auto mb-5">
             Start a conversation from a creator you subscribe to, or wait for them to message you.
           </p>
+          <Button className="min-h-11" asChild>
+            <Link to="/dashboard/discover">Browse creators</Link>
+          </Button>
         </div>
       ) : (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 min-w-0">
           <div className={cn('space-y-2', activeId && 'hidden lg:block')}>
             {threads.length === 0 ? (
-              <div className="rounded-xl border border-border bg-card p-6 text-center text-sm text-muted-foreground">
-                No prior conversations
+              <div className="rounded-xl border border-border bg-card p-6 text-center">
+                <p className="text-support text-muted-foreground">No prior conversations</p>
               </div>
             ) : (
               threads.map((thread) => (
@@ -217,22 +258,27 @@ const CustomerMessages = () => {
                   key={thread.creatorId}
                   type="button"
                   onClick={() => openThread(thread)}
-                  className={`w-full min-h-14 text-left rounded-xl border p-4 transition-colors ${
-                    thread.creatorId === activeId ? 'border-primary bg-primary/5' : 'border-border bg-card hover:bg-muted/40'
-                  }`}
+                  className={cn(
+                    'w-full min-h-14 text-left rounded-xl border p-4 transition-colors',
+                    thread.creatorId === activeId
+                      ? 'border-border bg-muted/50'
+                      : 'border-border bg-card hover:bg-muted/40',
+                  )}
                 >
                   <div className="flex items-center gap-3">
-                    <div className="flex h-8 w-8 items-center justify-center rounded-full bg-muted shrink-0">
+                    <div className="flex h-10 w-10 items-center justify-center rounded-full bg-muted shrink-0">
                       <User className="h-4 w-4 text-muted-foreground" />
                     </div>
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center justify-between gap-2">
-                        <p className="text-sm font-medium truncate">{thread.name}</p>
+                        <p className="text-ui font-semibold text-foreground truncate">{thread.name}</p>
                         {thread.unread > 0 && (
-                          <Badge className="text-caption shrink-0">{thread.unread}</Badge>
+                          <Badge variant="outline" className="text-support shrink-0">
+                            {thread.unread}
+                          </Badge>
                         )}
                       </div>
-                      <p className="text-caption text-muted-foreground truncate mt-0.5">
+                      <p className="text-support text-muted-foreground truncate mt-0.5">
                         {thread.messages[thread.messages.length - 1]?.body}
                       </p>
                     </div>
@@ -243,12 +289,15 @@ const CustomerMessages = () => {
             {(inboxStatus === 'CanLoadMore' || inboxStatus === 'LoadingMore') && (
               <div className="flex justify-center pt-2">
                 <Button
+                  type="button"
                   variant="outline"
-                  size="sm"
+                  className="min-h-11"
                   disabled={inboxStatus === 'LoadingMore'}
                   onClick={() => loadMore(PAGE_SIZE)}
                 >
-                  {inboxStatus === 'LoadingMore' ? <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" /> : null}
+                  {inboxStatus === 'LoadingMore' ? (
+                    <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
+                  ) : null}
                   Load more
                 </Button>
               </div>
@@ -263,7 +312,7 @@ const CustomerMessages = () => {
           >
             {active ? (
               <>
-                <div className="border-b border-border px-3 sm:px-5 py-3 flex items-center gap-2">
+                <div className="border-b border-border px-3 sm:px-5 py-3 flex items-center gap-2 shrink-0">
                   <button
                     type="button"
                     className="lg:hidden inline-flex h-11 w-11 items-center justify-center rounded-lg text-muted-foreground hover:bg-muted/60 hover:text-foreground"
@@ -272,11 +321,11 @@ const CustomerMessages = () => {
                   >
                     <ArrowLeft className="h-5 w-5" />
                   </button>
-                  <p className="text-sm font-semibold truncate">{active.name}</p>
+                  <p className="text-ui font-semibold text-foreground truncate">{active.name}</p>
                 </div>
                 <div className="flex-1 overflow-y-auto p-4 space-y-3">
                   {active.messages.length === 0 ? (
-                    <div className="flex h-full min-h-[8rem] items-center justify-center text-sm text-muted-foreground">
+                    <div className="flex h-full min-h-[8rem] items-center justify-center text-support text-muted-foreground">
                       Say hello — start the conversation
                     </div>
                   ) : (
@@ -286,21 +335,23 @@ const CustomerMessages = () => {
                         className={`flex ${msg.sender_role === 'subscriber' ? 'justify-end' : 'justify-start'}`}
                       >
                         <div
-                          className={`max-w-[80%] rounded-xl px-3.5 py-2.5 text-sm ${
+                          className={`max-w-[80%] rounded-xl px-3.5 py-2.5 text-ui ${
                             msg.sender_role === 'subscriber'
                               ? 'bg-primary text-primary-foreground'
-                              : 'bg-muted/60'
+                              : 'bg-muted/60 text-foreground'
                           }`}
                         >
                           <p className="whitespace-pre-line">{msg.body}</p>
                           <div
-                            className={`mt-1 flex items-center justify-between gap-2 text-caption ${
+                            className={`mt-1 flex items-center justify-between gap-2 text-support ${
                               msg.sender_role === 'subscriber'
                                 ? 'text-primary-foreground/60'
                                 : 'text-muted-foreground'
                             }`}
                           >
-                            <span>{formatDistanceToNow(new Date(msg.created_at), { addSuffix: true })}</span>
+                            <span>
+                              {formatDistanceToNow(new Date(msg.created_at), { addSuffix: true })}
+                            </span>
                             {msg.sender_role === 'subscriber' && (
                               <MessageSeenReceipt seen={msg.read} light />
                             )}
@@ -310,27 +361,11 @@ const CustomerMessages = () => {
                     ))
                   )}
                 </div>
-                <div className="border-t border-border p-3 flex gap-2 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
-                  <Textarea
-                    placeholder="Write a message…"
-                    value={reply}
-                    onChange={(e) => setReply(e.target.value)}
-                    rows={2}
-                    className="resize-none min-w-0 flex-1"
-                  />
-                  <Button
-                    onClick={send}
-                    disabled={sending || !reply.trim() || !appUserId}
-                    size="icon"
-                    className="h-11 w-11 shrink-0"
-                    aria-label="Send message"
-                  >
-                    {sending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
-                  </Button>
-                </div>
+                <div className="hidden lg:block shrink-0">{composer}</div>
+                <div className="lg:hidden sticky bottom-0 z-20">{composer}</div>
               </>
             ) : (
-              <div className="flex-1 flex items-center justify-center text-sm text-muted-foreground">
+              <div className="flex-1 flex items-center justify-center text-support text-muted-foreground">
                 Select a conversation
               </div>
             )}
