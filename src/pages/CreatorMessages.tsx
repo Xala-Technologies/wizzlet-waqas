@@ -9,17 +9,17 @@ import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { useCreatorProfile } from '@/hooks/useCreatorProfile';
-import { MessageSquare, User, Power, Loader2, Send, ArrowLeft } from 'lucide-react';
+import { MessageSquare, User, Power, Loader2, Send, ArrowLeft, Shield } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { MessageSeenReceipt } from '@/components/messaging/MessageSeenReceipt';
 
 const PAGE_SIZE = 25;
+const SUPPORT_THREAD_ID = '__prizelet_support__';
 
-interface DirectMessage {
+interface ChatMessage {
   id: string;
-  subscriber_id: string;
   sender_role: string;
   body: string;
   read: boolean;
@@ -27,9 +27,10 @@ interface DirectMessage {
 }
 
 interface Thread {
-  subscriberId: string;
+  id: string;
+  kind: 'subscriber' | 'support';
   name: string;
-  messages: DirectMessage[];
+  messages: ChatMessage[];
   unread: number;
   lastAt: string;
 }
@@ -38,6 +39,7 @@ const CreatorMessages = () => {
   const { creator, loading: creatorLoading } = useCreatorProfile();
   const [searchParams, setSearchParams] = useSearchParams();
   const subscriberIdParam = searchParams.get('subscriberId');
+  const threadParam = searchParams.get('thread');
 
   const { results: inbox, status: inboxStatus, loadMore } = usePaginatedQuery(
     api.messaging.mutations.myCreatorInboxPage,
@@ -45,11 +47,18 @@ const CreatorMessages = () => {
     { initialNumItems: PAGE_SIZE },
   );
   const subscribers = useQuery(api.subscriptions.mutations.listSubscribersDetailed);
+  const supportRows = useQuery(api.support.mutations.listForMyCreator);
   const setMessagingEnabledMut = useMutation(api.messaging.mutations.setMessagingEnabled);
   const sendMessage = useMutation(api.messaging.mutations.send);
+  const sendSupport = useMutation(api.support.mutations.send);
   const markRead = useMutation(api.messaging.mutations.markReadCreator);
+  const markReadSupport = useMutation(api.support.mutations.markReadCreator);
 
-  const [activeId, setActiveId] = useState<string | null>(subscriberIdParam);
+  const initialActive =
+    threadParam === 'support'
+      ? SUPPORT_THREAD_ID
+      : subscriberIdParam;
+  const [activeId, setActiveId] = useState<string | null>(initialActive);
   const [reply, setReply] = useState('');
   const [sending, setSending] = useState(false);
   const [messagingEnabled, setMessagingEnabled] = useState(true);
@@ -58,8 +67,9 @@ const CreatorMessages = () => {
   const prevActiveIdRef = useRef<string | null>(activeId);
 
   useEffect(() => {
-    if (subscriberIdParam) setActiveId(subscriberIdParam);
-  }, [subscriberIdParam]);
+    if (threadParam === 'support') setActiveId(SUPPORT_THREAD_ID);
+    else if (subscriberIdParam) setActiveId(subscriberIdParam);
+  }, [subscriberIdParam, threadParam]);
 
   useEffect(() => {
     if (creator) setMessagingEnabled(creator.messaging_enabled ?? true);
@@ -74,7 +84,7 @@ const CreatorMessages = () => {
 
   const activeThreadMessages = useQuery(
     api.messaging.mutations.listThread,
-    creator && activeId
+    creator && activeId && activeId !== SUPPORT_THREAD_ID
       ? {
           creatorId: creator.id as Id<'creators'>,
           subscriberId: activeId as Id<'users'>,
@@ -82,7 +92,30 @@ const CreatorMessages = () => {
       : 'skip',
   );
 
-  const threads = useMemo(() => {
+  const supportThread = useMemo((): Thread | null => {
+    if (supportRows === undefined) return null;
+    const msgs = supportRows
+      .filter((m) => m.channel === 'support')
+      .sort((a, b) => a.createdAt - b.createdAt)
+      .map((m) => ({
+        id: m._id,
+        sender_role: m.senderRole,
+        body: m.body,
+        read: m.read,
+        created_at: new Date(m.createdAt).toISOString(),
+      }));
+    if (msgs.length === 0) return null;
+    return {
+      id: SUPPORT_THREAD_ID,
+      kind: 'support',
+      name: 'Prizelet Support',
+      messages: msgs,
+      unread: msgs.filter((m) => m.sender_role === 'admin' && !m.read).length,
+      lastAt: msgs[msgs.length - 1]?.created_at ?? '',
+    };
+  }, [supportRows]);
+
+  const subscriberThreads = useMemo(() => {
     if (inboxStatus === 'LoadingFirstPage') return [] as Thread[];
     const nameMap = new Map(
       (subscribers ?? []).map((s) => [
@@ -90,11 +123,10 @@ const CreatorMessages = () => {
         s.user?.fullName || s.user?.username || s.user?.email || 'Subscriber',
       ]),
     );
-    const grouped = new Map<string, DirectMessage[]>();
+    const grouped = new Map<string, ChatMessage[]>();
     for (const r of inbox) {
-      const msg: DirectMessage = {
+      const msg: ChatMessage = {
         id: r._id,
-        subscriber_id: r.subscriberId,
         sender_role: r.senderRole,
         body: r.body,
         read: r.read,
@@ -104,7 +136,8 @@ const CreatorMessages = () => {
     }
     return [...grouped.entries()]
       .map(([subscriberId, messages]) => ({
-        subscriberId,
+        id: subscriberId,
+        kind: 'subscriber' as const,
         name: nameMap.get(subscriberId as Id<'users'>) ?? 'Subscriber',
         messages: messages.sort((a, b) => a.created_at.localeCompare(b.created_at)),
         unread: messages.filter((m) => m.sender_role === 'subscriber' && !m.read).length,
@@ -113,22 +146,28 @@ const CreatorMessages = () => {
       .sort((a, b) => b.lastAt.localeCompare(a.lastAt));
   }, [inbox, inboxStatus, subscribers]);
 
+  const threads = useMemo(() => {
+    const list = messagingEnabled ? [...subscriberThreads] : [];
+    if (supportThread) list.unshift(supportThread);
+    return list;
+  }, [subscriberThreads, supportThread, messagingEnabled]);
+
   useEffect(() => {
     if (typeof window === 'undefined') return;
     if (!window.matchMedia('(min-width: 1024px)').matches) return;
-    if (!activeId && threads.length > 0) setActiveId(threads[0]?.subscriberId ?? null);
+    if (!activeId && threads.length > 0) setActiveId(threads[0]?.id ?? null);
   }, [threads, activeId]);
 
   const active = useMemo(() => {
     if (!activeId) return null;
-    const base = threads.find((t) => t.subscriberId === activeId);
+    if (activeId === SUPPORT_THREAD_ID) return supportThread;
+    const base = subscriberThreads.find((t) => t.id === activeId);
     if (!base) return null;
     if (activeThreadMessages) {
       return {
         ...base,
         messages: activeThreadMessages.map((m) => ({
           id: m._id,
-          subscriber_id: m.subscriberId,
           sender_role: m.senderRole,
           body: m.body,
           read: m.read,
@@ -137,10 +176,21 @@ const CreatorMessages = () => {
       };
     }
     return base;
-  }, [threads, activeId, activeThreadMessages]);
+  }, [activeId, supportThread, subscriberThreads, activeThreadMessages]);
 
   useEffect(() => {
     if (!active) return;
+    if (active.kind === 'support') {
+      const unreadIds = active.messages
+        .filter((m) => m.sender_role === 'admin' && !m.read && !markedRef.current.has(m.id))
+        .map((m) => m.id);
+      if (unreadIds.length === 0) return;
+      unreadIds.forEach((id) => markedRef.current.add(id));
+      void markReadSupport({ messageIds: unreadIds as Id<'supportMessages'>[] }).catch(() => {
+        unreadIds.forEach((id) => markedRef.current.delete(id));
+      });
+      return;
+    }
     const unreadIds = active.messages
       .filter((m) => m.sender_role === 'subscriber' && !m.read && !markedRef.current.has(m.id))
       .map((m) => m.id);
@@ -149,7 +199,7 @@ const CreatorMessages = () => {
     void markRead({ messageIds: unreadIds as Id<'directMessages'>[] }).catch(() => {
       unreadIds.forEach((id) => markedRef.current.delete(id));
     });
-  }, [active, markRead]);
+  }, [active, markRead, markReadSupport]);
 
   const toggleMessaging = async (next: boolean) => {
     setMessagingEnabled(next);
@@ -166,8 +216,12 @@ const CreatorMessages = () => {
   };
 
   const openThread = (thread: Thread) => {
-    setActiveId(thread.subscriberId);
-    setSearchParams({ subscriberId: thread.subscriberId }, { replace: true });
+    setActiveId(thread.id);
+    if (thread.kind === 'support') {
+      setSearchParams({ thread: 'support' }, { replace: true });
+    } else {
+      setSearchParams({ subscriberId: thread.id }, { replace: true });
+    }
   };
 
   const backToList = () => {
@@ -179,12 +233,21 @@ const CreatorMessages = () => {
     if (!creator || !active || !reply.trim() || sending) return;
     setSending(true);
     try {
-      await sendMessage({
-        creatorId: creator.id as Id<'creators'>,
-        subscriberId: active.subscriberId as Id<'users'>,
-        senderRole: 'creator',
-        body: reply.trim(),
-      });
+      if (active.kind === 'support') {
+        await sendSupport({
+          creatorId: creator.id as Id<'creators'>,
+          body: reply.trim(),
+          senderRole: 'creator',
+          channel: 'support',
+        });
+      } else {
+        await sendMessage({
+          creatorId: creator.id as Id<'creators'>,
+          subscriberId: active.id as Id<'users'>,
+          senderRole: 'creator',
+          body: reply.trim(),
+        });
+      }
       setReply('');
     } catch (e) {
       toast.error(e instanceof Error ? e.message : 'Failed to send message');
@@ -193,7 +256,11 @@ const CreatorMessages = () => {
     }
   };
 
-  const busy = creatorLoading || inboxStatus === 'LoadingFirstPage' || subscribers === undefined;
+  const busy =
+    creatorLoading ||
+    inboxStatus === 'LoadingFirstPage' ||
+    subscribers === undefined ||
+    supportRows === undefined;
 
   if (busy) {
     return (
@@ -210,7 +277,7 @@ const CreatorMessages = () => {
       <div className="min-w-0">
         <h1 className="text-heading font-bold text-foreground">Messages</h1>
         <p className="text-support text-muted-foreground mt-0.5">
-          Direct conversations with your subscribers
+          Prizelet Support and direct conversations with your subscribers
         </p>
       </div>
       {creator ? (
@@ -250,7 +317,7 @@ const CreatorMessages = () => {
     );
   }
 
-  if (!messagingEnabled) {
+  if (!messagingEnabled && !supportThread) {
     return (
       <DashboardLayout type="creator">
         {header}
@@ -260,7 +327,8 @@ const CreatorMessages = () => {
             Messaging is currently turned off
           </h3>
           <p className="text-support text-muted-foreground max-w-sm mx-auto">
-            Enable messaging above to receive messages from your subscribers.
+            Enable messaging above to receive messages from your subscribers. Prizelet Support
+            messages still appear here when Support writes to you.
           </p>
         </div>
       </DashboardLayout>
@@ -275,7 +343,7 @@ const CreatorMessages = () => {
           <MessageSquare className="h-10 w-10 text-muted-foreground mx-auto mb-4" />
           <h3 className="text-ui font-semibold text-foreground mb-2">No messages yet</h3>
           <p className="text-support text-muted-foreground max-w-sm mx-auto mb-5">
-            When a subscriber writes to you, the conversation appears here.
+            When Prizelet Support or a subscriber writes to you, the conversation appears here.
           </p>
           <Button asChild variant="outline" className="min-h-11">
             <Link to="/creator/subscribers">View subscribers</Link>
@@ -288,7 +356,7 @@ const CreatorMessages = () => {
   const composer = (
     <div className="border-t border-border p-3 flex gap-2 items-end bg-card pb-[max(0.75rem,env(safe-area-inset-bottom))]">
       <Textarea
-        placeholder="Write a reply…"
+        placeholder={active?.kind === 'support' ? 'Reply to Prizelet Support…' : 'Write a reply…'}
         value={reply}
         onChange={(e) => setReply(e.target.value)}
         rows={2}
@@ -313,26 +381,38 @@ const CreatorMessages = () => {
     </div>
   );
 
+  const isMine = (role: string) => role === 'creator';
+
   return (
     <DashboardLayout type="creator">
       {header}
+
+      {!messagingEnabled && supportThread ? (
+        <p className="text-support text-muted-foreground mb-4 rounded-lg border border-border bg-muted/40 px-3 py-2">
+          Subscriber messaging is off. You can still read and reply to Prizelet Support below.
+        </p>
+      ) : null}
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-5 lg:gap-6 min-w-0">
         <div className={cn('space-y-2', activeId && 'hidden lg:block')}>
           {threads.map((thread) => (
             <button
-              key={thread.subscriberId}
+              key={thread.id}
               type="button"
               onClick={() => openThread(thread)}
               className={`w-full min-h-14 text-left rounded-xl border p-4 transition-colors ${
-                thread.subscriberId === activeId
+                thread.id === activeId
                   ? 'border-primary bg-primary/5'
                   : 'border-border bg-card hover:bg-muted/40'
               }`}
             >
               <div className="flex items-center gap-3">
                 <div className="flex h-9 w-9 items-center justify-center rounded-full bg-muted shrink-0">
-                  <User className="h-4 w-4 text-muted-foreground" />
+                  {thread.kind === 'support' ? (
+                    <Shield className="h-4 w-4 text-muted-foreground" />
+                  ) : (
+                    <User className="h-4 w-4 text-muted-foreground" />
+                  )}
                 </div>
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center justify-between gap-2">
@@ -348,7 +428,7 @@ const CreatorMessages = () => {
               </div>
             </button>
           ))}
-          {(inboxStatus === 'CanLoadMore' || inboxStatus === 'LoadingMore') && (
+          {messagingEnabled && (inboxStatus === 'CanLoadMore' || inboxStatus === 'LoadingMore') && (
             <div className="flex justify-center pt-2">
               <Button
                 type="button"
@@ -389,11 +469,11 @@ const CreatorMessages = () => {
                 {active.messages.map((msg) => (
                   <div
                     key={msg.id}
-                    className={`flex ${msg.sender_role === 'creator' ? 'justify-end' : 'justify-start'}`}
+                    className={`flex ${isMine(msg.sender_role) ? 'justify-end' : 'justify-start'}`}
                   >
                     <div
                       className={`max-w-[80%] rounded-xl px-3.5 py-2.5 text-ui ${
-                        msg.sender_role === 'creator'
+                        isMine(msg.sender_role)
                           ? 'bg-primary text-primary-foreground'
                           : 'bg-muted/60 text-foreground'
                       }`}
@@ -401,7 +481,7 @@ const CreatorMessages = () => {
                       <p className="whitespace-pre-line">{msg.body}</p>
                       <div
                         className={`mt-1 flex items-center justify-between gap-2 text-caption ${
-                          msg.sender_role === 'creator'
+                          isMine(msg.sender_role)
                             ? 'text-primary-foreground/60'
                             : 'text-muted-foreground'
                         }`}
@@ -409,7 +489,7 @@ const CreatorMessages = () => {
                         <span>
                           {formatDistanceToNow(new Date(msg.created_at), { addSuffix: true })}
                         </span>
-                        {msg.sender_role === 'creator' && (
+                        {isMine(msg.sender_role) && (
                           <MessageSeenReceipt seen={msg.read} light />
                         )}
                       </div>
