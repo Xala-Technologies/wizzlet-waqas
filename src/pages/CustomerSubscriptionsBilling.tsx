@@ -1,11 +1,11 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useState, type ReactNode } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useQuery } from 'convex/react';
 import { DashboardLayout } from '@/components/dashboard/DashboardLayout';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Crown, CreditCard, FileText, ExternalLink, Loader2, MessageSquare } from 'lucide-react';
+import { Crown, CreditCard, FileText, ExternalLink, Loader2, MessageSquare, Compass } from 'lucide-react';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -47,6 +47,58 @@ function eventLabel(type: string): string {
   if (type === 'refund') return 'Refund';
   if (type === 'adjustment') return 'Adjustment';
   return type.replace(/_/g, ' ');
+}
+
+type ExpectRow = { icon: typeof Crown; label: string; detail: string };
+
+function BillingEmpty({
+  icon: Icon,
+  headline,
+  support,
+  expects,
+  primary,
+  secondary,
+}: {
+  icon: typeof Crown;
+  headline: string;
+  support: string;
+  expects: ExpectRow[];
+  primary: ReactNode;
+  secondary?: ReactNode;
+}) {
+  return (
+    <div className="rounded-xl border border-border bg-card px-6 py-12 sm:px-10 sm:py-14 text-center">
+      <div className="inbox-empty-enter mx-auto mb-6 flex h-14 w-14 items-center justify-center rounded-xl bg-muted">
+        <Icon className="h-7 w-7 text-muted-foreground" strokeWidth={1.75} />
+      </div>
+      <h2 className="inbox-empty-enter text-title-lg font-semibold text-foreground tracking-tight">
+        {headline}
+      </h2>
+      <p className="inbox-empty-enter-delay text-support text-muted-foreground mt-2 mx-auto max-w-md leading-relaxed">
+        {support}
+      </p>
+      <ul className="inbox-empty-enter-delay mx-auto mt-8 max-w-md text-left space-y-3">
+        {expects.map((row) => (
+          <li
+            key={row.label}
+            className="flex items-start gap-3 rounded-xl border border-border px-4 py-3"
+          >
+            <div className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-muted">
+              <row.icon className="h-4 w-4 text-muted-foreground" />
+            </div>
+            <div className="min-w-0">
+              <p className="text-ui font-medium text-foreground">{row.label}</p>
+              <p className="text-support text-muted-foreground">{row.detail}</p>
+            </div>
+          </li>
+        ))}
+      </ul>
+      <div className="inbox-empty-enter-delay mt-8 flex flex-wrap items-center justify-center gap-3">
+        {primary}
+        {secondary}
+      </div>
+    </div>
+  );
 }
 
 const CustomerSubscriptionsBilling = () => {
@@ -157,12 +209,24 @@ const CustomerSubscriptionsBilling = () => {
             separately when they differ.
           </p>
         </div>
-        {active.length > 0 && (
-          <div className="rounded-xl border border-border bg-card px-4 py-3 shrink-0">
-            <p className="text-support text-muted-foreground">Active access list-price total</p>
-            <p className="text-ui font-bold text-foreground mt-1">{currency(listPriceTotal)}</p>
-          </div>
-        )}
+        <div className="flex flex-wrap items-center gap-2 shrink-0">
+          {active.length > 0 && (
+            <div className="rounded-xl border border-border bg-card px-4 py-3">
+              <p className="text-support text-muted-foreground">Active access list-price total</p>
+              <p className="text-ui font-bold text-foreground mt-1">{currency(listPriceTotal)}</p>
+            </div>
+          )}
+          <Button
+            type="button"
+            variant="outline"
+            className="min-h-11"
+            onClick={() => void manageBilling()}
+            disabled={portalLoading}
+          >
+            {portalLoading ? <Loader2 className="mr-2 h-3.5 w-3.5 animate-spin" /> : null}
+            Billing portal
+          </Button>
+        </div>
       </header>
 
       {pastDueCount > 0 && (
@@ -190,10 +254,10 @@ const CustomerSubscriptionsBilling = () => {
       <Tabs defaultValue="subscriptions" className="space-y-4">
         <TabsList className="bg-muted/50 h-10">
           <TabsTrigger value="subscriptions" className="text-support h-8">
-            Subscriptions
+            Subscriptions ({subs.length})
           </TabsTrigger>
           <TabsTrigger value="billing" className="text-support h-8">
-            Charges
+            Charges ({(eventsRaw ?? []).length})
           </TabsTrigger>
           <TabsTrigger value="payment" className="text-support h-8">
             Payment Method
@@ -202,16 +266,38 @@ const CustomerSubscriptionsBilling = () => {
 
         <TabsContent value="subscriptions">
           {subs.length === 0 ? (
-            <div className="rounded-xl border border-border bg-card p-10 text-center">
-              <Crown className="h-10 w-10 text-muted-foreground mx-auto mb-4" />
-              <h3 className="text-ui font-semibold text-foreground mb-2">No subscriptions yet</h3>
-              <p className="text-support text-muted-foreground mb-5 max-w-sm mx-auto">
-                Discover creators and subscribe to get premium picks and content.
-              </p>
-              <Button className="min-h-11" asChild>
-                <Link to="/dashboard/discover">Browse Creators</Link>
-              </Button>
-            </div>
+            <BillingEmpty
+              icon={Crown}
+              headline="No subscriptions yet"
+              support="Subscribe to creators for premium picks and messaging access. Your active access and billing status stay honest here — even when they differ."
+              expects={[
+                {
+                  icon: Compass,
+                  label: 'Find creators',
+                  detail: 'Browse Discover and open a profile you trust',
+                },
+                {
+                  icon: Crown,
+                  label: 'Subscribe for access',
+                  detail: 'Premium content unlocks after checkout succeeds',
+                },
+                {
+                  icon: CreditCard,
+                  label: 'Manage anytime',
+                  detail: 'Cancel, fix past-due, or update cards from this page',
+                },
+              ]}
+              primary={
+                <Button className="min-h-11 px-6" asChild>
+                  <Link to="/dashboard/discover">Browse creators</Link>
+                </Button>
+              }
+              secondary={
+                <Button variant="outline" className="min-h-11 px-6" asChild>
+                  <Link to="/dashboard">Go to Feed</Link>
+                </Button>
+              }
+            />
           ) : (
             <div className="space-y-3">
               <div className="flex flex-wrap gap-2">
@@ -357,24 +443,46 @@ const CustomerSubscriptionsBilling = () => {
 
         <TabsContent value="billing">
           {(eventsRaw ?? []).length === 0 ? (
-            <div className="rounded-xl border border-border bg-card p-10 text-center">
-              <FileText className="h-10 w-10 text-muted-foreground mx-auto mb-4" />
-              <h3 className="text-ui font-semibold text-foreground mb-2">No settled charges yet</h3>
-              <p className="text-support text-muted-foreground mb-5 max-w-sm mx-auto">
-                Charges recorded after checkout appear here. Full invoices are in the billing
-                portal.
-              </p>
-              <Button
-                type="button"
-                variant="outline"
-                className="min-h-11"
-                onClick={() => void manageBilling()}
-                disabled={portalLoading}
-              >
-                {portalLoading ? <Loader2 className="mr-2 h-3.5 w-3.5 animate-spin" /> : null}
-                Open Billing Portal
-              </Button>
-            </div>
+            <BillingEmpty
+              icon={FileText}
+              headline="No settled charges yet"
+              support="After you subscribe, settled Prizelet payment events appear here. Stripe invoices and receipts stay in the billing portal."
+              expects={[
+                {
+                  icon: CreditCard,
+                  label: 'Checkout & renewals',
+                  detail: 'Successful charges and renewals land as events',
+                },
+                {
+                  icon: FileText,
+                  label: 'Refunds & adjustments',
+                  detail: 'Shown when recorded against your account',
+                },
+                {
+                  icon: ExternalLink,
+                  label: 'Full invoices',
+                  detail: 'Open the portal for PDFs and payment methods',
+                },
+              ]}
+              primary={
+                <Button
+                  type="button"
+                  className="min-h-11 px-6"
+                  onClick={() => void manageBilling()}
+                  disabled={portalLoading}
+                >
+                  {portalLoading ? <Loader2 className="mr-2 h-3.5 w-3.5 animate-spin" /> : null}
+                  Open billing portal
+                </Button>
+              }
+              secondary={
+                subs.length === 0 ? (
+                  <Button variant="outline" className="min-h-11 px-6" asChild>
+                    <Link to="/dashboard/discover">Browse creators</Link>
+                  </Button>
+                ) : undefined
+              }
+            />
           ) : (
             <div className="space-y-3">
               <p className="text-support text-muted-foreground">
@@ -401,10 +509,7 @@ const CustomerSubscriptionsBilling = () => {
                     <p className="text-ui font-semibold text-foreground">
                       {currency(item.amountCents / 100)}
                     </p>
-                    <Badge
-                      variant="outline"
-                      className="text-support bg-emerald-500/10 text-emerald-500 border-emerald-500/20"
-                    >
+                    <Badge variant="outline" className="text-support text-muted-foreground">
                       {item.status.toUpperCase()}
                     </Badge>
                   </div>
@@ -425,30 +530,62 @@ const CustomerSubscriptionsBilling = () => {
         </TabsContent>
 
         <TabsContent value="payment">
-          <div className="rounded-xl border border-border bg-card p-6">
-            <div className="flex items-start gap-4 mb-5">
-              <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-muted shrink-0">
-                <CreditCard className="h-5 w-5 text-muted-foreground" />
+          <div className="rounded-xl border border-border bg-card px-6 py-10 sm:px-10 text-center sm:text-left">
+            <div className="flex flex-col sm:flex-row sm:items-start gap-4 max-w-xl mx-auto sm:mx-0">
+              <div className="mx-auto sm:mx-0 flex h-14 w-14 items-center justify-center rounded-xl bg-muted shrink-0">
+                <CreditCard className="h-7 w-7 text-muted-foreground" strokeWidth={1.75} />
               </div>
-              <div>
-                <p className="text-ui font-medium text-foreground">
-                  Payment methods are stored with our payment provider
+              <div className="min-w-0 flex-1">
+                <h2 className="text-title-lg font-semibold text-foreground tracking-tight">
+                  Cards stay with Stripe
+                </h2>
+                <p className="text-support text-muted-foreground mt-2 leading-relaxed">
+                  Prizelet never stores full card numbers. Update payment methods, download
+                  invoices, or manage tax details in the secure billing portal.
                 </p>
-                <p className="text-support text-muted-foreground mt-1">
-                  Card details never touch Prizelet — update them in the secure billing portal.
-                </p>
+                <ul className="mt-6 space-y-3 text-left">
+                  {[
+                    {
+                      icon: CreditCard,
+                      label: 'Add or replace a card',
+                      detail: 'Default method used for renewals',
+                    },
+                    {
+                      icon: FileText,
+                      label: 'Invoices & receipts',
+                      detail: 'Download history from Stripe',
+                    },
+                    {
+                      icon: ExternalLink,
+                      label: 'Return here anytime',
+                      detail: 'Portal opens in a secure Stripe session',
+                    },
+                  ].map((row) => (
+                    <li
+                      key={row.label}
+                      className="flex items-start gap-3 rounded-xl border border-border px-4 py-3"
+                    >
+                      <div className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-muted">
+                        <row.icon className="h-4 w-4 text-muted-foreground" />
+                      </div>
+                      <div className="min-w-0">
+                        <p className="text-ui font-medium text-foreground">{row.label}</p>
+                        <p className="text-support text-muted-foreground">{row.detail}</p>
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+                <Button
+                  type="button"
+                  className="min-h-11 mt-8 w-full sm:w-auto"
+                  onClick={() => void manageBilling()}
+                  disabled={portalLoading}
+                >
+                  {portalLoading ? <Loader2 className="mr-2 h-3.5 w-3.5 animate-spin" /> : null}
+                  Open billing portal
+                </Button>
               </div>
             </div>
-            <Button
-              type="button"
-              variant="outline"
-              className="min-h-11"
-              onClick={() => void manageBilling()}
-              disabled={portalLoading}
-            >
-              {portalLoading ? <Loader2 className="mr-2 h-3.5 w-3.5 animate-spin" /> : null}
-              Open Billing Portal
-            </Button>
           </div>
         </TabsContent>
       </Tabs>

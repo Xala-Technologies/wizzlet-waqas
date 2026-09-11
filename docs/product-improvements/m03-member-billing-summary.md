@@ -31,3 +31,11 @@
 ## Preserved
 
 `mySubscriptionsDetailed` / `myPaymentEvents`, `subscriptionGrantsContentAccess` + `describeSubscriptionAccess`, cancel → Stripe, billing portal handoff, access vs billing status separation, three tabs (Subscriptions / Charges / Payment Method).
+
+## Follow-up: empty craft (flat)
+
+**Branch:** `fix/member-billing-empty-craft`
+
+- Shared flat empty panel (no gradients): subscriptions / charges with guidance rows
+- Payment Method rebuilt as clear Stripe handoff with three facts
+- Header Billing portal always available; tab counts; muted charge status badges
