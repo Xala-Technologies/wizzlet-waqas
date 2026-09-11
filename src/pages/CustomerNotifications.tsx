@@ -220,63 +220,44 @@ const CustomerNotifications = () => {
       </header>
 
       {items.length === 0 ? (
-        <div className="relative overflow-hidden rounded-2xl border border-border bg-card">
-          <div
-            aria-hidden
-            className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_top,hsl(var(--primary)/0.12),transparent_55%)]"
-          />
-          <div
-            aria-hidden
-            className="pointer-events-none absolute -right-16 top-8 h-40 w-40 rounded-full bg-primary/5 blur-2xl"
-          />
+        <div className="rounded-xl border border-border bg-card px-6 py-12 sm:px-10 sm:py-14 text-center">
+          <div className="inbox-empty-enter mx-auto mb-6 flex h-14 w-14 items-center justify-center rounded-xl bg-muted">
+            <CheckCircle2 className="h-7 w-7 text-muted-foreground" strokeWidth={1.75} />
+          </div>
 
-          <div className="relative px-6 py-12 sm:px-10 sm:py-14 text-center">
-            <div className="inbox-empty-enter relative mx-auto mb-6 flex h-20 w-20 items-center justify-center">
-              <span
-                aria-hidden
-                className="inbox-empty-ring absolute inset-0 rounded-full border border-primary/30"
-              />
-              <span
-                aria-hidden
-                className="absolute inset-2 rounded-full bg-primary/10"
-              />
-              <CheckCircle2 className="relative h-9 w-9 text-primary" strokeWidth={1.75} />
-            </div>
+          <h2 className="inbox-empty-enter text-title-lg font-semibold text-foreground tracking-tight">
+            {recovery.headline}
+          </h2>
+          <p className="inbox-empty-enter-delay text-support text-muted-foreground mt-2 mx-auto max-w-md leading-relaxed">
+            {recovery.support}
+          </p>
 
-            <h2 className="inbox-empty-enter text-title-lg font-semibold text-foreground tracking-tight">
-              {recovery.headline}
-            </h2>
-            <p className="inbox-empty-enter-delay text-support text-muted-foreground mt-2 mx-auto max-w-md leading-relaxed">
-              {recovery.support}
-            </p>
+          <ul className="inbox-empty-enter-delay mx-auto mt-8 max-w-md text-left space-y-3">
+            {recovery.expects.map((row) => (
+              <li
+                key={row.label}
+                className="flex items-start gap-3 rounded-xl border border-border px-4 py-3"
+              >
+                <div className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-muted">
+                  <row.icon className="h-4 w-4 text-muted-foreground" />
+                </div>
+                <div className="min-w-0">
+                  <p className="text-ui font-medium text-foreground">{row.label}</p>
+                  <p className="text-support text-muted-foreground">{row.detail}</p>
+                </div>
+              </li>
+            ))}
+          </ul>
 
-            <ul className="inbox-empty-enter-delay mx-auto mt-8 max-w-md text-left space-y-3">
-              {recovery.expects.map((row) => (
-                <li
-                  key={row.label}
-                  className="flex items-start gap-3 rounded-xl border border-border/80 bg-background/50 px-4 py-3"
-                >
-                  <div className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-muted">
-                    <row.icon className="h-4 w-4 text-muted-foreground" />
-                  </div>
-                  <div className="min-w-0">
-                    <p className="text-ui font-medium text-foreground">{row.label}</p>
-                    <p className="text-support text-muted-foreground">{row.detail}</p>
-                  </div>
-                </li>
-              ))}
-            </ul>
-
-            <div className="inbox-empty-enter-delay mt-8 flex flex-wrap items-center justify-center gap-3">
-              <Button className="min-h-11 px-6" asChild>
-                <Link to={recovery.primary.to}>{recovery.primary.label}</Link>
+          <div className="inbox-empty-enter-delay mt-8 flex flex-wrap items-center justify-center gap-3">
+            <Button className="min-h-11 px-6" asChild>
+              <Link to={recovery.primary.to}>{recovery.primary.label}</Link>
+            </Button>
+            {recovery.secondary && (
+              <Button variant="outline" className="min-h-11 px-6" asChild>
+                <Link to={recovery.secondary.to}>{recovery.secondary.label}</Link>
               </Button>
-              {recovery.secondary && (
-                <Button variant="outline" className="min-h-11 px-6" asChild>
-                  <Link to={recovery.secondary.to}>{recovery.secondary.label}</Link>
-                </Button>
-              )}
-            </div>
+            )}
           </div>
         </div>
       ) : (
