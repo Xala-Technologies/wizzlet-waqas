@@ -100,7 +100,7 @@ export const send = mutation({
         description: preview,
         link: isGrowth
           ? "/creator/personal-growth-manager"
-          : "/creator/messages",
+          : "/creator/messages?thread=support",
       });
     }
 
@@ -180,18 +180,26 @@ export const markReadCreator = mutation({
     if (!creator) throw new Error("NOT_FOUND");
     let updated = 0;
     let sawGrowth = false;
+    let sawSupport = false;
     for (const id of args.messageIds) {
       const msg = await ctx.db.get(id);
       if (!msg || msg.creatorId !== creator._id || msg.read) continue;
       if (msg.senderRole !== "admin") continue;
       await ctx.db.patch(id, { read: true });
       if (msg.channel === "growth") sawGrowth = true;
+      if (msg.channel === "support") sawSupport = true;
       updated += 1;
     }
     if (sawGrowth) {
       await markNotificationsReadByLink(ctx, {
         userId: user._id,
         linkIncludes: "/creator/personal-growth-manager",
+      });
+    }
+    if (sawSupport) {
+      await markNotificationsReadByLink(ctx, {
+        userId: user._id,
+        linkIncludes: "/creator/messages",
       });
     }
     return updated;
