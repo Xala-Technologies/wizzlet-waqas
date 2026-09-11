@@ -10,7 +10,6 @@ import {
   Megaphone,
   Info,
   CheckCircle2,
-  BellOff,
   Loader2,
   MessageSquare,
   Brain,
@@ -56,21 +55,51 @@ function layoutFromPath(pathname: string): LayoutType {
   return 'member';
 }
 
-function emptyRecovery(layoutType: LayoutType): { primary: { to: string; label: string }; secondary?: { to: string; label: string } } {
+function emptyRecovery(layoutType: LayoutType): {
+  primary: { to: string; label: string };
+  secondary?: { to: string; label: string };
+  headline: string;
+  support: string;
+  expects: Array<{ icon: typeof FileText; label: string; detail: string }>;
+} {
   if (layoutType === 'creator') {
     return {
       primary: { to: '/creator', label: 'Go to dashboard' },
       secondary: { to: '/creator/messages', label: 'Open messages' },
+      headline: 'Nothing needs you right now',
+      support:
+        'Subscriber messages, payout updates, and platform notes land here the moment they matter — never inventing noise.',
+      expects: [
+        { icon: MessageSquare, label: 'Subscriber messages', detail: 'When someone writes you' },
+        { icon: DollarSign, label: 'Payout & billing', detail: 'Requests and status changes' },
+        { icon: Megaphone, label: 'Platform updates', detail: 'Policy and product announcements' },
+      ],
     };
   }
   if (layoutType === 'admin') {
     return {
       primary: { to: '/admin', label: 'Go to admin' },
+      headline: 'Operations inbox is clear',
+      support:
+        'Support threads, resolution cases, and platform alerts appear here when action is required.',
+      expects: [
+        { icon: MessageSquare, label: 'Support & growth', detail: 'Threads that need a reply' },
+        { icon: FileText, label: 'Resolution cases', detail: 'Escalations and outcomes' },
+        { icon: Megaphone, label: 'Platform alerts', detail: 'Announcements that need visibility' },
+      ],
     };
   }
   return {
-    primary: { to: '/dashboard', label: 'Go to Feed' },
+    primary: { to: '/dashboard', label: 'Browse your Feed' },
     secondary: { to: '/dashboard/messages', label: 'Open messages' },
+    headline: 'You\'re all caught up',
+    support:
+      'Billing changes, creator messages, and Prizelet announcements show up here when something needs your attention — this is not your Feed.',
+    expects: [
+      { icon: DollarSign, label: 'Billing & access', detail: 'Charges, renewals, past-due' },
+      { icon: MessageSquare, label: 'Creator messages', detail: 'Replies that need a look' },
+      { icon: Megaphone, label: 'Announcements', detail: 'Product and policy updates' },
+    ],
   };
 }
 
@@ -172,38 +201,82 @@ const CustomerNotifications = () => {
             Messages, billing updates, and platform announcements
           </p>
         </div>
-        <Button
-          type="button"
-          variant="outline"
-          className="min-h-11"
-          onClick={() => void markAllRead()}
-          disabled={unreadCount === 0 || markingAll}
-        >
-          {markingAll ? (
-            <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
-          ) : (
-            <CheckCircle2 className="mr-1.5 h-3.5 w-3.5" />
-          )}
-          Mark all read
-        </Button>
+        {items.length > 0 && (
+          <Button
+            type="button"
+            variant="outline"
+            className="min-h-11"
+            onClick={() => void markAllRead()}
+            disabled={unreadCount === 0 || markingAll}
+          >
+            {markingAll ? (
+              <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
+            ) : (
+              <CheckCircle2 className="mr-1.5 h-3.5 w-3.5" />
+            )}
+            Mark all read
+          </Button>
+        )}
       </header>
 
       {items.length === 0 ? (
-        <div className="rounded-xl border border-border bg-card p-10 text-center">
-          <BellOff className="h-10 w-10 text-muted-foreground mx-auto mb-4" />
-          <h3 className="text-ui font-semibold text-foreground mb-2">You&apos;re all caught up</h3>
-          <p className="text-support text-muted-foreground mb-5 max-w-sm mx-auto">
-            New messages and updates will show up here when something needs your attention.
-          </p>
-          <div className="flex flex-wrap items-center justify-center gap-2">
-            <Button className="min-h-11" asChild>
-              <Link to={recovery.primary.to}>{recovery.primary.label}</Link>
-            </Button>
-            {recovery.secondary && (
-              <Button variant="outline" className="min-h-11" asChild>
-                <Link to={recovery.secondary.to}>{recovery.secondary.label}</Link>
+        <div className="relative overflow-hidden rounded-2xl border border-border bg-card">
+          <div
+            aria-hidden
+            className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_top,hsl(var(--primary)/0.12),transparent_55%)]"
+          />
+          <div
+            aria-hidden
+            className="pointer-events-none absolute -right-16 top-8 h-40 w-40 rounded-full bg-primary/5 blur-2xl"
+          />
+
+          <div className="relative px-6 py-12 sm:px-10 sm:py-14 text-center">
+            <div className="inbox-empty-enter relative mx-auto mb-6 flex h-20 w-20 items-center justify-center">
+              <span
+                aria-hidden
+                className="inbox-empty-ring absolute inset-0 rounded-full border border-primary/30"
+              />
+              <span
+                aria-hidden
+                className="absolute inset-2 rounded-full bg-primary/10"
+              />
+              <CheckCircle2 className="relative h-9 w-9 text-primary" strokeWidth={1.75} />
+            </div>
+
+            <h2 className="inbox-empty-enter text-title-lg font-semibold text-foreground tracking-tight">
+              {recovery.headline}
+            </h2>
+            <p className="inbox-empty-enter-delay text-support text-muted-foreground mt-2 mx-auto max-w-md leading-relaxed">
+              {recovery.support}
+            </p>
+
+            <ul className="inbox-empty-enter-delay mx-auto mt-8 max-w-md text-left space-y-3">
+              {recovery.expects.map((row) => (
+                <li
+                  key={row.label}
+                  className="flex items-start gap-3 rounded-xl border border-border/80 bg-background/50 px-4 py-3"
+                >
+                  <div className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-muted">
+                    <row.icon className="h-4 w-4 text-muted-foreground" />
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-ui font-medium text-foreground">{row.label}</p>
+                    <p className="text-support text-muted-foreground">{row.detail}</p>
+                  </div>
+                </li>
+              ))}
+            </ul>
+
+            <div className="inbox-empty-enter-delay mt-8 flex flex-wrap items-center justify-center gap-3">
+              <Button className="min-h-11 px-6" asChild>
+                <Link to={recovery.primary.to}>{recovery.primary.label}</Link>
               </Button>
-            )}
+              {recovery.secondary && (
+                <Button variant="outline" className="min-h-11 px-6" asChild>
+                  <Link to={recovery.secondary.to}>{recovery.secondary.label}</Link>
+                </Button>
+              )}
+            </div>
           </div>
         </div>
       ) : (

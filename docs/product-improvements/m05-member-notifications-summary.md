@@ -32,3 +32,11 @@
 ## Preserved
 
 `listMinePage` pagination, `markRead` / `markAllRead`, deep-link navigate on open, shared member/creator/admin layout. No filters, prefs, or schema invent.
+
+## Follow-up: empty craft
+
+**Branch:** `fix/notifications-empty-craft`
+
+- Role-aware empty composition (headline, honesty copy, what-lands-here rows)
+- Soft primary atmosphere + rise/ring motion (respects reduced-motion)
+- Hide Mark all when inbox is empty; CTAs: Browse Feed / Messages (member)
