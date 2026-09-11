@@ -13,6 +13,7 @@ import {
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { downloadCsv } from '@/lib/csv';
+import { dashboardSidebarAsideClassName } from '@/lib/dashboardSidebar';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -968,13 +969,7 @@ const DemoCreatorDashboard = () => {
   const go = (t: TabKey) => setParams(t === 'overview' ? {} : { tab: t });
 
   const SidebarNav = ({ mobile = false }: { mobile?: boolean }) => (
-    <aside
-      className={
-        mobile
-          ? 'flex h-full w-full flex-col bg-card'
-          : 'hidden md:flex h-full w-[220px] shrink-0 flex-col border-r border-border bg-card'
-      }
-    >
+    <aside className={dashboardSidebarAsideClassName(mobile)}>
       <div className="px-5 py-5">
         <button
           type="button"
