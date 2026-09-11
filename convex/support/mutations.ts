@@ -54,6 +54,9 @@ export const send = mutation({
       .withIndex("by_singletonKey", (q) => q.eq("singletonKey", "default"))
       .unique();
     const channel = args.channel ?? "support";
+    if (!isAdmin && channel === "support") {
+      throw new Error("Prizelet Support broadcasts are read-only");
+    }
     if (isAdmin) {
       if (channel === "growth" && settings?.featureFlags?.growthManagerEnabled === false) {
         throw new Error("Growth Manager chat is disabled in Settings");
