@@ -113,6 +113,23 @@ export const getPasswordAccountId = internalQuery({
   },
 });
 
+/** Whether the signed-in user has an email/password Auth account (not Discord-only). */
+export const hasPasswordAccount = query({
+  args: {},
+  returns: v.boolean(),
+  handler: async (ctx) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) return false;
+    const account = await ctx.db
+      .query("authAccounts")
+      .withIndex("userIdAndProvider", (q) =>
+        q.eq("userId", userId).eq("provider", "password"),
+      )
+      .unique();
+    return account !== null;
+  },
+});
+
 /**
  * Change password for the caller's owned password account only.
  * Uses authAccounts.providerAccountId bound to getAuthUserId — never profile email.

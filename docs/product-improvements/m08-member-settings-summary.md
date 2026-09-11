@@ -30,3 +30,11 @@
 ## Preserved
 
 `updateProfile`, email-change request / open-request honesty, Discord → `/login`, password change action and validation. No notification preference invent.
+
+## Follow-up: Security section (same page)
+
+**Branch:** `fix/member-settings-security`
+
+- `hasPasswordAccount` query; Discord/social-only accounts see honest empty (no dead password form)
+- Confirm new password; form submit; mapped errors (`INVALID_CURRENT_PASSWORD`, etc.)
+- Copy explains sign-out of other sessions after update
