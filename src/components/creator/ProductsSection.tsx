@@ -4,7 +4,9 @@ import { api } from '@convex/_generated/api';
 import type { Id } from '@convex/_generated/dataModel';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import { Switch } from '@/components/ui/switch';
 import {
   Select,
   SelectContent,
@@ -18,6 +20,16 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { Plus, Pencil, Trash2, Star, Package, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -33,6 +45,15 @@ const PERIOD_LABELS: Record<string, string> = {
   'one-time': 'One-Time',
 };
 
+function periodSuffix(period: string): string {
+  if (period === 'one-time') return '';
+  if (period === 'daily') return '/day';
+  if (period === 'weekly') return '/wk';
+  if (period === 'monthly') return '/mo';
+  if (period === 'yearly') return '/yr';
+  return '';
+}
+
 const ProductsSection = ({ creatorId }: ProductsSectionProps) => {
   const products = useQuery(api.products.mutations.listByCreator, { creatorId });
   const upsertProduct = useMutation(api.products.mutations.upsert);
@@ -41,6 +62,8 @@ const ProductsSection = ({ creatorId }: ProductsSectionProps) => {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingId, setEditingId] = useState<Id<'products'> | null>(null);
   const [saving, setSaving] = useState(false);
+  const [deleteId, setDeleteId] = useState<Id<'products'> | null>(null);
+  const [deleting, setDeleting] = useState(false);
 
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
@@ -138,12 +161,17 @@ const ProductsSection = ({ creatorId }: ProductsSectionProps) => {
     }
   };
 
-  const handleDelete = async (id: Id<'products'>) => {
+  const confirmDelete = async () => {
+    if (!deleteId) return;
+    setDeleting(true);
     try {
-      await removeProduct({ productId: id });
+      await removeProduct({ productId: deleteId });
       toast.success('Product deleted');
+      setDeleteId(null);
     } catch (e) {
       toast.error(e instanceof Error ? e.message : 'Failed to delete product');
+    } finally {
+      setDeleting(false);
     }
   };
 
@@ -189,34 +217,46 @@ const ProductsSection = ({ creatorId }: ProductsSectionProps) => {
 
   if (loading) {
     return (
-      <div className="flex justify-center py-8">
+      <div className="flex justify-center py-20">
         <Loader2 className="h-5 w-5 animate-spin text-primary" />
       </div>
     );
   }
 
   const rows = products ?? [];
+  const deleteTarget = rows.find((p) => p._id === deleteId);
+  const primaryCta = editingId ? 'Save changes' : 'Create Product';
+  const reviewName = name.trim() || 'Untitled product';
+  const numPrice = parseFloat(price);
+  const reviewPrice =
+    !isNaN(numPrice) && numPrice > 0
+      ? `$${numPrice.toFixed(2)}${periodSuffix(billingPeriod || 'monthly')}`
+      : null;
+  const reviewBits = [reviewPrice, isFeatured ? 'Featured' : 'Standard'].filter(Boolean);
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-4">
-        <h2 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">
-          Products & Pricing
-        </h2>
-        <Button variant="hero" size="sm" onClick={openCreate}>
-          <Plus className="mr-1.5 h-3.5 w-3.5" /> Add Product
+      <header className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between mb-6">
+        <div className="min-w-0">
+          <h1 className="text-heading font-bold text-foreground">Products</h1>
+          <p className="text-support text-muted-foreground mt-0.5">
+            Manage monthly pricing plans (monthly only)
+          </p>
+        </div>
+        <Button type="button" onClick={openCreate} className="min-h-11 shrink-0 w-full sm:w-auto">
+          <Plus className="mr-1.5 h-4 w-4" /> Add Product
         </Button>
-      </div>
+      </header>
 
       {rows.length === 0 ? (
         <div className="rounded-xl border border-border bg-card p-10 text-center">
           <Package className="h-10 w-10 text-muted-foreground mx-auto mb-4" />
-          <h3 className="font-semibold mb-2">No products yet</h3>
-          <p className="text-sm text-muted-foreground max-w-xs mx-auto mb-5">
+          <h3 className="text-ui font-semibold text-foreground mb-2">No products yet</h3>
+          <p className="text-support text-muted-foreground max-w-xs mx-auto mb-5">
             Create pricing plans so subscribers can choose how to support you.
           </p>
-          <Button variant="hero" size="sm" onClick={openCreate}>
-            <Plus className="mr-1.5 h-3.5 w-3.5" /> Create First Product
+          <Button type="button" onClick={openCreate} className="min-h-11">
+            <Plus className="mr-1.5 h-4 w-4" /> Create First Product
           </Button>
         </div>
       ) : (
@@ -237,50 +277,49 @@ const ProductsSection = ({ creatorId }: ProductsSectionProps) => {
               )}
               <div className="mb-3 mt-1">
                 <span className="text-caption font-medium text-muted-foreground uppercase tracking-wide rounded-full bg-secondary px-2 py-0.5">
-                  {PERIOD_LABELS[product.billingPeriod]}
+                  {PERIOD_LABELS[product.billingPeriod] ?? product.billingPeriod}
                 </span>
               </div>
-              <h3 className="font-semibold text-sm mb-1">{product.name}</h3>
+              <h3 className="text-ui font-semibold text-foreground mb-1">{product.name}</h3>
               {product.description && (
                 <p className="text-caption text-muted-foreground mb-3 line-clamp-2">
                   {product.description}
                 </p>
               )}
-              <p className="text-xl font-bold mb-4">
+              <p className="text-title-lg font-bold text-foreground mb-4">
                 ${(product.priceCents / 100).toFixed(2)}
                 {product.billingPeriod !== 'one-time' && (
                   <span className="text-caption font-normal text-muted-foreground">
-                    /{product.billingPeriod === 'daily' ? 'day' : product.billingPeriod === 'weekly' ? 'wk' : product.billingPeriod === 'monthly' ? 'mo' : 'yr'}
+                    {periodSuffix(product.billingPeriod)}
                   </span>
                 )}
               </p>
-              <div className="flex items-center gap-1.5">
+              <div className="flex flex-wrap items-center gap-2">
                 {!product.isFeatured && (
                   <Button
-                    variant="ghost"
-                    size="sm"
-                    className="text-caption h-7 px-2"
-                    onClick={() => handleSetFeatured(product._id)}
-                    title="Set as featured"
+                    type="button"
+                    variant="outline"
+                    className="min-h-11 px-3"
+                    onClick={() => void handleSetFeatured(product._id)}
                   >
-                    <Star className="h-3 w-3" />
+                    <Star className="mr-1.5 h-3.5 w-3.5" /> Feature
                   </Button>
                 )}
                 <Button
-                  variant="ghost"
-                  size="sm"
-                  className="text-caption h-7 px-2"
+                  type="button"
+                  variant="outline"
+                  className="min-h-11 px-3"
                   onClick={() => openEdit(product)}
                 >
-                  <Pencil className="h-3 w-3" />
+                  <Pencil className="mr-1.5 h-3.5 w-3.5" /> Edit
                 </Button>
                 <Button
-                  variant="ghost"
-                  size="sm"
-                  className="text-caption h-7 px-2 text-destructive hover:text-destructive"
-                  onClick={() => handleDelete(product._id)}
+                  type="button"
+                  variant="outline"
+                  className="min-h-11 px-3 text-destructive hover:text-destructive"
+                  onClick={() => setDeleteId(product._id)}
                 >
-                  <Trash2 className="h-3 w-3" />
+                  <Trash2 className="mr-1.5 h-3.5 w-3.5" /> Delete
                 </Button>
               </div>
             </div>
@@ -291,82 +330,151 @@ const ProductsSection = ({ creatorId }: ProductsSectionProps) => {
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>{editingId ? 'Edit Product' : 'New Product'}</DialogTitle>
+            <DialogTitle className="text-title-lg">
+              {editingId ? 'Edit Product' : 'New Product'}
+            </DialogTitle>
           </DialogHeader>
-          <div className="space-y-4 mt-2">
-            <div>
-              <label className="text-caption font-medium text-muted-foreground mb-1.5 block">
-                Product Name
-              </label>
+          <div className="space-y-5 mt-2">
+            <div className="space-y-2">
+              <Label htmlFor="product-name" className="text-support text-muted-foreground">
+                Product name *
+              </Label>
               <Input
+                id="product-name"
                 placeholder="e.g. Monthly Pro Access"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
+                className="h-11 text-ui"
+                maxLength={120}
               />
             </div>
-            <div>
-              <label className="text-caption font-medium text-muted-foreground mb-1.5 block">
+            <div className="space-y-2">
+              <Label htmlFor="product-description" className="text-support text-muted-foreground">
                 Description (optional)
-              </label>
+              </Label>
               <Textarea
+                id="product-description"
                 placeholder="What's included in this plan?"
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
-                rows={2}
+                rows={3}
+                className="resize-none text-ui min-h-[5rem]"
               />
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <div>
-                <label className="text-caption font-medium text-muted-foreground mb-1.5 block">
+              <div className="space-y-2">
+                <Label htmlFor="product-price" className="text-support text-muted-foreground">
                   Price ($)
-                </label>
+                </Label>
                 <Input
+                  id="product-price"
                   type="number"
                   step="0.01"
                   min="0.50"
                   placeholder="9.99"
                   value={price}
                   onChange={(e) => setPrice(e.target.value)}
+                  className="h-11 text-ui"
                 />
               </div>
-              <div>
-                <label className="text-caption font-medium text-muted-foreground mb-1.5 block">
-                  Billing Period
-                </label>
-                <Select value={billingPeriod} onValueChange={setBillingPeriod} disabled>
-                  <SelectTrigger>
+              <div className="space-y-2">
+                <Label className="text-support text-muted-foreground">Billing period</Label>
+                <Select value={billingPeriod || 'monthly'} onValueChange={setBillingPeriod} disabled>
+                  <SelectTrigger className="h-11 text-ui">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="monthly">Monthly</SelectItem>
                   </SelectContent>
                 </Select>
-                <p className="text-caption text-muted-foreground mt-1">
+                <p className="text-caption text-muted-foreground">
                   Creators can only sell monthly subscriptions for now.
                 </p>
               </div>
             </div>
-            <label className="flex items-center gap-2 cursor-pointer">
-              <input
-                type="checkbox"
-                checked={isFeatured}
-                onChange={(e) => setIsFeatured(e.target.checked)}
-                className="rounded border-border"
-              />
-              <span className="text-sm">Mark as featured / default plan</span>
-            </label>
-            <div className="flex justify-end gap-2 pt-2">
-              <Button variant="outline" size="sm" onClick={() => setDialogOpen(false)}>
+
+            <div className="border-t border-border pt-4">
+              <div className="flex items-center justify-between gap-3">
+                <div className="min-w-0">
+                  <p className="text-ui font-medium text-foreground">Featured / default plan</p>
+                  <p className="text-caption text-muted-foreground">
+                    Highlighted as the primary offer on your profile
+                  </p>
+                </div>
+                <Switch
+                  aria-label="Featured product"
+                  checked={isFeatured}
+                  onCheckedChange={setIsFeatured}
+                />
+              </div>
+            </div>
+
+            <div className="border-t border-border pt-4">
+              <p className="text-caption text-muted-foreground uppercase tracking-wider mb-1">
+                Ready to {editingId ? 'save' : 'create'}
+              </p>
+              <p className="text-ui text-foreground truncate">{reviewName}</p>
+              {reviewBits.length > 0 && (
+                <p className="text-support text-muted-foreground mt-0.5 truncate">
+                  {reviewBits.join(' · ')}
+                </p>
+              )}
+            </div>
+
+            <div className="flex justify-end gap-2 pt-1">
+              <Button
+                type="button"
+                variant="outline"
+                className="min-h-11"
+                onClick={() => setDialogOpen(false)}
+                disabled={saving}
+              >
                 Cancel
               </Button>
-              <Button variant="hero" size="sm" onClick={handleSave} disabled={saving}>
+              <Button
+                type="button"
+                className="min-h-11"
+                onClick={() => void handleSave()}
+                disabled={saving || !name.trim()}
+              >
                 {saving && <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />}
-                {editingId ? 'Save Changes' : 'Create Product'}
+                {primaryCta}
               </Button>
             </div>
           </div>
         </DialogContent>
       </Dialog>
+
+      <AlertDialog
+        open={!!deleteId}
+        onOpenChange={(open) => {
+          if (!open) setDeleteId(null);
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete this product?</AlertDialogTitle>
+            <AlertDialogDescription>
+              {deleteTarget
+                ? `“${deleteTarget.name}” will be removed from your catalogue. Existing purchases stay intact.`
+                : 'This product will be removed from your catalogue. Existing purchases stay intact.'}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={deleting}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              disabled={deleting}
+              onClick={(e) => {
+                e.preventDefault();
+                void confirmDelete();
+              }}
+            >
+              {deleting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
