@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { usePaginatedQuery } from 'convex/react';
+import { usePaginatedQuery, useQuery } from 'convex/react';
 import { api } from '../../convex/_generated/api';
 import { DashboardLayout } from '@/components/dashboard/DashboardLayout';
 import { DesktopTableRegion, MobileRecordCards } from '@/components/dashboard/MobileRecordList';
@@ -12,6 +12,7 @@ import { useNavigate } from 'react-router-dom';
 import { downloadCsv } from '@/lib/csv';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
+import { scanTruncationNote } from '@/lib/adminTruncation';
 
 const PAGE_SIZE = 25;
 
@@ -32,13 +33,14 @@ const AdminCustomers = () => {
   const [selected, setSelected] = useState<Customer | null>(null);
   const [search, setSearch] = useState('');
 
+  const overview = useQuery(api.admin.snapshots.customersOverview);
   const { results, status, loadMore } = usePaginatedQuery(
     api.admin.paginatedLists.listCustomersPage,
     {},
     { initialNumItems: PAGE_SIZE },
   );
 
-  const loading = status === 'LoadingFirstPage';
+  const loading = status === 'LoadingFirstPage' || overview === undefined;
 
   const customers = useMemo((): Customer[] => {
     return (results ?? []).map((c) => ({
@@ -59,8 +61,9 @@ const AdminCustomers = () => {
     return !q || (c.full_name?.toLowerCase().includes(q)) || c.email.toLowerCase().includes(q);
   });
 
-  const atRisk = customers.filter((c) => c.activeCount === 1 && c.canceledCount > 0).length;
-  const recentlyChurned = customers.filter((c) => c.canceledCount > 0 && c.activeCount === 0).length;
+  const truncation = overview
+    ? scanTruncationNote(overview.truncated, overview.listLimit)
+    : null;
 
   const handleExport = () => {
     if (filtered.length === 0) { toast.error('Nothing to export'); return; }
@@ -81,43 +84,50 @@ const AdminCustomers = () => {
         <div>
           <h1 className="text-2xl font-bold">Customers</h1>
           <p className="text-muted-foreground text-sm mt-0.5">
-            People with subscriptions · {customers.length} loaded
+            People with subscriptions
+            {overview ? ` · ${overview.customerCount} total` : ''}
+            {customers.length > 0 ? ` · ${customers.length} loaded` : ''}
             {status === 'CanLoadMore' || status === 'LoadingMore' ? ' (more available)' : ''}
           </p>
+          {truncation && <p className="text-amber-600 text-xs mt-1">{truncation}</p>}
         </div>
         <div className="flex flex-col sm:flex-row flex-wrap items-stretch sm:items-center gap-2 w-full sm:w-auto">
           <div className="relative w-full sm:w-64">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
-            <Input placeholder="Search loaded customers…" value={search} onChange={(e) => setSearch(e.target.value)} className="pl-9 h-11 sm:h-9" />
+            <Input placeholder="Search loaded customers…" value={search} onChange={(e) => setSearch(e.target.value)} className="pl-9 min-h-11" />
           </div>
-          <Button variant="outline" size="sm" className="h-11 sm:h-9 text-caption w-full sm:w-auto" onClick={handleExport}>
+          <Button variant="outline" size="sm" className="min-h-11 text-caption w-full sm:w-auto" onClick={handleExport}>
             <Download className="mr-1.5 h-3.5 w-3.5" /> Export
           </Button>
         </div>
       </div>
 
-      <div className="grid grid-cols-2 lg:grid-cols-5 gap-4 mb-6">
-        <div className="rounded-xl border border-border bg-card p-4">
-          <p className="text-caption text-muted-foreground uppercase tracking-wider mb-1">Loaded</p>
-          <p className="text-xl font-bold">{customers.length}</p>
+      {!loading && overview && (
+        <div className="grid grid-cols-2 lg:grid-cols-5 gap-4 mb-6">
+          <div className="rounded-xl border border-border bg-card p-4">
+            <p className="text-caption text-muted-foreground uppercase tracking-wider mb-1">Customers</p>
+            <p className="text-xl font-bold">{overview.customerCount}</p>
+          </div>
+          <div className="rounded-xl border border-border bg-card p-4">
+            <p className="text-caption text-muted-foreground uppercase tracking-wider mb-1">Active Subs</p>
+            <p className="text-xl font-bold text-emerald-400">{overview.activeSubCount}</p>
+          </div>
+          <div className="rounded-xl border border-border bg-card p-4">
+            <p className="text-caption text-muted-foreground uppercase tracking-wider mb-1">Revenue</p>
+            <p className="text-xl font-bold">${overview.revenue.toFixed(0)}</p>
+          </div>
+          <div className="rounded-xl border border-amber-500/20 bg-amber-500/5 p-4">
+            <div className="flex items-center gap-1 mb-1"><AlertTriangle className="h-3 w-3 text-amber-400" /><p className="text-caption text-muted-foreground uppercase tracking-wider">At Risk</p></div>
+            <p className="text-xl font-bold text-amber-400">{overview.atRiskCount}</p>
+            <p className="text-caption text-muted-foreground mt-0.5">Past due or failed</p>
+          </div>
+          <div className="rounded-xl border border-destructive/20 bg-destructive/5 p-4">
+            <div className="flex items-center gap-1 mb-1"><TrendingDown className="h-3 w-3 text-destructive" /><p className="text-caption text-muted-foreground uppercase tracking-wider">Churned</p></div>
+            <p className="text-xl font-bold text-destructive">{overview.churnedCount}</p>
+            <p className="text-caption text-muted-foreground mt-0.5">Canceled · no active</p>
+          </div>
         </div>
-        <div className="rounded-xl border border-border bg-card p-4">
-          <p className="text-caption text-muted-foreground uppercase tracking-wider mb-1">Active Subs</p>
-          <p className="text-xl font-bold text-emerald-400">{customers.reduce((a, c) => a + c.activeCount, 0)}</p>
-        </div>
-        <div className="rounded-xl border border-border bg-card p-4">
-          <p className="text-caption text-muted-foreground uppercase tracking-wider mb-1">Revenue (loaded)</p>
-          <p className="text-xl font-bold">${customers.reduce((a, c) => a + c.totalSpent, 0).toFixed(0)}</p>
-        </div>
-        <div className="rounded-xl border border-amber-500/20 bg-amber-500/5 p-4">
-          <div className="flex items-center gap-1 mb-1"><AlertTriangle className="h-3 w-3 text-amber-400" /><p className="text-caption text-muted-foreground uppercase tracking-wider">At Risk (loaded)</p></div>
-          <p className="text-xl font-bold text-amber-400">{atRisk}</p>
-        </div>
-        <div className="rounded-xl border border-destructive/20 bg-destructive/5 p-4">
-          <div className="flex items-center gap-1 mb-1"><TrendingDown className="h-3 w-3 text-destructive" /><p className="text-caption text-muted-foreground uppercase tracking-wider">Churned (loaded)</p></div>
-          <p className="text-xl font-bold text-destructive">{recentlyChurned}</p>
-        </div>
-      </div>
+      )}
 
       {loading ? (
         <div className="flex justify-center py-20"><Loader2 className="h-5 w-5 animate-spin text-primary" /></div>

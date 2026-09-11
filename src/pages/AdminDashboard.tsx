@@ -21,10 +21,9 @@ const AdminDashboardInner = () => {
   const truncation = scanTruncationNote(stats.truncated, stats.listLimit);
 
   const kpi = [
-    { label: 'Active sub volume', value: `$${(stats.totalRevenueCents / 100).toFixed(0)}`, icon: DollarSign, color: 'text-emerald-400' },
+    { label: 'Active sub volume (MRR)', value: `$${(stats.totalRevenueCents / 100).toFixed(0)}`, icon: DollarSign, color: 'text-emerald-400' },
     { label: 'Platform fee revenue', value: `$${(stats.platformFeesCents / 100).toFixed(0)}`, icon: Percent, color: 'text-purple-400' },
     { label: 'Creator paid out', value: `$${(stats.paidOutCents / 100).toFixed(0)}`, icon: TrendingUp, color: 'text-blue-400' },
-    { label: 'Active sub volume (MRR proxy)', value: `$${(stats.mrrCents / 100).toFixed(0)}`, icon: DollarSign, color: 'text-cyan-400' },
     { label: 'Creators', value: stats.creatorCount.toString(), icon: Crown, color: 'text-purple-400' },
     { label: 'Accounts', value: stats.userCount.toString(), icon: Users, color: 'text-blue-400' },
     { label: 'Active subscriptions', value: stats.activeSubscriptionCount.toString(), icon: CreditCard, color: 'text-emerald-400' },
@@ -47,7 +46,7 @@ const AdminDashboardInner = () => {
         </p>
       </div>
 
-      {(stats.openCases > 0 || stats.activeSubscriptionCount >= 0) && (
+      {(stats.openCases > 0 || stats.activeSubscriptionCount > 0 || stats.creatorCount > 0) && (
         <div className="rounded-xl border border-border bg-card p-4 mb-6">
           <h2 className="text-caption font-medium text-muted-foreground uppercase tracking-wider mb-3">Next up</h2>
           <ul className="space-y-2 text-sm">
@@ -65,14 +64,14 @@ const AdminDashboardInner = () => {
             </li>
             <li>
               <Link to="/admin/payouts" className="text-primary hover:underline inline-flex items-center gap-1">
-                Review payout requests <ArrowRight className="h-3 w-3" />
+                Review payout ledger <ArrowRight className="h-3 w-3" />
               </Link>
             </li>
           </ul>
         </div>
       )}
 
-      <div className="grid grid-cols-2 lg:grid-cols-5 gap-4 mb-8">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
         {kpi.map((stat) => (
           <div key={stat.label} className="rounded-xl border border-border bg-card p-4 transition-colors hover:border-primary/20">
             <div className="flex items-center justify-between mb-2">

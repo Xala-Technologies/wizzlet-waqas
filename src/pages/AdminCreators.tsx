@@ -110,15 +110,14 @@ const AdminCreators = () => {
         </div>
         <div className="relative w-full sm:w-64">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
-          <Input placeholder="Search loaded creators…" value={search} onChange={(e) => setSearch(e.target.value)} className="pl-9 h-11 sm:h-9" />
+          <Input placeholder="Search loaded creators…" value={search} onChange={(e) => setSearch(e.target.value)} className="pl-9 min-h-11" />
         </div>
       </div>
 
       {!loading && (
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
           <div className="rounded-xl border border-border bg-card p-4">
-            <div className="flex items-center gap-2 mb-2"><Star className="h-3.5 w-3.5 text-amber-400" /><span className="text-caption font-medium text-muted-foreground">Top (loaded)</span></div>
-            {topCreators.slice(0, 3).map((c) => (
+            <div className="flex items-center gap-2 mb-2"><Star className="h-3.5 w-3.5 text-amber-400" /><span className="text-caption font-medium text-muted-foreground">Top (on this page)</span></div>            {topCreators.slice(0, 3).map((c) => (
               <div key={c.id} className="flex items-center justify-between py-1">
                 <span className="text-caption font-medium truncate">{c.display_name ?? `@${c.username}`}</span>
                 <span className="text-caption text-emerald-400">${c.revenue.toFixed(0)}</span>
@@ -126,8 +125,7 @@ const AdminCreators = () => {
             ))}
           </div>
           <div className="rounded-xl border border-border bg-card p-4">
-            <div className="flex items-center gap-2 mb-2"><TrendingDown className="h-3.5 w-3.5 text-blue-400" /><span className="text-caption font-medium text-muted-foreground">Growing (loaded)</span></div>
-            {fastestGrowing.slice(0, 3).map((c) => (
+            <div className="flex items-center gap-2 mb-2"><TrendingDown className="h-3.5 w-3.5 text-blue-400" /><span className="text-caption font-medium text-muted-foreground">Growing (on this page)</span></div>            {fastestGrowing.slice(0, 3).map((c) => (
               <div key={c.id} className="flex items-center justify-between py-1">
                 <span className="text-caption font-medium truncate">{c.display_name ?? `@${c.username}`}</span>
                 <span className="text-caption text-blue-400">{c.subCount} subs</span>
@@ -136,15 +134,14 @@ const AdminCreators = () => {
             {fastestGrowing.length === 0 && <p className="text-caption text-muted-foreground py-2">No data</p>}
           </div>
           <div className="rounded-xl border border-amber-500/20 bg-amber-500/5 p-4">
-            <div className="flex items-center gap-2 mb-2"><Crown className="h-3.5 w-3.5 text-amber-400" /><span className="text-caption font-medium text-muted-foreground">At Risk</span></div>
+            <div className="flex items-center gap-2 mb-2"><Crown className="h-3.5 w-3.5 text-amber-400" /><span className="text-caption font-medium text-muted-foreground">At Risk (on this page)</span></div>
             <p className="text-xl font-bold text-amber-400">{atRisk.length}</p>
-            <p className="text-caption text-muted-foreground">Among loaded · &lt;3 subscribers</p>
+            <p className="text-caption text-muted-foreground">&lt;3 subscribers among loaded rows</p>
           </div>
           <div className="rounded-xl border border-border bg-card p-4">
-            <div className="flex items-center gap-2 mb-2"><UserX className="h-3.5 w-3.5 text-muted-foreground" /><span className="text-caption font-medium text-muted-foreground">Inactive</span></div>
+            <div className="flex items-center gap-2 mb-2"><UserX className="h-3.5 w-3.5 text-muted-foreground" /><span className="text-caption font-medium text-muted-foreground">Inactive (on this page)</span></div>
             <p className="text-xl font-bold">{inactive.length}</p>
-            <p className="text-caption text-muted-foreground">Among loaded · 30d / 0 subs</p>
-          </div>
+            <p className="text-caption text-muted-foreground">30d+ / 0 subs among loaded rows</p>          </div>
         </div>
       )}
 

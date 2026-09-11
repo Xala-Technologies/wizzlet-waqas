@@ -53,8 +53,9 @@ const AdminResolutionCases = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const caseIdParam = searchParams.get('caseId');
   const [filter, setFilter] = useState('all');
-  const [selected, setSelected] = useState<string | null>(caseIdParam);
-  const [reply, setReply] = useState('');
+  const [nowMs] = useState(() => Date.now());
+  const alertsOverview = useQuery(api.admin.snapshots.alertsOverview, { nowMs });
+  const [selected, setSelected] = useState<string | null>(caseIdParam);  const [reply, setReply] = useState('');
   const [sending, setSending] = useState(false);
   const markedRef = useRef<Set<string>>(new Set());
 
@@ -154,20 +155,25 @@ const AdminResolutionCases = () => {
     else setSearchParams({}, { replace: true });
   };
 
-  const openCount = cases.filter((c) => c.status === 'open' || c.status === 'escalated').length;
-
+  const openCount =
+    alertsOverview?.openCases ??
+    cases.filter((c) => c.status === 'open' || c.status === 'escalated').length;
   return (
     <DashboardLayout type="admin">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
         <div>
           <h1 className="text-2xl font-bold">Resolution Cases</h1>
           <p className="text-muted-foreground text-sm mt-0.5">
-            {openCount} open · {cases.length} loaded
+            {alertsOverview !== undefined
+              ? `${openCount} open platform-wide`
+              : `${openCount} open among loaded`}
+            {' · '}
+            {cases.length} loaded
             {pageStatus === 'CanLoadMore' || pageStatus === 'LoadingMore' ? ' (more available)' : ''}
           </p>
         </div>
         <Select value={filter} onValueChange={setFilter}>
-          <SelectTrigger className="w-44"><SelectValue /></SelectTrigger>
+          <SelectTrigger className="w-44 min-h-11"><SelectValue /></SelectTrigger>
           <SelectContent>
             <SelectItem value="all">All cases</SelectItem>
             <SelectItem value="open">Open</SelectItem>

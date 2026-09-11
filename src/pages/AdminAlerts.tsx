@@ -83,9 +83,15 @@ const AdminAlerts = () => {
     ].filter((a) => a.count > 0);
   }, [overview]);
 
-  const criticalCount = alerts.filter((a) => a.type === 'critical').length;
-  const warningCount = alerts.filter((a) => a.type === 'warning').length;
-  const infoCount = alerts.filter((a) => a.type === 'info').length;
+  const criticalCount = alerts
+    .filter((a) => a.type === 'critical')
+    .reduce((sum, a) => sum + a.count, 0);
+  const warningCount = alerts
+    .filter((a) => a.type === 'warning')
+    .reduce((sum, a) => sum + a.count, 0);
+  const infoCount = alerts
+    .filter((a) => a.type === 'info')
+    .reduce((sum, a) => sum + a.count, 0);
 
   return (
     <DashboardLayout type="admin">
@@ -105,15 +111,15 @@ const AdminAlerts = () => {
         <>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
             <div className="rounded-xl border border-destructive/30 bg-destructive/5 p-5">
-              <p className="text-caption text-muted-foreground uppercase tracking-wider mb-1">Critical</p>
+              <p className="text-caption text-muted-foreground uppercase tracking-wider mb-1">Critical items</p>
               <p className="text-2xl font-bold text-destructive">{criticalCount}</p>
             </div>
             <div className="rounded-xl border border-amber-500/30 bg-amber-500/5 p-5">
-              <p className="text-caption text-muted-foreground uppercase tracking-wider mb-1">Warnings</p>
+              <p className="text-caption text-muted-foreground uppercase tracking-wider mb-1">Warning items</p>
               <p className="text-2xl font-bold text-amber-500">{warningCount}</p>
             </div>
             <div className="rounded-xl border border-border bg-card p-5">
-              <p className="text-caption text-muted-foreground uppercase tracking-wider mb-1">Info</p>
+              <p className="text-caption text-muted-foreground uppercase tracking-wider mb-1">Info items</p>
               <p className="text-2xl font-bold">{infoCount}</p>
             </div>
           </div>
@@ -139,7 +145,7 @@ const AdminAlerts = () => {
                         <p className="text-caption text-muted-foreground">{a.description}</p>
                       </div>
                     </div>
-                    <Button asChild variant="outline" size="sm" className="h-8 text-caption shrink-0">
+                    <Button asChild variant="outline" size="sm" className="min-h-11 text-caption shrink-0">
                       <Link to={a.link}>{a.linkLabel} <ArrowRight className="ml-1.5 h-3 w-3" /></Link>
                     </Button>
                   </div>

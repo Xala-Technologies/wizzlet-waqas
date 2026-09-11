@@ -3,6 +3,7 @@ import { useQuery } from 'convex/react';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/contexts/AuthContext';
 import { api } from '@convex/_generated/api';
+import { segmentedItemClassName, segmentedTrackClassName } from '@/lib/segmentedControl';
 
 const tabs = [
   { label: 'Broadcast', href: '/admin/creator-messaging', description: 'Message creators' },
@@ -25,9 +26,9 @@ export function AdminSupportTabs() {
 
   return (
     <div
+      className={cn(segmentedTrackClassName, 'mb-6 w-fit')}
       role="tablist"
-      aria-label="Support sections"
-      className="inline-flex gap-0.5 rounded-lg border border-border bg-muted/40 p-1"
+      aria-label="Support workspace"
     >
       {tabs.map((tab) => {
         const active = pathname.startsWith(tab.href);
@@ -42,12 +43,7 @@ export function AdminSupportTabs() {
             role="tab"
             aria-selected={active}
             title={tab.description}
-            className={cn(
-              'inline-flex items-center gap-1.5 rounded-md px-3.5 py-1.5 text-caption font-medium transition-colors',
-              active
-                ? 'bg-background text-foreground shadow-sm'
-                : 'text-muted-foreground hover:text-foreground',
-            )}
+            className={cn(segmentedItemClassName(active), 'gap-1.5')}
           >
             {tab.label}
             {badge && (
