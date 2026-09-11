@@ -65,7 +65,7 @@ export function DemoAdminSidebar({ mobile = false }: { mobile?: boolean } = {}) 
 
 
   return (
-    <aside className={mobile ? 'flex h-full w-full flex-col bg-card' : 'hidden md:flex h-full w-[220px] shrink-0 flex-col border-r border-border bg-card'}>
+    <aside className={mobile ? 'flex h-full w-full flex-col bg-card' : 'hidden md:flex h-full w-[248px] shrink-0 flex-col border-r border-border bg-card'}>
       <div className="px-5 py-5">
         <PrizeletLogo size="md" linkTo="/demo/admin" />
       </div>
