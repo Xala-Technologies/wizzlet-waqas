@@ -13,6 +13,16 @@ import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogClose
 } from '@/components/ui/dialog';
 import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
+import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow, TableFooter
 } from '@/components/ui/table';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -20,7 +30,7 @@ import {
   TrendingUp, Trophy, Target, DollarSign, Zap, Plus, Pencil, Trash2,
   ListFilter, Download, Upload, BarChart3, Activity, Award, TrendingDown,
   ArrowUpRight, ArrowDownRight, Lightbulb, FileText, Eye, MousePointerClick,
-  Copy, ShieldCheck, Flame
+  Copy, ShieldCheck, Flame, Loader2
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { ResponsiveContainer, AreaChart, Area, XAxis, YAxis, Tooltip, PieChart, Pie, Cell, BarChart, Bar } from 'recharts';
@@ -106,6 +116,8 @@ const CreatorPerformanceTracker = () => {
   const [filterResult, setFilterResult] = useState('all');
   const [quickAddOpen, setQuickAddOpen] = useState(false);
   const [savingPick, setSavingPick] = useState(false);
+  const [deleteId, setDeleteId] = useState<string | null>(null);
+  const [deleting, setDeleting] = useState(false);
 
   const picks = useMemo(() => (picksRaw ?? []).map(fromConvexPick).sort((a, b) => a.date.localeCompare(b.date)), [picksRaw]);
   const posts = useMemo(
@@ -146,15 +158,18 @@ const CreatorPerformanceTracker = () => {
     },
   };
 
-  const deleteMutation = {
-    mutate: async (id: string) => {
-      try {
-        await removePick({ pickId: id as Id<'pickTracker'> });
-        toast.success('Deleted');
-      } catch {
-        toast.error('Failed to delete');
-      }
-    },
+  const confirmDelete = async () => {
+    if (!deleteId) return;
+    setDeleting(true);
+    try {
+      await removePick({ pickId: deleteId as Id<'pickTracker'> });
+      toast.success('Deleted');
+      setDeleteId(null);
+    } catch {
+      toast.error('Failed to delete');
+    } finally {
+      setDeleting(false);
+    }
   };
 
   const resetForm = () => { setForm(defaultForm); setEditId(null); setDialogOpen(false); setQuickAddOpen(false); };
@@ -463,63 +478,133 @@ const CreatorPerformanceTracker = () => {
 
   const OddsFields = ({ compact = false }: { compact?: boolean }) => (
     <>
-      <div className={compact ? 'w-full sm:w-[75px]' : ''}>
-        <label className={`text-muted-foreground mb-0.5 block ${compact ? 'text-[10px]' : 'text-xs mb-1'}`}>EU Odds</label>
-        <Input type="number" step="0.01" min="1.01" placeholder="1.91" className={compact ? 'h-8 text-xs' : ''} value={form.eu_odds} onChange={e => handleEuChange(e.target.value)} />
+      <div className={compact ? 'w-full sm:w-auto xl:w-[88px]' : ''}>
+        <label className="text-support text-muted-foreground mb-1.5 block">EU Odds</label>
+        <Input
+          type="number"
+          step="0.01"
+          min="1.01"
+          placeholder="1.91"
+          className="h-11 min-h-11 text-ui"
+          value={form.eu_odds}
+          onChange={(e) => handleEuChange(e.target.value)}
+        />
       </div>
-      <div className={compact ? 'w-full sm:w-[75px]' : ''}>
-        <label className={`text-muted-foreground mb-0.5 block ${compact ? 'text-[10px]' : 'text-xs mb-1'}`}>US Odds</label>
-        <Input placeholder="-110" className={compact ? 'h-8 text-xs' : ''} value={form.us_odds} onChange={e => handleUsChange(e.target.value)} />
+      <div className={compact ? 'w-full sm:w-auto xl:w-[88px]' : ''}>
+        <label className="text-support text-muted-foreground mb-1.5 block">US Odds</label>
+        <Input
+          placeholder="-110"
+          className="h-11 min-h-11 text-ui"
+          value={form.us_odds}
+          onChange={(e) => handleUsChange(e.target.value)}
+        />
       </div>
     </>
   );
 
+  if (isLoading || creatorProfile === undefined) {
+    return (
+      <DashboardLayout type="creator">
+        <div className="flex justify-center py-20">
+          <Loader2 className="h-5 w-5 animate-spin text-primary" />
+        </div>
+      </DashboardLayout>
+    );
+  }
+
+  const deleteTarget = picks.find((p) => p.id === deleteId);
+  const quickAddCta = editId ? 'Save changes' : 'Add';
+
   return (
     <DashboardLayout type="creator">
-      <div className="mb-5 flex items-center justify-between flex-wrap gap-3">
-        <div>
-          <h1 className="text-2xl font-bold flex items-center gap-2">
+      <header className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+        <div className="min-w-0">
+          <h1 className="text-heading font-bold text-foreground flex flex-wrap items-center gap-2">
             Performance Tracker
             {isVerified && (
-              <span className="inline-flex items-center gap-1 text-xs font-medium text-emerald-400 bg-emerald-500/10 rounded-full px-2.5 py-0.5 border border-emerald-500/20">
+              <span className="inline-flex items-center gap-1 text-caption font-medium text-emerald-400 bg-emerald-500/10 rounded-full px-2.5 py-0.5 border border-emerald-500/20">
                 <ShieldCheck className="h-3 w-3" /> Verified
               </span>
             )}
           </h1>
-          <p className="text-muted-foreground text-sm mt-0.5">
-            Practice pick ledger — separate from Create Post settled results. Verified badge is platform-granted.
+          <p className="text-support text-muted-foreground mt-0.5">
+            Practice pick ledger — separate from Create Post settled results. Verified badge is
+            platform-granted.
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
-          <input ref={importInputRef} type="file" accept=".csv,text/csv" className="hidden" onChange={e => handleImportCSV(e.target.files?.[0])} />
-          <Button variant="outline" size="sm" className="gap-1.5 text-xs h-9 min-h-9 flex-1 sm:flex-none" disabled={importing} onClick={() => importInputRef.current?.click()}><Upload className="h-3 w-3" /> {importing ? 'Importing…' : 'Import'}</Button>
-          <Button variant="outline" size="sm" className="gap-1.5 text-xs h-9 min-h-9 flex-1 sm:flex-none" onClick={handleExportCSV}><Download className="h-3 w-3" /> Export</Button>
-          <Button variant="outline" size="sm" className="gap-1.5 text-xs h-9 min-h-9 flex-1 sm:flex-none" onClick={handleSmartAdd}><Flame className="h-3 w-3" /> Smart Add</Button>
-          <Button size="sm" className="gap-1.5 h-9 min-h-9 w-full sm:w-auto" onClick={() => { resetForm(); setQuickAddOpen(true); }}><Plus className="h-3.5 w-3.5" /> Add Pick</Button>
+          <input
+            ref={importInputRef}
+            type="file"
+            accept=".csv,text/csv"
+            className="hidden"
+            onChange={(e) => handleImportCSV(e.target.files?.[0])}
+          />
+          <Button
+            type="button"
+            variant="outline"
+            className="gap-1.5 min-h-11 flex-1 sm:flex-none"
+            disabled={importing}
+            onClick={() => importInputRef.current?.click()}
+          >
+            <Upload className="h-3.5 w-3.5" /> {importing ? 'Importing…' : 'Import'}
+          </Button>
+          <Button
+            type="button"
+            variant="outline"
+            className="gap-1.5 min-h-11 flex-1 sm:flex-none"
+            onClick={handleExportCSV}
+          >
+            <Download className="h-3.5 w-3.5" /> Export
+          </Button>
+          <Button
+            type="button"
+            variant="outline"
+            className="gap-1.5 min-h-11 flex-1 sm:flex-none"
+            onClick={handleSmartAdd}
+          >
+            <Flame className="h-3.5 w-3.5" /> Smart Add
+          </Button>
+          <Button
+            type="button"
+            className="gap-1.5 min-h-11 w-full sm:w-auto"
+            onClick={() => {
+              resetForm();
+              setQuickAddOpen(true);
+            }}
+          >
+            <Plus className="h-4 w-4" /> Add Pick
+          </Button>
         </div>
-      </div>
+      </header>
 
       {/* Tracker volume progress (not auto-Verified) */}
       {!isVerified && (
-        <div className="rounded-lg border border-border bg-card p-3 mb-5 flex items-center gap-3">
-          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-muted">
+        <div className="rounded-xl border border-border bg-card p-4 mb-5 flex items-start gap-3">
+          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-muted">
             <Target className="h-4 w-4 text-muted-foreground" />
           </div>
           <div className="flex-1 min-w-0">
-            <div className="flex items-center justify-between mb-1">
-              <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-medium">Tracker eligibility progress</p>
-              <p className="text-[10px] text-muted-foreground">{trackerEligibility.settled}/{trackerEligibility.minPicks} settled · {trackerEligibility.currentWinRate}% win rate</p>
+            <div className="flex flex-wrap items-center justify-between gap-2 mb-1.5">
+              <p className="text-support font-medium text-muted-foreground">
+                Tracker eligibility progress
+              </p>
+              <p className="text-support text-muted-foreground">
+                {trackerEligibility.settled}/{trackerEligibility.minPicks} settled ·{' '}
+                {trackerEligibility.currentWinRate}% win rate
+              </p>
             </div>
             <Progress value={trackerEligibility.progress} className="h-1.5" />
-            <p className="text-[9px] text-muted-foreground mt-1">
-              Track more settled picks for your own analysis. Platform Verified is granted separately by admins.
+            <p className="text-support text-muted-foreground mt-1.5">
+              Track more settled picks for your own analysis. Platform Verified is granted separately
+              by admins.
             </p>
           </div>
         </div>
       )}
 
       {/* Summary Cards */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-2 mb-5">
+      <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-2.5 mb-5">
         {[
           { label: 'Net Profit', value: fmtUnit(stats.totalWonLost) + 'u', icon: DollarSign, positive: stats.totalWonLost >= 0 },
           { label: 'Total Picks', value: stats.totalPicks, icon: Target, neutral: true },
@@ -529,12 +614,19 @@ const CreatorPerformanceTracker = () => {
           { label: 'Streak', value: `${stats.streak}${stats.streakType === 'win' ? 'W' : stats.streakType === 'loss' ? 'L' : '—'}`, icon: Zap, positive: stats.streakType === 'win' },
           { label: 'Best Run', value: `${stats.longestWin}W`, icon: ArrowUpRight, positive: true },
           { label: 'Worst Run', value: `${stats.longestLoss}L`, icon: ArrowDownRight, positive: false },
-        ].map(s => {
-          const color = s.neutral ? 'text-foreground' : (s.positive ? 'text-emerald-400' : 'text-destructive');
+        ].map((s) => {
+          const color = s.neutral
+            ? 'text-foreground'
+            : s.positive
+              ? 'text-emerald-400'
+              : 'text-destructive';
           return (
-            <div key={s.label} className="rounded-lg border border-border bg-card p-2.5">
-              <div className="flex items-center gap-1 mb-1"><s.icon className="h-2.5 w-2.5 text-muted-foreground" /><span className="text-[9px] text-muted-foreground uppercase tracking-wider">{s.label}</span></div>
-              <p className={`text-base font-bold leading-none ${color}`}>{s.value}</p>
+            <div key={s.label} className="rounded-xl border border-border bg-card p-3">
+              <div className="flex items-center gap-1.5 mb-1.5">
+                <s.icon className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+                <span className="text-support text-muted-foreground">{s.label}</span>
+              </div>
+              <p className={`text-ui font-bold leading-none ${color}`}>{s.value}</p>
             </div>
           );
         })}
@@ -547,9 +639,9 @@ const CreatorPerformanceTracker = () => {
             <div className="rounded-lg border border-emerald-500/20 bg-emerald-500/5 p-3 flex items-center gap-3">
               <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-emerald-500/10"><Award className="h-4 w-4 text-emerald-400" /></div>
               <div className="flex-1 min-w-0">
-                <p className="text-[10px] text-emerald-400/70 uppercase tracking-wider font-medium">Biggest Win</p>
+                <p className="text-caption text-emerald-400/70 uppercase tracking-wider font-medium">Biggest Win</p>
                 <p className="text-sm font-semibold truncate">{insights.biggestWin.pick_event}</p>
-                <p className="text-[10px] text-muted-foreground">{insights.biggestWin.date}</p>
+                <p className="text-caption text-muted-foreground">{insights.biggestWin.date}</p>
               </div>
               <p className="text-lg font-bold text-emerald-400">+{(insights.biggestWin.units_won_lost || 0).toFixed(1)}u</p>
             </div>
@@ -558,9 +650,9 @@ const CreatorPerformanceTracker = () => {
             <div className="rounded-lg border border-destructive/20 bg-destructive/5 p-3 flex items-center gap-3">
               <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-destructive/10"><TrendingDown className="h-4 w-4 text-destructive" /></div>
               <div className="flex-1 min-w-0">
-                <p className="text-[10px] text-destructive/70 uppercase tracking-wider font-medium">Biggest Loss</p>
+                <p className="text-caption text-destructive/70 uppercase tracking-wider font-medium">Biggest Loss</p>
                 <p className="text-sm font-semibold truncate">{insights.biggestLoss.pick_event}</p>
-                <p className="text-[10px] text-muted-foreground">{insights.biggestLoss.date}</p>
+                <p className="text-caption text-muted-foreground">{insights.biggestLoss.date}</p>
               </div>
               <p className="text-lg font-bold text-destructive">{(insights.biggestLoss.units_won_lost || 0).toFixed(1)}u</p>
             </div>
@@ -572,41 +664,120 @@ const CreatorPerformanceTracker = () => {
       {picks.length > 1 && (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-2.5 mb-5">
           <div className="lg:col-span-2 rounded-lg border border-border bg-card p-4">
-            <h3 className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mb-3">Cumulative Profit</h3>
+            <h3 className="text-support font-semibold text-muted-foreground mb-3">Cumulative Profit</h3>
             <ResponsiveContainer width="100%" height={150}>
               <AreaChart data={profitChartData}>
                 <defs><linearGradient id="cpGrad" x1="0" y1="0" x2="0" y2="1"><stop offset="5%" stopColor="hsl(142, 71%, 45%)" stopOpacity={0.3} /><stop offset="95%" stopColor="hsl(142, 71%, 45%)" stopOpacity={0} /></linearGradient></defs>
-                <XAxis dataKey="date" tick={{ fontSize: 8, fill: 'hsl(var(--muted-foreground))' }} tickLine={false} axisLine={false} />
-                <YAxis tick={{ fontSize: 8, fill: 'hsl(var(--muted-foreground))' }} tickLine={false} axisLine={false} width={28} />
-                <Tooltip contentStyle={{ background: 'hsl(var(--card))', border: '1px solid hsl(var(--border))', borderRadius: 8, fontSize: 11 }} formatter={(v: number) => [`${v}u`, 'Profit']} />
+                <XAxis dataKey="date" tick={{ fontSize: 14, fill: 'hsl(var(--muted-foreground))' }} tickLine={false} axisLine={false} />
+                <YAxis tick={{ fontSize: 14, fill: 'hsl(var(--muted-foreground))' }} tickLine={false} axisLine={false} width={28} />
+                <Tooltip contentStyle={{ background: 'hsl(var(--card))', border: '1px solid hsl(var(--border))', borderRadius: 8, fontSize: 14 }} formatter={(v: number) => [`${v}u`, 'Profit']} />
                 <Area type="monotone" dataKey="profit" stroke="hsl(142, 71%, 45%)" fill="url(#cpGrad)" strokeWidth={2} />
               </AreaChart>
             </ResponsiveContainer>
           </div>
           <div className="rounded-lg border border-border bg-card p-4">
-            <h3 className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mb-3">Distribution</h3>
+            <h3 className="text-support font-semibold text-muted-foreground mb-3">Distribution</h3>
             <ResponsiveContainer width="100%" height={120}>
-              <PieChart><Pie data={pieData} dataKey="value" cx="50%" cy="50%" innerRadius={35} outerRadius={50} paddingAngle={3}>{pieData.map((e, i) => <Cell key={i} fill={e.color} />)}</Pie><Tooltip contentStyle={{ background: 'hsl(var(--card))', border: '1px solid hsl(var(--border))', borderRadius: 8, fontSize: 11 }} /></PieChart>
+              <PieChart><Pie data={pieData} dataKey="value" cx="50%" cy="50%" innerRadius={35} outerRadius={50} paddingAngle={3}>{pieData.map((e, i) => <Cell key={i} fill={e.color} />)}</Pie><Tooltip contentStyle={{ background: 'hsl(var(--card))', border: '1px solid hsl(var(--border))', borderRadius: 8, fontSize: 14 }} /></PieChart>
             </ResponsiveContainer>
-            <div className="flex justify-center gap-3 mt-1">{pieData.map(d => (<div key={d.name} className="flex items-center gap-1"><div className="h-2 w-2 rounded-full" style={{ background: d.color }} /><span className="text-[9px] text-muted-foreground">{d.name} ({d.value})</span></div>))}</div>
+            <div className="flex justify-center gap-3 mt-1">{pieData.map(d => (<div key={d.name} className="flex items-center gap-1"><div className="h-2 w-2 rounded-full" style={{ background: d.color }} /><span className="text-caption text-muted-foreground">{d.name} ({d.value})</span></div>))}</div>
           </div>
         </div>
       )}
 
       {/* Quick Add */}
       {quickAddOpen && (
-        <div className="rounded-lg border border-primary/20 bg-card p-3 mb-4">
-          <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-4 xl:flex xl:flex-wrap xl:items-end">
-            <div className="w-full sm:w-auto xl:w-[100px]"><label className="text-[10px] text-muted-foreground mb-0.5 block">Date</label><Input type="date" className="h-9 text-xs" value={form.date} onChange={e => setForm(f => ({ ...f, date: e.target.value }))} /></div>
-            <div className="w-full sm:col-span-2 xl:flex-1 xl:min-w-[120px]"><label className="text-[10px] text-muted-foreground mb-0.5 block">Pick / Event</label><Input className="h-9 text-xs" placeholder="Chiefs -3.5" value={form.pick_event} onChange={e => setForm(f => ({ ...f, pick_event: e.target.value }))} /></div>
-            <div className="w-full sm:w-auto xl:w-[80px]"><label className="text-[10px] text-muted-foreground mb-0.5 block">Sport</label><Select value={form.sport} onValueChange={v => setForm(f => ({ ...f, sport: v }))}><SelectTrigger className="h-9 text-xs"><SelectValue /></SelectTrigger><SelectContent>{SPORTS.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}</SelectContent></Select></div>
+        <div className="rounded-xl border border-border bg-card p-4 mb-4">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4 xl:flex xl:flex-wrap xl:items-end">
+            <div className="w-full sm:w-auto xl:w-[120px]">
+              <label className="text-support text-muted-foreground mb-1.5 block">Date</label>
+              <Input
+                type="date"
+                className="h-11 min-h-11 text-ui"
+                value={form.date}
+                onChange={(e) => setForm((f) => ({ ...f, date: e.target.value }))}
+              />
+            </div>
+            <div className="w-full sm:col-span-2 xl:flex-1 xl:min-w-[140px]">
+              <label className="text-support text-muted-foreground mb-1.5 block">Pick / Event</label>
+              <Input
+                className="h-11 min-h-11 text-ui"
+                placeholder="Chiefs -3.5"
+                value={form.pick_event}
+                onChange={(e) => setForm((f) => ({ ...f, pick_event: e.target.value }))}
+              />
+            </div>
+            <div className="w-full sm:w-auto xl:w-[100px]">
+              <label className="text-support text-muted-foreground mb-1.5 block">Sport</label>
+              <Select value={form.sport} onValueChange={(v) => setForm((f) => ({ ...f, sport: v }))}>
+                <SelectTrigger className="h-11 min-h-11 text-ui">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {SPORTS.map((s) => (
+                    <SelectItem key={s} value={s}>
+                      {s}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
             <OddsFields compact />
-            <div className="w-full sm:w-auto xl:w-[72px]"><label className="text-[10px] text-muted-foreground mb-0.5 block">Risked</label><Input type="number" step="0.5" className="h-9 text-xs" value={form.units_risked} onChange={e => setForm(f => ({ ...f, units_risked: e.target.value }))} /></div>
-            <div className="w-full sm:w-auto xl:w-[85px]"><label className="text-[10px] text-muted-foreground mb-0.5 block">Result</label><Select value={form.result} onValueChange={v => setForm(f => ({ ...f, result: v }))}><SelectTrigger className="h-9 text-xs"><SelectValue /></SelectTrigger><SelectContent>{RESULTS.map(r => <SelectItem key={r} value={r}>{r.charAt(0).toUpperCase() + r.slice(1)}</SelectItem>)}</SelectContent></Select></div>
-            <div className="w-full sm:w-auto xl:w-[72px]"><label className="text-[10px] text-muted-foreground mb-0.5 block">+/−</label><Input type="number" step="0.5" className="h-9 text-xs" value={form.units_won_lost} onChange={e => setForm(f => ({ ...f, units_won_lost: e.target.value }))} /></div>
-            <div className="flex gap-2 w-full sm:w-auto xl:w-auto">
-              <Button size="sm" className="h-9 min-h-9 text-xs px-3 flex-1 sm:flex-none" onClick={handleSubmit} disabled={upsertMutation.isPending}>Add</Button>
-              <Button variant="ghost" size="sm" className="h-9 min-h-9 text-xs px-3" onClick={() => setQuickAddOpen(false)}>✕</Button>
+            <div className="w-full sm:w-auto xl:w-[88px]">
+              <label className="text-support text-muted-foreground mb-1.5 block">Risked</label>
+              <Input
+                type="number"
+                step="0.5"
+                className="h-11 min-h-11 text-ui"
+                value={form.units_risked}
+                onChange={(e) => setForm((f) => ({ ...f, units_risked: e.target.value }))}
+              />
+            </div>
+            <div className="w-full sm:w-auto xl:w-[110px]">
+              <label className="text-support text-muted-foreground mb-1.5 block">Result</label>
+              <Select value={form.result} onValueChange={(v) => setForm((f) => ({ ...f, result: v }))}>
+                <SelectTrigger className="h-11 min-h-11 text-ui">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {RESULTS.map((r) => (
+                    <SelectItem key={r} value={r}>
+                      {r.charAt(0).toUpperCase() + r.slice(1)}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="w-full sm:w-auto xl:w-[88px]">
+              <label className="text-support text-muted-foreground mb-1.5 block">+/−</label>
+              <Input
+                type="number"
+                step="0.5"
+                className="h-11 min-h-11 text-ui"
+                value={form.units_won_lost}
+                onChange={(e) => setForm((f) => ({ ...f, units_won_lost: e.target.value }))}
+              />
+            </div>
+            <div className="flex gap-2 w-full sm:w-auto">
+              <Button
+                type="button"
+                className="min-h-11 flex-1 sm:flex-none"
+                onClick={handleSubmit}
+                disabled={upsertMutation.isPending || !form.pick_event.trim()}
+              >
+                {upsertMutation.isPending ? (
+                  <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
+                ) : null}
+                {quickAddCta}
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                className="min-h-11"
+                onClick={() => setQuickAddOpen(false)}
+              >
+                Cancel
+              </Button>
             </div>
           </div>
         </div>
@@ -614,19 +785,57 @@ const CreatorPerformanceTracker = () => {
 
       {/* Filters */}
       <div className="flex flex-wrap items-center gap-2 mb-3">
-        <ListFilter className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
-        <Select value={filterSport} onValueChange={setFilterSport}><SelectTrigger className="w-full sm:w-[100px] h-9 sm:h-7 text-[11px]"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="all">All Sports</SelectItem>{SPORTS.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}</SelectContent></Select>
-        <Select value={filterResult} onValueChange={setFilterResult}><SelectTrigger className="w-full sm:w-[100px] h-9 sm:h-7 text-[11px]"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="all">All Results</SelectItem>{RESULTS.map(r => <SelectItem key={r} value={r}>{r.charAt(0).toUpperCase() + r.slice(1)}</SelectItem>)}</SelectContent></Select>
-        <span className="text-[10px] text-muted-foreground sm:ml-auto w-full sm:w-auto">{filtered.length} pick{filtered.length !== 1 ? 's' : ''}</span>
+        <ListFilter className="h-4 w-4 text-muted-foreground shrink-0" />
+        <Select value={filterSport} onValueChange={setFilterSport}>
+          <SelectTrigger className="w-full sm:w-[120px] min-h-11 h-11 text-ui">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All Sports</SelectItem>
+            {SPORTS.map((s) => (
+              <SelectItem key={s} value={s}>
+                {s}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        <Select value={filterResult} onValueChange={setFilterResult}>
+          <SelectTrigger className="w-full sm:w-[120px] min-h-11 h-11 text-ui">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All Results</SelectItem>
+            {RESULTS.map((r) => (
+              <SelectItem key={r} value={r}>
+                {r.charAt(0).toUpperCase() + r.slice(1)}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        <span className="text-support text-muted-foreground sm:ml-auto w-full sm:w-auto">
+          {filtered.length} pick{filtered.length !== 1 ? 's' : ''}
+        </span>
       </div>
 
       {/* Table */}
-      {picks.length === 0 && !isLoading ? (
-        <div className="rounded-xl border border-dashed border-border bg-card/50 p-8 sm:p-16 text-center">
-          <BarChart3 className="h-12 w-12 text-muted-foreground/30 mx-auto mb-4" />
-          <h3 className="text-base font-semibold mb-1">Start tracking your performance</h3>
-          <p className="text-sm text-muted-foreground mb-5 max-w-sm mx-auto px-1">Log your picks to get real-time analytics on win rate, ROI, and profitability across sports and time.</p>
-          <Button size="sm" onClick={() => { resetForm(); setQuickAddOpen(true); }} className="gap-1.5"><Plus className="h-3.5 w-3.5" /> Add First Pick</Button>
+      {picks.length === 0 ? (
+        <div className="rounded-xl border border-border bg-card p-10 text-center">
+          <BarChart3 className="h-10 w-10 text-muted-foreground mx-auto mb-4" />
+          <h3 className="text-ui font-semibold text-foreground mb-2">Start tracking your performance</h3>
+          <p className="text-support text-muted-foreground mb-5 max-w-sm mx-auto">
+            Log your picks to get real-time analytics on win rate, ROI, and profitability across
+            sports and time.
+          </p>
+          <Button
+            type="button"
+            className="gap-1.5 min-h-11"
+            onClick={() => {
+              resetForm();
+              setQuickAddOpen(true);
+            }}
+          >
+            <Plus className="h-4 w-4" /> Add First Pick
+          </Button>
         </div>
       ) : (
         <div className="mb-5 space-y-3">
@@ -636,15 +845,15 @@ const CreatorPerformanceTracker = () => {
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0">
                     <p className="text-sm font-medium leading-snug">{pick.pick_event}</p>
-                    <p className="text-[11px] text-muted-foreground mt-1 font-mono">
+                    <p className="text-caption text-muted-foreground mt-1 font-mono">
                       {pick.date} · {pick.sport}
                     </p>
                   </div>
-                  <span className={`text-[11px] font-bold uppercase shrink-0 ${pick.result === 'win' ? 'text-emerald-400' : pick.result === 'loss' ? 'text-destructive' : 'text-muted-foreground'}`}>
+                  <span className={`text-caption font-bold uppercase shrink-0 ${pick.result === 'win' ? 'text-emerald-400' : pick.result === 'loss' ? 'text-destructive' : 'text-muted-foreground'}`}>
                     {pick.result === 'win' ? 'Win' : pick.result === 'loss' ? 'Loss' : pick.result === 'push' ? 'Push' : 'Pending'}
                   </span>
                 </div>
-                <div className="mt-3 grid grid-cols-3 gap-2 text-[11px]">
+                <div className="mt-3 grid grid-cols-3 gap-2 text-caption">
                   <div>
                     <p className="text-muted-foreground">Risk</p>
                     <p className="font-mono font-medium">{pick.units_risked}u</p>
@@ -659,18 +868,33 @@ const CreatorPerformanceTracker = () => {
                   </div>
                 </div>
                 {(pick.eu_odds || pick.us_odds) && (
-                  <p className="text-[11px] text-muted-foreground mt-2 font-mono">
+                  <p className="text-caption text-muted-foreground mt-2 font-mono">
                     Odds {pick.eu_odds ?? '—'} / {pick.us_odds ?? '—'}
                   </p>
                 )}
-                <div className="flex gap-1 mt-3 -ml-2">
-                  <Button variant="ghost" size="sm" className="h-9 gap-1.5 text-xs" onClick={() => handleDuplicate(pick)}>
+                <div className="flex flex-wrap gap-2 mt-3">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="min-h-11 gap-1.5"
+                    onClick={() => handleDuplicate(pick)}
+                  >
                     <Copy className="h-3.5 w-3.5" /> Duplicate
                   </Button>
-                  <Button variant="ghost" size="sm" className="h-9 gap-1.5 text-xs" onClick={() => handleEdit(pick)}>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="min-h-11 gap-1.5"
+                    onClick={() => handleEdit(pick)}
+                  >
                     <Pencil className="h-3.5 w-3.5" /> Edit
                   </Button>
-                  <Button variant="ghost" size="sm" className="h-9 gap-1.5 text-xs text-destructive" onClick={() => deleteMutation.mutate(pick.id)}>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="min-h-11 gap-1.5 text-destructive hover:text-destructive"
+                    onClick={() => setDeleteId(pick.id)}
+                  >
                     <Trash2 className="h-3.5 w-3.5" /> Delete
                   </Button>
                 </div>
@@ -682,43 +906,74 @@ const CreatorPerformanceTracker = () => {
             <Table className="min-w-[720px]">
               <TableHeader className="sticky top-0 z-10">
                 <TableRow className="bg-muted/60 hover:bg-muted/60">
-                  <TableHead className="text-[9px] font-semibold uppercase tracking-wider py-1.5 px-2 w-[78px] sticky left-0 z-[1] bg-muted/95">Date</TableHead>
-                  <TableHead className="text-[9px] font-semibold uppercase tracking-wider py-1.5 px-2">Pick / Event</TableHead>
-                  <TableHead className="text-[9px] font-semibold uppercase tracking-wider py-1.5 px-2 w-[55px]">Sport</TableHead>
-                  <TableHead className="text-[9px] font-semibold uppercase tracking-wider py-1.5 px-2 w-[52px] text-right">EU</TableHead>
-                  <TableHead className="text-[9px] font-semibold uppercase tracking-wider py-1.5 px-2 w-[52px] text-right">US</TableHead>
-                  <TableHead className="text-[9px] font-semibold uppercase tracking-wider py-1.5 px-2 w-[52px] text-right">Risk</TableHead>
-                  <TableHead className="text-[9px] font-semibold uppercase tracking-wider py-1.5 px-2 w-[48px]">Res</TableHead>
-                  <TableHead className="text-[9px] font-semibold uppercase tracking-wider py-1.5 px-2 w-[52px] text-right">+/−</TableHead>
-                  <TableHead className="text-[9px] font-semibold uppercase tracking-wider py-1.5 px-2 w-[56px] text-right">Net</TableHead>
-                  <TableHead className="text-[9px] font-semibold uppercase tracking-wider py-1.5 px-2 w-[80px]">Notes</TableHead>
+                  <TableHead className="text-caption font-semibold uppercase tracking-wider py-1.5 px-2 w-[78px] sticky left-0 z-[1] bg-muted/95">Date</TableHead>
+                  <TableHead className="text-caption font-semibold uppercase tracking-wider py-1.5 px-2">Pick / Event</TableHead>
+                  <TableHead className="text-caption font-semibold uppercase tracking-wider py-1.5 px-2 w-[55px]">Sport</TableHead>
+                  <TableHead className="text-caption font-semibold uppercase tracking-wider py-1.5 px-2 w-[52px] text-right">EU</TableHead>
+                  <TableHead className="text-caption font-semibold uppercase tracking-wider py-1.5 px-2 w-[52px] text-right">US</TableHead>
+                  <TableHead className="text-caption font-semibold uppercase tracking-wider py-1.5 px-2 w-[52px] text-right">Risk</TableHead>
+                  <TableHead className="text-caption font-semibold uppercase tracking-wider py-1.5 px-2 w-[48px]">Res</TableHead>
+                  <TableHead className="text-caption font-semibold uppercase tracking-wider py-1.5 px-2 w-[52px] text-right">+/−</TableHead>
+                  <TableHead className="text-caption font-semibold uppercase tracking-wider py-1.5 px-2 w-[56px] text-right">Net</TableHead>
+                  <TableHead className="text-caption font-semibold uppercase tracking-wider py-1.5 px-2 w-[80px]">Notes</TableHead>
                   <TableHead className="py-1.5 px-1 w-[48px]"></TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {displayPicks.map((pick, i) => (
                   <TableRow key={pick.id} className={`hover:bg-muted/30 transition-colors ${i % 2 ? 'bg-muted/8' : ''}`}>
-                    <TableCell className="text-[10px] py-1 px-2 font-mono text-muted-foreground sticky left-0 z-[1] bg-card">{pick.date}</TableCell>
-                    <TableCell className="text-[10px] py-1 px-2 font-medium">{pick.pick_event}</TableCell>
-                    <TableCell className="py-1 px-2"><span className="text-[8px] font-medium text-muted-foreground bg-muted/50 rounded px-1 py-0.5">{pick.sport}</span></TableCell>
-                    <TableCell className="text-[10px] py-1 px-2 text-right font-mono text-muted-foreground">{pick.eu_odds || '—'}</TableCell>
-                    <TableCell className="text-[10px] py-1 px-2 text-right font-mono text-muted-foreground">{pick.us_odds || '—'}</TableCell>
-                    <TableCell className="text-[10px] py-1 px-2 text-right font-mono">{pick.units_risked}u</TableCell>
-                    <TableCell className="py-1 px-2"><span className={`text-[9px] font-bold uppercase ${pick.result === 'win' ? 'text-emerald-400' : pick.result === 'loss' ? 'text-destructive' : 'text-muted-foreground'}`}>{pick.result === 'win' ? '✓ W' : pick.result === 'loss' ? '✗ L' : pick.result === 'push' ? '— P' : '⏳'}</span></TableCell>
-                    <TableCell className={`text-[10px] py-1 px-2 text-right font-mono font-medium ${valColor(pick.units_won_lost || 0)}`}>{fmtUnit(pick.units_won_lost || 0)}</TableCell>
-                    <TableCell className={`text-[10px] py-1 px-2 text-right font-mono font-semibold ${valColor(pick.runningTotal)}`}>{fmtUnit(pick.runningTotal)}</TableCell>
-                    <TableCell className="text-[9px] py-1 px-2 text-muted-foreground/60 max-w-[80px] truncate">{pick.notes || ''}</TableCell>
-                    <TableCell className="py-1 px-1"><div className="flex gap-0.5"><Button variant="ghost" size="icon" className="h-9 w-9 opacity-60 hover:opacity-100" onClick={() => handleDuplicate(pick)} title="Duplicate" aria-label="Duplicate pick"><Copy className="h-3.5 w-3.5" /></Button><Button variant="ghost" size="icon" className="h-9 w-9 opacity-60 hover:opacity-100" onClick={() => handleEdit(pick)} aria-label="Edit pick"><Pencil className="h-3.5 w-3.5" /></Button><Button variant="ghost" size="icon" className="h-9 w-9 opacity-60 hover:opacity-100 text-destructive" onClick={() => deleteMutation.mutate(pick.id)} aria-label="Delete pick"><Trash2 className="h-3.5 w-3.5" /></Button></div></TableCell>
+                    <TableCell className="text-caption py-1 px-2 font-mono text-muted-foreground sticky left-0 z-[1] bg-card">{pick.date}</TableCell>
+                    <TableCell className="text-caption py-1 px-2 font-medium">{pick.pick_event}</TableCell>
+                    <TableCell className="py-1 px-2"><span className="text-caption font-medium text-muted-foreground bg-muted/50 rounded px-1 py-0.5">{pick.sport}</span></TableCell>
+                    <TableCell className="text-caption py-1 px-2 text-right font-mono text-muted-foreground">{pick.eu_odds || '—'}</TableCell>
+                    <TableCell className="text-caption py-1 px-2 text-right font-mono text-muted-foreground">{pick.us_odds || '—'}</TableCell>
+                    <TableCell className="text-caption py-1 px-2 text-right font-mono">{pick.units_risked}u</TableCell>
+                    <TableCell className="py-1 px-2"><span className={`text-caption font-bold uppercase ${pick.result === 'win' ? 'text-emerald-400' : pick.result === 'loss' ? 'text-destructive' : 'text-muted-foreground'}`}>{pick.result === 'win' ? '✓ W' : pick.result === 'loss' ? '✗ L' : pick.result === 'push' ? '— P' : '⏳'}</span></TableCell>
+                    <TableCell className={`text-caption py-1 px-2 text-right font-mono font-medium ${valColor(pick.units_won_lost || 0)}`}>{fmtUnit(pick.units_won_lost || 0)}</TableCell>
+                    <TableCell className={`text-caption py-1 px-2 text-right font-mono font-semibold ${valColor(pick.runningTotal)}`}>{fmtUnit(pick.runningTotal)}</TableCell>
+                    <TableCell className="text-caption py-1 px-2 text-muted-foreground/60 max-w-[80px] truncate">{pick.notes || ''}</TableCell>
+                    <TableCell className="py-1 px-1">
+                      <div className="flex gap-0.5">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-9 w-9 opacity-60 hover:opacity-100"
+                          onClick={() => handleDuplicate(pick)}
+                          title="Duplicate"
+                          aria-label="Duplicate pick"
+                        >
+                          <Copy className="h-3.5 w-3.5" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-9 w-9 opacity-60 hover:opacity-100"
+                          onClick={() => handleEdit(pick)}
+                          aria-label="Edit pick"
+                        >
+                          <Pencil className="h-3.5 w-3.5" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-9 w-9 opacity-60 hover:opacity-100 text-destructive"
+                          onClick={() => setDeleteId(pick.id)}
+                          aria-label="Delete pick"
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </Button>
+                      </div>
+                    </TableCell>
                   </TableRow>
                 ))}
               </TableBody>
               <TableFooter>
                 <TableRow className="bg-muted/40 hover:bg-muted/40 border-t-2 border-border">
-                  <TableCell colSpan={5} className="text-[9px] font-semibold uppercase tracking-wider py-1.5 px-2">Totals</TableCell>
-                  <TableCell className="text-[10px] py-1.5 px-2 text-right font-mono font-bold">{totals.risked.toFixed(1)}u</TableCell>
+                  <TableCell colSpan={5} className="text-caption font-semibold uppercase tracking-wider py-1.5 px-2">Totals</TableCell>
+                  <TableCell className="text-caption py-1.5 px-2 text-right font-mono font-bold">{totals.risked.toFixed(1)}u</TableCell>
                   <TableCell className="py-1.5 px-2"></TableCell>
-                  <TableCell className={`text-[10px] py-1.5 px-2 text-right font-mono font-bold ${valColor(totals.wonLost)}`}>{fmtUnit(totals.wonLost)}</TableCell>
-                  <TableCell className={`text-[10px] py-1.5 px-2 text-right font-mono font-bold ${valColor(totals.wonLost)}`}>{fmtUnit(totals.wonLost)}</TableCell>
+                  <TableCell className={`text-caption py-1.5 px-2 text-right font-mono font-bold ${valColor(totals.wonLost)}`}>{fmtUnit(totals.wonLost)}</TableCell>
+                  <TableCell className={`text-caption py-1.5 px-2 text-right font-mono font-bold ${valColor(totals.wonLost)}`}>{fmtUnit(totals.wonLost)}</TableCell>
                   <TableCell colSpan={2}></TableCell>
                 </TableRow>
               </TableFooter>
@@ -730,11 +985,11 @@ const CreatorPerformanceTracker = () => {
       {/* Analytics Tabs */}
       {picks.length > 0 && (
         <Tabs defaultValue="content" className="mt-2">
-          <TabsList className="bg-muted/50 h-8">
-            <TabsTrigger value="content" className="text-[11px] h-6">Content</TabsTrigger>
-            <TabsTrigger value="sport" className="text-[11px] h-6">By Sport</TabsTrigger>
-            <TabsTrigger value="monthly" className="text-[11px] h-6">Monthly</TabsTrigger>
-            <TabsTrigger value="insights" className="text-[11px] h-6">Insights</TabsTrigger>
+          <TabsList>
+            <TabsTrigger value="content">Content</TabsTrigger>
+            <TabsTrigger value="sport">By Sport</TabsTrigger>
+            <TabsTrigger value="monthly">Monthly</TabsTrigger>
+            <TabsTrigger value="insights">Insights</TabsTrigger>
           </TabsList>
 
           {/* Content Performance Tab */}
@@ -744,11 +999,11 @@ const CreatorPerformanceTracker = () => {
               <div className="rounded-lg border border-primary/20 bg-primary/5 p-4">
                 <div className="flex items-center gap-2 mb-3">
                   <Lightbulb className="h-4 w-4 text-primary" />
-                  <h3 className="text-xs font-semibold uppercase tracking-wider">Content Intelligence</h3>
+                  <h3 className="text-caption font-semibold uppercase tracking-wider">Content Intelligence</h3>
                 </div>
                 <div className="space-y-2">
                   {contentPerformance.insights.map((insight, i) => (
-                    <div key={i} className="flex items-start gap-2 text-xs">
+                    <div key={i} className="flex items-start gap-2 text-caption">
                       <span className="text-primary mt-0.5">→</span>
                       <span className="text-muted-foreground">{insight}</span>
                     </div>
@@ -759,12 +1014,12 @@ const CreatorPerformanceTracker = () => {
               {/* Engagement by Type Chart */}
               {contentPerformance.engagementByType.length > 0 && (
                 <div className="rounded-lg border border-border bg-card p-4">
-                  <h3 className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mb-3">Engagement by Content Type</h3>
+                  <h3 className="text-caption font-semibold text-muted-foreground uppercase tracking-wider mb-3">Engagement by Content Type</h3>
                   <ResponsiveContainer width="100%" height={120}>
                     <BarChart data={contentPerformance.engagementByType}>
-                      <XAxis dataKey="type" tick={{ fontSize: 10, fill: 'hsl(var(--muted-foreground))' }} tickLine={false} axisLine={false} />
-                      <YAxis tick={{ fontSize: 8, fill: 'hsl(var(--muted-foreground))' }} tickLine={false} axisLine={false} width={28} />
-                      <Tooltip contentStyle={{ background: 'hsl(var(--card))', border: '1px solid hsl(var(--border))', borderRadius: 8, fontSize: 11 }} />
+                      <XAxis dataKey="type" tick={{ fontSize: 14, fill: 'hsl(var(--muted-foreground))' }} tickLine={false} axisLine={false} />
+                      <YAxis tick={{ fontSize: 14, fill: 'hsl(var(--muted-foreground))' }} tickLine={false} axisLine={false} width={28} />
+                      <Tooltip contentStyle={{ background: 'hsl(var(--card))', border: '1px solid hsl(var(--border))', borderRadius: 8, fontSize: 14 }} />
                       <Bar dataKey="views" name="Views" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
                       <Bar dataKey="conversions" name="Conversions" fill="hsl(142, 71%, 45%)" radius={[4, 4, 0, 0]} />
                     </BarChart>
@@ -783,31 +1038,31 @@ const CreatorPerformanceTracker = () => {
                   <Table className="min-w-[520px]">
                     <TableHeader className="sticky top-0 z-10">
                       <TableRow className="bg-muted/60 hover:bg-muted/60">
-                        <TableHead className="text-[9px] font-semibold uppercase tracking-wider py-1.5 px-2">Post</TableHead>
-                        <TableHead className="text-[9px] font-semibold uppercase tracking-wider py-1.5 px-2 w-[50px]">Type</TableHead>
-                        <TableHead className="text-[9px] font-semibold uppercase tracking-wider py-1.5 px-2 w-[50px] text-right"><Eye className="h-2.5 w-2.5 inline" /></TableHead>
-                        <TableHead className="text-[9px] font-semibold uppercase tracking-wider py-1.5 px-2 w-[50px] text-right"><MousePointerClick className="h-2.5 w-2.5 inline" /></TableHead>
-                        <TableHead className="text-[9px] font-semibold uppercase tracking-wider py-1.5 px-2 w-[50px] text-right">CVR</TableHead>
-                        <TableHead className="text-[9px] font-semibold uppercase tracking-wider py-1.5 px-2 w-[60px] text-right">Picks</TableHead>
-                        <TableHead className="text-[9px] font-semibold uppercase tracking-wider py-1.5 px-2 w-[110px]">Score</TableHead>
+                        <TableHead className="text-caption font-semibold uppercase tracking-wider py-1.5 px-2">Post</TableHead>
+                        <TableHead className="text-caption font-semibold uppercase tracking-wider py-1.5 px-2 w-[50px]">Type</TableHead>
+                        <TableHead className="text-caption font-semibold uppercase tracking-wider py-1.5 px-2 w-[50px] text-right"><Eye className="h-2.5 w-2.5 inline" /></TableHead>
+                        <TableHead className="text-caption font-semibold uppercase tracking-wider py-1.5 px-2 w-[50px] text-right"><MousePointerClick className="h-2.5 w-2.5 inline" /></TableHead>
+                        <TableHead className="text-caption font-semibold uppercase tracking-wider py-1.5 px-2 w-[50px] text-right">CVR</TableHead>
+                        <TableHead className="text-caption font-semibold uppercase tracking-wider py-1.5 px-2 w-[60px] text-right">Picks</TableHead>
+                        <TableHead className="text-caption font-semibold uppercase tracking-wider py-1.5 px-2 w-[110px]">Score</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
                       {contentPerformance.postStats.map((post, i) => (
                         <TableRow key={post.id} className={`hover:bg-muted/30 ${i % 2 ? 'bg-muted/8' : ''}`}>
                           <TableCell className="py-1.5 px-2">
-                            <p className="text-[10px] font-medium truncate max-w-[200px]">{post.title}</p>
-                            <p className="text-[8px] text-muted-foreground">{new Date(post.date).toLocaleDateString()}</p>
+                            <p className="text-caption font-medium truncate max-w-[200px]">{post.title}</p>
+                            <p className="text-caption text-muted-foreground">{new Date(post.date).toLocaleDateString()}</p>
                           </TableCell>
                           <TableCell className="py-1.5 px-2">
-                            <span className={`text-[8px] font-medium rounded px-1.5 py-0.5 ${post.is_premium ? 'bg-primary/10 text-primary' : 'bg-muted text-muted-foreground'}`}>
+                            <span className={`text-caption font-medium rounded px-1.5 py-0.5 ${post.is_premium ? 'bg-primary/10 text-primary' : 'bg-muted text-muted-foreground'}`}>
                               {post.contentType}
                             </span>
                           </TableCell>
-                          <TableCell className="text-[10px] py-1.5 px-2 text-right font-mono">{post.views}</TableCell>
-                          <TableCell className="text-[10px] py-1.5 px-2 text-right font-mono">{post.conversions}</TableCell>
-                          <TableCell className="text-[10px] py-1.5 px-2 text-right font-mono">{post.conversionRate}%</TableCell>
-                          <TableCell className="text-[10px] py-1.5 px-2 text-right">
+                          <TableCell className="text-caption py-1.5 px-2 text-right font-mono">{post.views}</TableCell>
+                          <TableCell className="text-caption py-1.5 px-2 text-right font-mono">{post.conversions}</TableCell>
+                          <TableCell className="text-caption py-1.5 px-2 text-right font-mono">{post.conversionRate}%</TableCell>
+                          <TableCell className="text-caption py-1.5 px-2 text-right">
                             {post.relatedPicks > 0 ? (
                               <span className={`font-mono ${valColor(post.pickProfit)}`}>{post.relatedPicks}p · {fmtUnit(post.pickProfit)}u</span>
                             ) : <span className="text-muted-foreground/40">—</span>}
@@ -815,7 +1070,7 @@ const CreatorPerformanceTracker = () => {
                           <TableCell className="py-1.5 px-2">
                             <div className="flex items-center gap-1.5">
                               <Progress value={post.engagementScore} className="h-1 flex-1" />
-                              <span className="text-[9px] font-bold text-muted-foreground w-[20px] text-right">{post.engagementScore}</span>
+                              <span className="text-caption font-bold text-muted-foreground w-[20px] text-right">{post.engagementScore}</span>
                             </div>
                           </TableCell>
                         </TableRow>
@@ -827,7 +1082,7 @@ const CreatorPerformanceTracker = () => {
                 <div className="rounded-lg border border-dashed border-border bg-card/50 p-10 text-center">
                   <FileText className="h-8 w-8 text-muted-foreground/30 mx-auto mb-3" />
                   <p className="text-sm font-medium mb-1">No posts yet</p>
-                  <p className="text-xs text-muted-foreground">Publish content to see which posts drive the most engagement and revenue.</p>
+                  <p className="text-caption text-muted-foreground">Publish content to see which posts drive the most engagement and revenue.</p>
                 </div>
               )}
             </div>
@@ -837,11 +1092,11 @@ const CreatorPerformanceTracker = () => {
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 mt-3">
               {sportBreakdown.map(s => (
                 <div key={s.sport} className="rounded-lg border border-border bg-card p-3">
-                  <div className="flex items-center justify-between mb-2"><span className="text-xs font-semibold">{s.sport}</span><span className="text-[9px] text-muted-foreground">{s.picks} picks</span></div>
+                  <div className="flex items-center justify-between mb-2"><span className="text-caption font-semibold">{s.sport}</span><span className="text-caption text-muted-foreground">{s.picks} picks</span></div>
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-                    <div><p className="text-[9px] text-muted-foreground uppercase">Win Rate</p><p className="text-sm font-bold">{s.winRate}%</p></div>
-                    <div><p className="text-[9px] text-muted-foreground uppercase">Profit</p><p className={`text-sm font-bold ${valColor(s.profit)}`}>{fmtUnit(s.profit)}u</p></div>
-                    <div><p className="text-[9px] text-muted-foreground uppercase">ROI</p><p className={`text-sm font-bold ${valColor(s.roi)}`}>{s.roi >= 0 ? '+' : ''}{s.roi}%</p></div>
+                    <div><p className="text-caption text-muted-foreground uppercase">Win Rate</p><p className="text-sm font-bold">{s.winRate}%</p></div>
+                    <div><p className="text-caption text-muted-foreground uppercase">Profit</p><p className={`text-sm font-bold ${valColor(s.profit)}`}>{fmtUnit(s.profit)}u</p></div>
+                    <div><p className="text-caption text-muted-foreground uppercase">ROI</p><p className={`text-sm font-bold ${valColor(s.roi)}`}>{s.roi >= 0 ? '+' : ''}{s.roi}%</p></div>
                   </div>
                 </div>
               ))}
@@ -852,22 +1107,22 @@ const CreatorPerformanceTracker = () => {
             <div className="rounded-lg border border-border overflow-hidden mt-3">
               <Table>
                 <TableHeader><TableRow className="bg-muted/40 hover:bg-muted/40">
-                  <TableHead className="text-[9px] font-semibold uppercase py-1.5 px-3">Month</TableHead>
-                  <TableHead className="text-[9px] font-semibold uppercase py-1.5 px-3 text-right">Picks</TableHead>
-                  <TableHead className="text-[9px] font-semibold uppercase py-1.5 px-3 text-right">Win Rate</TableHead>
-                  <TableHead className="text-[9px] font-semibold uppercase py-1.5 px-3 text-right">Risked</TableHead>
-                  <TableHead className="text-[9px] font-semibold uppercase py-1.5 px-3 text-right">Profit</TableHead>
-                  <TableHead className="text-[9px] font-semibold uppercase py-1.5 px-3 text-right">ROI</TableHead>
+                  <TableHead className="text-caption font-semibold uppercase py-1.5 px-3">Month</TableHead>
+                  <TableHead className="text-caption font-semibold uppercase py-1.5 px-3 text-right">Picks</TableHead>
+                  <TableHead className="text-caption font-semibold uppercase py-1.5 px-3 text-right">Win Rate</TableHead>
+                  <TableHead className="text-caption font-semibold uppercase py-1.5 px-3 text-right">Risked</TableHead>
+                  <TableHead className="text-caption font-semibold uppercase py-1.5 px-3 text-right">Profit</TableHead>
+                  <TableHead className="text-caption font-semibold uppercase py-1.5 px-3 text-right">ROI</TableHead>
                 </TableRow></TableHeader>
                 <TableBody>
                   {monthlyBreakdown.map((m, i) => (
                     <TableRow key={m.month} className={i % 2 ? 'bg-muted/8' : ''}>
-                      <TableCell className="text-[11px] py-1.5 px-3 font-medium">{m.label}</TableCell>
-                      <TableCell className="text-[11px] py-1.5 px-3 text-right font-mono">{m.picks}</TableCell>
-                      <TableCell className="text-[11px] py-1.5 px-3 text-right font-mono">{m.winRate}%</TableCell>
-                      <TableCell className="text-[11px] py-1.5 px-3 text-right font-mono">{m.risked.toFixed(1)}u</TableCell>
-                      <TableCell className={`text-[11px] py-1.5 px-3 text-right font-mono font-medium ${valColor(m.profit)}`}>{fmtUnit(m.profit)}u</TableCell>
-                      <TableCell className={`text-[11px] py-1.5 px-3 text-right font-mono font-medium ${valColor(m.roi)}`}>{m.roi >= 0 ? '+' : ''}{m.roi}%</TableCell>
+                      <TableCell className="text-caption py-1.5 px-3 font-medium">{m.label}</TableCell>
+                      <TableCell className="text-caption py-1.5 px-3 text-right font-mono">{m.picks}</TableCell>
+                      <TableCell className="text-caption py-1.5 px-3 text-right font-mono">{m.winRate}%</TableCell>
+                      <TableCell className="text-caption py-1.5 px-3 text-right font-mono">{m.risked.toFixed(1)}u</TableCell>
+                      <TableCell className={`text-caption py-1.5 px-3 text-right font-mono font-medium ${valColor(m.profit)}`}>{fmtUnit(m.profit)}u</TableCell>
+                      <TableCell className={`text-caption py-1.5 px-3 text-right font-mono font-medium ${valColor(m.roi)}`}>{m.roi >= 0 ? '+' : ''}{m.roi}%</TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
@@ -889,9 +1144,9 @@ const CreatorPerformanceTracker = () => {
                   { label: 'Longest L Streak', value: `${stats.longestLoss}`, sub: 'consecutive losses' },
                 ].map(item => (
                   <div key={item.label} className="rounded-lg border border-border bg-card p-3">
-                    <p className="text-[9px] text-muted-foreground uppercase tracking-wider mb-1">{item.label}</p>
+                    <p className="text-caption text-muted-foreground uppercase tracking-wider mb-1">{item.label}</p>
                     <p className="text-sm font-bold">{item.value}</p>
-                    {item.sub && <p className="text-[10px] text-muted-foreground mt-0.5">{item.sub}</p>}
+                    {item.sub && <p className="text-caption text-muted-foreground mt-0.5">{item.sub}</p>}
                   </div>
                 ))}
               </div>
@@ -901,29 +1156,155 @@ const CreatorPerformanceTracker = () => {
       )}
 
       {/* Edit Dialog */}
-      <Dialog open={dialogOpen} onOpenChange={(o) => { if (!o) resetForm(); setDialogOpen(o); }}>
+      <Dialog
+        open={dialogOpen}
+        onOpenChange={(o) => {
+          if (!o) resetForm();
+          setDialogOpen(o);
+        }}
+      >
         <DialogContent className="sm:max-w-lg">
-          <DialogHeader><DialogTitle>Edit Pick</DialogTitle></DialogHeader>
-          <div className="grid gap-3 py-2">
+          <DialogHeader>
+            <DialogTitle className="text-title-lg">Edit Pick</DialogTitle>
+          </DialogHeader>
+          <div className="grid gap-4 py-2">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <div><label className="text-xs text-muted-foreground mb-1 block">Date</label><Input type="date" value={form.date} onChange={e => setForm(f => ({ ...f, date: e.target.value }))} /></div>
-              <div><label className="text-xs text-muted-foreground mb-1 block">Sport</label><Select value={form.sport} onValueChange={v => setForm(f => ({ ...f, sport: v }))}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>{SPORTS.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}</SelectContent></Select></div>
+              <div className="space-y-2">
+                <label className="text-support text-muted-foreground block">Date</label>
+                <Input
+                  type="date"
+                  className="h-11 text-ui"
+                  value={form.date}
+                  onChange={(e) => setForm((f) => ({ ...f, date: e.target.value }))}
+                />
+              </div>
+              <div className="space-y-2">
+                <label className="text-support text-muted-foreground block">Sport</label>
+                <Select value={form.sport} onValueChange={(v) => setForm((f) => ({ ...f, sport: v }))}>
+                  <SelectTrigger className="h-11 text-ui">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {SPORTS.map((s) => (
+                      <SelectItem key={s} value={s}>
+                        {s}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
-            <div><label className="text-xs text-muted-foreground mb-1 block">Pick / Event</label><Input value={form.pick_event} onChange={e => setForm(f => ({ ...f, pick_event: e.target.value }))} /></div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3"><OddsFields /></div>
+            <div className="space-y-2">
+              <label className="text-support text-muted-foreground block">Pick / Event</label>
+              <Input
+                className="h-11 text-ui"
+                value={form.pick_event}
+                onChange={(e) => setForm((f) => ({ ...f, pick_event: e.target.value }))}
+              />
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <OddsFields />
+            </div>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-              <div><label className="text-xs text-muted-foreground mb-1 block">Units Risked</label><Input type="number" step="0.5" value={form.units_risked} onChange={e => setForm(f => ({ ...f, units_risked: e.target.value }))} /></div>
-              <div><label className="text-xs text-muted-foreground mb-1 block">Result</label><Select value={form.result} onValueChange={v => setForm(f => ({ ...f, result: v }))}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>{RESULTS.map(r => <SelectItem key={r} value={r}>{r.charAt(0).toUpperCase() + r.slice(1)}</SelectItem>)}</SelectContent></Select></div>
-              <div><label className="text-xs text-muted-foreground mb-1 block">Units Won/Lost</label><Input type="number" step="0.5" value={form.units_won_lost} onChange={e => setForm(f => ({ ...f, units_won_lost: e.target.value }))} /></div>
+              <div className="space-y-2">
+                <label className="text-support text-muted-foreground block">Units Risked</label>
+                <Input
+                  type="number"
+                  step="0.5"
+                  className="h-11 text-ui"
+                  value={form.units_risked}
+                  onChange={(e) => setForm((f) => ({ ...f, units_risked: e.target.value }))}
+                />
+              </div>
+              <div className="space-y-2">
+                <label className="text-support text-muted-foreground block">Result</label>
+                <Select
+                  value={form.result}
+                  onValueChange={(v) => setForm((f) => ({ ...f, result: v }))}
+                >
+                  <SelectTrigger className="h-11 text-ui">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {RESULTS.map((r) => (
+                      <SelectItem key={r} value={r}>
+                        {r.charAt(0).toUpperCase() + r.slice(1)}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <label className="text-support text-muted-foreground block">Units Won/Lost</label>
+                <Input
+                  type="number"
+                  step="0.5"
+                  className="h-11 text-ui"
+                  value={form.units_won_lost}
+                  onChange={(e) => setForm((f) => ({ ...f, units_won_lost: e.target.value }))}
+                />
+              </div>
             </div>
-            <div><label className="text-xs text-muted-foreground mb-1 block">Notes</label><Input value={form.notes} onChange={e => setForm(f => ({ ...f, notes: e.target.value }))} /></div>
+            <div className="space-y-2">
+              <label className="text-support text-muted-foreground block">Notes</label>
+              <Input
+                className="h-11 text-ui"
+                value={form.notes}
+                onChange={(e) => setForm((f) => ({ ...f, notes: e.target.value }))}
+              />
+            </div>
           </div>
           <DialogFooter>
-            <DialogClose asChild><Button variant="outline" size="sm">Cancel</Button></DialogClose>
-            <Button size="sm" onClick={handleSubmit} disabled={upsertMutation.isPending}>Update</Button>
+            <DialogClose asChild>
+              <Button type="button" variant="outline" className="min-h-11">
+                Cancel
+              </Button>
+            </DialogClose>
+            <Button
+              type="button"
+              className="min-h-11"
+              onClick={handleSubmit}
+              disabled={upsertMutation.isPending || !form.pick_event.trim()}
+            >
+              {upsertMutation.isPending ? (
+                <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
+              ) : null}
+              Save changes
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <AlertDialog
+        open={!!deleteId}
+        onOpenChange={(open) => {
+          if (!open) setDeleteId(null);
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete this pick?</AlertDialogTitle>
+            <AlertDialogDescription>
+              {deleteTarget
+                ? `“${deleteTarget.pick_event}” will be removed from your practice ledger. This does not change Create Post settled results.`
+                : 'This pick will be removed from your practice ledger. This does not change Create Post settled results.'}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={deleting}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              disabled={deleting}
+              onClick={(e) => {
+                e.preventDefault();
+                void confirmDelete();
+              }}
+            >
+              {deleting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </DashboardLayout>
   );
 };

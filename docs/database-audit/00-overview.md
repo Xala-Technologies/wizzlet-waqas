@@ -1,6 +1,6 @@
 # Database Architecture Audit — Overview
 
-**Product:** Wizzlet — sports tipster / creator subscription SaaS  
+**Product:** Prizelet — sports tipster / creator subscription SaaS  
 **Date:** 2026-09-05  
 **Constraint:** Live Supabase management access unavailable. Inventory from repo migrations + `types.ts`. **Authoritative persistence target: Convex** (`combative-mongoose-559`).
 

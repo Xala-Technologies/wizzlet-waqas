@@ -1,6 +1,6 @@
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useQuery } from 'convex/react';
-import { WizzletLogo } from '@/components/WizzletLogo';
+import { PrizeletLogo } from '@/components/PrizeletLogo';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import {
@@ -101,7 +101,7 @@ const demoMemberSections: NavSection[] = [
 
 function SectionLabel({ children }: { children: React.ReactNode }) {
   return (
-    <span className="px-3 text-[10px] font-semibold uppercase tracking-widest text-muted-foreground/50 dark:text-muted-foreground/70 select-none">
+    <span className="px-3 text-caption font-semibold uppercase tracking-widest text-muted-foreground/50 dark:text-muted-foreground/70 select-none">
       {children}
     </span>
   );
@@ -111,7 +111,7 @@ function NavItemLink({ item, active }: { item: NavItem; active: boolean }) {
   return (
     <Link
       to={item.href}
-      className={`group flex items-center gap-3 rounded-lg px-3 py-2 text-[13px] transition-all duration-200 ${
+      className={`group flex items-center gap-3 rounded-lg px-3 py-2 text-ui transition-all duration-200 ${
         active
           ? 'bg-primary/10 text-primary font-medium shadow-[inset_2px_0_0_0_hsl(var(--primary))]'
           : 'text-muted-foreground hover:text-foreground hover:bg-muted/60'
@@ -124,7 +124,7 @@ function NavItemLink({ item, active }: { item: NavItem; active: boolean }) {
       />
       <span className="flex-1">{item.label}</span>
       {item.badge && (
-        <span className="flex h-4 min-w-[16px] items-center justify-center rounded-full bg-primary px-1 text-[9px] font-bold text-primary-foreground">
+        <span className="flex h-4 min-w-[16px] items-center justify-center rounded-full bg-primary px-1 text-caption font-bold text-primary-foreground">
           {item.badge}
         </span>
       )}
@@ -135,11 +135,16 @@ function NavItemLink({ item, active }: { item: NavItem; active: boolean }) {
 export function MemberSidebar({ demo = false, mobile = false }: { demo?: boolean; mobile?: boolean }) {
   const { signOut, user } = useAuth();
   const demoStore = useDemoMemberStoreOptional();
-  const liveUnread = useQuery(
+  const liveNotifUnread = useQuery(
     api.notifications.mutations.unreadCount,
     !demo && user ? {} : 'skip',
   );
-  const unread = demo && demoStore ? demoStore.metrics.unread : (liveUnread ?? 0);
+  const liveDmUnread = useQuery(
+    api.messaging.mutations.unreadCountSubscriber,
+    !demo && user ? {} : 'skip',
+  );
+  const notifUnread = demo && demoStore ? demoStore.metrics.unread : (liveNotifUnread ?? 0);
+  const dmUnread = demo ? 0 : (liveDmUnread ?? 0);
   const location = useLocation();
   const navigate = useNavigate();
   const pathname = location.pathname;
@@ -148,20 +153,26 @@ export function MemberSidebar({ demo = false, mobile = false }: { demo?: boolean
 
   const handleSignOut = async () => {
     if (demo) { navigate('/'); return; }
-    await signOut();
+    // Leave the protected shell first so role-clear during logout cannot flash /select-role.
     navigate('/');
+    await signOut();
   };
 
-  const withBadge = (item: NavItem): NavItem =>
-    item.href.endsWith('/notifications') && unread > 0
-      ? { ...item, badge: unread > 9 ? '9+' : String(unread) }
-      : item;
+  const withBadge = (item: NavItem): NavItem => {
+    if (item.href.endsWith('/notifications') && notifUnread > 0) {
+      return { ...item, badge: notifUnread > 9 ? '9+' : String(notifUnread) };
+    }
+    if (item.href.endsWith('/messages') && dmUnread > 0) {
+      return { ...item, badge: dmUnread > 9 ? '9+' : String(dmUnread) };
+    }
+    return item;
+  };
 
   return (
-    <aside className={mobile ? 'flex h-full min-h-0 w-full flex-col bg-card' : 'hidden md:flex w-[220px] flex-col border-r border-border bg-card/80 backdrop-blur-sm'}>
+    <aside className={mobile ? 'flex h-full min-h-0 w-full flex-col bg-card' : 'hidden md:flex h-full w-[220px] shrink-0 flex-col border-r border-border bg-card'}>
       {!mobile && (
         <div className="px-5 py-5">
-          <WizzletLogo size="md" />
+          <PrizeletLogo size="md" linkTo={baseRoute} />
         </div>
       )}
 
@@ -185,14 +196,14 @@ export function MemberSidebar({ demo = false, mobile = false }: { demo?: boolean
       <div className="shrink-0 px-3 py-4 border-t border-border space-y-2">
         {!demo && <RoleSwitcher />}
         <div className="flex items-center justify-between px-3">
-          <span className="text-[11px] text-muted-foreground">Theme</span>
+          <span className="text-caption text-muted-foreground">Theme</span>
           <ThemeToggle />
         </div>
 
         <Button
           variant="ghost"
           size="sm"
-          className="w-full justify-start text-muted-foreground hover:text-foreground text-[13px]"
+          className="w-full justify-start text-muted-foreground hover:text-foreground text-ui"
           onClick={handleSignOut}
         >
           <LogOut className="mr-2 h-3.5 w-3.5" />

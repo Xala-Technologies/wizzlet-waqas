@@ -1,11 +1,17 @@
-import { useState } from 'react';
-import { WizzletLogo } from '@/components/WizzletLogo';
-import { Seo } from '@/components/Seo';
-import { Navigate, useNavigate } from 'react-router-dom';
+import { useEffect, useState } from 'react';
+import { Navigate, useNavigate, useSearchParams } from 'react-router-dom';
 import { useMutation } from 'convex/react';
 import { useAuth } from '@/contexts/AuthContext';
+import { AuthShell } from '@/components/auth/AuthShell';
+import { Button } from '@/components/ui/button';
 import { api } from '@convex/_generated/api';
-import { homePathForRole } from '@/lib/roles';
+import {
+  clearStoredReturnTo,
+  postAuthDestination,
+  postRoleSelectDestination,
+  readStoredReturnTo,
+  sanitizeReturnPath,
+} from '@/lib/safeReturnPath';
 import { Crown, Users, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -16,34 +22,58 @@ const SelectRole = () => {
     role: activeRole,
     roles: heldRoles,
     roleLoading,
+    signingOut,
     acceptAssignedRole,
     clearDevBypass,
     refreshRole,
   } = useAuth();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const returnTo =
+    sanitizeReturnPath(searchParams.get('returnTo')) ?? readStoredReturnTo();
   const [selected, setSelected] = useState<'creator' | 'subscriber' | null>(null);
   const [saving, setSaving] = useState(false);
   const assignSelfRole = useMutation(api.roles.mutations.assignSelfRole);
 
+  const alreadyHasRoles = heldRoles.length > 0;
+
+  useEffect(() => {
+    if (alreadyHasRoles) clearStoredReturnTo();
+  }, [alreadyHasRoles]);
+
+  if (signingOut) {
+    return <Navigate to="/" replace />;
+  }
+
   if (loading || roleLoading) {
     return (
-      <main id="main-content" className="min-h-screen flex items-center justify-center px-4">
+      <main id="main-content" className="min-h-screen flex items-center justify-center px-4 bg-background">
         <Loader2 className="h-6 w-6 animate-spin text-primary" />
       </main>
     );
   }
 
   if (!user) {
-    return <Navigate to="/login" replace />;
+    const loginQs = returnTo ? `?returnTo=${encodeURIComponent(returnTo)}` : '';
+    return <Navigate to={`/login${loginQs}`} replace />;
   }
 
   // Cross-device / re-login: already have DB roles — do not force re-pick.
-  if (heldRoles.length > 0) {
-    return <Navigate to={homePathForRole(activeRole)} replace />;
+  if (alreadyHasRoles) {
+    return (
+      <Navigate
+        to={postAuthDestination({
+          roles: heldRoles,
+          preferred: activeRole,
+          returnTo,
+        })}
+        replace
+      />
+    );
   }
 
   const handleContinue = async () => {
-    if (!selected || !user) return;
+    if (!selected || !user || saving) return;
     setSaving(true);
     clearDevBypass();
 
@@ -52,10 +82,16 @@ const SelectRole = () => {
       acceptAssignedRole(selected);
       const active = await refreshRole(selected);
       if (!active) {
-        // Optimistic state still allows ProtectedRoute through.
         toast.message('Role saved — continuing…');
       }
-      navigate(selected === 'creator' ? '/creator/onboarding' : '/dashboard', { replace: true });
+      const held: Array<'creator' | 'subscriber'> = [selected];
+      const dest = postRoleSelectDestination({
+        selected,
+        returnTo,
+        heldRoles: held,
+      });
+      clearStoredReturnTo();
+      navigate(dest, { replace: true });
     } catch {
       toast.error('Failed to set role. Please try again.');
     } finally {
@@ -68,67 +104,70 @@ const SelectRole = () => {
       id: 'creator' as const,
       icon: Crown,
       title: 'Become a Creator',
-      description: 'Share your sports picks, build an audience, and earn from subscriptions.',
+      description: 'Publish premium content, build an audience, and earn from subscriptions.',
     },
     {
       id: 'subscriber' as const,
       icon: Users,
       title: 'Continue as Subscriber',
-      description: 'Follow top creators and access premium sports picks and content.',
+      description: 'Follow top creators and access their premium content.',
     },
   ];
 
   return (
-    <main id="main-content" className="min-h-screen flex items-center justify-center px-4">
-      <Seo title="Choose your role — Wizzlet" description="Choose whether to join Wizzlet as a creator or subscriber." noindex />
-      <div className="w-full max-w-lg">
-        <div className="text-center mb-10">
-          <WizzletLogo size="lg" linkTo="" className="justify-center mb-6" />
-          <h1 className="text-2xl font-bold mt-4">How do you want to use Wizzlet?</h1>
-          <p className="text-sm text-muted-foreground mt-2">You can always change this later</p>
-        </div>
-
-        <div className="grid gap-4">
-          {roleOptions.map((option) => {
-            const Icon = option.icon;
-            return (
+    <AuthShell
+      title="How do you want to use Prizelet?"
+      subtitle="You can always add another role later from your account"
+      seoTitle="Choose your role — Prizelet"
+      seoDescription="Choose whether to join Prizelet as a creator or subscriber."
+      width="lg"
+      logoSize="lg"
+      logoLinkTo=""
+    >
+      <div className="grid gap-4" role="radiogroup" aria-label="Account role">
+        {roleOptions.map((option) => {
+          const Icon = option.icon;
+          const isSelected = selected === option.id;
+          return (
             <button
               key={option.id}
               type="button"
+              role="radio"
+              aria-checked={isSelected}
               onClick={() => setSelected(option.id)}
               className={`flex items-start gap-4 rounded-xl border p-5 text-left transition-all ${
-                selected === option.id
+                isSelected
                   ? 'border-primary bg-primary/5 ring-1 ring-primary'
                   : 'border-border bg-card hover:border-muted-foreground/30'
               }`}
             >
               <div
                 className={`mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-lg ${
-                  selected === option.id ? 'bg-primary text-primary-foreground' : 'bg-secondary text-muted-foreground'
+                  isSelected ? 'bg-primary text-primary-foreground' : 'bg-secondary text-muted-foreground'
                 }`}
               >
                 <Icon className="h-5 w-5" />
               </div>
               <div>
-                <p className="font-semibold">{option.title}</p>
-                <p className="text-sm text-muted-foreground mt-1">{option.description}</p>
+                <p className="font-semibold text-ui text-foreground">{option.title}</p>
+                <p className="text-support text-muted-foreground mt-1">{option.description}</p>
               </div>
             </button>
-            );
-          })}
-        </div>
-
-        <button
-          type="button"
-          onClick={() => void handleContinue()}
-          disabled={!selected || saving || loading}
-          className="mt-6 w-full rounded-lg bg-primary px-4 py-3 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed"
-        >
-          {saving && <Loader2 className="mr-2 inline h-4 w-4 animate-spin" />}
-          Continue
-        </button>
+          );
+        })}
       </div>
-    </main>
+
+      <Button
+        type="button"
+        variant="default"
+        className="mt-6 w-full h-11"
+        onClick={() => void handleContinue()}
+        disabled={!selected || saving || loading}
+      >
+        {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+        Continue
+      </Button>
+    </AuthShell>
   );
 };
 

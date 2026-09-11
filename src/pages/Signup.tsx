@@ -1,6 +1,4 @@
 import { useState } from 'react';
-import { WizzletLogo } from '@/components/WizzletLogo';
-import { Seo } from '@/components/Seo';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -9,16 +7,19 @@ import { useAuthActions } from '@convex-dev/auth/react';
 import { useMutation } from 'convex/react';
 import { api } from '@convex/_generated/api';
 import { useAuth } from '@/contexts/AuthContext';
+import { AuthShell } from '@/components/auth/AuthShell';
+import { SocialAuthSection } from '@/components/auth/SocialAuthButtons';
 import { ACTIVE_ROLE_STORAGE_KEY } from '@/lib/roles';
 import { useConvexAuthReady, waitForAuthenticated, withAuthRetry } from '@/lib/authSession';
-import { Loader2 } from 'lucide-react';
+import { sanitizeReturnPath, storeReturnTo } from '@/lib/safeReturnPath';
+import { Eye, EyeOff, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
-import { SocialAuthSection } from '@/components/auth/SocialAuthButtons';
 
 const Signup = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const referralCode = (searchParams.get('ref') ?? '').trim();
+  const returnTo = sanitizeReturnPath(searchParams.get('returnTo'));
   const { signIn } = useAuthActions();
   const { clearDevBypass } = useAuth();
   const authReady = useConvexAuthReady();
@@ -27,10 +28,12 @@ const Signup = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [username, setUsername] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
 
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (loading) return;
     if (password.length < 8) {
       toast.error('Password must be at least 8 characters');
       return;
@@ -69,8 +72,12 @@ const Signup = () => {
       } catch {
         /* ignore */
       }
+      if (returnTo) storeReturnTo(returnTo);
       toast.success('Account created!');
-      navigate('/select-role', { replace: true });
+      const roleHref = returnTo
+        ? `/select-role?returnTo=${encodeURIComponent(returnTo)}`
+        : '/select-role';
+      navigate(roleHref, { replace: true });
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Sign up failed');
     } finally {
@@ -78,46 +85,101 @@ const Signup = () => {
     }
   };
 
+  const loginHref = returnTo
+    ? `/login?returnTo=${encodeURIComponent(returnTo)}`
+    : '/login';
+
   return (
-    <main id="main-content" className="min-h-screen flex items-center justify-center px-4 bg-background">
-      <Seo title="Create your Wizzlet account" description="Join the Wizzlet private network — create an account to follow creators or apply as a creator." noindex />
-      <div className="w-full max-w-[380px]">
-        <div className="text-center mb-10">
-          <WizzletLogo size="md" className="justify-center mb-8" />
-          <h1 className="text-xl font-bold tracking-tight mt-4 text-foreground">Create your account</h1>
-          <p className="text-[13px] text-muted-foreground mt-1.5">Start monetizing your expertise</p>
-          {referralCode ? (
-            <p className="text-[12px] text-primary mt-2">Referred via code {referralCode}</p>
-          ) : null}
-        </div>
-
-        <form onSubmit={(e) => void handleSignup(e)} className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="username" className="text-[13px]">Username</Label>
-            <Input id="username" placeholder="Choose a username" value={username} onChange={(e) => setUsername(e.target.value)} required className="bg-card border-border h-10" />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="email" className="text-[13px]">Email</Label>
-            <Input id="email" type="email" placeholder="you@example.com" value={email} onChange={(e) => setEmail(e.target.value)} required className="bg-card border-border h-10" />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="password" className="text-[13px]">Password</Label>
-            <Input id="password" type="password" placeholder="••••••••" value={password} onChange={(e) => setPassword(e.target.value)} required className="bg-card border-border h-10" />
-          </div>
-          <Button type="submit" variant="default" className="w-full" disabled={loading}>
-            {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-            Create account
-          </Button>
-        </form>
-
-        <SocialAuthSection redirectTo="/auth/callback" mode="signup" />
-
-        <p className="text-center text-[13px] text-muted-foreground mt-8">
+    <AuthShell
+      title="Create your account"
+      subtitle="Start monetizing your expertise"
+      seoTitle="Create your Prizelet account"
+      seoDescription="Join the Prizelet private network — create an account to follow creators or apply as a creator."
+      banner={
+        referralCode ? (
+          <p className="text-support text-primary mt-2">Referred via code {referralCode}</p>
+        ) : null
+      }
+      footer={
+        <p className="text-center text-support text-muted-foreground mt-8">
           Already have an account?{' '}
-          <Link to="/login" className="text-primary hover:underline font-medium">Sign in</Link>
+          <Link to={loginHref} className="text-primary hover:underline font-medium">
+            Sign in
+          </Link>
         </p>
-      </div>
-    </main>
+      }
+    >
+      <form onSubmit={(e) => void handleSignup(e)} className="space-y-4">
+        <div className="space-y-2">
+          <Label htmlFor="username" className="text-support">
+            Username
+          </Label>
+          <Input
+            id="username"
+            name="username"
+            autoComplete="username"
+            placeholder="Choose a username"
+            value={username}
+            onChange={(e) => setUsername(e.target.value)}
+            required
+            disabled={loading}
+            className="bg-card border-border h-11 text-ui"
+          />
+        </div>
+        <div className="space-y-2">
+          <Label htmlFor="email" className="text-support">
+            Email
+          </Label>
+          <Input
+            id="email"
+            name="email"
+            type="email"
+            autoComplete="email"
+            placeholder="you@example.com"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            required
+            disabled={loading}
+            className="bg-card border-border h-11 text-ui"
+          />
+        </div>
+        <div className="space-y-2">
+          <Label htmlFor="password" className="text-support">
+            Password
+          </Label>
+          <div className="relative">
+            <Input
+              id="password"
+              name="password"
+              type={showPassword ? 'text' : 'password'}
+              autoComplete="new-password"
+              placeholder="••••••••"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
+              disabled={loading}
+              minLength={8}
+              className="bg-card border-border h-11 text-ui pr-11"
+            />
+            <button
+              type="button"
+              className="absolute right-0 top-0 inline-flex h-11 w-11 items-center justify-center text-muted-foreground hover:text-foreground"
+              aria-label={showPassword ? 'Hide password' : 'Show password'}
+              onClick={() => setShowPassword((v) => !v)}
+            >
+              {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+            </button>
+          </div>
+          <p className="text-caption text-muted-foreground">At least 8 characters</p>
+        </div>
+        <Button type="submit" variant="default" className="w-full h-11" disabled={loading}>
+          {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+          Create account
+        </Button>
+      </form>
+
+      <SocialAuthSection redirectTo="/auth/callback" mode="signup" returnTo={returnTo} />
+    </AuthShell>
   );
 };
 

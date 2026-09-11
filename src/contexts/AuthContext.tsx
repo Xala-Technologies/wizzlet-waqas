@@ -9,6 +9,7 @@ import {
   isAppRole,
   resolveActiveRole,
 } from '@/lib/roles';
+import { safeGetItem, safeRemoveItem, safeSetItem } from '@/lib/safeStorage';
 
 const DEV_BYPASS_ALLOWED = import.meta.env.DEV;
 
@@ -30,6 +31,8 @@ interface AuthContextType {
   acceptAssignedRole: (role: AppRole) => void;
   clearDevBypass: () => void;
   signOut: () => Promise<void>;
+  /** True while Convex sign-out is in flight — avoid treating empty roles as “new user”. */
+  signingOut: boolean;
   /** Wait until `me.roles` includes `expectRole` (or any role if omitted). Returns active role. */
   refreshRole: (expectRole?: AppRole) => Promise<AppRole | null>;
   devMode: boolean;
@@ -49,6 +52,7 @@ const AuthContext = createContext<AuthContextType>({
   acceptAssignedRole: () => {},
   clearDevBypass: () => {},
   signOut: async () => {},
+  signingOut: false,
   refreshRole: async () => null,
   devMode: false,
   setDevRole: () => {},
@@ -58,21 +62,13 @@ const AuthContext = createContext<AuthContextType>({
 export const useAuth = () => useContext(AuthContext);
 
 function readStoredRole(): AppRole | null {
-  try {
-    const stored = localStorage.getItem(ACTIVE_ROLE_STORAGE_KEY);
-    return isAppRole(stored) ? stored : null;
-  } catch {
-    return null;
-  }
+  const stored = safeGetItem(ACTIVE_ROLE_STORAGE_KEY);
+  return isAppRole(stored) ? stored : null;
 }
 
 function persistRole(role: AppRole | null) {
-  try {
-    if (role) localStorage.setItem(ACTIVE_ROLE_STORAGE_KEY, role);
-    else localStorage.removeItem(ACTIVE_ROLE_STORAGE_KEY);
-  } catch {
-    /* ignore */
-  }
+  if (role) safeSetItem(ACTIVE_ROLE_STORAGE_KEY, role);
+  else safeRemoveItem(ACTIVE_ROLE_STORAGE_KEY);
 }
 
 function AuthProviderInner({ children }: { children: ReactNode }) {
@@ -87,6 +83,7 @@ function AuthProviderInner({ children }: { children: ReactNode }) {
   const [roleLoading, setRoleLoading] = useState(true);
   const [devMode, setDevMode] = useState(false);
   const [ensured, setEnsured] = useState(false);
+  const [signingOut, setSigningOut] = useState(false);
 
   // Sync profile + roles from Convex
   useEffect(() => {
@@ -198,12 +195,18 @@ function AuthProviderInner({ children }: { children: ReactNode }) {
   );
 
   const signOut = async () => {
+    // Mark first so ProtectedRoute does not treat cleared/stale roles as “pick a role”.
+    setSigningOut(true);
     setDevMode(false);
     persistRole(null);
     resetAnalyticsUser();
-    setRole(null);
-    setRoles([]);
-    await convexSignOut();
+    try {
+      await convexSignOut();
+    } finally {
+      setRole(null);
+      setRoles([]);
+      setSigningOut(false);
+    }
   };
 
   const loading = convexAuthLoading || (isAuthenticated && me === undefined);
@@ -222,6 +225,7 @@ function AuthProviderInner({ children }: { children: ReactNode }) {
         acceptAssignedRole,
         clearDevBypass,
         signOut,
+        signingOut,
         refreshRole,
         devMode: DEV_BYPASS_ALLOWED && devMode,
         setDevRole,

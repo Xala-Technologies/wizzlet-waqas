@@ -8,6 +8,7 @@ import {
   payoutDocValidator,
 } from "../lib/validators";
 import { adminTakeNewest } from "../lib/adminLists";
+import { notifyAdmins, previewBody } from "../lib/notify";
 
 export const listMine = query({
   args: {},
@@ -196,6 +197,16 @@ export const requestPayout = mutation({
       body: `Payout request for $${(args.amountCents / 100).toFixed(2)} via ${(args.method ?? settings?.method ?? "default").replace(/_/g, " ")}.`,
       read: false,
       createdAt: now,
+    });
+
+    const creatorLabel = creator.displayName ?? creator.username;
+    await notifyAdmins(ctx, {
+      type: "payout_request",
+      title: `Payout request from ${creatorLabel}`,
+      description: previewBody(
+        `$${(args.amountCents / 100).toFixed(2)} via ${(args.method ?? settings?.method ?? "default").replace(/_/g, " ")}`,
+      ),
+      link: "/admin/payouts",
     });
 
     return payoutId;

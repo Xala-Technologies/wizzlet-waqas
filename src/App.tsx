@@ -160,6 +160,7 @@ const App = () => (
             <Route path="/creator/access-control" element={<ProtectedRoute allowedRoles={['creator']}><CreatorAccessControl /></ProtectedRoute>} />
             <Route path="/creator/performance-tracker" element={<ProtectedRoute allowedRoles={['creator']}><CreatorPerformanceTracker /></ProtectedRoute>} />
             <Route path="/creator/messages" element={<ProtectedRoute allowedRoles={['creator']}><CreatorMessages /></ProtectedRoute>} />
+            <Route path="/creator/notifications" element={<ProtectedRoute allowedRoles={['creator']}><CustomerNotifications /></ProtectedRoute>} />
             <Route path="/creator/links" element={<ProtectedRoute allowedRoles={['creator']}><CreatorLinks /></ProtectedRoute>} />
             <Route path="/creator/referrals" element={<ProtectedRoute allowedRoles={['creator']}><CreatorReferrals /></ProtectedRoute>} />
             <Route path="/creator/earnings" element={<ProtectedRoute allowedRoles={['creator']}><CreatorEarnings /></ProtectedRoute>} />
@@ -179,6 +180,7 @@ const App = () => (
             <Route path="/admin/resolution-cases" element={<ProtectedRoute allowedRoles={['admin']}><AdminResolutionCases /></ProtectedRoute>} />
             <Route path="/admin/payouts" element={<ProtectedRoute allowedRoles={['admin']}><AdminPayouts /></ProtectedRoute>} />
             <Route path="/admin/alerts" element={<ProtectedRoute allowedRoles={['admin']}><AdminAlerts /></ProtectedRoute>} />
+            <Route path="/admin/notifications" element={<ProtectedRoute allowedRoles={['admin']}><CustomerNotifications /></ProtectedRoute>} />
             <Route path="/admin/reports" element={<ProtectedRoute allowedRoles={['admin']}><AdminReports /></ProtectedRoute>} />
             <Route path="/admin/settings" element={<ProtectedRoute allowedRoles={['admin']}><AdminSettings /></ProtectedRoute>} />
             <Route path="/subscription/success" element={<SubscriptionSuccess />} />

@@ -5,6 +5,7 @@ import { mapConvexSportEvent, SPORT_ICONS, formatEventTime, todayBoundsMs, type 
 import { useMemo } from 'react';
 import { useQuery } from 'convex/react';
 import { api } from '../../../convex/_generated/api';
+import { LandingSection } from '@/components/landing/LandingSection';
 
 const statusConfig: Record<EventStatus, { label: string; class: string; icon: typeof Zap }> = {
   featured: { label: 'Featured', class: 'bg-primary/15 text-primary border-primary/20', icon: Star },
@@ -23,9 +24,9 @@ function EventCard({ event }: { event: SportEvent }) {
       <div className="flex items-center justify-between mb-3">
         <div className="flex items-center gap-1.5">
           <span className="text-sm">{sportIcon}</span>
-          <span className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider">{event.league}</span>
+          <span className="text-caption font-medium text-muted-foreground uppercase tracking-wider">{event.league}</span>
         </div>
-        <span className={`inline-flex items-center gap-1 text-[9px] font-semibold uppercase tracking-wider rounded-full px-2 py-0.5 border ${cfg.class}`}>
+        <span className={`inline-flex items-center gap-1 text-caption font-semibold uppercase tracking-wider rounded-full px-2 py-0.5 border ${cfg.class}`}>
           {event.status === 'featured' && <Star className="h-2.5 w-2.5" />}
           {event.status === 'starting_soon' && <Zap className="h-2.5 w-2.5" />}
           {event.status === 'trending' && <Flame className="h-2.5 w-2.5" />}
@@ -36,21 +37,21 @@ function EventCard({ event }: { event: SportEvent }) {
       <div className="space-y-1.5 mb-3">
         <div className="flex items-center justify-between">
           <span className="text-sm font-semibold truncate flex-1">{event.homeTeam}</span>
-          {event.homeOdds && <span className="text-[10px] font-mono text-muted-foreground bg-muted/50 rounded px-1.5 py-0.5 ml-2">{event.homeOdds.toFixed(2)}</span>}
+          {event.homeOdds && <span className="text-caption font-mono text-muted-foreground bg-muted/50 rounded px-1.5 py-0.5 ml-2">{event.homeOdds.toFixed(2)}</span>}
         </div>
         <div className="flex items-center gap-2">
-          <span className="text-[9px] text-muted-foreground/50 uppercase tracking-widest">vs</span>
-          {event.drawOdds && <span className="text-[9px] font-mono text-muted-foreground/40">Draw {event.drawOdds.toFixed(2)}</span>}
+          <span className="text-caption text-muted-foreground/50 uppercase tracking-widest">vs</span>
+          {event.drawOdds && <span className="text-caption font-mono text-muted-foreground/40">Draw {event.drawOdds.toFixed(2)}</span>}
         </div>
         <div className="flex items-center justify-between">
           <span className="text-sm font-semibold truncate flex-1">{event.awayTeam}</span>
-          {event.awayOdds && <span className="text-[10px] font-mono text-muted-foreground bg-muted/50 rounded px-1.5 py-0.5 ml-2">{event.awayOdds.toFixed(2)}</span>}
+          {event.awayOdds && <span className="text-caption font-mono text-muted-foreground bg-muted/50 rounded px-1.5 py-0.5 ml-2">{event.awayOdds.toFixed(2)}</span>}
         </div>
       </div>
 
       <div className="flex items-center justify-between pt-2 border-t border-border/50">
-        <span className="text-[10px] text-muted-foreground">Today</span>
-        <span className="text-xs font-medium">{formatEventTime(event.startTime)}</span>
+        <span className="text-caption text-muted-foreground">Today</span>
+        <span className="text-caption font-medium">{formatEventTime(event.startTime)}</span>
       </div>
     </div>
   );
@@ -65,12 +66,11 @@ export function TodaysEventsSection() {
   );
 
   return (
-    <section className="py-24 relative overflow-hidden">
-      <div className="absolute inset-0 bg-gradient-to-b from-transparent via-primary/[0.02] to-transparent" />
+    <LandingSection className="overflow-hidden">
       <div className="container relative">
         <div className="flex items-end justify-between mb-10">
           <div>
-            <div className="inline-flex items-center gap-2 text-primary text-xs font-semibold uppercase tracking-widest mb-3">
+            <div className="inline-flex items-center gap-2 text-primary text-caption font-semibold uppercase tracking-widest mb-3">
               <Zap className="h-3.5 w-3.5" />
               Live Today
             </div>
@@ -78,7 +78,7 @@ export function TodaysEventsSection() {
             <p className="text-muted-foreground mt-2 max-w-md">See what's happening today across the biggest sports.</p>
           </div>
           <Link to="/todays-events" className="hidden sm:flex">
-            <Button variant="outline" size="sm" className="gap-1.5 text-xs">
+            <Button variant="outline" size="sm" className="gap-1.5 text-caption">
               View All <ArrowRight className="h-3 w-3" />
             </Button>
           </Link>
@@ -106,6 +106,6 @@ export function TodaysEventsSection() {
           </Link>
         </div>
       </div>
-    </section>
+    </LandingSection>
   );
 }

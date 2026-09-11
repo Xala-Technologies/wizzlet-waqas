@@ -41,6 +41,8 @@ export default defineSchema({
     externalAuthId: v.optional(v.string()),
     fullName: v.optional(v.string()),
     username: v.optional(v.string()),
+    /** Optional bio copied from social profile (e.g. X description) for onboarding prefills. */
+    bio: v.optional(v.string()),
     discordId: v.optional(v.string()),
     discordUsername: v.optional(v.string()),
     stripeCustomerId: v.optional(v.string()),
@@ -63,6 +65,7 @@ export default defineSchema({
   })
     .index("by_userId", ["userId"])
     .index("by_userId_role", ["userId", "role"])
+    .index("by_role", ["role"])
     .index("by_legacyId", ["legacyId"]),
 
   creators: defineTable({
@@ -384,6 +387,8 @@ export default defineSchema({
     caseId: v.id("resolutionCases"),
     senderRole: v.string(),
     body: v.string(),
+    /** Optional for legacy rows; treat missing as unread. */
+    read: v.optional(v.boolean()),
     createdAt: v.number(),
   })
     .index("by_caseId", ["caseId"])
@@ -399,6 +404,7 @@ export default defineSchema({
     createdAt: v.number(),
   })
     .index("by_creatorId", ["creatorId"])
+    .index("by_channel", ["channel"])
     .index("by_legacyId", ["legacyId"]),
 
   platformSettings: defineTable({

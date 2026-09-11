@@ -1,4 +1,4 @@
-# Release manifest — Wizzlet Convex stabilization
+# Release manifest — Prizelet Convex stabilization
 
 | Field | Value |
 |-------|--------|

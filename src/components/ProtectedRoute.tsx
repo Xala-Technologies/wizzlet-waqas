@@ -3,6 +3,7 @@ import { Navigate, useLocation } from 'react-router-dom';
 import { useQuery } from 'convex/react';
 import { useAuth } from '@/contexts/AuthContext';
 import { AppRole, homePathForRole } from '@/lib/roles';
+import { buildLoginHref } from '@/lib/safeReturnPath';
 import { api } from '@convex/_generated/api';
 import { Loader2 } from 'lucide-react';
 
@@ -18,13 +19,16 @@ const Spinner = () => (
 );
 
 export function ProtectedRoute({ children, allowedRoles }: ProtectedRouteProps) {
-  const { user, role, roles, loading, roleLoading, switchRole } = useAuth();
+  const { user, role, roles, loading, roleLoading, signingOut, switchRole } = useAuth();
   const location = useLocation();
 
   const grantedRole = allowedRoles?.find((r) => roles.includes(r)) ?? null;
 
   const needsCreatorProfile =
-    !!user && allowedRoles?.includes('creator') === true && location.pathname !== '/creator/onboarding';
+    !!user &&
+    !signingOut &&
+    allowedRoles?.includes('creator') === true &&
+    location.pathname !== '/creator/onboarding';
 
   const creatorProfile = useQuery(
     api.creators.queries.myCreator,
@@ -35,10 +39,15 @@ export function ProtectedRoute({ children, allowedRoles }: ProtectedRouteProps) 
     if (grantedRole && role !== grantedRole) switchRole(grantedRole);
   }, [grantedRole, role, switchRole]);
 
+  // Leave protected UI immediately on sign-out — do not flash /select-role.
+  if (signingOut) {
+    return <Navigate to="/" replace />;
+  }
+
   if (loading || roleLoading) return <Spinner />;
 
   if (!user) {
-    return <Navigate to="/login" replace />;
+    return <Navigate to={buildLoginHref(location.pathname, location.search)} replace />;
   }
 
   // Always enforce DB-held roles (no DEV UI bypass).

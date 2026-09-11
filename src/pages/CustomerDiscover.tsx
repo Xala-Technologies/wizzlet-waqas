@@ -5,11 +5,12 @@ import { DashboardLayout } from '@/components/dashboard/DashboardLayout';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Skeleton } from '@/components/ui/skeleton';
-import { TrendingUp, Users, Search, Bookmark, FileText, Loader2 } from 'lucide-react';
+import { Users, Search, Bookmark, FileText, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAuth } from '@/contexts/AuthContext';
 import { api } from '@convex/_generated/api';
 import type { Id } from '@convex/_generated/dataModel';
+import { segmentedItemClassName, segmentedTrackClassName } from '@/lib/segmentedControl';
 
 const PAGE_SIZE = 24;
 
@@ -27,9 +28,9 @@ interface CreatorRow {
 type SortKey = 'popular' | 'newest' | 'price';
 
 const sortOptions: { key: SortKey; label: string }[] = [
-  { key: 'popular', label: 'Most Active' },
+  { key: 'popular', label: 'Most active' },
   { key: 'newest', label: 'Newest' },
-  { key: 'price', label: 'Lowest Price' },
+  { key: 'price', label: 'Lowest list price' },
 ];
 
 const CustomerDiscover = () => {
@@ -112,10 +113,13 @@ const CustomerDiscover = () => {
 
   return (
     <DashboardLayout type="member">
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold">Discover Creators</h1>
-        <p className="text-muted-foreground text-sm mt-0.5">Find creators to subscribe to</p>
-      </div>
+      <header className="mb-6">
+        <h1 className="text-heading font-bold text-foreground">Discover creators</h1>
+        <p className="text-support text-muted-foreground mt-0.5">
+          Browse published creators. List price is a featured monthly signal — product tiers are on
+          each profile.
+        </p>
+      </header>
 
       <div className="flex flex-col gap-3 mb-6 sm:flex-row sm:flex-wrap sm:items-center">
         <div className="relative w-full sm:flex-1 sm:min-w-0 sm:max-w-md">
@@ -124,19 +128,22 @@ const CustomerDiscover = () => {
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder="Search creators"
-            className="pl-9 h-11 sm:h-9 text-sm w-full"
+            className="pl-9 h-11 min-h-11 text-ui w-full"
             aria-label="Search creators"
           />
         </div>
-        <div className="flex flex-wrap gap-1.5 w-full sm:w-auto">
+        <div
+          className={`${segmentedTrackClassName} w-full sm:w-auto`}
+          role="group"
+          aria-label="Sort creators"
+        >
           {sortOptions.map((o) => (
             <button
               key={o.key}
               type="button"
               onClick={() => setSort(o.key)}
-              className={`min-h-11 sm:min-h-0 px-3 py-2 sm:py-1.5 rounded-lg text-xs font-medium transition-colors ${
-                sort === o.key ? 'bg-primary/10 text-primary' : 'text-muted-foreground hover:text-foreground hover:bg-muted/60'
-              }`}
+              aria-pressed={sort === o.key}
+              className={segmentedItemClassName(sort === o.key)}
             >
               {o.label}
             </button>
@@ -144,20 +151,27 @@ const CustomerDiscover = () => {
         </div>
       </div>
 
-      <h2 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground mb-3 flex items-center gap-2">
-        <TrendingUp className="h-3.5 w-3.5 text-primary" /> Published Creators
+      <h2 className="text-support font-medium text-muted-foreground mb-3">
+        Published creators
+        {!loading && visible.length > 0 ? (
+          <span className="text-muted-foreground/80"> · {visible.length} shown</span>
+        ) : null}
       </h2>
 
       {loading ? (
-        <div className="space-y-3">
-          {[0, 1, 2].map((i) => <Skeleton key={i} className="h-28 w-full rounded-xl" />)}
+        <div className="space-y-3" aria-busy="true" aria-label="Loading creators">
+          {[0, 1, 2].map((i) => (
+            <Skeleton key={i} className="h-28 w-full rounded-xl" />
+          ))}
         </div>
       ) : visible.length === 0 ? (
-        <div className="rounded-xl border border-dashed border-border bg-card/50 p-12 text-center">
-          <Users className="h-10 w-10 text-muted-foreground/40 mx-auto mb-3" />
-          <h3 className="text-sm font-medium mb-1">No creators found</h3>
-          <p className="text-xs text-muted-foreground">
-            {query ? 'Try a different search term.' : 'New creators appear here as soon as they publish.'}
+        <div className="rounded-xl border border-border bg-card p-10 text-center">
+          <Users className="h-10 w-10 text-muted-foreground mx-auto mb-4" />
+          <h3 className="text-ui font-semibold text-foreground mb-2">No creators found</h3>
+          <p className="text-support text-muted-foreground max-w-sm mx-auto">
+            {query.trim()
+              ? 'Try a different search term.'
+              : 'New creators appear here as soon as they publish.'}
           </p>
         </div>
       ) : (
@@ -165,48 +179,63 @@ const CustomerDiscover = () => {
           {visible.map((c, index) => {
             const name = c.display_name || c.username || 'Creator';
             const bookmarked = Boolean(bookmarks[c.id]);
+            const listPrice =
+              c.monthly_price != null ? `$${Number(c.monthly_price).toFixed(2)}/mo` : '—';
             return (
-              <div key={c.id} className="rounded-xl border border-border bg-card p-5 transition-colors hover:border-primary/20">
-                <div className="flex items-start gap-4">
-                  <div className="flex flex-col items-center gap-1 shrink-0">
-                    <span className="text-xs font-bold text-muted-foreground">#{index + 1}</span>
+              <div
+                key={c.id}
+                className="rounded-xl border border-border bg-card p-4 sm:p-5 transition-colors hover:border-primary/20"
+              >
+                <div className="flex flex-col gap-4 sm:flex-row sm:items-start">
+                  <div className="flex items-center gap-3 sm:flex-col sm:items-center sm:gap-1 shrink-0">
+                    <span className="text-support text-muted-foreground font-medium">#{index + 1}</span>
                     {c.avatar_url ? (
-                      <img src={c.avatar_url} alt={`${name} avatar`} className="h-12 w-12 rounded-full object-cover" />
+                      <img
+                        src={c.avatar_url}
+                        alt=""
+                        className="h-12 w-12 rounded-full object-cover"
+                      />
                     ) : (
-                      <div className="h-12 w-12 rounded-full bg-primary/20 flex items-center justify-center">
-                        <span className="text-lg font-bold text-primary">{name[0]?.toUpperCase()}</span>
+                      <div className="h-12 w-12 rounded-full bg-muted flex items-center justify-center">
+                        <span className="text-ui font-bold text-muted-foreground">
+                          {name[0]?.toUpperCase()}
+                        </span>
                       </div>
                     )}
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="font-semibold text-sm truncate">{name}</p>
-                    {c.username && <p className="text-xs text-muted-foreground mb-2">@{c.username}</p>}
-                    <p className="text-xs text-muted-foreground line-clamp-2 mb-2">{c.bio || 'No bio yet.'}</p>
-                    <span className="flex items-center gap-1 text-[10px] text-muted-foreground">
-                      <FileText className="h-3 w-3" /> {c.postCount} posts published
+                    <p className="text-ui font-semibold text-foreground truncate">{name}</p>
+                    {c.username && (
+                      <p className="text-support text-muted-foreground mb-2">@{c.username}</p>
+                    )}
+                    <p className="text-support text-muted-foreground line-clamp-2 mb-2">
+                      {c.bio || 'No bio yet.'}
+                    </p>
+                    <span className="flex items-center gap-1 text-support text-muted-foreground">
+                      <FileText className="h-3.5 w-3.5" /> {c.postCount} posts published
                     </span>
                   </div>
-                  <div className="flex flex-col items-end gap-2 shrink-0">
-                    <span className="text-sm font-bold text-primary">
-                      ${Number(c.monthly_price ?? 0).toFixed(2)}/mo
-                    </span>
-                    <div className="flex items-center gap-1.5">
+                  <div className="flex flex-row sm:flex-col items-center sm:items-end justify-between sm:justify-start gap-2 shrink-0">
+                    <span className="text-ui font-bold text-foreground">{listPrice}</span>
+                    <div className="flex items-center gap-2">
                       {user && (
                         <Button
-                          variant="ghost"
-                          size="icon"
-                          className={`h-7 w-7 ${bookmarked ? 'text-primary' : 'text-muted-foreground'}`}
-                          aria-label={bookmarked ? `Remove ${name} from bookmarks` : `Bookmark ${name}`}
-                          onClick={() => toggleBookmark(c.id)}
+                          type="button"
+                          variant="outline"
+                          className={`min-h-11 min-w-11 px-3 ${bookmarked ? 'text-primary' : ''}`}
+                          aria-label={
+                            bookmarked ? `Remove ${name} from bookmarks` : `Bookmark ${name}`
+                          }
+                          onClick={() => void toggleBookmark(c.id)}
                         >
                           <Bookmark className={`h-3.5 w-3.5 ${bookmarked ? 'fill-current' : ''}`} />
                         </Button>
                       )}
-                      {c.username && (
-                        <Link to={`/${c.username}`}>
-                          <Button size="sm" className="h-7 text-xs">View Profile</Button>
-                        </Link>
-                      )}
+                      {c.username ? (
+                        <Button className="min-h-11" asChild>
+                          <Link to={`/${c.username}`}>View profile</Link>
+                        </Button>
+                      ) : null}
                     </div>
                   </div>
                 </div>
@@ -216,14 +245,17 @@ const CustomerDiscover = () => {
           {canLoadMore && (
             <div className="flex justify-center pt-2">
               <Button
+                type="button"
                 variant="outline"
-                size="sm"
+                className="min-h-11"
                 disabled={creatorsRaw === undefined}
                 onClick={() => {
                   if (creatorsRaw?.continueCursor) setCursor(creatorsRaw.continueCursor);
                 }}
               >
-                {creatorsRaw === undefined ? <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" /> : null}
+                {creatorsRaw === undefined ? (
+                  <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
+                ) : null}
                 Load more
               </Button>
             </div>

@@ -93,7 +93,7 @@ const AdminAlerts = () => {
         <h1 className="text-2xl font-bold">Alerts & Attention Center</h1>
         <p className="text-muted-foreground text-sm mt-0.5">Items requiring your attention right now</p>
         {scanTruncationNote(!!overview?.truncated, overview?.listLimit) && (
-          <p className="text-amber-600 text-xs mt-2">
+          <p className="text-amber-600 text-caption mt-2">
             {scanTruncationNote(!!overview?.truncated, overview?.listLimit)}
           </p>
         )}
@@ -105,15 +105,15 @@ const AdminAlerts = () => {
         <>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
             <div className="rounded-xl border border-destructive/30 bg-destructive/5 p-5">
-              <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1">Critical</p>
+              <p className="text-caption text-muted-foreground uppercase tracking-wider mb-1">Critical</p>
               <p className="text-2xl font-bold text-destructive">{criticalCount}</p>
             </div>
             <div className="rounded-xl border border-amber-500/30 bg-amber-500/5 p-5">
-              <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1">Warnings</p>
+              <p className="text-caption text-muted-foreground uppercase tracking-wider mb-1">Warnings</p>
               <p className="text-2xl font-bold text-amber-500">{warningCount}</p>
             </div>
             <div className="rounded-xl border border-border bg-card p-5">
-              <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1">Info</p>
+              <p className="text-caption text-muted-foreground uppercase tracking-wider mb-1">Info</p>
               <p className="text-2xl font-bold">{infoCount}</p>
             </div>
           </div>
@@ -122,7 +122,7 @@ const AdminAlerts = () => {
             <div className="rounded-xl border border-border bg-card p-12 text-center">
               <CheckCircle2 className="h-10 w-10 text-emerald-400 mx-auto mb-3" />
               <p className="text-sm font-medium">All clear</p>
-              <p className="text-xs text-muted-foreground mt-1">No items need attention right now.</p>
+              <p className="text-caption text-muted-foreground mt-1">No items need attention right now.</p>
             </div>
           ) : (
             <div className="space-y-3">
@@ -134,12 +134,12 @@ const AdminAlerts = () => {
                       <div className="min-w-0">
                         <div className="flex items-center gap-2 mb-1">
                           <p className="text-sm font-semibold">{a.title}</p>
-                          <Badge variant="outline" className={`text-[10px] ${badgeStyles[a.type]}`}>{a.count}</Badge>
+                          <Badge variant="outline" className={`text-caption ${badgeStyles[a.type]}`}>{a.count}</Badge>
                         </div>
-                        <p className="text-xs text-muted-foreground">{a.description}</p>
+                        <p className="text-caption text-muted-foreground">{a.description}</p>
                       </div>
                     </div>
-                    <Button asChild variant="outline" size="sm" className="h-8 text-xs shrink-0">
+                    <Button asChild variant="outline" size="sm" className="h-8 text-caption shrink-0">
                       <Link to={a.link}>{a.linkLabel} <ArrowRight className="ml-1.5 h-3 w-3" /></Link>
                     </Button>
                   </div>

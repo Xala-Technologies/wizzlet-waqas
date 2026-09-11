@@ -2,7 +2,7 @@
 
 ## Product
 
-Wizzlet is a **creator / subscriber / admin** SaaS for sports picks and subscriptions. Not multi-tenant org SaaS. Actors: anonymous visitor, authenticated subscriber, creator, admin.
+Prizelet is a **creator / subscriber / admin** SaaS for sports picks and subscriptions. Not multi-tenant org SaaS. Actors: anonymous visitor, authenticated subscriber, creator, admin.
 
 ## Entry points
 

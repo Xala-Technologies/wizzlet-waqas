@@ -4,6 +4,11 @@ import { ConvexError, v } from "convex/values";
 import { getCreatorForUser, requireAppUser, hasActiveSubscription } from "../lib/auth";
 import { canSendDirectMessage } from "../lib/messagingAccess";
 import { directMessageDocValidator } from "../lib/validators";
+import {
+  createNotification,
+  markNotificationsReadByLink,
+  previewBody,
+} from "../lib/notify";
 
 export const listThread = query({
   args: {
@@ -53,18 +58,45 @@ export const send = mutation({
       subscriberHasActiveSub,
       body: args.body,
     });
-    if (!decision.ok) {
+    if (decision.ok === false) {
       throw new ConvexError(decision.reason);
     }
 
-    return ctx.db.insert("directMessages", {
+    const body = args.body.trim();
+    const id = await ctx.db.insert("directMessages", {
       creatorId: args.creatorId,
       subscriberId: args.subscriberId,
       senderRole: args.senderRole,
-      body: args.body.trim(),
+      body,
       read: false,
       createdAt: Date.now(),
     });
+
+    const creatorLabel = creator.displayName ?? creator.username;
+    const senderLabel =
+      args.senderRole === "creator"
+        ? creatorLabel
+        : (user.fullName ?? user.username ?? user.name ?? "A subscriber");
+
+    if (args.senderRole === "subscriber") {
+      await createNotification(ctx, {
+        userId: creator.userId,
+        type: "message",
+        title: `New message from ${senderLabel}`,
+        description: previewBody(body),
+        link: `/creator/messages?subscriberId=${args.subscriberId}`,
+      });
+    } else {
+      await createNotification(ctx, {
+        userId: args.subscriberId,
+        type: "message",
+        title: `New message from ${creatorLabel}`,
+        description: previewBody(body),
+        link: `/dashboard/messages?creatorId=${args.creatorId}`,
+      });
+    }
+
+    return id;
   },
 });
 
@@ -102,6 +134,38 @@ export const myCreatorInboxPage = query({
   },
 });
 
+/** Unread DM count for the signed-in creator (subscriber → creator). */
+export const unreadCountCreator = query({
+  args: {},
+  returns: v.number(),
+  handler: async (ctx) => {
+    const user = await requireAppUser(ctx);
+    const creator = await getCreatorForUser(ctx, user._id);
+    if (!creator) return 0;
+    const rows = await ctx.db
+      .query("directMessages")
+      .withIndex("by_creatorId", (q) => q.eq("creatorId", creator._id))
+      .order("desc")
+      .take(500);
+    return rows.filter((m) => m.senderRole === "subscriber" && !m.read).length;
+  },
+});
+
+/** Unread DM count for the signed-in subscriber (creator → subscriber). */
+export const unreadCountSubscriber = query({
+  args: {},
+  returns: v.number(),
+  handler: async (ctx) => {
+    const user = await requireAppUser(ctx);
+    const rows = await ctx.db
+      .query("directMessages")
+      .withIndex("by_subscriberId", (q) => q.eq("subscriberId", user._id))
+      .order("desc")
+      .take(500);
+    return rows.filter((m) => m.senderRole === "creator" && !m.read).length;
+  },
+});
+
 /** Creator marks subscriber messages as read when opening a thread. */
 export const markReadCreator = mutation({
   args: {
@@ -113,12 +177,20 @@ export const markReadCreator = mutation({
     const creator = await getCreatorForUser(ctx, user._id);
     if (!creator) throw new ConvexError("NOT_FOUND");
     let updated = 0;
+    const subscriberIds = new Set<string>();
     for (const id of args.messageIds) {
       const msg = await ctx.db.get(id);
       if (!msg || msg.creatorId !== creator._id || msg.read) continue;
       if (msg.senderRole !== "subscriber") continue;
       await ctx.db.patch(id, { read: true });
+      subscriberIds.add(msg.subscriberId);
       updated += 1;
+    }
+    for (const subscriberId of subscriberIds) {
+      await markNotificationsReadByLink(ctx, {
+        userId: user._id,
+        linkIncludes: `subscriberId=${subscriberId}`,
+      });
     }
     return updated;
   },
@@ -133,12 +205,20 @@ export const markReadSubscriber = mutation({
   handler: async (ctx, args) => {
     const user = await requireAppUser(ctx);
     let updated = 0;
+    const creatorIds = new Set<string>();
     for (const id of args.messageIds) {
       const msg = await ctx.db.get(id);
       if (!msg || msg.subscriberId !== user._id || msg.read) continue;
       if (msg.senderRole !== "creator") continue;
       await ctx.db.patch(id, { read: true });
+      creatorIds.add(msg.creatorId);
       updated += 1;
+    }
+    for (const creatorId of creatorIds) {
+      await markNotificationsReadByLink(ctx, {
+        userId: user._id,
+        linkIncludes: `creatorId=${creatorId}`,
+      });
     }
     return updated;
   },

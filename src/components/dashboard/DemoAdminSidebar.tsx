@@ -1,5 +1,5 @@
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { WizzletLogo } from '@/components/WizzletLogo';
+import { PrizeletLogo } from '@/components/PrizeletLogo';
 import { Button } from '@/components/ui/button';
 import { useDemoAdminStore } from '@/components/demo/demoAdminStore';
 import {
@@ -32,7 +32,7 @@ function NavItemLink({ item, active, badge = 0 }: { item: NavItem; active: boole
   return (
     <Link
       to={item.href}
-      className={`group flex items-center gap-3 rounded-lg px-3 py-2 text-[13px] transition-all duration-200 ${
+      className={`group flex items-center gap-3 rounded-lg px-3 py-2 text-ui transition-all duration-200 ${
         active
           ? 'bg-primary/10 text-primary font-medium shadow-[inset_2px_0_0_0_hsl(var(--primary))]'
           : 'text-muted-foreground hover:text-foreground hover:bg-muted/60'
@@ -45,7 +45,7 @@ function NavItemLink({ item, active, badge = 0 }: { item: NavItem; active: boole
       />
       <span className="flex-1">{item.label}</span>
       {badge > 0 && (
-        <span className="rounded-full bg-primary px-1.5 py-0.5 text-[10px] font-semibold leading-none text-primary-foreground">
+        <span className="rounded-full bg-primary px-1.5 py-0.5 text-caption font-semibold leading-none text-primary-foreground">
           {badge}
         </span>
       )}
@@ -65,15 +65,15 @@ export function DemoAdminSidebar({ mobile = false }: { mobile?: boolean } = {}) 
 
 
   return (
-    <aside className={mobile ? 'flex h-full w-full flex-col bg-card' : 'hidden md:flex w-[220px] flex-col border-r border-border bg-card/80 backdrop-blur-sm'}>
+    <aside className={mobile ? 'flex h-full w-full flex-col bg-card' : 'hidden md:flex h-full w-[220px] shrink-0 flex-col border-r border-border bg-card'}>
       <div className="px-5 py-5">
-        <WizzletLogo size="md" />
+        <PrizeletLogo size="md" linkTo="/demo/admin" />
       </div>
 
       <div className="px-5 mb-4">
         <div className="flex items-center gap-2 rounded-lg bg-destructive/10 px-3 py-1.5">
           <Shield className="h-3.5 w-3.5 text-destructive" />
-          <span className="text-[11px] font-medium text-destructive">Admin Panel</span>
+          <span className="text-caption font-medium text-destructive">Admin Panel</span>
         </div>
       </div>
 
@@ -92,7 +92,7 @@ export function DemoAdminSidebar({ mobile = false }: { mobile?: boolean } = {}) 
         <Button
           variant="ghost"
           size="sm"
-          className="w-full justify-start text-muted-foreground hover:text-foreground text-[13px]"
+          className="w-full justify-start text-muted-foreground hover:text-foreground text-ui"
           onClick={() => navigate('/')}
         >
           <LogOut className="mr-2 h-3.5 w-3.5" />

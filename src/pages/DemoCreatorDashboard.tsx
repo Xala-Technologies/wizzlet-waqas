@@ -62,8 +62,8 @@ function Stat({ label, value, icon: Icon, hint }: { label: string; value: string
         <TrendingUp className="h-3 w-3 text-muted-foreground/40" />
       </div>
       <p className="text-2xl font-bold">{value}</p>
-      <p className="text-xs text-muted-foreground mt-1">{label}</p>
-      {hint && <p className="text-[11px] text-muted-foreground/70 mt-1">{hint}</p>}
+      <p className="text-caption text-muted-foreground mt-1">{label}</p>
+      {hint && <p className="text-caption text-muted-foreground/70 mt-1">{hint}</p>}
     </Card>
   );
 }
@@ -94,9 +94,9 @@ function Overview({ store, go }: { store: DemoStore; go: (t: TabKey) => void }) 
         <div className="flex-1">
           <div className="flex items-center gap-2">
             <p className="text-sm font-semibold">Intro fee: {Math.round(metrics.feeRate * 100)}% for your first 30 days</p>
-            <Badge variant="secondary" className="text-[10px] uppercase">Active</Badge>
+            <Badge variant="secondary" className="text-caption uppercase">Active</Badge>
           </div>
-          <p className="text-xs text-muted-foreground mt-0.5">{metrics.introDaysLeft} days remaining before the standard 10% rate applies</p>
+          <p className="text-caption text-muted-foreground mt-0.5">{metrics.introDaysLeft} days remaining before the standard 10% rate applies</p>
           <div className="mt-2.5">
             <div className="h-1.5 rounded-full bg-muted overflow-hidden">
               <div className="h-full rounded-full bg-emerald-500" style={{ width: `${((30 - metrics.introDaysLeft) / 30) * 100}%` }} />
@@ -129,13 +129,13 @@ function Overview({ store, go }: { store: DemoStore; go: (t: TabKey) => void }) 
           {pending > 0 && (
             <button onClick={() => go('content')} className="text-left rounded-xl border border-amber-500/30 bg-amber-500/5 p-4 hover:border-amber-500/50 transition-colors">
               <p className="text-sm font-medium flex items-center gap-2"><AlertTriangle className="h-4 w-4 text-amber-500" /> {pending} pick{pending > 1 ? 's' : ''} awaiting settlement</p>
-              <p className="text-xs text-muted-foreground mt-1">Unsettled picks are excluded from your verified win rate.</p>
+              <p className="text-caption text-muted-foreground mt-1">Unsettled picks are excluded from your verified win rate.</p>
             </button>
           )}
           {metrics.unreadMessages > 0 && (
             <button onClick={() => go('messages')} className="text-left rounded-xl border border-border bg-card p-4 hover:border-primary/30 transition-colors">
               <p className="text-sm font-medium flex items-center gap-2"><MessageSquare className="h-4 w-4 text-primary" /> {metrics.unreadMessages} unread message{metrics.unreadMessages > 1 ? 's' : ''}</p>
-              <p className="text-xs text-muted-foreground mt-1">Fast replies are the single biggest driver of retention.</p>
+              <p className="text-caption text-muted-foreground mt-1">Fast replies are the single biggest driver of retention.</p>
             </button>
           )}
         </div>
@@ -151,25 +151,25 @@ function Overview({ store, go }: { store: DemoStore; go: (t: TabKey) => void }) 
         ]).map(a => (
           <Button key={a.label} variant="outline" className="w-full h-auto py-4 flex-col gap-2" onClick={() => go(a.tab)}>
             <a.icon className="h-5 w-5 text-primary" />
-            <span className="text-xs">{a.label}</span>
+            <span className="text-caption">{a.label}</span>
           </Button>
         ))}
       </div>
 
       <div className="flex items-center justify-between mb-3">
         <h2 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">Recent activity</h2>
-        <Button variant="ghost" size="sm" className="text-xs" onClick={() => go('content')}>View all</Button>
+        <Button variant="ghost" size="sm" className="text-caption" onClick={() => go('content')}>View all</Button>
       </div>
       <div className="space-y-2">
         {state.posts.slice(0, 4).map(post => (
           <div key={post.id} className="flex items-center justify-between gap-4 rounded-xl border border-border bg-card p-4">
             <div className="min-w-0">
               <p className="font-medium text-sm truncate">{post.title}</p>
-              <p className="text-xs text-muted-foreground">
+              <p className="text-caption text-muted-foreground">
                 {post.isPremium ? 'Premium' : 'Free'} · {post.sport} · {format(new Date(post.createdAt), 'MMM d')}
               </p>
             </div>
-            <span className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] font-medium uppercase ${resultStyles[post.result]}`}>{post.result}</span>
+            <span className={`shrink-0 rounded-full px-2 py-0.5 text-caption font-medium uppercase ${resultStyles[post.result]}`}>{post.result}</span>
           </div>
         ))}
       </div>
@@ -207,14 +207,14 @@ function CreatePost({ store, go }: { store: DemoStore; go: (t: TabKey) => void }
       <div className="grid lg:grid-cols-[1fr_280px] gap-5">
         <Card className="space-y-4">
           <div>
-            <Label className="text-xs">Title</Label>
+            <Label className="text-caption">Title</Label>
             <Input className="mt-1" value={title} onChange={e => setTitle(e.target.value)} placeholder="NFL Week 15: my highest-conviction spread" />
           </div>
           <div className="grid sm:grid-cols-2 gap-4">
             <div>
-              <Label className="text-xs">Sport</Label>
+              <Label className="text-caption">Sport</Label>
               <select
-                className="mt-1 h-10 w-full rounded-md border border-input bg-background px-3 text-sm"
+                className="mt-1 h-10 w-full rounded-md border border-input bg-background px-3 text-base md:text-sm"
                 value={sport}
                 onChange={e => setSport(e.target.value)}
               >
@@ -222,28 +222,28 @@ function CreatePost({ store, go }: { store: DemoStore; go: (t: TabKey) => void }
               </select>
             </div>
             <div>
-              <Label className="text-xs">Event / matchup</Label>
+              <Label className="text-caption">Event / matchup</Label>
               <Input className="mt-1" value={event} onChange={e => setEvent(e.target.value)} placeholder="Chiefs vs Bills" />
             </div>
           </div>
           <div className="grid sm:grid-cols-2 gap-4">
             <div>
-              <Label className="text-xs">Odds (American)</Label>
+              <Label className="text-caption">Odds (American)</Label>
               <Input className="mt-1" value={usOdds} onChange={e => setUsOdds(e.target.value)} placeholder="-110" />
-              <p className="text-[11px] text-muted-foreground mt-1">
+              <p className="text-caption text-muted-foreground mt-1">
                 {decimal ? `Decimal (EU): ${decimal.toFixed(2)}` : 'Enter -110 or +150 style odds'}
               </p>
             </div>
             <div>
-              <Label className="text-xs">Units risked</Label>
+              <Label className="text-caption">Units risked</Label>
               <Input className="mt-1" type="number" step="0.5" min="0.5" max="10" value={units} onChange={e => setUnits(e.target.value)} />
-              <p className="text-[11px] text-muted-foreground mt-1">
+              <p className="text-caption text-muted-foreground mt-1">
                 {decimal ? `Returns +${((decimal - 1) * (Number(units) || 0)).toFixed(2)}u on a win` : ' '}
               </p>
             </div>
           </div>
           <div>
-            <Label className="text-xs">Analysis</Label>
+            <Label className="text-caption">Analysis</Label>
             <Textarea className="mt-1 min-h-[120px]" value={content} onChange={e => setContent(e.target.value)} placeholder="Why this play — line movement, injuries, model edge…" />
           </div>
         </Card>
@@ -254,7 +254,7 @@ function CreatePost({ store, go }: { store: DemoStore; go: (t: TabKey) => void }
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm">Premium only</p>
-                <p className="text-[11px] text-muted-foreground">{isPremium ? 'Locked for non-subscribers' : 'Visible to everyone'}</p>
+                <p className="text-caption text-muted-foreground">{isPremium ? 'Locked for non-subscribers' : 'Visible to everyone'}</p>
               </div>
               <Switch aria-label="Premium only" checked={isPremium} onCheckedChange={setIsPremium} />
             </div>
@@ -262,7 +262,7 @@ function CreatePost({ store, go }: { store: DemoStore; go: (t: TabKey) => void }
           <Card>
             <p className="text-sm font-medium mb-2">Preview</p>
             <p className="text-sm truncate">{title || 'Untitled pick'}</p>
-            <p className="text-xs text-muted-foreground mt-1">{sport} · {event || 'No event'} · {usOdds} ({decimal?.toFixed(2) ?? '—'}) · {units}u</p>
+            <p className="text-caption text-muted-foreground mt-1">{sport} · {event || 'No event'} · {usOdds} ({decimal?.toFixed(2) ?? '—'}) · {units}u</p>
           </Card>
           <Button className="w-full" onClick={submit}><Send className="mr-1.5 h-3.5 w-3.5" /> Publish</Button>
         </div>
@@ -313,7 +313,7 @@ function Content({ store }: { store: DemoStore }) {
       <div className="flex flex-col sm:flex-row gap-3 mb-4">
         <div className="flex gap-2 flex-wrap">
           {(['all', 'premium', 'free', 'pending'] as const).map(f => (
-            <Button key={f} size="sm" variant={filter === f ? 'default' : 'outline'} className="capitalize text-xs" onClick={() => setFilter(f)}>
+            <Button key={f} size="sm" variant={filter === f ? 'default' : 'outline'} className="capitalize text-caption" onClick={() => setFilter(f)}>
               {f} <span className="ml-1.5 opacity-60">{counts[f]}</span>
             </Button>
           ))}
@@ -331,15 +331,15 @@ function Content({ store }: { store: DemoStore }) {
               <div className="min-w-0">
                 <div className="flex items-center gap-2">
                   <p className="font-medium text-sm truncate">{post.title}</p>
-                  <span className={`rounded-full px-2 py-0.5 text-[10px] font-medium uppercase ${resultStyles[post.result]}`}>{post.result}</span>
+                  <span className={`rounded-full px-2 py-0.5 text-caption font-medium uppercase ${resultStyles[post.result]}`}>{post.result}</span>
                 </div>
-                <p className="text-xs text-muted-foreground mt-1">
+                <p className="text-caption text-muted-foreground mt-1">
                   {post.isPremium ? 'Premium' : 'Free'} · {post.sport} · {post.event} · {post.usOdds} ({usToDecimal(post.usOdds)?.toFixed(2) ?? '—'}) · {post.units}u ·{' '}
                   <span className={unitsFor(post) > 0 ? 'text-emerald-500' : unitsFor(post) < 0 ? 'text-destructive' : ''}>
                     {unitsFor(post) > 0 ? '+' : ''}{unitsFor(post)}u
                   </span>
                 </p>
-                <p className="text-[11px] text-muted-foreground/70 mt-1 flex items-center gap-3">
+                <p className="text-caption text-muted-foreground/70 mt-1 flex items-center gap-3">
                   <span className="inline-flex items-center gap-1"><Eye className="h-3 w-3" /> {post.views}</span>
                   <span>{post.saves} saves</span>
                   <span>{format(new Date(post.createdAt), 'MMM d, HH:mm')}</span>
@@ -348,12 +348,12 @@ function Content({ store }: { store: DemoStore }) {
               <div className="flex items-center gap-1.5 shrink-0">
                 {post.result === 'pending' ? (
                   <>
-                    <Button size="sm" variant="outline" className="text-xs" onClick={() => settle(post, 'won')}>Won</Button>
-                    <Button size="sm" variant="outline" className="text-xs" onClick={() => settle(post, 'lost')}>Lost</Button>
-                    <Button size="sm" variant="outline" className="text-xs" onClick={() => settle(post, 'push')}>Push</Button>
+                    <Button size="sm" variant="outline" className="text-caption" onClick={() => settle(post, 'won')}>Won</Button>
+                    <Button size="sm" variant="outline" className="text-caption" onClick={() => settle(post, 'lost')}>Lost</Button>
+                    <Button size="sm" variant="outline" className="text-caption" onClick={() => settle(post, 'push')}>Push</Button>
                   </>
                 ) : (
-                  <Button size="sm" variant="ghost" className="text-xs" onClick={() => settle(post, 'pending')}>
+                  <Button size="sm" variant="ghost" className="text-caption" onClick={() => settle(post, 'pending')}>
                     <RotateCcw className="mr-1 h-3 w-3" /> Reopen
                   </Button>
                 )}
@@ -430,25 +430,25 @@ function Products({ store }: { store: DemoStore }) {
                   <div className="min-w-0">
                     <div className="flex items-center gap-2 flex-wrap">
                       <p className="font-medium text-sm">{p.name}</p>
-                      {p.isFeatured && <Badge variant="secondary" className="text-[10px]">Featured</Badge>}
-                      {!p.isActive && <Badge variant="outline" className="text-[10px]">Paused</Badge>}
-                      {full && <Badge variant="outline" className="text-[10px] border-amber-500/40 text-amber-500">Sold out</Badge>}
+                      {p.isFeatured && <Badge variant="secondary" className="text-caption">Featured</Badge>}
+                      {!p.isActive && <Badge variant="outline" className="text-caption">Paused</Badge>}
+                      {full && <Badge variant="outline" className="text-caption border-amber-500/40 text-amber-500">Sold out</Badge>}
                     </div>
-                    <p className="text-xs text-muted-foreground mt-1">{p.description || 'No description'}</p>
-                    <p className="text-xs text-muted-foreground mt-2">
+                    <p className="text-caption text-muted-foreground mt-1">{p.description || 'No description'}</p>
+                    <p className="text-caption text-muted-foreground mt-2">
                       {money(p.price)}/{periodLabel(p.billingPeriod)} · {st?.activeSubs ?? 0} active · {money(st?.gross ?? 0)} gross
                       {st?.spotsLeft !== null && st !== undefined ? ` · ${st.spotsLeft} of ${p.maxSpots} spots left` : ''}
                     </p>
-                    <p className="text-[11px] text-muted-foreground/70 mt-1">
+                    <p className="text-caption text-muted-foreground/70 mt-1">
                       Fee -{money(st?.fee ?? 0)} · you keep <span className="text-emerald-500">{money(st?.net ?? 0)}</span>
                     </p>
                   </div>
                   <div className="flex flex-col items-end gap-2 shrink-0">
                     <Switch aria-label={`${p.name} active`} checked={p.isActive} onCheckedChange={v => { store.updateProduct(p.id, { isActive: v }); toast.success(v ? 'Tier resumed' : 'Tier paused — no new signups'); }} />
-                    <Button size="sm" variant="ghost" className="text-xs" onClick={() => { store.updateProduct(p.id, { isFeatured: !p.isFeatured }); toast.success(p.isFeatured ? 'Removed from featured' : 'Set as featured tier'); }}>
+                    <Button size="sm" variant="ghost" className="text-caption" onClick={() => { store.updateProduct(p.id, { isFeatured: !p.isFeatured }); toast.success(p.isFeatured ? 'Removed from featured' : 'Set as featured tier'); }}>
                       {p.isFeatured ? 'Unfeature' : 'Feature'}
                     </Button>
-                    <Button size="sm" variant="ghost" className="text-xs text-muted-foreground" onClick={() => setConfirmDelete(p)}>
+                    <Button size="sm" variant="ghost" className="text-caption text-muted-foreground" onClick={() => setConfirmDelete(p)}>
                       <Trash2 className="mr-1 h-3 w-3" /> Delete
                     </Button>
                   </div>
@@ -459,13 +459,13 @@ function Products({ store }: { store: DemoStore }) {
         </div>
         <Card className="h-fit space-y-3">
           <p className="text-sm font-medium">New tier</p>
-          <div><Label className="text-xs" htmlFor="tier-name">Name</Label><Input id="tier-name" className="mt-1" value={name} onChange={e => setName(e.target.value)} placeholder="VIP Access" /></div>
-          <div><Label className="text-xs" htmlFor="tier-desc">Description</Label><Textarea id="tier-desc" className="mt-1" value={description} onChange={e => setDescription(e.target.value)} placeholder="What's included" /></div>
+          <div><Label className="text-caption" htmlFor="tier-name">Name</Label><Input id="tier-name" className="mt-1" value={name} onChange={e => setName(e.target.value)} placeholder="VIP Access" /></div>
+          <div><Label className="text-caption" htmlFor="tier-desc">Description</Label><Textarea id="tier-desc" className="mt-1" value={description} onChange={e => setDescription(e.target.value)} placeholder="What's included" /></div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <div><Label className="text-xs" htmlFor="tier-price">Price ($)</Label><Input id="tier-price" className="mt-1" type="number" value={price} onChange={e => setPrice(e.target.value)} /></div>
+            <div><Label className="text-caption" htmlFor="tier-price">Price ($)</Label><Input id="tier-price" className="mt-1" type="number" value={price} onChange={e => setPrice(e.target.value)} /></div>
             <div>
-              <Label className="text-xs" htmlFor="tier-billing">Billing</Label>
-              <select id="tier-billing" className="mt-1 h-10 w-full rounded-md border border-input bg-background px-3 text-sm" value={period} onChange={e => setPeriod(e.target.value as typeof period)}>
+              <Label className="text-caption" htmlFor="tier-billing">Billing</Label>
+              <select id="tier-billing" className="mt-1 h-10 w-full rounded-md border border-input bg-background px-3 text-base md:text-ui" value={period} onChange={e => setPeriod(e.target.value as typeof period)}>
                 <option value="monthly">Monthly</option>
                 <option value="quarterly">Quarterly</option>
                 <option value="yearly">Yearly</option>
@@ -473,9 +473,9 @@ function Products({ store }: { store: DemoStore }) {
             </div>
           </div>
           <div>
-            <Label className="text-xs" htmlFor="tier-spots">Spot limit (optional)</Label>
+            <Label className="text-caption" htmlFor="tier-spots">Spot limit (optional)</Label>
             <Input id="tier-spots" className="mt-1" type="number" min="1" value={spots} onChange={e => setSpots(e.target.value)} placeholder="Unlimited" />
-            <p className="text-[11px] text-muted-foreground mt-1">Scarcity lifts conversion on high-priced tiers.</p>
+            <p className="text-caption text-muted-foreground mt-1">Scarcity lifts conversion on high-priced tiers.</p>
           </div>
           <Button className="w-full" onClick={create}><Plus className="mr-1.5 h-3.5 w-3.5" /> Create tier</Button>
         </Card>
@@ -560,7 +560,7 @@ function Subscribers({ store }: { store: DemoStore }) {
       <div className="flex flex-col sm:flex-row gap-3 mb-4">
         <div className="flex gap-2">
           {(['all', 'active', 'cancelled'] as const).map(f => (
-            <Button key={f} size="sm" variant={status === f ? 'default' : 'outline'} className="capitalize text-xs" onClick={() => setStatus(f)}>
+            <Button key={f} size="sm" variant={status === f ? 'default' : 'outline'} className="capitalize text-caption" onClick={() => setStatus(f)}>
               {f} <span className="ml-1.5 opacity-60">{counts[f]}</span>
             </Button>
           ))}
@@ -572,7 +572,7 @@ function Subscribers({ store }: { store: DemoStore }) {
       </div>
       <Card className="p-0 overflow-x-auto">
         <table className="w-full text-sm">
-          <thead className="text-xs text-muted-foreground border-b border-border">
+          <thead className="text-caption text-muted-foreground border-b border-border">
             <tr>
               <SortTh label="Member" k="name" />
               <th className="text-left font-medium px-4 py-3">Tier</th>
@@ -586,18 +586,18 @@ function Subscribers({ store }: { store: DemoStore }) {
               <tr key={s.id} className="border-b border-border/60 last:border-0">
                 <td className="px-4 py-3">
                   <p className="font-medium">{s.name}</p>
-                  <p className="text-xs text-muted-foreground">{s.email}</p>
+                  <p className="text-caption text-muted-foreground">{s.email}</p>
                 </td>
                 <td className="px-4 py-3 text-muted-foreground">{productName(s.productId)}</td>
                 <td className="px-4 py-3 text-right">{money(s.amount)}</td>
                 <td className="px-4 py-3 text-muted-foreground">{format(new Date(s.joinedAt), 'MMM d, yyyy')}</td>
                 <td className="px-4 py-3 text-right">
                   {s.status === 'active' ? (
-                    <Button size="sm" variant="ghost" className="text-xs" onClick={() => setConfirmCancel(s)}>Cancel</Button>
+                    <Button size="sm" variant="ghost" className="text-caption" onClick={() => setConfirmCancel(s)}>Cancel</Button>
                   ) : (
                     <div className="flex items-center justify-end gap-2">
-                      <Badge variant="outline" className="text-[10px]">Cancelled</Badge>
-                      <Button size="sm" variant="ghost" className="text-xs" onClick={() => { store.reactivateSubscriber(s.id); toast.success(`${s.name} reactivated`); }}>Reactivate</Button>
+                      <Badge variant="outline" className="text-caption">Cancelled</Badge>
+                      <Button size="sm" variant="ghost" className="text-caption" onClick={() => { store.reactivateSubscriber(s.id); toast.success(`${s.name} reactivated`); }}>Reactivate</Button>
                     </div>
                   )}
                 </td>
@@ -662,9 +662,9 @@ function Promotions({ store }: { store: DemoStore }) {
               <div>
                 <div className="flex items-center gap-2">
                   <p className="font-mono font-medium text-sm">{p.code}</p>
-                  <Badge variant={p.isActive ? 'secondary' : 'outline'} className="text-[10px]">{p.isActive ? 'Active' : 'Disabled'}</Badge>
+                  <Badge variant={p.isActive ? 'secondary' : 'outline'} className="text-caption">{p.isActive ? 'Active' : 'Disabled'}</Badge>
                 </div>
-                <p className="text-xs text-muted-foreground mt-1">
+                <p className="text-caption text-muted-foreground mt-1">
                   {p.discountPercent}% off · used {p.timesUsed}{p.maxUses ? `/${p.maxUses}` : ''} times
                   {p.maxUses && p.timesUsed >= p.maxUses ? ' · limit reached' : ''}
                 </p>
@@ -681,10 +681,10 @@ function Promotions({ store }: { store: DemoStore }) {
         </div>
         <Card className="h-fit space-y-3">
           <p className="text-sm font-medium">New code</p>
-          <div><Label className="text-xs">Code</Label><Input className="mt-1 font-mono uppercase" value={code} onChange={e => setCode(e.target.value)} placeholder="SUPERBOWL25" /></div>
+          <div><Label className="text-caption">Code</Label><Input className="mt-1 font-mono uppercase" value={code} onChange={e => setCode(e.target.value)} placeholder="SUPERBOWL25" /></div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <div><Label className="text-xs">Discount %</Label><Input className="mt-1" type="number" value={discount} onChange={e => setDiscount(e.target.value)} /></div>
-            <div><Label className="text-xs">Max uses</Label><Input className="mt-1" type="number" value={maxUses} onChange={e => setMaxUses(e.target.value)} placeholder="∞" /></div>
+            <div><Label className="text-caption">Discount %</Label><Input className="mt-1" type="number" value={discount} onChange={e => setDiscount(e.target.value)} /></div>
+            <div><Label className="text-caption">Max uses</Label><Input className="mt-1" type="number" value={maxUses} onChange={e => setMaxUses(e.target.value)} placeholder="∞" /></div>
           </div>
           <Button className="w-full" onClick={create}><Percent className="mr-1.5 h-3.5 w-3.5" /> Create code</Button>
         </Card>
@@ -715,7 +715,7 @@ function Messages({ store }: { store: DemoStore }) {
         description={store.state.settings.messagingEnabled ? `${store.metrics.unreadMessages} unread` : 'Messaging is turned off in Settings'}
         action={
           <div className="flex items-center gap-2">
-            <span className="text-xs text-muted-foreground">Accept messages</span>
+            <span className="text-caption text-muted-foreground">Accept messages</span>
             <Switch
               aria-label="Accept messages"
               checked={store.state.settings.messagingEnabled}
@@ -736,9 +736,9 @@ function Messages({ store }: { store: DemoStore }) {
               >
                 <div className="flex items-center justify-between">
                   <p className="text-sm font-medium">{sub?.name ?? 'Subscriber'}</p>
-                  {t.unread > 0 && <span className="rounded-full bg-primary px-1.5 text-[10px] text-primary-foreground">{t.unread}</span>}
+                  {t.unread > 0 && <span className="rounded-full bg-primary px-1.5 text-caption text-primary-foreground">{t.unread}</span>}
                 </div>
-                <p className="text-xs text-muted-foreground truncate mt-0.5">{t.messages[t.messages.length - 1]?.body}</p>
+                <p className="text-caption text-muted-foreground truncate mt-0.5">{t.messages[t.messages.length - 1]?.body}</p>
               </button>
             );
           })}
@@ -750,7 +750,7 @@ function Messages({ store }: { store: DemoStore }) {
                 {thread.messages.map(m => (
                   <div key={m.id} className={`max-w-[80%] rounded-xl px-3 py-2 text-sm ${m.from === 'creator' ? 'ml-auto bg-primary text-primary-foreground' : 'bg-muted'}`}>
                     {m.body}
-                    <p className={`text-[10px] mt-1 ${m.from === 'creator' ? 'text-primary-foreground/70' : 'text-muted-foreground'}`}>
+                    <p className={`text-caption mt-1 ${m.from === 'creator' ? 'text-primary-foreground/70' : 'text-muted-foreground'}`}>
                       {format(new Date(m.createdAt), 'MMM d, HH:mm')}
                     </p>
                   </div>
@@ -813,7 +813,7 @@ function Earnings({ store }: { store: DemoStore }) {
       </div>
       <Card className="p-0 overflow-x-auto">
         <table className="w-full text-sm">
-          <thead className="text-xs text-muted-foreground border-b border-border">
+          <thead className="text-caption text-muted-foreground border-b border-border">
             <tr>
               <th className="text-left font-medium px-4 py-3">Tier</th>
               <th className="text-right font-medium px-4 py-3">Subscribers</th>
@@ -842,7 +842,7 @@ function Earnings({ store }: { store: DemoStore }) {
           </tbody>
         </table>
       </Card>
-      <p className="text-xs text-muted-foreground mt-3">
+      <p className="text-caption text-muted-foreground mt-3">
         Payouts run weekly once the balance clears $50. Demo figures recalculate as you add tiers or cancel subscribers.
       </p>
     </>
@@ -876,7 +876,7 @@ function SettingsTab({ store }: { store: DemoStore }) {
         description="Profile and payout preferences."
         action={dirty ? (
           <div className="flex items-center gap-2">
-            <span className="text-xs text-amber-500">Unsaved changes</span>
+            <span className="text-caption text-amber-500">Unsaved changes</span>
             <Button size="sm" variant="outline" onClick={() => setForm(s)}>Discard</Button>
           </div>
         ) : undefined}
@@ -884,17 +884,17 @@ function SettingsTab({ store }: { store: DemoStore }) {
       <div className="grid lg:grid-cols-2 gap-5">
         <Card className="space-y-4">
           <p className="text-sm font-medium">Public profile</p>
-          <div><Label className="text-xs" htmlFor="set-name">Display name</Label><Input id="set-name" className="mt-1" value={form.displayName} onChange={e => setForm({ ...form, displayName: e.target.value })} /></div>
+          <div><Label className="text-caption" htmlFor="set-name">Display name</Label><Input id="set-name" className="mt-1" value={form.displayName} onChange={e => setForm({ ...form, displayName: e.target.value })} /></div>
           <div>
-            <Label className="text-xs" htmlFor="set-username">Username</Label>
+            <Label className="text-caption" htmlFor="set-username">Username</Label>
             <Input id="set-username" className="mt-1" value={form.username} onChange={e => setForm({ ...form, username: e.target.value.replace(/\s/g, '') })} />
-            <p className="text-[11px] text-muted-foreground mt-1">wizzlet.com/{form.username || 'username'}</p>
+            <p className="text-caption text-muted-foreground mt-1">prizelet.com/{form.username || 'username'}</p>
           </div>
-          <div><Label className="text-xs" htmlFor="set-bio">Bio</Label><Textarea id="set-bio" className="mt-1" maxLength={280} value={form.bio} onChange={e => setForm({ ...form, bio: e.target.value })} /><p className="text-[11px] text-muted-foreground mt-1">{form.bio.length}/280</p></div>
+          <div><Label className="text-caption" htmlFor="set-bio">Bio</Label><Textarea id="set-bio" className="mt-1" maxLength={280} value={form.bio} onChange={e => setForm({ ...form, bio: e.target.value })} /><p className="text-caption text-muted-foreground mt-1">{form.bio.length}/280</p></div>
           <div>
-            <Label className="text-xs" htmlFor="set-price">Base monthly price ($)</Label>
+            <Label className="text-caption" htmlFor="set-price">Base monthly price ($)</Label>
             <Input id="set-price" className="mt-1" type="number" min="1" value={form.monthlyPrice} onChange={e => setForm({ ...form, monthlyPrice: Number(e.target.value) })} />
-            <p className="text-[11px] text-muted-foreground mt-1">
+            <p className="text-caption text-muted-foreground mt-1">
               You keep {money(+(form.monthlyPrice * (1 - store.metrics.feeRate)).toFixed(2))} per subscriber after the {Math.round(store.metrics.feeRate * 100)}% fee.
             </p>
           </div>
@@ -911,7 +911,7 @@ function SettingsTab({ store }: { store: DemoStore }) {
               <div key={row.key} className="flex items-center justify-between">
                 <div>
                   <p className="text-sm">{row.label}</p>
-                  <p className="text-[11px] text-muted-foreground">{row.hint}</p>
+                  <p className="text-caption text-muted-foreground">{row.hint}</p>
                 </div>
                 <Switch
                   aria-label={row.label}
@@ -921,12 +921,12 @@ function SettingsTab({ store }: { store: DemoStore }) {
               </div>
             ))}
             {!s.published && (
-              <p className="text-[11px] text-amber-500">Your profile is hidden — new members cannot find or subscribe to you.</p>
+              <p className="text-caption text-amber-500">Your profile is hidden — new members cannot find or subscribe to you.</p>
             )}
           </Card>
           <Card className="space-y-3">
             <p className="text-sm font-medium">Demo data</p>
-            <p className="text-xs text-muted-foreground">Everything you change here lives in this browser session only.</p>
+            <p className="text-caption text-muted-foreground">Everything you change here lives in this browser session only.</p>
             <Button variant="outline" size="sm" onClick={() => setConfirmReset(true)}>
               <RotateCcw className="mr-1.5 h-3.5 w-3.5" /> Reset demo data
             </Button>
@@ -972,16 +972,20 @@ const DemoCreatorDashboard = () => {
       className={
         mobile
           ? 'flex h-full w-full flex-col bg-card'
-          : 'hidden md:flex w-[220px] flex-col border-r border-border bg-card/80 backdrop-blur-sm'
+          : 'hidden md:flex h-full w-[220px] shrink-0 flex-col border-r border-border bg-card'
       }
     >
       <div className="px-5 py-5">
-        <Link to="/" className="flex items-center gap-2 font-semibold text-[14px] tracking-tight text-foreground">
+        <button
+          type="button"
+          onClick={() => go('overview')}
+          className="flex items-center gap-2 font-semibold text-ui tracking-tight text-foreground"
+        >
           <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-primary text-primary-foreground">
-            <span className="font-bold text-[11px]">W</span>
+            <span className="font-bold text-caption">P</span>
           </div>
-          Wizzlet
-        </Link>
+          Prizelet
+        </button>
       </div>
       <nav className="flex-1 overflow-y-auto px-3 pb-4 space-y-0.5">
         {sidebarItems.map(item => {
@@ -990,7 +994,7 @@ const DemoCreatorDashboard = () => {
             <button
               key={item.label}
               onClick={() => go(item.tab)}
-              className={`group w-full flex items-center gap-3 rounded-lg px-3 py-2 text-[13px] transition-all duration-200 ${
+              className={`group w-full flex items-center gap-3 rounded-lg px-3 py-2 text-support transition-all duration-200 ${
                 isActive
                   ? 'bg-primary/10 text-primary font-medium shadow-[inset_2px_0_0_0_hsl(var(--primary))]'
                   : 'text-muted-foreground hover:text-foreground hover:bg-muted/60'
@@ -999,7 +1003,7 @@ const DemoCreatorDashboard = () => {
               <item.icon className={`h-4 w-4 shrink-0 ${isActive ? 'text-primary' : 'text-muted-foreground'}`} />
               {item.label}
               {item.tab === 'messages' && store.metrics.unreadMessages > 0 && (
-                <span className="ml-auto rounded-full bg-primary px-1.5 text-[10px] text-primary-foreground">{store.metrics.unreadMessages}</span>
+                <span className="ml-auto rounded-full bg-primary px-1.5 text-caption text-primary-foreground">{store.metrics.unreadMessages}</span>
               )}
             </button>
           );
@@ -1007,7 +1011,7 @@ const DemoCreatorDashboard = () => {
       </nav>
       <div className="px-3 py-4 border-t border-border">
         <Link to="/">
-          <Button variant="ghost" size="sm" className="w-full justify-start text-muted-foreground hover:text-foreground text-[13px]">
+          <Button variant="ghost" size="sm" className="w-full justify-start text-muted-foreground hover:text-foreground text-support">
             <LogOut className="mr-2 h-3.5 w-3.5" /> Exit Demo
           </Button>
         </Link>
@@ -1016,11 +1020,11 @@ const DemoCreatorDashboard = () => {
   );
 
   return (
-    <div className="min-h-screen flex bg-background">
+    <div className="h-dvh flex overflow-hidden bg-background">
       <SidebarNav />
 
-      <main className="flex-1 min-w-0 overflow-auto">
-        <MobileTopBar>
+      <main className="flex-1 min-h-0 min-w-0 overflow-x-hidden overflow-y-auto">
+        <MobileTopBar homeHref="/demo/creator">
           <SidebarNav mobile />
         </MobileTopBar>
         <div className="p-4 sm:p-6 md:p-8 w-full max-w-5xl">

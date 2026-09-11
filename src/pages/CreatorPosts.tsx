@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { useMutation, usePaginatedQuery, useQuery } from 'convex/react';
 import { api } from '../../convex/_generated/api';
 import type { Id } from '../../convex/_generated/dataModel';
@@ -14,6 +14,16 @@ import {
   Dialog, DialogContent, DialogHeader, DialogTitle,
 } from '@/components/ui/dialog';
 import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
+import {
   FileText, Plus, Loader2, Pencil, Trash2, Lock, Globe,
   CheckCircle2, ArrowRight, Zap, Flame,
   Clock, Trophy, XCircle, Minus,
@@ -21,6 +31,7 @@ import {
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 import { americanToDecimal, decimalToAmerican } from '@/lib/odds';
+import { parsePostContent } from '@/lib/postContent';
 import { computeWinRate } from '../../convex/lib/results';
 
 const PAGE_SIZE = 25;
@@ -52,36 +63,35 @@ const CreatorPosts = () => {
     {},
     { initialNumItems: PAGE_SIZE },
   );
-  const subs = useQuery(api.subscriptions.mutations.listForMyCreator);
   const upsertPost = useMutation(api.posts.queries.upsert);
   const removePost = useMutation(api.posts.queries.remove);
   const setResultMut = useMutation(api.posts.queries.setResult);
 
-  const loading =
-    creator === undefined || postsStatus === 'LoadingFirstPage' || subs === undefined;
+  const loading = creator === undefined || postsStatus === 'LoadingFirstPage';
+  const listComplete = postsStatus === 'Exhausted';
   const creatorId = creator?._id ?? null;
-  const subCount = (subs ?? []).filter((s) => s.status === 'active').length;
 
   const posts = useMemo(
-    () => (postsRaw ?? []).map((p) => ({
-      id: p._id,
-      title: p.title,
-      content: p.content ?? null,
-      is_premium: p.isPremium,
-      created_at: new Date(p.createdAt).toISOString(),
-      result: p.result ?? 'pending',
-      tracking_mode: p.trackingMode ?? '',
-    })),
+    () =>
+      (postsRaw ?? []).map((p) => ({
+        id: p._id,
+        title: p.title,
+        content: p.content ?? null,
+        is_premium: p.isPremium,
+        created_at: new Date(p.createdAt).toISOString(),
+        result: p.result ?? 'pending',
+        tracking_mode: p.trackingMode ?? '',
+      })),
     [postsRaw],
   );
 
-  // Create/Edit state
   const [mode, setMode] = useState<'list' | 'create'>('list');
   const [saving, setSaving] = useState(false);
   const [editId, setEditId] = useState<string | null>(null);
   const [showSuccess, setShowSuccess] = useState(false);
+  const [deleteId, setDeleteId] = useState<string | null>(null);
+  const [deleting, setDeleting] = useState(false);
 
-  // Form fields
   const [title, setTitle] = useState('');
   const [sport, setSport] = useState('');
   const [event, setEvent] = useState('');
@@ -95,16 +105,40 @@ const CreatorPosts = () => {
   const [oddsSource, setOddsSource] = useState<'us' | 'eu' | null>(null);
 
   const resetForm = () => {
-    setEditId(null); setTitle(''); setSport(''); setEvent(''); setPickType('');
-    setPick(''); setUsOdds(''); setEuOdds(''); setUnits('1'); setNotes('');
-    setIsPremium(true); setOddsSource(null);
+    setEditId(null);
+    setTitle('');
+    setSport('');
+    setEvent('');
+    setPickType('');
+    setPick('');
+    setUsOdds('');
+    setEuOdds('');
+    setUnits('1');
+    setNotes('');
+    setIsPremium(true);
+    setOddsSource(null);
   };
 
-  const openCreate = () => { resetForm(); setMode('create'); };
+  const openCreate = () => {
+    resetForm();
+    setMode('create');
+  };
 
   const openEdit = (post: Post) => {
-    resetForm(); setEditId(post.id); setTitle(post.title); setNotes(post.content ?? '');
-    setIsPremium(post.is_premium); setMode('create');
+    resetForm();
+    const parsed = parsePostContent(post.content);
+    setEditId(post.id);
+    setTitle(post.title);
+    setSport(parsed.sport);
+    setEvent(parsed.event);
+    setPickType(parsed.pickType);
+    setPick(parsed.pick);
+    setUsOdds(parsed.usOdds);
+    setEuOdds(parsed.euOdds);
+    setUnits(parsed.units);
+    setNotes(parsed.notes);
+    setIsPremium(post.is_premium);
+    setMode('create');
   };
 
   const handleUsOddsChange = (val: string) => {
@@ -125,15 +159,25 @@ const CreatorPosts = () => {
     if (event) parts.push(`Event: ${event}`);
     if (pickType) parts.push(`Type: ${pickType}`);
     if (pick) parts.push(`Pick: ${pick}`);
-    if (usOdds || euOdds) parts.push(`Odds: ${usOdds ? usOdds + ' (US)' : ''} ${euOdds ? euOdds + ' (EU)' : ''}`.trim());
+    if (usOdds || euOdds) {
+      parts.push(
+        `Odds: ${usOdds ? `${usOdds} (US)` : ''} ${euOdds ? `${euOdds} (EU)` : ''}`.trim(),
+      );
+    }
     if (units) parts.push(`Units: ${units}u`);
     if (notes) parts.push(`\n${notes}`);
     return parts.join('\n');
   };
 
   const handleSave = async () => {
-    if (!title.trim()) { toast.error('Title is required'); return; }
-    if (!creatorId) return;
+    if (!title.trim()) {
+      toast.error('Title is required');
+      return;
+    }
+    if (!creatorId) {
+      toast.error('Creator profile not ready — try again in a moment');
+      return;
+    }
     setSaving(true);
     const contentStr = buildContent();
     try {
@@ -152,12 +196,17 @@ const CreatorPosts = () => {
     }
   };
 
-  const handleDelete = async (id: string) => {
+  const confirmDelete = async () => {
+    if (!deleteId) return;
+    setDeleting(true);
     try {
-      await removePost({ postId: id as Id<'posts'> });
+      await removePost({ postId: deleteId as Id<'posts'> });
       toast.success('Post deleted');
+      setDeleteId(null);
     } catch (e) {
       toast.error(e instanceof Error ? e.message : 'Failed to delete post');
+    } finally {
+      setDeleting(false);
     }
   };
 
@@ -167,116 +216,281 @@ const CreatorPosts = () => {
       toast.success(`Marked as ${newResult}`);
     } catch (e) {
       const msg = e instanceof Error ? e.message : '';
-      if (msg.includes('RESULT_LOCKED')) toast.error('Settled results are locked and cannot be changed');
-      else toast.error('Failed to update result');
+      if (msg.includes('RESULT_LOCKED')) {
+        toast.error('Settled results are locked and cannot be changed');
+      } else {
+        toast.error('Failed to update result');
+      }
     }
   };
 
-  // Streak calculation
   const winStreak = (() => {
     let streak = 0;
     for (const p of posts) {
       if (p.result === 'won') streak++;
       else if (p.result === 'lost') break;
-      else continue;
     }
     return streak;
   })();
 
+  const deleteDialog = (
+    <AlertDialog open={!!deleteId} onOpenChange={(open) => { if (!open) setDeleteId(null); }}>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>Delete this pick?</AlertDialogTitle>
+          <AlertDialogDescription>
+            This permanently removes the post. Settled history on this pick will be gone.
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel disabled={deleting}>Cancel</AlertDialogCancel>
+          <AlertDialogAction
+            disabled={deleting}
+            className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            onClick={(e) => {
+              e.preventDefault();
+              void confirmDelete();
+            }}
+          >
+            {deleting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+            Delete
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
+  );
+
   // CREATE MODE
   if (mode === 'create') {
+    const primaryCta = editId ? 'Save changes' : 'Publish Pick';
+    const reviewTitle = title.trim() || 'Untitled pick';
+    const reviewOdds =
+      usOdds || euOdds
+        ? [usOdds && `${usOdds} US`, euOdds && `${euOdds} EU`].filter(Boolean).join(' · ')
+        : null;
+    const reviewBits = [
+      isPremium ? 'Premium' : 'Free',
+      pick.trim() || null,
+      reviewOdds,
+    ].filter(Boolean);
+
     return (
       <DashboardLayout type="creator">
-        <div className="flex items-center justify-between mb-6">
-          <div>
-            <button onClick={() => setMode('list')} className="text-xs text-muted-foreground hover:text-foreground transition-colors mb-1 block">← Back to posts</button>
-            <h1 className="text-xl font-bold">{editId ? 'Edit Pick' : 'New Pick'}</h1>
+        <header className="flex items-start justify-between gap-4 mb-6">
+          <div className="min-w-0">
+            <button
+              type="button"
+              onClick={() => setMode('list')}
+              className="text-support text-muted-foreground hover:text-foreground transition-colors mb-1 block"
+            >
+              ← Back to posts
+            </button>
+            <h1 className="text-heading font-bold text-foreground">
+              {editId ? 'Edit Pick' : 'New Pick'}
+            </h1>
           </div>
-          <Button onClick={handleSave} disabled={saving || !title.trim()} size="sm">
+          <Button
+            type="button"
+            onClick={() => void handleSave()}
+            disabled={saving || !title.trim()}
+            className="min-h-11 shrink-0 hidden md:inline-flex"
+          >
             {saving && <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />}
-            <Zap className="mr-1.5 h-3.5 w-3.5" /> Publish Pick
+            {!editId && <Zap className="mr-1.5 h-3.5 w-3.5" />}
+            {primaryCta}
           </Button>
-        </div>
+        </header>
 
-        <div className="max-w-2xl space-y-4">
-          <div className="rounded-xl border border-border bg-card p-4">
-            <Label className="text-xs font-medium text-muted-foreground mb-1.5 block">Title *</Label>
-            <Input placeholder="e.g. Lakers ML +150" value={title} onChange={e => setTitle(e.target.value)}
-              className="text-base font-medium border-0 bg-transparent px-0 h-auto focus-visible:ring-0 placeholder:text-muted-foreground/40 dark:placeholder:text-muted-foreground/55" maxLength={200} />
+        <div className="max-w-2xl">
+          <div className="rounded-xl border border-border bg-card p-4 sm:p-5 space-y-6">
+            <div className="space-y-2">
+              <Label htmlFor="pick-title" className="text-support text-muted-foreground">
+                Title *
+              </Label>
+              <Input
+                id="pick-title"
+                placeholder="e.g. Lakers ML +150"
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+                className="h-11 text-ui"
+                maxLength={200}
+                required
+              />
+            </div>
+
+            <div className="border-t border-border pt-6 space-y-4">
+              <p className="text-caption font-medium text-muted-foreground uppercase tracking-wider">
+                Pick details
+              </p>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div className="space-y-2">
+                  <Label className="text-support text-muted-foreground">Sport</Label>
+                  <Select
+                    value={sport || undefined}
+                    onValueChange={setSport}
+                  >
+                    <SelectTrigger className="h-11 text-ui">
+                      <SelectValue placeholder="Select sport" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {SPORTS.map((s) => (
+                        <SelectItem key={s} value={s}>
+                          {s}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-support text-muted-foreground">Pick type</Label>
+                  <Select
+                    value={pickType || undefined}
+                    onValueChange={setPickType}
+                  >
+                    <SelectTrigger className="h-11 text-ui">
+                      <SelectValue placeholder="Select type" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {PICK_TYPES.map((t) => (
+                        <SelectItem key={t} value={t}>
+                          {t}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="pick-event" className="text-support text-muted-foreground">
+                  Event
+                </Label>
+                <Input
+                  id="pick-event"
+                  placeholder="e.g. Lakers vs Warriors"
+                  value={event}
+                  onChange={(e) => setEvent(e.target.value)}
+                  className="h-11 text-ui"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="pick-selection" className="text-support text-muted-foreground">
+                  Pick
+                </Label>
+                <Input
+                  id="pick-selection"
+                  placeholder="e.g. Lakers ML, Over 2.5 goals"
+                  value={pick}
+                  onChange={(e) => setPick(e.target.value)}
+                  className="h-11 text-ui"
+                />
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div className="space-y-2">
+                  <Label htmlFor="pick-us-odds" className="text-support text-muted-foreground">
+                    US odds
+                  </Label>
+                  <Input
+                    id="pick-us-odds"
+                    placeholder="-120 or +150"
+                    value={usOdds}
+                    onChange={(e) => handleUsOddsChange(e.target.value)}
+                    className={`h-11 text-ui ${oddsSource === 'eu' ? 'text-muted-foreground' : ''}`}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="pick-eu-odds" className="text-support text-muted-foreground">
+                    EU odds
+                  </Label>
+                  <Input
+                    id="pick-eu-odds"
+                    placeholder="1.85"
+                    value={euOdds}
+                    onChange={(e) => handleEuOddsChange(e.target.value)}
+                    className={`h-11 text-ui ${oddsSource === 'us' ? 'text-muted-foreground' : ''}`}
+                  />
+                </div>
+              </div>
+              {oddsSource && (
+                <p className="text-caption text-muted-foreground">
+                  {oddsSource === 'us' ? 'EU odds auto-calculated' : 'US odds auto-calculated'}
+                </p>
+              )}
+              <div className="space-y-2">
+                <Label htmlFor="pick-units" className="text-support text-muted-foreground">
+                  Units
+                </Label>
+                <div className="flex items-center gap-2">
+                  <Input
+                    id="pick-units"
+                    type="number"
+                    value={units}
+                    onChange={(e) => setUnits(e.target.value)}
+                    className="h-11 w-24 text-ui"
+                    min="0.5"
+                    max="100"
+                    step="0.5"
+                  />
+                  <span className="text-support text-muted-foreground">units risked</span>
+                </div>
+              </div>
+            </div>
+
+            <div className="border-t border-border pt-6 space-y-2">
+              <Label htmlFor="pick-notes" className="text-support text-muted-foreground">
+                Notes (optional)
+              </Label>
+              <Textarea
+                id="pick-notes"
+                placeholder="Why do you like this play?"
+                value={notes}
+                onChange={(e) => setNotes(e.target.value)}
+                rows={3}
+                className="resize-none text-ui min-h-[5.5rem]"
+              />
+            </div>
+
+            <div className="border-t border-border pt-6">
+              <div className="flex items-center justify-between gap-3">
+                <div className="min-w-0">
+                  <p className="text-ui font-medium text-foreground">Premium (subscribers only)</p>
+                  <p className="text-caption text-muted-foreground">
+                    Only paying subscribers can see this
+                  </p>
+                </div>
+                <Switch
+                  aria-label="Premium only"
+                  checked={isPremium}
+                  onCheckedChange={setIsPremium}
+                />
+              </div>
+            </div>
+
+            <div className="border-t border-border pt-4">
+              <p className="text-caption text-muted-foreground uppercase tracking-wider mb-1">
+                Ready to {editId ? 'save' : 'publish'}
+              </p>
+              <p className="text-ui text-foreground truncate">{reviewTitle}</p>
+              {reviewBits.length > 0 && (
+                <p className="text-support text-muted-foreground mt-0.5 truncate">
+                  {reviewBits.join(' · ')}
+                </p>
+              )}
+            </div>
           </div>
 
-          <div className="rounded-xl border border-border bg-card p-4 space-y-4">
-            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Pick Details</p>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <div>
-                <Label className="text-xs text-muted-foreground mb-1.5 block">Sport</Label>
-                <Select value={sport} onValueChange={setSport}>
-                  <SelectTrigger className="h-10"><SelectValue placeholder="Select sport" /></SelectTrigger>
-                  <SelectContent>{SPORTS.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}</SelectContent>
-                </Select>
-              </div>
-              <div>
-                <Label className="text-xs text-muted-foreground mb-1.5 block">Pick Type</Label>
-                <Select value={pickType} onValueChange={setPickType}>
-                  <SelectTrigger className="h-10"><SelectValue placeholder="Select type" /></SelectTrigger>
-                  <SelectContent>{PICK_TYPES.map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}</SelectContent>
-                </Select>
-              </div>
-            </div>
-            <div>
-              <Label className="text-xs text-muted-foreground mb-1.5 block">Event</Label>
-              <Input placeholder="e.g. Lakers vs Warriors" value={event} onChange={e => setEvent(e.target.value)} className="h-10" />
-            </div>
-            <div>
-              <Label className="text-xs text-muted-foreground mb-1.5 block">Pick</Label>
-              <Input placeholder="e.g. Lakers ML, Over 2.5 goals" value={pick} onChange={e => setPick(e.target.value)} className="h-10" />
-            </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <div>
-                <Label className="text-xs text-muted-foreground mb-1.5 block">US Odds</Label>
-                <Input placeholder="-120 or +150" value={usOdds} onChange={e => handleUsOddsChange(e.target.value)}
-                  className={`h-10 ${oddsSource === 'eu' ? 'text-muted-foreground' : ''}`} />
-              </div>
-              <div>
-                <Label className="text-xs text-muted-foreground mb-1.5 block">EU Odds</Label>
-                <Input placeholder="1.85" value={euOdds} onChange={e => handleEuOddsChange(e.target.value)}
-                  className={`h-10 ${oddsSource === 'us' ? 'text-muted-foreground' : ''}`} />
-              </div>
-            </div>
-            {oddsSource && <p className="text-[10px] text-muted-foreground -mt-2">{oddsSource === 'us' ? 'EU odds auto-calculated' : 'US odds auto-calculated'}</p>}
-            <div>
-              <Label className="text-xs text-muted-foreground mb-1.5 block">Units</Label>
-              <div className="flex items-center gap-2">
-                <Input type="number" value={units} onChange={e => setUnits(e.target.value)} className="h-10 w-24" min="0.5" max="100" step="0.5" />
-                <span className="text-sm text-muted-foreground">units risked</span>
-              </div>
-            </div>
-          </div>
-
-          <div className="rounded-xl border border-border bg-card p-4">
-            <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2 block">Notes (optional)</Label>
-            <Textarea placeholder="Why do you like this play?" value={notes} onChange={e => setNotes(e.target.value)} rows={3}
-              className="resize-none border-0 bg-transparent px-0 focus-visible:ring-0 placeholder:text-muted-foreground/40 dark:placeholder:text-muted-foreground/55" />
-          </div>
-
-          <div className="rounded-xl border border-border bg-card p-4 space-y-4">
-            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Visibility</p>
-            <div className="flex items-center justify-between rounded-lg bg-muted/30 p-3">
-              <div>
-                <p className="text-sm font-medium">Premium (subscribers only)</p>
-                <p className="text-xs text-muted-foreground">Only paying subscribers can see this</p>
-              </div>
-              <Switch aria-label="Premium only" checked={isPremium} onCheckedChange={setIsPremium} />
-            </div>
-          </div>
-
-          <div className="md:hidden fixed bottom-0 left-0 right-0 p-4 bg-background/95 backdrop-blur-sm border-t border-border z-50">
-            <Button onClick={handleSave} disabled={saving || !title.trim()} className="w-full h-12 text-sm font-semibold">
+          <div className="md:hidden fixed bottom-0 left-0 right-0 p-4 bg-background border-t border-border z-50 pb-[max(1rem,env(safe-area-inset-bottom))]">
+            <Button
+              type="button"
+              onClick={() => void handleSave()}
+              disabled={saving || !title.trim()}
+              className="w-full min-h-12 text-ui font-semibold"
+            >
               {saving && <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />}
-              <Zap className="mr-1.5 h-4 w-4" /> Publish Pick
+              {!editId && <Zap className="mr-1.5 h-4 w-4" />}
+              {primaryCta}
             </Button>
           </div>
-          <div className="h-20 md:hidden" />
+          <div className="h-24 md:hidden" aria-hidden />
         </div>
 
         <Dialog open={showSuccess} onOpenChange={setShowSuccess}>
@@ -288,72 +502,109 @@ const CreatorPosts = () => {
                 </div>
               </div>
               <DialogHeader>
-                <DialogTitle className="text-center text-lg">Pick posted successfully</DialogTitle>
+                <DialogTitle className="text-center text-title-lg">
+                  Pick posted successfully
+                </DialogTitle>
               </DialogHeader>
-              <p className="text-sm text-muted-foreground">Your pick is now live for subscribers.</p>
+              <p className="text-support text-muted-foreground">
+                Your pick is now live for subscribers.
+              </p>
               <div className="flex flex-col gap-2 pt-2">
-                <Button onClick={() => { setShowSuccess(false); resetForm(); }} className="w-full">
+                <Button
+                  onClick={() => {
+                    setShowSuccess(false);
+                    resetForm();
+                  }}
+                  className="w-full min-h-11"
+                >
                   <Plus className="mr-1.5 h-4 w-4" /> Create Another
                 </Button>
-                <Button variant="outline" onClick={() => { setShowSuccess(false); setMode('list'); }} className="w-full">
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    setShowSuccess(false);
+                    setMode('list');
+                  }}
+                  className="w-full min-h-11"
+                >
                   Go to Feed <ArrowRight className="ml-1.5 h-4 w-4" />
                 </Button>
               </div>
             </div>
           </DialogContent>
         </Dialog>
+        {deleteDialog}
       </DashboardLayout>
     );
   }
 
-  // LIST MODE
+  // LIST MODE — gate chrome until first page is ready
+  if (loading) {
+    return (
+      <DashboardLayout type="creator">
+        <div className="flex justify-center py-20">
+          <Loader2 className="h-5 w-5 animate-spin text-primary" />
+        </div>
+      </DashboardLayout>
+    );
+  }
+
   const { winRatePct: winRate, wins, losses } = computeWinRate(posts.map((p) => p.result));
+  const picksLabel = listComplete ? 'Total picks' : 'Loaded picks';
+  const statsNote = listComplete
+    ? `${posts.length} pick${posts.length !== 1 ? 's' : ''}`
+    : `Stats for ${posts.length} loaded post${posts.length !== 1 ? 's' : ''}`;
+
+  const stats = [
+    { label: picksLabel, value: posts.length, color: 'text-foreground' },
+    { label: 'Wins', value: wins, color: 'text-emerald-500' },
+    { label: 'Losses', value: losses, color: 'text-red-500' },
+    { label: 'Win rate', value: `${winRate}%`, color: 'text-primary' },
+  ];
 
   return (
     <DashboardLayout type="creator">
-      <div className="flex items-center justify-between mb-6">
-        <div>
-          <h1 className="text-2xl font-bold flex items-center gap-2">
+      <header className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between mb-6">
+        <div className="min-w-0">
+          <h1 className="text-heading md:text-heading-lg font-bold text-foreground flex flex-wrap items-center gap-2">
             Posts
             {winStreak >= 3 && (
-              <span className="inline-flex items-center gap-1 rounded-full bg-amber-500/10 px-2.5 py-1 text-xs font-semibold text-amber-500">
+              <span className="inline-flex items-center gap-1 rounded-full bg-amber-500/10 px-2.5 py-1 text-caption font-semibold text-amber-500">
                 <Flame className="h-3.5 w-3.5" /> {winStreak}W Streak
               </span>
             )}
           </h1>
-          <p className="text-muted-foreground text-sm mt-1">{posts.length} post{posts.length !== 1 ? 's' : ''} · {winRate}% win rate</p>
-          <p className="text-xs text-muted-foreground mt-1">
+          <p className="text-support text-muted-foreground mt-1">{statsNote}</p>
+          <p className="text-caption text-muted-foreground mt-1">
             Settled post results here are separate from Performance Tracker practice picks.
           </p>
         </div>
-        <Button size="sm" onClick={openCreate}>
+        <Button onClick={openCreate} className="min-h-11 shrink-0 w-full sm:w-auto">
           <Plus className="mr-1.5 h-4 w-4" /> New Pick
         </Button>
-      </div>
+      </header>
 
-      {/* Quick Stats */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-6">
-        {[
-          { label: 'Total Picks', value: posts.length, color: 'text-foreground' },
-          { label: 'Wins', value: wins, color: 'text-emerald-500' },
-          { label: 'Losses', value: losses, color: 'text-red-500' },
-          { label: 'Win Rate', value: `${winRate}%`, color: 'text-primary' },
-        ].map(s => (
-          <div key={s.label} className="rounded-lg border border-border bg-card p-3">
-            <p className={`text-xl font-bold ${s.color}`}>{s.value}</p>
-            <p className="text-[10px] text-muted-foreground uppercase tracking-wider">{s.label}</p>
+      <section className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4 mb-6">
+        {stats.map((s) => (
+          <div key={s.label} className="rounded-xl border border-border bg-card p-4">
+            <p className={`text-title-lg font-bold tabular-nums ${s.color}`}>{s.value}</p>
+            <p className="text-caption text-muted-foreground mt-0.5 uppercase tracking-wider">
+              {s.label}
+            </p>
           </div>
         ))}
-      </div>
+      </section>
 
-      {loading ? (
-        <div className="flex justify-center py-20"><Loader2 className="h-5 w-5 animate-spin text-primary" /></div>
-      ) : posts.length === 0 ? (
-        <div className="rounded-xl border border-border bg-card p-10 text-center">
-          <FileText className="h-10 w-10 text-muted-foreground mx-auto mb-4" />
-          <h3 className="font-semibold mb-2">No picks yet</h3>
-          <p className="text-sm text-muted-foreground max-w-xs mx-auto mb-5">Post your first pick and share it with subscribers.</p>
-          <Button size="sm" onClick={openCreate}><Plus className="mr-1.5 h-4 w-4" /> Create Pick</Button>
+      {posts.length === 0 ? (
+        <div className="rounded-xl border border-border bg-card p-6 text-center">
+          <FileText className="h-8 w-8 text-muted-foreground mx-auto mb-3" />
+          <h3 className="text-title font-semibold text-foreground mb-1">No picks yet</h3>
+          <p className="text-support text-muted-foreground max-w-xs mx-auto mb-4">
+            Post your first pick and share it with subscribers.
+          </p>
+          <Button onClick={openCreate} className="min-h-11">
+            <Plus className="mr-1.5 h-4 w-4" /> Create Pick
+          </Button>
         </div>
       ) : (
         <div className="space-y-3">
@@ -361,51 +612,96 @@ const CreatorPosts = () => {
             const rc = resultConfig[post.result as keyof typeof resultConfig] || resultConfig.pending;
             const ResultIcon = rc.icon;
             return (
-              <div key={post.id} className="group rounded-xl border border-border bg-card p-4 sm:p-5 transition-colors hover:border-border/80">
-                <div className="flex items-start justify-between gap-3">
+              <div
+                key={post.id}
+                className="rounded-xl border border-border bg-card p-4 sm:p-5 transition-colors hover:border-primary/20"
+              >
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-2 mb-1.5 flex-wrap">
                       {post.is_premium ? (
-                        <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-medium text-primary uppercase tracking-wide"><Lock className="h-2.5 w-2.5" /> Premium</span>
+                        <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-2 py-0.5 text-caption font-medium text-primary uppercase tracking-wide">
+                          <Lock className="h-2.5 w-2.5" /> Premium
+                        </span>
                       ) : (
-                        <span className="inline-flex items-center gap-1 rounded-full bg-secondary px-2 py-0.5 text-[10px] font-medium text-muted-foreground uppercase tracking-wide"><Globe className="h-2.5 w-2.5" /> Free</span>
+                        <span className="inline-flex items-center gap-1 rounded-full bg-secondary px-2 py-0.5 text-caption font-medium text-muted-foreground uppercase tracking-wide">
+                          <Globe className="h-2.5 w-2.5" /> Free
+                        </span>
                       )}
-                      <Badge variant="outline" className={`text-[9px] font-semibold uppercase ${rc.className}`}>
+                      <Badge
+                        variant="outline"
+                        className={`text-caption font-semibold uppercase ${rc.className}`}
+                      >
                         <ResultIcon className="h-2.5 w-2.5 mr-0.5" />
                         {rc.label}
                       </Badge>
-                      <span className="text-xs text-muted-foreground">{format(new Date(post.created_at), 'MMM d, yyyy')}</span>
+                      <span className="text-caption text-muted-foreground">
+                        {format(new Date(post.created_at), 'MMM d, yyyy')}
+                      </span>
                     </div>
-                    <h3 className="font-semibold text-sm">{post.title}</h3>
-                    {post.content && <p className="text-xs text-muted-foreground mt-1 line-clamp-1">{post.content}</p>}
+                    <h3 className="font-semibold text-ui text-foreground">{post.title}</h3>
+                    {post.content && (
+                      <p className="text-caption text-muted-foreground mt-1 line-clamp-2">
+                        {post.content}
+                      </p>
+                    )}
                   </div>
 
-                  {/* Actions */}
-                  <div className="flex items-center gap-1 shrink-0">
-                    {/* Result buttons */}
+                  <div className="flex flex-wrap items-center gap-1 shrink-0">
                     {post.result === 'pending' && (
                       <div className="flex items-center gap-0.5 mr-1">
-                        <Button variant="ghost" size="icon" className="h-7 w-7 text-emerald-500 hover:bg-emerald-500/10 hover:text-emerald-500"
-                          onClick={() => handleResultChange(post.id, 'won')} title="Mark Won">
-                          <Trophy className="h-3.5 w-3.5" />
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-11 w-11 text-emerald-500 hover:bg-emerald-500/10 hover:text-emerald-500"
+                          onClick={() => void handleResultChange(post.id, 'won')}
+                          title="Mark Won"
+                        >
+                          <Trophy className="h-4 w-4" />
                         </Button>
-                        <Button variant="ghost" size="icon" className="h-7 w-7 text-red-500 hover:bg-red-500/10 hover:text-red-500"
-                          onClick={() => handleResultChange(post.id, 'lost')} title="Mark Lost">
-                          <XCircle className="h-3.5 w-3.5" />
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-11 w-11 text-red-500 hover:bg-red-500/10 hover:text-red-500"
+                          onClick={() => void handleResultChange(post.id, 'lost')}
+                          title="Mark Lost"
+                        >
+                          <XCircle className="h-4 w-4" />
                         </Button>
-                        <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:bg-muted"
-                          onClick={() => handleResultChange(post.id, 'push')} title="Mark Push">
-                          <Minus className="h-3.5 w-3.5" />
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-11 w-11 text-muted-foreground hover:bg-muted"
+                          onClick={() => void handleResultChange(post.id, 'push')}
+                          title="Mark Push"
+                        >
+                          <Minus className="h-4 w-4" />
                         </Button>
                       </div>
                     )}
                     {post.result !== 'pending' && (
-                      <span className="text-[10px] text-muted-foreground mr-1 px-1.5 py-0.5 rounded border border-border">
+                      <span className="text-caption text-muted-foreground mr-1 px-1.5 py-0.5 rounded border border-border">
                         Settled · locked
                       </span>
                     )}
-                    <Button variant="ghost" size="icon" className="h-8 w-8 md:opacity-0 md:group-hover:opacity-100 transition-opacity" onClick={() => openEdit(post)}><Pencil className="h-3.5 w-3.5" /></Button>
-                    <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive md:opacity-0 md:group-hover:opacity-100 transition-opacity" onClick={() => handleDelete(post.id)}><Trash2 className="h-3.5 w-3.5" /></Button>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-11 w-11"
+                      onClick={() => openEdit(post)}
+                      aria-label="Edit pick"
+                    >
+                      <Pencil className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-11 w-11 text-destructive hover:text-destructive"
+                      onClick={() => setDeleteId(post.id)}
+                      aria-label="Delete pick"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
                   </div>
                 </div>
               </div>
@@ -415,17 +711,20 @@ const CreatorPosts = () => {
             <div className="flex justify-center pt-2">
               <Button
                 variant="outline"
-                size="sm"
+                className="min-h-11"
                 disabled={postsStatus === 'LoadingMore'}
                 onClick={() => loadMore(PAGE_SIZE)}
               >
-                {postsStatus === 'LoadingMore' ? <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" /> : null}
+                {postsStatus === 'LoadingMore' ? (
+                  <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
+                ) : null}
                 Load more
               </Button>
             </div>
           )}
         </div>
       )}
+      {deleteDialog}
     </DashboardLayout>
   );
 };

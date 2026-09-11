@@ -1,25 +1,38 @@
 import { useState } from 'react';
-import { WizzletLogo } from '@/components/WizzletLogo';
-import { Seo } from '@/components/Seo';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useAuthActions } from '@convex-dev/auth/react';
-import { useMutation } from 'convex/react';
+import { useConvex, useMutation } from 'convex/react';
 import { useAuth } from '@/contexts/AuthContext';
-import { ADMIN_BOOTSTRAP } from '@/lib/adminBootstrap';
-import { homePathForRole } from '@/lib/roles';
-import { useConvexAuthReady, waitForAuthenticated, withAuthRetry } from '@/lib/authSession';
-import { api } from '@convex/_generated/api';
-import { Loader2 } from 'lucide-react';
-import { toast } from 'sonner';
+import { AuthShell } from '@/components/auth/AuthShell';
 import { SocialAuthSection } from '@/components/auth/SocialAuthButtons';
+import { ADMIN_BOOTSTRAP } from '@/lib/adminBootstrap';
+import { useConvexAuthReady, waitForAuthenticated, withAuthRetry } from '@/lib/authSession';
+import { isAppRole, type AppRole } from '@/lib/roles';
+import {
+  clearStoredReturnTo,
+  postAuthDestination,
+  sanitizeReturnPath,
+  storeReturnTo,
+} from '@/lib/safeReturnPath';
+import { api } from '@convex/_generated/api';
+import { Eye, EyeOff, Loader2 } from 'lucide-react';
+import { toast } from 'sonner';
 
 const isDevBuild = import.meta.env.DEV;
 
+async function loadHeldRoles(convex: ReturnType<typeof useConvex>): Promise<AppRole[]> {
+  const latest = await convex.query(api.users.queries.me, {});
+  return ((latest?.roles ?? []) as unknown[]).filter(isAppRole) as AppRole[];
+}
+
 const Login = () => {
   const navigate = useNavigate();
+  const convex = useConvex();
+  const [searchParams] = useSearchParams();
+  const returnTo = sanitizeReturnPath(searchParams.get('returnTo'));
   const { signIn } = useAuthActions();
   const { refreshRole, clearDevBypass, acceptAssignedRole } = useAuth();
   const authReady = useConvexAuthReady();
@@ -27,6 +40,7 @@ const Login = () => {
   const ensureUser = useMutation(api.users.queries.ensureUser);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
 
   const finishAdminSession = async () => {
@@ -40,12 +54,14 @@ const Login = () => {
     await withAuthRetry(() => grantTestAdmin({}));
     acceptAssignedRole('admin');
     await refreshRole('admin');
+    clearStoredReturnTo();
     toast.success('Signed in as platform owner');
     navigate('/admin');
   };
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (loading) return;
     setLoading(true);
     try {
       const normalizedEmail = email.trim().toLowerCase();
@@ -64,8 +80,14 @@ const Login = () => {
       clearDevBypass();
       await withAuthRetry(() => ensureUser({})).catch(() => undefined);
       const active = await refreshRole();
-      // Server-held roles drive destination — works with empty localStorage (new device).
-      navigate(homePathForRole(active));
+      const held = await withAuthRetry(() => loadHeldRoles(convex));
+      const dest = postAuthDestination({
+        roles: held,
+        preferred: active,
+        returnTo,
+      });
+      clearStoredReturnTo();
+      navigate(dest, { replace: true });
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Sign in failed');
     } finally {
@@ -78,6 +100,7 @@ const Login = () => {
       toast.error('Admin bootstrap login is only available in development builds.');
       return;
     }
+    if (loading) return;
     setLoading(true);
     setEmail(ADMIN_BOOTSTRAP.email);
     setPassword(ADMIN_BOOTSTRAP.password);
@@ -105,60 +128,102 @@ const Login = () => {
     }
   };
 
+  const signupHref = returnTo
+    ? `/signup?returnTo=${encodeURIComponent(returnTo)}`
+    : '/signup';
+
   return (
-    <main id="main-content" className="min-h-screen flex items-center justify-center px-4 bg-background">
-      <Seo title="Sign in — Wizzlet" description="Sign in to your Wizzlet account to manage picks, subscriptions and payouts." noindex />
-      <div className="w-full max-w-[380px]">
-        <div className="text-center mb-10">
-          <WizzletLogo size="md" className="justify-center mb-8" />
-          <h1 className="text-xl font-bold tracking-tight mt-4 text-foreground">Welcome back</h1>
-          <p className="text-[13px] text-muted-foreground mt-1.5">Sign in to your account</p>
-        </div>
-
-        <form onSubmit={(e) => void handleLogin(e)} className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="email" className="text-[13px]">Email</Label>
-            <Input id="email" type="email" placeholder="you@example.com" value={email} onChange={(e) => setEmail(e.target.value)} required className="bg-card border-border h-10" />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="password" className="text-[13px]">Password</Label>
-            <Input id="password" type="password" placeholder="••••••••" value={password} onChange={(e) => setPassword(e.target.value)} required className="bg-card border-border h-10" />
-          </div>
-          <Button type="submit" variant="default" className="w-full" disabled={loading}>
-            {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-            Sign in
-          </Button>
-        </form>
-
-        <SocialAuthSection redirectTo="/auth/callback" mode="signin" />
-
-        <p className="text-center text-[13px] text-muted-foreground mt-6">
+    <AuthShell
+      title="Welcome back"
+      subtitle="Sign in to your account"
+      seoTitle="Sign in — Prizelet"
+      seoDescription="Sign in to your Prizelet account to manage picks, subscriptions and payouts."
+      footer={
+        <p className="text-center text-support text-muted-foreground mt-6">
           Don&apos;t have an account?{' '}
-          <Link to="/signup" className="text-primary hover:underline">Sign up</Link>
+          <Link to={signupHref} className="text-primary hover:underline">
+            Sign up
+          </Link>
         </p>
-
-        {isDevBuild && (
-          <div className="mt-6 space-y-3 rounded-xl border border-border bg-muted/30 p-4">
-            <p className="text-[12px] font-medium text-foreground">Platform owner (local)</p>
-            <p className="text-[11px] text-muted-foreground font-mono leading-relaxed">
-              {ADMIN_BOOTSTRAP.email}
-              <br />
-              {ADMIN_BOOTSTRAP.password}
-            </p>
-            <Button
-              type="button"
-              variant="outline"
-              className="w-full"
-              onClick={() => void handleAdminLogin()}
+      }
+    >
+      <form onSubmit={(e) => void handleLogin(e)} className="space-y-4">
+        <div className="space-y-2">
+          <Label htmlFor="email" className="text-support">
+            Email
+          </Label>
+          <Input
+            id="email"
+            name="email"
+            type="email"
+            autoComplete="email"
+            placeholder="you@example.com"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            required
+            disabled={loading}
+            className="bg-card border-border h-11 text-ui"
+          />
+        </div>
+        <div className="space-y-2">
+          <Label htmlFor="password" className="text-support">
+            Password
+          </Label>
+          <div className="relative">
+            <Input
+              id="password"
+              name="password"
+              type={showPassword ? 'text' : 'password'}
+              autoComplete="current-password"
+              placeholder="••••••••"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
               disabled={loading}
+              className="bg-card border-border h-11 text-ui pr-11"
+            />
+            <button
+              type="button"
+              className="absolute right-0 top-0 inline-flex h-11 w-11 items-center justify-center text-muted-foreground hover:text-foreground"
+              aria-label={showPassword ? 'Hide password' : 'Show password'}
+              onClick={() => setShowPassword((v) => !v)}
             >
-              {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              Sign in as platform owner
-            </Button>
+              {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+            </button>
           </div>
-        )}
-      </div>
-    </main>
+        </div>
+        <Button type="submit" variant="default" className="w-full h-11" disabled={loading}>
+          {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+          Sign in
+        </Button>
+      </form>
+
+      <SocialAuthSection redirectTo="/auth/callback" mode="signin" returnTo={returnTo} />
+
+      {isDevBuild && (
+        <div className="mt-6 space-y-3 rounded-xl border border-border bg-muted/30 p-4">
+          <p className="text-support font-medium text-foreground">Platform owner (local)</p>
+          <p className="text-caption text-muted-foreground font-mono leading-relaxed">
+            {ADMIN_BOOTSTRAP.email}
+            <br />
+            {ADMIN_BOOTSTRAP.password}
+          </p>
+          <Button
+            type="button"
+            variant="outline"
+            className="w-full h-11"
+            onClick={() => {
+              storeReturnTo(null);
+              void handleAdminLogin();
+            }}
+            disabled={loading}
+          >
+            {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+            Sign in as platform owner
+          </Button>
+        </div>
+      )}
+    </AuthShell>
   );
 };
 

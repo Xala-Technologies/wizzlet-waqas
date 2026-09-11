@@ -10,9 +10,11 @@ import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
-import { MessageSquare, Send, Loader2, Users } from 'lucide-react';
-import { format } from 'date-fns';
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { MessageSquare, Send, Loader2, Users, Search, AlertCircle } from 'lucide-react';
+import { formatDistanceToNow } from 'date-fns';
 import { toast } from 'sonner';
+import { cn } from '@/lib/utils';
 
 const CREATOR_PAGE = 50;
 const MSG_PAGE = 50;
@@ -28,6 +30,13 @@ interface SentMessage {
   creatorName: string;
   body: string;
   created_at: number;
+}
+
+function initials(name: string) {
+  const parts = name.trim().split(/\s+/).filter(Boolean);
+  if (parts.length === 0) return '?';
+  if (parts.length === 1) return parts[0]!.slice(0, 2).toUpperCase();
+  return `${parts[0]![0] ?? ''}${parts[1]![0] ?? ''}`.toUpperCase();
 }
 
 const AdminCreatorMessaging = () => {
@@ -123,7 +132,7 @@ const AdminCreatorMessaging = () => {
       ));
       setBody('');
       setSelected(new Set());
-      toast.success('Message delivered');
+      toast.success(`Sent to ${selected.size} creator${selected.size === 1 ? '' : 's'}`);
     } catch (e) {
       toast.error(e instanceof Error ? e.message : 'Failed to send message');
     } finally {
@@ -133,101 +142,207 @@ const AdminCreatorMessaging = () => {
 
   return (
     <DashboardLayout type="admin">
-      <AdminSupportTabs />
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold">Creator Messaging</h1>
-        <p className="text-muted-foreground text-sm mt-0.5">
-          Broadcast to creators · {creators.length} loaded
-          {creatorStatus === 'CanLoadMore' || creatorStatus === 'LoadingMore' ? ' (more available)' : ''}
-        </p>
-        {!messagingEnabled && (
-          <p className="text-amber-600 text-xs mt-2">Creator messaging is disabled in Settings — send is blocked.</p>
-        )}
+      <div className="mb-5 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight">Support</h1>
+          <p className="text-muted-foreground text-sm mt-1">
+            Creator coaching conversations and platform broadcasts
+          </p>
+        </div>
+        <AdminSupportTabs />
       </div>
 
-      {loading ? (
-        <div className="flex justify-center py-20"><Loader2 className="h-5 w-5 animate-spin text-primary" /></div>
-      ) : (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-          <div className="rounded-xl border border-border bg-card p-6">
-            <h2 className="text-sm font-semibold mb-3 flex items-center gap-2"><Users className="h-4 w-4 text-primary" /> Recipients ({selected.size})</h2>
-            <Input placeholder="Search loaded creators…" value={search} onChange={(e) => setSearch(e.target.value)} className="mb-3" />
-            <div className="flex items-center gap-2 mb-3">
-              <Button variant="outline" size="sm" className="h-7 text-xs" onClick={() => setSelected(new Set(filtered.map((c) => c.id)))}>Select all loaded</Button>
-              <Button variant="ghost" size="sm" className="h-7 text-xs" onClick={() => setSelected(new Set())}>Clear</Button>
-            </div>
-            <div className="max-h-72 overflow-y-auto space-y-1">
-              {filtered.length === 0 && <p className="text-xs text-muted-foreground">No creators found.</p>}
-              {filtered.map((c) => (
-                <label key={c.id} className="flex items-center gap-2 rounded-lg px-2 py-2 text-sm hover:bg-muted/40 cursor-pointer">
-                  <Checkbox checked={selected.has(c.id)} onCheckedChange={() => toggle(c.id)} />
-                  {c.name}
-                </label>
-              ))}
-            </div>
-            {(creatorStatus === 'CanLoadMore' || creatorStatus === 'LoadingMore') && (
-              <Button
-                variant="outline"
-                size="sm"
-                className="mt-3 w-full"
-                disabled={creatorStatus === 'LoadingMore'}
-                onClick={() => loadMoreCreators(CREATOR_PAGE)}
-              >
-                {creatorStatus === 'LoadingMore' ? <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" /> : null}
-                Load more creators
-              </Button>
-            )}
-          </div>
+      {!messagingEnabled && (
+        <div className="mb-4 flex items-start gap-2.5 rounded-lg border border-amber-500/25 bg-amber-500/5 px-3.5 py-3 text-sm text-amber-800 dark:text-amber-200">
+          <AlertCircle className="h-4 w-4 mt-0.5 shrink-0" />
+          <p>Creator messaging is turned off in Settings. Broadcasts are blocked until you re-enable it.</p>
+        </div>
+      )}
 
-          <div className="rounded-xl border border-border bg-card p-6">
-            <h2 className="text-sm font-semibold mb-3 flex items-center gap-2"><MessageSquare className="h-4 w-4 text-primary" /> Message</h2>
-            <Label className="text-xs text-muted-foreground">Body</Label>
+      {loading ? (
+        <div className="flex justify-center py-24">
+          <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 lg:grid-cols-[340px_1fr] gap-4">
+          <section className="rounded-xl border border-border bg-card overflow-hidden flex flex-col min-h-[420px]">
+            <div className="border-b border-border px-4 py-3.5 space-y-3">
+              <div className="flex items-center justify-between gap-2">
+                <h2 className="text-sm font-semibold flex items-center gap-2">
+                  <Users className="h-4 w-4 text-muted-foreground" />
+                  Recipients
+                </h2>
+                <span className="text-caption text-muted-foreground tabular-nums">
+                  {selected.size} selected
+                </span>
+              </div>
+              <div className="relative">
+                <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+                <Input
+                  placeholder="Search creators…"
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  className="h-9 pl-8 text-sm"
+                  aria-label="Search creators"
+                />
+              </div>
+              <div className="flex items-center gap-1.5">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="h-7 text-caption"
+                  onClick={() => setSelected(new Set(filtered.map((c) => c.id)))}
+                >
+                  Select all
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-7 text-caption"
+                  onClick={() => setSelected(new Set())}
+                  disabled={selected.size === 0}
+                >
+                  Clear
+                </Button>
+              </div>
+            </div>
+
+            <div className="flex-1 overflow-y-auto p-2">
+              {filtered.length === 0 ? (
+                <p className="px-3 py-8 text-center text-sm text-muted-foreground">No creators found</p>
+              ) : (
+                filtered.map((c) => {
+                  const checked = selected.has(c.id);
+                  return (
+                    <label
+                      key={c.id}
+                      className={cn(
+                        'flex items-center gap-3 rounded-lg px-2.5 py-2.5 text-sm cursor-pointer transition-colors',
+                        checked ? 'bg-primary/5' : 'hover:bg-muted/40',
+                      )}
+                    >
+                      <Checkbox checked={checked} onCheckedChange={() => toggle(c.id)} />
+                      <Avatar className="h-7 w-7">
+                        <AvatarFallback className="text-caption font-semibold bg-muted text-muted-foreground">
+                          {initials(c.name)}
+                        </AvatarFallback>
+                      </Avatar>
+                      <span className="truncate font-medium">{c.name}</span>
+                    </label>
+                  );
+                })
+              )}
+            </div>
+
+            {(creatorStatus === 'CanLoadMore' || creatorStatus === 'LoadingMore') && (
+              <div className="p-2 border-t border-border">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="w-full text-caption text-muted-foreground"
+                  disabled={creatorStatus === 'LoadingMore'}
+                  onClick={() => loadMoreCreators(CREATOR_PAGE)}
+                >
+                  {creatorStatus === 'LoadingMore' ? <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" /> : null}
+                  Load more creators
+                </Button>
+              </div>
+            )}
+          </section>
+
+          <section className="rounded-xl border border-border bg-card p-5 sm:p-6 flex flex-col min-h-[420px]">
+            <h2 className="text-sm font-semibold mb-1 flex items-center gap-2">
+              <MessageSquare className="h-4 w-4 text-muted-foreground" />
+              Compose broadcast
+            </h2>
+            <p className="text-caption text-muted-foreground mb-4">
+              Send the same message to every selected creator.
+            </p>
+            <Label htmlFor="broadcast-body" className="text-caption text-muted-foreground mb-1.5">
+              Message
+            </Label>
             <Textarea
-              rows={7}
-              className="mt-1.5"
-              placeholder={messagingEnabled ? 'Write your message…' : 'Disabled in Settings'}
+              id="broadcast-body"
+              rows={8}
+              className="flex-1 min-h-[160px] resize-none"
+              placeholder={messagingEnabled ? 'Write a clear, professional message…' : 'Messaging is disabled'}
               value={body}
               onChange={(e) => setBody(e.target.value)}
               disabled={!messagingEnabled}
             />
-            <Button variant="hero" size="sm" className="mt-4" onClick={() => void send()} disabled={sending || !messagingEnabled}>
-              {sending ? <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" /> : <Send className="mr-1.5 h-3.5 w-3.5" />}
-              Send to {selected.size} creator{selected.size === 1 ? '' : 's'}
-            </Button>
-          </div>
+            <div className="mt-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+              <p className="text-caption text-muted-foreground">
+                {selected.size === 0
+                  ? 'Select recipients to enable send'
+                  : `Ready for ${selected.size} creator${selected.size === 1 ? '' : 's'}`}
+              </p>
+              <Button
+                size="sm"
+                className="sm:min-w-[140px]"
+                onClick={() => void send()}
+                disabled={sending || !messagingEnabled || selected.size === 0 || !body.trim()}
+              >
+                {sending ? <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" /> : <Send className="mr-1.5 h-3.5 w-3.5" />}
+                Send broadcast
+              </Button>
+            </div>
+          </section>
         </div>
       )}
 
-      <h2 className="text-sm font-medium text-muted-foreground uppercase tracking-wider mt-8 mb-3">Recently Sent</h2>
-      {supportStatus === 'LoadingFirstPage' ? (
-        <div className="flex justify-center py-8"><Loader2 className="h-4 w-4 animate-spin text-muted-foreground" /></div>
-      ) : recent.length === 0 ? (
-        <div className="rounded-xl border border-border bg-card p-8 text-center">
-          <p className="text-sm text-muted-foreground">No messages sent yet.</p>
+      <div className="mt-8">
+        <div className="flex items-center justify-between mb-3">
+          <h2 className="text-sm font-semibold">Recent broadcasts</h2>
+          {(supportStatus === 'CanLoadMore' || supportStatus === 'LoadingMore') && (
+            <Button
+              variant="ghost"
+              size="sm"
+              className="text-caption h-7"
+              disabled={supportStatus === 'LoadingMore'}
+              onClick={() => loadMoreSupport(MSG_PAGE)}
+            >
+              {supportStatus === 'LoadingMore' ? <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" /> : null}
+              Load more
+            </Button>
+          )}
         </div>
-      ) : (
-        <>
+
+        {supportStatus === 'LoadingFirstPage' ? (
+          <div className="flex justify-center py-8">
+            <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+          </div>
+        ) : recent.length === 0 ? (
+          <div className="rounded-xl border border-dashed border-border bg-card/50 px-6 py-10 text-center">
+            <p className="text-sm text-muted-foreground">No broadcasts sent yet</p>
+          </div>
+        ) : (
           <div className="space-y-2">
             {recent.map((m) => (
-              <div key={m.id} className="rounded-xl border border-border bg-card p-4">
-                <div className="flex items-center justify-between mb-1">
-                  <p className="text-sm font-medium">{m.creatorName}</p>
-                  <p className="text-[10px] text-muted-foreground">{format(new Date(m.created_at), 'MMM d, HH:mm')}</p>
+              <div
+                key={m.id}
+                className="rounded-xl border border-border bg-card px-4 py-3.5 flex gap-3"
+              >
+                <Avatar className="h-8 w-8 mt-0.5">
+                  <AvatarFallback className="text-caption font-semibold bg-muted text-muted-foreground">
+                    {initials(m.creatorName)}
+                  </AvatarFallback>
+                </Avatar>
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center justify-between gap-2 mb-1">
+                    <p className="text-sm font-medium truncate">{m.creatorName}</p>
+                    <p className="text-caption text-muted-foreground shrink-0">
+                      {formatDistanceToNow(new Date(m.created_at), { addSuffix: true })}
+                    </p>
+                  </div>
+                  <p className="text-sm text-muted-foreground whitespace-pre-wrap leading-relaxed">
+                    {m.body}
+                  </p>
                 </div>
-                <p className="text-xs text-muted-foreground whitespace-pre-wrap">{m.body}</p>
               </div>
             ))}
           </div>
-          {(supportStatus === 'CanLoadMore' || supportStatus === 'LoadingMore') && (
-            <div className="flex justify-center mt-4">
-              <Button variant="outline" size="sm" disabled={supportStatus === 'LoadingMore'} onClick={() => loadMoreSupport(MSG_PAGE)}>
-                {supportStatus === 'LoadingMore' ? <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" /> : null}
-                Load more messages
-              </Button>
-            </div>
-          )}
-        </>
-      )}
+        )}
+      </div>
     </DashboardLayout>
   );
 };

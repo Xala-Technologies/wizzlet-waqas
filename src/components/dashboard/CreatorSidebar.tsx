@@ -1,5 +1,6 @@
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { WizzletLogo } from '@/components/WizzletLogo';
+import { useQuery } from 'convex/react';
+import { PrizeletLogo } from '@/components/PrizeletLogo';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import {
@@ -25,16 +26,18 @@ import {
   ChevronDown,
   Brain,
   Lock,
+  Bell,
 } from 'lucide-react';
 import { useState } from 'react';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { RoleSwitcher } from './RoleSwitcher';
-
+import { api } from '@convex/_generated/api';
 
 interface NavItem {
   label: string;
   href: string;
   icon: typeof LayoutGrid;
+  badge?: string;
 }
 
 const mainItems: NavItem[] = [
@@ -64,11 +67,16 @@ const financeItems: NavItem[] = [
   { label: 'Resolution Case', href: '/creator/resolution-case', icon: FileWarning },
 ];
 
+function formatBadge(n: number): string | undefined {
+  if (n <= 0) return undefined;
+  return n > 9 ? '9+' : String(n);
+}
+
 function NavItemLink({ item, active }: { item: NavItem; active: boolean }) {
   return (
     <Link
       to={item.href}
-      className={`group flex items-center gap-3 rounded-lg px-3 py-2 text-[13px] transition-all duration-200 ${
+      className={`group flex items-center gap-3 rounded-lg px-3 py-2 text-ui transition-all duration-200 ${
         active
           ? 'bg-primary/10 text-primary font-medium shadow-[inset_2px_0_0_0_hsl(var(--primary))]'
           : 'text-muted-foreground hover:text-foreground hover:bg-muted/60'
@@ -79,14 +87,19 @@ function NavItemLink({ item, active }: { item: NavItem; active: boolean }) {
           active ? 'text-primary' : 'text-muted-foreground group-hover:text-foreground'
         }`}
       />
-      {item.label}
+      <span className="flex-1 truncate">{item.label}</span>
+      {item.badge && (
+        <span className="flex h-4 min-w-[16px] items-center justify-center rounded-full bg-primary px-1 text-caption font-bold text-primary-foreground">
+          {item.badge}
+        </span>
+      )}
     </Link>
   );
 }
 
 function SectionLabel({ children }: { children: React.ReactNode }) {
   return (
-    <span className="px-3 text-[10px] font-semibold uppercase tracking-widest text-muted-foreground/50 dark:text-muted-foreground/70 select-none">
+    <span className="px-3 text-caption font-semibold uppercase tracking-widest text-muted-foreground/50 dark:text-muted-foreground/70 select-none">
       {children}
     </span>
   );
@@ -98,13 +111,16 @@ function CollapsibleSection({
   pathname,
   defaultOpen = false,
   nestedTools,
+  badgeFor,
 }: {
   label: string;
   items: NavItem[];
   pathname: string;
   defaultOpen?: boolean;
   nestedTools?: NavItem[];
+  badgeFor?: (item: NavItem) => NavItem;
 }) {
+  const decorate = badgeFor ?? ((i: NavItem) => i);
   const allItems = nestedTools ? [...items, ...nestedTools] : items;
   const hasActive = allItems.some((i) => pathname === i.href);
   const [open, setOpen] = useState(defaultOpen || hasActive);
@@ -121,14 +137,14 @@ function CollapsibleSection({
       </CollapsibleTrigger>
       <CollapsibleContent className="space-y-0.5 mt-1">
         {items.map((item) => (
-          <NavItemLink key={item.href} item={item} active={pathname === item.href} />
+          <NavItemLink key={item.href} item={decorate(item)} active={pathname === item.href} />
         ))}
         {nestedTools && nestedTools.length > 0 && (
           <div className="pt-2 mt-1.5 space-y-0.5">
             <SectionLabel>Tools</SectionLabel>
             <div className="mt-1 space-y-0.5">
               {nestedTools.map((item) => (
-                <NavItemLink key={item.href} item={item} active={pathname === item.href} />
+                <NavItemLink key={item.href} item={decorate(item)} active={pathname === item.href} />
               ))}
             </div>
           </div>
@@ -139,28 +155,62 @@ function CollapsibleSection({
 }
 
 export function CreatorSidebar({ mobile = false }: { mobile?: boolean } = {}) {
-  const { signOut } = useAuth();
+  const { signOut, user } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
   const pathname = location.pathname;
 
+  const dmUnread = useQuery(
+    api.messaging.mutations.unreadCountCreator,
+    user ? {} : 'skip',
+  );
+  const growthUnread = useQuery(
+    api.support.mutations.unreadCountCreatorGrowth,
+    user ? {} : 'skip',
+  );
+  const resolutionUnread = useQuery(
+    api.resolution.mutations.unreadCountCreator,
+    user ? {} : 'skip',
+  );
+  const notifUnread = useQuery(
+    api.notifications.mutations.unreadCount,
+    user ? {} : 'skip',
+  );
+
   const handleSignOut = async () => {
-    await signOut();
     navigate('/');
+    await signOut();
+  };
+
+  const withBadges = (item: NavItem): NavItem => {
+    if (item.href === '/creator/messages') {
+      const badge = formatBadge(dmUnread ?? 0);
+      return badge ? { ...item, badge } : item;
+    }
+    if (item.href === '/creator/personal-growth-manager') {
+      const badge = formatBadge(growthUnread ?? 0);
+      return badge ? { ...item, badge } : item;
+    }
+    if (item.href === '/creator/resolution-case') {
+      const badge = formatBadge(resolutionUnread ?? 0);
+      return badge ? { ...item, badge } : item;
+    }
+    if (item.href === '/creator/notifications') {
+      const badge = formatBadge(notifUnread ?? 0);
+      return badge ? { ...item, badge } : item;
+    }
+    return item;
   };
 
   return (
-    <aside className={mobile ? 'flex h-full min-h-0 w-full flex-col bg-card' : 'hidden md:flex w-[220px] flex-col border-r border-border bg-card/80 backdrop-blur-sm'}>
-      {/* Logo — omitted in mobile drawer (shown in MobileTopBar) */}
+    <aside className={mobile ? 'flex h-full min-h-0 w-full flex-col bg-card' : 'hidden md:flex h-full w-[220px] shrink-0 flex-col border-r border-border bg-card'}>
       {!mobile && (
         <div className="px-5 py-5">
-          <WizzletLogo size="md" />
+          <PrizeletLogo size="md" linkTo="/creator" />
         </div>
       )}
 
-      {/* Navigation */}
       <nav className={`flex-1 overflow-y-auto px-3 pb-4 space-y-5 ${mobile ? 'pt-4' : ''}`}>
-        {/* Main */}
         <div className="space-y-0.5">
           <SectionLabel>Main</SectionLabel>
           <div className="mt-1.5 space-y-0.5">
@@ -170,20 +220,27 @@ export function CreatorSidebar({ mobile = false }: { mobile?: boolean } = {}) {
           </div>
         </div>
 
-        {/* Growth - Collapsible, with Tools nest */}
         <CollapsibleSection
           label="Growth"
           items={growthPrimaryItems}
           nestedTools={growthToolItems}
           pathname={pathname}
           defaultOpen
+          badgeFor={withBadges}
         />
 
-        {/* Finance - Collapsible */}
-        <CollapsibleSection label="Finance" items={financeItems} pathname={pathname} />
+        <CollapsibleSection
+          label="Finance"
+          items={financeItems}
+          pathname={pathname}
+          badgeFor={withBadges}
+        />
 
-        {/* Settings */}
         <div className="space-y-0.5">
+          <NavItemLink
+            item={withBadges({ label: 'Notifications', href: '/creator/notifications', icon: Bell })}
+            active={pathname === '/creator/notifications'}
+          />
           <NavItemLink
             item={{ label: 'Settings', href: '/creator/settings', icon: Settings }}
             active={pathname === '/creator/settings'}
@@ -191,18 +248,16 @@ export function CreatorSidebar({ mobile = false }: { mobile?: boolean } = {}) {
         </div>
       </nav>
 
-      {/* Footer */}
       <div className="shrink-0 px-3 py-4 border-t border-border space-y-2">
         <RoleSwitcher />
         <div className="flex items-center justify-between px-3">
-
-          <span className="text-[11px] text-muted-foreground">Theme</span>
+          <span className="text-caption text-muted-foreground">Theme</span>
           <ThemeToggle />
         </div>
         <Button
           variant="ghost"
           size="sm"
-          className="w-full justify-start text-muted-foreground hover:text-foreground text-[13px]"
+          className="w-full justify-start text-muted-foreground hover:text-foreground text-ui"
           onClick={handleSignOut}
         >
           <LogOut className="mr-2 h-3.5 w-3.5" />

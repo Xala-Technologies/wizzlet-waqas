@@ -29,23 +29,21 @@ const Creators = () => {
   return (
     <div className="flex min-h-screen flex-col bg-noise">
       <Seo
-        title="Top Sports Creators on Wizzlet"
-        description="Browse verified creators on Wizzlet, compare win rates and units, and subscribe to the handicappers you trust."
+        title="Top Sports Creators on Prizelet"
+        description="Browse verified creators on Prizelet, compare win rates and units, and subscribe to the handicappers you trust."
       />
       <Navbar />
 
       <main id="main-content" className="relative flex-1">
-        <div className="pointer-events-none absolute inset-x-0 top-0 h-[28rem] bg-[radial-gradient(ellipse_70%_50%_at_50%_-10%,hsl(var(--primary)/0.10),transparent)]" />
-
         <section className="container relative pt-28 pb-10 md:pt-32 md:pb-14">
-          <p className="mb-4 text-[11px] font-medium uppercase tracking-[0.22em] text-primary">
-            Wizzlet · Creators
+          <p className="mb-4 text-caption font-medium uppercase tracking-[0.22em] text-primary">
+            Prizelet · Creators
           </p>
           <h1 className="max-w-2xl text-4xl font-extrabold tracking-[-0.04em] text-foreground sm:text-5xl">
             Creators who publish with an edge
           </h1>
-          <p className="mt-4 max-w-xl text-[15px] leading-relaxed text-muted-foreground">
-            Live profiles from the Wizzlet network. Subscribe for gated picks — no algorithm,
+          <p className="mt-4 max-w-xl text-ui leading-relaxed text-muted-foreground">
+            Live profiles from the Prizelet network. Subscribe for gated content — no algorithm,
             no public feed noise.
           </p>
 
@@ -112,30 +110,30 @@ const Creators = () => {
                             <span className="font-semibold text-foreground group-hover:text-primary transition-colors">
                               {name}
                             </span>
-                            <span className="text-[13px] text-muted-foreground">@{c.username}</span>
+                            <span className="text-support text-muted-foreground">@{c.username}</span>
                             {c.verificationStatus === 'verified' && (
-                              <span className="text-[10px] font-medium uppercase tracking-wider text-primary">
+                              <span className="text-caption font-medium uppercase tracking-wider text-primary">
                                 Verified
                               </span>
                             )}
                           </div>
                           {c.bio ? (
-                            <p className="mt-1 line-clamp-2 text-[13px] leading-relaxed text-muted-foreground">
+                            <p className="mt-1 line-clamp-2 text-support leading-relaxed text-muted-foreground">
                               {c.bio}
                             </p>
                           ) : null}
-                          <p className="mt-2 text-[12px] text-muted-foreground/80">
+                          <p className="mt-2 text-support text-muted-foreground/80">
                             {c.postCount} {c.postCount === 1 ? 'pick' : 'picks'} published
                           </p>
                         </div>
                       </div>
                       <div className="flex shrink-0 items-center gap-4 pl-16 sm:pl-0">
                         {price && (
-                          <span className="font-mono text-[13px] tabular-nums text-foreground">
+                          <span className="font-mono text-support tabular-nums text-foreground">
                             {price}
                           </span>
                         )}
-                        <span className="text-[12px] font-medium text-primary opacity-0 transition-opacity group-hover:opacity-100">
+                        <span className="hover-reveal text-support font-medium text-primary transition-opacity">
                           View profile →
                         </span>
                       </div>
@@ -154,7 +152,7 @@ const Creators = () => {
                 Have a record worth selling?
               </h2>
               <p className="mt-2 text-sm text-muted-foreground">
-                Wizzlet is invite-only infrastructure — not another public tip board.
+                Prizelet is invite-only infrastructure — not another public tip board.
               </p>
             </div>
             <Link to="/signup">

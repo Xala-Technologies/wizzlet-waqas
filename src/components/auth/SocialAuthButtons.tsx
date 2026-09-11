@@ -5,6 +5,8 @@ import { api } from '@convex/_generated/api';
 import { Loader2 } from 'lucide-react';
 import { useState } from 'react';
 import { toast } from 'sonner';
+import { authCallbackUrl } from '@/lib/authSession';
+import { storeReturnTo } from '@/lib/safeReturnPath';
 
 type SocialProvider = 'twitter' | 'discord';
 
@@ -12,11 +14,14 @@ interface SocialAuthButtonsProps {
   /** Where Convex Auth redirects after OAuth (must be an app route). */
   redirectTo?: string;
   mode?: 'signin' | 'signup';
+  /** Optional deep-link path stashed for AuthCallback after OAuth. */
+  returnTo?: string | null;
 }
 
 export function SocialAuthButtons({
   redirectTo = '/auth/callback',
   mode = 'signin',
+  returnTo = null,
 }: SocialAuthButtonsProps) {
   const { signIn } = useAuthActions();
   const available = useQuery(api.authProviders.socialProviders);
@@ -25,7 +30,9 @@ export function SocialAuthButtons({
   const start = async (provider: SocialProvider) => {
     setPending(provider);
     try {
-      await signIn(provider, { redirectTo });
+      storeReturnTo(returnTo);
+      // Must match Convex SITE_URL origin (dev deploy uses http://127.0.0.1:8080 locally).
+      await signIn(provider, { redirectTo: authCallbackUrl(redirectTo) });
     } catch (err) {
       toast.error(
         err instanceof Error
@@ -76,7 +83,7 @@ export function SocialAuthButtons({
           {pending === 'discord' ? (
             <Loader2 className="mr-2 h-4 w-4 animate-spin" />
           ) : (
-            <span className="mr-2 inline-flex h-4 w-4 items-center justify-center rounded-sm bg-[#5865F2] text-[9px] font-bold text-white">
+            <span className="mr-2 inline-flex h-4 w-4 items-center justify-center rounded-sm bg-[#5865F2] text-caption font-bold text-white">
               D
             </span>
           )}
@@ -99,7 +106,7 @@ export function SocialAuthSection(props: SocialAuthButtonsProps) {
         <div className="absolute inset-0 flex items-center">
           <span className="w-full border-t border-border" />
         </div>
-        <div className="relative flex justify-center text-[11px] uppercase tracking-wide">
+        <div className="relative flex justify-center text-caption uppercase tracking-wide">
           <span className="bg-background px-2 text-muted-foreground">Or</span>
         </div>
       </div>
