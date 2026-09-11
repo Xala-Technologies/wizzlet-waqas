@@ -1,10 +1,9 @@
 import { useMemo, useState } from 'react';
-import { useLocation, useNavigate } from 'react-router-dom';
-import { useMutation, usePaginatedQuery } from 'convex/react';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { useMutation, usePaginatedQuery, useQuery } from 'convex/react';
 import { DashboardLayout } from '@/components/dashboard/DashboardLayout';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Skeleton } from '@/components/ui/skeleton';
 import {
   FileText,
   DollarSign,
@@ -57,23 +56,46 @@ function layoutFromPath(pathname: string): LayoutType {
   return 'member';
 }
 
+function emptyRecovery(layoutType: LayoutType): { primary: { to: string; label: string }; secondary?: { to: string; label: string } } {
+  if (layoutType === 'creator') {
+    return {
+      primary: { to: '/creator', label: 'Go to dashboard' },
+      secondary: { to: '/creator/messages', label: 'Open messages' },
+    };
+  }
+  if (layoutType === 'admin') {
+    return {
+      primary: { to: '/admin', label: 'Go to admin' },
+    };
+  }
+  return {
+    primary: { to: '/dashboard', label: 'Go to Feed' },
+    secondary: { to: '/dashboard/messages', label: 'Open messages' },
+  };
+}
+
 /** In-app notification center — shared by member, creator, and admin dashboards. */
 const CustomerNotifications = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
   const { pathname } = useLocation();
   const layoutType = layoutFromPath(pathname);
+  const recovery = emptyRecovery(layoutType);
   const [markingAll, setMarkingAll] = useState(false);
+  const [openingId, setOpeningId] = useState<string | null>(null);
 
   const { results, status, loadMore } = usePaginatedQuery(
     api.notifications.mutations.listMinePage,
     user ? {} : 'skip',
     { initialNumItems: PAGE_SIZE },
   );
+  const unreadTotal = useQuery(api.notifications.mutations.unreadCount, user ? {} : 'skip');
   const markReadMutation = useMutation(api.notifications.mutations.markRead);
   const markAllReadMutation = useMutation(api.notifications.mutations.markAllRead);
 
-  const loading = user ? status === 'LoadingFirstPage' : false;
+  const loading = user
+    ? status === 'LoadingFirstPage' || unreadTotal === undefined
+    : false;
 
   const items: NotificationRow[] = useMemo(
     () =>
@@ -89,18 +111,24 @@ const CustomerNotifications = () => {
     [results],
   );
 
-  const unreadCount = items.filter((n) => !n.read).length;
+  const unreadCount = unreadTotal ?? 0;
 
   const markRead = async (row: NotificationRow) => {
-    if (!row.read) {
-      try {
-        await markReadMutation({ notificationId: row.id as Id<'notifications'> });
-      } catch {
-        toast.error('Could not update notification');
-        return;
+    if (openingId) return;
+    setOpeningId(row.id);
+    try {
+      if (!row.read) {
+        try {
+          await markReadMutation({ notificationId: row.id as Id<'notifications'> });
+        } catch {
+          toast.error('Could not update notification');
+          return;
+        }
       }
+      if (row.link) navigate(row.link);
+    } finally {
+      setOpeningId(null);
     }
-    if (row.link) navigate(row.link);
   };
 
   const markAllRead = async () => {
@@ -115,10 +143,20 @@ const CustomerNotifications = () => {
     }
   };
 
+  if (loading) {
+    return (
+      <DashboardLayout type={layoutType}>
+        <div className="flex justify-center py-20">
+          <Loader2 className="h-5 w-5 animate-spin text-primary" />
+        </div>
+      </DashboardLayout>
+    );
+  }
+
   return (
     <DashboardLayout type={layoutType}>
       <header className="flex items-center justify-between mb-6 gap-3 flex-wrap">
-        <div>
+        <div className="min-w-0">
           <h1 className="text-heading font-bold text-foreground flex items-center gap-2 flex-wrap">
             Notifications
             {unreadCount > 0 && (
@@ -150,37 +188,47 @@ const CustomerNotifications = () => {
         </Button>
       </header>
 
-      {loading ? (
-        <div className="space-y-3" aria-busy="true" aria-label="Loading notifications">
-          {[0, 1, 2, 3].map((i) => (
-            <Skeleton key={i} className="h-[88px] w-full rounded-xl" />
-          ))}
-        </div>
-      ) : items.length === 0 ? (
+      {items.length === 0 ? (
         <div className="rounded-xl border border-border bg-card p-10 text-center">
           <BellOff className="h-10 w-10 text-muted-foreground mx-auto mb-4" />
           <h3 className="text-ui font-semibold text-foreground mb-2">You&apos;re all caught up</h3>
-          <p className="text-support text-muted-foreground max-w-sm mx-auto">
-            New messages and updates will show up here.
+          <p className="text-support text-muted-foreground mb-5 max-w-sm mx-auto">
+            New messages and updates will show up here when something needs your attention.
           </p>
+          <div className="flex flex-wrap items-center justify-center gap-2">
+            <Button className="min-h-11" asChild>
+              <Link to={recovery.primary.to}>{recovery.primary.label}</Link>
+            </Button>
+            {recovery.secondary && (
+              <Button variant="outline" className="min-h-11" asChild>
+                <Link to={recovery.secondary.to}>{recovery.secondary.label}</Link>
+              </Button>
+            )}
+          </div>
         </div>
       ) : (
         <div className="space-y-3">
           {items.map((n) => {
             const cfg = typeConfig[n.type] ?? typeConfig.announcement;
+            const busy = openingId === n.id;
             return (
               <button
                 key={n.id}
                 type="button"
+                disabled={!!openingId}
                 onClick={() => void markRead(n)}
-                className={`w-full min-h-[4.5rem] text-left rounded-xl border bg-card p-4 flex items-start gap-3 transition-colors hover:border-primary/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${
+                className={`w-full min-h-11 text-left rounded-xl border bg-card p-4 flex items-start gap-3 transition-colors hover:border-primary/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-60 ${
                   n.read ? 'border-border opacity-70' : 'border-border'
                 }`}
               >
                 <div
                   className={`flex h-10 w-10 items-center justify-center rounded-lg ${cfg.bg} shrink-0 mt-0.5`}
                 >
-                  <cfg.icon className={`h-4 w-4 ${cfg.color}`} />
+                  {busy ? (
+                    <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+                  ) : (
+                    <cfg.icon className={`h-4 w-4 ${cfg.color}`} />
+                  )}
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 mb-0.5">
@@ -205,7 +253,7 @@ const CustomerNotifications = () => {
                 type="button"
                 variant="outline"
                 className="min-h-11"
-                disabled={status === 'LoadingMore'}
+                disabled={status === 'LoadingMore' || !!openingId}
                 onClick={() => loadMore(PAGE_SIZE)}
               >
                 {status === 'LoadingMore' ? (
