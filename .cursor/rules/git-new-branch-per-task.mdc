@@ -9,21 +9,24 @@ When starting a new task or continuing after a completed PR/commit wave:
 
 - **Create a new branch first** — do not keep committing on the previous feature branch.
 - Name branches by intent, e.g. `fix/…`, `feat/…`, `chore/…`.
-- Base the branch on the appropriate upstream (`dev`, `main`, or the open cutover branch only when stacking intentionally).
+- **Base on the newest shipped tip** — the latest production-deployed feature branch (or `main`/`dev` only if it already contains that tip). Never cut from a stale `dev` that lags Prizelet branding or recent polish.
+- Before branching: `git fetch` and confirm the base has current package/branding (e.g. `prizelet`, `PrizeletLogo`) and recent layout work.
 - Commit only when asked (or when the user explicitly requests push/PR); then **push the new branch** and **open a new PR**.
 - Prefer a focused PR for the current change set; do not dump unrelated work onto an old branch.
 
 ## Examples
 
 ```bash
-# ✅ Start fresh
-git checkout dev   # or the agreed base
+# ✅ Start from newest tip (example: last shipped polish branch)
+git fetch origin
+git checkout fix/global-segmented-controls   # or whatever is currently live
 git pull
-git checkout -b fix/creators-footer-onboarding-exit
+git checkout -b fix/admin-wave2-people-tables
 
-# ❌ Continue piling onto the last branch
-git checkout feat/convex-cutover-stripe
-git commit ...
+# ❌ Cut from outdated upstream and overwrite prod
+git checkout origin/dev   # stale — missing Prizelet / polish
+git checkout -b fix/something
+npx vercel --prod         # can roll branding back
 ```
 
 Stack onto an existing feature branch only when the user asks for a stacked PR or the change depends on unmerged work on that branch.
