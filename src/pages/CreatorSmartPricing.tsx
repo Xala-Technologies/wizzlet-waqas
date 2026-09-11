@@ -5,9 +5,19 @@ import { api } from '../../convex/_generated/api';
 import { DashboardLayout } from '@/components/dashboard/DashboardLayout';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { useCreatorProfile } from '@/hooks/useCreatorProfile';
-import { DollarSign, Zap, BarChart3, Target, Lightbulb, Loader2, Package, ArrowRight } from 'lucide-react';
+import {
+  DollarSign,
+  BarChart3,
+  Target,
+  Lightbulb,
+  Loader2,
+  Package,
+  ArrowRight,
+  TrendingUp,
+} from 'lucide-react';
 import { toast } from 'sonner';
 
 interface PricingData {
@@ -34,7 +44,9 @@ const CreatorSmartPricing = () => {
 
   useEffect(() => {
     if (creatorLoading || !creator) return;
-    if (subs === undefined || analytics === undefined || posts === undefined || marketPage === undefined) return;
+    if (subs === undefined || analytics === undefined || posts === undefined || marketPage === undefined) {
+      return;
+    }
     const market = marketPage.items;
 
     const activeSubs = subs.filter((s) => s.status === 'active');
@@ -52,12 +64,20 @@ const CreatorSmartPricing = () => {
       profileViews: analytics.filter((e) => e.eventType === 'profile_view').length,
       winRate: settled.length ? (wins / settled.length) * 100 : 0,
       settledPicks: settled.length,
-      marketAverage: marketPrices.length ? marketPrices.reduce((a, b) => a + b, 0) / marketPrices.length : price,
+      marketAverage: marketPrices.length
+        ? marketPrices.reduce((a, b) => a + b, 0) / marketPrices.length
+        : price,
     });
     setPriceInput(price.toFixed(2));
   }, [creator, creatorLoading, subs, analytics, posts, marketPage]);
 
-  const loading = creatorLoading || !creator || subs === undefined || analytics === undefined || posts === undefined || marketPage === undefined;
+  const queriesLoading =
+    !!creator &&
+    (subs === undefined ||
+      analytics === undefined ||
+      posts === undefined ||
+      marketPage === undefined);
+  const loading = creatorLoading || queriesLoading;
 
   const suggestion = useMemo(() => {
     if (!data) return null;
@@ -77,13 +97,16 @@ const CreatorSmartPricing = () => {
   }, [data]);
 
   const savePrice = async () => {
-    if (!creator) return;
+    if (!creator || saving) return;
     const next = Number(priceInput);
-    if (!next || next < 1) { toast.error('Enter a valid price'); return; }
+    if (!next || next < 1) {
+      toast.error('Enter a valid price');
+      return;
+    }
     setSaving(true);
     try {
       await updateSettings({ monthlyPriceCents: Math.round(next * 100) });
-      setData((d) => d ? { ...d, price: next } : d);
+      setData((d) => (d ? { ...d, price: next } : d));
       toast.success('Featured / list price updated');
     } catch (e) {
       toast.error(e instanceof Error ? e.message : 'Failed to update price');
@@ -92,10 +115,45 @@ const CreatorSmartPricing = () => {
     }
   };
 
-  if (loading || !data || !suggestion) {
+  if (loading) {
     return (
       <DashboardLayout type="creator">
-        <div className="flex justify-center py-20"><Loader2 className="h-5 w-5 animate-spin text-primary" /></div>
+        <div className="flex justify-center py-20">
+          <Loader2 className="h-5 w-5 animate-spin text-primary" />
+        </div>
+      </DashboardLayout>
+    );
+  }
+
+  if (!creator) {
+    return (
+      <DashboardLayout type="creator">
+        <header className="mb-6">
+          <h1 className="text-heading font-bold text-foreground">Smart Pricing</h1>
+          <p className="text-support text-muted-foreground mt-0.5">
+            Illustrative pricing guidance from your live metrics — not a guarantee.
+          </p>
+        </header>
+        <div className="rounded-xl border border-border bg-card p-10 text-center">
+          <DollarSign className="h-10 w-10 text-muted-foreground mx-auto mb-4" />
+          <h3 className="text-ui font-semibold text-foreground mb-2">No creator profile yet</h3>
+          <p className="text-support text-muted-foreground max-w-xs mx-auto mb-5">
+            Finish onboarding to see pricing guidance and set your list price.
+          </p>
+          <Button asChild className="min-h-11">
+            <Link to="/creator/onboarding">Set up your profile</Link>
+          </Button>
+        </div>
+      </DashboardLayout>
+    );
+  }
+
+  if (!data || !suggestion) {
+    return (
+      <DashboardLayout type="creator">
+        <div className="flex justify-center py-20">
+          <Loader2 className="h-5 w-5 animate-spin text-primary" />
+        </div>
       </DashboardLayout>
     );
   }
@@ -110,84 +168,127 @@ const CreatorSmartPricing = () => {
     `Market average across published creators is about $${data.marketAverage.toFixed(2)}/mo — you are ${data.price >= data.marketAverage ? 'above' : 'below'} it. Treat this as a rough benchmark only.`,
   ];
 
+  const impactLabel =
+    suggestion.direction === 'higher'
+      ? 'Exploring a higher list price'
+      : suggestion.direction === 'lower'
+        ? 'Exploring a lower list price'
+        : 'Current price looks aligned';
+
   return (
     <DashboardLayout type="creator">
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold">Smart Pricing</h1>
-        <p className="text-muted-foreground text-sm mt-0.5">Illustrative pricing guidance from your live metrics — not a guarantee</p>
-      </div>
+      <header className="mb-6">
+        <h1 className="text-heading font-bold text-foreground">Smart Pricing</h1>
+        <p className="text-support text-muted-foreground mt-0.5">
+          Illustrative pricing guidance from your live metrics — not a guarantee.
+        </p>
+      </header>
 
-      <div className="rounded-xl border border-primary/20 bg-primary/5 p-4 mb-6 flex flex-col sm:flex-row sm:items-center gap-3 justify-between">
+      <div className="rounded-xl border border-border bg-card p-4 sm:p-5 mb-6 flex flex-col sm:flex-row sm:items-center gap-3 justify-between">
         <div className="flex items-start gap-3 min-w-0">
-          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary/10">
-            <Package className="h-4 w-4 text-primary" />
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-muted">
+            <Package className="h-4 w-4 text-muted-foreground" />
           </div>
           <div className="min-w-0">
-            <p className="text-sm font-medium">Edit sellable product prices in Products</p>
-            <p className="text-caption text-muted-foreground mt-0.5">
-              Subscription tiers and product pricing live on the Products page. Use the control below only for your featured / list monthly price.
+            <p className="text-ui font-semibold text-foreground">Edit sellable product prices in Products</p>
+            <p className="text-support text-muted-foreground mt-0.5">
+              Subscription tiers and product pricing live on the Products page. Use the control below
+              only for your featured / list monthly price.
             </p>
           </div>
         </div>
-        <Button variant="hero" size="sm" asChild className="shrink-0">
+        <Button variant="hero" asChild className="min-h-11 shrink-0">
           <Link to="/creator/products">
             Go to Products <ArrowRight className="ml-1.5 h-3.5 w-3.5" />
           </Link>
         </Button>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-        <div className="rounded-xl border border-border bg-card p-5">
-          <p className="text-caption text-muted-foreground uppercase tracking-wider font-semibold mb-2">Current List Price</p>
-          <p className="text-3xl font-bold">${data.price.toFixed(2)}</p>
-          <p className="text-caption text-muted-foreground mt-1">{data.activeSubs} active subscribers</p>
-        </div>
-        <div className="rounded-xl border border-primary/30 bg-card p-5 ring-1 ring-primary/10">
-          <div className="flex items-center justify-between mb-2">
-            <p className="text-caption text-primary uppercase tracking-wider font-semibold">Suggested Range</p>
-            <Zap className="h-3.5 w-3.5 text-primary" />
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-6">
+        <div className="rounded-xl border border-border bg-card p-4">
+          <div className="flex items-center gap-1.5 mb-1.5">
+            <DollarSign className="h-3.5 w-3.5 text-muted-foreground" />
+            <p className="text-support text-muted-foreground">Current list price</p>
           </div>
-          <p className="text-3xl font-bold text-primary">${suggestion.suggested.toFixed(2)}</p>
-          <p className="text-caption text-muted-foreground mt-1">Heuristic from win rate, demand and market data</p>
-        </div>
-        <div className="rounded-xl border border-border bg-card p-5">
-          <p className="text-caption text-muted-foreground uppercase tracking-wider font-semibold mb-2">Illustrative Impact</p>
-          <p className="text-lg font-semibold leading-snug mt-1">
-            {suggestion.direction === 'higher'
-              ? 'Exploring a higher list price'
-              : suggestion.direction === 'lower'
-                ? 'Exploring a lower list price'
-                : 'Current price looks aligned'}
+          <p className="text-ui font-bold text-foreground">${data.price.toFixed(2)}</p>
+          <p className="text-support text-muted-foreground mt-1">
+            {data.activeSubs} active subscribers
           </p>
-          <p className="text-caption text-muted-foreground mt-2">
-            Directional only — not a projected revenue %. Actual results depend on demand and product mix.
+        </div>
+        <div className="rounded-xl border border-border bg-card p-4">
+          <div className="flex items-center gap-1.5 mb-1.5">
+            <TrendingUp className="h-3.5 w-3.5 text-muted-foreground" />
+            <p className="text-support text-muted-foreground">Suggested range</p>
+          </div>
+          <p className="text-ui font-bold text-foreground">${suggestion.suggested.toFixed(2)}</p>
+          <p className="text-support text-muted-foreground mt-1">
+            Heuristic from win rate, demand and market data
+          </p>
+        </div>
+        <div className="rounded-xl border border-border bg-card p-4">
+          <div className="flex items-center gap-1.5 mb-1.5">
+            <Target className="h-3.5 w-3.5 text-muted-foreground" />
+            <p className="text-support text-muted-foreground">Illustrative impact</p>
+          </div>
+          <p className="text-ui font-semibold text-foreground leading-snug">{impactLabel}</p>
+          <p className="text-support text-muted-foreground mt-1">
+            Directional only — not a projected revenue %. Actual results depend on demand and product
+            mix.
           </p>
         </div>
       </div>
 
-      <div className="rounded-xl border border-border bg-card p-6 mb-6">
-        <h2 className="text-sm font-medium mb-1 flex items-center gap-2"><DollarSign className="h-4 w-4 text-primary" /> Update Featured / List Price</h2>
-        <p className="text-caption text-muted-foreground mb-4">
-          Applies your monthly featured price shown on your public profile and creator list. For sellable product prices, use Products.
+      <div className="rounded-xl border border-border bg-card p-5 sm:p-6 mb-6 space-y-4">
+        <h2 className="text-ui font-semibold text-foreground flex items-center gap-2">
+          <DollarSign className="h-4 w-4 text-primary" /> Update featured / list price
+        </h2>
+        <p className="text-support text-muted-foreground">
+          Applies your monthly featured price shown on your public profile and creator list. For
+          sellable product prices, use Products. Changing the input alone does not save until you
+          apply.
         </p>
-        <div className="flex flex-wrap items-end gap-3">
-          <div>
-            <label className="text-caption text-muted-foreground">Monthly price ($)</label>
-            <Input type="number" min="1" step="0.01" value={priceInput} onChange={e => setPriceInput(e.target.value)} className="mt-1.5 w-40" />
+        <div className="flex flex-col sm:flex-row sm:flex-wrap sm:items-end gap-3">
+          <div className="space-y-2">
+            <Label htmlFor="list-price" className="text-support text-muted-foreground">
+              Monthly price ($)
+            </Label>
+            <Input
+              id="list-price"
+              type="number"
+              min={1}
+              step="0.01"
+              value={priceInput}
+              onChange={(e) => setPriceInput(e.target.value)}
+              className="h-11 min-h-11 w-full sm:w-40 text-ui"
+            />
           </div>
-          <Button variant="hero" size="sm" onClick={savePrice} disabled={saving}>
-            {saving && <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />} Apply list price
+          <Button
+            type="button"
+            variant="hero"
+            className="min-h-11"
+            onClick={() => void savePrice()}
+            disabled={saving || !priceInput.trim()}
+          >
+            {saving ? <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" /> : null}
+            Apply list price
           </Button>
-          <Button variant="outline" size="sm" onClick={() => setPriceInput(suggestion.suggested.toFixed(2))}>
+          <Button
+            type="button"
+            variant="outline"
+            className="min-h-11"
+            onClick={() => setPriceInput(suggestion.suggested.toFixed(2))}
+          >
             <Target className="mr-1.5 h-3.5 w-3.5" /> Use suggested
           </Button>
         </div>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div className="rounded-xl border border-border bg-card p-6">
-          <h2 className="text-sm font-medium mb-4 flex items-center gap-2"><BarChart3 className="h-4 w-4 text-primary" /> Live Metrics</h2>
-          <div className="space-y-3 text-sm">
+        <div className="rounded-xl border border-border bg-card p-5 sm:p-6">
+          <h2 className="text-ui font-semibold text-foreground mb-4 flex items-center gap-2">
+            <BarChart3 className="h-4 w-4 text-primary" /> Live metrics
+          </h2>
+          <div className="space-y-3">
             {[
               ['Monthly recurring revenue', `$${data.monthlyRevenue.toFixed(2)}`],
               ['Active subscribers', String(data.activeSubs)],
@@ -195,21 +296,28 @@ const CreatorSmartPricing = () => {
               ['View → subscriber rate', `${suggestion.conversion.toFixed(1)}%`],
               ['Win rate', `${data.winRate.toFixed(1)}%`],
             ].map(([label, value]) => (
-              <div key={label} className="flex items-center justify-between border-b border-border last:border-0 pb-2 last:pb-0">
-                <span className="text-muted-foreground text-caption">{label}</span>
-                <span className="font-semibold">{value}</span>
+              <div
+                key={label}
+                className="flex items-center justify-between border-b border-border last:border-0 pb-2 last:pb-0"
+              >
+                <span className="text-support text-muted-foreground">{label}</span>
+                <span className="text-ui font-semibold text-foreground">{value}</span>
               </div>
             ))}
           </div>
         </div>
 
-        <div className="rounded-xl border border-border bg-card p-6">
-          <h2 className="text-sm font-medium mb-4 flex items-center gap-2"><Lightbulb className="h-4 w-4 text-amber-500" /> Recommendations</h2>
+        <div className="rounded-xl border border-border bg-card p-5 sm:p-6">
+          <h2 className="text-ui font-semibold text-foreground mb-4 flex items-center gap-2">
+            <Lightbulb className="h-4 w-4 text-muted-foreground" /> Recommendations
+          </h2>
           <div className="space-y-3">
             {insights.map((text, i) => (
               <div key={i} className="flex gap-3">
-                <Badge variant="outline" className="h-5 shrink-0 text-caption">{i + 1}</Badge>
-                <p className="text-caption text-muted-foreground leading-relaxed">{text}</p>
+                <Badge variant="outline" className="h-5 shrink-0 text-caption">
+                  {i + 1}
+                </Badge>
+                <p className="text-support text-muted-foreground leading-relaxed">{text}</p>
               </div>
             ))}
           </div>
