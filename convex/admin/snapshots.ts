@@ -357,6 +357,76 @@ export const alertsOverview = query({
   },
 });
 
+/**
+ * Exact customer list KPIs (users with ≥1 subscription).
+ * Aligns canceled / at-risk with Alerts (past_due | failed).
+ */
+export const customersOverview = query({
+  args: {},
+  returns: v.object({
+    customerCount: v.number(),
+    activeSubscriberCount: v.number(),
+    activeSubCount: v.number(),
+    revenue: v.number(),
+    atRiskCount: v.number(),
+    churnedCount: v.number(),
+    truncated: v.boolean(),
+    listLimit: v.number(),
+  }),
+  handler: async (ctx) => {
+    await requireAdmin(ctx);
+    const subsScan = await adminScanAll(ctx, "subscriptions");
+    const byUser = new Map<
+      Id<"users">,
+      {
+        active: number;
+        canceled: number;
+        problem: number;
+        spent: number;
+      }
+    >();
+
+    for (const s of subsScan.docs) {
+      const cur = byUser.get(s.userId) ?? {
+        active: 0,
+        canceled: 0,
+        problem: 0,
+        spent: 0,
+      };
+      cur.spent += s.amountCents / 100;
+      if (s.status === "active") cur.active += 1;
+      else if (s.status === "canceled") cur.canceled += 1;
+      if (s.status === "past_due" || s.status === "failed") cur.problem += 1;
+      byUser.set(s.userId, cur);
+    }
+
+    let activeSubscriberCount = 0;
+    let activeSubCount = 0;
+    let atRiskCount = 0;
+    let churnedCount = 0;
+    let revenue = 0;
+
+    for (const row of byUser.values()) {
+      revenue += row.spent;
+      activeSubCount += row.active;
+      if (row.active > 0) activeSubscriberCount += 1;
+      if (row.problem > 0) atRiskCount += 1;
+      else if (row.active === 0 && row.canceled > 0) churnedCount += 1;
+    }
+
+    return {
+      customerCount: byUser.size,
+      activeSubscriberCount,
+      activeSubCount,
+      revenue,
+      atRiskCount,
+      churnedCount,
+      truncated: subsScan.truncated,
+      listLimit: ADMIN_SCAN_MAX_DOCS,
+    };
+  },
+});
+
 const payoutBalanceRowValidator = v.object({
   creatorId: v.id("creators"),
   name: v.string(),

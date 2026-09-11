@@ -111,9 +111,7 @@ const CustomerNotifications = () => {
   const layoutType = layoutFromPath(pathname);
   const recovery = emptyRecovery(layoutType);
   const [markingAll, setMarkingAll] = useState(false);
-  const [openingId, setOpeningId] = useState<string | null>(null);
-
-  const { results, status, loadMore } = usePaginatedQuery(
+  const [openingId, setOpeningId] = useState<string | null>(null);  const { results, status, loadMore } = usePaginatedQuery(
     api.notifications.mutations.listMinePage,
     user ? {} : 'skip',
     { initialNumItems: PAGE_SIZE },
@@ -198,7 +196,9 @@ const CustomerNotifications = () => {
             )}
           </h1>
           <p className="text-support text-muted-foreground mt-0.5">
-            Messages, billing updates, and platform announcements
+            {layoutType === 'admin'
+              ? 'Platform alerts and admin account messages'
+              : 'Messages, billing updates, and platform announcements'}
           </p>
         </div>
         {items.length > 0 && (

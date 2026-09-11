@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { usePaginatedQuery } from 'convex/react';
 import { api } from '../../convex/_generated/api';
@@ -14,7 +14,8 @@ import { downloadCsv } from '@/lib/csv';
 
 const PAGE_SIZE = 25;
 
-const STATUS_OPTIONS = ['all', 'active', 'canceled', 'past_due', 'failed', 'incomplete', 'trialing'] as const;
+const STATUS_OPTIONS = ['all', 'active', 'canceled', 'past_due', 'failed', 'incomplete', 'trialing', 'unpaid'] as const;
+type StatusFilter = (typeof STATUS_OPTIONS)[number];
 
 interface Transaction {
   id: string;
@@ -28,18 +29,27 @@ interface Transaction {
   feePercentage: number;
 }
 
+function parseStatus(raw: string | null): StatusFilter {
+  if (raw && (STATUS_OPTIONS as readonly string[]).includes(raw)) {
+    return raw as StatusFilter;
+  }
+  return 'all';
+}
+
 const AdminTransactions = () => {
   const [searchParams, setSearchParams] = useSearchParams();
-  const statusFromUrl = searchParams.get('status') ?? 'all';
-  const initialStatus = STATUS_OPTIONS.includes(statusFromUrl as (typeof STATUS_OPTIONS)[number])
-    ? statusFromUrl
-    : 'all';
   const [search, setSearch] = useState('');
-  const [statusFilter, setStatusFilter] = useState(initialStatus);
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>(() =>
+    parseStatus(searchParams.get('status')),
+  );
+
+  useEffect(() => {
+    setStatusFilter(parseStatus(searchParams.get('status')));
+  }, [searchParams]);
 
   const { results, status, loadMore } = usePaginatedQuery(
     api.admin.paginatedLists.listTransactionsPage,
-    {},
+    { status: statusFilter },
     { initialNumItems: PAGE_SIZE },
   );
 
@@ -59,25 +69,24 @@ const AdminTransactions = () => {
     }));
   }, [results]);
 
-  const active = transactions.filter((t) => t.status === 'active');
-  const totalAmount = active.reduce((a, b) => a + b.amount, 0);
-  const totalFees = active.reduce((a, b) => a + b.platformFee, 0);
-  const totalCreatorEarnings = active.reduce((a, b) => a + b.creatorEarnings, 0);
+  const pageVolume = transactions.reduce((a, b) => a + b.amount, 0);
+  const pageFees = transactions.reduce((a, b) => a + b.platformFee, 0);
+  const pageCreator = transactions.reduce((a, b) => a + b.creatorEarnings, 0);
+  const activeOnPage = transactions.filter((t) => t.status === 'active').length;
 
   const filtered = transactions.filter((t) => {
     const q = search.toLowerCase();
-    const matchesSearch = !q || t.userName.toLowerCase().includes(q) || t.creatorName.toLowerCase().includes(q);
-    const matchesStatus = statusFilter === 'all' || t.status === statusFilter;
-    return matchesSearch && matchesStatus;
+    return !q || t.userName.toLowerCase().includes(q) || t.creatorName.toLowerCase().includes(q);
   });
 
   const onStatusChange = (value: string) => {
-    setStatusFilter(value);
-    if (value === 'all') {
+    const next = parseStatus(value);
+    setStatusFilter(next);
+    if (next === 'all') {
       searchParams.delete('status');
       setSearchParams(searchParams, { replace: true });
     } else {
-      setSearchParams({ status: value }, { replace: true });
+      setSearchParams({ status: next }, { replace: true });
     }
   };
 
@@ -101,50 +110,54 @@ const AdminTransactions = () => {
           <h1 className="text-2xl font-bold">Transactions</h1>
           <p className="text-muted-foreground text-sm mt-0.5">
             {transactions.length} loaded
+            {statusFilter === 'failed' ? ' · failed + past due' : statusFilter !== 'all' ? ` · ${statusFilter}` : ''}
             {status === 'CanLoadMore' || status === 'LoadingMore' ? ' (more available)' : ''}
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
           <div className="relative w-full sm:w-48">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
-            <Input placeholder="Search loaded…" value={search} onChange={(e) => setSearch(e.target.value)} className="pl-9 h-9" />
+            <Input placeholder="Search loaded…" value={search} onChange={(e) => setSearch(e.target.value)} className="pl-9 min-h-11" />
           </div>
           <Select value={statusFilter} onValueChange={onStatusChange}>
-            <SelectTrigger className="w-full sm:w-36 h-9"><SelectValue /></SelectTrigger>
+            <SelectTrigger className="w-full sm:w-44 min-h-11"><SelectValue /></SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All Status</SelectItem>
               <SelectItem value="active">Active</SelectItem>
               <SelectItem value="canceled">Canceled</SelectItem>
-              <SelectItem value="past_due">Past due</SelectItem>
-              <SelectItem value="failed">Failed</SelectItem>
+              <SelectItem value="past_due">Past due only</SelectItem>
+              <SelectItem value="failed">Failed + past due</SelectItem>
               <SelectItem value="incomplete">Incomplete</SelectItem>
               <SelectItem value="trialing">Trialing</SelectItem>
+              <SelectItem value="unpaid">Unpaid</SelectItem>
             </SelectContent>
           </Select>
-          <Button variant="outline" size="sm" className="h-9 min-h-9 text-caption w-full sm:w-auto" onClick={handleExport}>
+          <Button variant="outline" size="sm" className="min-h-11 text-caption w-full sm:w-auto" onClick={handleExport}>
             <Download className="mr-1.5 h-3.5 w-3.5" /> Export
           </Button>
         </div>
       </div>
 
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-        <div className="rounded-xl border border-border bg-card p-5">
-          <p className="text-caption text-muted-foreground uppercase tracking-wider mb-1">Volume (loaded)</p>
-          <p className="text-xl font-bold">${totalAmount.toFixed(2)}</p>
+      {!loading && (
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+          <div className="rounded-xl border border-border bg-card p-5">
+            <p className="text-caption text-muted-foreground uppercase tracking-wider mb-1">Volume (on this page)</p>
+            <p className="text-xl font-bold">${pageVolume.toFixed(2)}</p>
+          </div>
+          <div className="rounded-xl border border-border bg-card p-5">
+            <p className="text-caption text-muted-foreground uppercase tracking-wider mb-1">Fees (on this page)</p>
+            <p className="text-xl font-bold text-emerald-400">${pageFees.toFixed(2)}</p>
+          </div>
+          <div className="rounded-xl border border-border bg-card p-5">
+            <p className="text-caption text-muted-foreground uppercase tracking-wider mb-1">Creator (on this page)</p>
+            <p className="text-xl font-bold">${pageCreator.toFixed(2)}</p>
+          </div>
+          <div className="rounded-xl border border-border bg-card p-5">
+            <p className="text-caption text-muted-foreground uppercase tracking-wider mb-1">Active (on this page)</p>
+            <p className="text-xl font-bold">{activeOnPage}</p>
+          </div>
         </div>
-        <div className="rounded-xl border border-border bg-card p-5">
-          <p className="text-caption text-muted-foreground uppercase tracking-wider mb-1">Fees (loaded)</p>
-          <p className="text-xl font-bold text-emerald-400">${totalFees.toFixed(2)}</p>
-        </div>
-        <div className="rounded-xl border border-border bg-card p-5">
-          <p className="text-caption text-muted-foreground uppercase tracking-wider mb-1">Creator (loaded)</p>
-          <p className="text-xl font-bold">${totalCreatorEarnings.toFixed(2)}</p>
-        </div>
-        <div className="rounded-xl border border-border bg-card p-5">
-          <p className="text-caption text-muted-foreground uppercase tracking-wider mb-1">Active (loaded)</p>
-          <p className="text-xl font-bold">{active.length}</p>
-        </div>
-      </div>
+      )}
 
       {loading ? (
         <div className="flex justify-center py-20"><Loader2 className="h-5 w-5 animate-spin text-primary" /></div>
@@ -152,9 +165,11 @@ const AdminTransactions = () => {
         <div className="rounded-xl border border-border bg-card p-12 text-center">
           <CreditCard className="h-10 w-10 text-muted-foreground mx-auto mb-3" />
           <p className="text-sm text-muted-foreground">
-            {statusFilter === 'failed' || statusFilter === 'past_due'
-              ? `No ${statusFilter.replace('_', ' ')} subscriptions in the loaded set. Load more or clear the filter.`
-              : 'No transactions match this filter.'}
+            {statusFilter === 'failed'
+              ? 'No failed or past due subscriptions.'
+              : statusFilter !== 'all'
+                ? `No ${statusFilter.replace('_', ' ')} subscriptions.`
+                : 'No transactions match this filter.'}
           </p>
         </div>
       ) : (
@@ -193,7 +208,7 @@ const AdminTransactions = () => {
           </div>
           {(status === 'CanLoadMore' || status === 'LoadingMore') && (
             <div className="flex justify-center mt-4">
-              <Button variant="outline" size="sm" disabled={status === 'LoadingMore'} onClick={() => loadMore(PAGE_SIZE)}>
+              <Button variant="outline" size="sm" className="min-h-11" disabled={status === 'LoadingMore'} onClick={() => loadMore(PAGE_SIZE)}>
                 {status === 'LoadingMore' ? <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" /> : null}
                 Load more
               </Button>

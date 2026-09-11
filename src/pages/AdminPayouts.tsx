@@ -139,7 +139,7 @@ const AdminPayouts = () => {
         method: 'bank_transfer',
         reference: `Payout – ${now.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}`,
       });
-      toast.success(`Payout of ${fmt(row.available)} queued for ${row.name}`);
+      toast.success(`Ledger payout of ${fmt(row.available)} recorded for ${row.name}`);
     } catch (e) {
       toast.error(e instanceof Error ? e.message : 'Failed to create payout');
     } finally {
@@ -154,7 +154,7 @@ const AdminPayouts = () => {
         payoutId: id as Id<'payouts'>,
         status,
       });
-      toast.success(`Payout marked ${status}`);
+      toast.success(`Ledger marked ${status}`);
     } catch (e) {
       toast.error(e instanceof Error ? e.message : 'Failed to update payout');
     } finally {
@@ -174,7 +174,12 @@ const AdminPayouts = () => {
     <DashboardLayout type="admin">
       <div className="mb-8">
         <h1 className="text-2xl font-bold">Payouts &amp; Treasury</h1>
-        <p className="text-muted-foreground text-sm mt-0.5">Creator earnings, queued payouts, and payment history</p>
+        <p className="text-muted-foreground text-sm mt-0.5">
+          Manual treasury ledger — record bank transfers and mark them paid in Prizelet
+        </p>
+        <p className="text-muted-foreground text-xs mt-1">
+          These actions update the ledger only. Funds move outside Prizelet until Stripe Connect is enabled.
+        </p>
         {Number.isFinite(minPayoutDollars) && minPayoutDollars > 0 && (
           <p className="text-caption text-muted-foreground mt-1">Minimum payout: ${minPayoutDollars.toFixed(2)}</p>
         )}
@@ -230,7 +235,7 @@ const AdminPayouts = () => {
                     disabled={b.available <= 0 || busyId === b.creatorId}
                     onClick={() => createPayout(b)}
                   >
-                    {busyId === b.creatorId ? <Loader2 className="h-3 w-3 animate-spin" /> : <><Send className="mr-1.5 h-3 w-3" /> Create payout</>}
+                    {busyId === b.creatorId ? <Loader2 className="h-3 w-3 animate-spin" /> : <><Send className="mr-1.5 h-3 w-3" /> Record payout</>}
                   </Button>
                 </li>
               ))}
@@ -259,11 +264,10 @@ const AdminPayouts = () => {
                         <Button
                           size="sm"
                           variant="outline"
-                          className="h-9 text-caption"
-                          disabled={b.available <= 0 || busyId === b.creatorId}
+                          className="min-h-11 text-caption"                          disabled={b.available <= 0 || busyId === b.creatorId}
                           onClick={() => createPayout(b)}
                         >
-                          {busyId === b.creatorId ? <Loader2 className="h-3 w-3 animate-spin" /> : <><Send className="mr-1.5 h-3 w-3" /> Create payout</>}
+                          {busyId === b.creatorId ? <Loader2 className="h-3 w-3 animate-spin" /> : <><Send className="mr-1.5 h-3 w-3" /> Record payout</>}
                         </Button>
                       </td>
                     </tr>
@@ -295,7 +299,7 @@ const AdminPayouts = () => {
           <h2 className="text-sm font-medium">Payout History</h2>
         </div>
         {payouts.length === 0 ? (
-          <p className="text-sm text-muted-foreground text-center py-10">No payouts recorded yet — create one from a creator balance above</p>
+          <p className="text-sm text-muted-foreground text-center py-10">No payouts recorded yet — record one from a creator balance above</p>
         ) : (
           <>
             <MobileRecordCards>
@@ -316,17 +320,17 @@ const AdminPayouts = () => {
                   <div className="flex flex-wrap gap-2">
                     {p.status !== 'completed' && (
                       <Button size="sm" variant="outline" className="h-11 flex-1 text-caption" disabled={busyId === p.id} onClick={() => updateStatus(p.id, 'completed')}>
-                        Mark paid
+                        Mark paid in ledger
                       </Button>
                     )}
                     {p.status === 'pending' && (
                       <Button size="sm" variant="outline" className="h-11 flex-1 text-caption" disabled={busyId === p.id} onClick={() => updateStatus(p.id, 'processing')}>
-                        Processing
+                        Mark processing
                       </Button>
                     )}
                     {p.status !== 'failed' && p.status !== 'completed' && (
                       <Button size="sm" variant="outline" className="h-11 flex-1 text-caption text-destructive" disabled={busyId === p.id} onClick={() => updateStatus(p.id, 'failed')}>
-                        Fail
+                        Mark failed
                       </Button>
                     )}
                   </div>
@@ -361,18 +365,18 @@ const AdminPayouts = () => {
                       </td>
                       <td className="p-4 text-right space-x-1">
                         {p.status !== 'completed' && (
-                          <Button size="sm" variant="ghost" className="h-9 px-2 text-caption" disabled={busyId === p.id} onClick={() => updateStatus(p.id, 'completed')}>
-                            Mark paid
+                          <Button size="sm" variant="ghost" className="min-h-11 px-2 text-caption" disabled={busyId === p.id} onClick={() => updateStatus(p.id, 'completed')}>
+                            Mark paid in ledger
                           </Button>
                         )}
                         {p.status === 'pending' && (
-                          <Button size="sm" variant="ghost" className="h-9 px-2 text-caption" disabled={busyId === p.id} onClick={() => updateStatus(p.id, 'processing')}>
-                            Processing
+                          <Button size="sm" variant="ghost" className="min-h-11 px-2 text-caption" disabled={busyId === p.id} onClick={() => updateStatus(p.id, 'processing')}>
+                            Mark processing
                           </Button>
                         )}
                         {p.status !== 'failed' && p.status !== 'completed' && (
-                          <Button size="sm" variant="ghost" className="h-9 px-2 text-caption text-destructive" disabled={busyId === p.id} onClick={() => updateStatus(p.id, 'failed')}>
-                            Fail
+                          <Button size="sm" variant="ghost" className="min-h-11 px-2 text-caption text-destructive" disabled={busyId === p.id} onClick={() => updateStatus(p.id, 'failed')}>
+                            Mark failed
                           </Button>
                         )}
                       </td>

@@ -1,7 +1,9 @@
 import { paginationOptsValidator, paginationResultValidator } from "convex/server";
 import { query } from "../_generated/server";
 import { v } from "convex/values";
+import type { Id } from "../_generated/dataModel";
 import { listRolesForUser, requireAdmin } from "../lib/auth";
+import { ADMIN_SCAN_MAX_DOCS, adminScanAll } from "../lib/adminLists";
 import { isPaidOutPayoutStatus } from "../lib/payoutBalance";
 
 const adminUserRowValidator = v.object({
@@ -263,39 +265,79 @@ const adminTransactionRowValidator = v.object({
   feePercentage: v.number(),
 });
 
-/** Cursor-paginated customers (users + per-user subscription stats). */
+/**
+ * Cursor-paginated customers = users with ≥1 subscription (not all accounts).
+ * `canceledCount` is status === canceled only; payment problems are separate rows in Alerts.
+ */
 export const listCustomersPage = query({
   args: { paginationOpts: paginationOptsValidator },
   returns: paginationResultValidator(adminCustomerRowValidator),
   handler: async (ctx, args) => {
     await requireAdmin(ctx);
-    const result = await ctx.db.query("users").order("desc").paginate(args.paginationOpts);
+    const subsScan = await adminScanAll(ctx, "subscriptions");
+    const byUser = new Map<
+      Id<"users">,
+      {
+        subs: Array<{
+          status: string;
+          amountCents: number;
+          createdAt: number;
+        }>;
+        lastActivity: number;
+      }
+    >();
+
+    for (const s of subsScan.docs) {
+      const cur = byUser.get(s.userId) ?? { subs: [], lastActivity: 0 };
+      cur.subs.push({
+        status: s.status,
+        amountCents: s.amountCents,
+        createdAt: s.createdAt,
+      });
+      cur.lastActivity = Math.max(cur.lastActivity, s.createdAt);
+      byUser.set(s.userId, cur);
+    }
+
+    const userIds = [...byUser.entries()]
+      .sort((a, b) => b[1].lastActivity - a[1].lastActivity)
+      .map(([id]) => id);
+
+    const start = args.paginationOpts.cursor
+      ? Number.parseInt(args.paginationOpts.cursor, 10)
+      : 0;
+    const startIndex = Number.isFinite(start) && start > 0 ? start : 0;
+    const numItems = args.paginationOpts.numItems;
+    const slice = userIds.slice(startIndex, startIndex + numItems);
+    const nextIndex = startIndex + numItems;
+    const isDone = nextIndex >= userIds.length;
 
     const page = [];
-    for (const u of result.page) {
-      const subs = await ctx.db
-        .query("subscriptions")
-        .withIndex("by_userId", (q) => q.eq("userId", u._id))
-        .collect();
-      const active = subs.filter((s) => s.status === "active");
-      const canceled = subs.filter((s) => s.status !== "active");
-      const totalSpent = subs.reduce((a, s) => a + s.amountCents / 100, 0);
-      const lastSub = [...subs].sort((a, b) => b.createdAt - a.createdAt)[0];
+    for (const userId of slice) {
+      const u = await ctx.db.get(userId);
+      const bucket = byUser.get(userId);
+      if (!u || !bucket) continue;
+      const active = bucket.subs.filter((s) => s.status === "active");
+      const canceled = bucket.subs.filter((s) => s.status === "canceled");
+      const totalSpent = bucket.subs.reduce((a, s) => a + s.amountCents / 100, 0);
       const createdAt = u.createdAt ?? u._creationTime;
       page.push({
         id: u._id,
         email: u.email ?? "",
         fullName: u.fullName ?? null,
         createdAt,
-        subCount: subs.length,
+        subCount: bucket.subs.length,
         activeCount: active.length,
         canceledCount: canceled.length,
         totalSpent,
-        lastActivity: lastSub?.createdAt ?? createdAt,
+        lastActivity: bucket.lastActivity || createdAt,
       });
     }
 
-    return { ...result, page };
+    return {
+      page,
+      isDone,
+      continueCursor: String(nextIndex),
+    };
   },
 });
 
@@ -365,37 +407,108 @@ export const listSupportMessagesPage = query({
   },
 });
 
-/** Cursor-paginated subscription “transactions” with user/creator names. */
+const transactionStatusFilterValidator = v.union(
+  v.literal("all"),
+  v.literal("active"),
+  v.literal("canceled"),
+  v.literal("past_due"),
+  v.literal("failed"),
+  v.literal("incomplete"),
+  v.literal("trialing"),
+  v.literal("unpaid"),
+);
+
+/**
+ * Cursor-paginated subscription “transactions” with user/creator names.
+ * `status: "failed"` matches Alerts (failed + past_due payment problems).
+ */
 export const listTransactionsPage = query({
-  args: { paginationOpts: paginationOptsValidator },
+  args: {
+    paginationOpts: paginationOptsValidator,
+    status: v.optional(transactionStatusFilterValidator),
+  },
   returns: paginationResultValidator(adminTransactionRowValidator),
   handler: async (ctx, args) => {
     await requireAdmin(ctx);
+    const statusFilter = args.status ?? "all";
+
+    async function enrich(
+      rows: Array<{
+        _id: Id<"subscriptions">;
+        status: string;
+        createdAt: number;
+        userId: Id<"users">;
+        creatorId: Id<"creators">;
+        amountCents: number;
+        creatorEarningsCents: number;
+        platformFeeCents: number;
+        feePercentage: number;
+      }>,
+    ) {
+      const page = [];
+      for (const s of rows) {
+        const user = await ctx.db.get(s.userId);
+        const creator = await ctx.db.get(s.creatorId);
+        page.push({
+          id: s._id,
+          status: s.status,
+          createdAt: s.createdAt,
+          userName: user?.fullName ?? user?.email ?? "Unknown",
+          creatorName: creator
+            ? (creator.displayName ?? `@${creator.username}`)
+            : "Unknown",
+          amountCents: s.amountCents,
+          creatorEarningsCents: s.creatorEarningsCents,
+          platformFeeCents: s.platformFeeCents,
+          feePercentage: s.feePercentage,
+        });
+      }
+      return page;
+    }
+
+    // Alerts deep-link: payment problems = failed + past_due (indexed takes, then offset page).
+    if (statusFilter === "failed") {
+      const failed = await ctx.db
+        .query("subscriptions")
+        .withIndex("by_status", (q) => q.eq("status", "failed"))
+        .order("desc")
+        .take(ADMIN_SCAN_MAX_DOCS);
+      const pastDue = await ctx.db
+        .query("subscriptions")
+        .withIndex("by_status", (q) => q.eq("status", "past_due"))
+        .order("desc")
+        .take(ADMIN_SCAN_MAX_DOCS);
+      const merged = [...failed, ...pastDue].sort(
+        (a, b) => b.createdAt - a.createdAt,
+      );
+      const start = args.paginationOpts.cursor
+        ? Number.parseInt(args.paginationOpts.cursor, 10)
+        : 0;
+      const startIndex = Number.isFinite(start) && start > 0 ? start : 0;
+      const numItems = args.paginationOpts.numItems;
+      const slice = merged.slice(startIndex, startIndex + numItems);
+      const nextIndex = startIndex + numItems;
+      return {
+        page: await enrich(slice),
+        isDone: nextIndex >= merged.length,
+        continueCursor: String(nextIndex),
+      };
+    }
+
+    if (statusFilter !== "all") {
+      const result = await ctx.db
+        .query("subscriptions")
+        .withIndex("by_status", (q) => q.eq("status", statusFilter))
+        .order("desc")
+        .paginate(args.paginationOpts);
+      return { ...result, page: await enrich(result.page) };
+    }
+
     const result = await ctx.db
       .query("subscriptions")
       .order("desc")
       .paginate(args.paginationOpts);
-
-    const page = [];
-    for (const s of result.page) {
-      const user = await ctx.db.get(s.userId);
-      const creator = await ctx.db.get(s.creatorId);
-      page.push({
-        id: s._id,
-        status: s.status,
-        createdAt: s.createdAt,
-        userName: user?.fullName ?? user?.email ?? "Unknown",
-        creatorName: creator
-          ? (creator.displayName ?? `@${creator.username}`)
-          : "Unknown",
-        amountCents: s.amountCents,
-        creatorEarningsCents: s.creatorEarningsCents,
-        platformFeeCents: s.platformFeeCents,
-        feePercentage: s.feePercentage,
-      });
-    }
-
-    return { ...result, page };
+    return { ...result, page: await enrich(result.page) };
   },
 });
 
