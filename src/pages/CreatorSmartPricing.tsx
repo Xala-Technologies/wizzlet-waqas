@@ -38,17 +38,32 @@ const CreatorSmartPricing = () => {
   const marketPage = useQuery(api.creators.queries.listPublished, {});
   const updateSettings = useMutation(api.creators.queries.updateSettings);
 
-  const [data, setData] = useState<PricingData | null>(null);
   const [priceInput, setPriceInput] = useState('');
   const [saving, setSaving] = useState(false);
 
+  const creatorId = creator?.id;
+  const savedListPrice = creator?.monthly_price ?? null;
+
+  // Draft input only re-syncs when the persisted list price changes — not on every
+  // reactive subs/analytics/posts/market refresh (that was wiping typing).
   useEffect(() => {
-    if (creatorLoading || !creator) return;
-    if (subs === undefined || analytics === undefined || posts === undefined || marketPage === undefined) {
-      return;
+    if (!creatorId) return;
+    setPriceInput((savedListPrice ?? 9.99).toFixed(2));
+  }, [creatorId, savedListPrice]);
+
+  const queriesLoading =
+    !!creator &&
+    (subs === undefined ||
+      analytics === undefined ||
+      posts === undefined ||
+      marketPage === undefined);
+  const loading = creatorLoading || queriesLoading;
+
+  const data = useMemo((): PricingData | null => {
+    if (!creator || subs === undefined || analytics === undefined || posts === undefined || marketPage === undefined) {
+      return null;
     }
     const market = marketPage.items;
-
     const activeSubs = subs.filter((s) => s.status === 'active');
     const price = creator.monthly_price ?? 9.99;
     const settled = posts.filter((p) => p.result === 'won' || p.result === 'lost');
@@ -57,7 +72,7 @@ const CreatorSmartPricing = () => {
       .map((m) => (m.monthlyPriceCents ?? 0) / 100)
       .filter((p) => p > 0);
 
-    setData({
+    return {
       price,
       activeSubs: activeSubs.length,
       monthlyRevenue: activeSubs.reduce((a, b) => a + b.amountCents / 100, 0),
@@ -67,17 +82,8 @@ const CreatorSmartPricing = () => {
       marketAverage: marketPrices.length
         ? marketPrices.reduce((a, b) => a + b, 0) / marketPrices.length
         : price,
-    });
-    setPriceInput(price.toFixed(2));
-  }, [creator, creatorLoading, subs, analytics, posts, marketPage]);
-
-  const queriesLoading =
-    !!creator &&
-    (subs === undefined ||
-      analytics === undefined ||
-      posts === undefined ||
-      marketPage === undefined);
-  const loading = creatorLoading || queriesLoading;
+    };
+  }, [creator, subs, analytics, posts, marketPage]);
 
   const suggestion = useMemo(() => {
     if (!data) return null;
@@ -106,7 +112,7 @@ const CreatorSmartPricing = () => {
     setSaving(true);
     try {
       await updateSettings({ monthlyPriceCents: Math.round(next * 100) });
-      setData((d) => (d ? { ...d, price: next } : d));
+      setPriceInput(next.toFixed(2));
       toast.success('Featured / list price updated');
     } catch (e) {
       toast.error(e instanceof Error ? e.message : 'Failed to update price');
