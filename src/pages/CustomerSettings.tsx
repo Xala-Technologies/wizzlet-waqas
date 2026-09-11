@@ -12,6 +12,7 @@ import { api } from '@convex/_generated/api';
 const CustomerSettings = () => {
   const { user } = useAuth();
   const me = useQuery(api.users.queries.me, user ? {} : 'skip');
+  const hasPasswordAccount = useQuery(api.users.queries.hasPasswordAccount, user ? {} : 'skip');
   const updateProfile = useMutation(api.users.queries.updateProfile);
   const changePasswordAction = useAction(api.users.queries.changePassword);
   const requestEmailChange = useMutation(api.accountRequests.requestEmailChange);
@@ -26,10 +27,14 @@ const CustomerSettings = () => {
   const [savingEmailRequest, setSavingEmailRequest] = useState(false);
   const [savingProfile, setSavingProfile] = useState(false);
   const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [currentPassword, setCurrentPassword] = useState('');
   const [savingPassword, setSavingPassword] = useState(false);
 
-  const loading = user ? me === undefined || myAccountRequests === undefined : false;
+  const loading =
+    user
+      ? me === undefined || myAccountRequests === undefined || hasPasswordAccount === undefined
+      : false;
 
   // Hydrate once per user id — do not wipe dirty edits on reactive profile refreshes.
   useEffect(() => {
@@ -97,7 +102,7 @@ const CustomerSettings = () => {
   };
 
   const changePassword = async () => {
-    if (savingPassword) return;
+    if (savingPassword || !hasPasswordAccount) return;
     if (!currentPassword) {
       toast.error('Enter your current password');
       return;
@@ -106,14 +111,28 @@ const CustomerSettings = () => {
       toast.error('Password must be at least 8 characters');
       return;
     }
+    if (password !== confirmPassword) {
+      toast.error('New password and confirmation do not match');
+      return;
+    }
+    if (password === currentPassword) {
+      toast.error('Choose a new password different from your current one');
+      return;
+    }
     setSavingPassword(true);
     try {
       await changePasswordAction({ currentPassword, newPassword: password });
       setPassword('');
+      setConfirmPassword('');
       setCurrentPassword('');
       toast.success('Password updated — please sign in again');
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : 'Could not update password');
+      const msg = e instanceof Error ? e.message : '';
+      if (msg.includes('INVALID_CURRENT_PASSWORD')) toast.error('Current password is incorrect');
+      else if (msg.includes('PASSWORD_ACCOUNT_MISSING')) {
+        toast.error('This account signs in with Discord or another provider — no password to change');
+      } else if (msg.includes('at least 8')) toast.error('Password must be at least 8 characters');
+      else toast.error('Could not update password');
     } finally {
       setSavingPassword(false);
     }
@@ -281,49 +300,94 @@ const CustomerSettings = () => {
         </section>
 
         <section className="rounded-xl border border-border bg-card p-5">
-          <div className="flex items-center gap-3 mb-4">
+          <div className="flex items-center gap-3 mb-2">
             <Shield className="h-4 w-4 text-muted-foreground" />
             <h2 className="text-ui font-semibold text-foreground">Security</h2>
           </div>
-          <div className="grid gap-3 max-w-sm">
-            <div className="space-y-2">
-              <label htmlFor="currentPassword" className="text-support text-muted-foreground block">
-                Current Password
-              </label>
-              <Input
-                id="currentPassword"
-                type="password"
-                className="h-11 min-h-11 text-ui"
-                value={currentPassword}
-                onChange={(e) => setCurrentPassword(e.target.value)}
-                autoComplete="current-password"
-              />
+          <p className="text-support text-muted-foreground mb-4 max-w-lg">
+            Change the password for your email sign-in. After a successful update you will be signed
+            out of other sessions and need to sign in again.
+          </p>
+          {!hasPasswordAccount ? (
+            <div className="rounded-lg border border-border bg-muted/30 p-4 max-w-lg">
+              <p className="text-ui font-medium text-foreground mb-1">No password on this account</p>
+              <p className="text-support text-muted-foreground mb-4">
+                You signed in with Discord or another provider, so there is no Prizelet password to
+                change here. Keep using that provider to sign in.
+              </p>
+              <Button type="button" variant="outline" className="min-h-11" asChild>
+                <a href="/login">Review sign-in options</a>
+              </Button>
             </div>
-            <div className="space-y-2">
-              <label htmlFor="newPassword" className="text-support text-muted-foreground block">
-                New Password
-              </label>
-              <Input
-                id="newPassword"
-                type="password"
-                className="h-11 min-h-11 text-ui"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="At least 8 characters"
-                autoComplete="new-password"
-              />
-            </div>
-            <Button
-              type="button"
-              variant="outline"
-              className="min-h-11 w-fit"
-              onClick={() => void changePassword()}
-              disabled={savingPassword || !password || !currentPassword}
+          ) : (
+            <form
+              className="grid gap-4 max-w-sm"
+              onSubmit={(e) => {
+                e.preventDefault();
+                void changePassword();
+              }}
             >
-              {savingPassword ? <Loader2 className="mr-2 h-3.5 w-3.5 animate-spin" /> : null}
-              Change Password
-            </Button>
-          </div>
+              <div className="space-y-2">
+                <label htmlFor="currentPassword" className="text-support text-muted-foreground block">
+                  Current password
+                </label>
+                <Input
+                  id="currentPassword"
+                  type="password"
+                  className="h-11 min-h-11 text-ui"
+                  value={currentPassword}
+                  onChange={(e) => setCurrentPassword(e.target.value)}
+                  autoComplete="current-password"
+                  required
+                />
+              </div>
+              <div className="space-y-2">
+                <label htmlFor="newPassword" className="text-support text-muted-foreground block">
+                  New password
+                </label>
+                <Input
+                  id="newPassword"
+                  type="password"
+                  className="h-11 min-h-11 text-ui"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="At least 8 characters"
+                  autoComplete="new-password"
+                  minLength={8}
+                  required
+                />
+              </div>
+              <div className="space-y-2">
+                <label htmlFor="confirmPassword" className="text-support text-muted-foreground block">
+                  Confirm new password
+                </label>
+                <Input
+                  id="confirmPassword"
+                  type="password"
+                  className="h-11 min-h-11 text-ui"
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  placeholder="Re-enter new password"
+                  autoComplete="new-password"
+                  minLength={8}
+                  required
+                />
+              </div>
+              <Button
+                type="submit"
+                className="min-h-11 w-full sm:w-auto"
+                disabled={
+                  savingPassword ||
+                  !currentPassword ||
+                  password.length < 8 ||
+                  confirmPassword.length < 8
+                }
+              >
+                {savingPassword ? <Loader2 className="mr-2 h-3.5 w-3.5 animate-spin" /> : null}
+                Update password
+              </Button>
+            </form>
+          )}
         </section>
       </div>
     </DashboardLayout>
