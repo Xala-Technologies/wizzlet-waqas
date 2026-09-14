@@ -14,7 +14,6 @@ import {
   Loader2,
   MessageSquare,
   Compass,
-  ChevronRight,
 } from 'lucide-react';
 import {
   AlertDialog,
@@ -35,6 +34,14 @@ import { creatorProfilePath } from '@/lib/creatorProfilePath';
 import { subscriptionGrantsContentAccess } from '../../convex/lib/contentAccess';
 import { segmentedItemClassName, segmentedTrackClassName } from '@/lib/segmentedControl';
 import { useAuth } from '@/contexts/AuthContext';
+import { PageHeader } from '@/components/ux/PageHeader';
+import {
+  SurfaceCard,
+  SurfaceCardBody,
+  SurfaceCardFooter,
+  SurfaceCardHeader,
+} from '@/components/ux/SurfaceCard';
+import { ListRowLink } from '@/components/ux/ListRowLink';
 
 interface SubscriptionRow {
   id: string;
@@ -81,7 +88,7 @@ function BillingEmpty({
   secondary?: ReactNode;
 }) {
   return (
-    <div className="rounded-xl border border-border bg-card px-6 py-12 sm:px-10 sm:py-14 text-center">
+    <SurfaceCard className="px-6 py-12 sm:px-10 sm:py-14 text-center">
       <div className="inbox-empty-enter mx-auto mb-6 flex h-14 w-14 items-center justify-center rounded-xl bg-muted">
         <Icon className="h-7 w-7 text-muted-foreground" strokeWidth={1.75} />
       </div>
@@ -111,7 +118,7 @@ function BillingEmpty({
         {primary}
         {secondary}
       </div>
-    </div>
+    </SurfaceCard>
   );
 }
 
@@ -234,44 +241,48 @@ const CustomerSubscriptionsBilling = () => {
   if (loading) {
     return (
       <DashboardLayout type="member">
-        <div className="flex justify-center py-20">
-          <Loader2 className="h-5 w-5 animate-spin text-primary" />
-        </div>
+        <PageHeader
+          title="Subscriptions"
+          description="See what you get from each creator. Charges and payment methods live in the tabs below."
+        />
+        <SurfaceCard className="p-4 space-y-3" aria-busy="true" aria-label="Loading subscriptions">
+          {[0, 1, 2].map((i) => (
+            <Skeleton key={i} className="h-24 w-full rounded-lg" />
+          ))}
+        </SurfaceCard>
       </DashboardLayout>
     );
   }
 
   return (
     <DashboardLayout type="member">
-      <header className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-        <div className="min-w-0">
-          <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
-            <h1 className="text-heading font-bold text-foreground">Subscriptions</h1>
-            <button
-              type="button"
-              className="text-support font-medium text-primary hover:underline min-h-11 inline-flex items-center"
-              onClick={() => void manageBilling()}
-              disabled={portalLoading}
-            >
-              Manage billing →
-            </button>
-          </div>
-          <p className="text-support text-muted-foreground mt-0.5">
-            See what you get from each creator. Charges and payment methods live in the tabs below.
-          </p>
-        </div>
-        <div className="flex flex-wrap items-center gap-2 shrink-0">
-          {active.length > 0 && (
-            <div className="rounded-xl border border-border bg-card px-4 py-3">
-              <p className="text-support text-muted-foreground">Active access list-price total</p>
-              <p className="text-ui font-bold text-foreground mt-1">{currency(listPriceTotal)}</p>
-            </div>
-          )}
-          <Button type="button" variant="outline" className="min-h-11" asChild>
-            <Link to="/dashboard/discover">Find creators</Link>
-          </Button>
-        </div>
-      </header>
+      <PageHeader
+        title="Subscriptions"
+        description="See what you get from each creator. Charges and payment methods live in the tabs below."
+        action={
+          <button
+            type="button"
+            className="text-support font-medium text-primary hover:underline min-h-11 inline-flex items-center"
+            onClick={() => void manageBilling()}
+            disabled={portalLoading}
+          >
+            Manage billing →
+          </button>
+        }
+        trailing={
+          <>
+            {active.length > 0 && (
+              <SurfaceCard className="px-4 py-3">
+                <p className="text-support text-muted-foreground">Active access list-price total</p>
+                <p className="text-ui font-bold text-foreground mt-1">{currency(listPriceTotal)}</p>
+              </SurfaceCard>
+            )}
+            <Button type="button" variant="outline" className="min-h-11" asChild>
+              <Link to="/dashboard/discover">Find creators</Link>
+            </Button>
+          </>
+        }
+      />
 
       {pastDueCount > 0 && (
         <div className="mb-4 rounded-xl border border-destructive/30 bg-destructive/5 px-4 py-4">
@@ -369,7 +380,7 @@ const CustomerSubscriptionsBilling = () => {
                   ))}
                 </div>
                 {filtered.length === 0 && filtersActive ? (
-                  <div className="rounded-xl border border-border bg-card p-10 text-center">
+                  <SurfaceCard className="p-10 text-center">
                     <h3 className="mb-2 text-ui font-semibold text-foreground">
                       No subscriptions in this filter
                     </h3>
@@ -385,7 +396,7 @@ const CustomerSubscriptionsBilling = () => {
                     >
                       Show all
                     </Button>
-                  </div>
+                  </SurfaceCard>
                 ) : (
                   filtered.map((sub) => {
                     const name = sub.creator?.display_name || sub.creator?.username || 'Creator';
@@ -411,11 +422,8 @@ const CustomerSubscriptionsBilling = () => {
                       ? creatorProfilePath(sub.creator.username)
                       : null;
                     return (
-                      <div
-                        key={sub.id}
-                        className="overflow-hidden rounded-xl border border-border bg-card"
-                      >
-                        <div className="flex flex-wrap items-center gap-3 border-b border-border p-4">
+                      <SurfaceCard key={sub.id}>
+                        <SurfaceCardHeader>
                           {profileHref ? (
                             <Link
                               to={profileHref}
@@ -457,10 +465,10 @@ const CustomerSubscriptionsBilling = () => {
                           <Badge variant="outline" className={`text-support ${toneClass}`}>
                             {access.badge.toUpperCase()}
                           </Badge>
-                        </div>
+                        </SurfaceCardHeader>
 
                         {access.hasAccess ? (
-                          <div className="divide-y divide-border">
+                          <SurfaceCardBody>
                             {feedLoading ? (
                               <div className="space-y-3 p-4" aria-busy="true" aria-label="Loading posts">
                                 {[0, 1, 2].map((i) => (
@@ -474,21 +482,14 @@ const CustomerSubscriptionsBilling = () => {
                               </p>
                             ) : (
                               recent.map((post) => (
-                                <Link
+                                <ListRowLink
                                   key={post.id}
                                   to="/dashboard"
-                                  className="flex min-h-11 items-center gap-3 px-4 py-3 text-left transition-colors hover:bg-muted/40"
-                                >
-                                  <span className="min-w-0 flex-1 truncate text-ui text-foreground">
-                                    {post.title}
-                                  </span>
-                                  <span className="shrink-0 text-support text-muted-foreground">
-                                    {formatDistanceToNowStrict(new Date(post.createdAt), {
-                                      addSuffix: true,
-                                    })}
-                                  </span>
-                                  <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" />
-                                </Link>
+                                  title={post.title}
+                                  meta={formatDistanceToNowStrict(new Date(post.createdAt), {
+                                    addSuffix: true,
+                                  })}
+                                />
                               ))
                             )}
                             <div className="p-3">
@@ -496,14 +497,14 @@ const CustomerSubscriptionsBilling = () => {
                                 <Link to="/dashboard">View posts →</Link>
                               </Button>
                             </div>
-                          </div>
+                          </SurfaceCardBody>
                         ) : (
                           <p className="px-4 py-5 text-support text-muted-foreground">
                             Premium posts stay locked until access is restored.
                           </p>
                         )}
 
-                        <div className="flex flex-col gap-2 border-t border-border p-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
+                        <SurfaceCardFooter className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
                           <div className="flex flex-wrap items-center gap-2">
                             {access.hasAccess &&
                               sub.creator &&
@@ -553,8 +554,8 @@ const CustomerSubscriptionsBilling = () => {
                               Cancel access
                             </Button>
                           )}
-                        </div>
-                      </div>
+                        </SurfaceCardFooter>
+                      </SurfaceCard>
                     );
                   })
                 )}
@@ -576,23 +577,22 @@ const CustomerSubscriptionsBilling = () => {
                   </Link>
                 </div>
                 {discoverRaw === undefined ? (
-                  <div className="flex justify-center rounded-xl border border-border bg-card p-6">
-                    <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
-                  </div>
+                  <SurfaceCard className="space-y-3 p-4" aria-busy="true" aria-label="Loading suggestions">
+                    {[0, 1].map((i) => (
+                      <Skeleton key={i} className="h-20 w-full rounded-lg" />
+                    ))}
+                  </SurfaceCard>
                 ) : suggestedCreators.length === 0 ? (
-                  <div className="rounded-xl border border-border bg-card p-5">
+                  <SurfaceCard className="p-5">
                     <p className="text-support text-muted-foreground">
                       You’re already subscribed to every published creator we can suggest right now.
                     </p>
-                  </div>
+                  </SurfaceCard>
                 ) : (
                   suggestedCreators.map((c) => {
                     const name = c.displayName ?? c.username;
                     return (
-                      <div
-                        key={c._id}
-                        className="space-y-3 rounded-xl border border-border bg-card p-4"
-                      >
+                      <SurfaceCard key={c._id} className="space-y-3 p-4">
                         <div className="flex min-w-0 items-start gap-3">
                           <div className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-full bg-muted text-sm font-semibold text-muted-foreground">
                             {c.avatarUrl ? (
@@ -616,7 +616,7 @@ const CustomerSubscriptionsBilling = () => {
                         <Button className="min-h-11 w-full" variant="outline" asChild>
                           <Link to={creatorProfilePath(c.username)}>View profile</Link>
                         </Button>
-                      </div>
+                      </SurfaceCard>
                     );
                   })
                 )}
@@ -673,7 +673,7 @@ const CustomerSubscriptionsBilling = () => {
                 Settled payment events from Prizelet. For Stripe invoices and receipts, open the
                 billing portal.
               </p>
-              <div className="rounded-xl border border-border overflow-hidden bg-card">
+              <SurfaceCard>
                 {(eventsRaw ?? []).map((item, i, arr) => (
                   <div
                     key={item._id}
@@ -698,7 +698,7 @@ const CustomerSubscriptionsBilling = () => {
                     </Badge>
                   </div>
                 ))}
-              </div>
+              </SurfaceCard>
               <Button
                 type="button"
                 variant="outline"
@@ -714,7 +714,7 @@ const CustomerSubscriptionsBilling = () => {
         </TabsContent>
 
         <TabsContent value="payment">
-          <div className="rounded-xl border border-border bg-card px-6 py-10 sm:px-10 text-center sm:text-left">
+          <SurfaceCard className="px-6 py-10 sm:px-10 text-center sm:text-left">
             <div className="flex flex-col sm:flex-row sm:items-start gap-4 max-w-xl mx-auto sm:mx-0">
               <div className="mx-auto sm:mx-0 flex h-14 w-14 items-center justify-center rounded-xl bg-muted shrink-0">
                 <CreditCard className="h-7 w-7 text-muted-foreground" strokeWidth={1.75} />
@@ -770,7 +770,7 @@ const CustomerSubscriptionsBilling = () => {
                 </Button>
               </div>
             </div>
-          </div>
+          </SurfaceCard>
         </TabsContent>
       </Tabs>
 

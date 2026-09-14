@@ -4,10 +4,12 @@ import { useQuery } from 'convex/react';
 import { api } from '../../../convex/_generated/api';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Search, TrendingUp, Star, Sparkles, Loader2 } from 'lucide-react';
+import { Search, TrendingUp, Star, Sparkles } from 'lucide-react';
 import { LandingSection } from '@/components/landing/LandingSection';
 import { creatorProfilePath } from '@/lib/creatorProfilePath';
 import { segmentedItemClassName, segmentedTrackClassName } from '@/lib/segmentedControl';
+import { SurfaceCard } from '@/components/ux/SurfaceCard';
+import { Skeleton } from '@/components/ui/skeleton';
 
 const filters = [
   { label: 'Most active', icon: TrendingUp },
@@ -89,7 +91,17 @@ export function CreatorDiscovery() {
         </div>
 
         {creatorsPage === undefined ? (
-          <div className="flex justify-center py-12"><Loader2 className="h-5 w-5 animate-spin text-primary" /></div>
+          <div
+            className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4 max-w-4xl mx-auto"
+            aria-busy="true"
+            aria-label="Loading creators"
+          >
+            {[0, 1, 2].map((i) => (
+              <SurfaceCard key={i} className="p-5">
+                <Skeleton className="h-28 w-full rounded-lg" />
+              </SurfaceCard>
+            ))}
+          </div>
         ) : (
           <>
             <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4 max-w-4xl mx-auto">
@@ -97,9 +109,9 @@ export function CreatorDiscovery() {
                 const name = creator.displayName ?? creator.username;
                 const initials = name.slice(0, 2).toUpperCase();
                 return (
-                  <div
+                  <SurfaceCard
                     key={creator._id}
-                    className="group rounded-xl border border-border bg-card p-5 card-shadow transition-all duration-300 hover:card-shadow-hover hover:border-primary/20"
+                    className="group p-5 transition-colors hover:border-primary/20"
                   >
                     <div className="flex items-start gap-3.5 mb-4">
                       <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary text-sm font-semibold overflow-hidden">
@@ -127,10 +139,10 @@ export function CreatorDiscovery() {
                         ? ` · $${(creator.monthlyPriceCents / 100).toFixed(0)}/mo list`
                         : ''}
                     </p>
-                    <Button asChild variant="outline" size="sm" className="w-full group-hover:border-primary/30 group-hover:text-primary transition-colors">
+                    <Button asChild className="w-full min-h-11">
                       <Link to={creatorProfilePath(creator.username)}>View profile</Link>
                     </Button>
-                  </div>
+                  </SurfaceCard>
                 );
               })}
             </div>
