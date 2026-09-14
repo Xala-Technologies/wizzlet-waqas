@@ -12,8 +12,9 @@ import { Footer } from '@/components/landing/Footer';
 import { createCheckoutSession } from '@/data/payments';
 import { trackPageView, trackPostView, trackSubscribeClick } from '@/lib/analytics';
 import { Lock, Users, CheckCircle, Loader2, Trophy, TrendingUp, Target, Flame, Clock, XCircle, Minus, Copy } from 'lucide-react';
-import { format, formatDistanceToNowStrict } from 'date-fns';
+import { format } from 'date-fns';
 import PricingCards from '@/components/creator/PricingCards';
+import { SurfaceCard } from '@/components/ux/SurfaceCard';
 import { ResponsiveContainer, AreaChart, Area, XAxis, YAxis, Tooltip } from 'recharts';
 import { toast } from 'sonner';
 import { copyToClipboard } from '@/lib/clipboard';
@@ -301,16 +302,16 @@ const CreatorProfile = () => {
             { label: 'Units P/L', value: `${stats.totalUnits}u`, icon: Target, color: 'text-primary' },
             { label: 'Record', value: `${stats.wins}W - ${stats.settled - stats.wins}L`, icon: Trophy, color: 'text-foreground' },
           ].map(s => (
-            <div key={s.label} className="rounded-xl border border-border bg-card p-3 text-center">
+            <SurfaceCard key={s.label} className="p-3 text-center">
               <s.icon className={`h-4 w-4 ${s.color} mx-auto mb-1`} />
               <p className={`text-lg font-bold ${s.color}`}>{s.value}</p>
               <p className="text-caption text-muted-foreground uppercase tracking-wider">{s.label}</p>
-            </div>
+            </SurfaceCard>
           ))}
         </div>
 
         {/* Performance chart from settled picks */}
-        <div className="mt-6 rounded-xl border border-border bg-card p-4">
+        <SurfaceCard className="mt-6 p-4">
           <h3 className="text-caption font-semibold text-muted-foreground uppercase tracking-wider mb-3">Performance</h3>
           {chartData.length === 0 ? (
             <p className="text-sm text-muted-foreground py-8 text-center">No settled picks yet to chart.</p>
@@ -330,7 +331,7 @@ const CreatorProfile = () => {
               </AreaChart>
             </ResponsiveContainer>
           )}
-        </div>
+        </SurfaceCard>
 
         {/* Subscribe CTA */}
         {isSubscribed ? (
@@ -377,9 +378,9 @@ const CreatorProfile = () => {
           <h2 className="text-sm font-medium text-muted-foreground uppercase tracking-wider mb-4">Recent Picks</h2>
 
           {posts.length === 0 && (
-            <div className="rounded-xl border border-border bg-card p-8 text-center">
+            <SurfaceCard className="p-8 text-center">
               <p className="text-sm text-muted-foreground">No picks yet. Check back soon!</p>
-            </div>
+            </SurfaceCard>
           )}
 
           {posts.map((post) => {
@@ -390,7 +391,7 @@ const CreatorProfile = () => {
             const ResultIcon = rc.icon;
 
             return (
-              <article key={post.id} className="rounded-xl border border-border bg-card overflow-hidden transition-colors hover:border-border/80">
+              <SurfaceCard key={post.id} className="transition-colors hover:border-border/80">
                 <div className="p-5 sm:p-6">
                   <div className="flex items-center gap-2 mb-2.5 flex-wrap">
                     {post.is_premium && !post.content ? (
@@ -494,7 +495,7 @@ const CreatorProfile = () => {
                     </div>
                   )}
                 </div>
-              </article>
+              </SurfaceCard>
             );
           })}
         </div>

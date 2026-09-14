@@ -7,8 +7,10 @@ import { Seo } from '@/components/Seo';
 import { Footer } from '@/components/landing/Footer';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { ArrowRight, Loader2, Search } from 'lucide-react';
+import { ArrowRight, Search } from 'lucide-react';
 import { creatorProfilePath } from '@/lib/creatorProfilePath';
+import { SurfaceCard } from '@/components/ux/SurfaceCard';
+import { Skeleton } from '@/components/ui/skeleton';
 
 const Creators = () => {
   const creatorsPage = useQuery(api.creators.queries.listPublished, {});
@@ -62,8 +64,12 @@ const Creators = () => {
 
         <section className="container relative pb-16 md:pb-20">
           {creatorsPage === undefined ? (
-            <div className="flex justify-center py-20">
-              <Loader2 className="h-5 w-5 animate-spin text-primary" />
+            <div className="space-y-3" aria-busy="true" aria-label="Loading creators">
+              {[0, 1, 2, 3].map((i) => (
+                <SurfaceCard key={i} className="p-5">
+                  <Skeleton className="h-16 w-full rounded-lg" />
+                </SurfaceCard>
+              ))}
             </div>
           ) : !creators || creators.length === 0 ? (
             <div className="mx-auto max-w-lg py-16 text-center">
@@ -85,64 +91,66 @@ const Creators = () => {
               No creators match “{search.trim()}”.
             </p>
           ) : (
-            <ul className="divide-y divide-border border-y border-border">
-              {filtered.map((c) => {
-                const name = c.displayName ?? c.username;
-                const price =
-                  c.monthlyPriceCents != null
-                    ? `$${(c.monthlyPriceCents / 100).toFixed(0)}/mo`
-                    : null;
-                return (
-                  <li key={c._id}>
-                    <Link
-                      to={creatorProfilePath(c.username)}
-                      className="group flex flex-col gap-4 py-5 transition-colors sm:flex-row sm:items-center sm:justify-between sm:gap-6 sm:py-6"
-                    >
-                      <div className="flex min-w-0 items-start gap-4">
-                        <div className="flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-full bg-primary/12 text-sm font-bold text-primary">
-                          {c.avatarUrl ? (
-                            <img src={c.avatarUrl} alt="" className="h-full w-full object-cover" />
-                          ) : (
-                            name[0]?.toUpperCase()
-                          )}
-                        </div>
-                        <div className="min-w-0">
-                          <div className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
-                            <span className="font-semibold text-foreground group-hover:text-primary transition-colors">
-                              {name}
-                            </span>
-                            <span className="text-support text-muted-foreground">@{c.username}</span>
-                            {c.verificationStatus === 'verified' && (
-                              <span className="text-caption font-medium uppercase tracking-wider text-primary">
-                                Verified
-                              </span>
+            <SurfaceCard>
+              <ul className="divide-y divide-border">
+                {filtered.map((c) => {
+                  const name = c.displayName ?? c.username;
+                  const price =
+                    c.monthlyPriceCents != null
+                      ? `$${(c.monthlyPriceCents / 100).toFixed(0)}/mo`
+                      : null;
+                  return (
+                    <li key={c._id}>
+                      <Link
+                        to={creatorProfilePath(c.username)}
+                        className="group flex flex-col gap-4 px-4 py-5 transition-colors hover:bg-muted/40 sm:flex-row sm:items-center sm:justify-between sm:gap-6 sm:px-5 sm:py-5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset"
+                      >
+                        <div className="flex min-w-0 items-start gap-4">
+                          <div className="flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-full bg-primary/12 text-sm font-bold text-primary">
+                            {c.avatarUrl ? (
+                              <img src={c.avatarUrl} alt="" className="h-full w-full object-cover" />
+                            ) : (
+                              name[0]?.toUpperCase()
                             )}
                           </div>
-                          {c.bio ? (
-                            <p className="mt-1 line-clamp-2 text-support leading-relaxed text-muted-foreground">
-                              {c.bio}
+                          <div className="min-w-0">
+                            <div className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
+                              <span className="font-semibold text-foreground group-hover:text-primary transition-colors">
+                                {name}
+                              </span>
+                              <span className="text-support text-muted-foreground">@{c.username}</span>
+                              {c.verificationStatus === 'verified' && (
+                                <span className="text-caption font-medium uppercase tracking-wider text-primary">
+                                  Verified
+                                </span>
+                              )}
+                            </div>
+                            {c.bio ? (
+                              <p className="mt-1 line-clamp-2 text-support leading-relaxed text-muted-foreground">
+                                {c.bio}
+                              </p>
+                            ) : null}
+                            <p className="mt-2 text-support text-muted-foreground/80">
+                              {c.postCount} {c.postCount === 1 ? 'pick' : 'picks'} published
                             </p>
-                          ) : null}
-                          <p className="mt-2 text-support text-muted-foreground/80">
-                            {c.postCount} {c.postCount === 1 ? 'pick' : 'picks'} published
-                          </p>
+                          </div>
                         </div>
-                      </div>
-                      <div className="flex shrink-0 items-center gap-4 pl-16 sm:pl-0">
-                        {price && (
-                          <span className="font-mono text-support tabular-nums text-foreground">
-                            {price}
+                        <div className="flex shrink-0 items-center gap-4 pl-16 sm:pl-0">
+                          {price && (
+                            <span className="font-mono text-support tabular-nums text-foreground">
+                              {price}
+                            </span>
+                          )}
+                          <span className="hover-reveal text-support font-medium text-primary transition-opacity">
+                            View profile →
                           </span>
-                        )}
-                        <span className="hover-reveal text-support font-medium text-primary transition-opacity">
-                          View profile →
-                        </span>
-                      </div>
-                    </Link>
-                  </li>
-                );
-              })}
-            </ul>
+                        </div>
+                      </Link>
+                    </li>
+                  );
+                })}
+              </ul>
+            </SurfaceCard>
           )}
         </section>
 

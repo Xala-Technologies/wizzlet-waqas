@@ -5,6 +5,7 @@ import { Label } from '@/components/ui/label';
 import { Star } from 'lucide-react';
 import { createCheckoutSession } from '@/lib/stripe';
 import { trackSubscribeClick } from '@/lib/analytics';
+import { SurfaceCard } from '@/components/ux/SurfaceCard';
 
 interface Product {
   id: string;
@@ -50,12 +51,10 @@ const PricingCards = ({ products, creatorId, creatorUsername }: PricingCardsProp
 
       <div className={`grid gap-4 ${products.length === 1 ? 'max-w-sm mx-auto' : products.length === 2 ? 'sm:grid-cols-2 max-w-2xl mx-auto' : 'sm:grid-cols-2 lg:grid-cols-3'}`}>
         {products.map((product) => (
-          <div
+          <SurfaceCard
             key={product.id}
-            className={`rounded-2xl border bg-card p-6 text-center transition-all ${
-              product.is_featured
-                ? 'border-primary/40 ring-2 ring-primary/20 shadow-lg relative'
-                : 'border-border'
+            className={`relative p-6 text-center transition-colors ${
+              product.is_featured ? 'border-primary' : ''
             }`}
           >
             {product.is_featured && (
@@ -86,8 +85,8 @@ const PricingCards = ({ products, creatorId, creatorUsername }: PricingCardsProp
             </p>
 
             <Button
-              variant={product.is_featured ? 'hero' : 'outline'}
-              className="w-full mt-5 h-11"
+              variant={product.is_featured ? 'default' : 'outline'}
+              className="w-full mt-5 min-h-11"
               onClick={() => {
                 trackSubscribeClick(creatorId);
                 void createCheckoutSession(
@@ -100,7 +99,7 @@ const PricingCards = ({ products, creatorId, creatorUsername }: PricingCardsProp
             >
               Subscribe
             </Button>
-          </div>
+          </SurfaceCard>
         ))}
       </div>
     </div>

@@ -14,6 +14,8 @@ import type { Id } from '@convex/_generated/dataModel';
 import { creatorProfilePath } from '@/lib/creatorProfilePath';
 import { segmentedItemClassName, segmentedTrackClassName } from '@/lib/segmentedControl';
 import { subscriptionGrantsContentAccess } from '../../convex/lib/contentAccess';
+import { PageHeader } from '@/components/ux/PageHeader';
+import { SurfaceCard } from '@/components/ux/SurfaceCard';
 
 const PAGE_SIZE = 24;
 
@@ -138,13 +140,10 @@ const CustomerDiscover = () => {
 
   return (
     <DashboardLayout type="member">
-      <header className="mb-6">
-        <h1 className="text-heading font-bold text-foreground">Discover creators</h1>
-        <p className="text-support text-muted-foreground mt-0.5">
-          Browse published creators. List price is a featured monthly signal — product tiers are on
-          each profile.
-        </p>
-      </header>
+      <PageHeader
+        title="Discover creators"
+        description="Browse published creators. List price is a featured monthly signal — product tiers are on each profile."
+      />
 
       <div className="flex flex-col gap-3 mb-6 sm:flex-row sm:flex-wrap sm:items-center">
         <div className="relative w-full sm:flex-1 sm:min-w-0 sm:max-w-md">
@@ -186,11 +185,13 @@ const CustomerDiscover = () => {
       {loading ? (
         <div className="space-y-3" aria-busy="true" aria-label="Loading creators">
           {[0, 1, 2].map((i) => (
-            <Skeleton key={i} className="h-28 w-full rounded-xl" />
+            <SurfaceCard key={i} className="p-4">
+              <Skeleton className="h-20 w-full rounded-lg" />
+            </SurfaceCard>
           ))}
         </div>
       ) : visible.length === 0 ? (
-        <div className="rounded-xl border border-border bg-card p-10 text-center">
+        <SurfaceCard className="p-10 text-center">
           <Users className="h-10 w-10 text-muted-foreground mx-auto mb-4" />
           <h3 className="text-ui font-semibold text-foreground mb-2">No creators found</h3>
           <p className="text-support text-muted-foreground max-w-sm mx-auto">
@@ -198,7 +199,7 @@ const CustomerDiscover = () => {
               ? 'Try a different search term.'
               : 'New creators appear here as soon as they publish.'}
           </p>
-        </div>
+        </SurfaceCard>
       ) : (
         <div className="space-y-3">
           {visible.map((c, index) => {
@@ -208,9 +209,9 @@ const CustomerDiscover = () => {
             const listPrice =
               c.monthly_price != null ? `$${Number(c.monthly_price).toFixed(2)}/mo` : '—';
             return (
-              <div
+              <SurfaceCard
                 key={c.id}
-                className="rounded-xl border border-border bg-card p-4 sm:p-5 transition-colors hover:border-primary/20"
+                className="p-4 sm:p-5 transition-colors hover:border-primary/20"
               >
                 <div className="flex flex-col gap-4 sm:flex-row sm:items-start">
                   <div className="flex items-center gap-3 sm:flex-col sm:items-center sm:gap-1 shrink-0">
@@ -284,7 +285,7 @@ const CustomerDiscover = () => {
                     </div>
                   </div>
                 </div>
-              </div>
+              </SurfaceCard>
             );
           })}
           {canLoadMore && (

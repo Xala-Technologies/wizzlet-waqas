@@ -25,6 +25,9 @@ import { trackPostView } from '@/lib/analytics';
 import { copyToClipboard } from '@/lib/clipboard';
 import { computeWinRate } from '../../convex/lib/results';
 import { subscriptionGrantsContentAccess } from '../../convex/lib/contentAccess';
+import { PageHeader } from '@/components/ux/PageHeader';
+import { SurfaceCard } from '@/components/ux/SurfaceCard';
+import { Skeleton } from '@/components/ui/skeleton';
 
 interface Subscription {
   id: string;
@@ -274,7 +277,25 @@ const Dashboard = () => {
   if (loading) {
     return (
       <DashboardLayout type="member">
-        <div className="flex justify-center py-20"><Loader2 className="h-5 w-5 animate-spin text-primary" /></div>
+        <PageHeader
+          title="Your Feed"
+          description="Latest picks from creators you subscribe to."
+        />
+        <div className="space-y-4" aria-busy="true" aria-label="Loading feed">
+          {[0, 1, 2].map((i) => (
+            <SurfaceCard key={i} className="p-5 space-y-3">
+              <div className="flex items-center gap-3">
+                <Skeleton className="h-9 w-9 rounded-full" />
+                <div className="flex-1 space-y-2">
+                  <Skeleton className="h-4 w-32" />
+                  <Skeleton className="h-3 w-20" />
+                </div>
+              </div>
+              <Skeleton className="h-5 w-3/4" />
+              <Skeleton className="h-16 w-full rounded-lg" />
+            </SurfaceCard>
+          ))}
+        </div>
       </DashboardLayout>
     );
   }
@@ -294,7 +315,7 @@ const Dashboard = () => {
     }
 
     return (
-      <article key={post.id} className="rounded-xl border border-border bg-card overflow-hidden transition-colors hover:border-primary/20">
+      <SurfaceCard key={post.id} className="transition-colors hover:border-primary/20">
         <div className="flex items-center gap-3 px-4 sm:px-5 pt-4 sm:pt-5 pb-3">
           {post.creator.avatar_url ? (
             <img src={post.creator.avatar_url} alt="" className="h-9 w-9 rounded-full object-cover shrink-0" />
@@ -418,44 +439,42 @@ const Dashboard = () => {
             </Button>
           </div>
         </div>
-      </article>
+      </SurfaceCard>
     );
   };
 
   return (
     <DashboardLayout type="member">
-      <header className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
-        <div>
-          <h1 className="text-heading font-bold text-foreground">Your Feed</h1>
-          <p className="text-support text-muted-foreground mt-0.5">
-            {posts.length > 0 ? `${posts.length} picks from your creators` : 'No picks yet'}
-          </p>
-        </div>
-        <div className="flex flex-wrap items-center gap-2">
-          {(activeSubs.length > 0 || pastDueSubs.length > 0) && (
-            <Button
-              type="button"
-              variant="outline"
-              className="min-h-11"
-              onClick={() => void openCustomerPortal()}
-            >
-              <CreditCard className="mr-1.5 h-3.5 w-3.5" /> Billing
+      <PageHeader
+        title="Your Feed"
+        description={posts.length > 0 ? `${posts.length} picks from your creators` : 'No picks yet'}
+        trailing={
+          <>
+            {(activeSubs.length > 0 || pastDueSubs.length > 0) && (
+              <Button
+                type="button"
+                variant="outline"
+                className="min-h-11"
+                onClick={() => void openCustomerPortal()}
+              >
+                <CreditCard className="mr-1.5 h-3.5 w-3.5" /> Billing
+              </Button>
+            )}
+            <Button variant="outline" className="min-h-11" asChild>
+              <Link to="/dashboard/discover">
+                <Crown className="mr-1.5 h-3.5 w-3.5" /> Browse creators
+              </Link>
             </Button>
-          )}
-          <Button variant="outline" className="min-h-11" asChild>
-            <Link to="/dashboard/discover">
-              <Crown className="mr-1.5 h-3.5 w-3.5" /> Browse creators
-            </Link>
-          </Button>
-        </div>
-      </header>
+          </>
+        }
+      />
 
       {(pastDueSubs.length > 0 ||
         cancelPendingSubs.length > 0 ||
         (notifUnread ?? 0) > 0 ||
         unreadDms > 0 ||
         activeSubs.length === 0) && (
-        <div className="rounded-xl border border-border bg-card p-4 sm:p-5 mb-6">
+        <SurfaceCard className="p-4 sm:p-5 mb-6">
           <h2 className="text-ui font-semibold text-foreground mb-3">Next up</h2>
           <ul className="space-y-2.5">
             {pastDueSubs.length > 0 && (
@@ -502,7 +521,7 @@ const Dashboard = () => {
               </li>
             )}
           </ul>
-        </div>
+        </SurfaceCard>
       )}
 
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
@@ -516,13 +535,13 @@ const Dashboard = () => {
             icon: Star,
           },
         ].map((stat) => (
-          <div key={stat.label} className="rounded-xl border border-border bg-card p-4">
+          <SurfaceCard key={stat.label} className="p-4">
             <div className="flex items-center gap-1.5 mb-1.5">
               <stat.icon className="h-3.5 w-3.5 text-muted-foreground" />
               <p className="text-support text-muted-foreground">{stat.label}</p>
             </div>
             <p className="text-ui font-bold text-foreground">{stat.value}</p>
-          </div>
+          </SurfaceCard>
         ))}
       </div>
 
@@ -549,7 +568,7 @@ const Dashboard = () => {
           )}
         </div>
       ) : activeSubs.length === 0 ? (
-        <div className="rounded-xl border border-border bg-card p-10 text-center">
+        <SurfaceCard className="p-10 text-center">
           <Users className="h-10 w-10 text-muted-foreground mx-auto mb-4" />
           <h3 className="text-ui font-semibold text-foreground mb-2">No picks yet</h3>
           <p className="text-support text-muted-foreground max-w-xs mx-auto mb-5">
@@ -560,9 +579,9 @@ const Dashboard = () => {
               <Crown className="mr-1.5 h-4 w-4" /> Browse creators
             </Link>
           </Button>
-        </div>
+        </SurfaceCard>
       ) : (
-        <div className="rounded-xl border border-border bg-card p-10 text-center">
+        <SurfaceCard className="p-10 text-center">
           <FileText className="h-10 w-10 text-muted-foreground mx-auto mb-4" />
           <h3 className="text-ui font-semibold text-foreground mb-2">No picks yet</h3>
           <p className="text-support text-muted-foreground max-w-xs mx-auto mb-5">
@@ -571,7 +590,7 @@ const Dashboard = () => {
           <Button variant="outline" className="min-h-11" asChild>
             <Link to="/dashboard/discover">Browse more creators</Link>
           </Button>
-        </div>
+        </SurfaceCard>
       )}
 
       <Dialog open={trackOpen} onOpenChange={setTrackOpen}>
