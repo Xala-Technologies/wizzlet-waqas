@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Link, useNavigate, useSearchParams } from 'react-router-dom';
+import { Link, Navigate, useNavigate, useSearchParams } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -34,7 +34,17 @@ const Login = () => {
   const [searchParams] = useSearchParams();
   const returnTo = sanitizeReturnPath(searchParams.get('returnTo'));
   const { signIn } = useAuthActions();
-  const { refreshRole, clearDevBypass, acceptAssignedRole } = useAuth();
+  const {
+    user,
+    role,
+    roles,
+    loading: authLoading,
+    roleLoading,
+    signingOut,
+    refreshRole,
+    clearDevBypass,
+    acceptAssignedRole,
+  } = useAuth();
   const authReady = useConvexAuthReady();
   const grantTestAdmin = useMutation(api.roles.mutations.grantTestAdmin);
   const ensureUser = useMutation(api.users.queries.ensureUser);
@@ -42,6 +52,7 @@ const Login = () => {
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [formError, setFormError] = useState<string | null>(null);
 
   const finishAdminSession = async () => {
     await waitForAuthenticated(() => authReady.current);
@@ -63,6 +74,7 @@ const Login = () => {
     e.preventDefault();
     if (loading) return;
     setLoading(true);
+    setFormError(null);
     try {
       const normalizedEmail = email.trim().toLowerCase();
       const form = new FormData();
@@ -89,7 +101,9 @@ const Login = () => {
       clearStoredReturnTo();
       navigate(dest, { replace: true });
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Sign in failed');
+      const message = err instanceof Error ? err.message : 'Sign in failed';
+      setFormError(message);
+      toast.error(message);
     } finally {
       setLoading(false);
     }
@@ -102,6 +116,7 @@ const Login = () => {
     }
     if (loading) return;
     setLoading(true);
+    setFormError(null);
     setEmail(ADMIN_BOOTSTRAP.email);
     setPassword(ADMIN_BOOTSTRAP.password);
     try {
@@ -122,7 +137,9 @@ const Login = () => {
       }
       await finishAdminSession();
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Admin login failed');
+      const message = err instanceof Error ? err.message : 'Admin login failed';
+      setFormError(message);
+      toast.error(message);
     } finally {
       setLoading(false);
     }
@@ -131,6 +148,16 @@ const Login = () => {
   const signupHref = returnTo
     ? `/signup?returnTo=${encodeURIComponent(returnTo)}`
     : '/signup';
+
+  // Already signed in — leave /login once roles have settled (avoids select-role flash).
+  if (!authLoading && !roleLoading && !signingOut && user) {
+    return (
+      <Navigate
+        to={postAuthDestination({ roles, preferred: role, returnTo })}
+        replace
+      />
+    );
+  }
 
   return (
     <AuthShell
@@ -159,7 +186,10 @@ const Login = () => {
             autoComplete="email"
             placeholder="you@example.com"
             value={email}
-            onChange={(e) => setEmail(e.target.value)}
+            onChange={(e) => {
+              setEmail(e.target.value);
+              if (formError) setFormError(null);
+            }}
             required
             disabled={loading}
             className="bg-card border-border h-11 text-ui"
@@ -177,10 +207,15 @@ const Login = () => {
               autoComplete="current-password"
               placeholder="••••••••"
               value={password}
-              onChange={(e) => setPassword(e.target.value)}
+              onChange={(e) => {
+                setPassword(e.target.value);
+                if (formError) setFormError(null);
+              }}
               required
               disabled={loading}
               className="bg-card border-border h-11 text-ui pr-11"
+              aria-invalid={formError ? true : undefined}
+              aria-describedby={formError ? 'login-error' : undefined}
             />
             <button
               type="button"
@@ -192,6 +227,11 @@ const Login = () => {
             </button>
           </div>
         </div>
+        {formError ? (
+          <p id="login-error" role="alert" className="text-sm text-destructive">
+            {formError}
+          </p>
+        ) : null}
         <Button type="submit" variant="default" className="w-full h-11" disabled={loading}>
           {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
           Sign in

@@ -12,6 +12,7 @@ import { creatorProfilePath } from '@/lib/creatorProfilePath';
 import { segmentedItemClassName, segmentedTrackClassName } from '@/lib/segmentedControl';
 import { SurfaceCard } from '@/components/ux/SurfaceCard';
 import { Skeleton } from '@/components/ui/skeleton';
+import { useAuth } from '@/contexts/AuthContext';
 
 type SortKey = 'popular' | 'newest' | 'price';
 
@@ -29,6 +30,9 @@ const Discover = () => {
   const creators = creatorsPage?.items;
   const [search, setSearch] = useState('');
   const [sort, setSort] = useState<SortKey>('popular');
+  const { user, role } = useAuth();
+  const dashboardPath =
+    role === 'creator' ? '/creator' : role === 'admin' ? '/admin' : '/dashboard';
 
   const visible = useMemo(() => {
     if (!creators) return [];
@@ -198,18 +202,28 @@ const Discover = () => {
           <div className="container flex flex-col items-start justify-between gap-6 py-12 md:flex-row md:items-center md:py-14">
             <div className="max-w-md">
               <h2 className="text-xl font-bold tracking-tight text-foreground sm:text-2xl">
-                Already browsing as a member?
+                {user ? 'Ready to manage your account?' : 'Already browsing as a member?'}
               </h2>
               <p className="mt-2 text-sm text-muted-foreground">
-                Sign in to bookmark creators and manage subscriptions from your dashboard.
+                {user
+                  ? 'Open your dashboard for subscriptions, messages, and creator tools.'
+                  : 'Sign in to bookmark creators and manage subscriptions from your dashboard.'}
               </p>
             </div>
             <div className="flex flex-wrap gap-3">
-              <Link to="/login">
-                <Button variant="outline" size="lg">
-                  Sign in
-                </Button>
-              </Link>
+              {user ? (
+                <Link to={dashboardPath}>
+                  <Button variant="outline" size="lg">
+                    Dashboard
+                  </Button>
+                </Link>
+              ) : (
+                <Link to="/login">
+                  <Button variant="outline" size="lg">
+                    Sign in
+                  </Button>
+                </Link>
+              )}
               <Link to="/creators">
                 <Button variant="hero" size="lg" className="gap-2">
                   Creators directory <ArrowRight className="h-4 w-4" />

@@ -1,20 +1,28 @@
 import { Link } from 'react-router-dom';
 import { PrizeletLogo } from '@/components/PrizeletLogo';
+import { useAuth } from '@/contexts/AuthContext';
 
 const explore = [
   { label: 'Home', to: '/' },
   { label: 'Discover', to: '/discover' },
   { label: 'Creators', to: '/creators' },
   { label: "Today's Events", to: '/todays-events' },
-];
-
-const account = [
-  { label: 'Log in', to: '/login' },
-  { label: 'Apply for access', to: '/signup' },
   { label: 'Pricing', to: '/pricing' },
+  { label: 'Support', to: '/support' },
 ];
 
 export function Footer() {
+  const { user, role } = useAuth();
+  const dashboardPath =
+    role === 'creator' ? '/creator' : role === 'admin' ? '/admin' : '/dashboard';
+
+  const account = user
+    ? [{ label: 'Dashboard', to: dashboardPath }]
+    : [
+        { label: 'Log in', to: '/login' },
+        { label: 'Apply for access', to: '/signup' },
+      ];
+
   return (
     <footer className="relative mt-auto border-t border-border bg-background">
       <div className="container relative py-14 md:py-16">
@@ -63,14 +71,6 @@ export function Footer() {
                   </Link>
                 </li>
               ))}
-              <li>
-                <a
-                  href="mailto:support@prizelet.com"
-                  className="text-support text-muted-foreground transition-colors hover:text-foreground"
-                >
-                  Support
-                </a>
-              </li>
             </ul>
           </div>
         </div>

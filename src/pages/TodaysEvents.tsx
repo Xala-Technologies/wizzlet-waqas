@@ -198,7 +198,7 @@ const TodaysEvents = () => {
               </h3>
               <p className="text-sm text-muted-foreground">
                 {allEvents.length === 0
-                  ? 'Admins can add sport events in Convex. Nothing is fabricated for the UI.'
+                  ? 'No matchups are listed for today yet. Check back later or browse Discover for creators.'
                   : 'Try adjusting your search or filters.'}
               </p>
             </div>

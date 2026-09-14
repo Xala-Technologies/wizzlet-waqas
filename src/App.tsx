@@ -79,6 +79,7 @@ import Creators from "./pages/Creators";
 import TodaysEvents from "./pages/TodaysEvents";
 import NotFound from "./pages/NotFound";
 import Pricing from "./pages/Pricing";
+import Support from "./pages/Support";
 import Discover from "./pages/Discover";
 import TopCreators from "./pages/TopCreators";
 import Community from "./pages/Community";
@@ -113,6 +114,7 @@ const App = () => (
             <Route path="/discover" element={<Discover />} />
             <Route path="/top-creators" element={<TopCreators />} />
             <Route path="/pricing" element={<Pricing />} />
+            <Route path="/support" element={<Support />} />
             <Route path="/community" element={<Community />} />
             <Route path="/login" element={<Login />} />
             <Route path="/signup" element={<Signup />} />
