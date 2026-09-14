@@ -47,7 +47,7 @@ const SelectRole = () => {
 
   if (loading || roleLoading) {
     return (
-      <main id="main-content" className="min-h-screen flex items-center justify-center px-4 bg-background">
+      <main id="main-content" className="min-h-screen flex items-center justify-center px-4 bg-muted">
         <Loader2 className="h-6 w-6 animate-spin text-primary" />
       </main>
     );
@@ -124,7 +124,7 @@ const SelectRole = () => {
       logoSize="lg"
       logoLinkTo=""
     >
-      <div className="grid gap-4" role="radiogroup" aria-label="Account role">
+      <div className="grid gap-3" role="radiogroup" aria-label="Account role">
         {roleOptions.map((option) => {
           const Icon = option.icon;
           const isSelected = selected === option.id;
@@ -135,22 +135,22 @@ const SelectRole = () => {
               role="radio"
               aria-checked={isSelected}
               onClick={() => setSelected(option.id)}
-              className={`flex items-start gap-4 rounded-xl border p-5 text-left transition-all ${
+              className={`flex items-start gap-4 rounded-xl border p-5 text-left transition-colors ${
                 isSelected
-                  ? 'border-primary bg-primary/5 ring-1 ring-primary'
-                  : 'border-border bg-card hover:border-muted-foreground/30'
+                  ? 'border-primary bg-primary/5'
+                  : 'border-border bg-background hover:border-foreground/20'
               }`}
             >
               <div
                 className={`mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-lg ${
-                  isSelected ? 'bg-primary text-primary-foreground' : 'bg-secondary text-muted-foreground'
+                  isSelected ? 'bg-primary text-primary-foreground' : 'bg-muted text-foreground'
                 }`}
               >
                 <Icon className="h-5 w-5" />
               </div>
               <div>
                 <p className="font-semibold text-ui text-foreground">{option.title}</p>
-                <p className="text-support text-muted-foreground mt-1">{option.description}</p>
+                <p className="mt-1 text-support text-muted-foreground">{option.description}</p>
               </div>
             </button>
           );
@@ -160,7 +160,7 @@ const SelectRole = () => {
       <Button
         type="button"
         variant="default"
-        className="mt-6 w-full h-11"
+        className="mt-6 h-12 w-full text-ui font-semibold"
         onClick={() => void handleContinue()}
         disabled={!selected || saving || loading}
       >

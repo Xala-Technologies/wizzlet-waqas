@@ -166,17 +166,17 @@ const Login = () => {
       seoTitle="Sign in — Prizelet"
       seoDescription="Sign in to your Prizelet account to manage picks, subscriptions and payouts."
       footer={
-        <p className="text-center text-support text-muted-foreground mt-6">
+        <p className="text-center text-support text-muted-foreground">
           Don&apos;t have an account?{' '}
-          <Link to={signupHref} className="text-primary hover:underline">
+          <Link to={signupHref} className="font-medium text-primary hover:underline">
             Sign up
           </Link>
         </p>
       }
     >
-      <form onSubmit={(e) => void handleLogin(e)} className="space-y-4">
+      <form onSubmit={(e) => void handleLogin(e)} className="space-y-5">
         <div className="space-y-2">
-          <Label htmlFor="email" className="text-support">
+          <Label htmlFor="email">
             Email
           </Label>
           <Input
@@ -192,11 +192,11 @@ const Login = () => {
             }}
             required
             disabled={loading}
-            className="bg-card border-border h-11 text-ui"
+            className="h-12 bg-background text-ui"
           />
         </div>
         <div className="space-y-2">
-          <Label htmlFor="password" className="text-support">
+          <Label htmlFor="password">
             Password
           </Label>
           <div className="relative">
@@ -213,13 +213,13 @@ const Login = () => {
               }}
               required
               disabled={loading}
-              className="bg-card border-border h-11 text-ui pr-11"
+              className="h-12 bg-background pr-11 text-ui"
               aria-invalid={formError ? true : undefined}
               aria-describedby={formError ? 'login-error' : undefined}
             />
             <button
               type="button"
-              className="absolute right-0 top-0 inline-flex h-11 w-11 items-center justify-center text-muted-foreground hover:text-foreground"
+              className="absolute right-0 top-0 inline-flex h-12 w-11 items-center justify-center text-muted-foreground hover:text-foreground"
               aria-label={showPassword ? 'Hide password' : 'Show password'}
               onClick={() => setShowPassword((v) => !v)}
             >
@@ -232,7 +232,7 @@ const Login = () => {
             {formError}
           </p>
         ) : null}
-        <Button type="submit" variant="default" className="w-full h-11" disabled={loading}>
+        <Button type="submit" variant="default" className="h-12 w-full text-ui font-semibold" disabled={loading}>
           {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
           Sign in
         </Button>
@@ -241,9 +241,9 @@ const Login = () => {
       <SocialAuthSection redirectTo="/auth/callback" mode="signin" returnTo={returnTo} />
 
       {isDevBuild && (
-        <div className="mt-6 space-y-3 rounded-xl border border-border bg-muted/30 p-4">
-          <p className="text-support font-medium text-foreground">Platform owner (local)</p>
-          <p className="text-caption text-muted-foreground font-mono leading-relaxed">
+        <div className="mt-6 space-y-3 rounded-xl border border-border bg-muted p-4">
+          <p className="text-sm font-medium text-foreground">Platform owner (local)</p>
+          <p className="font-mono text-caption leading-relaxed text-muted-foreground">
             {ADMIN_BOOTSTRAP.email}
             <br />
             {ADMIN_BOOTSTRAP.password}
@@ -251,7 +251,7 @@ const Login = () => {
           <Button
             type="button"
             variant="outline"
-            className="w-full h-11"
+            className="h-11 w-full border-border bg-background"
             onClick={() => {
               storeReturnTo(null);
               void handleAdminLogin();

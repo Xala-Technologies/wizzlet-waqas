@@ -101,17 +101,17 @@ const Signup = () => {
         ) : null
       }
       footer={
-        <p className="text-center text-support text-muted-foreground mt-8">
+        <p className="text-center text-support text-muted-foreground">
           Already have an account?{' '}
-          <Link to={loginHref} className="text-primary hover:underline font-medium">
+          <Link to={loginHref} className="font-medium text-primary hover:underline">
             Sign in
           </Link>
         </p>
       }
     >
-      <form onSubmit={(e) => void handleSignup(e)} className="space-y-4">
+      <form onSubmit={(e) => void handleSignup(e)} className="space-y-5">
         <div className="space-y-2">
-          <Label htmlFor="username" className="text-support">
+          <Label htmlFor="username">
             Username
           </Label>
           <Input
@@ -123,11 +123,11 @@ const Signup = () => {
             onChange={(e) => setUsername(e.target.value)}
             required
             disabled={loading}
-            className="bg-card border-border h-11 text-ui"
+            className="h-12 bg-background text-ui"
           />
         </div>
         <div className="space-y-2">
-          <Label htmlFor="email" className="text-support">
+          <Label htmlFor="email">
             Email
           </Label>
           <Input
@@ -140,11 +140,11 @@ const Signup = () => {
             onChange={(e) => setEmail(e.target.value)}
             required
             disabled={loading}
-            className="bg-card border-border h-11 text-ui"
+            className="h-12 bg-background text-ui"
           />
         </div>
         <div className="space-y-2">
-          <Label htmlFor="password" className="text-support">
+          <Label htmlFor="password">
             Password
           </Label>
           <div className="relative">
@@ -159,11 +159,11 @@ const Signup = () => {
               required
               disabled={loading}
               minLength={8}
-              className="bg-card border-border h-11 text-ui pr-11"
+              className="h-12 bg-background pr-11 text-ui"
             />
             <button
               type="button"
-              className="absolute right-0 top-0 inline-flex h-11 w-11 items-center justify-center text-muted-foreground hover:text-foreground"
+              className="absolute right-0 top-0 inline-flex h-12 w-11 items-center justify-center text-muted-foreground hover:text-foreground"
               aria-label={showPassword ? 'Hide password' : 'Show password'}
               onClick={() => setShowPassword((v) => !v)}
             >
@@ -172,7 +172,7 @@ const Signup = () => {
           </div>
           <p className="text-caption text-muted-foreground">At least 8 characters</p>
         </div>
-        <Button type="submit" variant="default" className="w-full h-11" disabled={loading}>
+        <Button type="submit" variant="default" className="h-12 w-full text-ui font-semibold" disabled={loading}>
           {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
           Create account
         </Button>

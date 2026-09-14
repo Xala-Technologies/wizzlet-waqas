@@ -9,20 +9,20 @@ const buttonVariants = cva(
   {
     variants: {
       variant: {
-        default: "btn-glow text-primary-foreground hover:brightness-110 hover:scale-[1.02]",
+        default: "btn-glow text-primary-foreground hover:brightness-110",
         destructive: "bg-destructive text-destructive-foreground hover:bg-destructive/90",
-        outline: "border border-border bg-transparent hover:bg-muted/50 hover:border-muted-foreground/30 text-foreground",
-        secondary: "bg-secondary border border-border text-secondary-foreground hover:bg-muted hover:border-muted-foreground/20",
-        ghost: "hover:bg-muted hover:text-foreground text-muted-foreground",
+        outline: "border border-input bg-background hover:bg-muted text-foreground",
+        secondary: "bg-secondary border border-input text-secondary-foreground hover:bg-muted",
+        ghost: "hover:bg-muted hover:text-foreground text-foreground",
         link: "text-primary underline-offset-4 hover:underline",
-        hero: "btn-glow text-primary-foreground hover:brightness-110 hover:scale-[1.03] font-semibold tracking-tight",
-        "hero-outline": "border border-border bg-card text-foreground hover:bg-muted hover:border-muted-foreground/30 font-medium",
+        hero: "btn-glow text-primary-foreground hover:brightness-110 font-semibold tracking-tight",
+        "hero-outline": "border border-input bg-card text-foreground hover:bg-muted font-medium",
       },
       size: {
-        default: "h-10 px-5 py-2",
+        default: "h-11 px-5 py-2",
         sm: "h-9 rounded-lg px-4 text-[length:var(--text-support)] leading-[var(--leading-support)]",
         lg: "h-12 rounded-xl px-8 text-[length:var(--text-ui)] leading-[var(--leading-ui)]",
-        icon: "h-10 w-10",
+        icon: "h-11 w-11",
       },
     },
     defaultVariants: {

@@ -19,8 +19,8 @@ interface AuthShellProps {
 }
 
 /**
- * Shared centered auth layout — single column, flat surface, one primary task.
- * Does not introduce a new visual language; aligns Login / Signup / SelectRole.
+ * Shared auth layout — solid Prizelet surfaces, one primary task.
+ * Page = muted; panel = card + border. No extra brand colors or gradients.
  */
 export function AuthShell({
   title,
@@ -37,31 +37,33 @@ export function AuthShell({
   return (
     <main
       id="main-content"
-      className="min-h-screen flex items-center justify-center px-4 bg-background"
+      className="min-h-screen flex items-center justify-center bg-muted px-4 py-12 sm:py-16"
     >
       <Seo title={seoTitle} description={seoDescription} noindex />
-      <div className={cn('w-full', width === 'sm' ? 'max-w-[380px]' : 'max-w-lg')}>
-        <div className="text-center mb-10">
+      <div className={cn('w-full', width === 'sm' ? 'max-w-[400px]' : 'max-w-lg')}>
+        <header className="mb-8 text-center">
           <PrizeletLogo
-            size={logoSize}
+            size={logoSize === 'lg' ? 'lg' : 'md'}
             linkTo={logoLinkTo}
-            className={cn('justify-center', logoSize === 'lg' ? 'mb-6' : 'mb-8')}
+            className="mb-8 justify-center"
           />
           <h1
             className={cn(
               'font-bold tracking-tight text-foreground',
-              width === 'lg' ? 'text-heading' : 'text-title-lg',
+              width === 'lg' ? 'text-heading' : 'text-2xl sm:text-[1.75rem] leading-tight',
             )}
           >
             {title}
           </h1>
           {subtitle ? (
-            <p className="text-support text-muted-foreground mt-1.5">{subtitle}</p>
+            <p className="mt-2 text-support leading-relaxed text-muted-foreground">{subtitle}</p>
           ) : null}
           {banner}
-        </div>
-        {children}
-        {footer}
+        </header>
+
+        <div className="rounded-2xl border border-border bg-card p-6 sm:p-8">{children}</div>
+
+        {footer ? <div className="mt-6">{footer}</div> : null}
       </div>
     </main>
   );
