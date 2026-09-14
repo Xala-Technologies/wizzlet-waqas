@@ -55,19 +55,21 @@ export function SocialAuthButtons({
   }
 
   return (
-    <div className="space-y-2">
+    <div className="space-y-3">
       {showTwitter ? (
         <Button
           type="button"
           variant="outline"
-          className="w-full h-10"
+          className="h-12 w-full bg-background text-foreground"
           disabled={pending !== null}
           onClick={() => void start('twitter')}
         >
           {pending === 'twitter' ? (
             <Loader2 className="mr-2 h-4 w-4 animate-spin" />
           ) : (
-            <span className="mr-2 font-bold text-sm">𝕏</span>
+            <span className="mr-2 text-sm font-bold text-foreground" aria-hidden>
+              𝕏
+            </span>
           )}
           {verb} with X
         </Button>
@@ -76,14 +78,17 @@ export function SocialAuthButtons({
         <Button
           type="button"
           variant="outline"
-          className="w-full h-10"
+          className="h-12 w-full bg-background text-foreground"
           disabled={pending !== null}
           onClick={() => void start('discord')}
         >
           {pending === 'discord' ? (
             <Loader2 className="mr-2 h-4 w-4 animate-spin" />
           ) : (
-            <span className="mr-2 inline-flex h-4 w-4 items-center justify-center rounded-sm bg-[#5865F2] text-caption font-bold text-white">
+            <span
+              className="mr-2 inline-flex h-5 w-5 items-center justify-center rounded-md bg-foreground text-caption font-bold text-background"
+              aria-hidden
+            >
               D
             </span>
           )}
@@ -106,8 +111,8 @@ export function SocialAuthSection(props: SocialAuthButtonsProps) {
         <div className="absolute inset-0 flex items-center">
           <span className="w-full border-t border-border" />
         </div>
-        <div className="relative flex justify-center text-caption uppercase tracking-wide">
-          <span className="bg-background px-2 text-muted-foreground">Or</span>
+        <div className="relative flex justify-center text-caption font-medium uppercase tracking-[0.14em]">
+          <span className="bg-card px-3 text-muted-foreground">Or</span>
         </div>
       </div>
       <SocialAuthButtons {...props} />

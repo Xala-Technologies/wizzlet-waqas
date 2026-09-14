@@ -3,6 +3,7 @@ import { Link, useSearchParams } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { CheckCircle, Loader2 } from 'lucide-react';
 import { confirmStripeCheckoutSession, PAYMENTS_MODE } from '@/lib/stripe';
+import { creatorProfilePath } from '@/lib/creatorProfilePath';
 
 const SubscriptionSuccess = () => {
   const [searchParams] = useSearchParams();
@@ -38,29 +39,30 @@ const SubscriptionSuccess = () => {
           )}
         </div>
         <h1 className="text-2xl font-bold mb-2">
-          {confirming ? 'Confirming subscription…' : 'Subscription Confirmed!'}
+          {confirming ? 'Confirming subscription…' : 'Subscription confirmed'}
         </h1>
         <p className="text-muted-foreground text-sm mb-8">
           {confirming
             ? 'Finishing payment confirmation. This only takes a moment.'
             : confirmFailed
-              ? 'Payment may still be processing. Refresh in a minute or check billing.'
-              : `You're now subscribed${creatorUsername ? ` to @${creatorUsername}` : ''}. You have full access to all premium content.`}
+              ? 'Payment may still be processing. Refresh in a minute or check Subscriptions.'
+              : `You're subscribed${creatorUsername ? ` to @${creatorUsername}` : ''}. Open Subscriptions to see recent posts and manage access.`}
         </p>
         <div className="flex flex-col sm:flex-row gap-3 justify-center">
-          {creatorUsername && (
-            <Link to={`/${creatorUsername}`}>
-              <Button variant="hero" size="lg" disabled={confirming}>
-                View Creator
-              </Button>
-            </Link>
-          )}
-          <Link to="/dashboard">
-            <Button variant="outline" size="lg" disabled={confirming}>
-              Go to Dashboard
-            </Button>
-          </Link>
+          <Button variant="hero" size="lg" disabled={confirming} asChild>
+            <Link to="/dashboard/subscriptions-billing">Go to Subscriptions</Link>
+          </Button>
+          <Button variant="outline" size="lg" disabled={confirming} asChild>
+            <Link to="/dashboard">View Feed</Link>
+          </Button>
         </div>
+        {creatorUsername ? (
+          <div className="mt-4">
+            <Button variant="ghost" size="lg" disabled={confirming} asChild>
+              <Link to={creatorProfilePath(creatorUsername)}>View creator profile</Link>
+            </Button>
+          </div>
+        ) : null}
       </div>
     </div>
   );

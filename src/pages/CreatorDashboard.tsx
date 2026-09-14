@@ -21,6 +21,7 @@ import {
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { computeWinRate } from '../../convex/lib/results';
+import { Seo } from '@/components/Seo';
 
 interface PickEntry {
   id: string;
@@ -218,6 +219,7 @@ const CreatorDashboard = () => {
 
   return (
     <DashboardLayout type="creator">
+      <Seo title="Creator overview — Prizelet" description="Your Prizelet creator overview, earnings, and next steps." />
       {/* 1. Page header */}
       <header className="mb-6">
         <h1 className="text-heading md:text-heading-lg font-bold text-foreground flex flex-wrap items-center gap-2">
@@ -229,7 +231,7 @@ const CreatorDashboard = () => {
           )}
         </h1>
         <p className="text-support text-muted-foreground mt-1">
-          Welcome back{creatorUsername ? `, @${creatorUsername}` : ''}
+          {creatorUsername ? `Welcome back, @${creatorUsername}` : 'Welcome back'}
           {' · '}
           <Link to="/creator/earnings" className="text-primary hover:underline">
             Earnings

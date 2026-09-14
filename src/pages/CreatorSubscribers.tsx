@@ -6,6 +6,7 @@ import { DesktopTableRegion, MobileRecordCards } from '@/components/dashboard/Mo
 import { Button } from '@/components/ui/button';
 import { Users, Loader2, CheckCircle2, XCircle } from 'lucide-react';
 import { format } from 'date-fns';
+import { creatorProfilePath } from '@/lib/creatorProfilePath';
 
 const PAGE_SIZE = 25;
 
@@ -36,7 +37,7 @@ const CreatorSubscribers = () => {
 
   const profileReady = Boolean(creator?.username && creator.isPublished);
   const emptyCtaHref = profileReady
-    ? `/c/${creator.username}`
+    ? creatorProfilePath(creator!.username)
     : creator
       ? '/creator/settings'
       : '/creator/onboarding';

@@ -2,8 +2,13 @@ import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { LandingSection } from '@/components/landing/LandingSection';
 import { ArrowRight, Play } from 'lucide-react';
+import { useAuth } from '@/contexts/AuthContext';
 
 export function HeroSection() {
+  const { user, role } = useAuth();
+  const dashboardPath =
+    role === 'creator' ? '/creator' : role === 'admin' ? '/admin' : '/dashboard';
+
   return (
     <LandingSection variant="hero" className="bg-background">
       <div className="container relative z-10">
@@ -25,11 +30,19 @@ export function HeroSection() {
           </p>
 
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4 opacity-0 animate-fade-in-up" style={{ animationDelay: '0.2s' }}>
-            <Link to="/signup">
-              <Button variant="hero" size="lg" className="w-full sm:w-auto h-13 px-10 text-ui">
-                Get Access <ArrowRight className="ml-1 h-4 w-4" />
-              </Button>
-            </Link>
+            {user ? (
+              <Link to={dashboardPath}>
+                <Button variant="hero" size="lg" className="w-full sm:w-auto h-13 px-10 text-ui">
+                  Open dashboard <ArrowRight className="ml-1 h-4 w-4" />
+                </Button>
+              </Link>
+            ) : (
+              <Link to="/signup">
+                <Button variant="hero" size="lg" className="w-full sm:w-auto h-13 px-10 text-ui">
+                  Get Access <ArrowRight className="ml-1 h-4 w-4" />
+                </Button>
+              </Link>
+            )}
             <a href="#how-it-works">
               <Button variant="hero-outline" size="lg" className="w-full sm:w-auto h-13 px-8 text-ui">
                 <Play className="mr-1.5 h-3.5 w-3.5" /> See How It Works

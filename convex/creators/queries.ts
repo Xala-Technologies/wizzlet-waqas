@@ -77,13 +77,24 @@ export const listPublished = query({
         .query("posts")
         .withIndex("by_creatorId", (q) => q.eq("creatorId", c._id))
         .collect();
+      // Match CreatorProfile checkout: featured active product, else first active.
+      const products = await ctx.db
+        .query("products")
+        .withIndex("by_creatorId_active", (q) =>
+          q.eq("creatorId", c._id).eq("isActive", true),
+        )
+        .collect();
+      const sellable = products.filter((p) => !p.isClosed);
+      const featured =
+        sellable.find((p) => p.isFeatured) ??
+        [...sellable].sort((a, b) => a.priceCents - b.priceCents)[0];
       mapped.push({
         _id: c._id,
         username: c.username,
         displayName: c.displayName,
         bio: c.bio,
         avatarUrl: c.avatarUrl,
-        monthlyPriceCents: c.monthlyPriceCents,
+        monthlyPriceCents: featured?.priceCents ?? c.monthlyPriceCents,
         verificationStatus: c.verificationStatus ?? "none",
         createdAt: c.createdAt,
         postCount: posts.length,
@@ -123,6 +134,26 @@ export const upsertOnboarding = mutation({
     const username = args.username.trim().toLowerCase();
     if (!/^[a-z0-9_]{3,32}$/.test(username)) {
       throw new Error("INVALID_USERNAME");
+    }
+    const reserved = new Set([
+      "support",
+      "pricing",
+      "discover",
+      "creators",
+      "login",
+      "signup",
+      "admin",
+      "dashboard",
+      "creator",
+      "community",
+      "network",
+      "auth",
+      "api",
+      "settings",
+      "help",
+    ]);
+    if (reserved.has(username)) {
+      throw new Error("USERNAME_RESERVED");
     }
     const taken = await ctx.db
       .query("creators")

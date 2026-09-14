@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Link, useNavigate, useSearchParams } from 'react-router-dom';
+import { Link, Navigate, useNavigate, useSearchParams } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -34,7 +34,17 @@ const Login = () => {
   const [searchParams] = useSearchParams();
   const returnTo = sanitizeReturnPath(searchParams.get('returnTo'));
   const { signIn } = useAuthActions();
-  const { refreshRole, clearDevBypass, acceptAssignedRole } = useAuth();
+  const {
+    user,
+    role,
+    roles,
+    loading: authLoading,
+    roleLoading,
+    signingOut,
+    refreshRole,
+    clearDevBypass,
+    acceptAssignedRole,
+  } = useAuth();
   const authReady = useConvexAuthReady();
   const grantTestAdmin = useMutation(api.roles.mutations.grantTestAdmin);
   const ensureUser = useMutation(api.users.queries.ensureUser);
@@ -42,6 +52,7 @@ const Login = () => {
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [formError, setFormError] = useState<string | null>(null);
 
   const finishAdminSession = async () => {
     await waitForAuthenticated(() => authReady.current);
@@ -63,6 +74,7 @@ const Login = () => {
     e.preventDefault();
     if (loading) return;
     setLoading(true);
+    setFormError(null);
     try {
       const normalizedEmail = email.trim().toLowerCase();
       const form = new FormData();
@@ -89,7 +101,9 @@ const Login = () => {
       clearStoredReturnTo();
       navigate(dest, { replace: true });
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Sign in failed');
+      const message = err instanceof Error ? err.message : 'Sign in failed';
+      setFormError(message);
+      toast.error(message);
     } finally {
       setLoading(false);
     }
@@ -102,6 +116,7 @@ const Login = () => {
     }
     if (loading) return;
     setLoading(true);
+    setFormError(null);
     setEmail(ADMIN_BOOTSTRAP.email);
     setPassword(ADMIN_BOOTSTRAP.password);
     try {
@@ -122,7 +137,9 @@ const Login = () => {
       }
       await finishAdminSession();
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Admin login failed');
+      const message = err instanceof Error ? err.message : 'Admin login failed';
+      setFormError(message);
+      toast.error(message);
     } finally {
       setLoading(false);
     }
@@ -132,6 +149,16 @@ const Login = () => {
     ? `/signup?returnTo=${encodeURIComponent(returnTo)}`
     : '/signup';
 
+  // Already signed in — leave /login once roles have settled (avoids select-role flash).
+  if (!authLoading && !roleLoading && !signingOut && user) {
+    return (
+      <Navigate
+        to={postAuthDestination({ roles, preferred: role, returnTo })}
+        replace
+      />
+    );
+  }
+
   return (
     <AuthShell
       title="Welcome back"
@@ -139,17 +166,17 @@ const Login = () => {
       seoTitle="Sign in — Prizelet"
       seoDescription="Sign in to your Prizelet account to manage picks, subscriptions and payouts."
       footer={
-        <p className="text-center text-support text-muted-foreground mt-6">
+        <p className="text-center text-support text-muted-foreground">
           Don&apos;t have an account?{' '}
-          <Link to={signupHref} className="text-primary hover:underline">
+          <Link to={signupHref} className="font-medium text-primary hover:underline">
             Sign up
           </Link>
         </p>
       }
     >
-      <form onSubmit={(e) => void handleLogin(e)} className="space-y-4">
+      <form onSubmit={(e) => void handleLogin(e)} className="space-y-5">
         <div className="space-y-2">
-          <Label htmlFor="email" className="text-support">
+          <Label htmlFor="email">
             Email
           </Label>
           <Input
@@ -159,14 +186,17 @@ const Login = () => {
             autoComplete="email"
             placeholder="you@example.com"
             value={email}
-            onChange={(e) => setEmail(e.target.value)}
+            onChange={(e) => {
+              setEmail(e.target.value);
+              if (formError) setFormError(null);
+            }}
             required
             disabled={loading}
-            className="bg-card border-border h-11 text-ui"
+            className="h-12 bg-background text-ui"
           />
         </div>
         <div className="space-y-2">
-          <Label htmlFor="password" className="text-support">
+          <Label htmlFor="password">
             Password
           </Label>
           <div className="relative">
@@ -177,14 +207,19 @@ const Login = () => {
               autoComplete="current-password"
               placeholder="••••••••"
               value={password}
-              onChange={(e) => setPassword(e.target.value)}
+              onChange={(e) => {
+                setPassword(e.target.value);
+                if (formError) setFormError(null);
+              }}
               required
               disabled={loading}
-              className="bg-card border-border h-11 text-ui pr-11"
+              className="h-12 bg-background pr-11 text-ui"
+              aria-invalid={formError ? true : undefined}
+              aria-describedby={formError ? 'login-error' : undefined}
             />
             <button
               type="button"
-              className="absolute right-0 top-0 inline-flex h-11 w-11 items-center justify-center text-muted-foreground hover:text-foreground"
+              className="absolute right-0 top-0 inline-flex h-12 w-11 items-center justify-center text-muted-foreground hover:text-foreground"
               aria-label={showPassword ? 'Hide password' : 'Show password'}
               onClick={() => setShowPassword((v) => !v)}
             >
@@ -192,7 +227,12 @@ const Login = () => {
             </button>
           </div>
         </div>
-        <Button type="submit" variant="default" className="w-full h-11" disabled={loading}>
+        {formError ? (
+          <p id="login-error" role="alert" className="text-sm text-destructive">
+            {formError}
+          </p>
+        ) : null}
+        <Button type="submit" variant="default" className="h-12 w-full text-ui font-semibold" disabled={loading}>
           {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
           Sign in
         </Button>
@@ -201,9 +241,9 @@ const Login = () => {
       <SocialAuthSection redirectTo="/auth/callback" mode="signin" returnTo={returnTo} />
 
       {isDevBuild && (
-        <div className="mt-6 space-y-3 rounded-xl border border-border bg-muted/30 p-4">
-          <p className="text-support font-medium text-foreground">Platform owner (local)</p>
-          <p className="text-caption text-muted-foreground font-mono leading-relaxed">
+        <div className="mt-6 space-y-3 rounded-xl border border-border bg-muted p-4">
+          <p className="text-sm font-medium text-foreground">Platform owner (local)</p>
+          <p className="font-mono text-caption leading-relaxed text-muted-foreground">
             {ADMIN_BOOTSTRAP.email}
             <br />
             {ADMIN_BOOTSTRAP.password}
@@ -211,7 +251,7 @@ const Login = () => {
           <Button
             type="button"
             variant="outline"
-            className="w-full h-11"
+            className="h-11 w-full border-border bg-background"
             onClick={() => {
               storeReturnTo(null);
               void handleAdminLogin();

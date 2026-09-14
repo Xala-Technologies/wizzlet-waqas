@@ -28,6 +28,7 @@ import {
   Brain,
   Lock,
   Bell,
+  Compass,
 } from 'lucide-react';
 import { useState } from 'react';
 import { ThemeToggle } from '@/components/ThemeToggle';
@@ -46,7 +47,7 @@ const mainItems: NavItem[] = [
   { label: 'Create Post', href: '/creator/posts', icon: PenLine },
   { label: 'Products', href: '/creator/products', icon: Package },
   { label: 'Subscribers', href: '/creator/subscribers', icon: Users },
-  { label: 'Performance Tracker', href: '/creator/performance-tracker', icon: TrendingUp },
+  { label: 'Performance', href: '/creator/performance-tracker', icon: TrendingUp },
 ];
 
 const growthPrimaryItems: NavItem[] = [
@@ -80,7 +81,7 @@ function NavItemLink({ item, active }: { item: NavItem; active: boolean }) {
       className={`group flex items-center gap-3 rounded-lg px-3 py-2 text-ui transition-all duration-200 ${
         active
           ? 'bg-primary/10 text-primary font-medium shadow-[inset_2px_0_0_0_hsl(var(--primary))]'
-          : 'text-muted-foreground hover:text-foreground hover:bg-muted/60'
+          : 'text-foreground hover:bg-muted/60'
       }`}
     >
       <item.icon
@@ -250,6 +251,17 @@ export function CreatorSidebar({ mobile = false }: { mobile?: boolean } = {}) {
       </nav>
 
       <div className="shrink-0 px-3 py-4 border-t border-border space-y-2">
+        <Button
+          variant="ghost"
+          size="sm"
+          className="w-full justify-start text-muted-foreground hover:text-foreground text-ui"
+          asChild
+        >
+          <Link to="/discover">
+            <Compass className="mr-2 h-3.5 w-3.5" />
+            Discover
+          </Link>
+        </Button>
         <RoleSwitcher />
         <div className="flex items-center justify-between px-3">
           <span className="text-caption text-muted-foreground">Theme</span>

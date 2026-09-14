@@ -56,6 +56,7 @@ import CreatorPayouts from "./pages/CreatorPayouts";
 import CreatorSettings from "./pages/CreatorSettings";
 import CreatorOnboarding from "./pages/CreatorOnboarding";
 import CreatorProfile from "./pages/CreatorProfile";
+import CreatorProfileRedirect from "./pages/CreatorProfileRedirect";
 import AdminDashboard from "./pages/AdminDashboard";
 import AdminCreators from "./pages/AdminCreators";
 import AdminUsers from "./pages/AdminUsers";
@@ -78,6 +79,7 @@ import Creators from "./pages/Creators";
 import TodaysEvents from "./pages/TodaysEvents";
 import NotFound from "./pages/NotFound";
 import Pricing from "./pages/Pricing";
+import Support from "./pages/Support";
 import Discover from "./pages/Discover";
 import TopCreators from "./pages/TopCreators";
 import Community from "./pages/Community";
@@ -112,6 +114,7 @@ const App = () => (
             <Route path="/discover" element={<Discover />} />
             <Route path="/top-creators" element={<TopCreators />} />
             <Route path="/pricing" element={<Pricing />} />
+            <Route path="/support" element={<Support />} />
             <Route path="/community" element={<Community />} />
             <Route path="/login" element={<Login />} />
             <Route path="/signup" element={<Signup />} />
@@ -186,6 +189,8 @@ const App = () => (
             <Route path="/subscription/success" element={<SubscriptionSuccess />} />
             <Route path="/subscription/cancel" element={<SubscriptionCancel />} />
             <Route path="/go/:linkId" element={<CreatorLinkRedirect />} />
+            {/* Legacy /c/:username bookmarks and landing links */}
+            <Route path="/c/:username" element={<CreatorProfileRedirect />} />
             <Route path="/:username" element={<CreatorProfile />} />
             <Route path="*" element={<NotFound />} />
           </Routes>

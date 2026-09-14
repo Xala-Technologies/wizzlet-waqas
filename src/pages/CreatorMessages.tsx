@@ -50,7 +50,6 @@ const CreatorMessages = () => {
   const supportRows = useQuery(api.support.mutations.listForMyCreator);
   const setMessagingEnabledMut = useMutation(api.messaging.mutations.setMessagingEnabled);
   const sendMessage = useMutation(api.messaging.mutations.send);
-  const sendSupport = useMutation(api.support.mutations.send);
   const markRead = useMutation(api.messaging.mutations.markReadCreator);
   const markReadSupport = useMutation(api.support.mutations.markReadCreator);
 
@@ -230,24 +229,15 @@ const CreatorMessages = () => {
   };
 
   const send = async () => {
-    if (!creator || !active || !reply.trim() || sending) return;
+    if (!creator || !active || active.kind === 'support' || !reply.trim() || sending) return;
     setSending(true);
     try {
-      if (active.kind === 'support') {
-        await sendSupport({
-          creatorId: creator.id as Id<'creators'>,
-          body: reply.trim(),
-          senderRole: 'creator',
-          channel: 'support',
-        });
-      } else {
-        await sendMessage({
-          creatorId: creator.id as Id<'creators'>,
-          subscriberId: active.id as Id<'users'>,
-          senderRole: 'creator',
-          body: reply.trim(),
-        });
-      }
+      await sendMessage({
+        creatorId: creator.id as Id<'creators'>,
+        subscriberId: active.id as Id<'users'>,
+        senderRole: 'creator',
+        body: reply.trim(),
+      });
       setReply('');
     } catch (e) {
       toast.error(e instanceof Error ? e.message : 'Failed to send message');
@@ -277,7 +267,7 @@ const CreatorMessages = () => {
       <div className="min-w-0">
         <h1 className="text-heading font-bold text-foreground">Messages</h1>
         <p className="text-support text-muted-foreground mt-0.5">
-          Prizelet Support and direct conversations with your subscribers
+          Prizelet Support announcements and direct conversations with your subscribers
         </p>
       </div>
       {creator ? (
@@ -356,7 +346,7 @@ const CreatorMessages = () => {
   const composer = (
     <div className="border-t border-border p-3 flex gap-2 items-end bg-card pb-[max(0.75rem,env(safe-area-inset-bottom))]">
       <Textarea
-        placeholder={active?.kind === 'support' ? 'Reply to Prizelet Support…' : 'Write a reply…'}
+        placeholder="Write a reply…"
         value={reply}
         onChange={(e) => setReply(e.target.value)}
         rows={2}
@@ -378,6 +368,14 @@ const CreatorMessages = () => {
       >
         {sending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
       </Button>
+    </div>
+  );
+
+  const supportReadOnlyNote = (
+    <div className="border-t border-border px-4 py-3 bg-muted/30">
+      <p className="text-support text-muted-foreground">
+        Prizelet Support broadcasts are one-way announcements — replies are not available here.
+      </p>
     </div>
   );
 
@@ -497,8 +495,12 @@ const CreatorMessages = () => {
                   </div>
                 ))}
               </div>
-              <div className="hidden lg:block">{composer}</div>
-              <div className="lg:hidden sticky bottom-0 z-20">{composer}</div>
+              <div className="hidden lg:block">
+                {active.kind === 'support' ? supportReadOnlyNote : composer}
+              </div>
+              <div className="lg:hidden sticky bottom-0 z-20">
+                {active.kind === 'support' ? supportReadOnlyNote : composer}
+              </div>
             </>
           ) : (
             <div className="flex-1 flex items-center justify-center text-support text-muted-foreground p-6">

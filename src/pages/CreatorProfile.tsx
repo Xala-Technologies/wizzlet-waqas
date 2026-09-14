@@ -12,11 +12,13 @@ import { Footer } from '@/components/landing/Footer';
 import { createCheckoutSession } from '@/data/payments';
 import { trackPageView, trackPostView, trackSubscribeClick } from '@/lib/analytics';
 import { Lock, Users, CheckCircle, Loader2, Trophy, TrendingUp, Target, Flame, Clock, XCircle, Minus, Copy } from 'lucide-react';
-import { format, formatDistanceToNowStrict } from 'date-fns';
+import { format } from 'date-fns';
 import PricingCards from '@/components/creator/PricingCards';
+import { SurfaceCard } from '@/components/ux/SurfaceCard';
 import { ResponsiveContainer, AreaChart, Area, XAxis, YAxis, Tooltip } from 'recharts';
 import { toast } from 'sonner';
 import { copyToClipboard } from '@/lib/clipboard';
+import { subscriptionGrantsContentAccess } from '../../convex/lib/contentAccess';
 
 interface Creator {
   id: string;
@@ -140,7 +142,18 @@ const CreatorProfile = () => {
   const subCount = subCountRaw ?? 0;
   const isSubscribed = Boolean(
     creator &&
-      mySubs?.some((s) => s.creatorId === creator.id && s.status === 'active'),
+      mySubs?.some((s) =>
+        s.creatorId === creator.id &&
+        subscriptionGrantsContentAccess(
+          {
+            status: s.status,
+            billingStatus: s.billingStatus,
+            currentPeriodEnd: s.currentPeriodEnd,
+            cancelAtPeriodEnd: s.cancelAtPeriodEnd,
+          },
+          Date.now(),
+        ),
+      ),
   );
 
   useEffect(() => {
@@ -289,16 +302,16 @@ const CreatorProfile = () => {
             { label: 'Units P/L', value: `${stats.totalUnits}u`, icon: Target, color: 'text-primary' },
             { label: 'Record', value: `${stats.wins}W - ${stats.settled - stats.wins}L`, icon: Trophy, color: 'text-foreground' },
           ].map(s => (
-            <div key={s.label} className="rounded-xl border border-border bg-card p-3 text-center">
+            <SurfaceCard key={s.label} className="p-3 text-center">
               <s.icon className={`h-4 w-4 ${s.color} mx-auto mb-1`} />
               <p className={`text-lg font-bold ${s.color}`}>{s.value}</p>
               <p className="text-caption text-muted-foreground uppercase tracking-wider">{s.label}</p>
-            </div>
+            </SurfaceCard>
           ))}
         </div>
 
         {/* Performance chart from settled picks */}
-        <div className="mt-6 rounded-xl border border-border bg-card p-4">
+        <SurfaceCard className="mt-6 p-4">
           <h3 className="text-caption font-semibold text-muted-foreground uppercase tracking-wider mb-3">Performance</h3>
           {chartData.length === 0 ? (
             <p className="text-sm text-muted-foreground py-8 text-center">No settled picks yet to chart.</p>
@@ -318,21 +331,36 @@ const CreatorProfile = () => {
               </AreaChart>
             </ResponsiveContainer>
           )}
-        </div>
+        </SurfaceCard>
 
         {/* Subscribe CTA */}
         {isSubscribed ? (
-          <div className="mt-6 flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
-            <Button variant="outline" size="lg" className="text-base px-10 h-12 pointer-events-none">
-              <CheckCircle className="mr-2 h-4 w-4 text-emerald-500" />
-              Subscribed
+          <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center">
+            <Button variant="hero" size="lg" className="h-12 text-base px-8" asChild>
+              <Link to="/dashboard/subscriptions-billing">Open Subscriptions</Link>
+            </Button>
+            <Button variant="outline" size="lg" className="h-12 text-base px-8" asChild>
+              <Link to="/dashboard">View posts</Link>
+            </Button>
+            <Button variant="ghost" size="lg" className="h-12 pointer-events-none gap-2">
+              <CheckCircle className="h-4 w-4 text-emerald-500" />
+              Active access
             </Button>
             <Button variant="ghost" size="lg" className="h-12" asChild>
               <Link to="/dashboard/subscriptions-billing">Manage billing</Link>
             </Button>
           </div>
         ) : hasProducts ? (
-          <div className="mt-8 w-full">
+          <div className="mt-8 w-full space-y-3">
+            <h2 className="text-sm font-medium uppercase tracking-wider text-muted-foreground">
+              Choose a plan
+            </h2>
+            <p className="text-support text-muted-foreground max-w-xl">
+              Pick a product below to unlock premium posts
+              {products.length > 0
+                ? ` — ${posts.filter((p) => p.is_premium).length} premium and ${posts.length} total published samples on this profile.`
+                : '.'}
+            </p>
             <PricingCards products={products} creatorId={creator.id} creatorUsername={creator.username} />
           </div>
         ) : (
@@ -350,9 +378,9 @@ const CreatorProfile = () => {
           <h2 className="text-sm font-medium text-muted-foreground uppercase tracking-wider mb-4">Recent Picks</h2>
 
           {posts.length === 0 && (
-            <div className="rounded-xl border border-border bg-card p-8 text-center">
+            <SurfaceCard className="p-8 text-center">
               <p className="text-sm text-muted-foreground">No picks yet. Check back soon!</p>
-            </div>
+            </SurfaceCard>
           )}
 
           {posts.map((post) => {
@@ -363,7 +391,7 @@ const CreatorProfile = () => {
             const ResultIcon = rc.icon;
 
             return (
-              <article key={post.id} className="rounded-xl border border-border bg-card overflow-hidden transition-colors hover:border-border/80">
+              <SurfaceCard key={post.id} className="transition-colors hover:border-border/80">
                 <div className="p-5 sm:p-6">
                   <div className="flex items-center gap-2 mb-2.5 flex-wrap">
                     {post.is_premium && !post.content ? (
@@ -467,7 +495,7 @@ const CreatorProfile = () => {
                     </div>
                   )}
                 </div>
-              </article>
+              </SurfaceCard>
             );
           })}
         </div>

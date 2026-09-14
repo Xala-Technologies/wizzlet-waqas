@@ -40,7 +40,7 @@ export function MobileTopBar({ children, homeHref, badge, title }: MobileTopBarP
       <Sheet open={open} onOpenChange={setOpen}>
         <SheetTrigger
           aria-label="Open navigation menu"
-          className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-muted/60 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-lg text-foreground transition-colors hover:bg-muted/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
         >
           <Menu className="h-5 w-5" />
         </SheetTrigger>

@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useQuery, useMutation } from 'convex/react';
 import { DashboardLayout } from '@/components/dashboard/DashboardLayout';
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -10,7 +11,11 @@ import { toast } from 'sonner';
 import { useAuth } from '@/contexts/AuthContext';
 import { api } from '@convex/_generated/api';
 import type { Id } from '@convex/_generated/dataModel';
+import { creatorProfilePath } from '@/lib/creatorProfilePath';
 import { segmentedItemClassName, segmentedTrackClassName } from '@/lib/segmentedControl';
+import { subscriptionGrantsContentAccess } from '../../convex/lib/contentAccess';
+import { PageHeader } from '@/components/ux/PageHeader';
+import { SurfaceCard } from '@/components/ux/SurfaceCard';
 
 const PAGE_SIZE = 24;
 
@@ -57,6 +62,7 @@ const CustomerDiscover = () => {
     search: debouncedSearch || undefined,
   });
   const bookmarkRows = useQuery(api.bookmarks.mutations.listCreatorBookmarks, user ? {} : 'skip');
+  const mySubs = useQuery(api.subscriptions.mutations.mySubscriptions, user ? {} : 'skip');
   const toggleCreatorBookmark = useMutation(api.bookmarks.mutations.toggleCreatorBookmark);
 
   useEffect(() => {
@@ -80,7 +86,7 @@ const CustomerDiscover = () => {
 
   const loading =
     (creatorsRaw === undefined && creators.length === 0) ||
-    (user ? bookmarkRows === undefined : false);
+    (user ? bookmarkRows === undefined || mySubs === undefined : false);
 
   const bookmarks = useMemo(() => {
     const marks: Record<string, string> = {};
@@ -89,6 +95,27 @@ const CustomerDiscover = () => {
     }
     return marks;
   }, [bookmarkRows]);
+
+  const activeCreatorIds = useMemo(() => {
+    const now = Date.now();
+    const ids = new Set<string>();
+    for (const s of mySubs ?? []) {
+      if (
+        subscriptionGrantsContentAccess(
+          {
+            status: s.status,
+            billingStatus: s.billingStatus,
+            currentPeriodEnd: s.currentPeriodEnd,
+            cancelAtPeriodEnd: s.cancelAtPeriodEnd,
+          },
+          now,
+        )
+      ) {
+        ids.add(s.creatorId);
+      }
+    }
+    return ids;
+  }, [mySubs]);
 
   const visible = useMemo(() => {
     return [...creators].sort((a, b) => {
@@ -113,13 +140,10 @@ const CustomerDiscover = () => {
 
   return (
     <DashboardLayout type="member">
-      <header className="mb-6">
-        <h1 className="text-heading font-bold text-foreground">Discover creators</h1>
-        <p className="text-support text-muted-foreground mt-0.5">
-          Browse published creators. List price is a featured monthly signal — product tiers are on
-          each profile.
-        </p>
-      </header>
+      <PageHeader
+        title="Discover creators"
+        description="Browse published creators. List price is a featured monthly signal — product tiers are on each profile."
+      />
 
       <div className="flex flex-col gap-3 mb-6 sm:flex-row sm:flex-wrap sm:items-center">
         <div className="relative w-full sm:flex-1 sm:min-w-0 sm:max-w-md">
@@ -161,11 +185,13 @@ const CustomerDiscover = () => {
       {loading ? (
         <div className="space-y-3" aria-busy="true" aria-label="Loading creators">
           {[0, 1, 2].map((i) => (
-            <Skeleton key={i} className="h-28 w-full rounded-xl" />
+            <SurfaceCard key={i} className="p-4">
+              <Skeleton className="h-20 w-full rounded-lg" />
+            </SurfaceCard>
           ))}
         </div>
       ) : visible.length === 0 ? (
-        <div className="rounded-xl border border-border bg-card p-10 text-center">
+        <SurfaceCard className="p-10 text-center">
           <Users className="h-10 w-10 text-muted-foreground mx-auto mb-4" />
           <h3 className="text-ui font-semibold text-foreground mb-2">No creators found</h3>
           <p className="text-support text-muted-foreground max-w-sm mx-auto">
@@ -173,18 +199,19 @@ const CustomerDiscover = () => {
               ? 'Try a different search term.'
               : 'New creators appear here as soon as they publish.'}
           </p>
-        </div>
+        </SurfaceCard>
       ) : (
         <div className="space-y-3">
           {visible.map((c, index) => {
             const name = c.display_name || c.username || 'Creator';
             const bookmarked = Boolean(bookmarks[c.id]);
+            const hasActiveAccess = activeCreatorIds.has(c.id);
             const listPrice =
               c.monthly_price != null ? `$${Number(c.monthly_price).toFixed(2)}/mo` : '—';
             return (
-              <div
+              <SurfaceCard
                 key={c.id}
-                className="rounded-xl border border-border bg-card p-4 sm:p-5 transition-colors hover:border-primary/20"
+                className="p-4 sm:p-5 transition-colors hover:border-primary/20"
               >
                 <div className="flex flex-col gap-4 sm:flex-row sm:items-start">
                   <div className="flex items-center gap-3 sm:flex-col sm:items-center sm:gap-1 shrink-0">
@@ -204,7 +231,17 @@ const CustomerDiscover = () => {
                     )}
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-ui font-semibold text-foreground truncate">{name}</p>
+                    <div className="flex flex-wrap items-center gap-2 mb-0.5">
+                      <p className="text-ui font-semibold text-foreground truncate">{name}</p>
+                      {hasActiveAccess && (
+                        <Badge
+                          variant="outline"
+                          className="text-support bg-emerald-500/10 text-emerald-600 border-emerald-500/20"
+                        >
+                          Active access
+                        </Badge>
+                      )}
+                    </div>
                     {c.username && (
                       <p className="text-support text-muted-foreground mb-2">@{c.username}</p>
                     )}
@@ -217,7 +254,7 @@ const CustomerDiscover = () => {
                   </div>
                   <div className="flex flex-row sm:flex-col items-center sm:items-end justify-between sm:justify-start gap-2 shrink-0">
                     <span className="text-ui font-bold text-foreground">{listPrice}</span>
-                    <div className="flex items-center gap-2">
+                    <div className="flex flex-wrap items-center justify-end gap-2">
                       {user && (
                         <Button
                           type="button"
@@ -231,15 +268,24 @@ const CustomerDiscover = () => {
                           <Bookmark className={`h-3.5 w-3.5 ${bookmarked ? 'fill-current' : ''}`} />
                         </Button>
                       )}
-                      {c.username ? (
+                      {hasActiveAccess ? (
+                        <>
+                          <Button variant="outline" className="min-h-11" asChild>
+                            <Link to="/dashboard">View posts</Link>
+                          </Button>
+                          <Button className="min-h-11" asChild>
+                            <Link to="/dashboard/subscriptions-billing">Open in Subscriptions</Link>
+                          </Button>
+                        </>
+                      ) : c.username ? (
                         <Button className="min-h-11" asChild>
-                          <Link to={`/${c.username}`}>View profile</Link>
+                          <Link to={creatorProfilePath(c.username)}>View profile</Link>
                         </Button>
                       ) : null}
                     </div>
                   </div>
                 </div>
-              </div>
+              </SurfaceCard>
             );
           })}
           {canLoadMore && (

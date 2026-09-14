@@ -4,17 +4,21 @@ import { useQuery } from 'convex/react';
 import { api } from '../../../convex/_generated/api';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Search, TrendingUp, Star, Sparkles, Loader2 } from 'lucide-react';
+import { Search, TrendingUp, Star, Sparkles } from 'lucide-react';
 import { LandingSection } from '@/components/landing/LandingSection';
+import { creatorProfilePath } from '@/lib/creatorProfilePath';
+import { segmentedItemClassName, segmentedTrackClassName } from '@/lib/segmentedControl';
+import { SurfaceCard } from '@/components/ux/SurfaceCard';
+import { Skeleton } from '@/components/ui/skeleton';
 
 const filters = [
-  { label: 'Trending', icon: TrendingUp },
-  { label: 'Popular', icon: Star },
-  { label: 'New', icon: Sparkles },
+  { label: 'Most active', icon: TrendingUp },
+  { label: 'Newest', icon: Sparkles },
+  { label: 'Lowest list price', icon: Star },
 ] as const;
 
 export function CreatorDiscovery() {
-  const [activeFilter, setActiveFilter] = useState('Trending');
+  const [activeFilter, setActiveFilter] = useState<(typeof filters)[number]['label']>('Most active');
   const [search, setSearch] = useState('');
   const creatorsPage = useQuery(api.creators.queries.listPublished, {
     search: search.trim() || undefined,
@@ -24,8 +28,14 @@ export function CreatorDiscovery() {
   const filtered = useMemo(() => {
     if (!creators) return [];
     const sorted = [...creators];
-    if (activeFilter === 'New') {
+    if (activeFilter === 'Newest') {
       sorted.sort((a, b) => b.createdAt - a.createdAt);
+    } else if (activeFilter === 'Lowest list price') {
+      sorted.sort(
+        (a, b) => (a.monthlyPriceCents ?? Number.POSITIVE_INFINITY) - (b.monthlyPriceCents ?? Number.POSITIVE_INFINITY),
+      );
+    } else {
+      sorted.sort((a, b) => (b.postCount ?? 0) - (a.postCount ?? 0));
     }
     return sorted;
   }, [creators, activeFilter]);
@@ -55,26 +65,43 @@ export function CreatorDiscovery() {
               className="pl-10 h-11 bg-card border-border focus-visible:ring-primary/30"
             />
           </div>
-          <div className="flex items-center gap-2">
+          <div
+            className={`${segmentedTrackClassName} w-full sm:w-auto flex-wrap`}
+            role="group"
+            aria-label="Sort creators"
+          >
             {filters.map((f) => (
               <button
                 key={f.label}
+                type="button"
                 onClick={() => setActiveFilter(f.label)}
-                className={`inline-flex items-center gap-1.5 rounded-full px-4 py-1.5 text-support font-medium transition-all duration-200 ${
-                  activeFilter === f.label
-                    ? 'bg-primary/10 text-primary border border-primary/20'
-                    : 'bg-card text-muted-foreground border border-border hover:border-border hover:text-foreground'
-                }`}
+                aria-pressed={activeFilter === f.label}
+                className={segmentedItemClassName(activeFilter === f.label)}
               >
                 <f.icon className="h-3.5 w-3.5" />
                 {f.label}
               </button>
             ))}
           </div>
+          <div className="flex justify-center">
+            <Button asChild variant="outline" size="sm">
+              <Link to="/discover">Browse full directory</Link>
+            </Button>
+          </div>
         </div>
 
         {creatorsPage === undefined ? (
-          <div className="flex justify-center py-12"><Loader2 className="h-5 w-5 animate-spin text-primary" /></div>
+          <div
+            className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4 max-w-4xl mx-auto"
+            aria-busy="true"
+            aria-label="Loading creators"
+          >
+            {[0, 1, 2].map((i) => (
+              <SurfaceCard key={i} className="p-5">
+                <Skeleton className="h-28 w-full rounded-lg" />
+              </SurfaceCard>
+            ))}
+          </div>
         ) : (
           <>
             <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4 max-w-4xl mx-auto">
@@ -82,9 +109,9 @@ export function CreatorDiscovery() {
                 const name = creator.displayName ?? creator.username;
                 const initials = name.slice(0, 2).toUpperCase();
                 return (
-                  <div
+                  <SurfaceCard
                     key={creator._id}
-                    className="group rounded-xl border border-border bg-card p-5 card-shadow transition-all duration-300 hover:card-shadow-hover hover:border-primary/20"
+                    className="group p-5 transition-colors hover:border-primary/20"
                   >
                     <div className="flex items-start gap-3.5 mb-4">
                       <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary text-sm font-semibold overflow-hidden">
@@ -104,10 +131,18 @@ export function CreatorDiscovery() {
                     <p className="text-support text-muted-foreground leading-relaxed mb-5 line-clamp-2">
                       {creator.bio || 'Sports creator on Prizelet.'}
                     </p>
-                    <Button asChild variant="outline" size="sm" className="w-full group-hover:border-primary/30 group-hover:text-primary transition-colors">
-                      <Link to={`/c/${creator.username}`}>View profile</Link>
+                    <p className="text-support text-muted-foreground mb-4">
+                      {(creator.postCount ?? 0) === 1
+                        ? '1 post published'
+                        : `${creator.postCount ?? 0} posts published`}
+                      {creator.monthlyPriceCents != null
+                        ? ` · $${(creator.monthlyPriceCents / 100).toFixed(0)}/mo list`
+                        : ''}
+                    </p>
+                    <Button asChild className="w-full min-h-11">
+                      <Link to={creatorProfilePath(creator.username)}>View profile</Link>
                     </Button>
-                  </div>
+                  </SurfaceCard>
                 );
               })}
             </div>
