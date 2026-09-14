@@ -10,6 +10,7 @@ import { toast } from 'sonner';
 import { useAuth } from '@/contexts/AuthContext';
 import { api } from '@convex/_generated/api';
 import type { Id } from '@convex/_generated/dataModel';
+import { creatorProfilePath } from '@/lib/creatorProfilePath';
 import { segmentedItemClassName, segmentedTrackClassName } from '@/lib/segmentedControl';
 
 const PAGE_SIZE = 24;
@@ -233,7 +234,7 @@ const CustomerDiscover = () => {
                       )}
                       {c.username ? (
                         <Button className="min-h-11" asChild>
-                          <Link to={`/${c.username}`}>View profile</Link>
+                          <Link to={creatorProfilePath(c.username)}>View profile</Link>
                         </Button>
                       ) : null}
                     </div>

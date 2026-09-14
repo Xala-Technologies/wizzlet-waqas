@@ -3,9 +3,9 @@ import { PrizeletLogo } from '@/components/PrizeletLogo';
 
 const explore = [
   { label: 'Home', to: '/' },
+  { label: 'Discover', to: '/discover' },
   { label: 'Creators', to: '/creators' },
   { label: "Today's Events", to: '/todays-events' },
-  { label: 'Network', to: '/network' },
 ];
 
 const account = [
