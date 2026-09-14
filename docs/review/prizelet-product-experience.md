@@ -7,37 +7,46 @@
 
 Prizelet is private creator infrastructure: creators publish gated content/products, members subscribe via Stripe, admins operate trust/ops. It is not a public “club marketplace” like DubClub; discovery and subscriptions must stay honest to published creators, list prices, and access status.
 
+## Wave decision (DubClub-inspired, own logic)
+
+**Scope chosen:** Subscriptions hub + Discover + light profile/success glue.
+
+DubClub lesson kept: connected loop find → offer → pay → **see value in Subscriptions** → manage billing separately.  
+Not cloned: Games mix UI, star reviews, partner affiliate “For You”, season passes, campaign banners without real campaigns.
+
 ## Reference observations (DubClub)
 
 | URL | Observation | Auth barrier |
 |-----|-------------|--------------|
-| https://dubclub.win/subscriptions/ | Hub: promo strip, **Subscriptions** list with recent posts per club, **Manage**, **For You** sidebar | Page loaded while signed in on reference account — signed-out empty state unverified |
+| https://dubclub.win/subscriptions/ | Hub: promo strip, **Subscriptions** list with recent posts per club, **Manage**, **For You** sidebar | Signed-in session available |
 | https://dubclub.win/ | Games grid + Find a Club search/filters, club cards with reviews/ratings | Public |
-| https://dubclub.win/find-a-club/ | Same discovery surface as homepage Find a Club | Public |
+| https://dubclub.win/discover/ | Same discovery surface as homepage Find a Club | Public |
 
-Unverified behind payment/auth: checkout, cancel flows, club admin tools.
+## Comparison → this branch
 
-## Comparison → shipped in this branch
+| Reference pattern | Prizelet before | Change | Priority |
+|-------------------|-----------------|--------|----------|
+| Club profile from discovery | `/c/:username` links broken | Canonical `creatorProfilePath` + `/c/:username` redirect | P0 |
+| Find a Club directory | Stub `/discover` / `/top-creators` | Real `/discover`; redirect top-creators; honest SEO | P0 |
+| Subscriptions = recent posts | Billing rows only | Hub cards with skeletons, avatars, last 3 posts, View posts → Feed | P1 |
+| Manage lifecycle | Portal button only | Manage billing + Charges/Payment tabs; Active / No access filters | P1 |
+| For You ads | None | Suggested creators from published roster minus current subs | P1 |
+| Discover subscribed state | Always “View profile” | Active access badge + Open in Subscriptions / View posts | P1 |
+| Post-checkout land | Profile / Dashboard | Primary Go to Subscriptions | P1 |
+| Profile subscribed CTA | Static Subscribed | Open Subscriptions + View posts + Manage billing | P1 |
 
-| Reference pattern | Prizelet before | Impact | Change | Priority |
-|-------------------|-----------------|--------|--------|----------|
-| Club profile from discovery | Landing/Creators linked to `/c/:username` but app only served `/:username` | Broken discovery → profile | Canonical `creatorProfilePath` + `/c/:username` redirect | P0 |
-| Find a Club directory | Public `/discover` and `/top-creators` were stubs; SEO claimed fabricated leaderboard metrics | Dead ends / trust risk | Real `/discover`; `/top-creators` → discover; honest SEO | P0 |
-| Subscriptions with recent posts | Billing rows only (status/price/cancel) | Weak “what am I paying for?” | Subscription cards show up to 3 recent posts + Feed CTA | P1 |
-| For You recommendations | No suggestions beside billing | Harder to grow second subscription | Suggested creators from published roster minus current subs | P1 |
-| Clear Manage + Explore CTAs | Billing portal button only | Unclear next action | Manage billing + Find creators | P1 |
-| Nav discovery entry | Network/Creators only | Discover hard to find | Navbar/Footer Discover | P2 |
+## Backlog (explicit non-goals)
 
-## Backlog (not in this branch)
-
-- Sport/category filters (Prizelet lacks DubClub-style taxonomy in schema)
+- Sport/category filters (no taxonomy in schema)
 - Games/plays aggregation surface
 - Review ratings (do not invent)
 - Promo campaign banners without real campaign data
-- Public Network page depth
+- Partner affiliate carousel
+- Notification preferences panel
+- Per-post public detail URLs
 
 ## Deploy safety
 
 - Do **not** run `vercel --prod` for this branch.
-- Push creates GitHub Preview commits only when Git integration is connected; production alias stays on last manual prod deploy.
-- Local: worktree + existing `npx convex dev` / Vite against **dev** Convex (`combative-mongoose-559`).
+- Draft PR only; production alias stays on last manual prod deploy.
+- Local: worktree + `npx convex dev` / Vite against **dev** Convex (`combative-mongoose-559`).

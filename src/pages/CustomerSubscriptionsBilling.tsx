@@ -5,7 +5,17 @@ import { DashboardLayout } from '@/components/dashboard/DashboardLayout';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Crown, CreditCard, FileText, ExternalLink, Loader2, MessageSquare, Compass } from 'lucide-react';
+import { Skeleton } from '@/components/ui/skeleton';
+import {
+  Crown,
+  CreditCard,
+  FileText,
+  ExternalLink,
+  Loader2,
+  MessageSquare,
+  Compass,
+  ChevronRight,
+} from 'lucide-react';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -38,6 +48,7 @@ interface SubscriptionRow {
     id: string;
     username: string | null;
     display_name: string | null;
+    avatar_url: string | null;
     messaging_enabled: boolean | null;
   } | null;
 }
@@ -117,11 +128,8 @@ const CustomerSubscriptionsBilling = () => {
   const [cancelTarget, setCancelTarget] = useState<{ id: string; name: string } | null>(null);
   const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'cancelled'>('all');
 
-  const loading =
-    userLoading ||
-    (appUserId
-      ? subsRaw === undefined || eventsRaw === undefined || feedRaw === undefined
-      : false);
+  const loading = userLoading || (appUserId ? subsRaw === undefined || eventsRaw === undefined : false);
+  const feedLoading = Boolean(user) && feedRaw === undefined;
 
   const subs: SubscriptionRow[] = useMemo(
     () =>
@@ -137,6 +145,7 @@ const CustomerSubscriptionsBilling = () => {
           id: s.creator._id,
           username: s.creator.username,
           display_name: s.creator.displayName ?? null,
+          avatar_url: s.creator.avatarUrl ?? null,
           messaging_enabled: s.creator.messagingEnabled,
         },
       })),
@@ -248,8 +257,7 @@ const CustomerSubscriptionsBilling = () => {
             </button>
           </div>
           <p className="text-support text-muted-foreground mt-0.5">
-            Your creator access, recent posts from active subscriptions, and billing controls in one
-            place.
+            See what you get from each creator. Charges and payment methods live in the tabs below.
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2 shrink-0">
@@ -259,12 +267,7 @@ const CustomerSubscriptionsBilling = () => {
               <p className="text-ui font-bold text-foreground mt-1">{currency(listPriceTotal)}</p>
             </div>
           )}
-          <Button
-            type="button"
-            variant="outline"
-            className="min-h-11"
-            asChild
-          >
+          <Button type="button" variant="outline" className="min-h-11" asChild>
             <Link to="/dashboard/discover">Find creators</Link>
           </Button>
         </div>
@@ -293,15 +296,15 @@ const CustomerSubscriptionsBilling = () => {
       )}
 
       <Tabs defaultValue="subscriptions" className="space-y-4">
-        <TabsList>
-          <TabsTrigger value="subscriptions">
-            Subscriptions ({subs.length})
+        <TabsList className="flex h-auto w-full flex-wrap gap-1 sm:w-auto">
+          <TabsTrigger value="subscriptions" className="min-h-11">
+            What you get ({subs.length})
           </TabsTrigger>
-          <TabsTrigger value="billing">
+          <TabsTrigger value="billing" className="min-h-11">
             Charges ({(eventsRaw ?? []).length})
           </TabsTrigger>
-          <TabsTrigger value="payment">
-            Payment Method
+          <TabsTrigger value="payment" className="min-h-11">
+            Payment
           </TabsTrigger>
         </TabsList>
 
@@ -310,7 +313,7 @@ const CustomerSubscriptionsBilling = () => {
             <BillingEmpty
               icon={Crown}
               headline="No subscriptions yet"
-              support="Subscribe to creators for premium picks and messaging access. Your active access and billing status stay honest here — even when they differ."
+              support="When you subscribe, recent posts from each creator show up here so you can see what you are paying for."
               expects={[
                 {
                   icon: Compass,
@@ -324,8 +327,8 @@ const CustomerSubscriptionsBilling = () => {
                 },
                 {
                   icon: CreditCard,
-                  label: 'Manage anytime',
-                  detail: 'Cancel, fix past-due, or update cards from this page',
+                  label: 'Manage billing separately',
+                  detail: 'Charges and cards stay in the other tabs and Stripe portal',
                 },
               ]}
               primary={
@@ -340,8 +343,8 @@ const CustomerSubscriptionsBilling = () => {
               }
             />
           ) : (
-            <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(16rem,20rem)] lg:items-start">
-              <div className="space-y-3 min-w-0">
+            <div className="flex flex-col gap-6 lg:grid lg:grid-cols-[minmax(0,1fr)_minmax(16rem,20rem)] lg:items-start">
+              <div className="order-1 min-w-0 space-y-3">
                 <div
                   className={`${segmentedTrackClassName} w-full sm:w-auto`}
                   role="group"
@@ -367,10 +370,10 @@ const CustomerSubscriptionsBilling = () => {
                 </div>
                 {filtered.length === 0 && filtersActive ? (
                   <div className="rounded-xl border border-border bg-card p-10 text-center">
-                    <h3 className="text-ui font-semibold text-foreground mb-2">
+                    <h3 className="mb-2 text-ui font-semibold text-foreground">
                       No subscriptions in this filter
                     </h3>
-                    <p className="text-support text-muted-foreground mb-5 max-w-sm mx-auto">
+                    <p className="mx-auto mb-5 max-w-sm text-support text-muted-foreground">
                       Active means content access right now. No access includes ended and past-due
                       paused access — not only voluntary cancels.
                     </p>
@@ -404,17 +407,47 @@ const CustomerSubscriptionsBilling = () => {
                             ? 'bg-destructive/10 text-destructive border-destructive/20'
                             : 'bg-muted text-muted-foreground';
                     const recent = sub.creator ? recentByCreator.get(sub.creator.id) ?? [] : [];
+                    const profileHref = sub.creator?.username
+                      ? creatorProfilePath(sub.creator.username)
+                      : null;
                     return (
                       <div
                         key={sub.id}
-                        className="rounded-xl border border-border bg-card overflow-hidden"
+                        className="overflow-hidden rounded-xl border border-border bg-card"
                       >
-                        <div className="flex flex-wrap items-center gap-3 p-4 border-b border-border">
-                          <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10 shrink-0">
-                            <Crown className="h-4 w-4 text-primary" />
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <p className="text-ui font-medium text-foreground truncate">{name}</p>
+                        <div className="flex flex-wrap items-center gap-3 border-b border-border p-4">
+                          {profileHref ? (
+                            <Link
+                              to={profileHref}
+                              className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-full bg-primary/10"
+                              aria-label={`${name} profile`}
+                            >
+                              {sub.creator?.avatar_url ? (
+                                <img
+                                  src={sub.creator.avatar_url}
+                                  alt=""
+                                  className="h-full w-full object-cover"
+                                />
+                              ) : (
+                                <Crown className="h-4 w-4 text-primary" />
+                              )}
+                            </Link>
+                          ) : (
+                            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary/10">
+                              <Crown className="h-4 w-4 text-primary" />
+                            </div>
+                          )}
+                          <div className="min-w-0 flex-1">
+                            {profileHref ? (
+                              <Link
+                                to={profileHref}
+                                className="block truncate text-ui font-medium text-foreground hover:underline"
+                              >
+                                {name}
+                              </Link>
+                            ) : (
+                              <p className="truncate text-ui font-medium text-foreground">{name}</p>
+                            )}
                             <p className="text-support text-muted-foreground">
                               {currency(Number(sub.amount) || 0)}
                               {' · '}
@@ -428,7 +461,13 @@ const CustomerSubscriptionsBilling = () => {
 
                         {access.hasAccess ? (
                           <div className="divide-y divide-border">
-                            {recent.length === 0 ? (
+                            {feedLoading ? (
+                              <div className="space-y-3 p-4" aria-busy="true" aria-label="Loading posts">
+                                {[0, 1, 2].map((i) => (
+                                  <Skeleton key={i} className="h-10 w-full rounded-lg" />
+                                ))}
+                              </div>
+                            ) : recent.length === 0 ? (
                               <p className="px-4 py-6 text-support text-muted-foreground">
                                 No posts yet from this creator. New premium content will appear here
                                 and on your Feed.
@@ -438,9 +477,9 @@ const CustomerSubscriptionsBilling = () => {
                                 <Link
                                   key={post.id}
                                   to="/dashboard"
-                                  className="flex min-h-11 items-center justify-between gap-3 px-4 py-3 text-left transition-colors hover:bg-muted/40"
+                                  className="flex min-h-11 items-center gap-3 px-4 py-3 text-left transition-colors hover:bg-muted/40"
                                 >
-                                  <span className="min-w-0 truncate text-ui text-foreground">
+                                  <span className="min-w-0 flex-1 truncate text-ui text-foreground">
                                     {post.title}
                                   </span>
                                   <span className="shrink-0 text-support text-muted-foreground">
@@ -448,12 +487,13 @@ const CustomerSubscriptionsBilling = () => {
                                       addSuffix: true,
                                     })}
                                   </span>
+                                  <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" />
                                 </Link>
                               ))
                             )}
                             <div className="p-3">
-                              <Button variant="secondary" className="w-full min-h-11" asChild>
-                                <Link to="/dashboard">View all posts →</Link>
+                              <Button variant="secondary" className="min-h-11 w-full" asChild>
+                                <Link to="/dashboard">View posts →</Link>
                               </Button>
                             </div>
                           </div>
@@ -463,7 +503,42 @@ const CustomerSubscriptionsBilling = () => {
                           </p>
                         )}
 
-                        <div className="flex flex-wrap items-center gap-2 border-t border-border p-3">
+                        <div className="flex flex-col gap-2 border-t border-border p-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
+                          <div className="flex flex-wrap items-center gap-2">
+                            {access.hasAccess &&
+                              sub.creator &&
+                              (sub.creator.messaging_enabled ?? true) && (
+                                <Button
+                                  type="button"
+                                  variant="outline"
+                                  className="min-h-11 gap-1.5"
+                                  onClick={() =>
+                                    navigate(`/dashboard/messages?creatorId=${sub.creator!.id}`)
+                                  }
+                                >
+                                  <MessageSquare className="h-3.5 w-3.5" /> Message
+                                </Button>
+                              )}
+                            {profileHref && (
+                              <Button type="button" variant="outline" className="min-h-11 gap-1.5" asChild>
+                                <Link to={profileHref}>
+                                  <ExternalLink className="h-3.5 w-3.5" /> Profile
+                                </Link>
+                              </Button>
+                            )}
+                            {!access.hasAccess &&
+                              (access.tone === 'danger' || access.tone === 'warn') && (
+                                <Button
+                                  type="button"
+                                  variant="outline"
+                                  className="min-h-11 gap-1.5"
+                                  onClick={() => void manageBilling()}
+                                  disabled={portalLoading}
+                                >
+                                  <CreditCard className="h-3.5 w-3.5" /> Fix billing
+                                </Button>
+                              )}
+                          </div>
                           {access.hasAccess && sub.creator && (
                             <Button
                               type="button"
@@ -475,43 +550,7 @@ const CustomerSubscriptionsBilling = () => {
                               {cancellingId === sub.creator.id ? (
                                 <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
                               ) : null}
-                              Cancel
-                            </Button>
-                          )}
-                          {access.hasAccess &&
-                            sub.creator &&
-                            (sub.creator.messaging_enabled ?? true) && (
-                              <Button
-                                type="button"
-                                variant="outline"
-                                className="min-h-11 gap-1.5"
-                                onClick={() =>
-                                  navigate(`/dashboard/messages?creatorId=${sub.creator!.id}`)
-                                }
-                              >
-                                <MessageSquare className="h-3.5 w-3.5" /> Message
-                              </Button>
-                            )}
-                          {!access.hasAccess &&
-                            (access.tone === 'danger' || access.tone === 'warn') && (
-                              <Button
-                                type="button"
-                                variant="outline"
-                                className="min-h-11 gap-1.5"
-                                onClick={() => void manageBilling()}
-                                disabled={portalLoading}
-                              >
-                                <CreditCard className="h-3.5 w-3.5" /> Fix billing
-                              </Button>
-                            )}
-                          {sub.creator?.username && (
-                            <Button
-                              type="button"
-                              variant="outline"
-                              className="min-h-11 gap-1.5"
-                              onClick={() => navigate(creatorProfilePath(sub.creator!.username!))}
-                            >
-                              <ExternalLink className="h-3.5 w-3.5" /> Profile
+                              Cancel access
                             </Button>
                           )}
                         </div>
@@ -519,25 +558,25 @@ const CustomerSubscriptionsBilling = () => {
                     );
                   })
                 )}
-                <p className="text-support text-muted-foreground pt-1">
+                <p className="pt-1 text-support text-muted-foreground">
                   Cancel ends Stripe billing and premium access for that creator immediately after
-                  confirmation. Past-due subscriptions keep the record visible but block access until
-                  payment succeeds. Use Manage billing for cards and invoices.
+                  confirmation. Past-due subscriptions stay listed but block access until payment
+                  succeeds. Use Manage billing for cards and invoices.
                 </p>
               </div>
 
-              <aside className="space-y-3 lg:sticky lg:top-4">
+              <aside className="order-2 space-y-3 lg:sticky lg:top-4">
                 <div className="flex items-center justify-between gap-2">
                   <h2 className="text-ui font-semibold text-foreground">Suggested for you</h2>
                   <Link
                     to="/dashboard/discover"
-                    className="text-support font-medium text-primary hover:underline min-h-11 inline-flex items-center"
+                    className="inline-flex min-h-11 items-center text-support font-medium text-primary hover:underline"
                   >
                     Browse all
                   </Link>
                 </div>
                 {discoverRaw === undefined ? (
-                  <div className="rounded-xl border border-border bg-card p-6 flex justify-center">
+                  <div className="flex justify-center rounded-xl border border-border bg-card p-6">
                     <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
                   </div>
                 ) : suggestedCreators.length === 0 ? (
@@ -552,9 +591,9 @@ const CustomerSubscriptionsBilling = () => {
                     return (
                       <div
                         key={c._id}
-                        className="rounded-xl border border-border bg-card p-4 space-y-3"
+                        className="space-y-3 rounded-xl border border-border bg-card p-4"
                       >
-                        <div className="flex items-start gap-3 min-w-0">
+                        <div className="flex min-w-0 items-start gap-3">
                           <div className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-full bg-muted text-sm font-semibold text-muted-foreground">
                             {c.avatarUrl ? (
                               <img src={c.avatarUrl} alt="" className="h-full w-full object-cover" />
@@ -563,18 +602,18 @@ const CustomerSubscriptionsBilling = () => {
                             )}
                           </div>
                           <div className="min-w-0">
-                            <p className="text-ui font-medium text-foreground truncate">{name}</p>
-                            <p className="text-support text-muted-foreground truncate">
+                            <p className="truncate text-ui font-medium text-foreground">{name}</p>
+                            <p className="truncate text-support text-muted-foreground">
                               @{c.username}
                               {' · '}
                               {c.postCount} posts
                             </p>
                           </div>
                         </div>
-                        <p className="text-support text-muted-foreground line-clamp-2">
+                        <p className="line-clamp-2 text-support text-muted-foreground">
                           {c.bio || 'Published creator on Prizelet.'}
                         </p>
-                        <Button className="w-full min-h-11" variant="outline" asChild>
+                        <Button className="min-h-11 w-full" variant="outline" asChild>
                           <Link to={creatorProfilePath(c.username)}>View profile</Link>
                         </Button>
                       </div>
