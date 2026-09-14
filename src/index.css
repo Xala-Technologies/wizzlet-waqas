@@ -52,8 +52,8 @@
     --gradient-primary: hsl(var(--primary));
     --gradient-hero: hsl(var(--primary));
     --shadow-glow: none;
-    --shadow-card: none;
-    --shadow-card-hover: none;
+    --shadow-card: 0 1px 2px 0 hsl(220 20% 20% / 0.06);
+    --shadow-card-hover: 0 2px 8px 0 hsl(220 20% 20% / 0.08);
     --success: 152 55% 42%;
     --glow-gold: hsl(var(--primary));
     --glow-purple: hsl(var(--primary));
@@ -123,8 +123,8 @@
     --gradient-primary: hsl(var(--primary));
     --gradient-hero: hsl(var(--primary));
     --shadow-glow: none;
-    --shadow-card: none;
-    --shadow-card-hover: none;
+    --shadow-card: 0 1px 2px 0 hsl(0 0% 0% / 0.35);
+    --shadow-card-hover: 0 2px 8px 0 hsl(0 0% 0% / 0.4);
     --success: 152 55% 42%;
     --glow-gold: hsl(var(--primary));
     --glow-purple: hsl(var(--primary));
