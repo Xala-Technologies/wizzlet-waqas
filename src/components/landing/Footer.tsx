@@ -5,8 +5,8 @@ import { useAuth } from '@/contexts/AuthContext';
 const explore = [
   { label: 'Home', to: '/' },
   { label: 'Discover', to: '/discover' },
+  { label: "Today's Games", to: '/discover#todays-games' },
   { label: 'Creators', to: '/creators' },
-  { label: "Today's Events", to: '/todays-events' },
   { label: 'Pricing', to: '/pricing' },
   { label: 'Support', to: '/support' },
 ];

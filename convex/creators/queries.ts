@@ -94,6 +94,7 @@ export const listPublished = query({
         displayName: c.displayName,
         bio: c.bio,
         avatarUrl: c.avatarUrl,
+        bannerUrl: c.bannerUrl,
         monthlyPriceCents: featured?.priceCents ?? c.monthlyPriceCents,
         verificationStatus: c.verificationStatus ?? "none",
         createdAt: c.createdAt,

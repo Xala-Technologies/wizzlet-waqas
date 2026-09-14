@@ -43,11 +43,11 @@ interface NavItem {
 }
 
 const mainItems: NavItem[] = [
-  { label: 'Overview', href: '/creator', icon: LayoutGrid },
-  { label: 'Create Post', href: '/creator/posts', icon: PenLine },
-  { label: 'Products', href: '/creator/products', icon: Package },
-  { label: 'Subscribers', href: '/creator/subscribers', icon: Users },
-  { label: 'Performance', href: '/creator/performance-tracker', icon: TrendingUp },
+  { label: 'Dashboard', href: '/creator', icon: LayoutGrid },
+  { label: 'Publish', href: '/creator/posts', icon: PenLine },
+  { label: 'Products & Pricing', href: '/creator/products', icon: Package },
+  { label: 'People', href: '/creator/subscribers', icon: Users },
+  { label: 'Play performance', href: '/creator/performance-tracker', icon: TrendingUp },
 ];
 
 const growthPrimaryItems: NavItem[] = [

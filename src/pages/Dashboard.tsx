@@ -15,8 +15,8 @@ import {
 } from '@/components/ui/dialog';
 import {
   Crown, FileText, Loader2, Lock, Globe, Users, CreditCard,
-  Bookmark, Star, ArrowRight, Copy, PlusCircle,
-  Clock, Check, Trophy, XCircle, Minus,
+  Bookmark, ArrowRight, Copy, PlusCircle,
+  Clock, Check, Trophy, XCircle, Minus, Compass,
 } from 'lucide-react';
 import { openCustomerPortal } from '@/lib/stripe';
 import { formatDistanceToNowStrict } from 'date-fns';
@@ -25,9 +25,14 @@ import { trackPostView } from '@/lib/analytics';
 import { copyToClipboard } from '@/lib/clipboard';
 import { computeWinRate } from '../../convex/lib/results';
 import { subscriptionGrantsContentAccess } from '../../convex/lib/contentAccess';
-import { PageHeader } from '@/components/ux/PageHeader';
 import { SurfaceCard } from '@/components/ux/SurfaceCard';
 import { Skeleton } from '@/components/ui/skeleton';
+import { mapConvexSportEvent, todayBoundsMs } from '@/lib/events';
+import {
+  GameMatchupCard,
+  countPicksForMatchup,
+} from '@/components/discover/GameMatchupCard';
+import { Seo } from '@/components/Seo';
 
 interface Subscription {
   id: string;
@@ -102,6 +107,9 @@ const Dashboard = () => {
   const savedRaw = useQuery(api.bookmarks.mutations.listSavedPosts, user ? {} : 'skip');
   const notifUnread = useQuery(api.notifications.mutations.unreadCount, user ? {} : 'skip');
   const dmInbox = useQuery(api.messaging.mutations.mySubscriberInbox, user ? {} : 'skip');
+  const picksRaw = useQuery(api.picks.mutations.listMine, user ? {} : 'skip');
+  const dayBounds = useMemo(() => todayBoundsMs(), []);
+  const eventsRaw = useQuery(api.events.queries.listPublishedToday, dayBounds);
   const toggleSavedPost = useMutation(api.bookmarks.mutations.toggleSavedPost);
   const upsertPick = useMutation(api.picks.mutations.upsert);
 
@@ -217,6 +225,20 @@ const Dashboard = () => {
   const { winRatePct: winRate, decided: settledPicks } = computeWinRate(posts.map((p) => p.result));
   const wonPicks = posts.filter((p) => p.result === 'won').length;
 
+  const todaysGames = useMemo(
+    () => (eventsRaw ?? []).map(mapConvexSportEvent).slice(0, 6),
+    [eventsRaw],
+  );
+
+  const myPickRows = useMemo(
+    () =>
+      (picksRaw ?? []).map((p) => ({
+        pickEvent: p.pickEvent,
+        sport: p.sport,
+      })),
+    [picksRaw],
+  );
+
   const openTracker = (post: FeedPost) => {
     const pick = parsePick(post.content);
     const odds = pick ? parseOdds(pick.odds) : { us: null, eu: null };
@@ -277,10 +299,11 @@ const Dashboard = () => {
   if (loading) {
     return (
       <DashboardLayout type="member">
-        <PageHeader
-          title="Your Feed"
-          description="Latest picks from creators you subscribe to."
-        />
+        <Seo title="Dashboard — Prizelet" description="Your Prizelet member dashboard." />
+        <header className="mb-8">
+          <h1 className="text-3xl font-bold tracking-tight text-foreground sm:text-4xl">Dashboard</h1>
+          <p className="mt-2 text-base text-secondary-foreground">Loading your feed…</p>
+        </header>
         <div className="space-y-4" aria-busy="true" aria-label="Loading feed">
           {[0, 1, 2].map((i) => (
             <SurfaceCard key={i} className="p-5 space-y-3">
@@ -445,46 +468,53 @@ const Dashboard = () => {
 
   return (
     <DashboardLayout type="member">
-      <PageHeader
-        title="Your Feed"
-        description={posts.length > 0 ? `${posts.length} picks from your creators` : 'No picks yet'}
-        trailing={
-          <>
-            {(activeSubs.length > 0 || pastDueSubs.length > 0) && (
-              <Button
-                type="button"
-                variant="outline"
-                className="min-h-11"
-                onClick={() => void openCustomerPortal()}
-              >
-                <CreditCard className="mr-1.5 h-3.5 w-3.5" /> Billing
-              </Button>
-            )}
-            <Button variant="outline" className="min-h-11" asChild>
-              <Link to="/dashboard/discover">
-                <Crown className="mr-1.5 h-3.5 w-3.5" /> Browse creators
-              </Link>
-            </Button>
-          </>
-        }
+      <Seo
+        title="Dashboard — Prizelet"
+        description="Your Prizelet member dashboard: feed, today’s games, and discover."
       />
+
+      <header className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+        <div className="min-w-0">
+          <h1 className="text-3xl font-bold tracking-tight text-foreground sm:text-4xl">Dashboard</h1>
+          <p className="mt-2 text-base text-secondary-foreground">
+            {posts.length > 0
+              ? `${posts.length} pick${posts.length === 1 ? '' : 's'} from your creators`
+              : 'Latest picks from creators you subscribe to'}
+          </p>
+        </div>
+        <div className="flex flex-wrap gap-2">
+          {(activeSubs.length > 0 || pastDueSubs.length > 0) && (
+            <Button type="button" variant="outline" onClick={() => void openCustomerPortal()}>
+              <CreditCard className="mr-1.5 h-3.5 w-3.5" aria-hidden /> Billing
+            </Button>
+          )}
+          <Button variant="outline" asChild>
+            <Link to="/dashboard/discover" className="gap-1.5">
+              <Compass className="h-4 w-4" aria-hidden /> Discover
+            </Link>
+          </Button>
+        </div>
+      </header>
 
       {(pastDueSubs.length > 0 ||
         cancelPendingSubs.length > 0 ||
         (notifUnread ?? 0) > 0 ||
         unreadDms > 0 ||
         activeSubs.length === 0) && (
-        <SurfaceCard className="p-4 sm:p-5 mb-6">
-          <h2 className="text-ui font-semibold text-foreground mb-3">Next up</h2>
-          <ul className="space-y-2.5">
+        <section className="mb-8 rounded-2xl border border-border bg-card p-5">
+          <h2 className="mb-3 text-xs font-semibold uppercase tracking-wide text-secondary-foreground">
+            Next up
+          </h2>
+          <ul className="space-y-2">
             {pastDueSubs.length > 0 && (
               <li>
                 <Link
                   to="/dashboard/subscriptions-billing"
-                  className="text-ui text-destructive hover:underline"
+                  className="inline-flex items-center gap-1.5 text-base font-medium text-destructive hover:underline"
                 >
                   {pastDueSubs.length} subscription{pastDueSubs.length === 1 ? '' : 's'} past due —
                   review billing
+                  <ArrowRight className="h-4 w-4 shrink-0 opacity-70" aria-hidden />
                 </Link>
               </li>
             )}
@@ -492,63 +522,140 @@ const Dashboard = () => {
               <li>
                 <Link
                   to="/dashboard/subscriptions-billing"
-                  className="text-ui text-foreground hover:underline"
+                  className="inline-flex items-center gap-1.5 text-base font-medium text-foreground hover:text-primary"
                 >
                   Cancellation pending on {cancelPendingSubs.length} subscription
                   {cancelPendingSubs.length === 1 ? '' : 's'}
+                  <ArrowRight className="h-4 w-4 shrink-0 opacity-70" aria-hidden />
                 </Link>
               </li>
             )}
             {(notifUnread ?? 0) > 0 && (
               <li>
-                <Link to="/dashboard/notifications" className="text-ui text-foreground hover:underline">
+                <Link
+                  to="/dashboard/notifications"
+                  className="inline-flex items-center gap-1.5 text-base font-medium text-foreground hover:text-primary"
+                >
                   {notifUnread} unread notification{notifUnread === 1 ? '' : 's'}
+                  <ArrowRight className="h-4 w-4 shrink-0 opacity-70" aria-hidden />
                 </Link>
               </li>
             )}
             {unreadDms > 0 && (
               <li>
-                <Link to="/dashboard/messages" className="text-ui text-foreground hover:underline">
+                <Link
+                  to="/dashboard/messages"
+                  className="inline-flex items-center gap-1.5 text-base font-medium text-foreground hover:text-primary"
+                >
                   {unreadDms} unread message{unreadDms === 1 ? '' : 's'}
+                  <ArrowRight className="h-4 w-4 shrink-0 opacity-70" aria-hidden />
                 </Link>
               </li>
             )}
             {activeSubs.length === 0 && (
               <li>
-                <Link to="/dashboard/discover" className="text-ui text-foreground hover:underline">
+                <Link
+                  to="/dashboard/discover"
+                  className="inline-flex items-center gap-1.5 text-base font-medium text-foreground hover:text-primary"
+                >
                   No active access — discover creators
+                  <ArrowRight className="h-4 w-4 shrink-0 opacity-70" aria-hidden />
                 </Link>
               </li>
             )}
           </ul>
-        </SurfaceCard>
+        </section>
       )}
 
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
+      <section className="mb-8 grid grid-cols-2 gap-3 lg:grid-cols-4 lg:gap-4">
         {[
-          { label: 'Active subs', value: String(activeSubs.length), icon: Crown },
-          { label: 'Picks available', value: String(posts.length), icon: FileText },
-          { label: 'Creator wins', value: String(wonPicks), icon: Trophy },
+          { label: 'Active subs', value: String(activeSubs.length) },
+          { label: 'Picks available', value: String(posts.length) },
+          { label: 'Creator wins', value: String(wonPicks) },
           {
             label: 'Creator win rate',
             value: settledPicks > 0 ? `${winRate}%` : '—',
-            icon: Star,
           },
         ].map((stat) => (
-          <SurfaceCard key={stat.label} className="p-4">
-            <div className="flex items-center gap-1.5 mb-1.5">
-              <stat.icon className="h-3.5 w-3.5 text-muted-foreground" />
-              <p className="text-support text-muted-foreground">{stat.label}</p>
-            </div>
-            <p className="text-ui font-bold text-foreground">{stat.value}</p>
-          </SurfaceCard>
+          <div key={stat.label} className="rounded-2xl border border-border bg-card p-5">
+            <p className="text-2xl font-bold tabular-nums tracking-tight text-foreground sm:text-3xl">
+              {stat.value}
+            </p>
+            <p className="mt-1 text-sm font-medium text-secondary-foreground">{stat.label}</p>
+          </div>
         ))}
-      </div>
+      </section>
 
-      <p className="text-support text-muted-foreground mb-4">
-        Latest picks from creators you subscribe to. Win rate is from those creator posts — your
-        personal log is My Bet Tracker.
-      </p>
+      {/* Today's Games */}
+      <section className="mb-8 rounded-2xl border border-border bg-card p-5 sm:p-6">
+        <div className="mb-5 flex flex-wrap items-end justify-between gap-3">
+          <div>
+            <h2 className="text-xl font-bold tracking-tight text-foreground">Today’s Games</h2>
+            <p className="mt-1 text-sm text-secondary-foreground">
+              Live slate — your tracked pick counts only (no invented market bars).
+            </p>
+          </div>
+          <Link
+            to="/dashboard/discover#todays-games"
+            className="inline-flex items-center gap-1 text-sm font-semibold text-foreground hover:text-primary"
+          >
+            Browse games
+            <ArrowRight className="h-4 w-4" aria-hidden />
+          </Link>
+        </div>
+
+        {eventsRaw === undefined ? (
+          <div className="flex justify-center py-12" aria-busy="true">
+            <Loader2 className="h-5 w-5 animate-spin text-primary" />
+          </div>
+        ) : todaysGames.length === 0 ? (
+          <div className="rounded-xl border border-dashed border-border px-4 py-12 text-center">
+            <p className="text-base font-semibold text-foreground">No games published today</p>
+            <p className="mt-1 text-sm text-secondary-foreground">
+              When the slate is live, matchups appear here with your pick counts.
+            </p>
+          </div>
+        ) : (
+          <ul className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
+            {todaysGames.map((event) => {
+              const yourPickCount = countPicksForMatchup(myPickRows, event);
+              return (
+                <li key={event.id} className="list-none">
+                  <GameMatchupCard
+                    event={event}
+                    yourPickCount={yourPickCount}
+                    actionHref="/dashboard/results"
+                    actionLabel={yourPickCount > 0 ? 'View tracker' : 'Track pick'}
+                  />
+                </li>
+              );
+            })}
+          </ul>
+        )}
+      </section>
+
+      {/* Discover strip */}
+      <section className="mb-8 rounded-2xl border border-border bg-card p-5 sm:p-6">
+        <div className="mb-2 flex items-center gap-2">
+          <Compass className="h-4 w-4 text-primary" aria-hidden />
+          <h2 className="text-lg font-bold tracking-tight text-foreground">Discover</h2>
+        </div>
+        <p className="mb-4 text-sm leading-relaxed text-secondary-foreground">
+          Browse creators and today’s full games slate — find clubs worth following.
+        </p>
+        <Button asChild>
+          <Link to="/dashboard/discover">Open Discover</Link>
+        </Button>
+      </section>
+
+      <div className="mb-4 flex flex-wrap items-end justify-between gap-2">
+        <h2 className="text-sm font-semibold uppercase tracking-wide text-secondary-foreground">
+          Your feed
+        </h2>
+        <p className="text-sm text-secondary-foreground">
+          Win rate is from creator posts — your personal log is My Bet Tracker.
+        </p>
+      </div>
 
       {visiblePosts.length > 0 ? (
         <div className="space-y-4">
@@ -568,29 +675,29 @@ const Dashboard = () => {
           )}
         </div>
       ) : activeSubs.length === 0 ? (
-        <SurfaceCard className="p-10 text-center">
-          <Users className="h-10 w-10 text-muted-foreground mx-auto mb-4" />
-          <h3 className="text-ui font-semibold text-foreground mb-2">No picks yet</h3>
-          <p className="text-support text-muted-foreground max-w-xs mx-auto mb-5">
+        <div className="rounded-2xl border border-border bg-card p-10 text-center">
+          <Users className="mx-auto mb-4 h-10 w-10 text-secondary-foreground" aria-hidden />
+          <h3 className="mb-2 text-base font-semibold text-foreground">No picks yet</h3>
+          <p className="mx-auto mb-5 max-w-xs text-sm text-secondary-foreground">
             Subscribe to creators to start receiving premium picks in your feed.
           </p>
           <Button className="min-h-11" asChild>
             <Link to="/dashboard/discover">
-              <Crown className="mr-1.5 h-4 w-4" /> Browse creators
+              <Crown className="mr-1.5 h-4 w-4" aria-hidden /> Browse creators
             </Link>
           </Button>
-        </SurfaceCard>
+        </div>
       ) : (
-        <SurfaceCard className="p-10 text-center">
-          <FileText className="h-10 w-10 text-muted-foreground mx-auto mb-4" />
-          <h3 className="text-ui font-semibold text-foreground mb-2">No picks yet</h3>
-          <p className="text-support text-muted-foreground max-w-xs mx-auto mb-5">
+        <div className="rounded-2xl border border-border bg-card p-10 text-center">
+          <FileText className="mx-auto mb-4 h-10 w-10 text-secondary-foreground" aria-hidden />
+          <h3 className="mb-2 text-base font-semibold text-foreground">No picks yet</h3>
+          <p className="mx-auto mb-5 max-w-xs text-sm text-secondary-foreground">
             Your creators haven&apos;t posted any picks yet. Check back soon.
           </p>
           <Button variant="outline" className="min-h-11" asChild>
             <Link to="/dashboard/discover">Browse more creators</Link>
           </Button>
-        </SurfaceCard>
+        </div>
       )}
 
       <Dialog open={trackOpen} onOpenChange={setTrackOpen}>

@@ -27,10 +27,10 @@ export function DashboardLayout({ children, type }: DashboardLayoutProps) {
   const Sidebar = type === 'creator' ? CreatorSidebar : type === 'admin' ? AdminSidebar : MemberSidebar;
 
   const body = (
-    <div className="h-dvh flex overflow-hidden bg-muted">
+    <div className="h-dvh flex overflow-hidden bg-background">
       <UnreadMessageWatcher />
       <Sidebar />
-      <main className="flex-1 min-h-0 min-w-0 overflow-x-hidden overflow-y-auto bg-muted">
+      <main className="flex-1 min-h-0 min-w-0 overflow-x-hidden overflow-y-auto bg-background">
         <MobileTopBar homeHref={HOME_HREF[type]}>
           <Sidebar mobile />
         </MobileTopBar>

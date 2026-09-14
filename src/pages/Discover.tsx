@@ -1,5 +1,5 @@
-import { Link } from 'react-router-dom';
-import { useMemo, useState } from 'react';
+import { Link, useLocation } from 'react-router-dom';
+import { useEffect, useMemo, useState } from 'react';
 import { useQuery } from 'convex/react';
 import { api } from '../../convex/_generated/api';
 import { Navbar } from '@/components/landing/Navbar';
@@ -7,32 +7,47 @@ import { Seo } from '@/components/Seo';
 import { Footer } from '@/components/landing/Footer';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { ArrowRight, Search } from 'lucide-react';
-import { creatorProfilePath } from '@/lib/creatorProfilePath';
-import { segmentedItemClassName, segmentedTrackClassName } from '@/lib/segmentedControl';
-import { SurfaceCard } from '@/components/ux/SurfaceCard';
-import { Skeleton } from '@/components/ui/skeleton';
+import { ArrowRight, BadgeDollarSign, Search, Sparkles, TrendingUp } from 'lucide-react';
+import { DiscoveryFilterBar } from '@/components/discover/DiscoveryFilterBar';
+import { DiscoverGamesPanel } from '@/components/discover/DiscoverGamesPanel';
+import {
+  CreatorDiscoveryCard,
+  CreatorDiscoveryCardSkeleton,
+} from '@/components/discover/CreatorDiscoveryCard';
 import { useAuth } from '@/contexts/AuthContext';
 
 type SortKey = 'popular' | 'newest' | 'price';
 
-const sortOptions: { key: SortKey; label: string }[] = [
-  { key: 'popular', label: 'Most active' },
-  { key: 'newest', label: 'Newest' },
-  { key: 'price', label: 'Lowest list price' },
+const sortOptions = [
+  { key: 'popular' as const, label: 'Most active', icon: TrendingUp },
+  { key: 'newest' as const, label: 'Newest', icon: Sparkles },
+  { key: 'price' as const, label: 'Lowest price', icon: BadgeDollarSign },
 ];
 
 /**
- * Public discovery directory — same data as /creators with clearer compare signals.
+ * Discover — creators first, today's games stacked below (one page, no section tabs).
  */
 const Discover = () => {
+  const { hash, search: locationSearch } = useLocation();
   const creatorsPage = useQuery(api.creators.queries.listPublished, {});
   const creators = creatorsPage?.items;
   const [search, setSearch] = useState('');
+  const [gameSearch, setGameSearch] = useState('');
   const [sort, setSort] = useState<SortKey>('popular');
   const { user, role } = useAuth();
   const dashboardPath =
     role === 'creator' ? '/creator' : role === 'admin' ? '/admin' : '/dashboard';
+
+  useEffect(() => {
+    const params = new URLSearchParams(locationSearch);
+    const wantsGames =
+      hash === '#todays-games' || params.get('view') === 'games';
+    if (!wantsGames) return;
+    const el = document.getElementById('todays-games');
+    if (el) {
+      el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  }, [hash, locationSearch]);
 
   const visible = useMemo(() => {
     if (!creators) return [];
@@ -48,80 +63,104 @@ const Discover = () => {
     filtered.sort((a, b) => {
       if (sort === 'newest') return b.createdAt - a.createdAt;
       if (sort === 'price') {
-        return (a.monthlyPriceCents ?? Number.POSITIVE_INFINITY) - (b.monthlyPriceCents ?? Number.POSITIVE_INFINITY);
+        return (
+          (a.monthlyPriceCents ?? Number.POSITIVE_INFINITY) -
+          (b.monthlyPriceCents ?? Number.POSITIVE_INFINITY)
+        );
       }
       return (b.postCount ?? 0) - (a.postCount ?? 0);
     });
     return filtered;
   }, [creators, search, sort]);
 
+  const todayLabel = new Date().toLocaleDateString('en-US', {
+    weekday: 'long',
+    month: 'long',
+    day: 'numeric',
+  });
+
   return (
-    <div className="flex min-h-screen flex-col bg-muted">
+    <div className="flex min-h-screen flex-col bg-background">
       <Seo
-        title="Discover Creators — Prizelet"
-        description="Browse published Prizelet creators, compare published post counts and list prices, then open a profile to subscribe."
+        title="Discover — Creators & Today's Games | Prizelet"
+        description="Browse published Prizelet creators and today’s matchups in one place."
       />
       <Navbar />
 
-      <main id="main-content" className="relative flex-1 bg-muted">
+      <main id="main-content" className="relative flex-1 bg-background">
         <section className="container relative pt-28 pb-8 md:pt-32 md:pb-10">
-          <p className="mb-4 text-caption font-medium uppercase tracking-[0.22em] text-primary">
-            Prizelet · Discover
-          </p>
-          <h1 className="max-w-2xl text-4xl font-extrabold tracking-[-0.04em] text-foreground sm:text-5xl">
-            Find creators worth paying for
-          </h1>
-          <p className="mt-4 max-w-xl text-ui leading-relaxed text-muted-foreground">
-            Compare published activity and featured list prices, then open a profile for tiers,
-            sample posts, and checkout. No fabricated reviews or win-rate claims.
-          </p>
-
-          <div className="mt-10 flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center">
-            <div className="relative w-full sm:min-w-0 sm:max-w-md sm:flex-1">
-              <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-              <Input
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                placeholder="Search by name or handle…"
-                className="h-11 min-h-11 pl-10"
-                aria-label="Search creators"
-              />
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+            <div className="min-w-0 max-w-2xl">
+              <h1 className="text-4xl font-bold tracking-tight text-foreground sm:text-5xl">
+                Discover
+              </h1>
+              <p className="mt-3 text-base leading-relaxed text-secondary-foreground">
+                Find creators worth paying for, then check today’s games on the same page.
+              </p>
             </div>
-            <div
-              className={`${segmentedTrackClassName} w-full sm:w-auto`}
-              role="group"
-              aria-label="Sort creators"
+            <a
+              href="#todays-games"
+              className="inline-flex shrink-0 items-center gap-1.5 text-sm font-semibold text-foreground transition-colors hover:text-primary"
             >
-              {sortOptions.map((o) => (
-                <button
-                  key={o.key}
-                  type="button"
-                  onClick={() => setSort(o.key)}
-                  aria-pressed={sort === o.key}
-                  className={segmentedItemClassName(sort === o.key)}
-                >
-                  {o.label}
-                </button>
-              ))}
-            </div>
+              Today’s games
+              <ArrowRight className="h-4 w-4" aria-hidden />
+            </a>
           </div>
+
+          <form
+            className="mt-8 flex h-14 w-full items-center gap-2 rounded-full border border-border bg-card pl-4 pr-2 shadow-[var(--shadow-card)]"
+            onSubmit={(e) => {
+              e.preventDefault();
+            }}
+            role="search"
+          >
+            <Search className="h-5 w-5 shrink-0 text-foreground/45" aria-hidden />
+            <Input
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Search creators…"
+              className="h-full min-h-0 flex-1 border-0 bg-transparent px-2 text-base font-medium shadow-none focus-visible:ring-0 focus-visible:ring-offset-0"
+              aria-label="Search creators"
+            />
+            <Button type="submit" className="h-10 shrink-0 rounded-full px-5 font-semibold">
+              Search
+            </Button>
+          </form>
+
+          <DiscoveryFilterBar
+            className="mt-4"
+            options={sortOptions}
+            value={sort}
+            onChange={setSort}
+            aria-label="Sort creators"
+          />
         </section>
 
-        <section className="container relative pb-16 md:pb-20">
+        {/* Creators */}
+        <section className="container relative pb-16 md:pb-20" aria-labelledby="discover-creators-heading">
+          <h2
+            id="discover-creators-heading"
+            className="mb-6 text-2xl font-bold tracking-tight text-foreground"
+          >
+            Creators
+          </h2>
+
           {creatorsPage === undefined ? (
-            <div className="space-y-3" aria-busy="true" aria-label="Loading creators">
-              {[0, 1, 2, 3].map((i) => (
-                <SurfaceCard key={i} className="p-5">
-                  <Skeleton className="h-16 w-full rounded-lg" />
-                </SurfaceCard>
+            <ul
+              className="grid grid-cols-1 gap-6 sm:grid-cols-2 xl:grid-cols-3 lg:gap-8"
+              aria-busy="true"
+              aria-label="Loading creators"
+            >
+              {[0, 1, 2, 3, 4, 5].map((i) => (
+                <CreatorDiscoveryCardSkeleton key={i} />
               ))}
-            </div>
+            </ul>
           ) : !creators || creators.length === 0 ? (
             <div className="mx-auto max-w-lg py-16 text-center">
               <p className="text-lg font-semibold tracking-tight text-foreground">
                 The roster is still forming
               </p>
-              <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
+              <p className="mt-2 text-base leading-relaxed text-secondary-foreground">
                 Published creators appear here as soon as they go live. If you have an edge worth
                 charging for, apply for access.
               </p>
@@ -132,70 +171,76 @@ const Discover = () => {
               </Link>
             </div>
           ) : visible.length === 0 ? (
-            <p className="py-16 text-center text-sm text-muted-foreground">
+            <p className="py-16 text-center text-base text-secondary-foreground">
               No creators match “{search.trim()}”.
             </p>
           ) : (
-            <SurfaceCard>
-              <ul className="divide-y divide-border">
-                {visible.map((c, index) => {
-                  const name = c.displayName ?? c.username;
-                  const price =
-                    c.monthlyPriceCents != null
-                      ? `$${(c.monthlyPriceCents / 100).toFixed(0)}/mo`
-                      : 'Tiers on profile';
-                  return (
-                    <li key={c._id}>
-                      <Link
-                        to={creatorProfilePath(c.username)}
-                        className="group flex flex-col gap-4 px-4 py-5 transition-colors hover:bg-muted/40 sm:flex-row sm:items-center sm:justify-between sm:gap-6 sm:px-5 sm:py-5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset"
-                      >
-                        <div className="flex min-w-0 items-start gap-4">
-                          <span className="w-6 shrink-0 pt-3 text-support tabular-nums text-muted-foreground">
-                            {index + 1}
-                          </span>
-                          <div className="flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-full bg-primary/12 text-sm font-bold text-primary">
-                            {c.avatarUrl ? (
-                              <img src={c.avatarUrl} alt="" className="h-full w-full object-cover" />
-                            ) : (
-                              name[0]?.toUpperCase()
-                            )}
-                          </div>
-                          <div className="min-w-0">
-                            <div className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
-                              <span className="font-semibold text-foreground transition-colors group-hover:text-primary">
-                                {name}
-                              </span>
-                              <span className="text-support text-muted-foreground">@{c.username}</span>
-                              {c.verificationStatus === 'verified' && (
-                                <span className="text-caption font-medium uppercase tracking-wider text-primary">
-                                  Verified
-                                </span>
-                              )}
-                            </div>
-                            {c.bio ? (
-                              <p className="mt-1 line-clamp-2 text-support leading-relaxed text-muted-foreground">
-                                {c.bio}
-                              </p>
-                            ) : null}
-                            <p className="mt-2 text-support text-muted-foreground/80">
-                              {c.postCount} {c.postCount === 1 ? 'post' : 'posts'} published
-                            </p>
-                          </div>
-                        </div>
-                        <div className="flex shrink-0 items-center gap-4 pl-16 sm:pl-0">
-                          <span className="font-mono text-support tabular-nums text-foreground">
-                            {price}
-                          </span>
-                          <span className="text-support font-medium text-primary">View profile →</span>
-                        </div>
-                      </Link>
-                    </li>
-                  );
-                })}
-              </ul>
-            </SurfaceCard>
+            <ul className="grid grid-cols-1 gap-6 sm:grid-cols-2 xl:grid-cols-3 lg:gap-8">
+              {visible.map((c, index) => (
+                <CreatorDiscoveryCard
+                  key={c._id}
+                  username={c.username}
+                  displayName={c.displayName}
+                  bio={c.bio}
+                  avatarUrl={c.avatarUrl}
+                  bannerUrl={c.bannerUrl}
+                  monthlyPriceCents={c.monthlyPriceCents}
+                  verificationStatus={c.verificationStatus}
+                  postCount={c.postCount}
+                  rank={sort === 'popular' ? index + 1 : undefined}
+                  activityNoun="post"
+                  className="animate-fade-in-up opacity-0"
+                  style={{
+                    animationDelay: `${Math.min(index, 8) * 40}ms`,
+                    animationFillMode: 'forwards',
+                  }}
+                />
+              ))}
+            </ul>
           )}
+        </section>
+
+        {/* Today's Games — stacked under creators */}
+        <section
+          id="todays-games"
+          className="scroll-mt-24 border-t border-border bg-background"
+          aria-labelledby="discover-games-heading"
+        >
+          <div className="container py-14 md:py-16">
+            <div className="mb-8 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+              <div className="min-w-0 max-w-2xl">
+                <h2
+                  id="discover-games-heading"
+                  className="text-2xl font-bold tracking-tight text-foreground sm:text-3xl"
+                >
+                  Today’s Games
+                </h2>
+                <p className="mt-2 text-base text-secondary-foreground">{todayLabel}</p>
+              </div>
+            </div>
+
+            <form
+              className="mb-4 flex h-14 w-full items-center gap-2 rounded-full border border-border bg-card pl-4 pr-2 shadow-[var(--shadow-card)]"
+              onSubmit={(e) => {
+                e.preventDefault();
+              }}
+              role="search"
+            >
+              <Search className="h-5 w-5 shrink-0 text-foreground/45" aria-hidden />
+              <Input
+                value={gameSearch}
+                onChange={(e) => setGameSearch(e.target.value)}
+                placeholder="Search teams, leagues…"
+                className="h-full min-h-0 flex-1 border-0 bg-transparent px-2 text-base font-medium shadow-none focus-visible:ring-0 focus-visible:ring-offset-0"
+                aria-label="Search games"
+              />
+              <Button type="submit" className="h-10 shrink-0 rounded-full px-5 font-semibold">
+                Search
+              </Button>
+            </form>
+
+            <DiscoverGamesPanel search={gameSearch} />
+          </div>
         </section>
 
         <section className="border-t border-border bg-card">
@@ -204,7 +249,7 @@ const Discover = () => {
               <h2 className="text-xl font-bold tracking-tight text-foreground sm:text-2xl">
                 {user ? 'Ready to manage your account?' : 'Already browsing as a member?'}
               </h2>
-              <p className="mt-2 text-sm text-muted-foreground">
+              <p className="mt-2 text-base text-secondary-foreground">
                 {user
                   ? 'Open your dashboard for subscriptions, messages, and creator tools.'
                   : 'Sign in to bookmark creators and manage subscriptions from your dashboard.'}

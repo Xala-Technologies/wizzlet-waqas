@@ -77,7 +77,7 @@ export function TodaysEventsSection() {
             <h2 className="text-3xl md:text-4xl font-bold tracking-tight">Today's Biggest Events</h2>
             <p className="text-muted-foreground mt-2 max-w-md">See what's happening today across the biggest sports.</p>
           </div>
-          <Link to="/todays-events" className="hidden sm:flex">
+          <Link to="/discover#todays-games" className="hidden sm:flex">
             <Button variant="outline" size="sm" className="gap-1.5 text-caption">
               View All <ArrowRight className="h-3 w-3" />
             </Button>
@@ -99,7 +99,7 @@ export function TodaysEventsSection() {
         )}
 
         <div className="mt-8 text-center sm:hidden">
-          <Link to="/todays-events">
+          <Link to="/discover#todays-games">
             <Button variant="outline" size="sm" className="gap-1.5">
               View All Events <ArrowRight className="h-3 w-3" />
             </Button>

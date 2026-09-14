@@ -8,9 +8,9 @@ import { Shield } from 'lucide-react';
 export default function DemoAdminLayout() {
   return (
     <DemoAdminProvider>
-      <div className="h-dvh flex overflow-hidden bg-muted">
+      <div className="h-dvh flex overflow-hidden bg-background">
         <DemoAdminSidebar />
-        <main className="flex-1 min-h-0 min-w-0 overflow-x-hidden overflow-y-auto bg-muted">
+        <main className="flex-1 min-h-0 min-w-0 overflow-x-hidden overflow-y-auto bg-background">
           <MobileTopBar
             homeHref="/demo/admin"
             badge={

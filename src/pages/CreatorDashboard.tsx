@@ -1,27 +1,30 @@
 import { useMemo } from 'react';
 import { Link } from 'react-router-dom';
-import { useQuery } from 'convex/react';
+import { useMutation, useQuery } from 'convex/react';
 import { api } from '../../convex/_generated/api';
 import { DashboardLayout } from '@/components/dashboard/DashboardLayout';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import {
-  Users,
-  DollarSign,
   FileText,
   Plus,
   Loader2,
-  TrendingUp,
-  Package,
   ArrowRight,
   ShieldCheck,
-  Lightbulb,
   BarChart3,
   Target,
+  Compass,
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { computeWinRate } from '../../convex/lib/results';
 import { Seo } from '@/components/Seo';
+import { creatorProfilePath } from '@/lib/creatorProfilePath';
+import { mapConvexSportEvent, todayBoundsMs } from '@/lib/events';
+import {
+  GameMatchupCard,
+  countPicksForMatchup,
+} from '@/components/discover/GameMatchupCard';
+import { toast } from 'sonner';
 
 interface PickEntry {
   id: string;
@@ -30,6 +33,7 @@ interface PickEntry {
   units_risked: number;
   sport: string;
   date: string;
+  pick_event: string;
 }
 
 function uiPickResult(result: string): string {
@@ -48,6 +52,9 @@ const CreatorDashboard = () => {
   );
   const picksRaw = useQuery(api.picks.mutations.listMine);
   const earnings = useQuery(api.creators.earnings.myEarnings);
+  const dayBounds = useMemo(() => todayBoundsMs(), []);
+  const eventsRaw = useQuery(api.events.queries.listPublishedToday, dayBounds);
+  const seedTodayDev = useMutation(api.events.queries.seedTodayDev);
 
   const loading =
     creator === undefined ||
@@ -75,22 +82,19 @@ const CreatorDashboard = () => {
         date: p.date,
         pick_event: p.pickEvent,
         sport: p.sport,
-        eu_odds: p.euOdds ?? null,
-        us_odds: p.usOdds ?? null,
         units_risked: p.unitsRisked,
         result: uiPickResult(p.result),
         units_won_lost: p.unitsWonLost ?? null,
-        notes: p.notes ?? null,
       })) as PickEntry[],
     [picksRaw],
   );
 
+  const todaysGames = useMemo(
+    () => (eventsRaw ?? []).map(mapConvexSportEvent).slice(0, 6),
+    [eventsRaw],
+  );
+
   const subCount = (subs ?? []).filter((s) => s.status === 'active').length;
-  // Do not invent a $9.99 list price when unset — keep KPI aligned with Next-up tasks.
-  const listPriceMrr =
-    creator?.monthlyPriceCents != null
-      ? (creator.monthlyPriceCents / 100) * subCount
-      : 0;
   const activeMrrNet = (earnings?.netCents ?? 0) / 100;
   const postCount = postsRaw?.length ?? 0;
   const productCount = products?.length ?? 0;
@@ -112,47 +116,6 @@ const CreatorDashboard = () => {
     return { progress, settled: perfStats.settled, minPicks };
   }, [perfStats]);
 
-  const revenueInsights = useMemo(() => {
-    const insightsList: string[] = [];
-    if (picks.length === 0) return insightsList;
-
-    const sportMap: Record<string, { profit: number; picks: number }> = {};
-    picks.forEach((p) => {
-      if (!sportMap[p.sport]) sportMap[p.sport] = { profit: 0, picks: 0 };
-      sportMap[p.sport].profit += p.units_won_lost || 0;
-      sportMap[p.sport].picks++;
-    });
-    const sportArr = Object.entries(sportMap).sort((a, b) => b[1].profit - a[1].profit);
-    if (sportArr.length > 1) {
-      insightsList.push(
-        `${sportArr[0][0]} picks are your most profitable — focus content here for higher retention.`,
-      );
-      if (sportArr[sportArr.length - 1][1].profit < 0) {
-        insightsList.push(
-          `${sportArr[sportArr.length - 1][0]} is losing money — consider reducing picks in this sport.`,
-        );
-      }
-    }
-
-    // `posts` is the recent slice (max 5) — label insight honestly.
-    const premiumPosts = posts.filter((p) => p.is_premium);
-    const freePosts = posts.filter((p) => !p.is_premium);
-    if (premiumPosts.length > 0 && freePosts.length > 0) {
-      insightsList.push(
-        'Among your recent posts, you mix premium and free — free posts can funnel new subscribers.',
-      );
-    }
-
-    if (subCount > 0 && perfStats.winRate > 55) {
-      insightsList.push(
-        'Your high win rate is a selling point — highlight it in your profile to attract more subscribers.',
-      );
-    }
-
-    if (insightsList.length === 0) insightsList.push('Track more picks to unlock revenue insights.');
-    return insightsList;
-  }, [picks, posts, subCount, perfStats]);
-
   if (loading) {
     return (
       <DashboardLayout type="creator">
@@ -166,7 +129,7 @@ const CreatorDashboard = () => {
   if (!creator) {
     return (
       <DashboardLayout type="creator">
-        <p className="text-support text-muted-foreground">Creator profile not found.</p>
+        <p className="text-base text-secondary-foreground">Creator profile not found.</p>
       </DashboardLayout>
     );
   }
@@ -189,64 +152,67 @@ const CreatorDashboard = () => {
     tasks.push({ href: '/creator/payouts', label: 'Complete payout setup' });
   }
 
-  const stats = [
-    { label: 'Subscribers', value: subCount.toString(), icon: Users, color: 'text-blue-400' },
-    {
-      label: 'Active MRR net',
-      value: `$${activeMrrNet.toFixed(0)}`,
-      icon: DollarSign,
-      color: 'text-emerald-400',
-    },
-    {
-      label: 'List-price MRR est.',
-      value: `$${listPriceMrr.toFixed(0)}`,
-      icon: TrendingUp,
-      color: 'text-muted-foreground',
-    },
-    { label: 'Total Posts', value: postCount.toString(), icon: FileText, color: 'text-purple-400' },
-    { label: 'Products', value: productCount.toString(), icon: Package, color: 'text-amber-400' },
+  const kpis = [
+    { label: 'Subscribers', value: String(subCount) },
+    { label: 'Active MRR net', value: `$${activeMrrNet.toFixed(0)}` },
+    { label: 'Posts', value: String(postCount) },
+    { label: 'Products', value: String(productCount) },
   ];
 
   const valColor = (v: number) =>
-    v > 0 ? 'text-emerald-400' : v < 0 ? 'text-destructive' : 'text-muted-foreground';
+    v > 0 ? 'text-emerald-600 dark:text-emerald-400' : v < 0 ? 'text-destructive' : 'text-secondary-foreground';
 
-  const quickActions = [
-    { href: '/creator/posts', label: 'Create Post', icon: Plus },
-    { href: '/creator/performance-tracker', label: 'Track Pick', icon: Target },
-    { href: '/creator/products', label: 'New Product', icon: Package },
-    { href: '/creator/earnings', label: 'Earnings', icon: DollarSign },
-  ] as const;
+  const handleSeedGames = async () => {
+    try {
+      const res = await seedTodayDev(dayBounds);
+      if (res.skipped) {
+        toast.message('Today’s slate already has games');
+      } else {
+        toast.success(`Seeded ${res.inserted} games for today (dev only)`);
+      }
+    } catch {
+      toast.error('Dev seed unavailable — set ALLOW_DEV_ADMIN_GRANT=true on Convex');
+    }
+  };
 
   return (
     <DashboardLayout type="creator">
-      <Seo title="Creator overview — Prizelet" description="Your Prizelet creator overview, earnings, and next steps." />
-      {/* 1. Page header */}
-      <header className="mb-6">
-        <h1 className="text-heading md:text-heading-lg font-bold text-foreground flex flex-wrap items-center gap-2">
-          Overview
-          {isVerified && (
-            <span className="inline-flex items-center gap-1 text-caption font-medium text-emerald-400 bg-emerald-500/10 rounded-full px-2.5 py-0.5 border border-emerald-500/20">
-              <ShieldCheck className="h-3 w-3" /> Verified
-            </span>
-          )}
-        </h1>
-        <p className="text-support text-muted-foreground mt-1">
-          {creatorUsername ? `Welcome back, @${creatorUsername}` : 'Welcome back'}
-          {' · '}
-          <Link to="/creator/earnings" className="text-primary hover:underline">
-            Earnings
-          </Link>
-          {' · '}
-          <Link to="/creator/payouts" className="text-primary hover:underline">
-            Payouts
-          </Link>
-        </p>
+      <Seo
+        title="Creator dashboard — Prizelet"
+        description="Your Prizelet creator dashboard: games slate, publish tools, and performance."
+      />
+
+      <header className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+        <div className="min-w-0">
+          <h1 className="flex flex-wrap items-center gap-2 text-3xl font-bold tracking-tight text-foreground sm:text-4xl">
+            Dashboard
+            {isVerified && (
+              <span className="inline-flex items-center gap-1 rounded-full border border-emerald-500/25 bg-emerald-500/10 px-2.5 py-0.5 text-xs font-semibold text-emerald-700 dark:text-emerald-400">
+                <ShieldCheck className="h-3 w-3" aria-hidden />
+                Verified
+              </span>
+            )}
+          </h1>
+          <p className="mt-2 text-base text-secondary-foreground">
+            {creatorUsername ? `Welcome back, @${creatorUsername}` : 'Welcome back'}
+          </p>
+        </div>
+        <div className="flex flex-wrap gap-2">
+          <Button asChild variant="outline">
+            <Link to={creatorProfilePath(creator.username)}>View profile</Link>
+          </Button>
+          <Button asChild>
+            <Link to="/creator/posts" className="gap-1.5">
+              <Plus className="h-4 w-4" aria-hidden />
+              Publish post
+            </Link>
+          </Button>
+        </div>
       </header>
 
-      {/* 2. Next up */}
       {tasks.length > 0 && (
-        <section className="rounded-xl border border-border bg-card p-4 mb-6">
-          <h2 className="text-caption font-medium text-muted-foreground uppercase tracking-wider mb-3">
+        <section className="mb-8 rounded-2xl border border-border bg-card p-5">
+          <h2 className="mb-3 text-xs font-semibold uppercase tracking-wide text-secondary-foreground">
             Next up
           </h2>
           <ul className="space-y-2">
@@ -254,10 +220,10 @@ const CreatorDashboard = () => {
               <li key={t.href + t.label}>
                 <Link
                   to={t.href}
-                  className="text-ui text-primary hover:underline inline-flex items-center gap-1"
+                  className="inline-flex items-center gap-1.5 text-base font-medium text-foreground hover:text-primary"
                 >
                   {t.label}
-                  <ArrowRight className="h-3.5 w-3.5 shrink-0 opacity-70" />
+                  <ArrowRight className="h-4 w-4 shrink-0 opacity-70" aria-hidden />
                 </Link>
               </li>
             ))}
@@ -265,70 +231,135 @@ const CreatorDashboard = () => {
         </section>
       )}
 
-      {/* 3. Summary strip */}
-      <section className="grid grid-cols-2 lg:grid-cols-5 gap-3 sm:gap-4 mb-6">
-        {stats.map((stat, index) => (
-          <div
-            key={stat.label}
-            className={`rounded-xl border border-border bg-card p-4 transition-colors hover:border-primary/20 ${
-              index === stats.length - 1 ? 'col-span-2 lg:col-span-1' : ''
-            }`}
-          >
-            <stat.icon className={`h-4 w-4 mb-2 ${stat.color}`} aria-hidden />
-            <p className="text-title-lg font-bold text-foreground tabular-nums">{stat.value}</p>
-            <p className="text-caption text-muted-foreground mt-0.5">{stat.label}</p>
+      <section className="mb-8 grid grid-cols-2 gap-3 lg:grid-cols-4 lg:gap-4">
+        {kpis.map((stat) => (
+          <div key={stat.label} className="rounded-2xl border border-border bg-card p-5">
+            <p className="text-2xl font-bold tabular-nums tracking-tight text-foreground sm:text-3xl">
+              {stat.value}
+            </p>
+            <p className="mt-1 text-sm font-medium text-secondary-foreground">{stat.label}</p>
           </div>
         ))}
       </section>
 
-      {/* 4. Primary workspace: actions + recent activity */}
-      <section className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-        <div className="min-w-0">
-          <h2 className="text-caption font-medium text-muted-foreground uppercase tracking-wider mb-3">
-            Quick actions
-          </h2>
-          <div className="grid grid-cols-2 gap-3">
-            {quickActions.map((action) => (
-              <Link key={action.href} to={action.href} className="min-w-0">
-                <Button
-                  variant="outline"
-                  className="w-full h-auto min-h-11 py-3 flex-col gap-1.5 text-ui"
-                >
-                  <action.icon className="h-5 w-5 text-primary" />
-                  <span className="text-support">{action.label}</span>
-                </Button>
-              </Link>
-            ))}
+      {/* Today's Games */}
+      <section className="mb-8 rounded-2xl border border-border bg-card p-5 sm:p-6">
+        <div className="mb-5 flex flex-wrap items-end justify-between gap-3">
+          <div>
+            <h2 className="text-xl font-bold tracking-tight text-foreground">Today’s Games</h2>
+            <p className="mt-1 text-sm text-secondary-foreground">
+              Live slate — your pick counts only (no invented market bars).
+            </p>
           </div>
+          <Link
+            to="/discover#todays-games"
+            className="inline-flex items-center gap-1 text-sm font-semibold text-foreground hover:text-primary"
+          >
+            Browse games
+            <ArrowRight className="h-4 w-4" aria-hidden />
+          </Link>
         </div>
 
+        {eventsRaw === undefined ? (
+          <div className="flex justify-center py-12" aria-busy="true">
+            <Loader2 className="h-5 w-5 animate-spin text-primary" />
+          </div>
+        ) : todaysGames.length === 0 ? (
+          <div className="rounded-xl border border-dashed border-border px-4 py-12 text-center">
+            <p className="text-base font-semibold text-foreground">No games published today</p>
+            <p className="mt-1 text-sm text-secondary-foreground">
+              When the slate is live, matchups appear here with your pick counts.
+            </p>
+            {import.meta.env.DEV ? (
+              <Button type="button" variant="outline" className="mt-5" onClick={() => void handleSeedGames()}>
+                Seed today’s slate (dev)
+              </Button>
+            ) : null}
+          </div>
+        ) : (
+          <ul className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
+            {todaysGames.map((event) => {
+              const yourPickCount = countPicksForMatchup(
+                picks.map((p) => ({ pickEvent: p.pick_event, sport: p.sport })),
+                event,
+              );
+              return (
+                <li key={event.id} className="list-none">
+                  <GameMatchupCard
+                    event={event}
+                    yourPickCount={yourPickCount}
+                    actionHref="/creator/performance-tracker"
+                    actionLabel={yourPickCount > 0 ? 'View' : 'Track pick'}
+                  />
+                </li>
+              );
+            })}
+          </ul>
+        )}
+      </section>
+
+      {/* Discover / Publish strip */}
+      <section className="mb-8 grid gap-4 md:grid-cols-2">
+        <div className="rounded-2xl border border-border bg-card p-5 sm:p-6">
+          <div className="mb-2 flex items-center gap-2">
+            <Compass className="h-4 w-4 text-primary" aria-hidden />
+            <h2 className="text-lg font-bold tracking-tight text-foreground">Discover</h2>
+          </div>
+          <p className="mb-4 text-sm leading-relaxed text-secondary-foreground">
+            Browse the public creator directory and today’s full games slate.
+          </p>
+          <Button asChild variant="outline">
+            <Link to="/discover">Open Discover</Link>
+          </Button>
+        </div>
+        <div className="rounded-2xl border border-border bg-card p-5 sm:p-6">
+          <div className="mb-2 flex items-center gap-2">
+            <Plus className="h-4 w-4 text-primary" aria-hidden />
+            <h2 className="text-lg font-bold tracking-tight text-foreground">Publish</h2>
+          </div>
+          <p className="mb-4 text-sm leading-relaxed text-secondary-foreground">
+            Ship a post or update products and pricing for subscribers.
+          </p>
+          <div className="flex flex-wrap gap-2">
+            <Button asChild>
+              <Link to="/creator/posts">Create post</Link>
+            </Button>
+            <Button asChild variant="outline">
+              <Link to="/creator/products">Products & pricing</Link>
+            </Button>
+          </div>
+        </div>
+      </section>
+
+      {/* Recent posts + performance */}
+      <section className="mb-6 grid grid-cols-1 gap-6 md:grid-cols-2">
         <div className="min-w-0">
-          <div className="flex items-center justify-between gap-2 mb-3">
-            <h2 className="text-caption font-medium text-muted-foreground uppercase tracking-wider">
-              Recent activity
+          <div className="mb-3 flex items-center justify-between gap-2">
+            <h2 className="text-sm font-semibold uppercase tracking-wide text-secondary-foreground">
+              Recent posts
             </h2>
             {posts.length > 0 && (
               <Link
                 to="/creator/posts"
-                className="text-caption text-primary hover:underline inline-flex items-center gap-1"
+                className="inline-flex items-center gap-1 text-sm font-semibold text-foreground hover:text-primary"
               >
-                All posts <ArrowRight className="h-3 w-3" />
+                All posts <ArrowRight className="h-3.5 w-3.5" aria-hidden />
               </Link>
             )}
           </div>
 
           {posts.length === 0 ? (
-            <div className="rounded-xl border border-border bg-card p-6 text-center">
-              <FileText className="h-8 w-8 text-muted-foreground mx-auto mb-3" />
-              <h3 className="text-title font-semibold text-foreground mb-1">No activity yet</h3>
-              <p className="text-support text-muted-foreground max-w-xs mx-auto mb-4">
-                Create your first post to start engaging your audience.
+            <div className="rounded-2xl border border-border bg-card p-6 text-center">
+              <FileText className="mx-auto mb-3 h-8 w-8 text-secondary-foreground" aria-hidden />
+              <h3 className="mb-1 text-base font-semibold text-foreground">No posts yet</h3>
+              <p className="mx-auto mb-4 max-w-xs text-sm text-secondary-foreground">
+                Publish your first post to start engaging subscribers.
               </p>
-              <Link to="/creator/posts">
-                <Button variant="default" size="sm" className="min-h-11">
-                  <Plus className="mr-1.5 h-3.5 w-3.5" /> Create Post
-                </Button>
-              </Link>
+              <Button asChild size="sm">
+                <Link to="/creator/posts">
+                  <Plus className="mr-1.5 h-3.5 w-3.5" aria-hidden /> Publish
+                </Link>
+              </Button>
             </div>
           ) : (
             <ul className="space-y-2">
@@ -336,18 +367,18 @@ const CreatorDashboard = () => {
                 <li key={post.id}>
                   <Link
                     to="/creator/posts"
-                    className="flex items-center justify-between gap-4 rounded-xl border border-border bg-card p-3 sm:p-4 transition-colors hover:border-primary/20"
+                    className="flex items-center justify-between gap-4 rounded-2xl border border-border bg-card p-4 transition-colors hover:border-foreground/25"
                   >
-                    <div className="min-w-0 flex items-center gap-3">
+                    <div className="flex min-w-0 items-center gap-3">
                       <div
-                        className={`h-2 w-2 rounded-full shrink-0 ${
+                        className={`h-2 w-2 shrink-0 rounded-full ${
                           post.is_premium ? 'bg-primary' : 'bg-muted-foreground/40'
                         }`}
                         aria-hidden
                       />
                       <div className="min-w-0">
-                        <p className="font-medium text-ui truncate text-foreground">{post.title}</p>
-                        <p className="text-caption text-muted-foreground">
+                        <p className="truncate text-sm font-semibold text-foreground">{post.title}</p>
+                        <p className="text-xs text-secondary-foreground">
                           {post.is_premium ? 'Premium' : 'Free'} ·{' '}
                           {format(new Date(post.created_at), 'MMM d')}
                         </p>
@@ -359,94 +390,72 @@ const CreatorDashboard = () => {
             </ul>
           )}
         </div>
-      </section>
 
-      {/* 5. Secondary: tracker / verification / insights */}
-      {picks.length > 0 && (
-        <section className="rounded-xl border border-border bg-card p-4 mb-6">
-          <div className="flex flex-wrap items-center justify-between gap-2 mb-2">
-            <h2 className="text-caption font-medium text-muted-foreground uppercase tracking-wider flex items-center gap-1.5">
-              <BarChart3 className="h-3.5 w-3.5" /> Tracker performance (practice picks)
-            </h2>
-            <Link
-              to="/creator/performance-tracker"
-              className="text-caption text-primary hover:underline inline-flex items-center gap-1"
-            >
-              Full tracker <ArrowRight className="h-3 w-3" />
-            </Link>
-          </div>
-          <p className="text-caption text-muted-foreground mb-3">
-            Win rate here uses Performance Tracker picks. Settled results on Create Post are tracked
-            separately.
-          </p>
-          <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
-            <div className="min-w-0">
-              <p className="text-caption text-muted-foreground uppercase tracking-wide">Net Profit</p>
-              <p className={`text-title font-bold tabular-nums ${valColor(perfStats.totalWonLost)}`}>
-                {perfStats.totalWonLost > 0 ? '+' : ''}
-                {perfStats.totalWonLost.toFixed(1)}u
+        <div className="min-w-0">
+          {picks.length > 0 ? (
+            <div className="rounded-2xl border border-border bg-card p-5">
+              <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
+                <h2 className="flex items-center gap-1.5 text-sm font-semibold uppercase tracking-wide text-secondary-foreground">
+                  <BarChart3 className="h-3.5 w-3.5" aria-hidden /> Play performance
+                </h2>
+                <Link
+                  to="/creator/performance-tracker"
+                  className="inline-flex items-center gap-1 text-sm font-semibold text-foreground hover:text-primary"
+                >
+                  Full tracker <ArrowRight className="h-3.5 w-3.5" aria-hidden />
+                </Link>
+              </div>
+              <p className="mb-4 text-xs text-secondary-foreground">
+                Tracker picks only — settled Create Post results are separate.
               </p>
+              <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+                <div>
+                  <p className="text-xs uppercase tracking-wide text-secondary-foreground">Net</p>
+                  <p className={`text-lg font-bold tabular-nums ${valColor(perfStats.totalWonLost)}`}>
+                    {perfStats.totalWonLost > 0 ? '+' : ''}
+                    {perfStats.totalWonLost.toFixed(1)}u
+                  </p>
+                </div>
+                <div>
+                  <p className="text-xs uppercase tracking-wide text-secondary-foreground">Win rate</p>
+                  <p className="text-lg font-bold tabular-nums text-foreground">{perfStats.winRate}%</p>
+                </div>
+                <div>
+                  <p className="text-xs uppercase tracking-wide text-secondary-foreground">Picks</p>
+                  <p className="text-lg font-bold tabular-nums text-foreground">{perfStats.totalPicks}</p>
+                </div>
+              </div>
             </div>
-            <div className="min-w-0">
-              <p className="text-caption text-muted-foreground uppercase tracking-wide">Win Rate</p>
-              <p className="text-title font-bold tabular-nums text-foreground">{perfStats.winRate}%</p>
-            </div>
-            <div className="min-w-0">
-              <p className="text-caption text-muted-foreground uppercase tracking-wide">ROI</p>
-              <p className={`text-title font-bold tabular-nums ${valColor(perfStats.roi)}`}>
-                {perfStats.roi >= 0 ? '+' : ''}
-                {perfStats.roi}%
+          ) : (
+            <div className="rounded-2xl border border-border bg-card p-6 text-center">
+              <Target className="mx-auto mb-3 h-8 w-8 text-secondary-foreground" aria-hidden />
+              <h3 className="mb-1 text-base font-semibold text-foreground">Track your plays</h3>
+              <p className="mx-auto mb-4 max-w-xs text-sm text-secondary-foreground">
+                Log practice picks in Play performance to unlock win rate and ROI.
               </p>
+              <Button asChild variant="outline" size="sm">
+                <Link to="/creator/performance-tracker">Open tracker</Link>
+              </Button>
             </div>
-            <div className="min-w-0">
-              <p className="text-caption text-muted-foreground uppercase tracking-wide">Total Picks</p>
-              <p className="text-title font-bold tabular-nums text-foreground">{perfStats.totalPicks}</p>
-            </div>
-            <div className="min-w-0 col-span-2 sm:col-span-1">
-              <p className="text-caption text-muted-foreground uppercase tracking-wide">Wins</p>
-              <p className="text-title font-bold tabular-nums text-emerald-400">{perfStats.wins}</p>
-            </div>
-          </div>
-        </section>
-      )}
+          )}
 
-      {!isVerified && picks.length > 0 && (
-        <section className="rounded-xl border border-border bg-card p-4 mb-6">
-          <div className="flex flex-wrap items-center gap-2 mb-2">
-            <Target className="h-4 w-4 text-muted-foreground shrink-0" />
-            <p className="text-ui font-medium text-foreground">Tracker eligibility progress</p>
-            <span className="text-caption text-muted-foreground sm:ml-auto">
-              {verification.settled}/{verification.minPicks} settled picks
-            </span>
-          </div>
-          <Progress value={verification.progress} className="h-1.5 mb-1.5" />
-          <p className="text-caption text-muted-foreground">
-            Track more settled picks in Performance Tracker. The Verified badge is granted by the
-            platform, not automatically.
-          </p>
-        </section>
-      )}
-
-      {revenueInsights.length > 0 && (
-        <section className="rounded-xl border border-border bg-card p-4 mb-2">
-          <div className="flex items-center gap-2 mb-3">
-            <Lightbulb className="h-4 w-4 text-primary shrink-0" />
-            <h2 className="text-caption font-medium text-muted-foreground uppercase tracking-wider">
-              Revenue insights
-            </h2>
-          </div>
-          <ul className="space-y-2">
-            {revenueInsights.map((insight) => (
-              <li key={insight} className="flex items-start gap-2 text-support text-muted-foreground">
-                <span className="text-primary mt-0.5 shrink-0" aria-hidden>
-                  →
+          {!isVerified && picks.length > 0 && (
+            <div className="mt-4 rounded-2xl border border-border bg-card p-4">
+              <div className="mb-2 flex flex-wrap items-center gap-2">
+                <Target className="h-4 w-4 shrink-0 text-secondary-foreground" aria-hidden />
+                <p className="text-sm font-medium text-foreground">Tracker eligibility</p>
+                <span className="text-xs text-secondary-foreground sm:ml-auto">
+                  {verification.settled}/{verification.minPicks} settled
                 </span>
-                <span>{insight}</span>
-              </li>
-            ))}
-          </ul>
-        </section>
-      )}
+              </div>
+              <Progress value={verification.progress} className="mb-1.5 h-1.5" />
+              <p className="text-xs text-secondary-foreground">
+                Verified badge is granted by the platform, not automatically.
+              </p>
+            </div>
+          )}
+        </div>
+      </section>
     </DashboardLayout>
   );
 };

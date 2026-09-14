@@ -8,9 +8,10 @@ import { Footer } from '@/components/landing/Footer';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ArrowRight, Search } from 'lucide-react';
-import { creatorProfilePath } from '@/lib/creatorProfilePath';
-import { SurfaceCard } from '@/components/ux/SurfaceCard';
-import { Skeleton } from '@/components/ui/skeleton';
+import {
+  CreatorDiscoveryCard,
+  CreatorDiscoveryCardSkeleton,
+} from '@/components/discover/CreatorDiscoveryCard';
 
 const Creators = () => {
   const creatorsPage = useQuery(api.creators.queries.listPublished, {});
@@ -30,53 +31,72 @@ const Creators = () => {
   }, [creators, search]);
 
   return (
-    <div className="flex min-h-screen flex-col bg-muted">
+    <div className="flex min-h-screen flex-col bg-background">
       <Seo
         title="Top Sports Creators on Prizelet"
-        description="Browse verified creators on Prizelet, compare win rates and units, and subscribe to the handicappers you trust."
+        description="Browse published creators on Prizelet, compare list prices and activity, and open a profile to subscribe."
       />
       <Navbar />
 
-      <main id="main-content" className="relative flex-1 bg-muted">
+      <main id="main-content" className="relative flex-1 bg-background">
         <section className="container relative pt-28 pb-10 md:pt-32 md:pb-14">
-          <p className="mb-4 text-caption font-medium uppercase tracking-[0.22em] text-primary">
-            Prizelet · Creators
-          </p>
-          <h1 className="max-w-2xl text-4xl font-extrabold tracking-[-0.04em] text-foreground sm:text-5xl">
-            Creators who publish with an edge
-          </h1>
-          <p className="mt-4 max-w-xl text-ui leading-relaxed text-muted-foreground">
-            Live profiles from the Prizelet network. Subscribe for gated content — no algorithm,
-            no public feed noise.
-          </p>
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+            <div className="min-w-0 max-w-2xl">
+              <h1 className="text-4xl font-bold tracking-tight text-foreground sm:text-5xl">
+                Creators directory
+              </h1>
+              <p className="mt-3 text-base leading-relaxed text-secondary-foreground">
+                Live profiles from the Prizelet network. Subscribe for gated content — no algorithm,
+                no public feed noise.
+              </p>
+            </div>
+            <Link
+              to="/discover"
+              className="inline-flex shrink-0 items-center gap-1.5 text-sm font-semibold text-foreground transition-colors hover:text-primary"
+            >
+              Discover
+              <ArrowRight className="h-4 w-4" aria-hidden />
+            </Link>
+          </div>
 
-          <div className="relative mt-10 max-w-md">
-            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+          <form
+            className="mt-8 flex h-14 w-full items-center gap-2 rounded-full border border-border bg-card pl-4 pr-2 shadow-[var(--shadow-card)]"
+            onSubmit={(e) => {
+              e.preventDefault();
+            }}
+            role="search"
+          >
+            <Search className="h-5 w-5 shrink-0 text-foreground/45" aria-hidden />
             <Input
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              placeholder="Search by name or handle…"
-              className="h-11 pl-10"
+              placeholder="Search…"
+              className="h-full min-h-0 flex-1 border-0 bg-transparent px-2 text-base font-medium shadow-none focus-visible:ring-0 focus-visible:ring-offset-0"
               aria-label="Search creators"
             />
-          </div>
+            <Button type="submit" className="h-10 shrink-0 rounded-full px-5 font-semibold">
+              Search
+            </Button>
+          </form>
         </section>
 
         <section className="container relative pb-16 md:pb-20">
           {creatorsPage === undefined ? (
-            <div className="space-y-3" aria-busy="true" aria-label="Loading creators">
-              {[0, 1, 2, 3].map((i) => (
-                <SurfaceCard key={i} className="p-5">
-                  <Skeleton className="h-16 w-full rounded-lg" />
-                </SurfaceCard>
+            <ul
+              className="grid grid-cols-1 gap-6 sm:grid-cols-2 xl:grid-cols-3 lg:gap-8"
+              aria-busy="true"
+              aria-label="Loading creators"
+            >
+              {[0, 1, 2, 3, 4, 5].map((i) => (
+                <CreatorDiscoveryCardSkeleton key={i} />
               ))}
-            </div>
+            </ul>
           ) : !creators || creators.length === 0 ? (
             <div className="mx-auto max-w-lg py-16 text-center">
               <p className="text-lg font-semibold tracking-tight text-foreground">
                 The roster is still forming
               </p>
-              <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
+              <p className="mt-2 text-base leading-relaxed text-secondary-foreground">
                 Published creators appear here as soon as they go live. If you have an edge worth
                 charging for, apply for access.
               </p>
@@ -87,70 +107,31 @@ const Creators = () => {
               </Link>
             </div>
           ) : filtered.length === 0 ? (
-            <p className="py-16 text-center text-sm text-muted-foreground">
+            <p className="py-16 text-center text-base text-secondary-foreground">
               No creators match “{search.trim()}”.
             </p>
           ) : (
-            <SurfaceCard>
-              <ul className="divide-y divide-border">
-                {filtered.map((c) => {
-                  const name = c.displayName ?? c.username;
-                  const price =
-                    c.monthlyPriceCents != null
-                      ? `$${(c.monthlyPriceCents / 100).toFixed(0)}/mo`
-                      : null;
-                  return (
-                    <li key={c._id}>
-                      <Link
-                        to={creatorProfilePath(c.username)}
-                        className="group flex flex-col gap-4 px-4 py-5 transition-colors hover:bg-muted/40 sm:flex-row sm:items-center sm:justify-between sm:gap-6 sm:px-5 sm:py-5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset"
-                      >
-                        <div className="flex min-w-0 items-start gap-4">
-                          <div className="flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-full bg-primary/12 text-sm font-bold text-primary">
-                            {c.avatarUrl ? (
-                              <img src={c.avatarUrl} alt="" className="h-full w-full object-cover" />
-                            ) : (
-                              name[0]?.toUpperCase()
-                            )}
-                          </div>
-                          <div className="min-w-0">
-                            <div className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
-                              <span className="font-semibold text-foreground group-hover:text-primary transition-colors">
-                                {name}
-                              </span>
-                              <span className="text-support text-muted-foreground">@{c.username}</span>
-                              {c.verificationStatus === 'verified' && (
-                                <span className="text-caption font-medium uppercase tracking-wider text-primary">
-                                  Verified
-                                </span>
-                              )}
-                            </div>
-                            {c.bio ? (
-                              <p className="mt-1 line-clamp-2 text-support leading-relaxed text-muted-foreground">
-                                {c.bio}
-                              </p>
-                            ) : null}
-                            <p className="mt-2 text-support text-muted-foreground/80">
-                              {c.postCount} {c.postCount === 1 ? 'pick' : 'picks'} published
-                            </p>
-                          </div>
-                        </div>
-                        <div className="flex shrink-0 items-center gap-4 pl-16 sm:pl-0">
-                          {price && (
-                            <span className="font-mono text-support tabular-nums text-foreground">
-                              {price}
-                            </span>
-                          )}
-                          <span className="hover-reveal text-support font-medium text-primary transition-opacity">
-                            View profile →
-                          </span>
-                        </div>
-                      </Link>
-                    </li>
-                  );
-                })}
-              </ul>
-            </SurfaceCard>
+            <ul className="grid grid-cols-1 gap-6 sm:grid-cols-2 xl:grid-cols-3 lg:gap-8">
+              {filtered.map((c, index) => (
+                <CreatorDiscoveryCard
+                  key={c._id}
+                  username={c.username}
+                  displayName={c.displayName}
+                  bio={c.bio}
+                  avatarUrl={c.avatarUrl}
+                  bannerUrl={c.bannerUrl}
+                  monthlyPriceCents={c.monthlyPriceCents}
+                  verificationStatus={c.verificationStatus}
+                  postCount={c.postCount}
+                  activityNoun="pick"
+                  className="animate-fade-in-up opacity-0"
+                  style={{
+                    animationDelay: `${Math.min(index, 8) * 40}ms`,
+                    animationFillMode: 'forwards',
+                  }}
+                />
+              ))}
+            </ul>
           )}
         </section>
 
@@ -160,7 +141,7 @@ const Creators = () => {
               <h2 className="text-xl font-bold tracking-tight text-foreground sm:text-2xl">
                 Have a record worth selling?
               </h2>
-              <p className="mt-2 text-sm text-muted-foreground">
+              <p className="mt-2 text-base text-secondary-foreground">
                 Prizelet is invite-only infrastructure — not another public tip board.
               </p>
             </div>

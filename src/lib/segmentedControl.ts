@@ -13,3 +13,22 @@ export function segmentedItemClassName(active: boolean): string {
       : 'text-foreground hover:bg-muted',
   );
 }
+
+/**
+ * Discovery filter chips — DubClub-style pills under a full-width search.
+ * Active = solid foreground; idle = white + thin border; icons sit left of label.
+ */
+export const filterBarTrackClassName =
+  'flex min-w-0 flex-1 items-center gap-2.5 overflow-x-auto py-0.5 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden';
+
+export function filterBarItemClassName(active: boolean): string {
+  return cn(
+    'inline-flex h-11 shrink-0 items-center justify-center gap-2 whitespace-nowrap rounded-full px-5',
+    'text-sm font-semibold transition-colors',
+    'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2',
+    'disabled:pointer-events-none disabled:opacity-50',
+    active
+      ? 'border border-foreground bg-foreground text-background'
+      : 'border border-border bg-card text-foreground hover:border-foreground/35',
+  );
+}

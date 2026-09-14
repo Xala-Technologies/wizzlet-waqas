@@ -90,7 +90,7 @@ function emptyRecovery(layoutType: LayoutType): {
     };
   }
   return {
-    primary: { to: '/dashboard', label: 'Browse your Feed' },
+    primary: { to: '/dashboard', label: 'Open Dashboard' },
     secondary: { to: '/dashboard/messages', label: 'Open messages' },
     headline: 'You\'re all caught up',
     support:

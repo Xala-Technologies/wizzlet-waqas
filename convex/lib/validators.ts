@@ -201,6 +201,7 @@ export const creatorDiscoveryItemValidator = v.object({
   displayName: v.optional(v.string()),
   bio: v.optional(v.string()),
   avatarUrl: v.optional(v.string()),
+  bannerUrl: v.optional(v.string()),
   monthlyPriceCents: v.optional(v.number()),
   verificationStatus: verificationStatusValidator,
   createdAt: v.number(),

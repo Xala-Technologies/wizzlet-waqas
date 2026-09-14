@@ -4,21 +4,23 @@ import { useQuery } from 'convex/react';
 import { api } from '../../../convex/_generated/api';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Search, TrendingUp, Star, Sparkles } from 'lucide-react';
+import { Search, TrendingUp, Star, Sparkles, ArrowRight } from 'lucide-react';
 import { LandingSection } from '@/components/landing/LandingSection';
-import { creatorProfilePath } from '@/lib/creatorProfilePath';
-import { segmentedItemClassName, segmentedTrackClassName } from '@/lib/segmentedControl';
-import { SurfaceCard } from '@/components/ux/SurfaceCard';
-import { Skeleton } from '@/components/ui/skeleton';
+import { DiscoveryFilterBar } from '@/components/discover/DiscoveryFilterBar';
+import {
+  CreatorDiscoveryCard,
+  CreatorDiscoveryCardSkeleton,
+} from '@/components/discover/CreatorDiscoveryCard';
 
 const filters = [
-  { label: 'Most active', icon: TrendingUp },
-  { label: 'Newest', icon: Sparkles },
-  { label: 'Lowest list price', icon: Star },
-] as const;
+  { key: 'Most active' as const, label: 'Most active', icon: TrendingUp },
+  { key: 'Newest' as const, label: 'Newest', icon: Sparkles },
+  { key: 'Lowest price' as const, label: 'Lowest price', icon: Star },
+];
 
 export function CreatorDiscovery() {
-  const [activeFilter, setActiveFilter] = useState<(typeof filters)[number]['label']>('Most active');
+  const [activeFilter, setActiveFilter] =
+    useState<(typeof filters)[number]['key']>('Most active');
   const [search, setSearch] = useState('');
   const creatorsPage = useQuery(api.creators.queries.listPublished, {
     search: search.trim() || undefined,
@@ -30,9 +32,11 @@ export function CreatorDiscovery() {
     const sorted = [...creators];
     if (activeFilter === 'Newest') {
       sorted.sort((a, b) => b.createdAt - a.createdAt);
-    } else if (activeFilter === 'Lowest list price') {
+    } else if (activeFilter === 'Lowest price') {
       sorted.sort(
-        (a, b) => (a.monthlyPriceCents ?? Number.POSITIVE_INFINITY) - (b.monthlyPriceCents ?? Number.POSITIVE_INFINITY),
+        (a, b) =>
+          (a.monthlyPriceCents ?? Number.POSITIVE_INFINITY) -
+          (b.monthlyPriceCents ?? Number.POSITIVE_INFINITY),
       );
     } else {
       sorted.sort((a, b) => (b.postCount ?? 0) - (a.postCount ?? 0));
@@ -43,116 +47,86 @@ export function CreatorDiscovery() {
   return (
     <LandingSection id="creators" className="bg-background">
       <div className="container">
-        <div className="text-center mb-12">
-          <p className="text-support font-medium uppercase tracking-widest text-primary mb-3">
-            Network
-          </p>
-          <h2 className="text-2xl sm:text-3xl font-bold tracking-tight mb-3 text-foreground">
-            Creators on the platform
-          </h2>
-          <p className="text-muted-foreground text-sm max-w-md mx-auto">
-            Verified creators building real audiences. Subscribe to access their premium content.
-          </p>
-        </div>
+        <div className="mb-10">
+          <div className="mb-8 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+            <div className="min-w-0 max-w-2xl">
+              <h2 className="text-3xl font-bold tracking-tight text-foreground sm:text-4xl">
+                Find a creator
+              </h2>
+              <p className="mt-3 text-base text-secondary-foreground">
+                Verified creators building real audiences. Subscribe to access their premium content.
+              </p>
+            </div>
+            <Link
+              to="/discover"
+              className="inline-flex shrink-0 items-center gap-1.5 text-sm font-semibold text-foreground transition-colors hover:text-primary"
+            >
+              Browse full directory
+              <ArrowRight className="h-4 w-4" aria-hidden />
+            </Link>
+          </div>
 
-        <div className="max-w-2xl mx-auto mb-10 space-y-4">
-          <div className="relative">
-            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <form
+            className="flex h-14 w-full items-center gap-2 rounded-full border border-border bg-card pl-4 pr-2 shadow-[var(--shadow-card)]"
+            onSubmit={(e) => {
+              e.preventDefault();
+            }}
+            role="search"
+          >
+            <Search className="h-5 w-5 shrink-0 text-foreground/45" aria-hidden />
             <Input
-              placeholder="Search creators…"
+              placeholder="Search…"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="pl-10 h-11 bg-card border-border focus-visible:ring-primary/30"
+              className="h-full min-h-0 flex-1 border-0 bg-transparent px-2 text-base font-medium shadow-none focus-visible:ring-0 focus-visible:ring-offset-0"
+              aria-label="Search creators"
             />
-          </div>
-          <div
-            className={`${segmentedTrackClassName} w-full sm:w-auto flex-wrap`}
-            role="group"
-            aria-label="Sort creators"
-          >
-            {filters.map((f) => (
-              <button
-                key={f.label}
-                type="button"
-                onClick={() => setActiveFilter(f.label)}
-                aria-pressed={activeFilter === f.label}
-                className={segmentedItemClassName(activeFilter === f.label)}
-              >
-                <f.icon className="h-3.5 w-3.5" />
-                {f.label}
-              </button>
-            ))}
-          </div>
-          <div className="flex justify-center">
-            <Button asChild variant="outline" size="sm">
-              <Link to="/discover">Browse full directory</Link>
+            <Button type="submit" className="h-10 shrink-0 rounded-full px-5 font-semibold">
+              Search
             </Button>
-          </div>
+          </form>
+
+          <DiscoveryFilterBar
+            className="mt-4"
+            options={filters}
+            value={activeFilter}
+            onChange={setActiveFilter}
+            aria-label="Sort creators"
+          />
         </div>
 
         {creatorsPage === undefined ? (
-          <div
-            className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4 max-w-4xl mx-auto"
+          <ul
+            className="mx-auto grid w-full grid-cols-1 gap-6 sm:grid-cols-2 xl:grid-cols-3 lg:gap-8"
             aria-busy="true"
             aria-label="Loading creators"
           >
             {[0, 1, 2].map((i) => (
-              <SurfaceCard key={i} className="p-5">
-                <Skeleton className="h-28 w-full rounded-lg" />
-              </SurfaceCard>
+              <CreatorDiscoveryCardSkeleton key={i} />
             ))}
-          </div>
+          </ul>
+        ) : filtered.length === 0 ? (
+          <p className="py-12 text-center text-base text-secondary-foreground">
+            No published creators yet. Be the first to go live.
+          </p>
         ) : (
-          <>
-            <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4 max-w-4xl mx-auto">
-              {filtered.map((creator) => {
-                const name = creator.displayName ?? creator.username;
-                const initials = name.slice(0, 2).toUpperCase();
-                return (
-                  <SurfaceCard
-                    key={creator._id}
-                    className="group p-5 transition-colors hover:border-primary/20"
-                  >
-                    <div className="flex items-start gap-3.5 mb-4">
-                      <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary text-sm font-semibold overflow-hidden">
-                        {creator.avatarUrl ? (
-                          <img src={creator.avatarUrl} alt="" className="h-full w-full object-cover" />
-                        ) : (
-                          initials
-                        )}
-                      </div>
-                      <div className="min-w-0">
-                        <h3 className="font-semibold text-ui leading-tight truncate text-foreground">
-                          {name}
-                        </h3>
-                        <p className="text-support text-muted-foreground">@{creator.username}</p>
-                      </div>
-                    </div>
-                    <p className="text-support text-muted-foreground leading-relaxed mb-5 line-clamp-2">
-                      {creator.bio || 'Sports creator on Prizelet.'}
-                    </p>
-                    <p className="text-support text-muted-foreground mb-4">
-                      {(creator.postCount ?? 0) === 1
-                        ? '1 post published'
-                        : `${creator.postCount ?? 0} posts published`}
-                      {creator.monthlyPriceCents != null
-                        ? ` · $${(creator.monthlyPriceCents / 100).toFixed(0)}/mo list`
-                        : ''}
-                    </p>
-                    <Button asChild className="w-full min-h-11">
-                      <Link to={creatorProfilePath(creator.username)}>View profile</Link>
-                    </Button>
-                  </SurfaceCard>
-                );
-              })}
-            </div>
-
-            {filtered.length === 0 && (
-              <p className="text-center text-sm text-muted-foreground py-12">
-                No published creators yet. Be the first to go live.
-              </p>
-            )}
-          </>
+          <ul className="mx-auto grid w-full grid-cols-1 gap-6 sm:grid-cols-2 xl:grid-cols-3 lg:gap-8">
+            {filtered.map((creator, index) => (
+              <CreatorDiscoveryCard
+                key={creator._id}
+                username={creator.username}
+                displayName={creator.displayName}
+                bio={creator.bio}
+                avatarUrl={creator.avatarUrl}
+                bannerUrl={creator.bannerUrl}
+                monthlyPriceCents={creator.monthlyPriceCents}
+                verificationStatus={creator.verificationStatus}
+                postCount={creator.postCount ?? 0}
+                rank={activeFilter === 'Most active' ? index + 1 : undefined}
+                activityNoun="post"
+              />
+            ))}
+          </ul>
         )}
       </div>
     </LandingSection>

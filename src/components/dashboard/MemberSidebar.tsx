@@ -38,7 +38,7 @@ const memberSections: NavSection[] = [
   {
     label: 'Main',
     items: [
-      { label: 'Feed', href: '/dashboard', icon: LayoutGrid },
+      { label: 'Dashboard', href: '/dashboard', icon: LayoutGrid },
       { label: 'Discover', href: '/dashboard/discover', icon: Compass },
       { label: 'Messages', href: '/dashboard/messages', icon: MessageSquare },
     ],
@@ -63,7 +63,7 @@ const memberSections: NavSection[] = [
 
 /** Flat list kept for demo mode; no Messages — demo has no `/demo/member/messages` route. */
 export const demoMemberItems: NavItem[] = [
-  { label: 'Feed', href: '/demo/member', icon: LayoutGrid },
+  { label: 'Dashboard', href: '/demo/member', icon: LayoutGrid },
   { label: 'Discover', href: '/demo/member/discover', icon: Compass },
   { label: 'My Bet Tracker', href: '/demo/member/results', icon: Trophy },
   { label: 'Saved', href: '/demo/member/saved', icon: Bookmark },
@@ -77,7 +77,7 @@ const demoMemberSections: NavSection[] = [
   {
     label: 'Main',
     items: [
-      { label: 'Feed', href: '/demo/member', icon: LayoutGrid },
+      { label: 'Dashboard', href: '/demo/member', icon: LayoutGrid },
       { label: 'Discover', href: '/demo/member/discover', icon: Compass },
     ],
   },

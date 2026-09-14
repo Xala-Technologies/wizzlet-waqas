@@ -1,46 +1,58 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Link } from 'react-router-dom';
-import { useQuery, useMutation } from 'convex/react';
+import { Link, useLocation } from 'react-router-dom';
+import { useMutation, useQuery } from 'convex/react';
 import { DashboardLayout } from '@/components/dashboard/DashboardLayout';
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Skeleton } from '@/components/ui/skeleton';
-import { Users, Search, Bookmark, FileText, Loader2 } from 'lucide-react';
+import {
+  ArrowRight,
+  BadgeDollarSign,
+  Loader2,
+  Search,
+  Sparkles,
+  TrendingUp,
+} from 'lucide-react';
 import { toast } from 'sonner';
 import { useAuth } from '@/contexts/AuthContext';
 import { api } from '@convex/_generated/api';
 import type { Id } from '@convex/_generated/dataModel';
-import { creatorProfilePath } from '@/lib/creatorProfilePath';
-import { segmentedItemClassName, segmentedTrackClassName } from '@/lib/segmentedControl';
+import { DiscoveryFilterBar } from '@/components/discover/DiscoveryFilterBar';
+import { DiscoverGamesPanel } from '@/components/discover/DiscoverGamesPanel';
+import {
+  CreatorDiscoveryCard,
+  CreatorDiscoveryCardSkeleton,
+} from '@/components/discover/CreatorDiscoveryCard';
 import { subscriptionGrantsContentAccess } from '../../convex/lib/contentAccess';
-import { PageHeader } from '@/components/ux/PageHeader';
-import { SurfaceCard } from '@/components/ux/SurfaceCard';
+import { Seo } from '@/components/Seo';
 
 const PAGE_SIZE = 24;
 
 interface CreatorRow {
   id: string;
-  username: string | null;
+  username: string;
   display_name: string | null;
   bio: string | null;
   avatar_url: string | null;
-  monthly_price: number | null;
+  banner_url: string | null;
+  monthly_price_cents: number | null;
+  verification_status: string | null;
   created_at: string;
   postCount: number;
 }
 
 type SortKey = 'popular' | 'newest' | 'price';
 
-const sortOptions: { key: SortKey; label: string }[] = [
-  { key: 'popular', label: 'Most active' },
-  { key: 'newest', label: 'Newest' },
-  { key: 'price', label: 'Lowest list price' },
+const sortOptions = [
+  { key: 'popular' as const, label: 'Most active', icon: TrendingUp },
+  { key: 'newest' as const, label: 'Newest', icon: Sparkles },
+  { key: 'price' as const, label: 'Lowest price', icon: BadgeDollarSign },
 ];
 
 const CustomerDiscover = () => {
   const { user } = useAuth();
+  const { hash } = useLocation();
   const [query, setQuery] = useState('');
+  const [gameSearch, setGameSearch] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
   const [sort, setSort] = useState<SortKey>('popular');
   const [cursor, setCursor] = useState<string | undefined>(undefined);
@@ -56,6 +68,12 @@ const CustomerDiscover = () => {
     setCreators([]);
   }, [debouncedSearch]);
 
+  useEffect(() => {
+    if (hash !== '#todays-games') return;
+    const el = document.getElementById('todays-games');
+    if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }, [hash]);
+
   const creatorsRaw = useQuery(api.creators.queries.listPublished, {
     limit: PAGE_SIZE,
     cursor,
@@ -67,16 +85,20 @@ const CustomerDiscover = () => {
 
   useEffect(() => {
     if (!creatorsRaw) return;
-    const page: CreatorRow[] = creatorsRaw.items.map((c) => ({
-      id: c._id,
-      username: c.username,
-      display_name: c.displayName ?? null,
-      bio: c.bio ?? null,
-      avatar_url: c.avatarUrl ?? null,
-      monthly_price: c.monthlyPriceCents != null ? c.monthlyPriceCents / 100 : null,
-      created_at: new Date(c.createdAt).toISOString(),
-      postCount: c.postCount ?? 0,
-    }));
+    const page: CreatorRow[] = creatorsRaw.items
+      .filter((c) => Boolean(c.username))
+      .map((c) => ({
+        id: c._id,
+        username: c.username,
+        display_name: c.displayName ?? null,
+        bio: c.bio ?? null,
+        avatar_url: c.avatarUrl ?? null,
+        banner_url: c.bannerUrl ?? null,
+        monthly_price_cents: c.monthlyPriceCents ?? null,
+        verification_status: c.verificationStatus ?? null,
+        created_at: new Date(c.createdAt).toISOString(),
+        postCount: c.postCount ?? 0,
+      }));
     setCreators((prev) => {
       if (!cursor) return page;
       const seen = new Set(prev.map((c) => c.id));
@@ -120,194 +142,214 @@ const CustomerDiscover = () => {
   const visible = useMemo(() => {
     return [...creators].sort((a, b) => {
       if (sort === 'newest') return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
-      if (sort === 'price') return Number(a.monthly_price ?? 0) - Number(b.monthly_price ?? 0);
+      if (sort === 'price') {
+        return (a.monthly_price_cents ?? Number.POSITIVE_INFINITY) - (b.monthly_price_cents ?? Number.POSITIVE_INFINITY);
+      }
       return b.postCount - a.postCount;
     });
   }, [creators, sort]);
 
   const canLoadMore = Boolean(creatorsRaw && !creatorsRaw.isDone && creatorsRaw.continueCursor);
 
-  const toggleBookmark = async (creatorId: string) => {
+  const toggleBookmark = async (creatorId: string, name: string) => {
     if (!user) return;
     const existing = bookmarks[creatorId];
     try {
       await toggleCreatorBookmark({ creatorId: creatorId as Id<'creators'> });
-      toast.success(existing ? 'Bookmark removed' : 'Saved to your bookmarks');
+      toast.success(existing ? `Removed ${name} from bookmarks` : `Saved ${name}`);
     } catch {
       toast.error(existing ? 'Could not remove bookmark' : 'Could not bookmark this creator');
     }
   };
 
+  const todayLabel = new Date().toLocaleDateString('en-US', {
+    weekday: 'long',
+    month: 'long',
+    day: 'numeric',
+  });
+
   return (
     <DashboardLayout type="member">
-      <PageHeader
-        title="Discover creators"
-        description="Browse published creators. List price is a featured monthly signal — product tiers are on each profile."
+      <Seo
+        title="Discover — Prizelet"
+        description="Browse published Prizelet creators and today’s matchups."
+      />
+      <header className="mb-8 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+        <div className="min-w-0 max-w-2xl">
+          <h1 className="text-3xl font-bold tracking-tight text-foreground sm:text-4xl">Discover</h1>
+          <p className="mt-2 text-base leading-relaxed text-secondary-foreground">
+            Find creators worth paying for, then check today’s games on the same page.
+          </p>
+        </div>
+        <a
+          href="#todays-games"
+          className="inline-flex shrink-0 items-center gap-1.5 text-sm font-semibold text-foreground transition-colors hover:text-primary"
+        >
+          Today’s games
+          <ArrowRight className="h-4 w-4" aria-hidden />
+        </a>
+      </header>
+
+      <form
+        className="mb-4 flex h-14 w-full items-center gap-2 rounded-full border border-border bg-card pl-4 pr-2 shadow-[var(--shadow-card)]"
+        onSubmit={(e) => {
+          e.preventDefault();
+        }}
+        role="search"
+      >
+        <Search className="h-5 w-5 shrink-0 text-foreground/45" aria-hidden />
+        <Input
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          placeholder="Search creators…"
+          className="h-full min-h-0 flex-1 border-0 bg-transparent px-2 text-base font-medium shadow-none focus-visible:ring-0 focus-visible:ring-offset-0"
+          aria-label="Search creators"
+        />
+        <Button type="submit" className="h-10 shrink-0 rounded-full px-5 font-semibold">
+          Search
+        </Button>
+      </form>
+
+      <DiscoveryFilterBar
+        className="mb-8"
+        options={sortOptions}
+        value={sort}
+        onChange={setSort}
+        aria-label="Sort creators"
       />
 
-      <div className="flex flex-col gap-3 mb-6 sm:flex-row sm:flex-wrap sm:items-center">
-        <div className="relative w-full sm:flex-1 sm:min-w-0 sm:max-w-md">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
-          <Input
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            placeholder="Search creators"
-            className="pl-9 h-11 min-h-11 text-ui w-full"
-            aria-label="Search creators"
-          />
-        </div>
-        <div
-          className={`${segmentedTrackClassName} w-full sm:w-auto`}
-          role="group"
-          aria-label="Sort creators"
+      <section className="mb-12" aria-labelledby="member-discover-creators-heading">
+        <h2
+          id="member-discover-creators-heading"
+          className="mb-6 text-2xl font-bold tracking-tight text-foreground"
         >
-          {sortOptions.map((o) => (
-            <button
-              key={o.key}
-              type="button"
-              onClick={() => setSort(o.key)}
-              aria-pressed={sort === o.key}
-              className={segmentedItemClassName(sort === o.key)}
+          Creators
+          {!loading && visible.length > 0 ? (
+            <span className="ml-2 text-base font-medium text-secondary-foreground">
+              · {visible.length} shown
+            </span>
+          ) : null}
+        </h2>
+
+        {loading ? (
+          <ul
+            className="grid grid-cols-1 gap-6 sm:grid-cols-2 xl:grid-cols-3 lg:gap-8"
+            aria-busy="true"
+            aria-label="Loading creators"
+          >
+            {[0, 1, 2, 3, 4, 5].map((i) => (
+              <CreatorDiscoveryCardSkeleton key={i} />
+            ))}
+          </ul>
+        ) : visible.length === 0 ? (
+          <div className="rounded-2xl border border-dashed border-border bg-card px-6 py-16 text-center">
+            <p className="text-lg font-semibold text-foreground">
+              {query.trim() ? `No creators match “${query.trim()}”.` : 'No creators found'}
+            </p>
+            <p className="mt-2 text-base text-secondary-foreground">
+              {query.trim()
+                ? 'Try a different search term.'
+                : 'New creators appear here as soon as they publish.'}
+            </p>
+            <Button asChild variant="outline" className="mt-6">
+              <Link to="/dashboard">Back to Dashboard</Link>
+            </Button>
+          </div>
+        ) : (
+          <>
+            <ul className="grid grid-cols-1 gap-6 sm:grid-cols-2 xl:grid-cols-3 lg:gap-8">
+              {visible.map((c, index) => (
+                <CreatorDiscoveryCard
+                  key={c.id}
+                  username={c.username}
+                  displayName={c.display_name}
+                  bio={c.bio}
+                  avatarUrl={c.avatar_url}
+                  bannerUrl={c.banner_url}
+                  monthlyPriceCents={c.monthly_price_cents}
+                  verificationStatus={c.verification_status}
+                  postCount={c.postCount}
+                  rank={sort === 'popular' ? index + 1 : undefined}
+                  subscribed={activeCreatorIds.has(c.id)}
+                  bookmarked={Boolean(bookmarks[c.id])}
+                  onBookmarkClick={
+                    user
+                      ? (e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          void toggleBookmark(c.id, c.display_name || c.username);
+                        }
+                      : undefined
+                  }
+                  className="animate-fade-in-up opacity-0"
+                  style={{
+                    animationDelay: `${Math.min(index, 8) * 40}ms`,
+                    animationFillMode: 'forwards',
+                  }}
+                />
+              ))}
+            </ul>
+            {canLoadMore && (
+              <div className="flex justify-center pt-8">
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="min-h-11"
+                  disabled={creatorsRaw === undefined}
+                  onClick={() => {
+                    if (creatorsRaw?.continueCursor) setCursor(creatorsRaw.continueCursor);
+                  }}
+                >
+                  {creatorsRaw === undefined ? (
+                    <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
+                  ) : null}
+                  Load more
+                </Button>
+              </div>
+            )}
+          </>
+        )}
+      </section>
+
+      <section
+        id="todays-games"
+        className="scroll-mt-8 border-t border-border pt-10"
+        aria-labelledby="member-discover-games-heading"
+      >
+        <div className="mb-8 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+          <div className="min-w-0 max-w-2xl">
+            <h2
+              id="member-discover-games-heading"
+              className="text-2xl font-bold tracking-tight text-foreground sm:text-3xl"
             >
-              {o.label}
-            </button>
-          ))}
+              Today’s Games
+            </h2>
+            <p className="mt-2 text-base text-secondary-foreground">{todayLabel}</p>
+          </div>
         </div>
-      </div>
 
-      <h2 className="text-support font-medium text-muted-foreground mb-3">
-        Published creators
-        {!loading && visible.length > 0 ? (
-          <span className="text-muted-foreground/80"> · {visible.length} shown</span>
-        ) : null}
-      </h2>
+        <form
+          className="mb-4 flex h-14 w-full items-center gap-2 rounded-full border border-border bg-card pl-4 pr-2 shadow-[var(--shadow-card)]"
+          onSubmit={(e) => {
+            e.preventDefault();
+          }}
+          role="search"
+        >
+          <Search className="h-5 w-5 shrink-0 text-foreground/45" aria-hidden />
+          <Input
+            value={gameSearch}
+            onChange={(e) => setGameSearch(e.target.value)}
+            placeholder="Search teams, leagues…"
+            className="h-full min-h-0 flex-1 border-0 bg-transparent px-2 text-base font-medium shadow-none focus-visible:ring-0 focus-visible:ring-offset-0"
+            aria-label="Search games"
+          />
+          <Button type="submit" className="h-10 shrink-0 rounded-full px-5 font-semibold">
+            Search
+          </Button>
+        </form>
 
-      {loading ? (
-        <div className="space-y-3" aria-busy="true" aria-label="Loading creators">
-          {[0, 1, 2].map((i) => (
-            <SurfaceCard key={i} className="p-4">
-              <Skeleton className="h-20 w-full rounded-lg" />
-            </SurfaceCard>
-          ))}
-        </div>
-      ) : visible.length === 0 ? (
-        <SurfaceCard className="p-10 text-center">
-          <Users className="h-10 w-10 text-muted-foreground mx-auto mb-4" />
-          <h3 className="text-ui font-semibold text-foreground mb-2">No creators found</h3>
-          <p className="text-support text-muted-foreground max-w-sm mx-auto">
-            {query.trim()
-              ? 'Try a different search term.'
-              : 'New creators appear here as soon as they publish.'}
-          </p>
-        </SurfaceCard>
-      ) : (
-        <div className="space-y-3">
-          {visible.map((c, index) => {
-            const name = c.display_name || c.username || 'Creator';
-            const bookmarked = Boolean(bookmarks[c.id]);
-            const hasActiveAccess = activeCreatorIds.has(c.id);
-            const listPrice =
-              c.monthly_price != null ? `$${Number(c.monthly_price).toFixed(2)}/mo` : '—';
-            return (
-              <SurfaceCard
-                key={c.id}
-                className="p-4 sm:p-5 transition-colors hover:border-primary/20"
-              >
-                <div className="flex flex-col gap-4 sm:flex-row sm:items-start">
-                  <div className="flex items-center gap-3 sm:flex-col sm:items-center sm:gap-1 shrink-0">
-                    <span className="text-support text-muted-foreground font-medium">#{index + 1}</span>
-                    {c.avatar_url ? (
-                      <img
-                        src={c.avatar_url}
-                        alt=""
-                        className="h-12 w-12 rounded-full object-cover"
-                      />
-                    ) : (
-                      <div className="h-12 w-12 rounded-full bg-muted flex items-center justify-center">
-                        <span className="text-ui font-bold text-muted-foreground">
-                          {name[0]?.toUpperCase()}
-                        </span>
-                      </div>
-                    )}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex flex-wrap items-center gap-2 mb-0.5">
-                      <p className="text-ui font-semibold text-foreground truncate">{name}</p>
-                      {hasActiveAccess && (
-                        <Badge
-                          variant="outline"
-                          className="text-support bg-emerald-500/10 text-emerald-600 border-emerald-500/20"
-                        >
-                          Active access
-                        </Badge>
-                      )}
-                    </div>
-                    {c.username && (
-                      <p className="text-support text-muted-foreground mb-2">@{c.username}</p>
-                    )}
-                    <p className="text-support text-muted-foreground line-clamp-2 mb-2">
-                      {c.bio || 'No bio yet.'}
-                    </p>
-                    <span className="flex items-center gap-1 text-support text-muted-foreground">
-                      <FileText className="h-3.5 w-3.5" /> {c.postCount} posts published
-                    </span>
-                  </div>
-                  <div className="flex flex-row sm:flex-col items-center sm:items-end justify-between sm:justify-start gap-2 shrink-0">
-                    <span className="text-ui font-bold text-foreground">{listPrice}</span>
-                    <div className="flex flex-wrap items-center justify-end gap-2">
-                      {user && (
-                        <Button
-                          type="button"
-                          variant="outline"
-                          className={`min-h-11 min-w-11 px-3 ${bookmarked ? 'text-primary' : ''}`}
-                          aria-label={
-                            bookmarked ? `Remove ${name} from bookmarks` : `Bookmark ${name}`
-                          }
-                          onClick={() => void toggleBookmark(c.id)}
-                        >
-                          <Bookmark className={`h-3.5 w-3.5 ${bookmarked ? 'fill-current' : ''}`} />
-                        </Button>
-                      )}
-                      {hasActiveAccess ? (
-                        <>
-                          <Button variant="outline" className="min-h-11" asChild>
-                            <Link to="/dashboard">View posts</Link>
-                          </Button>
-                          <Button className="min-h-11" asChild>
-                            <Link to="/dashboard/subscriptions-billing">Open in Subscriptions</Link>
-                          </Button>
-                        </>
-                      ) : c.username ? (
-                        <Button className="min-h-11" asChild>
-                          <Link to={creatorProfilePath(c.username)}>View profile</Link>
-                        </Button>
-                      ) : null}
-                    </div>
-                  </div>
-                </div>
-              </SurfaceCard>
-            );
-          })}
-          {canLoadMore && (
-            <div className="flex justify-center pt-2">
-              <Button
-                type="button"
-                variant="outline"
-                className="min-h-11"
-                disabled={creatorsRaw === undefined}
-                onClick={() => {
-                  if (creatorsRaw?.continueCursor) setCursor(creatorsRaw.continueCursor);
-                }}
-              >
-                {creatorsRaw === undefined ? (
-                  <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
-                ) : null}
-                Load more
-              </Button>
-            </div>
-          )}
-        </div>
-      )}
+        <DiscoverGamesPanel search={gameSearch} />
+      </section>
     </DashboardLayout>
   );
 };

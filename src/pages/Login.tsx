@@ -9,7 +9,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { AuthShell } from '@/components/auth/AuthShell';
 import { SocialAuthSection } from '@/components/auth/SocialAuthButtons';
 import { ADMIN_BOOTSTRAP } from '@/lib/adminBootstrap';
-import { useConvexAuthReady, waitForAuthenticated, withAuthRetry } from '@/lib/authSession';
+import { useConvexAuthReady, waitForAuthenticated, withAuthRetry, isAuthOriginAligned } from '@/lib/authSession';
 import { isAppRole, type AppRole } from '@/lib/roles';
 import {
   clearStoredReturnTo,
@@ -165,6 +165,23 @@ const Login = () => {
       subtitle="Sign in to your account"
       seoTitle="Sign in — Prizelet"
       seoDescription="Sign in to your Prizelet account to manage picks, subscriptions and payouts."
+      banner={
+        isDevBuild && !isAuthOriginAligned() ? (
+          <p
+            role="status"
+            className="mt-4 rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-left text-sm text-foreground"
+          >
+            You’re on {window.location.origin}. OAuth requires{' '}
+            <a
+              className="font-semibold underline underline-offset-2"
+              href={import.meta.env.VITE_SITE_URL ?? 'http://127.0.0.1:8080/login'}
+            >
+              {import.meta.env.VITE_SITE_URL ?? 'http://127.0.0.1:8080'}
+            </a>
+            .
+          </p>
+        ) : null
+      }
       footer={
         <p className="text-center text-support text-muted-foreground">
           Don&apos;t have an account?{' '}

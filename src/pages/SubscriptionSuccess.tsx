@@ -53,7 +53,7 @@ const SubscriptionSuccess = () => {
             <Link to="/dashboard/subscriptions-billing">Go to Subscriptions</Link>
           </Button>
           <Button variant="outline" size="lg" disabled={confirming} asChild>
-            <Link to="/dashboard">View Feed</Link>
+            <Link to="/dashboard">View Dashboard</Link>
           </Button>
         </div>
         {creatorUsername ? (

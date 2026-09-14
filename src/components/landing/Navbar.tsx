@@ -11,7 +11,6 @@ import { api } from '@convex/_generated/api';
 
 const navLinks = [
   { label: 'Home', path: '/' },
-  { label: 'Today\'s Events', path: '/todays-events' },
   { label: 'Discover', path: '/discover' },
   { label: 'Creators', path: '/creators' },
 ];
@@ -52,7 +51,10 @@ export function Navbar() {
         {/* CENTER: Nav links */}
         <div className="hidden lg:flex items-center gap-1">
           {navLinks.map(({ label, path }) => {
-            const isActive = pathname === path;
+            const isActive =
+              path === '/'
+                ? pathname === '/'
+                : pathname === path || pathname.startsWith(`${path}/`);
             return (
               <Link
                 key={path}
@@ -136,7 +138,10 @@ export function Navbar() {
           className="lg:hidden border-t border-border bg-card px-6 pb-[max(1.5rem,env(safe-area-inset-bottom))] pt-4 space-y-1 animate-fade-in"
         >
           {navLinks.map(({ label, path }) => {
-            const isActive = pathname === path;
+            const isActive =
+              path === '/'
+                ? pathname === '/'
+                : pathname === path || pathname.startsWith(`${path}/`);
             return (
               <Link
                 key={path}

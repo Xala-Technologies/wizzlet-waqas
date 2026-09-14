@@ -129,7 +129,7 @@ const CustomerActivity = () => {
             engagement we already recorded — we do not invent activity.
           </p>
           <Button className="min-h-11" asChild>
-            <Link to="/dashboard">Go to Feed</Link>
+            <Link to="/dashboard">Go to Dashboard</Link>
           </Button>
         </div>
       ) : (

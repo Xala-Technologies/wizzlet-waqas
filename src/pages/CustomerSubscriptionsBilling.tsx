@@ -349,7 +349,7 @@ const CustomerSubscriptionsBilling = () => {
               }
               secondary={
                 <Button variant="outline" className="min-h-11 px-6" asChild>
-                  <Link to="/dashboard">Go to Feed</Link>
+                  <Link to="/dashboard">Go to Dashboard</Link>
                 </Button>
               }
             />

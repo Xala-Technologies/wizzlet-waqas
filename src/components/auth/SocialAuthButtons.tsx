@@ -31,13 +31,17 @@ export function SocialAuthButtons({
     setPending(provider);
     try {
       storeReturnTo(returnTo);
-      // Must match Convex SITE_URL origin (dev deploy uses http://127.0.0.1:8080 locally).
+      // Must match Convex SITE_URL (see VITE_SITE_URL) — not the random Vite preview port.
       await signIn(provider, { redirectTo: authCallbackUrl(redirectTo) });
     } catch (err) {
+      const raw = err instanceof Error ? err.message : String(err);
+      const siteMismatch = /Invalid `redirectTo`|SITE_URL/i.test(raw);
       toast.error(
-        err instanceof Error
-          ? err.message
-          : `${provider === 'twitter' ? 'X' : 'Discord'} sign-in is not configured yet.`,
+        siteMismatch
+          ? `Auth origin mismatch. Open the app at ${import.meta.env.VITE_SITE_URL ?? 'http://127.0.0.1:8080'} (Convex SITE_URL), not a preview port.`
+          : err instanceof Error
+            ? err.message
+            : `${provider === 'twitter' ? 'X' : 'Discord'} sign-in is not configured yet.`,
       );
       setPending(null);
     }

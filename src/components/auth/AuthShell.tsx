@@ -20,7 +20,7 @@ interface AuthShellProps {
 
 /**
  * Shared auth layout — solid Prizelet surfaces, one primary task.
- * Page = muted; panel = card + border. No extra brand colors or gradients.
+ * Page = background; panel = card + border. No gray canvas wash.
  */
 export function AuthShell({
   title,
@@ -37,7 +37,7 @@ export function AuthShell({
   return (
     <main
       id="main-content"
-      className="min-h-screen flex items-center justify-center bg-muted px-4 py-12 sm:py-16"
+      className="min-h-screen flex items-center justify-center bg-background px-4 py-12 sm:py-16"
     >
       <Seo title={seoTitle} description={seoDescription} noindex />
       <div className={cn('w-full', width === 'sm' ? 'max-w-[400px]' : 'max-w-lg')}>

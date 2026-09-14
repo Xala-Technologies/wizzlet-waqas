@@ -47,7 +47,7 @@ const SelectRole = () => {
 
   if (loading || roleLoading) {
     return (
-      <main id="main-content" className="min-h-screen flex items-center justify-center px-4 bg-muted">
+      <main id="main-content" className="min-h-screen flex items-center justify-center px-4 bg-background">
         <Loader2 className="h-6 w-6 animate-spin text-primary" />
       </main>
     );

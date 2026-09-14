@@ -67,12 +67,31 @@ export function useConvexAuthReady() {
 
 /**
  * OAuth return URL for Convex Auth.
- * Must be under the Convex deployment `SITE_URL` origin (exact host).
- * Local: set `SITE_URL=http://127.0.0.1:8080` on the **dev** deployment.
- * Production: `SITE_URL=https://www.prizelet.com` on the **prod** deployment.
+ * Must match the Convex deployment `SITE_URL` origin exactly.
+ *
+ * Prefer `VITE_SITE_URL` so preview servers on random ports (5182, etc.) still
+ * send a valid redirectTo. Local: http://127.0.0.1:8080 — never invent ports.
  */
 export function authCallbackUrl(path = "/auth/callback"): string {
-  if (typeof window === "undefined") return path;
   const normalized = path.startsWith("/") ? path : `/${path}`;
+  const configured = (import.meta.env.VITE_SITE_URL as string | undefined)?.replace(
+    /\/$/,
+    "",
+  );
+  if (configured) {
+    return `${configured}${normalized}`;
+  }
+  if (typeof window === "undefined") return path;
   return `${window.location.origin}${normalized}`;
+}
+
+/** True when the browser origin matches configured auth SITE_URL (local hygiene). */
+export function isAuthOriginAligned(): boolean {
+  if (typeof window === "undefined") return true;
+  const configured = (import.meta.env.VITE_SITE_URL as string | undefined)?.replace(
+    /\/$/,
+    "",
+  );
+  if (!configured) return true;
+  return window.location.origin === configured;
 }
