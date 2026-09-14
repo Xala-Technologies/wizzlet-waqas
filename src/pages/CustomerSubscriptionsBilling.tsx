@@ -5,7 +5,17 @@ import { DashboardLayout } from '@/components/dashboard/DashboardLayout';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Crown, CreditCard, FileText, ExternalLink, Loader2, MessageSquare, Compass } from 'lucide-react';
+import { Skeleton } from '@/components/ui/skeleton';
+import {
+  Crown,
+  CreditCard,
+  FileText,
+  ExternalLink,
+  Loader2,
+  MessageSquare,
+  Compass,
+  ChevronRight,
+} from 'lucide-react';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -16,12 +26,15 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import { format } from 'date-fns';
+import { format, formatDistanceToNowStrict } from 'date-fns';
 import { useAppUser } from '@/hooks/useAppUser';
 import { api } from '@convex/_generated/api';
 import { cancelSubscription, openCustomerPortal } from '@/lib/stripe';
 import { describeSubscriptionAccess } from '@/lib/billingAccess';
+import { creatorProfilePath } from '@/lib/creatorProfilePath';
 import { subscriptionGrantsContentAccess } from '../../convex/lib/contentAccess';
+import { segmentedItemClassName, segmentedTrackClassName } from '@/lib/segmentedControl';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface SubscriptionRow {
   id: string;
@@ -35,6 +48,7 @@ interface SubscriptionRow {
     id: string;
     username: string | null;
     display_name: string | null;
+    avatar_url: string | null;
     messaging_enabled: boolean | null;
   } | null;
 }
@@ -103,16 +117,19 @@ function BillingEmpty({
 
 const CustomerSubscriptionsBilling = () => {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const { appUserId, loading: userLoading } = useAppUser();
   const subsRaw = useQuery(api.subscriptions.mutations.mySubscriptionsDetailed, appUserId ? {} : 'skip');
   const eventsRaw = useQuery(api.subscriptions.mutations.myPaymentEvents, appUserId ? {} : 'skip');
+  const feedRaw = useQuery(api.posts.queries.memberFeed, user ? {} : 'skip');
+  const discoverRaw = useQuery(api.creators.queries.listPublished, user ? { limit: 24 } : 'skip');
   const [portalLoading, setPortalLoading] = useState(false);
   const [cancellingId, setCancellingId] = useState<string | null>(null);
   const [cancelTarget, setCancelTarget] = useState<{ id: string; name: string } | null>(null);
   const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'cancelled'>('all');
 
-  const loading =
-    userLoading || (appUserId ? subsRaw === undefined || eventsRaw === undefined : false);
+  const loading = userLoading || (appUserId ? subsRaw === undefined || eventsRaw === undefined : false);
+  const feedLoading = Boolean(user) && feedRaw === undefined;
 
   const subs: SubscriptionRow[] = useMemo(
     () =>
@@ -128,6 +145,7 @@ const CustomerSubscriptionsBilling = () => {
           id: s.creator._id,
           username: s.creator.username,
           display_name: s.creator.displayName ?? null,
+          avatar_url: s.creator.avatarUrl ?? null,
           messaging_enabled: s.creator.messagingEnabled,
         },
       })),
@@ -168,6 +186,30 @@ const CustomerSubscriptionsBilling = () => {
   }).length;
   const filtersActive = statusFilter !== 'all';
 
+  const recentByCreator = useMemo(() => {
+    const map = new Map<string, Array<{ id: string; title: string; createdAt: number }>>();
+    for (const post of feedRaw ?? []) {
+      const key = post.creator._id;
+      const list = map.get(key) ?? [];
+      if (list.length >= 3) continue;
+      list.push({ id: post._id, title: post.title, createdAt: post.createdAt });
+      map.set(key, list);
+    }
+    return map;
+  }, [feedRaw]);
+
+  const subscribedCreatorIds = useMemo(
+    () => new Set(subs.map((s) => s.creator?.id).filter(Boolean) as string[]),
+    [subs],
+  );
+
+  const suggestedCreators = useMemo(() => {
+    return (discoverRaw?.items ?? [])
+      .filter((c) => !subscribedCreatorIds.has(c._id))
+      .sort((a, b) => (b.postCount ?? 0) - (a.postCount ?? 0))
+      .slice(0, 4);
+  }, [discoverRaw, subscribedCreatorIds]);
+
   const manageBilling = async () => {
     if (portalLoading) return;
     setPortalLoading(true);
@@ -203,10 +245,19 @@ const CustomerSubscriptionsBilling = () => {
     <DashboardLayout type="member">
       <header className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div className="min-w-0">
-          <h1 className="text-heading font-bold text-foreground">Subscriptions &amp; Billing</h1>
+          <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
+            <h1 className="text-heading font-bold text-foreground">Subscriptions</h1>
+            <button
+              type="button"
+              className="text-support font-medium text-primary hover:underline min-h-11 inline-flex items-center"
+              onClick={() => void manageBilling()}
+              disabled={portalLoading}
+            >
+              Manage billing →
+            </button>
+          </div>
           <p className="text-support text-muted-foreground mt-0.5">
-            Manage subscriptions, charges, and payment methods. Access and billing status are shown
-            separately when they differ.
+            See what you get from each creator. Charges and payment methods live in the tabs below.
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2 shrink-0">
@@ -216,15 +267,8 @@ const CustomerSubscriptionsBilling = () => {
               <p className="text-ui font-bold text-foreground mt-1">{currency(listPriceTotal)}</p>
             </div>
           )}
-          <Button
-            type="button"
-            variant="outline"
-            className="min-h-11"
-            onClick={() => void manageBilling()}
-            disabled={portalLoading}
-          >
-            {portalLoading ? <Loader2 className="mr-2 h-3.5 w-3.5 animate-spin" /> : null}
-            Billing portal
+          <Button type="button" variant="outline" className="min-h-11" asChild>
+            <Link to="/dashboard/discover">Find creators</Link>
           </Button>
         </div>
       </header>
@@ -252,15 +296,15 @@ const CustomerSubscriptionsBilling = () => {
       )}
 
       <Tabs defaultValue="subscriptions" className="space-y-4">
-        <TabsList>
-          <TabsTrigger value="subscriptions">
-            Subscriptions ({subs.length})
+        <TabsList className="flex h-auto w-full flex-wrap gap-1 sm:w-auto">
+          <TabsTrigger value="subscriptions" className="min-h-11">
+            What you get ({subs.length})
           </TabsTrigger>
-          <TabsTrigger value="billing">
+          <TabsTrigger value="billing" className="min-h-11">
             Charges ({(eventsRaw ?? []).length})
           </TabsTrigger>
-          <TabsTrigger value="payment">
-            Payment Method
+          <TabsTrigger value="payment" className="min-h-11">
+            Payment
           </TabsTrigger>
         </TabsList>
 
@@ -269,7 +313,7 @@ const CustomerSubscriptionsBilling = () => {
             <BillingEmpty
               icon={Crown}
               headline="No subscriptions yet"
-              support="Subscribe to creators for premium picks and messaging access. Your active access and billing status stay honest here — even when they differ."
+              support="When you subscribe, recent posts from each creator show up here so you can see what you are paying for."
               expects={[
                 {
                   icon: Compass,
@@ -283,8 +327,8 @@ const CustomerSubscriptionsBilling = () => {
                 },
                 {
                   icon: CreditCard,
-                  label: 'Manage anytime',
-                  detail: 'Cancel, fix past-due, or update cards from this page',
+                  label: 'Manage billing separately',
+                  detail: 'Charges and cards stay in the other tabs and Stripe portal',
                 },
               ]}
               primary={
@@ -299,144 +343,284 @@ const CustomerSubscriptionsBilling = () => {
               }
             />
           ) : (
-            <div className="space-y-3">
-              <div className="flex flex-wrap gap-2">
-                {(
-                  [
-                    { key: 'all', label: 'All' },
-                    { key: 'active', label: 'Active' },
-                    { key: 'cancelled', label: 'Cancelled' },
-                  ] as const
-                ).map((opt) => (
-                  <Button
-                    key={opt.key}
-                    type="button"
-                    variant={statusFilter === opt.key ? 'default' : 'outline'}
-                    className="min-h-11"
-                    onClick={() => setStatusFilter(opt.key)}
-                  >
-                    {opt.label}
-                  </Button>
-                ))}
-              </div>
-              {filtered.length === 0 && filtersActive ? (
-                <div className="rounded-xl border border-border bg-card p-10 text-center">
-                  <h3 className="text-ui font-semibold text-foreground mb-2">
-                    No subscriptions in this filter
-                  </h3>
-                  <p className="text-support text-muted-foreground mb-5 max-w-sm mx-auto">
-                    Active means content access right now. Cancelled / no-access includes ended and
-                    past-due paused access — not only voluntary cancels.
-                  </p>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    className="min-h-11"
-                    onClick={() => setStatusFilter('all')}
-                  >
-                    Show all
-                  </Button>
-                </div>
-              ) : (
-                filtered.map((sub) => {
-                  const name = sub.creator?.display_name || sub.creator?.username || 'Creator';
-                  const access = describeSubscriptionAccess(
-                    {
-                      status: sub.status,
-                      billingStatus: sub.billingStatus,
-                      currentPeriodEnd: sub.currentPeriodEnd,
-                      cancelAtPeriodEnd: sub.cancelAtPeriodEnd,
-                    },
-                    now,
-                  );
-                  const toneClass =
-                    access.tone === 'ok'
-                      ? 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20'
-                      : access.tone === 'warn'
-                        ? 'bg-amber-500/10 text-amber-600 border-amber-500/20'
-                        : access.tone === 'danger'
-                          ? 'bg-destructive/10 text-destructive border-destructive/20'
-                          : 'bg-muted text-muted-foreground';
-                  return (
-                    <div
-                      key={sub.id}
-                      className="rounded-xl border border-border bg-card p-4 flex flex-wrap items-center gap-3"
+            <div className="flex flex-col gap-6 lg:grid lg:grid-cols-[minmax(0,1fr)_minmax(16rem,20rem)] lg:items-start">
+              <div className="order-1 min-w-0 space-y-3">
+                <div
+                  className={`${segmentedTrackClassName} w-full sm:w-auto`}
+                  role="group"
+                  aria-label="Filter subscriptions"
+                >
+                  {(
+                    [
+                      { key: 'all', label: 'All' },
+                      { key: 'active', label: 'Active' },
+                      { key: 'cancelled', label: 'No access' },
+                    ] as const
+                  ).map((opt) => (
+                    <button
+                      key={opt.key}
+                      type="button"
+                      onClick={() => setStatusFilter(opt.key)}
+                      aria-pressed={statusFilter === opt.key}
+                      className={segmentedItemClassName(statusFilter === opt.key)}
                     >
-                      <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10 shrink-0">
-                        <Crown className="h-4 w-4 text-primary" />
+                      {opt.label}
+                    </button>
+                  ))}
+                </div>
+                {filtered.length === 0 && filtersActive ? (
+                  <div className="rounded-xl border border-border bg-card p-10 text-center">
+                    <h3 className="mb-2 text-ui font-semibold text-foreground">
+                      No subscriptions in this filter
+                    </h3>
+                    <p className="mx-auto mb-5 max-w-sm text-support text-muted-foreground">
+                      Active means content access right now. No access includes ended and past-due
+                      paused access — not only voluntary cancels.
+                    </p>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      className="min-h-11"
+                      onClick={() => setStatusFilter('all')}
+                    >
+                      Show all
+                    </Button>
+                  </div>
+                ) : (
+                  filtered.map((sub) => {
+                    const name = sub.creator?.display_name || sub.creator?.username || 'Creator';
+                    const access = describeSubscriptionAccess(
+                      {
+                        status: sub.status,
+                        billingStatus: sub.billingStatus,
+                        currentPeriodEnd: sub.currentPeriodEnd,
+                        cancelAtPeriodEnd: sub.cancelAtPeriodEnd,
+                      },
+                      now,
+                    );
+                    const toneClass =
+                      access.tone === 'ok'
+                        ? 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20'
+                        : access.tone === 'warn'
+                          ? 'bg-amber-500/10 text-amber-600 border-amber-500/20'
+                          : access.tone === 'danger'
+                            ? 'bg-destructive/10 text-destructive border-destructive/20'
+                            : 'bg-muted text-muted-foreground';
+                    const recent = sub.creator ? recentByCreator.get(sub.creator.id) ?? [] : [];
+                    const profileHref = sub.creator?.username
+                      ? creatorProfilePath(sub.creator.username)
+                      : null;
+                    return (
+                      <div
+                        key={sub.id}
+                        className="overflow-hidden rounded-xl border border-border bg-card"
+                      >
+                        <div className="flex flex-wrap items-center gap-3 border-b border-border p-4">
+                          {profileHref ? (
+                            <Link
+                              to={profileHref}
+                              className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-full bg-primary/10"
+                              aria-label={`${name} profile`}
+                            >
+                              {sub.creator?.avatar_url ? (
+                                <img
+                                  src={sub.creator.avatar_url}
+                                  alt=""
+                                  className="h-full w-full object-cover"
+                                />
+                              ) : (
+                                <Crown className="h-4 w-4 text-primary" />
+                              )}
+                            </Link>
+                          ) : (
+                            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary/10">
+                              <Crown className="h-4 w-4 text-primary" />
+                            </div>
+                          )}
+                          <div className="min-w-0 flex-1">
+                            {profileHref ? (
+                              <Link
+                                to={profileHref}
+                                className="block truncate text-ui font-medium text-foreground hover:underline"
+                              >
+                                {name}
+                              </Link>
+                            ) : (
+                              <p className="truncate text-ui font-medium text-foreground">{name}</p>
+                            )}
+                            <p className="text-support text-muted-foreground">
+                              {currency(Number(sub.amount) || 0)}
+                              {' · '}
+                              {access.detail}
+                            </p>
+                          </div>
+                          <Badge variant="outline" className={`text-support ${toneClass}`}>
+                            {access.badge.toUpperCase()}
+                          </Badge>
+                        </div>
+
+                        {access.hasAccess ? (
+                          <div className="divide-y divide-border">
+                            {feedLoading ? (
+                              <div className="space-y-3 p-4" aria-busy="true" aria-label="Loading posts">
+                                {[0, 1, 2].map((i) => (
+                                  <Skeleton key={i} className="h-10 w-full rounded-lg" />
+                                ))}
+                              </div>
+                            ) : recent.length === 0 ? (
+                              <p className="px-4 py-6 text-support text-muted-foreground">
+                                No posts yet from this creator. New premium content will appear here
+                                and on your Feed.
+                              </p>
+                            ) : (
+                              recent.map((post) => (
+                                <Link
+                                  key={post.id}
+                                  to="/dashboard"
+                                  className="flex min-h-11 items-center gap-3 px-4 py-3 text-left transition-colors hover:bg-muted/40"
+                                >
+                                  <span className="min-w-0 flex-1 truncate text-ui text-foreground">
+                                    {post.title}
+                                  </span>
+                                  <span className="shrink-0 text-support text-muted-foreground">
+                                    {formatDistanceToNowStrict(new Date(post.createdAt), {
+                                      addSuffix: true,
+                                    })}
+                                  </span>
+                                  <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" />
+                                </Link>
+                              ))
+                            )}
+                            <div className="p-3">
+                              <Button variant="secondary" className="min-h-11 w-full" asChild>
+                                <Link to="/dashboard">View posts →</Link>
+                              </Button>
+                            </div>
+                          </div>
+                        ) : (
+                          <p className="px-4 py-5 text-support text-muted-foreground">
+                            Premium posts stay locked until access is restored.
+                          </p>
+                        )}
+
+                        <div className="flex flex-col gap-2 border-t border-border p-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
+                          <div className="flex flex-wrap items-center gap-2">
+                            {access.hasAccess &&
+                              sub.creator &&
+                              (sub.creator.messaging_enabled ?? true) && (
+                                <Button
+                                  type="button"
+                                  variant="outline"
+                                  className="min-h-11 gap-1.5"
+                                  onClick={() =>
+                                    navigate(`/dashboard/messages?creatorId=${sub.creator!.id}`)
+                                  }
+                                >
+                                  <MessageSquare className="h-3.5 w-3.5" /> Message
+                                </Button>
+                              )}
+                            {profileHref && (
+                              <Button type="button" variant="outline" className="min-h-11 gap-1.5" asChild>
+                                <Link to={profileHref}>
+                                  <ExternalLink className="h-3.5 w-3.5" /> Profile
+                                </Link>
+                              </Button>
+                            )}
+                            {!access.hasAccess &&
+                              (access.tone === 'danger' || access.tone === 'warn') && (
+                                <Button
+                                  type="button"
+                                  variant="outline"
+                                  className="min-h-11 gap-1.5"
+                                  onClick={() => void manageBilling()}
+                                  disabled={portalLoading}
+                                >
+                                  <CreditCard className="h-3.5 w-3.5" /> Fix billing
+                                </Button>
+                              )}
+                          </div>
+                          {access.hasAccess && sub.creator && (
+                            <Button
+                              type="button"
+                              variant="outline"
+                              className="min-h-11 text-destructive border-destructive/30 hover:bg-destructive/10"
+                              disabled={cancellingId === sub.creator.id}
+                              onClick={() => setCancelTarget({ id: sub.creator!.id, name })}
+                            >
+                              {cancellingId === sub.creator.id ? (
+                                <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
+                              ) : null}
+                              Cancel access
+                            </Button>
+                          )}
+                        </div>
                       </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-ui font-medium text-foreground truncate">{name}</p>
-                        <p className="text-support text-muted-foreground">
-                          Started {format(new Date(sub.created_at), 'MMM d, yyyy')}
-                          {' · '}
-                          {access.detail}
+                    );
+                  })
+                )}
+                <p className="pt-1 text-support text-muted-foreground">
+                  Cancel ends Stripe billing and premium access for that creator immediately after
+                  confirmation. Past-due subscriptions stay listed but block access until payment
+                  succeeds. Use Manage billing for cards and invoices.
+                </p>
+              </div>
+
+              <aside className="order-2 space-y-3 lg:sticky lg:top-4">
+                <div className="flex items-center justify-between gap-2">
+                  <h2 className="text-ui font-semibold text-foreground">Suggested for you</h2>
+                  <Link
+                    to="/dashboard/discover"
+                    className="inline-flex min-h-11 items-center text-support font-medium text-primary hover:underline"
+                  >
+                    Browse all
+                  </Link>
+                </div>
+                {discoverRaw === undefined ? (
+                  <div className="flex justify-center rounded-xl border border-border bg-card p-6">
+                    <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+                  </div>
+                ) : suggestedCreators.length === 0 ? (
+                  <div className="rounded-xl border border-border bg-card p-5">
+                    <p className="text-support text-muted-foreground">
+                      You’re already subscribed to every published creator we can suggest right now.
+                    </p>
+                  </div>
+                ) : (
+                  suggestedCreators.map((c) => {
+                    const name = c.displayName ?? c.username;
+                    return (
+                      <div
+                        key={c._id}
+                        className="space-y-3 rounded-xl border border-border bg-card p-4"
+                      >
+                        <div className="flex min-w-0 items-start gap-3">
+                          <div className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-full bg-muted text-sm font-semibold text-muted-foreground">
+                            {c.avatarUrl ? (
+                              <img src={c.avatarUrl} alt="" className="h-full w-full object-cover" />
+                            ) : (
+                              name[0]?.toUpperCase()
+                            )}
+                          </div>
+                          <div className="min-w-0">
+                            <p className="truncate text-ui font-medium text-foreground">{name}</p>
+                            <p className="truncate text-support text-muted-foreground">
+                              @{c.username}
+                              {' · '}
+                              {c.postCount} posts
+                            </p>
+                          </div>
+                        </div>
+                        <p className="line-clamp-2 text-support text-muted-foreground">
+                          {c.bio || 'Published creator on Prizelet.'}
                         </p>
+                        <Button className="min-h-11 w-full" variant="outline" asChild>
+                          <Link to={creatorProfilePath(c.username)}>View profile</Link>
+                        </Button>
                       </div>
-                      <p className="text-ui font-semibold text-foreground">
-                        {currency(Number(sub.amount) || 0)}
-                      </p>
-                      <Badge variant="outline" className={`text-support ${toneClass}`}>
-                        {access.badge.toUpperCase()}
-                      </Badge>
-                      {access.hasAccess && sub.creator && (
-                        <Button
-                          type="button"
-                          variant="outline"
-                          className="min-h-11 text-destructive border-destructive/30 hover:bg-destructive/10"
-                          disabled={cancellingId === sub.creator.id}
-                          onClick={() => setCancelTarget({ id: sub.creator!.id, name })}
-                        >
-                          {cancellingId === sub.creator.id ? (
-                            <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
-                          ) : null}
-                          Cancel
-                        </Button>
-                      )}
-                      {access.hasAccess && sub.creator && (sub.creator.messaging_enabled ?? true) && (
-                        <Button
-                          type="button"
-                          variant="outline"
-                          className="min-h-11 gap-1.5"
-                          onClick={() =>
-                            navigate(`/dashboard/messages?creatorId=${sub.creator!.id}`)
-                          }
-                        >
-                          <MessageSquare className="h-3.5 w-3.5" /> Message
-                        </Button>
-                      )}
-                      {!access.hasAccess && (access.tone === 'danger' || access.tone === 'warn') && (
-                        <Button
-                          type="button"
-                          variant="outline"
-                          className="min-h-11 gap-1.5"
-                          onClick={() => void manageBilling()}
-                          disabled={portalLoading}
-                        >
-                          <CreditCard className="h-3.5 w-3.5" /> Fix billing
-                        </Button>
-                      )}
-                      {sub.creator?.username && (
-                        <Button
-                          type="button"
-                          variant="outline"
-                          size="icon"
-                          className="h-11 w-11 min-h-11 min-w-11"
-                          aria-label={`Open ${name} profile`}
-                          onClick={() => navigate(`/${sub.creator!.username}`)}
-                        >
-                          <ExternalLink className="h-3.5 w-3.5" />
-                        </Button>
-                      )}
-                    </div>
-                  );
-                })
-              )}
-              <p className="text-support text-muted-foreground pt-1">
-                Cancel ends Stripe billing and premium access for that creator immediately after
-                confirmation. Past-due subscriptions keep the record visible but block access until
-                payment succeeds. Use Open Billing Portal for cards and invoices.
-              </p>
+                    );
+                  })
+                )}
+              </aside>
             </div>
           )}
         </TabsContent>

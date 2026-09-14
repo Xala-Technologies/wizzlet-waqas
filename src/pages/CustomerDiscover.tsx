@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useQuery, useMutation } from 'convex/react';
 import { DashboardLayout } from '@/components/dashboard/DashboardLayout';
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -10,7 +11,9 @@ import { toast } from 'sonner';
 import { useAuth } from '@/contexts/AuthContext';
 import { api } from '@convex/_generated/api';
 import type { Id } from '@convex/_generated/dataModel';
+import { creatorProfilePath } from '@/lib/creatorProfilePath';
 import { segmentedItemClassName, segmentedTrackClassName } from '@/lib/segmentedControl';
+import { subscriptionGrantsContentAccess } from '../../convex/lib/contentAccess';
 
 const PAGE_SIZE = 24;
 
@@ -57,6 +60,7 @@ const CustomerDiscover = () => {
     search: debouncedSearch || undefined,
   });
   const bookmarkRows = useQuery(api.bookmarks.mutations.listCreatorBookmarks, user ? {} : 'skip');
+  const mySubs = useQuery(api.subscriptions.mutations.mySubscriptions, user ? {} : 'skip');
   const toggleCreatorBookmark = useMutation(api.bookmarks.mutations.toggleCreatorBookmark);
 
   useEffect(() => {
@@ -80,7 +84,7 @@ const CustomerDiscover = () => {
 
   const loading =
     (creatorsRaw === undefined && creators.length === 0) ||
-    (user ? bookmarkRows === undefined : false);
+    (user ? bookmarkRows === undefined || mySubs === undefined : false);
 
   const bookmarks = useMemo(() => {
     const marks: Record<string, string> = {};
@@ -89,6 +93,27 @@ const CustomerDiscover = () => {
     }
     return marks;
   }, [bookmarkRows]);
+
+  const activeCreatorIds = useMemo(() => {
+    const now = Date.now();
+    const ids = new Set<string>();
+    for (const s of mySubs ?? []) {
+      if (
+        subscriptionGrantsContentAccess(
+          {
+            status: s.status,
+            billingStatus: s.billingStatus,
+            currentPeriodEnd: s.currentPeriodEnd,
+            cancelAtPeriodEnd: s.cancelAtPeriodEnd,
+          },
+          now,
+        )
+      ) {
+        ids.add(s.creatorId);
+      }
+    }
+    return ids;
+  }, [mySubs]);
 
   const visible = useMemo(() => {
     return [...creators].sort((a, b) => {
@@ -179,6 +204,7 @@ const CustomerDiscover = () => {
           {visible.map((c, index) => {
             const name = c.display_name || c.username || 'Creator';
             const bookmarked = Boolean(bookmarks[c.id]);
+            const hasActiveAccess = activeCreatorIds.has(c.id);
             const listPrice =
               c.monthly_price != null ? `$${Number(c.monthly_price).toFixed(2)}/mo` : '—';
             return (
@@ -204,7 +230,17 @@ const CustomerDiscover = () => {
                     )}
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-ui font-semibold text-foreground truncate">{name}</p>
+                    <div className="flex flex-wrap items-center gap-2 mb-0.5">
+                      <p className="text-ui font-semibold text-foreground truncate">{name}</p>
+                      {hasActiveAccess && (
+                        <Badge
+                          variant="outline"
+                          className="text-support bg-emerald-500/10 text-emerald-600 border-emerald-500/20"
+                        >
+                          Active access
+                        </Badge>
+                      )}
+                    </div>
                     {c.username && (
                       <p className="text-support text-muted-foreground mb-2">@{c.username}</p>
                     )}
@@ -217,7 +253,7 @@ const CustomerDiscover = () => {
                   </div>
                   <div className="flex flex-row sm:flex-col items-center sm:items-end justify-between sm:justify-start gap-2 shrink-0">
                     <span className="text-ui font-bold text-foreground">{listPrice}</span>
-                    <div className="flex items-center gap-2">
+                    <div className="flex flex-wrap items-center justify-end gap-2">
                       {user && (
                         <Button
                           type="button"
@@ -231,9 +267,18 @@ const CustomerDiscover = () => {
                           <Bookmark className={`h-3.5 w-3.5 ${bookmarked ? 'fill-current' : ''}`} />
                         </Button>
                       )}
-                      {c.username ? (
+                      {hasActiveAccess ? (
+                        <>
+                          <Button variant="outline" className="min-h-11" asChild>
+                            <Link to="/dashboard">View posts</Link>
+                          </Button>
+                          <Button className="min-h-11" asChild>
+                            <Link to="/dashboard/subscriptions-billing">Open in Subscriptions</Link>
+                          </Button>
+                        </>
+                      ) : c.username ? (
                         <Button className="min-h-11" asChild>
-                          <Link to={`/${c.username}`}>View profile</Link>
+                          <Link to={creatorProfilePath(c.username)}>View profile</Link>
                         </Button>
                       ) : null}
                     </div>

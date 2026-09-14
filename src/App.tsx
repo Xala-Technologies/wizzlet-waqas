@@ -56,6 +56,7 @@ import CreatorPayouts from "./pages/CreatorPayouts";
 import CreatorSettings from "./pages/CreatorSettings";
 import CreatorOnboarding from "./pages/CreatorOnboarding";
 import CreatorProfile from "./pages/CreatorProfile";
+import CreatorProfileRedirect from "./pages/CreatorProfileRedirect";
 import AdminDashboard from "./pages/AdminDashboard";
 import AdminCreators from "./pages/AdminCreators";
 import AdminUsers from "./pages/AdminUsers";
@@ -186,6 +187,8 @@ const App = () => (
             <Route path="/subscription/success" element={<SubscriptionSuccess />} />
             <Route path="/subscription/cancel" element={<SubscriptionCancel />} />
             <Route path="/go/:linkId" element={<CreatorLinkRedirect />} />
+            {/* Legacy /c/:username bookmarks and landing links */}
+            <Route path="/c/:username" element={<CreatorProfileRedirect />} />
             <Route path="/:username" element={<CreatorProfile />} />
             <Route path="*" element={<NotFound />} />
           </Routes>

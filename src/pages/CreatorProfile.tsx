@@ -17,6 +17,7 @@ import PricingCards from '@/components/creator/PricingCards';
 import { ResponsiveContainer, AreaChart, Area, XAxis, YAxis, Tooltip } from 'recharts';
 import { toast } from 'sonner';
 import { copyToClipboard } from '@/lib/clipboard';
+import { subscriptionGrantsContentAccess } from '../../convex/lib/contentAccess';
 
 interface Creator {
   id: string;
@@ -140,7 +141,18 @@ const CreatorProfile = () => {
   const subCount = subCountRaw ?? 0;
   const isSubscribed = Boolean(
     creator &&
-      mySubs?.some((s) => s.creatorId === creator.id && s.status === 'active'),
+      mySubs?.some((s) =>
+        s.creatorId === creator.id &&
+        subscriptionGrantsContentAccess(
+          {
+            status: s.status,
+            billingStatus: s.billingStatus,
+            currentPeriodEnd: s.currentPeriodEnd,
+            cancelAtPeriodEnd: s.cancelAtPeriodEnd,
+          },
+          Date.now(),
+        ),
+      ),
   );
 
   useEffect(() => {
@@ -322,17 +334,32 @@ const CreatorProfile = () => {
 
         {/* Subscribe CTA */}
         {isSubscribed ? (
-          <div className="mt-6 flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
-            <Button variant="outline" size="lg" className="text-base px-10 h-12 pointer-events-none">
-              <CheckCircle className="mr-2 h-4 w-4 text-emerald-500" />
-              Subscribed
+          <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center">
+            <Button variant="hero" size="lg" className="h-12 text-base px-8" asChild>
+              <Link to="/dashboard/subscriptions-billing">Open Subscriptions</Link>
+            </Button>
+            <Button variant="outline" size="lg" className="h-12 text-base px-8" asChild>
+              <Link to="/dashboard">View posts</Link>
+            </Button>
+            <Button variant="ghost" size="lg" className="h-12 pointer-events-none gap-2">
+              <CheckCircle className="h-4 w-4 text-emerald-500" />
+              Active access
             </Button>
             <Button variant="ghost" size="lg" className="h-12" asChild>
               <Link to="/dashboard/subscriptions-billing">Manage billing</Link>
             </Button>
           </div>
         ) : hasProducts ? (
-          <div className="mt-8 w-full">
+          <div className="mt-8 w-full space-y-3">
+            <h2 className="text-sm font-medium uppercase tracking-wider text-muted-foreground">
+              Choose a plan
+            </h2>
+            <p className="text-support text-muted-foreground max-w-xl">
+              Pick a product below to unlock premium posts
+              {products.length > 0
+                ? ` — ${posts.filter((p) => p.is_premium).length} premium and ${posts.length} total published samples on this profile.`
+                : '.'}
+            </p>
             <PricingCards products={products} creatorId={creator.id} creatorUsername={creator.username} />
           </div>
         ) : (

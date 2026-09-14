@@ -8,6 +8,7 @@ import { Footer } from '@/components/landing/Footer';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ArrowRight, Loader2, Search } from 'lucide-react';
+import { creatorProfilePath } from '@/lib/creatorProfilePath';
 
 const Creators = () => {
   const creatorsPage = useQuery(api.creators.queries.listPublished, {});
@@ -94,7 +95,7 @@ const Creators = () => {
                 return (
                   <li key={c._id}>
                     <Link
-                      to={`/c/${c.username}`}
+                      to={creatorProfilePath(c.username)}
                       className="group flex flex-col gap-4 py-5 transition-colors sm:flex-row sm:items-center sm:justify-between sm:gap-6 sm:py-6"
                     >
                       <div className="flex min-w-0 items-start gap-4">

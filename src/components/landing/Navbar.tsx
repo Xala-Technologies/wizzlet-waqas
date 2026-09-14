@@ -12,7 +12,7 @@ import { api } from '@convex/_generated/api';
 const navLinks = [
   { label: 'Home', path: '/' },
   { label: 'Today\'s Events', path: '/todays-events' },
-  { label: 'Network', path: '/network' },
+  { label: 'Discover', path: '/discover' },
   { label: 'Creators', path: '/creators' },
 ];
 
