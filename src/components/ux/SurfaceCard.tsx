@@ -1,7 +1,8 @@
 import type { HTMLAttributes, ReactNode } from 'react';
 import { cn } from '@/lib/utils';
 
-const surfaceClassName = 'rounded-xl border border-border bg-card overflow-hidden';
+const surfaceClassName =
+  'rounded-xl border border-border bg-card overflow-hidden card-shadow';
 
 type SurfaceCardProps = HTMLAttributes<HTMLDivElement> & {
   children: ReactNode;

@@ -30,14 +30,14 @@ const Creators = () => {
   }, [creators, search]);
 
   return (
-    <div className="flex min-h-screen flex-col bg-noise">
+    <div className="flex min-h-screen flex-col bg-muted">
       <Seo
         title="Top Sports Creators on Prizelet"
         description="Browse verified creators on Prizelet, compare win rates and units, and subscribe to the handicappers you trust."
       />
       <Navbar />
 
-      <main id="main-content" className="relative flex-1">
+      <main id="main-content" className="relative flex-1 bg-muted">
         <section className="container relative pt-28 pb-10 md:pt-32 md:pb-14">
           <p className="mb-4 text-caption font-medium uppercase tracking-[0.22em] text-primary">
             Prizelet · Creators
@@ -154,7 +154,7 @@ const Creators = () => {
           )}
         </section>
 
-        <section className="border-t border-border bg-card/40">
+        <section className="border-t border-border bg-card">
           <div className="container flex flex-col items-start justify-between gap-6 py-12 md:flex-row md:items-center md:py-14">
             <div className="max-w-md">
               <h2 className="text-xl font-bold tracking-tight text-foreground sm:text-2xl">
