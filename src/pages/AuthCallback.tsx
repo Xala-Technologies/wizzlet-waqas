@@ -120,10 +120,16 @@ const AuthCallback = () => {
     if (authLoading) return;
     autoStarted.current = true;
 
+    const oauthError =
+      searchParams.get('error_description') ??
+      searchParams.get('error') ??
+      searchParams.get('oauthError');
+
     // Provider failed or cancelled: landed on callback with no session and no code.
     if (!isAuthenticated && !oauthCodeRef.current && !searchParams.get('code')) {
-      const message =
-        'Social sign-in did not complete. Please try again from the login page.';
+      const message = oauthError
+        ? `Social sign-in failed: ${oauthError}`
+        : 'Social sign-in did not complete (X did not return a login code). Try again from the login page.';
       setError(message);
       setBusy(false);
       toast.error(message);
