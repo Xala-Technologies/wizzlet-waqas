@@ -57,41 +57,95 @@ const providers = [
   ...(socialConfigured.twitter
     ? [
         Twitter({
-          // X confidential clients authenticate the token request with HTTP Basic
-          // (Auth.js default). client_secret_post is rejected by X for many apps.
-          client: {
-            token_endpoint_auth_method: "client_secret_basic",
-          },
-          // Stock api.x.com userinfo — do not request confirmed_email (breaks /users/me).
-          userinfo:
-            "https://api.x.com/2/users/me?user.fields=profile_image_url,description",
-          profile(twitterProfile) {
-            const nested = (
-              twitterProfile as {
-                data?: {
-                  id?: string;
-                  name?: string;
-                  username?: string;
-                  profile_image_url?: string;
-                  description?: string | null;
-                  email?: string | null;
-                };
+          // Keep stock token/userinfo URLs; add conform/request hooks so prod logs
+          // show the real X error body when the Convex OAuth callback fails.
+          token: {
+            url: "https://api.x.com/2/oauth2/token",
+            async conform(response: Response) {
+              if (!response.ok) {
+                const body = await response.clone().text();
+                console.error(
+                  `[auth][twitter] token exchange ${response.status}`,
+                  body.slice(0, 400),
+                );
               }
-            ).data;
-            if (!nested?.id) {
+              return undefined;
+            },
+          },
+          userinfo: {
+            url: "https://api.x.com/2/users/me?user.fields=profile_image_url",
+            async request(ctx: {
+              tokens: { access_token?: string };
+            }) {
+              const res = await fetch(
+                "https://api.x.com/2/users/me?user.fields=profile_image_url",
+                {
+                  headers: {
+                    Authorization: `Bearer ${ctx.tokens.access_token ?? ""}`,
+                  },
+                },
+              );
+              const body = await res.text();
+              if (!res.ok) {
+                console.error(
+                  `[auth][twitter] userinfo ${res.status}`,
+                  body.slice(0, 400),
+                );
+                throw new Error(`X userinfo failed (${res.status})`);
+              }
+              return JSON.parse(body) as Record<string, unknown>;
+            },
+          },
+          // Profile must accept both `{ data: {...} }` (API v2) and rare flat shapes.
+          // Never return explicit `null` fields — Convex optional validators reject them.
+          profile(twitterProfile) {
+            const raw = twitterProfile as {
+              id?: string | number;
+              id_str?: string;
+              name?: string;
+              username?: string;
+              email?: string | null;
+              profile_image_url?: string;
+              profile_image_url_https?: string;
+              description?: string | null;
+              data?: {
+                id?: string | number;
+                name?: string;
+                username?: string;
+                email?: string | null;
+                profile_image_url?: string;
+                description?: string | null;
+              };
+            };
+            const nested = raw.data;
+            const id = String(nested?.id ?? raw.id_str ?? raw.id ?? "");
+            if (!id) {
+              console.error("[auth][twitter] profile payload missing id", {
+                keys: Object.keys(raw),
+              });
               throw new Error("X profile response missing user id");
             }
-            const handle = sanitizeUsername(nested.username);
-            const name = nested.name?.trim() || handle || "X user";
-            const image = nested.profile_image_url
-              ? nested.profile_image_url.replace("_normal", "")
-              : undefined;
-            const description = (nested.description ?? "").trim();
+            const handle = sanitizeUsername(nested?.username ?? raw.username);
+            const name =
+              (nested?.name ?? raw.name)?.trim() || handle || "X user";
+            const imageRaw =
+              nested?.profile_image_url ??
+              raw.profile_image_url_https ??
+              raw.profile_image_url;
+            const image =
+              typeof imageRaw === "string"
+                ? imageRaw.replace("_normal", "")
+                : undefined;
+            const description = (
+              nested?.description ??
+              raw.description ??
+              ""
+            ).trim();
             const now = Date.now();
             return omitNullish({
-              id: nested.id,
+              id,
               name,
-              email: nested.email ?? undefined,
+              email: nested?.email ?? raw.email ?? undefined,
               image,
               username: handle,
               fullName: name,
