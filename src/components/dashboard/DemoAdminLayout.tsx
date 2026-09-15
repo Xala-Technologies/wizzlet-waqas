@@ -3,6 +3,8 @@ import { DemoAdminSidebar } from '@/components/dashboard/DemoAdminSidebar';
 import { MobileTopBar } from '@/components/dashboard/MobileTopBar';
 import DemoRoleSwitcher from '@/components/demo/DemoRoleSwitcher';
 import { DemoAdminProvider } from '@/components/demo/demoAdminStore';
+import { DASHBOARD_CONTENT_CLASS } from '@/lib/dashboardSidebar';
+import { cn } from '@/lib/utils';
 import { Shield } from 'lucide-react';
 
 export default function DemoAdminLayout() {
@@ -21,7 +23,7 @@ export default function DemoAdminLayout() {
           >
             <DemoAdminSidebar mobile />
           </MobileTopBar>
-          <div className="p-4 sm:p-6 md:p-8 w-full max-w-6xl">
+          <div className={cn('p-4 sm:p-6 md:p-8', DASHBOARD_CONTENT_CLASS)}>
             <DemoRoleSwitcher />
             <Outlet />
           </div>

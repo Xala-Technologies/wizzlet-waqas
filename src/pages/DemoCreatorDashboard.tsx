@@ -13,7 +13,8 @@ import {
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { downloadCsv } from '@/lib/csv';
-import { dashboardSidebarAsideClassName } from '@/lib/dashboardSidebar';
+import { dashboardSidebarAsideClassName, DASHBOARD_CONTENT_CLASS } from '@/lib/dashboardSidebar';
+import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -1022,7 +1023,7 @@ const DemoCreatorDashboard = () => {
         <MobileTopBar homeHref="/demo/creator">
           <SidebarNav mobile />
         </MobileTopBar>
-        <div className="p-4 sm:p-6 md:p-8 w-full max-w-5xl">
+        <div className={cn('p-4 sm:p-6 md:p-8', DASHBOARD_CONTENT_CLASS)}>
           <DemoRoleSwitcher />
 
 

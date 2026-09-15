@@ -5,17 +5,13 @@ import { MemberSidebar } from './MemberSidebar';
 import { MobileTopBar } from './MobileTopBar';
 import { AdminQueryBoundary } from './AdminQueryBoundary';
 import { UnreadMessageWatcher } from './UnreadMessageWatcher';
+import { DASHBOARD_CONTENT_CLASS } from '@/lib/dashboardSidebar';
+import { cn } from '@/lib/utils';
 
 interface DashboardLayoutProps {
   children: ReactNode;
   type: 'creator' | 'member' | 'admin';
 }
-
-const CONTENT_WIDTH: Record<DashboardLayoutProps['type'], string> = {
-  creator: 'max-w-5xl',
-  admin: 'max-w-6xl',
-  member: 'max-w-4xl',
-};
 
 const HOME_HREF: Record<DashboardLayoutProps['type'], string> = {
   creator: '/creator',
@@ -35,7 +31,10 @@ export function DashboardLayout({ children, type }: DashboardLayoutProps) {
           <Sidebar mobile />
         </MobileTopBar>
         <div
-          className={`p-4 sm:p-6 md:p-8 w-full min-w-0 ${CONTENT_WIDTH[type]} pb-[max(1rem,env(safe-area-inset-bottom))]`}
+          className={cn(
+            'p-4 sm:p-6 md:p-8 pb-[max(1rem,env(safe-area-inset-bottom))]',
+            DASHBOARD_CONTENT_CLASS,
+          )}
         >
           {children}
         </div>
