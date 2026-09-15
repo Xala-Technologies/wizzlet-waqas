@@ -13,5 +13,6 @@ When building or redesigning a dashboard or management screen:
 4. Show a clear amber banner: sample preview for design review, not live metrics.
 5. Demo row actions must not write to Convex — toast and guide the user to create real data.
 6. Prefer mock content that matches the design mockup numbers and table examples so PO/design review is faithful.
+7. Pair mock data with Overview-style colorful KPIs (`DashboardKpiStrip` + `kpiIconTone`) — see `dashboard-visual-language`.
 
 Reference: `src/lib/creatorOverviewDemo.ts`, `src/lib/creatorPicksDemo.ts`, `CreatorDashboard` / `CreatorPosts` banners.

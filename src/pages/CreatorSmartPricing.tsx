@@ -3,11 +3,13 @@ import { Link } from 'react-router-dom';
 import { useMutation, useQuery } from 'convex/react';
 import { api } from '../../convex/_generated/api';
 import { DashboardLayout } from '@/components/dashboard/DashboardLayout';
+import { DashboardKpiStrip } from '@/components/dashboard/DashboardKpiStrip';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { useCreatorProfile } from '@/hooks/useCreatorProfile';
+import { kpiIconTone } from '@/lib/kpiIconTones';
 import {
   DollarSign,
   BarChart3,
@@ -210,38 +212,33 @@ const CreatorSmartPricing = () => {
         </Button>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-6">
-        <div className="rounded-xl border border-border bg-card p-4">
-          <div className="flex items-center gap-1.5 mb-1.5">
-            <DollarSign className="h-3.5 w-3.5 text-muted-foreground" />
-            <p className="text-support text-muted-foreground">Current list price</p>
-          </div>
-          <p className="text-ui font-bold text-foreground">${data.price.toFixed(2)}</p>
-          <p className="text-support text-muted-foreground mt-1">
-            {data.activeSubs} active subscribers
-          </p>
-        </div>
-        <div className="rounded-xl border border-border bg-card p-4">
-          <div className="flex items-center gap-1.5 mb-1.5">
-            <TrendingUp className="h-3.5 w-3.5 text-muted-foreground" />
-            <p className="text-support text-muted-foreground">Suggested range</p>
-          </div>
-          <p className="text-ui font-bold text-foreground">${suggestion.suggested.toFixed(2)}</p>
-          <p className="text-support text-muted-foreground mt-1">
-            Heuristic from win rate, demand and market data
-          </p>
-        </div>
-        <div className="rounded-xl border border-border bg-card p-4">
-          <div className="flex items-center gap-1.5 mb-1.5">
-            <Target className="h-3.5 w-3.5 text-muted-foreground" />
-            <p className="text-support text-muted-foreground">Illustrative impact</p>
-          </div>
-          <p className="text-ui font-semibold text-foreground leading-snug">{impactLabel}</p>
-          <p className="text-support text-muted-foreground mt-1">
-            Directional only — not a projected revenue %. Actual results depend on demand and product
-            mix.
-          </p>
-        </div>
+      <div className="mb-6">
+        <DashboardKpiStrip
+          items={[
+            {
+              label: 'Current list price',
+              value: `$${data.price.toFixed(2)}`,
+              icon: DollarSign,
+              iconClassName: kpiIconTone.emerald,
+            },
+            {
+              label: 'Suggested range',
+              value: `$${suggestion.suggested.toFixed(2)}`,
+              icon: TrendingUp,
+              iconClassName: kpiIconTone.sky,
+            },
+            {
+              label: 'Illustrative impact',
+              value: impactLabel,
+              icon: Target,
+              iconClassName: kpiIconTone.amber,
+            },
+          ]}
+        />
+        <p className="mt-2 text-support text-muted-foreground">
+          {data.activeSubs} active subscribers · heuristic from win rate, demand and market data ·
+          impact is directional only.
+        </p>
       </div>
 
       <div className="rounded-xl border border-border bg-card p-5 sm:p-6 mb-6 space-y-4">

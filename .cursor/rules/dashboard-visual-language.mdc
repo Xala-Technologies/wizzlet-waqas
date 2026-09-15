@@ -1,0 +1,17 @@
+---
+description: Dashboard UI must use Overview-style colorful icon KPI cards and shared visual tokens
+alwaysApply: true
+---
+
+# Dashboard visual language (Overview-first)
+
+Creator Overview is the visual source of truth. Apply the same style across creator (and shared) dashboards:
+
+1. **KPI strips** — use `DashboardKpiStrip` (`@/components/dashboard/DashboardKpiStrip`) with `kpiIconTone` from `@/lib/kpiIconTones` (violet / emerald / sky / amber / …). Never use bare muted glyphs or identical primary-only icon circles for a strip of metrics.
+2. **Cards** — `rounded-2xl border border-border bg-card shadow-[var(--shadow-card)]`.
+3. **Trends** — pill badges top-right (`trendLabel` / `trendPositive`), not flat text under the value.
+4. **Sport / pick rows** — use `sportVisual()` emoji chips and `resultPillTone` for Win / Loss / Pending / Published.
+5. **Sample data** — empty accounts get mock preview + amber banner (`?demo=0` / `?demo=1`) per `ui-mock-preview-data` rule.
+6. When adding a new stats page, reuse these shared pieces — do not invent a one-off KPI card.
+
+References: `CreatorDashboard`, `CreatorPosts`, `CreatorEarnings`, `CreatorPayouts`, `CreatorLinks`, `CreatorReferrals`, `CreatorSmartPricing`.

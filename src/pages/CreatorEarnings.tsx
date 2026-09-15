@@ -1,6 +1,8 @@
 import { useQuery } from 'convex/react';
 import { api } from '../../convex/_generated/api';
 import { DashboardLayout } from '@/components/dashboard/DashboardLayout';
+import { DashboardKpiStrip } from '@/components/dashboard/DashboardKpiStrip';
+import { kpiIconTone } from '@/lib/kpiIconTones';
 import { DollarSign, TrendingUp, CreditCard, Loader2, ArrowUpRight } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts';
 import { format } from 'date-fns';
@@ -30,22 +32,29 @@ const CreatorEarnings = () => {
         </p>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
-        <div className="rounded-xl border border-border bg-card p-5">
-          <DollarSign className="h-4 w-4 text-emerald-400 mb-2" />
-          <p className="text-2xl font-bold">${(earnings.grossCents / 100).toFixed(2)}</p>
-          <p className="text-caption text-muted-foreground">Active MRR gross ({earnings.activeCount} active)</p>
-        </div>
-        <div className="rounded-xl border border-border bg-card p-5">
-          <TrendingUp className="h-4 w-4 text-blue-400 mb-2" />
-          <p className="text-2xl font-bold">${(earnings.netCents / 100).toFixed(2)}</p>
-          <p className="text-caption text-muted-foreground">Active MRR net (after fees)</p>
-        </div>
-        <div className="rounded-xl border border-border bg-card p-5">
-          <CreditCard className="h-4 w-4 text-purple-400 mb-2" />
-          <p className="text-2xl font-bold">${(earnings.perSubCents / 100).toFixed(2)}</p>
-          <p className="text-caption text-muted-foreground">Featured price / subscriber</p>
-        </div>
+      <div className="mb-8">
+        <DashboardKpiStrip
+          items={[
+            {
+              label: `Active MRR gross (${earnings.activeCount} active)`,
+              value: `$${(earnings.grossCents / 100).toFixed(2)}`,
+              icon: DollarSign,
+              iconClassName: kpiIconTone.emerald,
+            },
+            {
+              label: 'Active MRR net (after fees)',
+              value: `$${(earnings.netCents / 100).toFixed(2)}`,
+              icon: TrendingUp,
+              iconClassName: kpiIconTone.sky,
+            },
+            {
+              label: 'Featured price / subscriber',
+              value: `$${(earnings.perSubCents / 100).toFixed(2)}`,
+              icon: CreditCard,
+              iconClassName: kpiIconTone.violet,
+            },
+          ]}
+        />
       </div>
 
       <div className="rounded-xl border border-border bg-card p-4 sm:p-6 mb-6 min-w-0">

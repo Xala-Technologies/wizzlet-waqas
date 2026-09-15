@@ -4,6 +4,8 @@ import { useMutation, useQuery } from 'convex/react';
 import { api } from '../../convex/_generated/api';
 import type { Id } from '../../convex/_generated/dataModel';
 import { DashboardLayout } from '@/components/dashboard/DashboardLayout';
+import { DashboardKpiStrip } from '@/components/dashboard/DashboardKpiStrip';
+import { kpiIconTone } from '@/lib/kpiIconTones';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -136,21 +138,23 @@ const CreatorLinks = () => {
         </p>
       </header>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-6">
-        <div className="rounded-xl border border-border bg-card p-4">
-          <div className="flex items-center gap-1.5 mb-1.5">
-            <MousePointerClick className="h-3.5 w-3.5 text-muted-foreground" />
-            <p className="text-support text-muted-foreground">Total clicks</p>
-          </div>
-          <p className="text-ui font-bold text-foreground">{totalClicks}</p>
-        </div>
-        <div className="rounded-xl border border-border bg-card p-4">
-          <div className="flex items-center gap-1.5 mb-1.5">
-            <TrendingUp className="h-3.5 w-3.5 text-muted-foreground" />
-            <p className="text-support text-muted-foreground">Conversions</p>
-          </div>
-          <p className="text-ui font-bold text-foreground">{totalConversions}</p>
-        </div>
+      <div className="mb-6">
+        <DashboardKpiStrip
+          items={[
+            {
+              label: 'Total clicks',
+              value: String(totalClicks),
+              icon: MousePointerClick,
+              iconClassName: kpiIconTone.violet,
+            },
+            {
+              label: 'Conversions',
+              value: String(totalConversions),
+              icon: TrendingUp,
+              iconClassName: kpiIconTone.emerald,
+            },
+          ]}
+        />
       </div>
 
       <div className="rounded-xl border border-border bg-card p-5 mb-6 space-y-4">

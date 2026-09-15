@@ -9,7 +9,6 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
-import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import {
@@ -55,6 +54,9 @@ import {
   isCreatorPicksDemoId,
   shouldUseCreatorPicksDemo,
 } from '@/lib/creatorPicksDemo';
+import { DashboardKpiStrip } from '@/components/dashboard/DashboardKpiStrip';
+import { kpiIconTone, resultPillTone } from '@/lib/kpiIconTones';
+import { sportVisual } from '@/lib/sportVisual';
 
 const PAGE_SIZE = 50;
 const TABLE_PAGE_SIZE = 10;
@@ -133,14 +135,6 @@ function wrapTextareaSelection(
   });
 }
 
-function teamInitials(name: string): string {
-  const cleaned = name.replace(/[^a-zA-Z0-9\s]/g, ' ').trim();
-  if (!cleaned) return '?';
-  const parts = cleaned.split(/\s+/).filter(Boolean);
-  if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
-  return `${parts[0][0] ?? ''}${parts[1][0] ?? ''}`.toUpperCase();
-}
-
 function splitMatch(event: string): { home: string; away: string } | null {
   const parts = event.split(/\s+vs\.?\s+/i);
   if (parts.length === 2 && parts[0].trim() && parts[1].trim()) {
@@ -154,10 +148,10 @@ function pctDelta(current: number, previous: number): number | null {
   return Number((((current - previous) / Math.abs(previous)) * 100).toFixed(1));
 }
 
-function formatSignedPct(value: number | null): string {
-  if (value === null) return '—';
+function formatSignedPct(value: number | null, suffix = '%'): string | undefined {
+  if (value === null) return undefined;
   const sign = value > 0 ? '↑' : value < 0 ? '↓' : '→';
-  return `${sign} ${Math.abs(value)}%`;
+  return `${sign} ${Math.abs(value)}${suffix}`;
 }
 
 function enrichPost(post: Post): EnrichedPick {
@@ -181,30 +175,26 @@ function enrichPost(post: Post): EnrichedPick {
 }
 
 function MatchCell({ event, sport }: { event: string; sport: string }) {
+  const visual = sportVisual(sport);
   const split = splitMatch(event);
   return (
     <div className="flex min-w-0 items-center gap-2.5">
-      {split ? (
-        <div className="flex shrink-0 items-center -space-x-1.5">
-          {[split.home, split.away].map((side) => (
-            <span
-              key={side}
-              className="flex h-7 w-7 items-center justify-center rounded-full border-2 border-card bg-muted text-[10px] font-bold text-muted-foreground"
-              title={side}
-            >
-              {teamInitials(side)}
-            </span>
-          ))}
-        </div>
-      ) : (
-        <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-muted text-[10px] font-bold text-muted-foreground">
-          {teamInitials(event)}
-        </span>
-      )}
+      <span
+        className={cn(
+          'flex h-9 w-9 shrink-0 items-center justify-center rounded-xl text-base',
+          visual.chipClass,
+        )}
+        aria-hidden
+        title={sport || 'Sport'}
+      >
+        {visual.emoji}
+      </span>
       <div className="min-w-0">
-        <p className="truncate text-ui font-medium text-foreground">{event || '—'}</p>
+        <p className="truncate text-sm font-semibold text-foreground">
+          {split ? `${split.home} vs ${split.away}` : event || '—'}
+        </p>
         {sport ? (
-          <p className="truncate text-caption text-muted-foreground">{sport}</p>
+          <p className="truncate text-xs font-medium text-muted-foreground">{sport}</p>
         ) : null}
       </div>
     </div>
@@ -989,34 +979,39 @@ const CreatorPosts = () => {
 
   const showingFrom = filtered.length === 0 ? 0 : safePage * TABLE_PAGE_SIZE + 1;
   const showingTo = Math.min(filtered.length, (safePage + 1) * TABLE_PAGE_SIZE);
-  const periodLabel =
-    dateRange === 'all' ? 'all time' : `last ${dateRange} days`;
 
-  const metricCards = [
+  const metricItems = [
     {
       label: 'Total Picks',
       value: String(metrics.totalPicks),
-      delta: metrics.totalPicksDelta,
       icon: Target,
+      iconClassName: kpiIconTone.violet,
+      trendLabel: formatSignedPct(metrics.totalPicksDelta),
+      trendPositive: (metrics.totalPicksDelta ?? 0) > 0,
     },
     {
       label: 'Win Rate',
       value: `${metrics.winRate}%`,
-      delta: metrics.winRateDelta,
       icon: Trophy,
-      deltaSuffix: ' pts',
+      iconClassName: kpiIconTone.sky,
+      trendLabel: formatSignedPct(metrics.winRateDelta, ' pts'),
+      trendPositive: (metrics.winRateDelta ?? 0) > 0,
     },
     {
       label: 'Total Profit (Units)',
       value: `${metrics.profit >= 0 ? '+' : ''}${metrics.profit}u`,
-      delta: metrics.profitDelta,
       icon: BarChart3,
+      iconClassName: kpiIconTone.emerald,
+      trendLabel: formatSignedPct(metrics.profitDelta),
+      trendPositive: (metrics.profitDelta ?? 0) > 0,
     },
     {
       label: 'Active Subscribers',
       value: String(metrics.subscribers),
-      delta: metrics.subscribersDelta,
       icon: Users,
+      iconClassName: kpiIconTone.amber,
+      trendLabel: formatSignedPct(metrics.subscribersDelta),
+      trendPositive: (metrics.subscribersDelta ?? 0) > 0,
     },
   ];
 
@@ -1090,43 +1085,9 @@ const CreatorPosts = () => {
         </div>
       ) : null}
 
-      <section className="mb-6 grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
-        {metricCards.map((card) => {
-          const Icon = card.icon;
-          const deltaPositive = (card.delta ?? 0) > 0;
-          const deltaNegative = (card.delta ?? 0) < 0;
-          return (
-            <div
-              key={card.label}
-              className="rounded-2xl border border-border bg-card p-4 shadow-sm sm:p-5"
-            >
-              <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-full bg-primary/10 text-primary">
-                <Icon className="h-4.5 w-4.5 h-[18px] w-[18px]" />
-              </div>
-              <p className="text-caption font-medium text-muted-foreground">{card.label}</p>
-              <p className="mt-1 text-title-lg font-bold tabular-nums text-foreground">
-                {card.value}
-              </p>
-              <p
-                className={cn(
-                  'mt-2 text-caption font-medium',
-                  card.delta === null
-                    ? 'text-muted-foreground'
-                    : deltaPositive
-                      ? 'text-emerald-600'
-                      : deltaNegative
-                        ? 'text-red-500'
-                        : 'text-muted-foreground',
-                )}
-              >
-                {card.delta === null
-                  ? `Live · ${periodLabel}`
-                  : `${formatSignedPct(card.delta)}${card.deltaSuffix ?? ''} vs. prior period`}
-              </p>
-            </div>
-          );
-        })}
-      </section>
+      <div className="mb-6 sm:mb-8">
+        <DashboardKpiStrip items={metricItems} />
+      </div>
 
       <div className="mb-4 flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
         <div className={cn(segmentedTrackClassName, 'w-full overflow-x-auto xl:w-auto')}>
@@ -1267,26 +1228,48 @@ const CreatorPosts = () => {
                     </TableCell>
                     <TableCell>
                       {isWin ? (
-                        <Badge className="border-transparent bg-emerald-500/15 text-emerald-700 hover:bg-emerald-500/15">
+                        <span
+                          className={cn(
+                            'inline-flex rounded-full border px-2 py-0.5 text-xs font-bold',
+                            resultPillTone.win,
+                          )}
+                        >
                           Win
-                        </Badge>
+                        </span>
                       ) : isLoss ? (
-                        <Badge className="border-transparent bg-red-500/15 text-red-600 hover:bg-red-500/15">
+                        <span
+                          className={cn(
+                            'inline-flex rounded-full border px-2 py-0.5 text-xs font-bold',
+                            resultPillTone.loss,
+                          )}
+                        >
                           Loss
-                        </Badge>
+                        </span>
                       ) : row.result === 'push' ? (
-                        <Badge variant="secondary">Push</Badge>
+                        <span
+                          className={cn(
+                            'inline-flex rounded-full border px-2 py-0.5 text-xs font-bold capitalize',
+                            resultPillTone.push,
+                          )}
+                        >
+                          Push
+                        </span>
                       ) : (
-                        <Badge variant="secondary" className="gap-1">
+                        <span
+                          className={cn(
+                            'inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-xs font-bold',
+                            resultPillTone.pending,
+                          )}
+                        >
                           <Clock className="h-3 w-3" /> Pending
-                        </Badge>
+                        </span>
                       )}
                     </TableCell>
                     <TableCell
                       className={cn(
-                        'tabular-nums font-medium',
-                        isWin && 'text-emerald-600',
-                        isLoss && 'text-red-500',
+                        'tabular-nums font-bold',
+                        isWin && 'text-emerald-600 dark:text-emerald-400',
+                        isLoss && 'text-rose-600 dark:text-rose-400',
                         isPending && 'text-muted-foreground',
                       )}
                     >
@@ -1295,9 +1278,14 @@ const CreatorPosts = () => {
                         : `${row.profit >= 0 ? '+' : ''}${row.profit.toFixed(2)}u`}
                     </TableCell>
                     <TableCell>
-                      <Badge className="border-transparent bg-emerald-500/15 text-emerald-700 hover:bg-emerald-500/15">
+                      <span
+                        className={cn(
+                          'inline-flex rounded-full border px-2 py-0.5 text-xs font-bold',
+                          resultPillTone.published,
+                        )}
+                      >
                         Published
-                      </Badge>
+                      </span>
                     </TableCell>
                     <TableCell className="text-right">
                       <DropdownMenu>
