@@ -3,30 +3,46 @@ import { CreatorSidebar } from './CreatorSidebar';
 import { AdminSidebar } from './AdminSidebar';
 import { MemberSidebar } from './MemberSidebar';
 import { MobileTopBar } from './MobileTopBar';
+import { CreatorTopBar } from './CreatorTopBar';
+import { AdminQueryBoundary } from './AdminQueryBoundary';
+import { UnreadMessageWatcher } from './UnreadMessageWatcher';
+import { DASHBOARD_CONTENT_CLASS } from '@/lib/dashboardSidebar';
+import { cn } from '@/lib/utils';
 
 interface DashboardLayoutProps {
   children: ReactNode;
   type: 'creator' | 'member' | 'admin';
 }
 
-const CONTENT_WIDTH: Record<DashboardLayoutProps['type'], string> = {
-  creator: 'max-w-5xl',
-  admin: 'max-w-6xl',
-  member: 'max-w-4xl',
+const HOME_HREF: Record<DashboardLayoutProps['type'], string> = {
+  creator: '/creator',
+  admin: '/admin',
+  member: '/dashboard',
 };
 
 export function DashboardLayout({ children, type }: DashboardLayoutProps) {
   const Sidebar = type === 'creator' ? CreatorSidebar : type === 'admin' ? AdminSidebar : MemberSidebar;
 
-  return (
-    <div className="min-h-screen flex bg-background">
+  const body = (
+    <div className="flex h-dvh overflow-hidden bg-background">
+      <UnreadMessageWatcher />
       <Sidebar />
-      <main className="flex-1 min-w-0 overflow-auto">
-        <MobileTopBar>
+      <main className="min-h-0 min-w-0 flex-1 overflow-x-hidden overflow-y-auto bg-muted/30">
+        <MobileTopBar homeHref={HOME_HREF[type]}>
           <Sidebar mobile />
         </MobileTopBar>
-        <div className={`p-4 sm:p-6 md:p-8 w-full ${CONTENT_WIDTH[type]}`}>{children}</div>
+        {type === 'creator' ? <CreatorTopBar /> : null}
+        <div
+          className={cn(
+            'p-4 pb-[max(1rem,env(safe-area-inset-bottom))] sm:p-6 md:p-8',
+            DASHBOARD_CONTENT_CLASS,
+          )}
+        >
+          {children}
+        </div>
       </main>
     </div>
   );
+
+  return type === 'admin' ? <AdminQueryBoundary>{body}</AdminQueryBoundary> : body;
 }

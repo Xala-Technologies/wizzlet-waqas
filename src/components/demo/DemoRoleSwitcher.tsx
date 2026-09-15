@@ -16,7 +16,7 @@ const DemoRoleSwitcher = () => {
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-2">
           <p className="text-sm text-primary font-medium">👀 Demo Mode</p>
-          <span className="text-xs text-muted-foreground hidden sm:inline">— switch roles to explore</span>
+          <span className="text-caption text-muted-foreground hidden sm:inline">— switch roles to explore</span>
         </div>
         <div className="flex items-center gap-2 flex-wrap">
           {roles.map((role) => {
@@ -26,7 +26,7 @@ const DemoRoleSwitcher = () => {
                 <Button
                   variant={isActive ? 'default' : 'outline'}
                   size="sm"
-                  className="h-8 text-xs gap-1.5"
+                  className="h-8 text-caption gap-1.5"
                 >
                   <role.icon className="h-3 w-3" />
                   {role.label}
@@ -35,7 +35,7 @@ const DemoRoleSwitcher = () => {
             );
           })}
           <Link to="/">
-            <Button variant="ghost" size="sm" className="h-8 text-xs gap-1.5">
+            <Button variant="ghost" size="sm" className="h-8 text-caption gap-1.5">
               <ArrowLeft className="h-3 w-3" /> Exit Demo
             </Button>
           </Link>

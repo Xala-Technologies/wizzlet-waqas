@@ -1,4 +1,8 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import { useMutation, useQuery } from 'convex/react';
+import { useSearchParams } from 'react-router-dom';
+import { api } from '../../convex/_generated/api';
+import type { Id } from '../../convex/_generated/dataModel';
 import { DashboardLayout } from '@/components/dashboard/DashboardLayout';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -6,28 +10,11 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { supabase } from '@/lib/supabase';
 import { useCreatorProfile } from '@/hooks/useCreatorProfile';
 import { FileWarning, Loader2, MessageSquare, Send, Clock } from 'lucide-react';
 import { format } from 'date-fns';
 import { toast } from 'sonner';
-
-interface CaseRow {
-  id: string;
-  subject: string;
-  category: string;
-  description: string | null;
-  status: string;
-  priority: string;
-  created_at: string;
-}
-
-interface CaseMessage {
-  id: string;
-  sender_role: string;
-  body: string;
-  created_at: string;
-}
+import { MessageSeenReceipt } from '@/components/messaging/MessageSeenReceipt';
 
 const statusColors: Record<string, string> = {
   open: 'bg-blue-500/10 text-blue-500 border-blue-500/20',
@@ -38,98 +25,129 @@ const statusColors: Record<string, string> = {
 
 const CreatorResolutionCase = () => {
   const { creator, loading: creatorLoading } = useCreatorProfile();
-  const [cases, setCases] = useState<CaseRow[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [searchParams, setSearchParams] = useSearchParams();
+  const caseIdParam = searchParams.get('caseId');
+
+  const cases = useQuery(api.resolution.mutations.listMine);
+  const createCase = useMutation(api.resolution.mutations.create);
+  const addMessage = useMutation(api.resolution.mutations.addMessage);
+  const markRead = useMutation(api.resolution.mutations.markReadCreator);
+
   const [subject, setSubject] = useState('');
   const [category, setCategory] = useState('payout');
   const [priority, setPriority] = useState('normal');
   const [description, setDescription] = useState('');
   const [saving, setSaving] = useState(false);
-  const [selected, setSelected] = useState<string | null>(null);
-  const [messages, setMessages] = useState<CaseMessage[]>([]);
+  const [selected, setSelected] = useState<string | null>(caseIdParam);
   const [reply, setReply] = useState('');
   const [sending, setSending] = useState(false);
+  const markedRef = useRef<Set<string>>(new Set());
 
   useEffect(() => {
-    if (creatorLoading) return;
-    if (!creator) { setLoading(false); return; }
-    const load = async () => {
-      const { data } = await supabase
-        .from('resolution_cases')
-        .select('id, subject, category, description, status, priority, created_at')
-        .eq('creator_id', creator.id)
-        .order('created_at', { ascending: false });
-      setCases(data ?? []);
-      setLoading(false);
-    };
-    void load();
-  }, [creator, creatorLoading]);
+    if (caseIdParam) setSelected(caseIdParam);
+  }, [caseIdParam]);
+
+  const messages = useQuery(
+    api.resolution.mutations.listMessages,
+    selected ? { caseId: selected as Id<'resolutionCases'> } : 'skip',
+  );
 
   useEffect(() => {
-    if (!selected) { setMessages([]); return; }
-    const load = async () => {
-      const { data } = await supabase
-        .from('resolution_case_messages')
-        .select('id, sender_role, body, created_at')
-        .eq('case_id', selected)
-        .order('created_at', { ascending: true });
-      setMessages(data ?? []);
-    };
-    void load();
-  }, [selected]);
+    if (!messages) return;
+    const unreadIds = messages
+      .filter((m) => m.senderRole === 'admin' && m.read !== true && !markedRef.current.has(m._id))
+      .map((m) => m._id);
+    if (unreadIds.length === 0) return;
+    unreadIds.forEach((id) => markedRef.current.add(id));
+    void markRead({ messageIds: unreadIds }).catch(() => {
+      unreadIds.forEach((id) => markedRef.current.delete(id));
+    });
+  }, [messages, markRead]);
 
-  const createCase = async () => {
+  const loading = creatorLoading || cases === undefined;
+
+  const createCaseHandler = async () => {
     if (!creator) return;
     if (!subject.trim()) { toast.error('Add a subject'); return; }
     setSaving(true);
-    const { data, error } = await supabase
-      .from('resolution_cases')
-      .insert({
-        creator_id: creator.id,
+    try {
+      const id = await createCase({
+        creatorId: creator.id as Id<'creators'>,
         subject: subject.trim(),
         category,
         priority,
-        description: description.trim() || null,
-      })
-      .select('id, subject, category, description, status, priority, created_at')
-      .maybeSingle();
-    setSaving(false);
-    if (error) { toast.error(error.message); return; }
-    if (data) setCases(prev => [data, ...prev]);
-    setSubject(''); setDescription('');
-    toast.success('Case submitted — our team will respond shortly');
+        description: description.trim() || undefined,
+      });
+      setSubject('');
+      setDescription('');
+      setSelected(id);
+      setSearchParams({ caseId: id }, { replace: true });
+      toast.success('Case submitted — our team will respond shortly');
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : 'Failed to submit case');
+    } finally {
+      setSaving(false);
+    }
   };
 
   const sendReply = async () => {
     if (!selected || !reply.trim()) return;
     setSending(true);
-    const { data, error } = await supabase
-      .from('resolution_case_messages')
-      .insert({ case_id: selected, sender_role: 'creator', body: reply.trim() })
-      .select('id, sender_role, body, created_at')
-      .maybeSingle();
-    setSending(false);
-    if (error) { toast.error(error.message); return; }
-    if (data) setMessages(prev => [...prev, data]);
-    setReply('');
+    try {
+      await addMessage({
+        caseId: selected as Id<'resolutionCases'>,
+        senderRole: 'creator',
+        body: reply.trim(),
+      });
+      setReply('');
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : 'Failed to send message');
+    } finally {
+      setSending(false);
+    }
   };
+
+  const openCase = (id: string) => {
+    const next = selected === id ? null : id;
+    setSelected(next);
+    if (next) setSearchParams({ caseId: next }, { replace: true });
+    else setSearchParams({}, { replace: true });
+  };
+
+  const caseRows = (cases ?? []).map((c) => ({
+    id: c._id,
+    subject: c.subject,
+    category: c.category ?? 'general',
+    description: c.description ?? null,
+    status: c.status,
+    priority: c.priority ?? 'normal',
+    created_at: new Date(c.createdAt).toISOString(),
+  }));
+
+  const messageRows = (messages ?? []).map((m) => ({
+    id: m._id,
+    sender_role: m.senderRole,
+    body: m.body,
+    read: m.read === true,
+    created_at: new Date(m.createdAt).toISOString(),
+  }));
 
   return (
     <DashboardLayout type="creator">
       <div className="mb-6">
         <h1 className="text-2xl font-bold">Resolution Center</h1>
-        <p className="text-muted-foreground text-sm mt-0.5">Raise an issue with the Wizzlet team and track its progress</p>
+        <p className="text-muted-foreground text-sm mt-0.5">Raise an issue with the Prizelet team and track its progress</p>
       </div>
 
       <div className="rounded-xl border border-border bg-card p-6 mb-8">
         <h2 className="text-sm font-semibold mb-4">Open a New Case</h2>
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <div className="sm:col-span-1">
-            <Label className="text-xs text-muted-foreground">Subject</Label>
+            <Label className="text-caption text-muted-foreground">Subject</Label>
             <Input className="mt-1.5" placeholder="Short summary" value={subject} onChange={e => setSubject(e.target.value)} />
           </div>
           <div>
-            <Label className="text-xs text-muted-foreground">Category</Label>
+            <Label className="text-caption text-muted-foreground">Category</Label>
             <Select value={category} onValueChange={setCategory}>
               <SelectTrigger className="mt-1.5"><SelectValue /></SelectTrigger>
               <SelectContent>
@@ -142,7 +160,7 @@ const CreatorResolutionCase = () => {
             </Select>
           </div>
           <div>
-            <Label className="text-xs text-muted-foreground">Priority</Label>
+            <Label className="text-caption text-muted-foreground">Priority</Label>
             <Select value={priority} onValueChange={setPriority}>
               <SelectTrigger className="mt-1.5"><SelectValue /></SelectTrigger>
               <SelectContent>
@@ -154,10 +172,10 @@ const CreatorResolutionCase = () => {
           </div>
         </div>
         <div className="mt-4">
-          <Label className="text-xs text-muted-foreground">Details</Label>
+          <Label className="text-caption text-muted-foreground">Details</Label>
           <Textarea className="mt-1.5" rows={3} placeholder="Describe what happened…" value={description} onChange={e => setDescription(e.target.value)} />
         </div>
-        <Button variant="hero" size="sm" className="mt-4" onClick={createCase} disabled={saving || !creator}>
+        <Button variant="hero" size="sm" className="mt-4" onClick={() => void createCaseHandler()} disabled={saving || !creator}>
           {saving && <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />} Submit Case
         </Button>
       </div>
@@ -165,28 +183,28 @@ const CreatorResolutionCase = () => {
       <h2 className="text-sm font-medium text-muted-foreground uppercase tracking-wider mb-3">Your Cases</h2>
       {loading ? (
         <div className="flex justify-center py-16"><Loader2 className="h-5 w-5 animate-spin text-primary" /></div>
-      ) : cases.length === 0 ? (
+      ) : caseRows.length === 0 ? (
         <div className="rounded-xl border border-border bg-card p-10 text-center">
           <FileWarning className="h-10 w-10 text-muted-foreground mx-auto mb-3" />
           <p className="text-sm text-muted-foreground">No cases yet.</p>
         </div>
       ) : (
         <div className="space-y-3">
-          {cases.map(c => (
+          {caseRows.map(c => (
             <div key={c.id} className="rounded-xl border border-border bg-card p-5">
               <div className="flex flex-wrap items-start justify-between gap-3">
                 <div className="min-w-0">
                   <div className="flex items-center gap-2 mb-1">
                     <p className="text-sm font-semibold">{c.subject}</p>
-                    <Badge variant="outline" className={`text-[10px] capitalize ${statusColors[c.status] ?? ''}`}>{c.status.replace('_', ' ')}</Badge>
+                    <Badge variant="outline" className={`text-caption capitalize ${statusColors[c.status] ?? ''}`}>{c.status.replace('_', ' ')}</Badge>
                   </div>
-                  <div className="flex items-center gap-3 text-xs text-muted-foreground">
+                  <div className="flex items-center gap-3 text-caption text-muted-foreground">
                     <span className="capitalize">{c.category}</span>
                     <span className="flex items-center gap-1"><Clock className="h-3 w-3" /> {format(new Date(c.created_at), 'MMM d, yyyy')}</span>
                   </div>
-                  {c.description && <p className="text-xs text-muted-foreground mt-2">{c.description}</p>}
+                  {c.description && <p className="text-caption text-muted-foreground mt-2">{c.description}</p>}
                 </div>
-                <Button variant="outline" size="sm" className="h-8 text-xs" onClick={() => setSelected(selected === c.id ? null : c.id)}>
+                <Button variant="outline" size="sm" className="h-8 text-caption" onClick={() => openCase(c.id)}>
                   <MessageSquare className="mr-1 h-3 w-3" /> {selected === c.id ? 'Hide' : 'Thread'}
                 </Button>
               </div>
@@ -194,18 +212,21 @@ const CreatorResolutionCase = () => {
               {selected === c.id && (
                 <div className="mt-4 border-t border-border pt-4">
                   <div className="space-y-2 max-h-64 overflow-y-auto mb-3">
-                    {messages.length === 0 && <p className="text-xs text-muted-foreground">No messages yet.</p>}
-                    {messages.map(m => (
-                      <div key={m.id} className={`rounded-lg p-3 text-xs ${m.sender_role === 'creator' ? 'bg-primary/10 ml-8' : 'bg-muted/40 mr-8'}`}>
-                        <p className="font-medium mb-1 capitalize">{m.sender_role === 'creator' ? 'You' : 'Wizzlet team'}</p>
+                    {messageRows.length === 0 && <p className="text-caption text-muted-foreground">No messages yet.</p>}
+                    {messageRows.map(m => (
+                      <div key={m.id} className={`rounded-lg p-3 text-caption ${m.sender_role === 'creator' ? 'bg-primary/10 ml-8' : 'bg-muted/40 mr-8'}`}>
+                        <p className="font-medium mb-1 capitalize">{m.sender_role === 'creator' ? 'You' : 'Prizelet team'}</p>
                         <p className="text-muted-foreground whitespace-pre-wrap">{m.body}</p>
-                        <p className="text-[10px] text-muted-foreground/70 mt-1">{format(new Date(m.created_at), 'MMM d, HH:mm')}</p>
+                        <div className="mt-1 flex items-center justify-between gap-2 text-caption text-muted-foreground/70">
+                          <span>{format(new Date(m.created_at), 'MMM d, HH:mm')}</span>
+                          {m.sender_role === 'creator' && <MessageSeenReceipt seen={m.read} />}
+                        </div>
                       </div>
                     ))}
                   </div>
                   <div className="flex gap-2">
                     <Textarea rows={2} placeholder="Add a message…" value={reply} onChange={e => setReply(e.target.value)} />
-                    <Button variant="hero" size="sm" onClick={sendReply} disabled={sending || !reply.trim()}>
+                    <Button variant="hero" size="sm" onClick={() => void sendReply()} disabled={sending || !reply.trim()}>
                       {sending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Send className="h-3.5 w-3.5" />}
                     </Button>
                   </div>

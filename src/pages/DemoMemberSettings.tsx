@@ -27,7 +27,7 @@ const DemoMemberSettings = () => {
       title="Settings"
       subtitle="Manage your profile, notifications and tracking defaults"
       actions={
-        <Button size="sm" className="text-xs" disabled={!dirty} onClick={save}>
+        <Button size="sm" className="text-caption" disabled={!dirty} onClick={save}>
           <Save className="mr-1.5 h-3.5 w-3.5" /> Save changes
         </Button>
       }
@@ -37,15 +37,15 @@ const DemoMemberSettings = () => {
           <h2 className="text-sm font-medium mb-4 flex items-center gap-2"><User className="h-4 w-4 text-primary" /> Profile</h2>
           <div className="grid sm:grid-cols-2 gap-4">
             <div>
-              <Label htmlFor="msg-display-name" className="text-xs">Display name</Label>
+              <Label htmlFor="msg-display-name" className="text-caption">Display name</Label>
 <Input id="msg-display-name" value={form.displayName} onChange={e => setForm({ ...form, displayName: e.target.value })} className="mt-1" />
             </div>
             <div>
-              <Label htmlFor="msg-username" className="text-xs">Username</Label>
+              <Label htmlFor="msg-username" className="text-caption">Username</Label>
 <Input id="msg-username" value={form.username} onChange={e => setForm({ ...form, username: e.target.value })} className="mt-1" />
             </div>
             <div className="sm:col-span-2">
-              <Label htmlFor="msg-email" className="text-xs">Email</Label>
+              <Label htmlFor="msg-email" className="text-caption">Email</Label>
 <Input id="msg-email" type="email" value={form.email} onChange={e => setForm({ ...form, email: e.target.value })} className="mt-1" />
             </div>
           </div>
@@ -62,7 +62,7 @@ const DemoMemberSettings = () => {
               <div key={row.key} className="flex items-center justify-between gap-4">
                 <div>
                   <p className="text-sm">{row.label}</p>
-                  <p className="text-[11px] text-muted-foreground">{row.desc}</p>
+                  <p className="text-caption text-muted-foreground">{row.desc}</p>
                 </div>
                 <Switch aria-label={row.label} checked={form[row.key]} onCheckedChange={v => setForm({ ...form, [row.key]: v })} />
               </div>
@@ -73,24 +73,24 @@ const DemoMemberSettings = () => {
         <section className="rounded-xl border border-border bg-card p-5">
           <h2 className="text-sm font-medium mb-4 flex items-center gap-2"><Target className="h-4 w-4 text-primary" /> Tracking</h2>
           <div className="max-w-[200px]">
-            <Label htmlFor="msg-default-unit-size" className="text-xs">Default unit size</Label>
+            <Label htmlFor="msg-default-unit-size" className="text-caption">Default unit size</Label>
 <Input id="msg-default-unit-size"
               type="number" min="0.5" step="0.5"
               value={form.defaultUnitSize}
               onChange={e => setForm({ ...form, defaultUnitSize: Number(e.target.value) || 1 })}
               className="mt-1"
             />
-            <p className="text-[11px] text-muted-foreground mt-1">Prefilled when you track a pick from your feed.</p>
+            <p className="text-caption text-muted-foreground mt-1">Prefilled when you track a pick from your feed.</p>
           </div>
         </section>
 
         <section className="rounded-xl border border-border bg-card p-5 flex items-center justify-between gap-4">
           <div>
             <p className="text-sm font-medium">Reset demo data</p>
-            <p className="text-[11px] text-muted-foreground">Restore subscriptions, picks, saves and notifications to their starting state.</p>
+            <p className="text-caption text-muted-foreground">Restore subscriptions, picks, saves and notifications to their starting state.</p>
           </div>
           <Button
-            size="sm" variant="outline" className="text-xs"
+            size="sm" variant="outline" className="text-caption"
             onClick={() => { store.reset(); toast.success('Demo data reset'); }}
           >
             <RotateCcw className="mr-1.5 h-3.5 w-3.5" /> Reset

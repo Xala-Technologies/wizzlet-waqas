@@ -1,6 +1,9 @@
-import { useState, useEffect } from 'react';
+import { useMemo, useState } from 'react';
+import { useMutation, usePaginatedQuery } from 'convex/react';
+import { api } from '../../convex/_generated/api';
+import type { Id } from '../../convex/_generated/dataModel';
 import { DashboardLayout } from '@/components/dashboard/DashboardLayout';
-import { supabase } from '@/lib/supabase';
+import { DesktopTableRegion, MobileRecordCards } from '@/components/dashboard/MobileRecordList';
 import { Button } from '@/components/ui/button';
 import { Crown, Loader2, ExternalLink, Ban, Star, CheckCircle2, XCircle, Search, MessageSquare, ShieldCheck, TrendingDown, UserX } from 'lucide-react';
 import { Input } from '@/components/ui/input';
@@ -9,122 +12,136 @@ import { toast } from 'sonner';
 import { format } from 'date-fns';
 import { Link, useNavigate } from 'react-router-dom';
 
+const PAGE_SIZE = 25;
+
 interface Creator {
   id: string;
   username: string | null;
   display_name: string | null;
   monthly_price: number | null;
-  is_published: boolean | null;
-  created_at: string;
+  is_published: boolean;
+  created_at: number;
   user_id: string;
   email: string;
   subCount: number;
   revenue: number;
-  feePercent: number;
-  verified: boolean;
+  verificationStatus: string;
   daysSinceSignup: number;
 }
 
 const AdminCreators = () => {
   const navigate = useNavigate();
-  const [loading, setLoading] = useState(true);
-  const [creators, setCreators] = useState<Creator[]>([]);
   const [search, setSearch] = useState('');
 
-  const loadCreators = async () => {
-    const [creatorsRes, subsRes, usersRes] = await Promise.all([
-      supabase.from('creators').select('id, username, display_name, monthly_price, is_published, created_at, user_id').order('created_at', { ascending: false }),
-      supabase.from('subscriptions').select('creator_id, status'),
-      supabase.from('users').select('id, email'),
-    ]);
+  const { results, status, loadMore } = usePaginatedQuery(
+    api.admin.paginatedLists.listCreatorsPage,
+    {},
+    { initialNumItems: PAGE_SIZE },
+  );
+  const setPublished = useMutation(api.creators.queries.setPublished);
+  const setVerificationStatus = useMutation(api.creators.queries.setVerificationStatus);
 
-    const subs = subsRes.data ?? [];
-    const subCounts = new Map<string, number>();
-    subs.filter(s => s.status === 'active').forEach(s => {
-      subCounts.set(s.creator_id, (subCounts.get(s.creator_id) ?? 0) + 1);
-    });
+  const loading = status === 'LoadingFirstPage';
 
-    const userMap = new Map((usersRes.data ?? []).map(u => [u.id, u]));
-
-    setCreators((creatorsRes.data ?? []).map(c => {
-      const days = Math.floor((Date.now() - new Date(c.created_at).getTime()) / (1000 * 60 * 60 * 24));
-      const user = userMap.get(c.user_id);
+  const creators = useMemo((): Creator[] => {
+    return (results ?? []).map((c) => {
+      const days = Math.floor((Date.now() - c.createdAt) / (1000 * 60 * 60 * 24));
+      const monthlyPrice = (c.monthlyPriceCents ?? 999) / 100;
       return {
-        ...c,
-        email: user?.email ?? '—',
-        subCount: subCounts.get(c.id) ?? 0,
-        revenue: (subCounts.get(c.id) ?? 0) * (c.monthly_price ?? 9.99),
-        feePercent: days < 30 ? 5 : 10,
-        verified: days > 14,
+        id: c.id,
+        username: c.username,
+        display_name: c.displayName,
+        monthly_price: monthlyPrice,
+        is_published: c.isPublished,
+        created_at: c.createdAt,
+        user_id: c.userId,
+        email: c.email,
+        subCount: c.subCount,
+        revenue: c.revenue,
+        verificationStatus: c.verificationStatus ?? 'none',
         daysSinceSignup: days,
       };
-    }));
-    setLoading(false);
-  };
-
-  useEffect(() => { loadCreators(); }, []);
+    });
+  }, [results]);
 
   const togglePublish = async (creator: Creator) => {
-    const { error } = await supabase.from('creators').update({ is_published: !creator.is_published }).eq('id', creator.id);
-    if (error) toast.error(error.message);
-    else { toast.success(creator.is_published ? 'Creator disabled' : 'Creator enabled'); loadCreators(); }
+    try {
+      await setPublished({
+        creatorId: creator.id as Id<'creators'>,
+        isPublished: !creator.is_published,
+      });
+      toast.success(creator.is_published ? 'Creator disabled' : 'Creator enabled');
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : 'Failed to update creator');
+    }
   };
 
-  const filtered = creators.filter(c => {
+  const toggleVerified = async (creator: Creator) => {
+    const next = creator.verificationStatus === 'verified' ? 'none' : 'verified';
+    try {
+      await setVerificationStatus({
+        creatorId: creator.id as Id<'creators'>,
+        verificationStatus: next,
+      });
+      toast.success(next === 'verified' ? 'Creator verified' : 'Verification removed');
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : 'Failed to update verification');
+    }
+  };
+
+  const filtered = creators.filter((c) => {
     const q = search.toLowerCase();
     return !q || (c.display_name?.toLowerCase().includes(q)) || (c.username?.toLowerCase().includes(q)) || c.email.toLowerCase().includes(q);
   });
 
   const topCreators = [...creators].sort((a, b) => b.revenue - a.revenue).slice(0, 5);
-  const fastestGrowing = [...creators].sort((a, b) => b.subCount - a.subCount).filter(c => c.daysSinceSignup < 60).slice(0, 5);
-  const atRisk = creators.filter(c => c.subCount > 0 && c.subCount < 3);
-  const inactive = creators.filter(c => c.daysSinceSignup > 30 && c.subCount === 0);
+  const fastestGrowing = [...creators].sort((a, b) => b.subCount - a.subCount).filter((c) => c.daysSinceSignup < 60).slice(0, 5);
+  const atRisk = creators.filter((c) => c.subCount > 0 && c.subCount < 3);
+  const inactive = creators.filter((c) => c.daysSinceSignup > 30 && c.subCount === 0);
 
   return (
     <DashboardLayout type="admin">
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
-        <div>
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mb-6">
+        <div className="min-w-0">
           <h1 className="text-2xl font-bold">Creators Management</h1>
-          <p className="text-muted-foreground text-sm mt-0.5">{creators.length} total creators</p>
+          <p className="text-muted-foreground text-sm mt-0.5">
+            {creators.length} loaded{status === 'CanLoadMore' || status === 'LoadingMore' ? ' (more available)' : ''}
+          </p>
         </div>
         <div className="relative w-full sm:w-64">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
-          <Input placeholder="Search creators…" value={search} onChange={e => setSearch(e.target.value)} className="pl-9 h-9" />
+          <Input placeholder="Search loaded creators…" value={search} onChange={(e) => setSearch(e.target.value)} className="pl-9 min-h-11" />
         </div>
       </div>
 
-      {/* Insight Sections */}
       {!loading && (
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
           <div className="rounded-xl border border-border bg-card p-4">
-            <div className="flex items-center gap-2 mb-2"><Star className="h-3.5 w-3.5 text-amber-400" /><span className="text-xs font-medium text-muted-foreground">Top Creators</span></div>
-            {topCreators.slice(0, 3).map((c, i) => (
+            <div className="flex items-center gap-2 mb-2"><Star className="h-3.5 w-3.5 text-amber-400" /><span className="text-caption font-medium text-muted-foreground">Top (on this page)</span></div>            {topCreators.slice(0, 3).map((c) => (
               <div key={c.id} className="flex items-center justify-between py-1">
-                <span className="text-xs font-medium truncate">{c.display_name ?? `@${c.username}`}</span>
-                <span className="text-xs text-emerald-400">${c.revenue.toFixed(0)}</span>
+                <span className="text-caption font-medium truncate">{c.display_name ?? `@${c.username}`}</span>
+                <span className="text-caption text-emerald-400">${c.revenue.toFixed(0)}</span>
               </div>
             ))}
           </div>
           <div className="rounded-xl border border-border bg-card p-4">
-            <div className="flex items-center gap-2 mb-2"><TrendingDown className="h-3.5 w-3.5 text-blue-400" /><span className="text-xs font-medium text-muted-foreground">Fastest Growing</span></div>
-            {fastestGrowing.slice(0, 3).map((c) => (
+            <div className="flex items-center gap-2 mb-2"><TrendingDown className="h-3.5 w-3.5 text-blue-400" /><span className="text-caption font-medium text-muted-foreground">Growing (on this page)</span></div>            {fastestGrowing.slice(0, 3).map((c) => (
               <div key={c.id} className="flex items-center justify-between py-1">
-                <span className="text-xs font-medium truncate">{c.display_name ?? `@${c.username}`}</span>
-                <span className="text-xs text-blue-400">{c.subCount} subs</span>
+                <span className="text-caption font-medium truncate">{c.display_name ?? `@${c.username}`}</span>
+                <span className="text-caption text-blue-400">{c.subCount} subs</span>
               </div>
             ))}
-            {fastestGrowing.length === 0 && <p className="text-xs text-muted-foreground py-2">No data</p>}
+            {fastestGrowing.length === 0 && <p className="text-caption text-muted-foreground py-2">No data</p>}
           </div>
           <div className="rounded-xl border border-amber-500/20 bg-amber-500/5 p-4">
-            <div className="flex items-center gap-2 mb-2"><Crown className="h-3.5 w-3.5 text-amber-400" /><span className="text-xs font-medium text-muted-foreground">At Risk</span></div>
+            <div className="flex items-center gap-2 mb-2"><Crown className="h-3.5 w-3.5 text-amber-400" /><span className="text-caption font-medium text-muted-foreground">At Risk (on this page)</span></div>
             <p className="text-xl font-bold text-amber-400">{atRisk.length}</p>
-            <p className="text-[10px] text-muted-foreground">Creators with &lt;3 subscribers</p>
+            <p className="text-caption text-muted-foreground">&lt;3 subscribers among loaded rows</p>
           </div>
           <div className="rounded-xl border border-border bg-card p-4">
-            <div className="flex items-center gap-2 mb-2"><UserX className="h-3.5 w-3.5 text-muted-foreground" /><span className="text-xs font-medium text-muted-foreground">Inactive</span></div>
+            <div className="flex items-center gap-2 mb-2"><UserX className="h-3.5 w-3.5 text-muted-foreground" /><span className="text-caption font-medium text-muted-foreground">Inactive (on this page)</span></div>
             <p className="text-xl font-bold">{inactive.length}</p>
-            <p className="text-[10px] text-muted-foreground">30+ days, 0 subscribers</p>
-          </div>
+            <p className="text-caption text-muted-foreground">30d+ / 0 subs among loaded rows</p>          </div>
         </div>
       )}
 
@@ -136,62 +153,108 @@ const AdminCreators = () => {
           <h3 className="font-semibold mb-2">{search ? 'No matching creators' : 'No creators yet'}</h3>
         </div>
       ) : (
-        <div className="rounded-xl border border-border overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
+        <>
+          <MobileRecordCards>
+            {filtered.map((c) => (
+              <li key={c.id} className="rounded-xl border border-border bg-card p-4 space-y-3">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <p className="text-sm font-medium truncate">{c.display_name ?? 'Unnamed'}</p>
+                    <p className="text-caption text-muted-foreground truncate">@{c.username ?? '—'} · {c.email}</p>
+                  </div>
+                  {c.is_published ? (
+                    <span className="inline-flex items-center gap-1 text-caption font-medium text-emerald-400 shrink-0"><CheckCircle2 className="h-3.5 w-3.5" /> Active</span>
+                  ) : (
+                    <span className="inline-flex items-center gap-1 text-caption font-medium text-destructive shrink-0"><XCircle className="h-3.5 w-3.5" /> Disabled</span>
+                  )}
+                </div>
+                <div className="grid grid-cols-2 gap-2 text-caption">
+                  <div><span className="text-muted-foreground">Subs</span><p className="font-medium mt-0.5">{c.subCount}</p></div>
+                  <div><span className="text-muted-foreground">Revenue</span><p className="font-medium mt-0.5 text-emerald-400">${c.revenue.toFixed(0)}</p></div>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  {c.username && (
+                    <Link to={`/${c.username}`} className="flex-1 min-w-[7rem]">
+                      <Button variant="outline" size="sm" className="h-11 w-full text-caption"><ExternalLink className="mr-1.5 h-3.5 w-3.5" /> Profile</Button>
+                    </Link>
+                  )}
+                  <Button variant="outline" size="sm" className="h-11 flex-1 min-w-[7rem] text-caption" onClick={() => navigate(`/admin/creator-messaging?creatorId=${c.id}`)}>
+                    <MessageSquare className="mr-1.5 h-3.5 w-3.5" /> Message
+                  </Button>
+                  <Button variant="outline" size="sm" className="h-11 flex-1 min-w-[7rem] text-caption" onClick={() => void toggleVerified(c)}>
+                    {c.verificationStatus === 'verified' ? (
+                      <><ShieldCheck className="mr-1.5 h-3.5 w-3.5 text-emerald-400" /> Unverify</>
+                    ) : (
+                      <><ShieldCheck className="mr-1.5 h-3.5 w-3.5" /> Verify</>
+                    )}
+                  </Button>
+                  <Button variant="outline" size="sm" className="h-11 flex-1 min-w-[7rem] text-caption" onClick={() => void togglePublish(c)}>
+                    {c.is_published ? <><Ban className="mr-1.5 h-3.5 w-3.5 text-destructive" /> Disable</> : <><CheckCircle2 className="mr-1.5 h-3.5 w-3.5 text-primary" /> Enable</>}
+                  </Button>
+                </div>
+              </li>
+            ))}
+          </MobileRecordCards>
+
+          <DesktopTableRegion label="Creators table" className="overflow-hidden">
+            <table className="w-full min-w-[720px] text-sm">
               <thead>
                 <tr className="border-b border-border bg-muted/30">
-                  <th className="text-left text-xs font-medium text-muted-foreground p-4">Creator</th>
-                  <th className="text-left text-xs font-medium text-muted-foreground p-4">Email</th>
-                  <th className="text-left text-xs font-medium text-muted-foreground p-4">Subs</th>
-                  <th className="text-left text-xs font-medium text-muted-foreground p-4">Revenue</th>
-                  <th className="text-left text-xs font-medium text-muted-foreground p-4">Fee</th>
-                  <th className="text-left text-xs font-medium text-muted-foreground p-4">Verified</th>
-                  <th className="text-left text-xs font-medium text-muted-foreground p-4">Status</th>
-                  <th className="text-left text-xs font-medium text-muted-foreground p-4">Joined</th>
-                  <th className="text-right text-xs font-medium text-muted-foreground p-4">Actions</th>
+                  <th className="text-left text-caption font-medium text-muted-foreground p-4">Creator</th>
+                  <th className="text-left text-caption font-medium text-muted-foreground p-4">Email</th>
+                  <th className="text-left text-caption font-medium text-muted-foreground p-4">Subs</th>
+                  <th className="text-left text-caption font-medium text-muted-foreground p-4">Revenue</th>
+                  <th className="text-left text-caption font-medium text-muted-foreground p-4">Verified</th>
+                  <th className="text-left text-caption font-medium text-muted-foreground p-4">Status</th>
+                  <th className="text-left text-caption font-medium text-muted-foreground p-4">Joined</th>
+                  <th className="text-right text-caption font-medium text-muted-foreground p-4">Actions</th>
                 </tr>
               </thead>
               <tbody>
-                {filtered.map(c => (
+                {filtered.map((c) => (
                   <tr key={c.id} className="border-b border-border last:border-0 hover:bg-muted/20 transition-colors">
                     <td className="p-4">
                       <p className="font-medium">{c.display_name ?? 'Unnamed'}</p>
-                      <p className="text-xs text-muted-foreground">@{c.username ?? '—'}</p>
+                      <p className="text-caption text-muted-foreground">@{c.username ?? '—'}</p>
                     </td>
-                    <td className="p-4 text-muted-foreground text-xs">{c.email}</td>
+                    <td className="p-4 text-muted-foreground text-caption">{c.email}</td>
                     <td className="p-4 font-medium">{c.subCount}</td>
                     <td className="p-4 font-medium text-emerald-400">${c.revenue.toFixed(0)}</td>
                     <td className="p-4">
-                      <Badge variant="outline" className={`text-[10px] ${c.feePercent <= 5 ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' : 'bg-amber-500/10 text-amber-400 border-amber-500/20'}`}>
-                        {c.feePercent}%
-                      </Badge>
-                    </td>
-                    <td className="p-4">
-                      {c.verified ? (
-                        <Badge variant="outline" className="text-[10px] bg-emerald-500/10 text-emerald-400 border-emerald-500/20"><ShieldCheck className="h-2.5 w-2.5 mr-1" />Verified</Badge>
+                      {c.verificationStatus === 'verified' ? (
+                        <Badge variant="outline" className="text-caption bg-emerald-500/10 text-emerald-400 border-emerald-500/20"><ShieldCheck className="h-2.5 w-2.5 mr-1" />Verified</Badge>
                       ) : (
-                        <Badge variant="outline" className="text-[10px] bg-muted text-muted-foreground">Pending</Badge>
+                        <span className="text-caption text-muted-foreground">—</span>
                       )}
                     </td>
                     <td className="p-4">
                       {c.is_published ? (
-                        <span className="inline-flex items-center gap-1 text-xs font-medium text-emerald-400"><CheckCircle2 className="h-3 w-3" /> Active</span>
+                        <span className="inline-flex items-center gap-1 text-caption font-medium text-emerald-400"><CheckCircle2 className="h-3 w-3" /> Active</span>
                       ) : (
-                        <span className="inline-flex items-center gap-1 text-xs font-medium text-destructive"><XCircle className="h-3 w-3" /> Disabled</span>
+                        <span className="inline-flex items-center gap-1 text-caption font-medium text-destructive"><XCircle className="h-3 w-3" /> Disabled</span>
                       )}
                     </td>
-                    <td className="p-4 text-xs text-muted-foreground">{format(new Date(c.created_at), 'MMM d, yyyy')}</td>
+                    <td className="p-4 text-caption text-muted-foreground">{format(new Date(c.created_at), 'MMM d, yyyy')}</td>
                     <td className="p-4">
                       <div className="flex items-center justify-end gap-1">
                         {c.username && (
                           <Link to={`/${c.username}`}>
-                            <Button variant="ghost" size="sm" className="h-7 px-2 text-xs" title="View profile"><ExternalLink className="h-3 w-3" /></Button>
+                            <Button variant="ghost" size="sm" className="h-9 w-9 px-0 text-caption" title="View profile" aria-label="View profile"><ExternalLink className="h-3.5 w-3.5" /></Button>
                           </Link>
                         )}
-                        <Button variant="ghost" size="sm" className="h-7 px-2 text-xs" onClick={() => navigate('/admin/creator-messaging')} title="Message creator"><MessageSquare className="h-3 w-3" /></Button>
-                        <Button variant="ghost" size="sm" className="h-7 px-2 text-xs" onClick={() => togglePublish(c)} title={c.is_published ? 'Disable' : 'Enable'}>
-                          {c.is_published ? <Ban className="h-3 w-3 text-destructive" /> : <CheckCircle2 className="h-3 w-3 text-primary" />}
+                        <Button variant="ghost" size="sm" className="h-9 w-9 px-0 text-caption" onClick={() => navigate(`/admin/creator-messaging?creatorId=${c.id}`)} title="Message creator" aria-label="Message creator"><MessageSquare className="h-3.5 w-3.5" /></Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-9 w-9 px-0 text-caption"
+                          onClick={() => void toggleVerified(c)}
+                          title={c.verificationStatus === 'verified' ? 'Remove verification' : 'Mark verified'}
+                          aria-label={c.verificationStatus === 'verified' ? 'Remove verification' : 'Mark verified'}
+                        >
+                          <ShieldCheck className={`h-3.5 w-3.5 ${c.verificationStatus === 'verified' ? 'text-emerald-400' : ''}`} />
+                        </Button>
+                        <Button variant="ghost" size="sm" className="h-9 w-9 px-0 text-caption" onClick={() => void togglePublish(c)} title={c.is_published ? 'Disable' : 'Enable'} aria-label={c.is_published ? 'Disable' : 'Enable'}>
+                          {c.is_published ? <Ban className="h-3.5 w-3.5 text-destructive" /> : <CheckCircle2 className="h-3.5 w-3.5 text-primary" />}
                         </Button>
                       </div>
                     </td>
@@ -199,8 +262,22 @@ const AdminCreators = () => {
                 ))}
               </tbody>
             </table>
-          </div>
-        </div>
+          </DesktopTableRegion>
+
+          {(status === 'CanLoadMore' || status === 'LoadingMore') && (
+            <div className="flex justify-center mt-4">
+              <Button
+                variant="outline"
+                size="sm"
+                disabled={status === 'LoadingMore'}
+                onClick={() => loadMore(PAGE_SIZE)}
+              >
+                {status === 'LoadingMore' ? <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" /> : null}
+                Load more
+              </Button>
+            </div>
+          )}
+        </>
       )}
     </DashboardLayout>
   );

@@ -1,19 +1,24 @@
 import { useParams, Link } from 'react-router-dom';
-import { useEffect, useState, useMemo } from 'react';
+import { useEffect, useMemo } from 'react';
+import { useConvexAuth, useQuery } from 'convex/react';
+import { api } from '../../convex/_generated/api';
+import type { Id } from '../../convex/_generated/dataModel';
 import { Button } from '@/components/ui/button';
 import { Seo } from '@/components/Seo';
 import { parsePickOdds as parseOdds } from '@/lib/odds';
 import { Badge } from '@/components/ui/badge';
 import { Navbar } from '@/components/landing/Navbar';
 import { Footer } from '@/components/landing/Footer';
-import { supabase } from '@/lib/supabase';
-import { createCheckoutSession } from '@/lib/stripe';
+import { createCheckoutSession } from '@/data/payments';
 import { trackPageView, trackPostView, trackSubscribeClick } from '@/lib/analytics';
 import { Lock, Users, CheckCircle, Loader2, Trophy, TrendingUp, Target, Flame, Clock, XCircle, Minus, Copy } from 'lucide-react';
-import { format, formatDistanceToNowStrict } from 'date-fns';
+import { format } from 'date-fns';
 import PricingCards from '@/components/creator/PricingCards';
+import { SurfaceCard } from '@/components/ux/SurfaceCard';
 import { ResponsiveContainer, AreaChart, Area, XAxis, YAxis, Tooltip } from 'recharts';
 import { toast } from 'sonner';
+import { copyToClipboard } from '@/lib/clipboard';
+import { subscriptionGrantsContentAccess } from '../../convex/lib/contentAccess';
 
 interface Creator {
   id: string;
@@ -72,33 +77,90 @@ const resultConfig = {
 
 const CreatorProfile = () => {
   const { username } = useParams();
-  const [creator, setCreator] = useState<Creator | null>(null);
-  const [posts, setPosts] = useState<Post[]>([]);
-  const [products, setProducts] = useState<Product[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [subCount, setSubCount] = useState(0);
+  const { isAuthenticated } = useConvexAuth();
+  const creatorData = useQuery(
+    api.creators.queries.getByUsername,
+    username ? { username } : 'skip',
+  );
+  const postsRaw = useQuery(
+    api.posts.queries.listPreviewsByCreator,
+    creatorData ? { creatorId: creatorData._id } : 'skip',
+  );
+  const productsRaw = useQuery(
+    api.products.mutations.listPublicByCreator,
+    creatorData ? { creatorId: creatorData._id } : 'skip',
+  );
+  const subCountRaw = useQuery(
+    api.subscriptions.mutations.countActiveByCreator,
+    creatorData ? { creatorId: creatorData._id } : 'skip',
+  );
+  const mySubs = useQuery(
+    api.subscriptions.mutations.mySubscriptions,
+    isAuthenticated ? {} : 'skip',
+  );
+
+  const loading = creatorData === undefined || (creatorData && (postsRaw === undefined || productsRaw === undefined));
+
+  const creator = creatorData
+    ? {
+        id: creatorData._id,
+        username: creatorData.username,
+        display_name: creatorData.displayName ?? null,
+        bio: creatorData.bio ?? null,
+        avatar_url: creatorData.avatarUrl ?? null,
+        banner_url: creatorData.bannerUrl ?? null,
+        monthly_price: creatorData.monthlyPriceCents != null ? creatorData.monthlyPriceCents / 100 : null,
+      }
+    : null;
+
+  const posts = useMemo(
+    () => (postsRaw ?? []).map((p) => ({
+      id: p._id,
+      title: p.title,
+      content: p.content,
+      is_premium: p.isPremium,
+      created_at: new Date(p.createdAt).toISOString(),
+      result: p.result,
+    })),
+    [postsRaw],
+  );
+
+  const products = useMemo(
+    () => (productsRaw ?? [])
+      .sort((a, b) => Number(b.isFeatured) - Number(a.isFeatured) || a.priceCents - b.priceCents)
+      .map((p) => ({
+        id: p._id,
+        name: p.name,
+        description: p.description ?? null,
+        price: p.priceCents / 100,
+        billing_period: p.billingPeriod,
+        is_featured: p.isFeatured,
+      })),
+    [productsRaw],
+  );
+
+  const subCount = subCountRaw ?? 0;
+  const isSubscribed = Boolean(
+    creator &&
+      mySubs?.some((s) =>
+        s.creatorId === creator.id &&
+        subscriptionGrantsContentAccess(
+          {
+            status: s.status,
+            billingStatus: s.billingStatus,
+            currentPeriodEnd: s.currentPeriodEnd,
+            cancelAtPeriodEnd: s.cancelAtPeriodEnd,
+          },
+          Date.now(),
+        ),
+      ),
+  );
 
   useEffect(() => {
-    if (!username) return;
-    const load = async () => {
-      setLoading(true);
-      const { data: creatorData } = await supabase.from('creators').select('*').eq('username', username).eq('is_published', true).maybeSingle();
-      if (!creatorData) { setLoading(false); return; }
-      setCreator(creatorData);
-      const [postsRes, subsRes, productsRes] = await Promise.all([
-        supabase.rpc('get_creator_post_previews', { p_creator_id: creatorData.id }),
-        supabase.from('subscriptions').select('id', { count: 'exact', head: true }).eq('creator_id', creatorData.id).eq('status', 'active'),
-        supabase.from('products').select('*').eq('creator_id', creatorData.id).eq('is_active', true).order('is_featured', { ascending: false }).order('price', { ascending: true }),
-      ]);
-      setPosts((postsRes.data ?? []) as Post[]);
-      setSubCount(subsRes.count ?? 0);
-      setProducts((productsRes.data ?? []) as Product[]);
-      setLoading(false);
-      trackPageView(`creator:${creatorData.username}`);
-      (postsRes.data ?? []).forEach((p: any) => trackPostView(p.id, creatorData.id));
-    };
-    load();
-  }, [username]);
+    if (!creator) return;
+    trackPageView(`creator:${creator.username}`);
+    posts.forEach((p) => trackPostView(p.id, creator.id));
+  }, [creator?.id, posts.length]);
 
   // Stats
   const stats = useMemo(() => {
@@ -156,7 +218,7 @@ const CreatorProfile = () => {
   if (!creator) {
     return (
       <div className="min-h-screen">
-        <Seo title="Creator not found — Wizzlet" description="This creator profile doesn't exist or isn't published yet." noindex />
+        <Seo title="Creator not found — Prizelet" description="This creator profile doesn't exist or isn't published yet." noindex />
         <Navbar />
         <main id="main-content" className="pt-32 text-center">
           <h1 className="text-2xl font-bold mb-2">Creator not found</h1>
@@ -170,15 +232,21 @@ const CreatorProfile = () => {
     );
   }
 
-  const price = (creator.monthly_price ?? 9.99).toFixed(2);
+  const featuredProduct = products.find((p) => p.is_featured) ?? products[0];
+  const price = (
+    featuredProduct?.price ??
+    creator.monthly_price ??
+    9.99
+  ).toFixed(2);
+  const checkoutProductId = featuredProduct?.id;
   const hasProducts = products.length > 0;
   const initials = (creator.display_name?.[0] ?? creator.username[0]).toUpperCase();
 
   return (
     <div className="min-h-screen">
       <Seo
-        title={`${creator.display_name ?? creator.username} (@${creator.username}) — Picks & Subscriptions | Wizzlet`}
-        description={(creator.bio?.trim() || `Follow @${creator.username} on Wizzlet for verified sports picks, results and subscription access from $${price}/mo.`).slice(0, 155)}
+        title={`${creator.display_name ?? creator.username} (@${creator.username}) — Picks & Subscriptions | Prizelet`}
+        description={(creator.bio?.trim() || `Follow @${creator.username} on Prizelet for verified sports picks, results and subscription access from $${price}/mo.`).slice(0, 155)}
         canonicalPath={`/${creator.username}`}
       />
       <Navbar />
@@ -189,9 +257,9 @@ const CreatorProfile = () => {
         {creator.banner_url ? (
           <img src={creator.banner_url} alt="" className="h-full w-full object-cover" />
         ) : (
-          <div className="h-full w-full bg-gradient-to-br from-primary/10 via-secondary to-secondary" />
+          <div className="h-full w-full bg-secondary" />
         )}
-        <div className="absolute inset-0 bg-gradient-to-t from-background via-background/20 to-transparent" />
+        <div className="absolute inset-0 bg-background/80" />
       </div>
 
       <div className="container max-w-2xl relative -mt-16 z-10 pb-20">
@@ -211,7 +279,7 @@ const CreatorProfile = () => {
             {creator.display_name ?? creator.username}
             <CheckCircle className="h-5 w-5 text-primary shrink-0" />
             {stats.streak >= 3 && (
-              <span className="inline-flex items-center gap-1 rounded-full bg-amber-500/10 px-2.5 py-1 text-xs font-bold text-amber-500">
+              <span className="inline-flex items-center gap-1 rounded-full bg-amber-500/10 px-2.5 py-1 text-caption font-bold text-amber-500">
                 <Flame className="h-3.5 w-3.5" /> {stats.streak}W
               </span>
             )}
@@ -234,17 +302,17 @@ const CreatorProfile = () => {
             { label: 'Units P/L', value: `${stats.totalUnits}u`, icon: Target, color: 'text-primary' },
             { label: 'Record', value: `${stats.wins}W - ${stats.settled - stats.wins}L`, icon: Trophy, color: 'text-foreground' },
           ].map(s => (
-            <div key={s.label} className="rounded-xl border border-border bg-card p-3 text-center">
+            <SurfaceCard key={s.label} className="p-3 text-center">
               <s.icon className={`h-4 w-4 ${s.color} mx-auto mb-1`} />
               <p className={`text-lg font-bold ${s.color}`}>{s.value}</p>
-              <p className="text-[9px] text-muted-foreground uppercase tracking-wider">{s.label}</p>
-            </div>
+              <p className="text-caption text-muted-foreground uppercase tracking-wider">{s.label}</p>
+            </SurfaceCard>
           ))}
         </div>
 
         {/* Performance chart from settled picks */}
-        <div className="mt-6 rounded-xl border border-border bg-card p-4">
-          <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">Performance</h3>
+        <SurfaceCard className="mt-6 p-4">
+          <h3 className="text-caption font-semibold text-muted-foreground uppercase tracking-wider mb-3">Performance</h3>
           {chartData.length === 0 ? (
             <p className="text-sm text-muted-foreground py-8 text-center">No settled picks yet to chart.</p>
           ) : (
@@ -256,23 +324,51 @@ const CreatorProfile = () => {
                     <stop offset="100%" stopColor="hsl(var(--primary))" stopOpacity={0} />
                   </linearGradient>
                 </defs>
-                <XAxis dataKey="date" tick={{ fontSize: 10 }} stroke="hsl(var(--muted-foreground))" tickLine={false} axisLine={false} interval="preserveStartEnd" />
-                <YAxis tick={{ fontSize: 10 }} stroke="hsl(var(--muted-foreground))" tickLine={false} axisLine={false} width={30} />
+                <XAxis dataKey="date" tick={{ fontSize: 14 }} stroke="hsl(var(--muted-foreground))" tickLine={false} axisLine={false} interval="preserveStartEnd" />
+                <YAxis tick={{ fontSize: 14 }} stroke="hsl(var(--muted-foreground))" tickLine={false} axisLine={false} width={30} />
                 <Tooltip contentStyle={{ background: 'hsl(var(--card))', border: '1px solid hsl(var(--border))', borderRadius: '8px', fontSize: '12px' }} />
                 <Area type="monotone" dataKey="units" stroke="hsl(var(--primary))" fill="url(#profitGrad)" strokeWidth={2} />
               </AreaChart>
             </ResponsiveContainer>
           )}
-        </div>
+        </SurfaceCard>
 
         {/* Subscribe CTA */}
-        {hasProducts ? (
-          <div className="mt-8 w-full">
+        {isSubscribed ? (
+          <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center">
+            <Button variant="hero" size="lg" className="h-12 text-base px-8" asChild>
+              <Link to="/dashboard/subscriptions-billing">Open Subscriptions</Link>
+            </Button>
+            <Button variant="outline" size="lg" className="h-12 text-base px-8" asChild>
+              <Link to="/dashboard">View posts</Link>
+            </Button>
+            <Button variant="ghost" size="lg" className="h-12 pointer-events-none gap-2">
+              <CheckCircle className="h-4 w-4 text-emerald-500" />
+              Active access
+            </Button>
+            <Button variant="ghost" size="lg" className="h-12" asChild>
+              <Link to="/dashboard/subscriptions-billing">Manage billing</Link>
+            </Button>
+          </div>
+        ) : hasProducts ? (
+          <div className="mt-8 w-full space-y-3">
+            <h2 className="text-sm font-medium uppercase tracking-wider text-muted-foreground">
+              Choose a plan
+            </h2>
+            <p className="text-support text-muted-foreground max-w-xl">
+              Pick a product below to unlock premium posts
+              {products.length > 0
+                ? ` — ${posts.filter((p) => p.is_premium).length} premium and ${posts.length} total published samples on this profile.`
+                : '.'}
+            </p>
             <PricingCards products={products} creatorId={creator.id} creatorUsername={creator.username} />
           </div>
         ) : (
           <Button variant="hero" size="lg" className="mt-6 text-base px-10 h-12 w-full sm:w-auto"
-            onClick={() => { trackSubscribeClick(creator.id); createCheckoutSession(creator.id, creator.username); }}>
+            onClick={() => {
+              trackSubscribeClick(creator.id);
+              createCheckoutSession(creator.id, creator.username, checkoutProductId);
+            }}>
             Subscribe — ${price}/mo
           </Button>
         )}
@@ -282,9 +378,9 @@ const CreatorProfile = () => {
           <h2 className="text-sm font-medium text-muted-foreground uppercase tracking-wider mb-4">Recent Picks</h2>
 
           {posts.length === 0 && (
-            <div className="rounded-xl border border-border bg-card p-8 text-center">
+            <SurfaceCard className="p-8 text-center">
               <p className="text-sm text-muted-foreground">No picks yet. Check back soon!</p>
-            </div>
+            </SurfaceCard>
           )}
 
           {posts.map((post) => {
@@ -295,27 +391,27 @@ const CreatorProfile = () => {
             const ResultIcon = rc.icon;
 
             return (
-              <article key={post.id} className="rounded-xl border border-border bg-card overflow-hidden transition-colors hover:border-border/80">
+              <SurfaceCard key={post.id} className="transition-colors hover:border-border/80">
                 <div className="p-5 sm:p-6">
                   <div className="flex items-center gap-2 mb-2.5 flex-wrap">
                     {post.is_premium && !post.content ? (
-                      <Badge variant="outline" className="text-[9px] bg-primary/10 text-primary border-primary/20">
+                      <Badge variant="outline" className="text-caption bg-primary/10 text-primary border-primary/20">
                         <Lock className="h-2.5 w-2.5 mr-0.5" /> PREMIUM
                       </Badge>
                     ) : post.is_premium ? (
-                      <Badge variant="outline" className="text-[9px] bg-primary/10 text-primary border-primary/20">
+                      <Badge variant="outline" className="text-caption bg-primary/10 text-primary border-primary/20">
                         <Lock className="h-2.5 w-2.5 mr-0.5" /> PREMIUM
                       </Badge>
                     ) : (
-                      <span className="inline-flex items-center rounded-full bg-secondary px-2 py-0.5 text-[10px] font-medium text-muted-foreground uppercase tracking-wide">Free</span>
+                      <span className="inline-flex items-center rounded-full bg-secondary px-2 py-0.5 text-caption font-medium text-muted-foreground uppercase tracking-wide">Free</span>
                     )}
                     {pick?.sport && (
-                      <Badge variant="outline" className="text-[9px] font-semibold bg-primary/5 text-primary border-primary/15">{pick.sport}</Badge>
+                      <Badge variant="outline" className="text-caption font-semibold bg-primary/5 text-primary border-primary/15">{pick.sport}</Badge>
                     )}
-                    <Badge variant="outline" className={`text-[9px] font-semibold uppercase ${rc.className}`}>
+                    <Badge variant="outline" className={`text-caption font-semibold uppercase ${rc.className}`}>
                       <ResultIcon className="h-2.5 w-2.5 mr-0.5" /> {rc.label}
                     </Badge>
-                    <span className="text-xs text-muted-foreground">{format(new Date(post.created_at), 'MMM d, yyyy')}</span>
+                    <span className="text-caption text-muted-foreground">{format(new Date(post.created_at), 'MMM d, yyyy')}</span>
                   </div>
 
                   <h3 className="font-semibold text-sm sm:text-base mb-2">{pick?.pick || post.title}</h3>
@@ -324,14 +420,14 @@ const CreatorProfile = () => {
                   {(odds.us || odds.eu) && (
                     <div className="flex items-center gap-2 mb-2">
                       <div className="inline-flex items-center gap-1.5 rounded-lg bg-muted/50 px-2.5 py-1">
-                        <span className="text-[10px] text-muted-foreground">Odds:</span>
-                        {odds.us && <span className="text-xs font-bold">{odds.us}</span>}
-                        {odds.us && odds.eu && <span className="text-[10px] text-muted-foreground">/</span>}
-                        {odds.eu && <span className="text-xs font-semibold text-muted-foreground">{odds.eu}</span>}
+                        <span className="text-caption text-muted-foreground">Odds:</span>
+                        {odds.us && <span className="text-caption font-bold">{odds.us}</span>}
+                        {odds.us && odds.eu && <span className="text-caption text-muted-foreground">/</span>}
+                        {odds.eu && <span className="text-caption font-semibold text-muted-foreground">{odds.eu}</span>}
                       </div>
                       {pick?.units && (
                         <div className="inline-flex items-center rounded-lg bg-muted/50 px-2.5 py-1">
-                          <span className="text-xs font-bold">{pick.units}</span>
+                          <span className="text-caption font-bold">{pick.units}</span>
                         </div>
                       )}
                     </div>
@@ -348,16 +444,26 @@ const CreatorProfile = () => {
                           <div className="h-3 bg-muted-foreground/10 rounded w-3/4" />
                         </div>
                       </div>
-                      <div className="relative z-10 backdrop-blur-[2px]">
+                      <div className="relative z-10">
                         <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-2">
                           <Lock className="h-4 w-4 text-primary" />
                         </div>
                         <p className="text-sm font-medium mb-1">Premium Content</p>
-                        <p className="text-xs text-muted-foreground mb-3">Subscribe to unlock this pick</p>
-                        <Button variant="hero" size="sm" className="text-xs px-5"
-                          onClick={(e) => { e.stopPropagation(); trackSubscribeClick(creator.id); createCheckoutSession(creator.id, creator.username); }}>
-                          Subscribe — ${price}/mo
-                        </Button>
+                        {isSubscribed ? (
+                          <p className="text-caption text-muted-foreground mb-3">Content will appear when the creator unlocks this pick.</p>
+                        ) : (
+                          <>
+                            <p className="text-caption text-muted-foreground mb-3">Subscribe to unlock this pick</p>
+                            <Button variant="hero" size="sm" className="text-caption px-5"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                trackSubscribeClick(creator.id);
+                                createCheckoutSession(creator.id, creator.username, checkoutProductId);
+                              }}>
+                              Subscribe — ${price}/mo
+                            </Button>
+                          </>
+                        )}
                       </div>
                     </div>
                   ) : (
@@ -374,19 +480,22 @@ const CreatorProfile = () => {
                   {/* Copy button */}
                   {post.content && (
                     <div className="pt-2 mt-2 border-t border-border">
-                      <Button variant="ghost" size="sm" className="h-7 text-xs text-muted-foreground hover:text-foreground"
+                      <Button variant="ghost" size="sm" className="h-7 text-caption text-muted-foreground hover:text-foreground"
                         onClick={() => {
-                          const p = parsePick(post.content);
-                          const text = p ? `${post.title}${p.pick ? ` | ${p.pick}` : ''}${p.odds ? ` | ${p.odds}` : ''}` : post.title;
-                          navigator.clipboard.writeText(text);
-                          toast.success('Pick copied to clipboard');
+                          void (async () => {
+                            const p = parsePick(post.content);
+                            const text = p ? `${post.title}${p.pick ? ` | ${p.pick}` : ''}${p.odds ? ` | ${p.odds}` : ''}` : post.title;
+                            const ok = await copyToClipboard(text);
+                            if (ok) toast.success('Pick copied to clipboard');
+                            else toast.error('Could not copy — try selecting the text manually');
+                          })();
                         }}>
                         <Copy className="h-3 w-3 mr-1" /> Copy Pick
                       </Button>
                     </div>
                   )}
                 </div>
-              </article>
+              </SurfaceCard>
             );
           })}
         </div>

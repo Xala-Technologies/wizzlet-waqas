@@ -69,7 +69,7 @@ export interface DemoAdminState {
   settings: DemoAdminSettings;
 }
 
-const KEY = 'wizzlet.demo.admin.v1';
+const KEY = 'prizelet.demo.admin.v1';
 
 const CREATOR_SEED: DemoAdminCreator[] = [
   { id: 'c1', name: 'SharpShooter Picks', username: 'sharpshooter', email: 'sharp@email.com', subs: 342, joinedDaysAgo: 120, active: true, featured: true },
@@ -117,8 +117,8 @@ const seed = (): DemoAdminState => ({
   ],
   transactions: txSeed(),
   settings: {
-    platformName: 'Wizzlet',
-    supportEmail: 'support@wizzlet.com',
+    platformName: 'Prizelet',
+    supportEmail: 'support@prizelet.com',
     tagline: 'The premium creator platform',
     standardFeePercent: 10,
     introFeePercent: 5,

@@ -2,15 +2,16 @@ import { Link, useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { useState } from 'react';
 import { Menu, X, Bell } from 'lucide-react';
+import { useQuery } from 'convex/react';
 import { useAuth } from '@/contexts/AuthContext';
 import { cn } from '@/lib/utils';
 import { ThemeToggle } from '@/components/ThemeToggle';
-import { WizzletLogo } from '@/components/WizzletLogo';
+import { PrizeletLogo } from '@/components/PrizeletLogo';
+import { api } from '@convex/_generated/api';
 
 const navLinks = [
   { label: 'Home', path: '/' },
-  { label: 'Today\'s Events', path: '/todays-events' },
-  { label: 'Network', path: '/network' },
+  { label: 'Discover', path: '/discover' },
   { label: 'Creators', path: '/creators' },
 ];
 
@@ -18,9 +19,20 @@ export function Navbar() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const { user, role } = useAuth();
   const { pathname } = useLocation();
+  const notifUnread = useQuery(
+    api.notifications.mutations.unreadCount,
+    user ? {} : 'skip',
+  );
 
   const dashboardPath = role === 'creator' ? '/creator' : role === 'admin' ? '/admin' : '/dashboard';
-  const notificationsPath = role === 'creator' ? '/creator' : '/dashboard/notifications';
+  const notificationsPath =
+    role === 'creator'
+      ? '/creator/notifications'
+      : role === 'admin'
+        ? '/admin/notifications'
+        : '/dashboard/notifications';
+
+  const showNotifDot = (notifUnread ?? 0) > 0;
 
   return (
     <>
@@ -30,25 +42,27 @@ export function Navbar() {
     >
       Skip to main content
     </a>
-    <nav className="fixed top-0 left-0 right-0 z-50 border-b border-border bg-card/70 backdrop-blur-2xl">
+    <nav className="fixed top-0 left-0 right-0 z-50 border-b border-border bg-card">
 
       <div className="container flex h-16 items-center justify-between">
         {/* LEFT: Logo */}
-        <WizzletLogo size="md" />
+        <PrizeletLogo size="md" />
 
         {/* CENTER: Nav links */}
         <div className="hidden lg:flex items-center gap-1">
           {navLinks.map(({ label, path }) => {
-            const isActive = pathname === path;
+            const isActive =
+              path === '/'
+                ? pathname === '/'
+                : pathname === path || pathname.startsWith(`${path}/`);
             return (
               <Link
                 key={path}
                 to={path}
+                aria-current={isActive ? 'page' : undefined}
                 className={cn(
-                  'relative px-3.5 py-2 text-[13px] font-medium rounded-lg transition-all duration-200',
-                  isActive
-                    ? 'text-foreground'
-                    : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'
+                  'relative px-3.5 py-2 text-support font-medium rounded-lg transition-all duration-200 text-foreground',
+                  !isActive && 'hover:bg-muted/50'
                 )}
               >
                 {label}
@@ -64,9 +78,11 @@ export function Navbar() {
         <div className="hidden lg:flex items-center gap-3 shrink-0">
           <ThemeToggle />
           {user && (
-            <Link to={notificationsPath} className="relative p-2 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors">
+            <Link to={notificationsPath} className="relative p-2 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors" aria-label="Notifications">
               <Bell className="h-4.5 w-4.5" />
-              <span className="absolute top-1 right-1 h-2 w-2 rounded-full bg-primary" />
+              {showNotifDot && (
+                <span className="absolute top-1 right-1 h-2 w-2 rounded-full bg-primary" />
+              )}
             </Link>
           )}
           {user ? (
@@ -88,16 +104,24 @@ export function Navbar() {
         {/* Mobile toggle */}
         <div className="flex lg:hidden items-center gap-2">
           {user && (
-            <Link to={notificationsPath} aria-label="Notifications" className="relative p-2 text-muted-foreground hover:text-foreground transition-colors">
+            <Link
+              to={notificationsPath}
+              aria-label="Notifications"
+              className="relative inline-flex h-11 w-11 items-center justify-center rounded-lg text-muted-foreground hover:bg-muted/50 hover:text-foreground transition-colors"
+            >
               <Bell className="h-4 w-4" />
-              <span className="absolute top-1 right-1 h-1.5 w-1.5 rounded-full bg-primary" />
+              {showNotifDot && (
+                <span className="absolute top-2.5 right-2.5 h-1.5 w-1.5 rounded-full bg-primary" />
+              )}
             </Link>
           )}
           <ThemeToggle />
           <button
+            type="button"
             aria-label={mobileOpen ? 'Close menu' : 'Open menu'}
             aria-expanded={mobileOpen}
-            className="p-2 text-muted-foreground hover:text-foreground transition-colors"
+            aria-controls="landing-mobile-nav"
+            className="inline-flex h-11 w-11 items-center justify-center rounded-lg text-muted-foreground hover:bg-muted/50 hover:text-foreground transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
             onClick={() => setMobileOpen(!mobileOpen)}
           >
             {mobileOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
@@ -107,16 +131,25 @@ export function Navbar() {
 
       {/* Mobile menu */}
       {mobileOpen && (
-        <div className="lg:hidden border-t border-border bg-card/95 backdrop-blur-xl px-6 pb-6 pt-4 space-y-1 animate-fade-in">
+        <div
+          id="landing-mobile-nav"
+          role="navigation"
+          aria-label="Mobile"
+          className="lg:hidden border-t border-border bg-card px-6 pb-[max(1.5rem,env(safe-area-inset-bottom))] pt-4 space-y-1 animate-fade-in"
+        >
           {navLinks.map(({ label, path }) => {
-            const isActive = pathname === path;
+            const isActive =
+              path === '/'
+                ? pathname === '/'
+                : pathname === path || pathname.startsWith(`${path}/`);
             return (
               <Link
                 key={path}
                 to={path}
+                aria-current={isActive ? 'page' : undefined}
                 className={cn(
-                  'block px-3 py-2.5 text-sm rounded-lg transition-colors',
-                  isActive ? 'text-foreground bg-muted/50' : 'text-muted-foreground hover:text-foreground hover:bg-muted/30'
+                  'flex min-h-11 items-center px-3 py-2.5 text-sm rounded-lg transition-colors text-foreground',
+                  isActive ? 'bg-muted/50' : 'hover:bg-muted/30'
                 )}
                 onClick={() => setMobileOpen(false)}
               >
@@ -127,15 +160,15 @@ export function Navbar() {
           <div className="flex flex-col gap-2 pt-3 border-t border-border mt-2">
             {user ? (
               <Link to={dashboardPath} onClick={() => setMobileOpen(false)}>
-                <Button variant="default" size="sm" className="w-full justify-center">Dashboard</Button>
+                <Button variant="default" size="sm" className="w-full justify-center min-h-11">Dashboard</Button>
               </Link>
             ) : (
               <>
                 <Link to="/login" onClick={() => setMobileOpen(false)}>
-                  <Button variant="ghost" size="sm" className="w-full justify-center">Log in</Button>
+                  <Button variant="ghost" size="sm" className="w-full justify-center min-h-11">Log in</Button>
                 </Link>
                 <Link to="/signup" onClick={() => setMobileOpen(false)}>
-                  <Button variant="default" size="sm" className="w-full justify-center">Get Access</Button>
+                  <Button variant="default" size="sm" className="w-full justify-center min-h-11">Get Access</Button>
                 </Link>
               </>
             )}

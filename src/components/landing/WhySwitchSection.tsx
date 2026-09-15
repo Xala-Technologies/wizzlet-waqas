@@ -1,4 +1,5 @@
 import { DollarSign, Focus, Shield } from 'lucide-react';
+import { LandingSection } from '@/components/landing/LandingSection';
 
 const cards = [
   {
@@ -20,12 +21,10 @@ const cards = [
 
 export function WhySwitchSection() {
   return (
-    <section className="relative py-24 md:py-32 overflow-hidden">
-      <div className="pointer-events-none absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 h-[500px] w-[600px] rounded-full opacity-[0.05] blur-[160px] bg-primary" />
-
+    <LandingSection className="overflow-hidden">
       <div className="container relative z-10">
         <div className="text-center mb-16">
-          <div className="inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/[0.06] px-4 py-1.5 text-[11px] uppercase tracking-[0.2em] text-primary mb-6 backdrop-blur-sm">
+          <div className="inline-flex items-center gap-2 rounded-full border border-border bg-muted px-4 py-1.5 text-caption uppercase tracking-[0.2em] text-muted-foreground mb-6">
             <span className="h-1.5 w-1.5 rounded-full bg-primary animate-pulse" />
             Invite-only system
           </div>
@@ -34,7 +33,7 @@ export function WhySwitchSection() {
             WHY PEOPLE SWITCH
           </h2>
 
-          <p className="text-[15px] sm:text-base text-muted-foreground max-w-[440px] mx-auto leading-relaxed">
+          <p className="text-ui sm:text-base text-muted-foreground max-w-[440px] mx-auto leading-relaxed">
             Most platforms are built for volume. This one is built for results.
           </p>
         </div>
@@ -49,17 +48,17 @@ export function WhySwitchSection() {
                 <card.icon className="h-5 w-5" />
               </div>
 
-              <h3 className="text-[17px] font-bold text-foreground mb-2 tracking-tight">
+              <h3 className="text-title font-bold text-foreground mb-2 tracking-tight">
                 {card.title}
               </h3>
 
-              <p className="text-[13px] text-muted-foreground leading-relaxed">
+              <p className="text-support text-muted-foreground leading-relaxed">
                 {card.desc}
               </p>
             </div>
           ))}
         </div>
       </div>
-    </section>
+    </LandingSection>
   );
 }

@@ -1,0 +1,59 @@
+{
+  "version": 1,
+  "baselineCommit": "4ad800119b7caf6decc14d0e10b50c8a711b820f",
+  "note": "Stabilization coverage register — statuses updated as fixes land",
+  "workflows": [
+    {
+      "id": "SEC-01",
+      "title": "Credential change cannot target another account",
+      "finding": "WZ-01",
+      "static": "PASS",
+      "backendTest": "PASS",
+      "browser": "NOT_RUN",
+      "notes": "ensureUser no longer accepts email; changePassword binds to owned authAccounts providerAccountId + currentPassword"
+    },
+    {
+      "id": "PAY-01",
+      "title": "Redirect and webhook same purchase → one ledger row",
+      "finding": "WZ-02",
+      "static": "PASS",
+      "backendTest": "PASS",
+      "browser": "NOT_RUN",
+      "notes": "fulfillCheckout dedupes on checkoutSessionId/commercialRef; webhookReceipts separate"
+    },
+    {
+      "id": "PAY-02",
+      "title": "Concurrent / retry fulfillment → one entitlement",
+      "finding": "WZ-02",
+      "static": "PASS",
+      "backendTest": "PASS",
+      "browser": "NOT_RUN"
+    },
+    {
+      "id": "PAY-05",
+      "title": "Stripe cancel failure does not fake local success",
+      "finding": "WZ-03",
+      "static": "PASS",
+      "backendTest": "PASS",
+      "browser": "NOT_RUN",
+      "notes": "cancel pending → Stripe → local; STRIPE_CANCEL_FAILED if provider fails"
+    },
+    {
+      "id": "PAY-06",
+      "title": "Invoice lifecycle updates billingStatus",
+      "finding": "WZ-04",
+      "static": "PASS",
+      "backendTest": "PASS",
+      "browser": "NOT_RUN"
+    },
+    {
+      "id": "AUTH-01",
+      "title": "Migrated user continuity",
+      "finding": "WZ-07",
+      "static": "NOT_APPLICABLE",
+      "backendTest": "NOT_APPLICABLE",
+      "browser": "NOT_APPLICABLE",
+      "notes": "Greenfield ADR"
+    }
+  ]
+}

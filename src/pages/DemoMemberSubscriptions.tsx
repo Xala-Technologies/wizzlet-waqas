@@ -39,7 +39,7 @@ const DemoMemberSubscriptions = () => {
           <div key={s.label} className="rounded-xl border border-border bg-card p-4">
             <s.icon className="h-3.5 w-3.5 text-muted-foreground mb-2" />
             <p className="text-xl font-bold">{s.value}</p>
-            <p className="text-[10px] text-muted-foreground uppercase">{s.label}</p>
+            <p className="text-caption text-muted-foreground uppercase">{s.label}</p>
           </div>
         ))}
       </div>
@@ -61,12 +61,12 @@ const DemoMemberSubscriptions = () => {
                 </div>
                 <div className="min-w-0 flex-1">
                   <p className="font-semibold text-sm">{c.name}</p>
-                  <p className="text-[11px] text-muted-foreground">
+                  <p className="text-caption text-muted-foreground">
                     ${c.price}/mo · renews {format(nextBilling, 'MMM d')}
                     {perf ? ` · ${perf.picks} tracked picks (${perf.units >= 0 ? '+' : ''}${perf.units}u)` : ''}
                   </p>
                 </div>
-                <Badge variant="outline" className="text-[9px] bg-emerald-500/10 text-emerald-500 border-emerald-500/20">ACTIVE</Badge>
+                <Badge variant="outline" className="text-caption bg-emerald-500/10 text-emerald-500 border-emerald-500/20">ACTIVE</Badge>
                 <CancelSubButton creatorId={c.id} />
               </div>
             );
@@ -80,12 +80,12 @@ const DemoMemberSubscriptions = () => {
       ) : (
         <div className="rounded-xl border border-border overflow-hidden">
           {invoices.map((inv, i) => (
-            <div key={inv.id} className={`flex items-center gap-3 px-5 py-3 text-xs ${i < invoices.length - 1 ? 'border-b border-border' : ''}`}>
+            <div key={inv.id} className={`flex items-center gap-3 px-5 py-3 text-caption ${i < invoices.length - 1 ? 'border-b border-border' : ''}`}>
               <Receipt className="h-3.5 w-3.5 text-muted-foreground" />
               <span className="flex-1 font-medium">{inv.creator}</span>
               <span className="text-muted-foreground">{format(inv.date, 'MMM d, yyyy')}</span>
               <span className="w-16 text-right font-medium">${inv.amount.toFixed(2)}</span>
-              <Badge variant="outline" className="text-[9px] bg-emerald-500/10 text-emerald-500 border-emerald-500/20">PAID</Badge>
+              <Badge variant="outline" className="text-caption bg-emerald-500/10 text-emerald-500 border-emerald-500/20">PAID</Badge>
             </div>
           ))}
         </div>

@@ -161,7 +161,7 @@ const seed = (): DemoMemberState => ({
   },
 });
 
-const KEY = 'wizzlet.demo.member.v1';
+const KEY = 'prizelet.demo.member.v1';
 
 const load = (): DemoMemberState => {
   try {

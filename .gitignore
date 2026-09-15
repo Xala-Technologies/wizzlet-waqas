@@ -27,3 +27,16 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Convex / migration
+.migration-checkpoints.json
+supabase/.temp/
+
+# Playwright / QA private artifacts
+/test-results/
+/playwright-report/
+/blob-report/
+/playwright/.cache/
+/e2e/.auth/
+docs/qa/private/
+.vercel

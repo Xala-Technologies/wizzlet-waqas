@@ -37,7 +37,7 @@ export function CancelSubButton({ creatorId, variant = 'plain' }: Props) {
       <Button
         size="sm"
         variant="outline"
-        className="h-7 text-xs"
+        className="h-7 text-caption"
         onClick={() => setOpen(true)}
       >
         {variant === 'status' ? <><Check className="mr-1 h-3 w-3" /> Subscribed</> : 'Cancel'}

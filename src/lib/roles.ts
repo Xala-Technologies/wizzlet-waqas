@@ -1,5 +1,3 @@
-import { supabase } from '@/lib/supabase';
-
 export type AppRole = 'creator' | 'subscriber' | 'admin';
 
 /**
@@ -14,7 +12,7 @@ export const ROLE_LABEL: Record<AppRole, string> = {
   subscriber: 'Member',
 };
 
-export const ACTIVE_ROLE_STORAGE_KEY = 'wizzlet.activeRole';
+export const ACTIVE_ROLE_STORAGE_KEY = 'prizelet.activeRole';
 
 export function isAppRole(value: unknown): value is AppRole {
   return value === 'admin' || value === 'creator' || value === 'subscriber';
@@ -28,11 +26,20 @@ export function sortRoles(roles: AppRole[]): AppRole[] {
 /**
  * Pick the active role deterministically: a previously chosen role wins when the
  * user still holds it, otherwise fall back to the highest-privilege role.
+ * Empty preferred (new device / cleared storage) → priority fallback.
  */
 export function resolveActiveRole(roles: AppRole[], preferred?: string | null): AppRole | null {
   if (roles.length === 0) return null;
   if (isAppRole(preferred) && roles.includes(preferred)) return preferred;
-  return sortRoles(roles)[0];
+  return sortRoles(roles)[0] ?? null;
+}
+
+/** Post-login destination from server-held roles (not localStorage alone). */
+export function postLoginPath(
+  roles: AppRole[],
+  preferred?: string | null,
+): string {
+  return homePathForRole(resolveActiveRole(roles, preferred));
 }
 
 export function homePathForRole(role: AppRole | null): string {
@@ -48,15 +55,9 @@ export function homePathForRole(role: AppRole | null): string {
   }
 }
 
-/** Fetch every role a user holds. Never returns duplicates. */
-export async function fetchUserRoles(userId: string): Promise<AppRole[]> {
-  const { data, error } = await supabase
-    .from('user_roles')
-    .select('role')
-    .eq('user_id', userId);
-
-  if (error || !data) return [];
-
-  const roles = data.map((r) => r.role).filter(isAppRole);
-  return sortRoles(Array.from(new Set(roles)));
+/**
+ * @deprecated Roles load via Convex AuthContext (api.roles.mutations.myRoles).
+ */
+export async function fetchUserRoles(_userId: string): Promise<AppRole[]> {
+  return [];
 }

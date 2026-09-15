@@ -26,6 +26,7 @@ import DemoMemberResults from "./pages/DemoMemberResults";
 import DemoMemberSaved from "./pages/DemoMemberSaved";
 import DemoMemberNotifications from "./pages/DemoMemberNotifications";
 import Signup from "./pages/Signup";
+import AuthCallback from "./pages/AuthCallback";
 import SelectRole from "./pages/SelectRole";
 import Dashboard from "./pages/Dashboard";
 import CustomerResults from "./pages/CustomerResults";
@@ -35,6 +36,7 @@ import CustomerNotifications from "./pages/CustomerNotifications";
 import CustomerDiscover from "./pages/CustomerDiscover";
 import CustomerSettings from "./pages/CustomerSettings";
 import CustomerActivity from "./pages/CustomerActivity";
+import CustomerMessages from "./pages/CustomerMessages";
 import CreatorDashboard from "./pages/CreatorDashboard";
 import CreatorPosts from "./pages/CreatorPosts";
 import CreatorProducts from "./pages/CreatorProducts";
@@ -47,12 +49,14 @@ import CreatorAccessControl from "./pages/CreatorAccessControl";
 import CreatorPerformanceTracker from "./pages/CreatorPerformanceTracker";
 import CreatorMessages from "./pages/CreatorMessages";
 import CreatorLinks from "./pages/CreatorLinks";
+import CreatorLinkRedirect from "./pages/CreatorLinkRedirect";
 import CreatorReferrals from "./pages/CreatorReferrals";
 import CreatorEarnings from "./pages/CreatorEarnings";
 import CreatorPayouts from "./pages/CreatorPayouts";
 import CreatorSettings from "./pages/CreatorSettings";
 import CreatorOnboarding from "./pages/CreatorOnboarding";
 import CreatorProfile from "./pages/CreatorProfile";
+import CreatorProfileRedirect from "./pages/CreatorProfileRedirect";
 import AdminDashboard from "./pages/AdminDashboard";
 import AdminCreators from "./pages/AdminCreators";
 import AdminUsers from "./pages/AdminUsers";
@@ -75,10 +79,12 @@ import Creators from "./pages/Creators";
 import TodaysEvents from "./pages/TodaysEvents";
 import NotFound from "./pages/NotFound";
 import Pricing from "./pages/Pricing";
+import Support from "./pages/Support";
 import Discover from "./pages/Discover";
 import TopCreators from "./pages/TopCreators";
 import Community from "./pages/Community";
 import { ErrorBoundary } from "./components/ErrorBoundary";
+import { ConvexAppProvider } from "./integrations/convex/ConvexAppProvider";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -92,6 +98,7 @@ const queryClient = new QueryClient({
 
 const App = () => (
   <ErrorBoundary>
+    <ConvexAppProvider>
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
         <TooltipProvider>
@@ -107,9 +114,11 @@ const App = () => (
             <Route path="/discover" element={<Discover />} />
             <Route path="/top-creators" element={<TopCreators />} />
             <Route path="/pricing" element={<Pricing />} />
+            <Route path="/support" element={<Support />} />
             <Route path="/community" element={<Community />} />
             <Route path="/login" element={<Login />} />
             <Route path="/signup" element={<Signup />} />
+            <Route path="/auth/callback" element={<AuthCallback />} />
             <Route path="/select-role" element={<SelectRole />} />
 
             {/* Demo routes — no auth required */}
@@ -142,6 +151,7 @@ const App = () => (
             <Route path="/dashboard/discover" element={<ProtectedRoute allowedRoles={['subscriber']}><CustomerDiscover /></ProtectedRoute>} />
             <Route path="/dashboard/activity" element={<ProtectedRoute allowedRoles={['subscriber']}><CustomerActivity /></ProtectedRoute>} />
             <Route path="/dashboard/settings" element={<ProtectedRoute allowedRoles={['subscriber']}><CustomerSettings /></ProtectedRoute>} />
+            <Route path="/dashboard/messages" element={<ProtectedRoute allowedRoles={['subscriber']}><CustomerMessages /></ProtectedRoute>} />
             <Route path="/creator" element={<ProtectedRoute allowedRoles={['creator']}><CreatorDashboard /></ProtectedRoute>} />
             <Route path="/creator/posts" element={<ProtectedRoute allowedRoles={['creator']}><CreatorPosts /></ProtectedRoute>} />
             <Route path="/creator/products" element={<ProtectedRoute allowedRoles={['creator']}><CreatorProducts /></ProtectedRoute>} />
@@ -153,6 +163,7 @@ const App = () => (
             <Route path="/creator/access-control" element={<ProtectedRoute allowedRoles={['creator']}><CreatorAccessControl /></ProtectedRoute>} />
             <Route path="/creator/performance-tracker" element={<ProtectedRoute allowedRoles={['creator']}><CreatorPerformanceTracker /></ProtectedRoute>} />
             <Route path="/creator/messages" element={<ProtectedRoute allowedRoles={['creator']}><CreatorMessages /></ProtectedRoute>} />
+            <Route path="/creator/notifications" element={<ProtectedRoute allowedRoles={['creator']}><CustomerNotifications /></ProtectedRoute>} />
             <Route path="/creator/links" element={<ProtectedRoute allowedRoles={['creator']}><CreatorLinks /></ProtectedRoute>} />
             <Route path="/creator/referrals" element={<ProtectedRoute allowedRoles={['creator']}><CreatorReferrals /></ProtectedRoute>} />
             <Route path="/creator/earnings" element={<ProtectedRoute allowedRoles={['creator']}><CreatorEarnings /></ProtectedRoute>} />
@@ -172,10 +183,14 @@ const App = () => (
             <Route path="/admin/resolution-cases" element={<ProtectedRoute allowedRoles={['admin']}><AdminResolutionCases /></ProtectedRoute>} />
             <Route path="/admin/payouts" element={<ProtectedRoute allowedRoles={['admin']}><AdminPayouts /></ProtectedRoute>} />
             <Route path="/admin/alerts" element={<ProtectedRoute allowedRoles={['admin']}><AdminAlerts /></ProtectedRoute>} />
+            <Route path="/admin/notifications" element={<ProtectedRoute allowedRoles={['admin']}><CustomerNotifications /></ProtectedRoute>} />
             <Route path="/admin/reports" element={<ProtectedRoute allowedRoles={['admin']}><AdminReports /></ProtectedRoute>} />
             <Route path="/admin/settings" element={<ProtectedRoute allowedRoles={['admin']}><AdminSettings /></ProtectedRoute>} />
             <Route path="/subscription/success" element={<SubscriptionSuccess />} />
             <Route path="/subscription/cancel" element={<SubscriptionCancel />} />
+            <Route path="/go/:linkId" element={<CreatorLinkRedirect />} />
+            {/* Legacy /c/:username bookmarks and landing links */}
+            <Route path="/c/:username" element={<CreatorProfileRedirect />} />
             <Route path="/:username" element={<CreatorProfile />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
@@ -183,6 +198,7 @@ const App = () => (
       </TooltipProvider>
     </AuthProvider>
   </QueryClientProvider>
+    </ConvexAppProvider>
   </ErrorBoundary>
 );
 

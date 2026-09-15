@@ -1,13 +1,19 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { useMutation, usePaginatedQuery, useQuery } from 'convex/react';
+import { useSearchParams } from 'react-router-dom';
+import { api } from '../../convex/_generated/api';
+import type { Id } from '../../convex/_generated/dataModel';
 import { DashboardLayout } from '@/components/dashboard/DashboardLayout';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { supabase } from '@/lib/supabase';
 import { FileWarning, MessageSquare, Clock, User, Loader2, Send } from 'lucide-react';
 import { format } from 'date-fns';
 import { toast } from 'sonner';
+import { MessageSeenReceipt } from '@/components/messaging/MessageSeenReceipt';
+
+const PAGE_SIZE = 25;
 
 interface CaseRow {
   id: string;
@@ -17,8 +23,8 @@ interface CaseRow {
   description: string | null;
   status: string;
   priority: string;
-  created_at: string;
-  updated_at: string;
+  created_at: number;
+  updated_at: number;
   creatorName: string;
 }
 
@@ -26,7 +32,8 @@ interface CaseMessage {
   id: string;
   sender_role: string;
   body: string;
-  created_at: string;
+  read: boolean;
+  created_at: number;
 }
 
 const statusColors: Record<string, string> = {
@@ -43,87 +50,130 @@ const priorityColors: Record<string, string> = {
 };
 
 const AdminResolutionCases = () => {
-  const [cases, setCases] = useState<CaseRow[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [searchParams, setSearchParams] = useSearchParams();
+  const caseIdParam = searchParams.get('caseId');
   const [filter, setFilter] = useState('all');
-  const [selected, setSelected] = useState<string | null>(null);
-  const [messages, setMessages] = useState<CaseMessage[]>([]);
-  const [reply, setReply] = useState('');
+  const [nowMs] = useState(() => Date.now());
+  const alertsOverview = useQuery(api.admin.snapshots.alertsOverview, { nowMs });
+  const [selected, setSelected] = useState<string | null>(caseIdParam);  const [reply, setReply] = useState('');
   const [sending, setSending] = useState(false);
+  const markedRef = useRef<Set<string>>(new Set());
 
   useEffect(() => {
-    const load = async () => {
-      const { data, error } = await supabase
-        .from('resolution_cases')
-        .select('id, creator_id, subject, category, description, status, priority, created_at, updated_at')
-        .order('updated_at', { ascending: false });
-      if (error) toast.error(error.message);
+    if (caseIdParam) setSelected(caseIdParam);
+  }, [caseIdParam]);
 
-      const rows = data ?? [];
-      const creatorIds = [...new Set(rows.map(r => r.creator_id))];
-      const { data: creators } = creatorIds.length
-        ? await supabase.from('creators').select('id, display_name, username').in('id', creatorIds)
-        : { data: [] as { id: string; display_name: string | null; username: string | null }[] };
-      const nameMap = new Map((creators ?? []).map(c => [c.id, c.display_name || c.username || 'Unnamed creator']));
-
-      setCases(rows.map(r => ({ ...r, creatorName: nameMap.get(r.creator_id) ?? 'Unknown creator' })));
-      setLoading(false);
-    };
-    void load();
-  }, []);
+  const { results, status: pageStatus, loadMore } = usePaginatedQuery(
+    api.admin.paginatedLists.listCasesPage,
+    {},
+    { initialNumItems: PAGE_SIZE },
+  );
+  const messagesRaw = useQuery(
+    api.resolution.mutations.listMessages,
+    selected ? { caseId: selected as Id<'resolutionCases'> } : 'skip',
+  );
+  const setStatus = useMutation(api.resolution.mutations.setStatus);
+  const addMessage = useMutation(api.resolution.mutations.addMessage);
+  const markRead = useMutation(api.resolution.mutations.markReadAdmin);
 
   useEffect(() => {
-    if (!selected) { setMessages([]); return; }
-    const load = async () => {
-      const { data } = await supabase
-        .from('resolution_case_messages')
-        .select('id, sender_role, body, created_at')
-        .eq('case_id', selected)
-        .order('created_at', { ascending: true });
-      setMessages(data ?? []);
-    };
-    void load();
-  }, [selected]);
+    if (!messagesRaw) return;
+    const unreadIds = messagesRaw
+      .filter((m) => m.senderRole === 'creator' && m.read !== true && !markedRef.current.has(m._id))
+      .map((m) => m._id);
+    if (unreadIds.length === 0) return;
+    unreadIds.forEach((id) => markedRef.current.add(id));
+    void markRead({ messageIds: unreadIds }).catch(() => {
+      unreadIds.forEach((id) => markedRef.current.delete(id));
+    });
+  }, [messagesRaw, markRead]);
+
+  const loading = pageStatus === 'LoadingFirstPage';
+
+  const cases = useMemo((): CaseRow[] => {
+    return (results ?? []).map((r) => ({
+      id: r.id,
+      creator_id: r.creatorId,
+      subject: r.subject,
+      category: r.category,
+      description: r.description,
+      status: r.status,
+      priority: r.priority,
+      created_at: r.createdAt,
+      updated_at: r.updatedAt,
+      creatorName: r.creatorName,
+    }));
+  }, [results]);
+
+  const messages = useMemo((): CaseMessage[] => {
+    if (!messagesRaw) return [];
+    return messagesRaw.map((m) => ({
+      id: m._id,
+      sender_role: m.senderRole,
+      body: m.body,
+      read: m.read === true,
+      created_at: m.createdAt,
+    }));
+  }, [messagesRaw]);
 
   const filtered = useMemo(
-    () => filter === 'all' ? cases : cases.filter(c => c.status === filter),
+    () => (filter === 'all' ? cases : cases.filter((c) => c.status === filter)),
     [cases, filter],
   );
 
   const updateStatus = async (id: string, status: string) => {
-    const previous = cases;
-    setCases(prev => prev.map(c => c.id === id ? { ...c, status } : c));
-    const { error } = await supabase.from('resolution_cases').update({ status }).eq('id', id);
-    if (error) { setCases(previous); toast.error(error.message); return; }
-    toast.success(`Case marked ${status.replace('_', ' ')}`);
+    try {
+      await setStatus({ caseId: id as Id<'resolutionCases'>, status });
+      toast.success(`Case marked ${status.replace('_', ' ')}`);
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : 'Failed to update case');
+    }
   };
 
   const sendReply = async () => {
     if (!selected || !reply.trim()) return;
     setSending(true);
-    const { data, error } = await supabase
-      .from('resolution_case_messages')
-      .insert({ case_id: selected, sender_role: 'admin', body: reply.trim() })
-      .select('id, sender_role, body, created_at')
-      .maybeSingle();
-    setSending(false);
-    if (error) { toast.error(error.message); return; }
-    if (data) setMessages(prev => [...prev, data]);
-    setReply('');
-    toast.success('Reply sent');
+    try {
+      await addMessage({
+        caseId: selected as Id<'resolutionCases'>,
+        senderRole: 'admin',
+        body: reply.trim(),
+      });
+      setReply('');
+      toast.success('Reply sent');
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : 'Failed to send reply');
+    } finally {
+      setSending(false);
+    }
   };
 
-  const openCount = cases.filter(c => c.status === 'open' || c.status === 'escalated').length;
+  const openCase = (id: string) => {
+    const next = selected === id ? null : id;
+    setSelected(next);
+    if (next) setSearchParams({ caseId: next }, { replace: true });
+    else setSearchParams({}, { replace: true });
+  };
 
+  const openCount =
+    alertsOverview?.openCases ??
+    cases.filter((c) => c.status === 'open' || c.status === 'escalated').length;
   return (
     <DashboardLayout type="admin">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
         <div>
           <h1 className="text-2xl font-bold">Resolution Cases</h1>
-          <p className="text-muted-foreground text-sm mt-0.5">{openCount} open · {cases.length} total</p>
+          <p className="text-muted-foreground text-sm mt-0.5">
+            {alertsOverview !== undefined
+              ? `${openCount} open platform-wide`
+              : `${openCount} open among loaded`}
+            {' · '}
+            {cases.length} loaded
+            {pageStatus === 'CanLoadMore' || pageStatus === 'LoadingMore' ? ' (more available)' : ''}
+          </p>
         </div>
         <Select value={filter} onValueChange={setFilter}>
-          <SelectTrigger className="w-44"><SelectValue /></SelectTrigger>
+          <SelectTrigger className="w-44 min-h-11"><SelectValue /></SelectTrigger>
           <SelectContent>
             <SelectItem value="all">All cases</SelectItem>
             <SelectItem value="open">Open</SelectItem>
@@ -142,67 +192,88 @@ const AdminResolutionCases = () => {
           <p className="text-sm text-muted-foreground">No cases in this view.</p>
         </div>
       ) : (
-        <div className="space-y-3">
-          {filtered.map(c => (
-            <div key={c.id} className="rounded-xl border border-border bg-card p-5">
-              <div className="flex flex-wrap items-start justify-between gap-3">
-                <div className="min-w-0">
-                  <div className="flex items-center gap-2 mb-1">
-                    <p className="text-sm font-semibold">{c.subject}</p>
-                    <Badge variant="outline" className={`text-[10px] capitalize ${statusColors[c.status] ?? ''}`}>{c.status.replace('_', ' ')}</Badge>
-                    <Badge variant="outline" className={`text-[10px] capitalize ${priorityColors[c.priority] ?? ''}`}>{c.priority}</Badge>
+        <>
+          <div className="space-y-3">
+            {filtered.map((c) => (
+              <div key={c.id} className="rounded-xl border border-border bg-card p-5">
+                <div className="flex flex-wrap items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <div className="flex items-center gap-2 mb-1">
+                      <p className="text-sm font-semibold">{c.subject}</p>
+                      <Badge variant="outline" className={`text-caption capitalize ${statusColors[c.status] ?? ''}`}>{c.status.replace('_', ' ')}</Badge>
+                      <Badge variant="outline" className={`text-caption capitalize ${priorityColors[c.priority] ?? ''}`}>{c.priority}</Badge>
+                    </div>
+                    <div className="flex flex-wrap items-center gap-3 text-caption text-muted-foreground">
+                      <span className="flex items-center gap-1"><User className="h-3 w-3" /> {c.creatorName}</span>
+                      <span className="flex items-center gap-1"><Clock className="h-3 w-3" /> {format(new Date(c.created_at), 'MMM d, yyyy')}</span>
+                      <span className="capitalize">{c.category}</span>
+                    </div>
+                    {c.description && <p className="text-caption text-muted-foreground mt-2 line-clamp-2">{c.description}</p>}
                   </div>
-                  <div className="flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
-                    <span className="flex items-center gap-1"><User className="h-3 w-3" /> {c.creatorName}</span>
-                    <span className="flex items-center gap-1"><Clock className="h-3 w-3" /> {format(new Date(c.created_at), 'MMM d, yyyy')}</span>
-                    <span className="capitalize">{c.category}</span>
-                  </div>
-                  {c.description && <p className="text-xs text-muted-foreground mt-2 line-clamp-2">{c.description}</p>}
-                </div>
-                <div className="flex items-center gap-2">
-                  <Select value={c.status} onValueChange={v => updateStatus(c.id, v)}>
-                    <SelectTrigger className="h-8 w-36 text-xs"><SelectValue /></SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="open">Open</SelectItem>
-                      <SelectItem value="in_progress">In progress</SelectItem>
-                      <SelectItem value="escalated">Escalated</SelectItem>
-                      <SelectItem value="resolved">Resolved</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="h-8 text-xs"
-                    onClick={() => setSelected(selected === c.id ? null : c.id)}
-                  >
-                    <MessageSquare className="mr-1 h-3 w-3" /> {selected === c.id ? 'Hide' : 'Thread'}
-                  </Button>
-                </div>
-              </div>
-
-              {selected === c.id && (
-                <div className="mt-4 border-t border-border pt-4">
-                  <div className="space-y-2 max-h-64 overflow-y-auto mb-3">
-                    {messages.length === 0 && <p className="text-xs text-muted-foreground">No messages yet.</p>}
-                    {messages.map(m => (
-                      <div key={m.id} className={`rounded-lg p-3 text-xs ${m.sender_role === 'admin' ? 'bg-primary/10 ml-8' : 'bg-muted/40 mr-8'}`}>
-                        <p className="font-medium mb-1 capitalize">{m.sender_role}</p>
-                        <p className="text-muted-foreground whitespace-pre-wrap">{m.body}</p>
-                        <p className="text-[10px] text-muted-foreground/70 mt-1">{format(new Date(m.created_at), 'MMM d, HH:mm')}</p>
-                      </div>
-                    ))}
-                  </div>
-                  <div className="flex gap-2">
-                    <Textarea rows={2} placeholder="Write a reply…" value={reply} onChange={e => setReply(e.target.value)} />
-                    <Button variant="hero" size="sm" onClick={sendReply} disabled={sending || !reply.trim()}>
-                      {sending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Send className="h-3.5 w-3.5" />}
+                  <div className="flex items-center gap-2">
+                    <Select value={c.status} onValueChange={(v) => void updateStatus(c.id, v)}>
+                      <SelectTrigger className="h-8 w-36 text-caption"><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="open">Open</SelectItem>
+                        <SelectItem value="in_progress">In progress</SelectItem>
+                        <SelectItem value="escalated">Escalated</SelectItem>
+                        <SelectItem value="resolved">Resolved</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="h-8 text-caption"
+                      onClick={() => openCase(c.id)}
+                    >
+                      <MessageSquare className="mr-1 h-3 w-3" /> {selected === c.id ? 'Hide' : 'Thread'}
                     </Button>
                   </div>
                 </div>
-              )}
+
+                {selected === c.id && (
+                  <div className="mt-4 border-t border-border pt-4">
+                    <div className="space-y-2 max-h-64 overflow-y-auto mb-3">
+                      {messagesRaw === undefined && (
+                        <div className="flex justify-center py-6">
+                          <Loader2 className="h-4 w-4 animate-spin text-primary" />
+                        </div>
+                      )}
+                      {messagesRaw !== undefined && messages.length === 0 && (
+                        <p className="text-caption text-muted-foreground">No messages yet.</p>
+                      )}
+                      {messages.map((m) => (
+                        <div key={m.id} className={`rounded-lg p-3 text-caption ${m.sender_role === 'admin' ? 'bg-primary/10 ml-8' : 'bg-muted/40 mr-8'}`}>
+                          <p className="font-medium mb-1 capitalize">{m.sender_role === 'admin' ? 'You' : 'Creator'}</p>
+                          <p className="text-muted-foreground whitespace-pre-wrap">{m.body}</p>
+                          <div className="mt-1 flex items-center justify-between gap-2 text-caption text-muted-foreground/70">
+                            <span>{format(new Date(m.created_at), 'MMM d, HH:mm')}</span>
+                            {m.sender_role === 'admin' && <MessageSeenReceipt seen={m.read} />}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                    <div className="flex gap-2">
+                      <Textarea rows={2} placeholder="Write a reply…" value={reply} onChange={(e) => setReply(e.target.value)} />
+                      <Button variant="hero" size="sm" onClick={() => void sendReply()} disabled={sending || !reply.trim()}>
+                        {sending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Send className="h-3.5 w-3.5" />}
+                      </Button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+
+          {(pageStatus === 'CanLoadMore' || pageStatus === 'LoadingMore') && (
+            <div className="flex justify-center mt-4">
+              <Button variant="outline" size="sm" disabled={pageStatus === 'LoadingMore'} onClick={() => loadMore(PAGE_SIZE)}>
+                {pageStatus === 'LoadingMore' ? <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" /> : null}
+                Load more
+              </Button>
             </div>
-          ))}
-        </div>
+          )}
+        </>
       )}
     </DashboardLayout>
   );

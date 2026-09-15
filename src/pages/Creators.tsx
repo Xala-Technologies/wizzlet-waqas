@@ -1,49 +1,162 @@
+import { Link } from 'react-router-dom';
+import { useMemo, useState } from 'react';
+import { useQuery } from 'convex/react';
+import { api } from '../../convex/_generated/api';
 import { Navbar } from '@/components/landing/Navbar';
 import { Seo } from '@/components/Seo';
 import { Footer } from '@/components/landing/Footer';
-import { Crown, TrendingUp, Users } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { ArrowRight, Search } from 'lucide-react';
+import {
+  CreatorDiscoveryCard,
+  CreatorDiscoveryCardSkeleton,
+} from '@/components/discover/CreatorDiscoveryCard';
 
-const demoCreators = [
-  { name: 'SharpShooter Picks', handle: '@sharpshooter', subscribers: 312, winRate: '68%', sport: 'NFL' },
-  { name: 'ProPlays Daily', handle: '@proplays', subscribers: 189, winRate: '72%', sport: 'NBA' },
-  { name: 'ClutchKing Analytics', handle: '@clutchking', subscribers: 244, winRate: '65%', sport: 'MLB' },
-  { name: 'IronLock Bets', handle: '@ironlock', subscribers: 156, winRate: '71%', sport: 'Soccer' },
-  { name: 'OverEdge Picks', handle: '@overedge', subscribers: 98, winRate: '63%', sport: 'MMA' },
-  { name: 'StatLine Pro', handle: '@statlinepro', subscribers: 421, winRate: '74%', sport: 'NFL' },
-];
+const Creators = () => {
+  const creatorsPage = useQuery(api.creators.queries.listPublished, {});
+  const creators = creatorsPage?.items;
+  const [search, setSearch] = useState('');
 
-const Creators = () => (
-  <div className="min-h-screen bg-background">
-    <Seo title={'Top Sports Creators on Wizzlet'} description={'Browse verified creators on Wizzlet, compare win rates and units, and subscribe to the handicappers you trust.'} />
+  const filtered = useMemo(() => {
+    if (!creators) return [];
+    const q = search.trim().toLowerCase();
+    if (!q) return creators;
+    return creators.filter(
+      (c) =>
+        c.username.toLowerCase().includes(q) ||
+        (c.displayName ?? '').toLowerCase().includes(q) ||
+        (c.bio ?? '').toLowerCase().includes(q),
+    );
+  }, [creators, search]);
+
+  return (
+    <div className="flex min-h-screen flex-col bg-background">
+      <Seo
+        title="Top Sports Creators on Prizelet"
+        description="Browse published creators on Prizelet, compare list prices and activity, and open a profile to subscribe."
+      />
       <Navbar />
-    <main id="main-content" className="container pt-32 pb-20 max-w-4xl">
-      <p className="text-xs font-medium uppercase tracking-widest text-primary mb-4">Creators</p>
-      <h1 className="text-4xl font-bold text-foreground mb-2 tracking-tight">Top performers on the platform</h1>
-      <p className="text-muted-foreground mb-12">Verified creators with proven track records. Every profile is manually reviewed.</p>
 
-      <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
-        {demoCreators.map((c) => (
-          <div key={c.handle} className="rounded-xl border border-border bg-card p-5 transition-colors hover:border-primary/20">
-            <div className="flex items-center gap-3 mb-4">
-              <div className="h-11 w-11 rounded-full bg-primary/15 flex items-center justify-center shrink-0">
-                <span className="text-sm font-bold text-primary">{c.name[0]}</span>
-              </div>
-              <div className="min-w-0">
-                <p className="font-semibold text-sm truncate">{c.name}</p>
-                <p className="text-xs text-muted-foreground">{c.handle}</p>
-              </div>
+      <main id="main-content" className="relative flex-1 bg-background">
+        <section className="container relative pt-28 pb-10 md:pt-32 md:pb-14">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+            <div className="min-w-0 max-w-2xl">
+              <h1 className="text-4xl font-bold tracking-tight text-foreground sm:text-5xl">
+                Creators directory
+              </h1>
+              <p className="mt-3 text-base leading-relaxed text-secondary-foreground">
+                Live profiles from the Prizelet network. Subscribe for gated content — no algorithm,
+                no public feed noise.
+              </p>
             </div>
-            <div className="flex items-center gap-4 text-xs text-muted-foreground">
-              <span className="flex items-center gap-1"><Users className="h-3 w-3" /> {c.subscribers}</span>
-              <span className="flex items-center gap-1"><TrendingUp className="h-3 w-3" /> {c.winRate}</span>
-              <span className="flex items-center gap-1"><Crown className="h-3 w-3" /> {c.sport}</span>
-            </div>
+            <Link
+              to="/discover"
+              className="inline-flex shrink-0 items-center gap-1.5 text-sm font-semibold text-foreground transition-colors hover:text-primary"
+            >
+              Discover
+              <ArrowRight className="h-4 w-4" aria-hidden />
+            </Link>
           </div>
-        ))}
-      </div>
-    </main>
-    <Footer />
-  </div>
-);
+
+          <form
+            className="mt-8 flex h-14 w-full items-center gap-2 rounded-full border border-border bg-card pl-4 pr-2 shadow-[var(--shadow-card)]"
+            onSubmit={(e) => {
+              e.preventDefault();
+            }}
+            role="search"
+          >
+            <Search className="h-5 w-5 shrink-0 text-foreground/45" aria-hidden />
+            <Input
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Search…"
+              className="h-full min-h-0 flex-1 border-0 bg-transparent px-2 text-base font-medium shadow-none focus-visible:ring-0 focus-visible:ring-offset-0"
+              aria-label="Search creators"
+            />
+            <Button type="submit" className="h-10 shrink-0 rounded-full px-5 font-semibold">
+              Search
+            </Button>
+          </form>
+        </section>
+
+        <section className="container relative pb-16 md:pb-20">
+          {creatorsPage === undefined ? (
+            <ul
+              className="grid grid-cols-1 gap-6 sm:grid-cols-2 xl:grid-cols-3 lg:gap-8"
+              aria-busy="true"
+              aria-label="Loading creators"
+            >
+              {[0, 1, 2, 3, 4, 5].map((i) => (
+                <CreatorDiscoveryCardSkeleton key={i} />
+              ))}
+            </ul>
+          ) : !creators || creators.length === 0 ? (
+            <div className="mx-auto max-w-lg py-16 text-center">
+              <p className="text-lg font-semibold tracking-tight text-foreground">
+                The roster is still forming
+              </p>
+              <p className="mt-2 text-base leading-relaxed text-secondary-foreground">
+                Published creators appear here as soon as they go live. If you have an edge worth
+                charging for, apply for access.
+              </p>
+              <Link to="/signup" className="mt-8 inline-block">
+                <Button variant="hero" className="gap-2">
+                  Apply for access <ArrowRight className="h-4 w-4" />
+                </Button>
+              </Link>
+            </div>
+          ) : filtered.length === 0 ? (
+            <p className="py-16 text-center text-base text-secondary-foreground">
+              No creators match “{search.trim()}”.
+            </p>
+          ) : (
+            <ul className="grid grid-cols-1 gap-6 sm:grid-cols-2 xl:grid-cols-3 lg:gap-8">
+              {filtered.map((c, index) => (
+                <CreatorDiscoveryCard
+                  key={c._id}
+                  username={c.username}
+                  displayName={c.displayName}
+                  bio={c.bio}
+                  avatarUrl={c.avatarUrl}
+                  bannerUrl={c.bannerUrl}
+                  monthlyPriceCents={c.monthlyPriceCents}
+                  verificationStatus={c.verificationStatus}
+                  postCount={c.postCount}
+                  activityNoun="pick"
+                  className="animate-fade-in-up opacity-0"
+                  style={{
+                    animationDelay: `${Math.min(index, 8) * 40}ms`,
+                    animationFillMode: 'forwards',
+                  }}
+                />
+              ))}
+            </ul>
+          )}
+        </section>
+
+        <section className="border-t border-border bg-card">
+          <div className="container flex flex-col items-start justify-between gap-6 py-12 md:flex-row md:items-center md:py-14">
+            <div className="max-w-md">
+              <h2 className="text-xl font-bold tracking-tight text-foreground sm:text-2xl">
+                Have a record worth selling?
+              </h2>
+              <p className="mt-2 text-base text-secondary-foreground">
+                Prizelet is invite-only infrastructure — not another public tip board.
+              </p>
+            </div>
+            <Link to="/signup">
+              <Button variant="hero" size="lg" className="gap-2">
+                Apply for access <ArrowRight className="h-4 w-4" />
+              </Button>
+            </Link>
+          </div>
+        </section>
+      </main>
+
+      <Footer />
+    </div>
+  );
+};
 
 export default Creators;

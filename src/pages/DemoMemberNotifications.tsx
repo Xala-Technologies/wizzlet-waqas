@@ -26,7 +26,7 @@ const DemoMemberNotifications = () => {
         <Button
           variant="outline"
           size="sm"
-          className="text-xs"
+          className="text-caption"
           disabled={unreadCount === 0}
           onClick={() => { store.markAllRead(); toast.success('All marked as read'); }}
         >
@@ -35,7 +35,7 @@ const DemoMemberNotifications = () => {
       }
     >
       {unreadCount > 0 && (
-        <Badge variant="outline" className="text-[9px] bg-primary/10 text-primary border-primary/20 mb-4">{unreadCount} new</Badge>
+        <Badge variant="outline" className="text-caption bg-primary/10 text-primary border-primary/20 mb-4">{unreadCount} new</Badge>
       )}
 
       <div className="space-y-2">
@@ -57,8 +57,8 @@ const DemoMemberNotifications = () => {
                   <p className="text-sm font-medium">{n.title}</p>
                   {!n.read && <div className="h-1.5 w-1.5 rounded-full bg-primary shrink-0" />}
                 </div>
-                <p className="text-xs text-muted-foreground line-clamp-1">{n.description}</p>
-                <p className="text-[10px] text-muted-foreground mt-1">{formatDistanceToNow(new Date(n.createdAt), { addSuffix: true })}</p>
+                <p className="text-caption text-muted-foreground line-clamp-1">{n.description}</p>
+                <p className="text-caption text-muted-foreground mt-1">{formatDistanceToNow(new Date(n.createdAt), { addSuffix: true })}</p>
               </div>
             </div>
           );

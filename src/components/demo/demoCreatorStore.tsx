@@ -186,7 +186,7 @@ const seed = (): DemoState => ({
 
 export const defaultSettings = (): DemoSettings => seed().settings;
 
-const KEY = 'wizzlet.demo.creator.v2';
+const KEY = 'prizelet.demo.creator.v2';
 
 export function useDemoCreatorStore() {
   const [state, setState] = useState<DemoState>(() => {

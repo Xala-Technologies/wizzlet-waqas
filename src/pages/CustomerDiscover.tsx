@@ -1,223 +1,355 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { useEffect, useMemo, useState } from 'react';
+import { Link, useLocation } from 'react-router-dom';
+import { useMutation, useQuery } from 'convex/react';
 import { DashboardLayout } from '@/components/dashboard/DashboardLayout';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Skeleton } from '@/components/ui/skeleton';
-import { TrendingUp, Users, Search, Bookmark, FileText } from 'lucide-react';
+import {
+  ArrowRight,
+  BadgeDollarSign,
+  Loader2,
+  Search,
+  Sparkles,
+  TrendingUp,
+} from 'lucide-react';
 import { toast } from 'sonner';
-import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/contexts/AuthContext';
+import { api } from '@convex/_generated/api';
+import type { Id } from '@convex/_generated/dataModel';
+import { DiscoveryFilterBar } from '@/components/discover/DiscoveryFilterBar';
+import { DiscoverGamesPanel } from '@/components/discover/DiscoverGamesPanel';
+import {
+  CreatorDiscoveryCard,
+  CreatorDiscoveryCardSkeleton,
+} from '@/components/discover/CreatorDiscoveryCard';
+import { subscriptionGrantsContentAccess } from '../../convex/lib/contentAccess';
+import { Seo } from '@/components/Seo';
+
+const PAGE_SIZE = 24;
 
 interface CreatorRow {
   id: string;
-  username: string | null;
+  username: string;
   display_name: string | null;
   bio: string | null;
   avatar_url: string | null;
-  monthly_price: number | null;
+  banner_url: string | null;
+  monthly_price_cents: number | null;
+  verification_status: string | null;
   created_at: string;
+  postCount: number;
 }
 
 type SortKey = 'popular' | 'newest' | 'price';
 
-const sortOptions: { key: SortKey; label: string }[] = [
-  { key: 'popular', label: 'Most Active' },
-  { key: 'newest', label: 'Newest' },
-  { key: 'price', label: 'Lowest Price' },
+const sortOptions = [
+  { key: 'popular' as const, label: 'Most active', icon: TrendingUp },
+  { key: 'newest' as const, label: 'Newest', icon: Sparkles },
+  { key: 'price' as const, label: 'Lowest price', icon: BadgeDollarSign },
 ];
 
 const CustomerDiscover = () => {
   const { user } = useAuth();
-  const [creators, setCreators] = useState<CreatorRow[]>([]);
-  const [postCounts, setPostCounts] = useState<Record<string, number>>({});
-  const [bookmarks, setBookmarks] = useState<Record<string, string>>({});
+  const { hash } = useLocation();
   const [query, setQuery] = useState('');
+  const [gameSearch, setGameSearch] = useState('');
+  const [debouncedSearch, setDebouncedSearch] = useState('');
   const [sort, setSort] = useState<SortKey>('popular');
-  const [loading, setLoading] = useState(true);
+  const [cursor, setCursor] = useState<string | undefined>(undefined);
+  const [creators, setCreators] = useState<CreatorRow[]>([]);
 
-  const load = useCallback(async () => {
-    setLoading(true);
-    const [creatorRes, postRes, bookmarkRes] = await Promise.all([
-      supabase
-        .from('creators')
-        .select('id, username, display_name, bio, avatar_url, monthly_price, created_at')
-        .eq('is_published', true),
-      supabase.from('posts').select('id, creator_id'),
-      user
-        ? supabase.from('creator_bookmarks').select('id, creator_id').eq('user_id', user.id)
-        : Promise.resolve({ data: [] as { id: string; creator_id: string }[] }),
-    ]);
+  useEffect(() => {
+    const t = window.setTimeout(() => setDebouncedSearch(query.trim()), 250);
+    return () => window.clearTimeout(t);
+  }, [query]);
 
-    const counts: Record<string, number> = {};
-    for (const p of (postRes.data ?? []) as { creator_id: string }[]) {
-      counts[p.creator_id] = (counts[p.creator_id] ?? 0) + 1;
-    }
+  useEffect(() => {
+    setCursor(undefined);
+    setCreators([]);
+  }, [debouncedSearch]);
 
+  useEffect(() => {
+    if (hash !== '#todays-games') return;
+    const el = document.getElementById('todays-games');
+    if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }, [hash]);
+
+  const creatorsRaw = useQuery(api.creators.queries.listPublished, {
+    limit: PAGE_SIZE,
+    cursor,
+    search: debouncedSearch || undefined,
+  });
+  const bookmarkRows = useQuery(api.bookmarks.mutations.listCreatorBookmarks, user ? {} : 'skip');
+  const mySubs = useQuery(api.subscriptions.mutations.mySubscriptions, user ? {} : 'skip');
+  const toggleCreatorBookmark = useMutation(api.bookmarks.mutations.toggleCreatorBookmark);
+
+  useEffect(() => {
+    if (!creatorsRaw) return;
+    const page: CreatorRow[] = creatorsRaw.items
+      .filter((c) => Boolean(c.username))
+      .map((c) => ({
+        id: c._id,
+        username: c.username,
+        display_name: c.displayName ?? null,
+        bio: c.bio ?? null,
+        avatar_url: c.avatarUrl ?? null,
+        banner_url: c.bannerUrl ?? null,
+        monthly_price_cents: c.monthlyPriceCents ?? null,
+        verification_status: c.verificationStatus ?? null,
+        created_at: new Date(c.createdAt).toISOString(),
+        postCount: c.postCount ?? 0,
+      }));
+    setCreators((prev) => {
+      if (!cursor) return page;
+      const seen = new Set(prev.map((c) => c.id));
+      return [...prev, ...page.filter((c) => !seen.has(c.id))];
+    });
+  }, [creatorsRaw, cursor]);
+
+  const loading =
+    (creatorsRaw === undefined && creators.length === 0) ||
+    (user ? bookmarkRows === undefined || mySubs === undefined : false);
+
+  const bookmarks = useMemo(() => {
     const marks: Record<string, string> = {};
-    for (const b of ((bookmarkRes.data ?? []) as { id: string; creator_id: string }[])) {
-      marks[b.creator_id] = b.id;
+    for (const b of bookmarkRows ?? []) {
+      marks[b.creatorId] = b._id;
     }
+    return marks;
+  }, [bookmarkRows]);
 
-    setCreators((creatorRes.data as CreatorRow[] | null) ?? []);
-    setPostCounts(counts);
-    setBookmarks(marks);
-    setLoading(false);
-  }, [user]);
-
-  useEffect(() => { load(); }, [load]);
+  const activeCreatorIds = useMemo(() => {
+    const now = Date.now();
+    const ids = new Set<string>();
+    for (const s of mySubs ?? []) {
+      if (
+        subscriptionGrantsContentAccess(
+          {
+            status: s.status,
+            billingStatus: s.billingStatus,
+            currentPeriodEnd: s.currentPeriodEnd,
+            cancelAtPeriodEnd: s.cancelAtPeriodEnd,
+          },
+          now,
+        )
+      ) {
+        ids.add(s.creatorId);
+      }
+    }
+    return ids;
+  }, [mySubs]);
 
   const visible = useMemo(() => {
-    const q = query.trim().toLowerCase();
-    const filtered = creators.filter((c) => {
-      if (!q) return true;
-      return (
-        (c.display_name ?? '').toLowerCase().includes(q) ||
-        (c.username ?? '').toLowerCase().includes(q) ||
-        (c.bio ?? '').toLowerCase().includes(q)
-      );
-    });
-
-    return [...filtered].sort((a, b) => {
+    return [...creators].sort((a, b) => {
       if (sort === 'newest') return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
-      if (sort === 'price') return Number(a.monthly_price ?? 0) - Number(b.monthly_price ?? 0);
-      return (postCounts[b.id] ?? 0) - (postCounts[a.id] ?? 0);
+      if (sort === 'price') {
+        return (a.monthly_price_cents ?? Number.POSITIVE_INFINITY) - (b.monthly_price_cents ?? Number.POSITIVE_INFINITY);
+      }
+      return b.postCount - a.postCount;
     });
-  }, [creators, query, sort, postCounts]);
+  }, [creators, sort]);
 
-  const toggleBookmark = async (creatorId: string) => {
+  const canLoadMore = Boolean(creatorsRaw && !creatorsRaw.isDone && creatorsRaw.continueCursor);
+
+  const toggleBookmark = async (creatorId: string, name: string) => {
     if (!user) return;
     const existing = bookmarks[creatorId];
-    if (existing) {
-      setBookmarks(({ [creatorId]: _removed, ...rest }) => rest);
-      const { error } = await supabase.from('creator_bookmarks').delete().eq('id', existing);
-      if (error) {
-        setBookmarks((prev) => ({ ...prev, [creatorId]: existing }));
-        toast.error('Could not remove bookmark');
-      } else {
-        toast.success('Bookmark removed');
-      }
-      return;
+    try {
+      await toggleCreatorBookmark({ creatorId: creatorId as Id<'creators'> });
+      toast.success(existing ? `Removed ${name} from bookmarks` : `Saved ${name}`);
+    } catch {
+      toast.error(existing ? 'Could not remove bookmark' : 'Could not bookmark this creator');
     }
-
-    const { data, error } = await supabase
-      .from('creator_bookmarks')
-      .insert({ user_id: user.id, creator_id: creatorId })
-      .select('id')
-      .maybeSingle();
-
-    if (error || !data) {
-      toast.error('Could not bookmark this creator');
-      return;
-    }
-    setBookmarks((prev) => ({ ...prev, [creatorId]: data.id }));
-    toast.success('Saved to your bookmarks');
   };
+
+  const todayLabel = new Date().toLocaleDateString('en-US', {
+    weekday: 'long',
+    month: 'long',
+    day: 'numeric',
+  });
 
   return (
     <DashboardLayout type="member">
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold">Discover Creators</h1>
-        <p className="text-muted-foreground text-sm mt-0.5">Find top-performing creators to follow</p>
-      </div>
-
-      <div className="flex flex-wrap items-center gap-2 mb-6">
-        <div className="relative flex-1 min-w-[220px]">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
-          <Input
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            placeholder="Search creators"
-            className="pl-9 h-9 text-sm"
-            aria-label="Search creators"
-          />
-        </div>
-        <div className="flex gap-1.5">
-          {sortOptions.map((o) => (
-            <button
-              key={o.key}
-              onClick={() => setSort(o.key)}
-              className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
-                sort === o.key ? 'bg-primary/10 text-primary' : 'text-muted-foreground hover:text-foreground hover:bg-muted/60'
-              }`}
-            >
-              {o.label}
-            </button>
-          ))}
-        </div>
-      </div>
-
-      <h2 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground mb-3 flex items-center gap-2">
-        <TrendingUp className="h-3.5 w-3.5 text-primary" /> Published Creators
-      </h2>
-
-      {loading ? (
-        <div className="space-y-3">
-          {[0, 1, 2].map((i) => <Skeleton key={i} className="h-28 w-full rounded-xl" />)}
-        </div>
-      ) : visible.length === 0 ? (
-        <div className="rounded-xl border border-dashed border-border bg-card/50 p-12 text-center">
-          <Users className="h-10 w-10 text-muted-foreground/40 mx-auto mb-3" />
-          <h3 className="text-sm font-medium mb-1">No creators found</h3>
-          <p className="text-xs text-muted-foreground">
-            {query ? 'Try a different search term.' : 'New creators appear here as soon as they publish.'}
+      <Seo
+        title="Discover — Prizelet"
+        description="Browse published Prizelet creators and today’s matchups."
+      />
+      <header className="mb-8 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+        <div className="min-w-0 max-w-2xl">
+          <h1 className="text-3xl font-bold tracking-tight text-foreground sm:text-4xl">Discover</h1>
+          <p className="mt-2 text-base leading-relaxed text-secondary-foreground">
+            Find creators worth paying for, then check today’s games on the same page.
           </p>
         </div>
-      ) : (
-        <div className="space-y-3">
-          {visible.map((c, index) => {
-            const name = c.display_name || c.username || 'Creator';
-            const bookmarked = Boolean(bookmarks[c.id]);
-            return (
-              <div key={c.id} className="rounded-xl border border-border bg-card p-5 transition-colors hover:border-primary/20">
-                <div className="flex items-start gap-4">
-                  <div className="flex flex-col items-center gap-1 shrink-0">
-                    <span className="text-xs font-bold text-muted-foreground">#{index + 1}</span>
-                    {c.avatar_url ? (
-                      <img src={c.avatar_url} alt={`${name} avatar`} className="h-12 w-12 rounded-full object-cover" />
-                    ) : (
-                      <div className="h-12 w-12 rounded-full bg-primary/20 flex items-center justify-center">
-                        <span className="text-lg font-bold text-primary">{name[0]?.toUpperCase()}</span>
-                      </div>
-                    )}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="font-semibold text-sm truncate">{name}</p>
-                    {c.username && <p className="text-xs text-muted-foreground mb-2">@{c.username}</p>}
-                    <p className="text-xs text-muted-foreground line-clamp-2 mb-2">{c.bio || 'No bio yet.'}</p>
-                    <span className="flex items-center gap-1 text-[10px] text-muted-foreground">
-                      <FileText className="h-3 w-3" /> {postCounts[c.id] ?? 0} posts published
-                    </span>
-                  </div>
-                  <div className="flex flex-col items-end gap-2 shrink-0">
-                    <span className="text-sm font-bold text-primary">
-                      ${Number(c.monthly_price ?? 0).toFixed(2)}/mo
-                    </span>
-                    <div className="flex items-center gap-1.5">
-                      {user && (
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className={`h-7 w-7 ${bookmarked ? 'text-primary' : 'text-muted-foreground'}`}
-                          aria-label={bookmarked ? `Remove ${name} from bookmarks` : `Bookmark ${name}`}
-                          onClick={() => toggleBookmark(c.id)}
-                        >
-                          <Bookmark className={`h-3.5 w-3.5 ${bookmarked ? 'fill-current' : ''}`} />
-                        </Button>
-                      )}
-                      {c.username && (
-                        <Link to={`/${c.username}`}>
-                          <Button size="sm" className="h-7 text-xs">View Profile</Button>
-                        </Link>
-                      )}
-                    </div>
-                  </div>
-                </div>
+        <a
+          href="#todays-games"
+          className="inline-flex shrink-0 items-center gap-1.5 text-sm font-semibold text-foreground transition-colors hover:text-primary"
+        >
+          Today’s games
+          <ArrowRight className="h-4 w-4" aria-hidden />
+        </a>
+      </header>
+
+      <form
+        className="mb-4 flex h-14 w-full items-center gap-2 rounded-full border border-border bg-card pl-4 pr-2 shadow-[var(--shadow-card)]"
+        onSubmit={(e) => {
+          e.preventDefault();
+        }}
+        role="search"
+      >
+        <Search className="h-5 w-5 shrink-0 text-foreground/45" aria-hidden />
+        <Input
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          placeholder="Search creators…"
+          className="h-full min-h-0 flex-1 border-0 bg-transparent px-2 text-base font-medium shadow-none focus-visible:ring-0 focus-visible:ring-offset-0"
+          aria-label="Search creators"
+        />
+        <Button type="submit" className="h-10 shrink-0 rounded-full px-5 font-semibold">
+          Search
+        </Button>
+      </form>
+
+      <DiscoveryFilterBar
+        className="mb-8"
+        options={sortOptions}
+        value={sort}
+        onChange={setSort}
+        aria-label="Sort creators"
+      />
+
+      <section className="mb-12" aria-labelledby="member-discover-creators-heading">
+        <h2
+          id="member-discover-creators-heading"
+          className="mb-6 text-2xl font-bold tracking-tight text-foreground"
+        >
+          Creators
+          {!loading && visible.length > 0 ? (
+            <span className="ml-2 text-base font-medium text-secondary-foreground">
+              · {visible.length} shown
+            </span>
+          ) : null}
+        </h2>
+
+        {loading ? (
+          <ul
+            className="grid grid-cols-1 gap-6 sm:grid-cols-2 xl:grid-cols-3 lg:gap-8"
+            aria-busy="true"
+            aria-label="Loading creators"
+          >
+            {[0, 1, 2, 3, 4, 5].map((i) => (
+              <CreatorDiscoveryCardSkeleton key={i} />
+            ))}
+          </ul>
+        ) : visible.length === 0 ? (
+          <div className="rounded-2xl border border-dashed border-border bg-card px-6 py-16 text-center">
+            <p className="text-lg font-semibold text-foreground">
+              {query.trim() ? `No creators match “${query.trim()}”.` : 'No creators found'}
+            </p>
+            <p className="mt-2 text-base text-secondary-foreground">
+              {query.trim()
+                ? 'Try a different search term.'
+                : 'New creators appear here as soon as they publish.'}
+            </p>
+            <Button asChild variant="outline" className="mt-6">
+              <Link to="/dashboard">Back to Dashboard</Link>
+            </Button>
+          </div>
+        ) : (
+          <>
+            <ul className="grid grid-cols-1 gap-6 sm:grid-cols-2 xl:grid-cols-3 lg:gap-8">
+              {visible.map((c, index) => (
+                <CreatorDiscoveryCard
+                  key={c.id}
+                  username={c.username}
+                  displayName={c.display_name}
+                  bio={c.bio}
+                  avatarUrl={c.avatar_url}
+                  bannerUrl={c.banner_url}
+                  monthlyPriceCents={c.monthly_price_cents}
+                  verificationStatus={c.verification_status}
+                  postCount={c.postCount}
+                  rank={sort === 'popular' ? index + 1 : undefined}
+                  subscribed={activeCreatorIds.has(c.id)}
+                  bookmarked={Boolean(bookmarks[c.id])}
+                  onBookmarkClick={
+                    user
+                      ? (e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          void toggleBookmark(c.id, c.display_name || c.username);
+                        }
+                      : undefined
+                  }
+                  className="animate-fade-in-up opacity-0"
+                  style={{
+                    animationDelay: `${Math.min(index, 8) * 40}ms`,
+                    animationFillMode: 'forwards',
+                  }}
+                />
+              ))}
+            </ul>
+            {canLoadMore && (
+              <div className="flex justify-center pt-8">
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="min-h-11"
+                  disabled={creatorsRaw === undefined}
+                  onClick={() => {
+                    if (creatorsRaw?.continueCursor) setCursor(creatorsRaw.continueCursor);
+                  }}
+                >
+                  {creatorsRaw === undefined ? (
+                    <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
+                  ) : null}
+                  Load more
+                </Button>
               </div>
-            );
-          })}
+            )}
+          </>
+        )}
+      </section>
+
+      <section
+        id="todays-games"
+        className="scroll-mt-8 border-t border-border pt-10"
+        aria-labelledby="member-discover-games-heading"
+      >
+        <div className="mb-8 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+          <div className="min-w-0 max-w-2xl">
+            <h2
+              id="member-discover-games-heading"
+              className="text-2xl font-bold tracking-tight text-foreground sm:text-3xl"
+            >
+              Today’s Games
+            </h2>
+            <p className="mt-2 text-base text-secondary-foreground">{todayLabel}</p>
+          </div>
         </div>
-      )}
+
+        <form
+          className="mb-4 flex h-14 w-full items-center gap-2 rounded-full border border-border bg-card pl-4 pr-2 shadow-[var(--shadow-card)]"
+          onSubmit={(e) => {
+            e.preventDefault();
+          }}
+          role="search"
+        >
+          <Search className="h-5 w-5 shrink-0 text-foreground/45" aria-hidden />
+          <Input
+            value={gameSearch}
+            onChange={(e) => setGameSearch(e.target.value)}
+            placeholder="Search teams, leagues…"
+            className="h-full min-h-0 flex-1 border-0 bg-transparent px-2 text-base font-medium shadow-none focus-visible:ring-0 focus-visible:ring-offset-0"
+            aria-label="Search games"
+          />
+          <Button type="submit" className="h-10 shrink-0 rounded-full px-5 font-semibold">
+            Search
+          </Button>
+        </form>
+
+        <DiscoverGamesPanel search={gameSearch} />
+      </section>
     </DashboardLayout>
   );
 };

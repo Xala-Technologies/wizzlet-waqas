@@ -1,17 +1,85 @@
-import { WizzletLogo } from '@/components/WizzletLogo';
+import { Link } from 'react-router-dom';
+import { PrizeletLogo } from '@/components/PrizeletLogo';
+import { useAuth } from '@/contexts/AuthContext';
+
+const explore = [
+  { label: 'Home', to: '/' },
+  { label: 'Discover', to: '/discover' },
+  { label: "Today's Games", to: '/discover#todays-games' },
+  { label: 'Creators', to: '/creators' },
+  { label: 'Pricing', to: '/pricing' },
+  { label: 'Support', to: '/support' },
+];
 
 export function Footer() {
+  const { user, role } = useAuth();
+  const dashboardPath =
+    role === 'creator' ? '/creator' : role === 'admin' ? '/admin' : '/dashboard';
+
+  const account = user
+    ? [{ label: 'Dashboard', to: dashboardPath }]
+    : [
+        { label: 'Log in', to: '/login' },
+        { label: 'Apply for access', to: '/signup' },
+      ];
+
   return (
-    <footer className="border-t border-border py-10 bg-card">
-      <div className="container">
-        <div className="flex flex-col md:flex-row items-center justify-between gap-5">
-          <WizzletLogo size="sm" />
-          <div className="flex items-center gap-6 text-[13px] text-muted-foreground">
-            <a href="#" className="inline-block py-1.5 hover:text-foreground transition-colors">Privacy</a>
-            <a href="#" className="inline-block py-1.5 hover:text-foreground transition-colors">Terms</a>
-            <a href="#" className="inline-block py-1.5 hover:text-foreground transition-colors">Support</a>
+    <footer className="relative mt-auto border-t border-border bg-background">
+      <div className="container relative py-14 md:py-16">
+        <div className="grid gap-12 md:grid-cols-[minmax(0,1.4fr)_repeat(2,minmax(0,0.8fr))] md:gap-10">
+          <div className="max-w-sm">
+            <PrizeletLogo size="md" />
+            <p className="mt-4 text-ui leading-relaxed text-muted-foreground">
+              Private creator infrastructure for people who treat their work like a business —
+              subscriptions, gated content, and payouts in one place.
+            </p>
+            <p className="mt-6 text-caption uppercase tracking-[0.18em] text-muted-foreground/60">
+              Invite-only · Manually reviewed
+            </p>
           </div>
-          <p className="text-[12px] text-muted-foreground">© 2026 Wizzlet</p>
+
+          <div>
+            <p className="mb-4 text-caption font-semibold uppercase tracking-[0.16em] text-foreground/80">
+              Explore
+            </p>
+            <ul className="space-y-2.5">
+              {explore.map((item) => (
+                <li key={item.to}>
+                  <Link
+                    to={item.to}
+                    className="text-support text-muted-foreground transition-colors hover:text-foreground"
+                  >
+                    {item.label}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </div>
+
+          <div>
+            <p className="mb-4 text-caption font-semibold uppercase tracking-[0.16em] text-foreground/80">
+              Account
+            </p>
+            <ul className="space-y-2.5">
+              {account.map((item) => (
+                <li key={item.to}>
+                  <Link
+                    to={item.to}
+                    className="text-support text-muted-foreground transition-colors hover:text-foreground"
+                  >
+                    {item.label}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </div>
+        </div>
+
+        <div className="mt-12 flex flex-col gap-3 border-t border-border/80 pt-6 sm:flex-row sm:items-center sm:justify-between">
+          <p className="text-support text-muted-foreground">© {new Date().getFullYear()} Prizelet</p>
+          <p className="text-support text-muted-foreground/70">
+            Built for serious creators — not everyone.
+          </p>
         </div>
       </div>
     </footer>

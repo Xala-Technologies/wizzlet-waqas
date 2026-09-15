@@ -1,10 +1,16 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
+import { useMutation, usePaginatedQuery, useQuery } from 'convex/react';
+import { api } from '../../convex/_generated/api';
+import type { Id } from '../../convex/_generated/dataModel';
 import { DashboardLayout } from '@/components/dashboard/DashboardLayout';
-import { supabase } from '@/lib/supabase';
+import { DesktopTableRegion, MobileRecordCards } from '@/components/dashboard/MobileRecordList';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Wallet, Clock, CheckCircle2, XCircle, TrendingUp, Calendar, Loader2, Crown, Send } from 'lucide-react';
 import { toast } from 'sonner';
+import { scanTruncationNote } from '@/lib/adminTruncation';
+
+const PAGE_SIZE = 25;
 
 interface PayoutRow {
   id: string;
@@ -13,8 +19,9 @@ interface PayoutRow {
   status: string;
   method: string;
   reference: string | null;
-  processed_at: string | null;
-  created_at: string;
+  processed_at: number | null;
+  created_at: number;
+  creator_name?: string;
 }
 
 interface CreatorBalance {
@@ -34,122 +41,125 @@ const statusStyles: Record<string, string> = {
 };
 
 const fmt = (n: number) => `$${n.toFixed(2)}`;
-const fmtDate = (d: string | null) =>
+const fmtDate = (d: number | null) =>
   d ? new Date(d).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '—';
 
 const AdminPayouts = () => {
-  const [loading, setLoading] = useState(true);
   const [busyId, setBusyId] = useState<string | null>(null);
-  const [payouts, setPayouts] = useState<PayoutRow[]>([]);
-  const [balances, setBalances] = useState<CreatorBalance[]>([]);
 
-  const load = useCallback(async () => {
-    const [subsRes, creatorsRes, payoutsRes] = await Promise.all([
-      supabase.from('subscriptions').select('creator_id, creator_earnings, status'),
-      supabase.from('creators').select('id, display_name, username'),
-      supabase.from('payouts').select('*').order('created_at', { ascending: false }),
-    ]);
+  const overview = useQuery(api.admin.snapshots.payoutsOverview);
+  const {
+    results: payoutResults,
+    status: payoutStatus,
+    loadMore: loadMorePayouts,
+  } = usePaginatedQuery(
+    api.admin.paginatedLists.listPayoutsPage,
+    {},
+    { initialNumItems: PAGE_SIZE },
+  );
+  const createPayoutMutation = useMutation(api.payouts.mutations.createAdmin);
+  const setStatusMutation = useMutation(api.payouts.mutations.setStatusAdmin);
+  const platformSettings = useQuery(api.platform.mutations.get);
 
-    if (subsRes.error || creatorsRes.error || payoutsRes.error) {
-      toast.error('Failed to load payout data');
-      setLoading(false);
-      return;
-    }
+  const payoutDefaults = (platformSettings?.payoutDefaults ?? {}) as Record<string, unknown>;
+  const minPayoutDollars = Number(payoutDefaults.minPayoutAmount ?? payoutDefaults.min_payout_amount ?? 0);
 
-    const payoutRows = (payoutsRes.data ?? []).map(p => ({ ...p, amount: Number(p.amount) })) as PayoutRow[];
-    setPayouts(payoutRows);
+  const loading = overview === undefined || payoutStatus === 'LoadingFirstPage';
 
-    const creators = creatorsRes.data ?? [];
-    const earnedBy = new Map<string, number>();
-    (subsRes.data ?? [])
-      .filter(s => s.status === 'active')
-      .forEach(s => earnedBy.set(s.creator_id, (earnedBy.get(s.creator_id) ?? 0) + Number(s.creator_earnings)));
+  const payouts = useMemo((): PayoutRow[] => {
+    return (payoutResults ?? []).map((p) => ({
+      id: p.id,
+      creator_id: p.creatorId,
+      amount: p.amountCents / 100,
+      status: p.status,
+      method: p.method ?? 'bank_transfer',
+      reference: p.reference ?? null,
+      processed_at: p.processedAt ?? null,
+      created_at: p.createdAt,
+      creator_name: p.creatorName,
+    }));
+  }, [payoutResults]);
 
-    const paidBy = new Map<string, number>();
-    const inFlightBy = new Map<string, number>();
-    payoutRows.forEach(p => {
-      if (p.status === 'completed') paidBy.set(p.creator_id, (paidBy.get(p.creator_id) ?? 0) + p.amount);
-      else if (p.status === 'pending' || p.status === 'processing')
-        inFlightBy.set(p.creator_id, (inFlightBy.get(p.creator_id) ?? 0) + p.amount);
-    });
-
-    const rows: CreatorBalance[] = creators
-      .map(c => {
-        const earned = earnedBy.get(c.id) ?? 0;
-        const paid = paidBy.get(c.id) ?? 0;
-        const inFlight = inFlightBy.get(c.id) ?? 0;
-        return {
-          creatorId: c.id,
-          name: c.display_name || `@${c.username ?? 'unknown'}`,
-          earned,
-          paid,
-          inFlight,
-          available: Math.max(0, earned - paid - inFlight),
-        };
-      })
-      .filter(r => r.earned > 0 || r.paid > 0 || r.inFlight > 0)
-      .sort((a, b) => b.available - a.available);
-
-    setBalances(rows);
-    setLoading(false);
-  }, []);
-
-  useEffect(() => {
-    load();
-  }, [load]);
+  const balances = useMemo((): CreatorBalance[] => {
+    return (overview?.balances ?? []).map((b) => ({
+      creatorId: b.creatorId,
+      name: b.name,
+      earned: b.earned,
+      paid: b.paid,
+      inFlight: b.inFlight,
+      available: b.available,
+    }));
+  }, [overview]);
 
   const totals = useMemo(() => {
-    const totalPaidOut = payouts.filter(p => p.status === 'completed').reduce((a, b) => a + b.amount, 0);
-    const pending = payouts.filter(p => p.status === 'pending' || p.status === 'processing').reduce((a, b) => a + b.amount, 0);
-    const owed = balances.reduce((a, b) => a + b.available, 0);
-    const lastPayout = payouts.find(p => p.status === 'completed');
+    if (!overview) {
+      return {
+        totalPaidOut: 0,
+        pending: 0,
+        owed: 0,
+        lastPayoutDate: 'No payouts yet',
+        processing: 0,
+        completed: 0,
+        failed: 0,
+      };
+    }
     return {
-      totalPaidOut,
-      pending,
-      owed,
-      lastPayoutDate: lastPayout ? fmtDate(lastPayout.processed_at ?? lastPayout.created_at) : 'No payouts yet',
-      processing: payouts.filter(p => p.status === 'processing' || p.status === 'pending').length,
-      completed: payouts.filter(p => p.status === 'completed').length,
-      failed: payouts.filter(p => p.status === 'failed').length,
+      totalPaidOut: overview.totalPaidOut,
+      pending: overview.pending,
+      owed: overview.owed,
+      lastPayoutDate: overview.lastPayoutAt
+        ? fmtDate(overview.lastPayoutAt)
+        : 'No payouts yet',
+      processing: overview.processingCount,
+      completed: overview.completedCount,
+      failed: overview.failedCount,
     };
-  }, [payouts, balances]);
+  }, [overview]);
 
-  const creatorName = (id: string) => balances.find(b => b.creatorId === id)?.name ?? 'Unknown creator';
+  const truncation = overview
+    ? scanTruncationNote(overview.truncated, overview.listLimit)
+    : null;
+
+  const creatorName = (p: PayoutRow) =>
+    p.creator_name ?? balances.find((b) => b.creatorId === p.creator_id)?.name ?? 'Unknown creator';
 
   const createPayout = async (row: CreatorBalance) => {
     if (row.available <= 0) return;
-    setBusyId(row.creatorId);
-    const now = new Date();
-    const { error } = await supabase.from('payouts').insert({
-      creator_id: row.creatorId,
-      amount: Number(row.available.toFixed(2)),
-      status: 'pending',
-      method: 'bank_transfer',
-      reference: `Payout – ${now.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}`,
-      period_end: now.toISOString().slice(0, 10),
-    });
-    setBusyId(null);
-    if (error) {
-      toast.error(error.message);
+    if (Number.isFinite(minPayoutDollars) && minPayoutDollars > 0 && row.available < minPayoutDollars) {
+      toast.error(`Payout must be at least $${minPayoutDollars.toFixed(2)} (platform minimum)`);
       return;
     }
-    toast.success(`Payout of ${fmt(row.available)} queued for ${row.name}`);
-    load();
+    setBusyId(row.creatorId);
+    const now = new Date();
+    try {
+      await createPayoutMutation({
+        creatorId: row.creatorId as Id<'creators'>,
+        amountCents: Math.round(row.available * 100),
+        status: 'pending',
+        method: 'bank_transfer',
+        reference: `Payout – ${now.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}`,
+      });
+      toast.success(`Ledger payout of ${fmt(row.available)} recorded for ${row.name}`);
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : 'Failed to create payout');
+    } finally {
+      setBusyId(null);
+    }
   };
 
   const updateStatus = async (id: string, status: string) => {
     setBusyId(id);
-    const { error } = await supabase
-      .from('payouts')
-      .update({ status, processed_at: status === 'completed' ? new Date().toISOString() : null })
-      .eq('id', id);
-    setBusyId(null);
-    if (error) {
-      toast.error(error.message);
-      return;
+    try {
+      await setStatusMutation({
+        payoutId: id as Id<'payouts'>,
+        status,
+      });
+      toast.success(`Ledger marked ${status}`);
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : 'Failed to update payout');
+    } finally {
+      setBusyId(null);
     }
-    toast.success(`Payout marked ${status}`);
-    load();
   };
 
   if (loading) {
@@ -164,33 +174,41 @@ const AdminPayouts = () => {
     <DashboardLayout type="admin">
       <div className="mb-8">
         <h1 className="text-2xl font-bold">Payouts &amp; Treasury</h1>
-        <p className="text-muted-foreground text-sm mt-0.5">Creator earnings, queued payouts, and payment history</p>
+        <p className="text-muted-foreground text-sm mt-0.5">
+          Manual treasury ledger — record bank transfers and mark them paid in Prizelet
+        </p>
+        <p className="text-muted-foreground text-xs mt-1">
+          These actions update the ledger only. Funds move outside Prizelet until Stripe Connect is enabled.
+        </p>
+        {Number.isFinite(minPayoutDollars) && minPayoutDollars > 0 && (
+          <p className="text-caption text-muted-foreground mt-1">Minimum payout: ${minPayoutDollars.toFixed(2)}</p>
+        )}
+        {truncation && <p className="text-amber-600 text-caption mt-2">{truncation}</p>}
       </div>
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
         <div className="rounded-xl border border-border bg-card p-5">
           <Wallet className="h-4 w-4 text-emerald-400 mb-2" />
           <p className="text-2xl font-bold text-emerald-400">{fmt(totals.owed)}</p>
-          <p className="text-xs text-muted-foreground mt-1">Owed to Creators</p>
+          <p className="text-caption text-muted-foreground mt-1">Owed to Creators</p>
         </div>
         <div className="rounded-xl border border-border bg-card p-5">
           <Clock className="h-4 w-4 text-amber-400 mb-2" />
           <p className="text-2xl font-bold text-amber-400">{fmt(totals.pending)}</p>
-          <p className="text-xs text-muted-foreground mt-1">Queued / In Progress</p>
+          <p className="text-caption text-muted-foreground mt-1">Queued / In Progress</p>
         </div>
         <div className="rounded-xl border border-border bg-card p-5">
           <TrendingUp className="h-4 w-4 text-blue-400 mb-2" />
           <p className="text-2xl font-bold">{fmt(totals.totalPaidOut)}</p>
-          <p className="text-xs text-muted-foreground mt-1">Total Paid Out</p>
+          <p className="text-caption text-muted-foreground mt-1">Total Paid Out</p>
         </div>
         <div className="rounded-xl border border-border bg-card p-5">
           <Calendar className="h-4 w-4 text-purple-400 mb-2" />
           <p className="text-lg font-bold">{totals.lastPayoutDate}</p>
-          <p className="text-xs text-muted-foreground mt-1">Last Completed Payout</p>
+          <p className="text-caption text-muted-foreground mt-1">Last Completed Payout</p>
         </div>
       </div>
 
-      {/* Creator balances */}
       <div className="rounded-xl border border-border overflow-hidden mb-8">
         <div className="p-4 border-b border-border bg-muted/30 flex items-center gap-2">
           <Crown className="h-4 w-4 text-primary" />
@@ -199,115 +217,187 @@ const AdminPayouts = () => {
         {balances.length === 0 ? (
           <p className="text-sm text-muted-foreground text-center py-10">No creator earnings yet</p>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b border-border bg-muted/20">
-                  <th className="text-left text-xs font-medium text-muted-foreground p-4">Creator</th>
-                  <th className="text-left text-xs font-medium text-muted-foreground p-4">Lifetime Earnings</th>
-                  <th className="text-left text-xs font-medium text-muted-foreground p-4">Paid</th>
-                  <th className="text-left text-xs font-medium text-muted-foreground p-4">In Progress</th>
-                  <th className="text-left text-xs font-medium text-muted-foreground p-4">Available</th>
-                  <th className="text-right text-xs font-medium text-muted-foreground p-4">Action</th>
-                </tr>
-              </thead>
-              <tbody>
-                {balances.map(b => (
-                  <tr key={b.creatorId} className="border-b border-border last:border-0 hover:bg-muted/20 transition-colors">
-                    <td className="p-4 font-medium text-xs">{b.name}</td>
-                    <td className="p-4 text-xs text-muted-foreground">{fmt(b.earned)}</td>
-                    <td className="p-4 text-xs text-muted-foreground">{fmt(b.paid)}</td>
-                    <td className="p-4 text-xs text-amber-400">{fmt(b.inFlight)}</td>
-                    <td className="p-4 font-medium text-emerald-400">{fmt(b.available)}</td>
-                    <td className="p-4 text-right">
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        className="h-8 text-xs"
-                        disabled={b.available <= 0 || busyId === b.creatorId}
-                        onClick={() => createPayout(b)}
-                      >
-                        {busyId === b.creatorId ? <Loader2 className="h-3 w-3 animate-spin" /> : <><Send className="mr-1.5 h-3 w-3" /> Create payout</>}
-                      </Button>
-                    </td>
+          <>
+            <MobileRecordCards>
+              {balances.map((b) => (
+                <li key={b.creatorId} className="mx-3 mb-3 last:mb-3 rounded-xl border border-border bg-card p-4 space-y-3 md:mx-0">
+                  <p className="text-sm font-medium truncate">{b.name}</p>
+                  <div className="grid grid-cols-2 gap-2 text-caption">
+                    <div><span className="text-muted-foreground">Lifetime</span><p className="mt-0.5">{fmt(b.earned)}</p></div>
+                    <div><span className="text-muted-foreground">Paid</span><p className="mt-0.5">{fmt(b.paid)}</p></div>
+                    <div><span className="text-muted-foreground">In progress</span><p className="mt-0.5 text-amber-400">{fmt(b.inFlight)}</p></div>
+                    <div><span className="text-muted-foreground">Available</span><p className="mt-0.5 font-medium text-emerald-400">{fmt(b.available)}</p></div>
+                  </div>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="h-11 w-full text-caption"
+                    disabled={b.available <= 0 || busyId === b.creatorId}
+                    onClick={() => createPayout(b)}
+                  >
+                    {busyId === b.creatorId ? <Loader2 className="h-3 w-3 animate-spin" /> : <><Send className="mr-1.5 h-3 w-3" /> Record payout</>}
+                  </Button>
+                </li>
+              ))}
+            </MobileRecordCards>
+            <DesktopTableRegion label="Creator balances table" className="rounded-none border-0">
+              <table className="w-full min-w-[640px] text-sm">
+                <thead>
+                  <tr className="border-b border-border bg-muted/20">
+                    <th className="text-left text-caption font-medium text-muted-foreground p-4">Creator</th>
+                    <th className="text-left text-caption font-medium text-muted-foreground p-4">Lifetime Earnings</th>
+                    <th className="text-left text-caption font-medium text-muted-foreground p-4">Paid</th>
+                    <th className="text-left text-caption font-medium text-muted-foreground p-4">In Progress</th>
+                    <th className="text-left text-caption font-medium text-muted-foreground p-4">Available</th>
+                    <th className="text-right text-caption font-medium text-muted-foreground p-4">Action</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                </thead>
+                <tbody>
+                  {balances.map((b) => (
+                    <tr key={b.creatorId} className="border-b border-border last:border-0 hover:bg-muted/20 transition-colors">
+                      <td className="p-4 font-medium text-caption">{b.name}</td>
+                      <td className="p-4 text-caption text-muted-foreground">{fmt(b.earned)}</td>
+                      <td className="p-4 text-caption text-muted-foreground">{fmt(b.paid)}</td>
+                      <td className="p-4 text-caption text-amber-400">{fmt(b.inFlight)}</td>
+                      <td className="p-4 font-medium text-emerald-400">{fmt(b.available)}</td>
+                      <td className="p-4 text-right">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="min-h-11 text-caption"                          disabled={b.available <= 0 || busyId === b.creatorId}
+                          onClick={() => createPayout(b)}
+                        >
+                          {busyId === b.creatorId ? <Loader2 className="h-3 w-3 animate-spin" /> : <><Send className="mr-1.5 h-3 w-3" /> Record payout</>}
+                        </Button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </DesktopTableRegion>
+          </>
         )}
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
         <div className="rounded-xl border border-border bg-card p-5">
-          <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1">Open</p>
+          <p className="text-caption text-muted-foreground uppercase tracking-wider mb-1">Open</p>
           <p className="text-2xl font-bold text-amber-400">{totals.processing}</p>
         </div>
         <div className="rounded-xl border border-border bg-card p-5">
-          <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1">Completed</p>
+          <p className="text-caption text-muted-foreground uppercase tracking-wider mb-1">Completed</p>
           <p className="text-2xl font-bold text-emerald-400">{totals.completed}</p>
         </div>
         <div className="rounded-xl border border-border bg-card p-5">
-          <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1">Failed</p>
+          <p className="text-caption text-muted-foreground uppercase tracking-wider mb-1">Failed</p>
           <p className="text-2xl font-bold text-destructive">{totals.failed}</p>
         </div>
       </div>
 
-      {/* Payout history */}
       <div className="rounded-xl border border-border overflow-hidden">
         <div className="p-4 border-b border-border bg-muted/30">
           <h2 className="text-sm font-medium">Payout History</h2>
         </div>
         {payouts.length === 0 ? (
-          <p className="text-sm text-muted-foreground text-center py-10">No payouts recorded yet — create one from a creator balance above</p>
+          <p className="text-sm text-muted-foreground text-center py-10">No payouts recorded yet — record one from a creator balance above</p>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b border-border bg-muted/20">
-                  <th className="text-left text-xs font-medium text-muted-foreground p-4">Creator</th>
-                  <th className="text-left text-xs font-medium text-muted-foreground p-4">Created</th>
-                  <th className="text-left text-xs font-medium text-muted-foreground p-4">Processed</th>
-                  <th className="text-left text-xs font-medium text-muted-foreground p-4">Amount</th>
-                  <th className="text-left text-xs font-medium text-muted-foreground p-4">Status</th>
-                  <th className="text-right text-xs font-medium text-muted-foreground p-4">Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {payouts.map(p => (
-                  <tr key={p.id} className="border-b border-border last:border-0 hover:bg-muted/20 transition-colors">
-                    <td className="p-4 font-medium text-xs">{creatorName(p.creator_id)}</td>
-                    <td className="p-4 text-xs text-muted-foreground">{fmtDate(p.created_at)}</td>
-                    <td className="p-4 text-xs text-muted-foreground">{fmtDate(p.processed_at)}</td>
-                    <td className="p-4 font-medium text-emerald-400">{fmt(p.amount)}</td>
-                    <td className="p-4">
-                      <Badge variant="outline" className={`text-[10px] ${statusStyles[p.status] ?? ''}`}>
-                        {p.status === 'completed' && <CheckCircle2 className="h-2.5 w-2.5 mr-1" />}
-                        {p.status === 'failed' && <XCircle className="h-2.5 w-2.5 mr-1" />}
-                        {p.status}
-                      </Badge>
-                    </td>
-                    <td className="p-4 text-right space-x-1">
-                      {p.status !== 'completed' && (
-                        <Button size="sm" variant="ghost" className="h-7 px-2 text-xs" disabled={busyId === p.id} onClick={() => updateStatus(p.id, 'completed')}>
-                          Mark paid
-                        </Button>
-                      )}
-                      {p.status === 'pending' && (
-                        <Button size="sm" variant="ghost" className="h-7 px-2 text-xs" disabled={busyId === p.id} onClick={() => updateStatus(p.id, 'processing')}>
-                          Processing
-                        </Button>
-                      )}
-                      {p.status !== 'failed' && p.status !== 'completed' && (
-                        <Button size="sm" variant="ghost" className="h-7 px-2 text-xs text-destructive" disabled={busyId === p.id} onClick={() => updateStatus(p.id, 'failed')}>
-                          Fail
-                        </Button>
-                      )}
-                    </td>
+          <>
+            <MobileRecordCards>
+              {payouts.map((p) => (
+                <li key={p.id} className="mx-3 mb-3 rounded-xl border border-border bg-card p-4 space-y-3">
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="min-w-0">
+                      <p className="text-sm font-medium truncate">{creatorName(p)}</p>
+                      <p className="text-caption text-muted-foreground mt-0.5">{fmtDate(p.created_at)}</p>
+                    </div>
+                    <Badge variant="outline" className={`text-caption shrink-0 ${statusStyles[p.status] ?? ''}`}>
+                      {p.status === 'completed' && <CheckCircle2 className="h-2.5 w-2.5 mr-1" />}
+                      {p.status === 'failed' && <XCircle className="h-2.5 w-2.5 mr-1" />}
+                      {p.status}
+                    </Badge>
+                  </div>
+                  <p className="text-sm font-medium text-emerald-400">{fmt(p.amount)}</p>
+                  <div className="flex flex-wrap gap-2">
+                    {p.status !== 'completed' && (
+                      <Button size="sm" variant="outline" className="h-11 flex-1 text-caption" disabled={busyId === p.id} onClick={() => updateStatus(p.id, 'completed')}>
+                        Mark paid in ledger
+                      </Button>
+                    )}
+                    {p.status === 'pending' && (
+                      <Button size="sm" variant="outline" className="h-11 flex-1 text-caption" disabled={busyId === p.id} onClick={() => updateStatus(p.id, 'processing')}>
+                        Mark processing
+                      </Button>
+                    )}
+                    {p.status !== 'failed' && p.status !== 'completed' && (
+                      <Button size="sm" variant="outline" className="h-11 flex-1 text-caption text-destructive" disabled={busyId === p.id} onClick={() => updateStatus(p.id, 'failed')}>
+                        Mark failed
+                      </Button>
+                    )}
+                  </div>
+                </li>
+              ))}
+            </MobileRecordCards>
+            <DesktopTableRegion label="Payout history table" className="rounded-none border-0">
+              <table className="w-full min-w-[640px] text-sm">
+                <thead>
+                  <tr className="border-b border-border bg-muted/20">
+                    <th className="text-left text-caption font-medium text-muted-foreground p-4">Creator</th>
+                    <th className="text-left text-caption font-medium text-muted-foreground p-4">Created</th>
+                    <th className="text-left text-caption font-medium text-muted-foreground p-4">Processed</th>
+                    <th className="text-left text-caption font-medium text-muted-foreground p-4">Amount</th>
+                    <th className="text-left text-caption font-medium text-muted-foreground p-4">Status</th>
+                    <th className="text-right text-caption font-medium text-muted-foreground p-4">Actions</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody>
+                  {payouts.map((p) => (
+                    <tr key={p.id} className="border-b border-border last:border-0 hover:bg-muted/20 transition-colors">
+                      <td className="p-4 font-medium text-caption">{creatorName(p)}</td>
+                      <td className="p-4 text-caption text-muted-foreground">{fmtDate(p.created_at)}</td>
+                      <td className="p-4 text-caption text-muted-foreground">{fmtDate(p.processed_at)}</td>
+                      <td className="p-4 font-medium text-emerald-400">{fmt(p.amount)}</td>
+                      <td className="p-4">
+                        <Badge variant="outline" className={`text-caption ${statusStyles[p.status] ?? ''}`}>
+                          {p.status === 'completed' && <CheckCircle2 className="h-2.5 w-2.5 mr-1" />}
+                          {p.status === 'failed' && <XCircle className="h-2.5 w-2.5 mr-1" />}
+                          {p.status}
+                        </Badge>
+                      </td>
+                      <td className="p-4 text-right space-x-1">
+                        {p.status !== 'completed' && (
+                          <Button size="sm" variant="ghost" className="min-h-11 px-2 text-caption" disabled={busyId === p.id} onClick={() => updateStatus(p.id, 'completed')}>
+                            Mark paid in ledger
+                          </Button>
+                        )}
+                        {p.status === 'pending' && (
+                          <Button size="sm" variant="ghost" className="min-h-11 px-2 text-caption" disabled={busyId === p.id} onClick={() => updateStatus(p.id, 'processing')}>
+                            Mark processing
+                          </Button>
+                        )}
+                        {p.status !== 'failed' && p.status !== 'completed' && (
+                          <Button size="sm" variant="ghost" className="min-h-11 px-2 text-caption text-destructive" disabled={busyId === p.id} onClick={() => updateStatus(p.id, 'failed')}>
+                            Mark failed
+                          </Button>
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </DesktopTableRegion>
+          </>
+        )}
+        {(payoutStatus === 'CanLoadMore' || payoutStatus === 'LoadingMore') && (
+          <div className="flex justify-center p-4 border-t border-border">
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={payoutStatus === 'LoadingMore'}
+              onClick={() => loadMorePayouts(PAGE_SIZE)}
+            >
+              {payoutStatus === 'LoadingMore' ? <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" /> : null}
+              Load more history
+            </Button>
           </div>
         )}
       </div>

@@ -1,11 +1,23 @@
 import { useEffect, useMemo, useState } from 'react';
+import { Link } from 'react-router-dom';
+import { useMutation, useQuery } from 'convex/react';
+import { api } from '../../convex/_generated/api';
 import { DashboardLayout } from '@/components/dashboard/DashboardLayout';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
-import { supabase } from '@/lib/supabase';
 import { useCreatorProfile } from '@/hooks/useCreatorProfile';
-import { DollarSign, Zap, BarChart3, ArrowUpRight, ArrowDownRight, Target, Lightbulb, Loader2 } from 'lucide-react';
+import {
+  DollarSign,
+  BarChart3,
+  Target,
+  Lightbulb,
+  Loader2,
+  Package,
+  ArrowRight,
+  TrendingUp,
+} from 'lucide-react';
 import { toast } from 'sonner';
 
 interface PricingData {
@@ -19,49 +31,62 @@ interface PricingData {
 }
 
 const CreatorSmartPricing = () => {
-  const { creator, loading: creatorLoading, reload } = useCreatorProfile();
-  const [data, setData] = useState<PricingData | null>(null);
-  const [loading, setLoading] = useState(true);
+  const { creator, loading: creatorLoading } = useCreatorProfile();
+  const subs = useQuery(api.subscriptions.mutations.listForMyCreator);
+  const analytics = useQuery(api.analytics.mutations.listForMyCreator);
+  const posts = useQuery(api.posts.queries.listMine);
+  const marketPage = useQuery(api.creators.queries.listPublished, {});
+  const updateSettings = useMutation(api.creators.queries.updateSettings);
+
   const [priceInput, setPriceInput] = useState('');
   const [saving, setSaving] = useState(false);
 
+  const creatorId = creator?.id;
+  const savedListPrice = creator?.monthly_price ?? null;
+
+  // Draft input only re-syncs when the persisted list price changes — not on every
+  // reactive subs/analytics/posts/market refresh (that was wiping typing).
   useEffect(() => {
-    if (creatorLoading) return;
-    if (!creator) { setLoading(false); return; }
+    if (!creatorId) return;
+    setPriceInput((savedListPrice ?? 9.99).toFixed(2));
+  }, [creatorId, savedListPrice]);
 
-    const load = async () => {
-      const [{ data: subs }, { data: views }, { data: posts }, { data: market }] = await Promise.all([
-        supabase.from('subscriptions').select('amount, status').eq('creator_id', creator.id).eq('status', 'active'),
-        supabase.from('analytics_events').select('id').eq('creator_id', creator.id).eq('event_type', 'profile_view'),
-        supabase.from('posts').select('result').eq('creator_id', creator.id),
-        supabase.from('creators').select('monthly_price').eq('is_published', true),
-      ]);
+  const queriesLoading =
+    !!creator &&
+    (subs === undefined ||
+      analytics === undefined ||
+      posts === undefined ||
+      marketPage === undefined);
+  const loading = creatorLoading || queriesLoading;
 
-      const activeSubs = subs?.length ?? 0;
-      const price = Number(creator.monthly_price ?? 9.99);
-      const settled = (posts ?? []).filter(p => p.result === 'won' || p.result === 'lost');
-      const wins = settled.filter(p => p.result === 'won').length;
-      const marketPrices = (market ?? []).map(m => Number(m.monthly_price ?? 0)).filter(p => p > 0);
+  const data = useMemo((): PricingData | null => {
+    if (!creator || subs === undefined || analytics === undefined || posts === undefined || marketPage === undefined) {
+      return null;
+    }
+    const market = marketPage.items;
+    const activeSubs = subs.filter((s) => s.status === 'active');
+    const price = creator.monthly_price ?? 9.99;
+    const settled = posts.filter((p) => p.result === 'won' || p.result === 'lost');
+    const wins = settled.filter((p) => p.result === 'won').length;
+    const marketPrices = market
+      .map((m) => (m.monthlyPriceCents ?? 0) / 100)
+      .filter((p) => p > 0);
 
-      setData({
-        price,
-        activeSubs,
-        monthlyRevenue: (subs ?? []).reduce((a, b) => a + Number(b.amount), 0),
-        profileViews: views?.length ?? 0,
-        winRate: settled.length ? (wins / settled.length) * 100 : 0,
-        settledPicks: settled.length,
-        marketAverage: marketPrices.length ? marketPrices.reduce((a, b) => a + b, 0) / marketPrices.length : price,
-      });
-      setPriceInput(price.toFixed(2));
-      setLoading(false);
+    return {
+      price,
+      activeSubs: activeSubs.length,
+      monthlyRevenue: activeSubs.reduce((a, b) => a + b.amountCents / 100, 0),
+      profileViews: analytics.filter((e) => e.eventType === 'profile_view').length,
+      winRate: settled.length ? (wins / settled.length) * 100 : 0,
+      settledPicks: settled.length,
+      marketAverage: marketPrices.length
+        ? marketPrices.reduce((a, b) => a + b, 0) / marketPrices.length
+        : price,
     };
-    void load();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [creator?.id, creatorLoading]);
+  }, [creator, subs, analytics, posts, marketPage]);
 
   const suggestion = useMemo(() => {
     if (!data) return null;
-    // Demand signal: how efficiently views turn into subscribers.
     const conversion = data.profileViews > 0 ? (data.activeSubs / data.profileViews) * 100 : 0;
     let multiplier = 1;
     if (data.winRate >= 58 && data.settledPicks >= 20) multiplier += 0.35;
@@ -72,96 +97,204 @@ const CreatorSmartPricing = () => {
     if (data.price < data.marketAverage * 0.8) multiplier += 0.1;
 
     const suggested = Math.max(4.99, Math.round(data.price * multiplier * 100) / 100);
-    const projectedSubs = data.activeSubs * (suggested > data.price ? 0.9 : 1.1);
-    const revenueImpact = data.monthlyRevenue > 0
-      ? ((suggested * projectedSubs - data.monthlyRevenue) / data.monthlyRevenue) * 100
-      : 0;
+    const direction = suggested > data.price ? 'higher' : suggested < data.price ? 'lower' : 'similar';
 
-    return { suggested, conversion, revenueImpact, multiplier };
+    return { suggested, conversion, direction, multiplier };
   }, [data]);
 
   const savePrice = async () => {
-    if (!creator) return;
+    if (!creator || saving) return;
     const next = Number(priceInput);
-    if (!next || next < 1) { toast.error('Enter a valid price'); return; }
+    if (!next || next < 1) {
+      toast.error('Enter a valid price');
+      return;
+    }
     setSaving(true);
-    const { error } = await supabase.from('creators').update({ monthly_price: next }).eq('id', creator.id);
-    setSaving(false);
-    if (error) { toast.error(error.message); return; }
-    setData(d => d ? { ...d, price: next } : d);
-    void reload();
-    toast.success('Subscription price updated');
+    try {
+      await updateSettings({ monthlyPriceCents: Math.round(next * 100) });
+      setPriceInput(next.toFixed(2));
+      toast.success('Featured / list price updated');
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : 'Failed to update price');
+    } finally {
+      setSaving(false);
+    }
   };
 
-  if (loading || !data || !suggestion) {
+  if (loading) {
     return (
       <DashboardLayout type="creator">
-        <div className="flex justify-center py-20"><Loader2 className="h-5 w-5 animate-spin text-primary" /></div>
+        <div className="flex justify-center py-20">
+          <Loader2 className="h-5 w-5 animate-spin text-primary" />
+        </div>
+      </DashboardLayout>
+    );
+  }
+
+  if (!creator) {
+    return (
+      <DashboardLayout type="creator">
+        <header className="mb-6">
+          <h1 className="text-heading font-bold text-foreground">Smart Pricing</h1>
+          <p className="text-support text-muted-foreground mt-0.5">
+            Illustrative pricing guidance from your live metrics — not a guarantee.
+          </p>
+        </header>
+        <div className="rounded-xl border border-border bg-card p-10 text-center">
+          <DollarSign className="h-10 w-10 text-muted-foreground mx-auto mb-4" />
+          <h3 className="text-ui font-semibold text-foreground mb-2">No creator profile yet</h3>
+          <p className="text-support text-muted-foreground max-w-xs mx-auto mb-5">
+            Finish onboarding to see pricing guidance and set your list price.
+          </p>
+          <Button asChild className="min-h-11">
+            <Link to="/creator/onboarding">Set up your profile</Link>
+          </Button>
+        </div>
+      </DashboardLayout>
+    );
+  }
+
+  if (!data || !suggestion) {
+    return (
+      <DashboardLayout type="creator">
+        <div className="flex justify-center py-20">
+          <Loader2 className="h-5 w-5 animate-spin text-primary" />
+        </div>
       </DashboardLayout>
     );
   }
 
   const insights = [
     data.settledPicks >= 10
-      ? `Your ${data.winRate.toFixed(1)}% win rate across ${data.settledPicks} settled picks ${data.winRate >= 53 ? 'supports a premium price' : 'suggests holding price until results improve'}.`
-      : `Only ${data.settledPicks} settled picks so far — publish more results to unlock stronger pricing power.`,
+      ? `Your ${data.winRate.toFixed(1)}% win rate across ${data.settledPicks} settled picks ${data.winRate >= 53 ? 'can support testing a higher list price' : 'suggests holding price until results improve'}.`
+      : `Only ${data.settledPicks} settled picks so far — publish more results before making large price moves.`,
     data.profileViews > 0
-      ? `${suggestion.conversion.toFixed(1)}% of your ${data.profileViews} profile views convert into subscribers.`
+      ? `About ${suggestion.conversion.toFixed(1)}% of your ${data.profileViews} tracked profile views become subscribers (illustrative conversion).`
       : 'No profile views tracked yet — promote your links to build demand data.',
-    `Market average across published creators is $${data.marketAverage.toFixed(2)}/mo — you are ${data.price >= data.marketAverage ? 'above' : 'below'} it.`,
+    `Market average across published creators is about $${data.marketAverage.toFixed(2)}/mo — you are ${data.price >= data.marketAverage ? 'above' : 'below'} it. Treat this as a rough benchmark only.`,
   ];
+
+  const impactLabel =
+    suggestion.direction === 'higher'
+      ? 'Exploring a higher list price'
+      : suggestion.direction === 'lower'
+        ? 'Exploring a lower list price'
+        : 'Current price looks aligned';
 
   return (
     <DashboardLayout type="creator">
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold">Smart Pricing</h1>
-        <p className="text-muted-foreground text-sm mt-0.5">Pricing guidance based on your live performance data</p>
+      <header className="mb-6">
+        <h1 className="text-heading font-bold text-foreground">Smart Pricing</h1>
+        <p className="text-support text-muted-foreground mt-0.5">
+          Illustrative pricing guidance from your live metrics — not a guarantee.
+        </p>
+      </header>
+
+      <div className="rounded-xl border border-border bg-card p-4 sm:p-5 mb-6 flex flex-col sm:flex-row sm:items-center gap-3 justify-between">
+        <div className="flex items-start gap-3 min-w-0">
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-muted">
+            <Package className="h-4 w-4 text-muted-foreground" />
+          </div>
+          <div className="min-w-0">
+            <p className="text-ui font-semibold text-foreground">Edit sellable product prices in Products</p>
+            <p className="text-support text-muted-foreground mt-0.5">
+              Subscription tiers and product pricing live on the Products page. Use the control below
+              only for your featured / list monthly price.
+            </p>
+          </div>
+        </div>
+        <Button variant="hero" asChild className="min-h-11 shrink-0">
+          <Link to="/creator/products">
+            Go to Products <ArrowRight className="ml-1.5 h-3.5 w-3.5" />
+          </Link>
+        </Button>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-        <div className="rounded-xl border border-border bg-card p-5">
-          <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-semibold mb-2">Current Price</p>
-          <p className="text-3xl font-bold">${data.price.toFixed(2)}</p>
-          <p className="text-xs text-muted-foreground mt-1">{data.activeSubs} active subscribers</p>
-        </div>
-        <div className="rounded-xl border border-primary/30 bg-card p-5 ring-1 ring-primary/10">
-          <div className="flex items-center justify-between mb-2">
-            <p className="text-[10px] text-primary uppercase tracking-wider font-semibold">Suggested Price</p>
-            <Zap className="h-3.5 w-3.5 text-primary" />
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-6">
+        <div className="rounded-xl border border-border bg-card p-4">
+          <div className="flex items-center gap-1.5 mb-1.5">
+            <DollarSign className="h-3.5 w-3.5 text-muted-foreground" />
+            <p className="text-support text-muted-foreground">Current list price</p>
           </div>
-          <p className="text-3xl font-bold text-primary">${suggestion.suggested.toFixed(2)}</p>
-          <p className="text-xs text-muted-foreground mt-1">From win rate, demand and market data</p>
-        </div>
-        <div className="rounded-xl border border-border bg-card p-5">
-          <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-semibold mb-2">Projected Impact</p>
-          <p className={`text-3xl font-bold flex items-center gap-1 ${suggestion.revenueImpact >= 0 ? 'text-emerald-500' : 'text-destructive'}`}>
-            {suggestion.revenueImpact >= 0 ? <ArrowUpRight className="h-5 w-5" /> : <ArrowDownRight className="h-5 w-5" />}
-            {suggestion.revenueImpact >= 0 ? '+' : ''}{suggestion.revenueImpact.toFixed(0)}%
+          <p className="text-ui font-bold text-foreground">${data.price.toFixed(2)}</p>
+          <p className="text-support text-muted-foreground mt-1">
+            {data.activeSubs} active subscribers
           </p>
-          <p className="text-xs text-muted-foreground mt-1">Monthly revenue at suggested price</p>
+        </div>
+        <div className="rounded-xl border border-border bg-card p-4">
+          <div className="flex items-center gap-1.5 mb-1.5">
+            <TrendingUp className="h-3.5 w-3.5 text-muted-foreground" />
+            <p className="text-support text-muted-foreground">Suggested range</p>
+          </div>
+          <p className="text-ui font-bold text-foreground">${suggestion.suggested.toFixed(2)}</p>
+          <p className="text-support text-muted-foreground mt-1">
+            Heuristic from win rate, demand and market data
+          </p>
+        </div>
+        <div className="rounded-xl border border-border bg-card p-4">
+          <div className="flex items-center gap-1.5 mb-1.5">
+            <Target className="h-3.5 w-3.5 text-muted-foreground" />
+            <p className="text-support text-muted-foreground">Illustrative impact</p>
+          </div>
+          <p className="text-ui font-semibold text-foreground leading-snug">{impactLabel}</p>
+          <p className="text-support text-muted-foreground mt-1">
+            Directional only — not a projected revenue %. Actual results depend on demand and product
+            mix.
+          </p>
         </div>
       </div>
 
-      <div className="rounded-xl border border-border bg-card p-6 mb-6">
-        <h2 className="text-sm font-medium mb-4 flex items-center gap-2"><DollarSign className="h-4 w-4 text-primary" /> Update Your Price</h2>
-        <div className="flex flex-wrap items-end gap-3">
-          <div>
-            <label className="text-xs text-muted-foreground">Monthly price ($)</label>
-            <Input type="number" min="1" step="0.01" value={priceInput} onChange={e => setPriceInput(e.target.value)} className="mt-1.5 w-40" />
+      <div className="rounded-xl border border-border bg-card p-5 sm:p-6 mb-6 space-y-4">
+        <h2 className="text-ui font-semibold text-foreground flex items-center gap-2">
+          <DollarSign className="h-4 w-4 text-primary" /> Update featured / list price
+        </h2>
+        <p className="text-support text-muted-foreground">
+          Applies your monthly featured price shown on your public profile and creator list. For
+          sellable product prices, use Products. Changing the input alone does not save until you
+          apply.
+        </p>
+        <div className="flex flex-col sm:flex-row sm:flex-wrap sm:items-end gap-3">
+          <div className="space-y-2">
+            <Label htmlFor="list-price" className="text-support text-muted-foreground">
+              Monthly price ($)
+            </Label>
+            <Input
+              id="list-price"
+              type="number"
+              min={1}
+              step="0.01"
+              value={priceInput}
+              onChange={(e) => setPriceInput(e.target.value)}
+              className="h-11 min-h-11 w-full sm:w-40 text-ui"
+            />
           </div>
-          <Button variant="hero" size="sm" onClick={savePrice} disabled={saving}>
-            {saving && <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />} Save Price
+          <Button
+            type="button"
+            variant="hero"
+            className="min-h-11"
+            onClick={() => void savePrice()}
+            disabled={saving || !priceInput.trim()}
+          >
+            {saving ? <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" /> : null}
+            Apply list price
           </Button>
-          <Button variant="outline" size="sm" onClick={() => setPriceInput(suggestion.suggested.toFixed(2))}>
+          <Button
+            type="button"
+            variant="outline"
+            className="min-h-11"
+            onClick={() => setPriceInput(suggestion.suggested.toFixed(2))}
+          >
             <Target className="mr-1.5 h-3.5 w-3.5" /> Use suggested
           </Button>
         </div>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div className="rounded-xl border border-border bg-card p-6">
-          <h2 className="text-sm font-medium mb-4 flex items-center gap-2"><BarChart3 className="h-4 w-4 text-primary" /> Live Metrics</h2>
-          <div className="space-y-3 text-sm">
+        <div className="rounded-xl border border-border bg-card p-5 sm:p-6">
+          <h2 className="text-ui font-semibold text-foreground mb-4 flex items-center gap-2">
+            <BarChart3 className="h-4 w-4 text-primary" /> Live metrics
+          </h2>
+          <div className="space-y-3">
             {[
               ['Monthly recurring revenue', `$${data.monthlyRevenue.toFixed(2)}`],
               ['Active subscribers', String(data.activeSubs)],
@@ -169,21 +302,28 @@ const CreatorSmartPricing = () => {
               ['View → subscriber rate', `${suggestion.conversion.toFixed(1)}%`],
               ['Win rate', `${data.winRate.toFixed(1)}%`],
             ].map(([label, value]) => (
-              <div key={label} className="flex items-center justify-between border-b border-border last:border-0 pb-2 last:pb-0">
-                <span className="text-muted-foreground text-xs">{label}</span>
-                <span className="font-semibold">{value}</span>
+              <div
+                key={label}
+                className="flex items-center justify-between border-b border-border last:border-0 pb-2 last:pb-0"
+              >
+                <span className="text-support text-muted-foreground">{label}</span>
+                <span className="text-ui font-semibold text-foreground">{value}</span>
               </div>
             ))}
           </div>
         </div>
 
-        <div className="rounded-xl border border-border bg-card p-6">
-          <h2 className="text-sm font-medium mb-4 flex items-center gap-2"><Lightbulb className="h-4 w-4 text-amber-500" /> Recommendations</h2>
+        <div className="rounded-xl border border-border bg-card p-5 sm:p-6">
+          <h2 className="text-ui font-semibold text-foreground mb-4 flex items-center gap-2">
+            <Lightbulb className="h-4 w-4 text-muted-foreground" /> Recommendations
+          </h2>
           <div className="space-y-3">
             {insights.map((text, i) => (
               <div key={i} className="flex gap-3">
-                <Badge variant="outline" className="h-5 shrink-0 text-[10px]">{i + 1}</Badge>
-                <p className="text-xs text-muted-foreground leading-relaxed">{text}</p>
+                <Badge variant="outline" className="h-5 shrink-0 text-caption">
+                  {i + 1}
+                </Badge>
+                <p className="text-support text-muted-foreground leading-relaxed">{text}</p>
               </div>
             ))}
           </div>

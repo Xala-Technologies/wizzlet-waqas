@@ -25,15 +25,15 @@ const pillars = [
 
 const Network = () => (
   <div className="min-h-screen bg-background">
-    <Seo title={'The Wizzlet Network — Built for Proven Creators'} description={'Inside the Wizzlet private network: verified performance, subscription tooling, and payouts built for serious sports creators.'} />
+    <Seo title={'The Prizelet Network — Built for Proven Creators'} description={'Inside the Prizelet private network: subscription tooling and payouts built for serious creators.'} />
       <Navbar />
     <main id="main-content" className="container pt-32 pb-20 max-w-3xl">
-      <p className="text-xs font-medium uppercase tracking-widest text-primary mb-4">The Network</p>
+      <p className="text-caption font-medium uppercase tracking-widest text-primary mb-4">The Network</p>
       <h1 className="text-4xl font-bold text-foreground mb-4 tracking-tight">
         A private infrastructure for creators who deliver.
       </h1>
       <p className="text-muted-foreground text-lg leading-relaxed mb-16">
-        Wizzlet isn't a public feed. It's a closed system designed for serious creators
+        Prizelet isn't a public feed. It's a closed system designed for serious creators
         and the subscribers who value their expertise. Every interaction is intentional.
       </p>
 

@@ -1,110 +1,134 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
+import { Link } from 'react-router-dom';
+import { useQuery } from 'convex/react';
+import { api } from '../../../convex/_generated/api';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Search, TrendingUp, Star, Sparkles } from 'lucide-react';
+import { Search, TrendingUp, Star, Sparkles, ArrowRight } from 'lucide-react';
+import { LandingSection } from '@/components/landing/LandingSection';
+import { DiscoveryFilterBar } from '@/components/discover/DiscoveryFilterBar';
+import {
+  CreatorDiscoveryCard,
+  CreatorDiscoveryCardSkeleton,
+} from '@/components/discover/CreatorDiscoveryCard';
 
 const filters = [
-  { label: 'Trending', icon: TrendingUp },
-  { label: 'Popular', icon: Star },
-  { label: 'New', icon: Sparkles },
-] as const;
-
-const mockCreators = [
-  { id: '1', name: 'Marcus Cole', handle: '@marcuscole', avatar: 'MC', description: 'NFL analyst with 8+ years covering the league. Data-driven picks.', color: 'bg-primary/10 text-primary' },
-  { id: '2', name: 'Sarah Lin', handle: '@sarahlin', avatar: 'SL', description: 'NBA betting specialist. Known for consistent player prop analysis.', color: 'bg-success/10 text-success' },
-  { id: '3', name: 'Diego Reyes', handle: '@diegoreyes', avatar: 'DR', description: 'Soccer expert covering La Liga and Premier League markets.', color: 'bg-ring/10 text-ring' },
-  { id: '4', name: 'Ava Chen', handle: '@avachen', avatar: 'AC', description: 'Tennis and golf specialist with a focus on live in-game edges.', color: 'bg-destructive/10 text-destructive' },
-  { id: '5', name: 'Jordan Patel', handle: '@jordanpatel', avatar: 'JP', description: 'MMA and combat sports insider. Exclusive card breakdowns.', color: 'bg-primary/10 text-primary' },
-  { id: '6', name: 'Lena Zhao', handle: '@lenazhao', avatar: 'LZ', description: 'MLB analytics expert. Modeling strikeouts, home runs, and more.', color: 'bg-success/10 text-success' },
+  { key: 'Most active' as const, label: 'Most active', icon: TrendingUp },
+  { key: 'Newest' as const, label: 'Newest', icon: Sparkles },
+  { key: 'Lowest price' as const, label: 'Lowest price', icon: Star },
 ];
 
 export function CreatorDiscovery() {
-  const [activeFilter, setActiveFilter] = useState('Trending');
+  const [activeFilter, setActiveFilter] =
+    useState<(typeof filters)[number]['key']>('Most active');
   const [search, setSearch] = useState('');
+  const creatorsPage = useQuery(api.creators.queries.listPublished, {
+    search: search.trim() || undefined,
+  });
+  const creators = creatorsPage?.items;
 
-  const filtered = mockCreators.filter((c) =>
-    c.name.toLowerCase().includes(search.toLowerCase()) ||
-    c.description.toLowerCase().includes(search.toLowerCase())
-  );
+  const filtered = useMemo(() => {
+    if (!creators) return [];
+    const sorted = [...creators];
+    if (activeFilter === 'Newest') {
+      sorted.sort((a, b) => b.createdAt - a.createdAt);
+    } else if (activeFilter === 'Lowest price') {
+      sorted.sort(
+        (a, b) =>
+          (a.monthlyPriceCents ?? Number.POSITIVE_INFINITY) -
+          (b.monthlyPriceCents ?? Number.POSITIVE_INFINITY),
+      );
+    } else {
+      sorted.sort((a, b) => (b.postCount ?? 0) - (a.postCount ?? 0));
+    }
+    return sorted;
+  }, [creators, activeFilter]);
 
   return (
-    <section id="creators" className="py-24 bg-background">
+    <LandingSection id="creators" className="bg-background">
       <div className="container">
-        <div className="text-center mb-12">
-          <p className="text-[12px] font-medium uppercase tracking-widest text-primary mb-3">
-            Network
-          </p>
-          <h2 className="text-2xl sm:text-3xl font-bold tracking-tight mb-3 text-foreground">
-            Creators on the platform
-          </h2>
-          <p className="text-muted-foreground text-sm max-w-md mx-auto">
-            Verified creators building real audiences. Subscribe to access their premium content.
-          </p>
-        </div>
+        <div className="mb-10">
+          <div className="mb-8 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+            <div className="min-w-0 max-w-2xl">
+              <h2 className="text-3xl font-bold tracking-tight text-foreground sm:text-4xl">
+                Find a creator
+              </h2>
+              <p className="mt-3 text-base text-secondary-foreground">
+                Verified creators building real audiences. Subscribe to access their premium content.
+              </p>
+            </div>
+            <Link
+              to="/discover"
+              className="inline-flex shrink-0 items-center gap-1.5 text-sm font-semibold text-foreground transition-colors hover:text-primary"
+            >
+              Browse full directory
+              <ArrowRight className="h-4 w-4" aria-hidden />
+            </Link>
+          </div>
 
-        {/* Search + Filters */}
-        <div className="max-w-2xl mx-auto mb-10 space-y-4">
-          <div className="relative">
-            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <form
+            className="flex h-14 w-full items-center gap-2 rounded-full border border-border bg-card pl-4 pr-2 shadow-[var(--shadow-card)]"
+            onSubmit={(e) => {
+              e.preventDefault();
+            }}
+            role="search"
+          >
+            <Search className="h-5 w-5 shrink-0 text-foreground/45" aria-hidden />
             <Input
-              placeholder="Search creators…"
+              placeholder="Search…"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="pl-10 h-11 bg-card border-border focus-visible:ring-primary/30"
+              className="h-full min-h-0 flex-1 border-0 bg-transparent px-2 text-base font-medium shadow-none focus-visible:ring-0 focus-visible:ring-offset-0"
+              aria-label="Search creators"
             />
-          </div>
-          <div className="flex items-center gap-2">
-            {filters.map((f) => (
-              <button
-                key={f.label}
-                onClick={() => setActiveFilter(f.label)}
-                className={`inline-flex items-center gap-1.5 rounded-full px-4 py-1.5 text-[13px] font-medium transition-all duration-200 ${
-                  activeFilter === f.label
-                    ? 'bg-primary/10 text-primary border border-primary/20'
-                    : 'bg-card text-muted-foreground border border-border hover:border-border hover:text-foreground'
-                }`}
-              >
-                <f.icon className="h-3.5 w-3.5" />
-                {f.label}
-              </button>
+            <Button type="submit" className="h-10 shrink-0 rounded-full px-5 font-semibold">
+              Search
+            </Button>
+          </form>
+
+          <DiscoveryFilterBar
+            className="mt-4"
+            options={filters}
+            value={activeFilter}
+            onChange={setActiveFilter}
+            aria-label="Sort creators"
+          />
+        </div>
+
+        {creatorsPage === undefined ? (
+          <ul
+            className="mx-auto grid w-full grid-cols-1 gap-6 sm:grid-cols-2 xl:grid-cols-3 lg:gap-8"
+            aria-busy="true"
+            aria-label="Loading creators"
+          >
+            {[0, 1, 2].map((i) => (
+              <CreatorDiscoveryCardSkeleton key={i} />
             ))}
-          </div>
-        </div>
-
-        {/* Creator Grid */}
-        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4 max-w-4xl mx-auto">
-          {filtered.map((creator) => (
-            <div
-              key={creator.id}
-              className="group rounded-xl border border-border bg-card p-5 card-shadow transition-all duration-300 hover:card-shadow-hover hover:border-primary/20"
-            >
-              <div className="flex items-start gap-3.5 mb-4">
-                <div className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-full ${creator.color} text-sm font-semibold`}>
-                  {creator.avatar}
-                </div>
-                <div className="min-w-0">
-                  <h3 className="font-semibold text-[14px] leading-tight truncate text-foreground">
-                    {creator.name}
-                  </h3>
-                  <p className="text-[12px] text-muted-foreground">{creator.handle}</p>
-                </div>
-              </div>
-              <p className="text-[13px] text-muted-foreground leading-relaxed mb-5 line-clamp-2">
-                {creator.description}
-              </p>
-              <Button variant="outline" size="sm" className="w-full group-hover:border-primary/30 group-hover:text-primary transition-colors">
-                Subscribe
-              </Button>
-            </div>
-          ))}
-        </div>
-
-        {filtered.length === 0 && (
-          <p className="text-center text-sm text-muted-foreground py-12">
-            No creators found. Try a different search.
+          </ul>
+        ) : filtered.length === 0 ? (
+          <p className="py-12 text-center text-base text-secondary-foreground">
+            No published creators yet. Be the first to go live.
           </p>
+        ) : (
+          <ul className="mx-auto grid w-full grid-cols-1 gap-6 sm:grid-cols-2 xl:grid-cols-3 lg:gap-8">
+            {filtered.map((creator, index) => (
+              <CreatorDiscoveryCard
+                key={creator._id}
+                username={creator.username}
+                displayName={creator.displayName}
+                bio={creator.bio}
+                avatarUrl={creator.avatarUrl}
+                bannerUrl={creator.bannerUrl}
+                monthlyPriceCents={creator.monthlyPriceCents}
+                verificationStatus={creator.verificationStatus}
+                postCount={creator.postCount ?? 0}
+                rank={activeFilter === 'Most active' ? index + 1 : undefined}
+                activityNoun="post"
+              />
+            ))}
+          </ul>
         )}
       </div>
-    </section>
+    </LandingSection>
   );
 }

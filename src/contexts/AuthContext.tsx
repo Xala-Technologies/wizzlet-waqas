@@ -1,31 +1,40 @@
 import { createContext, useContext, useEffect, useState, useCallback, ReactNode } from 'react';
-import { User, Session } from '@supabase/supabase-js';
-import { supabase } from '@/lib/supabase';
+import { useConvex, useConvexAuth, useQuery, useMutation } from 'convex/react';
+import { useAuthActions } from '@convex-dev/auth/react';
+import { api } from '@convex/_generated/api';
 import { resetAnalyticsUser } from '@/lib/analytics';
 import {
   AppRole,
   ACTIVE_ROLE_STORAGE_KEY,
-  fetchUserRoles,
   isAppRole,
   resolveActiveRole,
 } from '@/lib/roles';
+import { safeGetItem, safeRemoveItem, safeSetItem } from '@/lib/safeStorage';
 
 const DEV_BYPASS_ALLOWED = import.meta.env.DEV;
 
+interface AuthUser {
+  id: string;
+  email?: string;
+}
+
 interface AuthContextType {
-  user: User | null;
-  session: Session | null;
+  user: AuthUser | null;
+  session: { user: AuthUser } | null;
   loading: boolean;
-  /** The role the dashboard UI is currently operating as. */
   role: AppRole | null;
-  /** Every role the account holds, ordered by precedence. */
   roles: AppRole[];
   roleLoading: boolean;
   hasRole: (role: AppRole) => boolean;
   switchRole: (role: AppRole) => void;
+  /** Optimistically apply a role just written via assignSelfRole (clears DEV bypass). */
+  acceptAssignedRole: (role: AppRole) => void;
+  clearDevBypass: () => void;
   signOut: () => Promise<void>;
-  refreshRole: () => Promise<void>;
-  /** True only in development when Quick Test enabled a UI bypass. */
+  /** True while Convex sign-out is in flight — avoid treating empty roles as “new user”. */
+  signingOut: boolean;
+  /** Wait until `me.roles` includes `expectRole` (or any role if omitted). Returns active role. */
+  refreshRole: (expectRole?: AppRole) => Promise<AppRole | null>;
   devMode: boolean;
   setDevRole: (role: AppRole) => void;
   enableDevMode: () => void;
@@ -40,8 +49,11 @@ const AuthContext = createContext<AuthContextType>({
   roleLoading: true,
   hasRole: () => false,
   switchRole: () => {},
+  acceptAssignedRole: () => {},
+  clearDevBypass: () => {},
   signOut: async () => {},
-  refreshRole: async () => {},
+  signingOut: false,
+  refreshRole: async () => null,
   devMode: false,
   setDevRole: () => {},
   enableDevMode: () => {},
@@ -50,45 +62,111 @@ const AuthContext = createContext<AuthContextType>({
 export const useAuth = () => useContext(AuthContext);
 
 function readStoredRole(): AppRole | null {
-  try {
-    const stored = localStorage.getItem(ACTIVE_ROLE_STORAGE_KEY);
-    return isAppRole(stored) ? stored : null;
-  } catch {
-    return null;
-  }
+  const stored = safeGetItem(ACTIVE_ROLE_STORAGE_KEY);
+  return isAppRole(stored) ? stored : null;
 }
 
 function persistRole(role: AppRole | null) {
-  try {
-    if (role) localStorage.setItem(ACTIVE_ROLE_STORAGE_KEY, role);
-    else localStorage.removeItem(ACTIVE_ROLE_STORAGE_KEY);
-  } catch {
-    /* storage unavailable — precedence fallback still applies */
-  }
+  if (role) safeSetItem(ACTIVE_ROLE_STORAGE_KEY, role);
+  else safeRemoveItem(ACTIVE_ROLE_STORAGE_KEY);
 }
 
-export function AuthProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<User | null>(null);
-  const [session, setSession] = useState<Session | null>(null);
-  const [loading, setLoading] = useState(true);
+function AuthProviderInner({ children }: { children: ReactNode }) {
+  const convex = useConvex();
+  const { isLoading: convexAuthLoading, isAuthenticated } = useConvexAuth();
+  const { signOut: convexSignOut } = useAuthActions();
+  const me = useQuery(api.users.queries.me, isAuthenticated ? {} : 'skip');
+  const ensureUser = useMutation(api.users.queries.ensureUser);
+
   const [role, setRole] = useState<AppRole | null>(null);
   const [roles, setRoles] = useState<AppRole[]>([]);
   const [roleLoading, setRoleLoading] = useState(true);
   const [devMode, setDevMode] = useState(false);
+  const [ensured, setEnsured] = useState(false);
+  const [signingOut, setSigningOut] = useState(false);
 
-  const loadRoles = useCallback(async (userId: string) => {
-    setRoleLoading(true);
-    const held = await fetchUserRoles(userId);
-    const active = resolveActiveRole(held, readStoredRole());
-    setRoles(held);
-    setRole(active);
-    persistRole(active);
+  // Sync profile + roles from Convex
+  useEffect(() => {
+    if (convexAuthLoading) return;
+    if (!isAuthenticated) {
+      setRoles([]);
+      setRole(null);
+      setRoleLoading(false);
+      setEnsured(false);
+      setDevMode(false);
+      return;
+    }
+    if (me === undefined) {
+      setRoleLoading(true);
+      return;
+    }
+    if (me === null) {
+      setRoles([]);
+      setRole(null);
+      setRoleLoading(false);
+      return;
+    }
+    const held = (me.roles ?? []).filter(isAppRole) as AppRole[];
+    setRoles((prev) => {
+      // Keep optimistic roles from acceptAssignedRole until the query catches up.
+      const next = held.length > 0 ? held : prev;
+      const active = resolveActiveRole(next, readStoredRole());
+      setRole(active);
+      persistRole(active);
+      return next;
+    });
+    setRoleLoading(false);
+
+    if (!ensured) {
+      setEnsured(true);
+      void ensureUser({
+        fullName: me.fullName,
+        username: me.username,
+      }).catch(() => undefined);
+    }
+  }, [convexAuthLoading, isAuthenticated, me, ensureUser, ensured]);
+
+  const clearDevBypass = useCallback(() => {
+    setDevMode(false);
+  }, []);
+
+  const acceptAssignedRole = useCallback((assigned: AppRole) => {
+    setDevMode(false);
+    setRoles((prev) => (prev.includes(assigned) ? prev : [...prev, assigned]));
+    setRole(assigned);
+    persistRole(assigned);
     setRoleLoading(false);
   }, []);
 
-  const refreshRole = useCallback(async () => {
-    if (user) await loadRoles(user.id);
-  }, [user, loadRoles]);
+  const refreshRole = useCallback(
+    async (expectRole?: AppRole): Promise<AppRole | null> => {
+      const deadline = Date.now() + 8_000;
+      while (Date.now() < deadline) {
+        try {
+          const latest = await convex.query(api.users.queries.me, {});
+          const held = ((latest?.roles ?? []) as unknown[]).filter(isAppRole) as AppRole[];
+          if (held.length > 0) {
+            const active = resolveActiveRole(held, expectRole ?? readStoredRole());
+            setRoles(held);
+            setRole(active);
+            persistRole(active);
+            setRoleLoading(false);
+            if (!expectRole || held.includes(expectRole)) return active;
+          } else if (!expectRole) {
+            setRoles([]);
+            setRole(null);
+            setRoleLoading(false);
+            return null;
+          }
+        } catch {
+          /* still authenticating */
+        }
+        await new Promise((r) => setTimeout(r, 100));
+      }
+      return null;
+    },
+    [convex],
+  );
 
   const switchRole = useCallback(
     (next: AppRole) => {
@@ -101,13 +179,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const setDevRole = useCallback((newRole: AppRole) => {
     if (!DEV_BYPASS_ALLOWED) return;
-    setDevMode((enabled) => {
-      if (enabled) {
-        setRole(newRole);
-        persistRole(newRole);
-      }
-      return enabled;
-    });
+    setDevMode(true);
+    setRole(newRole);
+    persistRole(newRole);
   }, []);
 
   const enableDevMode = useCallback(() => {
@@ -120,66 +194,39 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     [roles, devMode],
   );
 
-  useEffect(() => {
-    let roleLoadTimer: ReturnType<typeof setTimeout> | undefined;
-
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, nextSession) => {
-      setSession(nextSession);
-      setUser(nextSession?.user ?? null);
-      setLoading(false);
-      if (nextSession?.user) {
-        // Defer the Supabase call out of the auth callback to avoid deadlocks.
-        roleLoadTimer = setTimeout(() => loadRoles(nextSession.user.id), 0);
-      } else {
-        setRole(null);
-        setRoles([]);
-        setRoleLoading(false);
-        setDevMode(false);
-        persistRole(null);
-        resetAnalyticsUser();
-      }
-    });
-
-    supabase.auth.getSession().then(({ data: { session: current } }) => {
-      setSession(current);
-      setUser(current?.user ?? null);
-      setLoading(false);
-      if (current?.user) {
-        loadRoles(current.user.id);
-      } else {
-        setRoleLoading(false);
-      }
-    });
-
-    return () => {
-      subscription.unsubscribe();
-      if (roleLoadTimer) clearTimeout(roleLoadTimer);
-    };
-  }, [loadRoles]);
-
   const signOut = async () => {
+    // Mark first so ProtectedRoute does not treat cleared/stale roles as “pick a role”.
+    setSigningOut(true);
     setDevMode(false);
     persistRole(null);
     resetAnalyticsUser();
-    await supabase.auth.signOut();
-    setRole(null);
-    setRoles([]);
+    try {
+      await convexSignOut();
+    } finally {
+      setRole(null);
+      setRoles([]);
+      setSigningOut(false);
+    }
   };
+
+  const loading = convexAuthLoading || (isAuthenticated && me === undefined);
 
   return (
     <AuthContext.Provider
       value={{
-        user,
-        session,
+        user: me ? { id: me._id, email: me.email ?? undefined } : null,
+        session: me ? { user: { id: me._id, email: me.email ?? undefined } } : null,
         loading,
         role,
         roles,
-        roleLoading,
+        roleLoading: loading || roleLoading,
         hasRole,
         switchRole,
+        acceptAssignedRole,
+        clearDevBypass,
         signOut,
+        signingOut,
         refreshRole,
-        // Never expose active bypass outside development builds.
         devMode: DEV_BYPASS_ALLOWED && devMode,
         setDevRole,
         enableDevMode,
@@ -188,4 +235,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       {children}
     </AuthContext.Provider>
   );
+}
+
+export function AuthProvider({ children }: { children: ReactNode }) {
+  return <AuthProviderInner>{children}</AuthProviderInner>;
 }

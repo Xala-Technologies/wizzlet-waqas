@@ -1,6 +1,6 @@
 /**
  * Single source of truth for odds parsing and conversion.
- * Wizzlet displays dual-format odds (American / decimal-EU) everywhere, so all
+ * Prizelet displays dual-format odds (American / decimal-EU) everywhere, so all
  * screens must use these helpers to guarantee identical numbers.
  */
 

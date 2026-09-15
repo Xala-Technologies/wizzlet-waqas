@@ -1,42 +1,17 @@
-import { useEffect, useState } from 'react';
-import { supabase } from '@/lib/supabase';
+import { useQuery } from 'convex/react';
 import { useAuth } from '@/contexts/AuthContext';
+import { api } from '@convex/_generated/api';
 
 /**
- * Resolves the internal `public.users.id` row for the signed-in auth user.
- * Most domain tables (subscriptions, analytics_events, ...) key off this id
- * rather than the auth uid, so pages need it before they can query.
+ * Resolves the app user id for domain FKs from Convex users.me.
  */
 export function useAppUser() {
   const { user } = useAuth();
-  const [appUserId, setAppUserId] = useState<string | null>(null);
-  const [loading, setLoading] = useState(true);
+  const convexMe = useQuery(api.users.queries.me, user ? {} : 'skip');
 
-  useEffect(() => {
-    let cancelled = false;
-
-    if (!user) {
-      setAppUserId(null);
-      setLoading(false);
-      return;
-    }
-
-    setLoading(true);
-    supabase
-      .from('users')
-      .select('id')
-      .eq('auth_id', user.id)
-      .maybeSingle()
-      .then(({ data }) => {
-        if (cancelled) return;
-        setAppUserId(data?.id ?? null);
-        setLoading(false);
-      });
-
-    return () => {
-      cancelled = true;
-    };
-  }, [user]);
-
-  return { appUserId, loading, authUserId: user?.id ?? null };
+  return {
+    appUserId: convexMe?._id ?? null,
+    loading: user ? convexMe === undefined : false,
+    authUserId: user?.id ?? null,
+  };
 }

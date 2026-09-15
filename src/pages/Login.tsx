@@ -1,157 +1,286 @@
 import { useState } from 'react';
-import { WizzletLogo } from '@/components/WizzletLogo';
-import { Seo } from '@/components/Seo';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, Navigate, useNavigate, useSearchParams } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { supabase } from '@/lib/supabase';
+import { useAuthActions } from '@convex-dev/auth/react';
+import { useConvex, useMutation } from 'convex/react';
 import { useAuth } from '@/contexts/AuthContext';
-import { ACTIVE_ROLE_STORAGE_KEY, fetchUserRoles, homePathForRole, resolveActiveRole } from '@/lib/roles';
-
-import { Loader2 } from 'lucide-react';
+import { AuthShell } from '@/components/auth/AuthShell';
+import { SocialAuthSection } from '@/components/auth/SocialAuthButtons';
+import { ADMIN_BOOTSTRAP } from '@/lib/adminBootstrap';
+import { useConvexAuthReady, waitForAuthenticated, withAuthRetry, isAuthOriginAligned } from '@/lib/authSession';
+import { isAppRole, type AppRole } from '@/lib/roles';
+import {
+  clearStoredReturnTo,
+  postAuthDestination,
+  sanitizeReturnPath,
+  storeReturnTo,
+} from '@/lib/safeReturnPath';
+import { api } from '@convex/_generated/api';
+import { Eye, EyeOff, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 
 const isDevBuild = import.meta.env.DEV;
 
+async function loadHeldRoles(convex: ReturnType<typeof useConvex>): Promise<AppRole[]> {
+  const latest = await convex.query(api.users.queries.me, {});
+  return ((latest?.roles ?? []) as unknown[]).filter(isAppRole) as AppRole[];
+}
+
 const Login = () => {
   const navigate = useNavigate();
-  const { enableDevMode, setDevRole } = useAuth();
+  const convex = useConvex();
+  const [searchParams] = useSearchParams();
+  const returnTo = sanitizeReturnPath(searchParams.get('returnTo'));
+  const { signIn } = useAuthActions();
+  const {
+    user,
+    role,
+    roles,
+    loading: authLoading,
+    roleLoading,
+    signingOut,
+    refreshRole,
+    clearDevBypass,
+    acceptAssignedRole,
+  } = useAuth();
+  const authReady = useConvexAuthReady();
+  const grantTestAdmin = useMutation(api.roles.mutations.grantTestAdmin);
+  const ensureUser = useMutation(api.users.queries.ensureUser);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [formError, setFormError] = useState<string | null>(null);
 
-  const handleLogin = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setLoading(true);
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
-    setLoading(false);
-    if (error) {
-      toast.error(error.message);
-      return;
-    }
-
-    await redirectByRole();
-  };
-
-  const redirectByRole = async () => {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return;
-
-    const held = await fetchUserRoles(user.id);
-    const active = resolveActiveRole(held, localStorage.getItem(ACTIVE_ROLE_STORAGE_KEY));
-    navigate(homePathForRole(active));
-  };
-
-  const handleTestLogin = async () => {
-    if (!isDevBuild) {
-      toast.error('Dev login is only available in development builds.');
-      return;
-    }
-
-    setLoading(true);
-    const testEmail = 'test@wizzlet.dev';
-    const testPassword = 'test123456';
-
-    let { error } = await supabase.auth.signInWithPassword({
-      email: testEmail,
-      password: testPassword,
-    });
-
-    if (error) {
-      const { error: signUpError } = await supabase.auth.signUp({
-        email: testEmail,
-        password: testPassword,
-        options: { data: { username: 'devtester' } },
-      });
-      if (signUpError) {
-        toast.error(signUpError.message);
-        setLoading(false);
-        return;
-      }
-      const { error: retryError } = await supabase.auth.signInWithPassword({
-        email: testEmail,
-        password: testPassword,
-      });
-      if (retryError) {
-        toast.error(retryError.message);
-        setLoading(false);
-        return;
-      }
-    }
-
-    // Non-admin roles only — admin cannot be self-assigned via client RLS.
-    const { data: { user } } = await supabase.auth.getUser();
-    if (user) {
-      const rolesToAssign: ('creator' | 'subscriber')[] = ['creator', 'subscriber'];
-      await supabase.from('user_roles').upsert(
-        rolesToAssign.map((role) => ({ user_id: user.id, role })),
-        { onConflict: 'user_id,role', ignoreDuplicates: true },
-      );
-    }
-
-    enableDevMode();
-    setDevRole('admin');
-    toast.success('Dev mode activated — UI role bypass enabled (DB admin still requires service role)');
-    setLoading(false);
+  const finishAdminSession = async () => {
+    await waitForAuthenticated(() => authReady.current);
+    await withAuthRetry(() =>
+      ensureUser({
+        username: ADMIN_BOOTSTRAP.username,
+        fullName: ADMIN_BOOTSTRAP.fullName,
+      }),
+    );
+    await withAuthRetry(() => grantTestAdmin({}));
+    acceptAssignedRole('admin');
+    await refreshRole('admin');
+    clearStoredReturnTo();
+    toast.success('Signed in as platform owner');
     navigate('/admin');
   };
 
+  const handleLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (loading) return;
+    setLoading(true);
+    setFormError(null);
+    try {
+      const normalizedEmail = email.trim().toLowerCase();
+      const form = new FormData();
+      form.set('email', normalizedEmail);
+      form.set('password', password);
+      form.set('flow', 'signIn');
+      await signIn('password', form);
+      await waitForAuthenticated(() => authReady.current);
+
+      if (normalizedEmail === ADMIN_BOOTSTRAP.email) {
+        await finishAdminSession();
+        return;
+      }
+
+      clearDevBypass();
+      await withAuthRetry(() => ensureUser({})).catch(() => undefined);
+      const active = await refreshRole();
+      const held = await withAuthRetry(() => loadHeldRoles(convex));
+      const dest = postAuthDestination({
+        roles: held,
+        preferred: active,
+        returnTo,
+      });
+      clearStoredReturnTo();
+      navigate(dest, { replace: true });
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Sign in failed';
+      setFormError(message);
+      toast.error(message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleAdminLogin = async () => {
+    if (!isDevBuild) {
+      toast.error('Admin bootstrap login is only available in development builds.');
+      return;
+    }
+    if (loading) return;
+    setLoading(true);
+    setFormError(null);
+    setEmail(ADMIN_BOOTSTRAP.email);
+    setPassword(ADMIN_BOOTSTRAP.password);
+    try {
+      const signInForm = new FormData();
+      signInForm.set('email', ADMIN_BOOTSTRAP.email);
+      signInForm.set('password', ADMIN_BOOTSTRAP.password);
+      signInForm.set('flow', 'signIn');
+      try {
+        await signIn('password', signInForm);
+      } catch {
+        const signUpForm = new FormData();
+        signUpForm.set('email', ADMIN_BOOTSTRAP.email);
+        signUpForm.set('password', ADMIN_BOOTSTRAP.password);
+        signUpForm.set('username', ADMIN_BOOTSTRAP.username);
+        signUpForm.set('name', ADMIN_BOOTSTRAP.fullName);
+        signUpForm.set('flow', 'signUp');
+        await signIn('password', signUpForm);
+      }
+      await finishAdminSession();
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Admin login failed';
+      setFormError(message);
+      toast.error(message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const signupHref = returnTo
+    ? `/signup?returnTo=${encodeURIComponent(returnTo)}`
+    : '/signup';
+
+  // Already signed in — leave /login once roles have settled (avoids select-role flash).
+  if (!authLoading && !roleLoading && !signingOut && user) {
+    return (
+      <Navigate
+        to={postAuthDestination({ roles, preferred: role, returnTo })}
+        replace
+      />
+    );
+  }
+
   return (
-    <main id="main-content" className="min-h-screen flex items-center justify-center px-4 bg-background">
-      <Seo title="Sign in — Wizzlet" description="Sign in to your Wizzlet account to manage picks, subscriptions and payouts." noindex />
-      <div className="w-full max-w-[380px]">
-        <div className="text-center mb-10">
-          <WizzletLogo size="md" className="justify-center mb-8" />
-          <h1 className="text-xl font-bold tracking-tight mt-4 text-foreground">Welcome back</h1>
-          <p className="text-[13px] text-muted-foreground mt-1.5">Sign in to your account</p>
-        </div>
-
-        <form onSubmit={handleLogin} className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="email" className="text-[13px]">Email</Label>
-            <Input id="email" type="email" placeholder="you@example.com" value={email} onChange={(e) => setEmail(e.target.value)} required className="bg-card border-border h-10" />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="password" className="text-[13px]">Password</Label>
-            <Input id="password" type="password" placeholder="••••••••" value={password} onChange={(e) => setPassword(e.target.value)} required className="bg-card border-border h-10" />
-          </div>
-          <Button type="submit" variant="default" className="w-full" disabled={loading}>
-            {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-            Sign in
-          </Button>
-        </form>
-
-        <div className="mt-6 pt-4 border-t border-border space-y-3">
-          {isDevBuild && (
-            <>
-              <Button
-                variant="outline"
-                className="w-full text-muted-foreground"
-                onClick={handleTestLogin}
-                disabled={loading}
-              >
-                {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                Dev: Quick Test
-              </Button>
-              <p className="text-[10px] text-muted-foreground/50 text-center">
-                Development only — UI bypass; does not grant DB admin
-              </p>
-            </>
-          )}
-          <Link to="/demo/admin">
-            <Button variant="ghost" className="w-full text-muted-foreground text-xs">
-              Explore Demo Mode
-            </Button>
+    <AuthShell
+      title="Welcome back"
+      subtitle="Sign in to your account"
+      seoTitle="Sign in — Prizelet"
+      seoDescription="Sign in to your Prizelet account to manage picks, subscriptions and payouts."
+      banner={
+        isDevBuild && !isAuthOriginAligned() ? (
+          <p
+            role="status"
+            className="mt-4 rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-left text-sm text-foreground"
+          >
+            You’re on {window.location.origin}. OAuth requires{' '}
+            <a
+              className="font-semibold underline underline-offset-2"
+              href={import.meta.env.VITE_SITE_URL ?? 'http://127.0.0.1:8080/login'}
+            >
+              {import.meta.env.VITE_SITE_URL ?? 'http://127.0.0.1:8080'}
+            </a>
+            .
+          </p>
+        ) : null
+      }
+      footer={
+        <p className="text-center text-support text-muted-foreground">
+          Don&apos;t have an account?{' '}
+          <Link to={signupHref} className="font-medium text-primary hover:underline">
+            Sign up
           </Link>
-        </div>
-
-        <p className="text-center text-[13px] text-muted-foreground mt-8">
-          Don't have an account?{' '}
-          <Link to="/signup" className="text-primary hover:underline font-medium">Sign up</Link>
         </p>
-      </div>
-    </main>
+      }
+    >
+      <form onSubmit={(e) => void handleLogin(e)} className="space-y-5">
+        <div className="space-y-2">
+          <Label htmlFor="email">
+            Email
+          </Label>
+          <Input
+            id="email"
+            name="email"
+            type="email"
+            autoComplete="email"
+            placeholder="you@example.com"
+            value={email}
+            onChange={(e) => {
+              setEmail(e.target.value);
+              if (formError) setFormError(null);
+            }}
+            required
+            disabled={loading}
+            className="h-12 bg-background text-ui"
+          />
+        </div>
+        <div className="space-y-2">
+          <Label htmlFor="password">
+            Password
+          </Label>
+          <div className="relative">
+            <Input
+              id="password"
+              name="password"
+              type={showPassword ? 'text' : 'password'}
+              autoComplete="current-password"
+              placeholder="••••••••"
+              value={password}
+              onChange={(e) => {
+                setPassword(e.target.value);
+                if (formError) setFormError(null);
+              }}
+              required
+              disabled={loading}
+              className="h-12 bg-background pr-11 text-ui"
+              aria-invalid={formError ? true : undefined}
+              aria-describedby={formError ? 'login-error' : undefined}
+            />
+            <button
+              type="button"
+              className="absolute right-0 top-0 inline-flex h-12 w-11 items-center justify-center text-muted-foreground hover:text-foreground"
+              aria-label={showPassword ? 'Hide password' : 'Show password'}
+              onClick={() => setShowPassword((v) => !v)}
+            >
+              {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+            </button>
+          </div>
+        </div>
+        {formError ? (
+          <p id="login-error" role="alert" className="text-sm text-destructive">
+            {formError}
+          </p>
+        ) : null}
+        <Button type="submit" variant="default" className="h-12 w-full text-ui font-semibold" disabled={loading}>
+          {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+          Sign in
+        </Button>
+      </form>
+
+      <SocialAuthSection redirectTo="/auth/callback" mode="signin" returnTo={returnTo} />
+
+      {isDevBuild && (
+        <div className="mt-6 space-y-3 rounded-xl border border-border bg-muted p-4">
+          <p className="text-sm font-medium text-foreground">Platform owner (local)</p>
+          <p className="font-mono text-caption leading-relaxed text-muted-foreground">
+            {ADMIN_BOOTSTRAP.email}
+            <br />
+            {ADMIN_BOOTSTRAP.password}
+          </p>
+          <Button
+            type="button"
+            variant="outline"
+            className="h-11 w-full border-border bg-background"
+            onClick={() => {
+              storeReturnTo(null);
+              void handleAdminLogin();
+            }}
+            disabled={loading}
+          >
+            {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+            Sign in as platform owner
+          </Button>
+        </div>
+      )}
+    </AuthShell>
   );
 };
 
