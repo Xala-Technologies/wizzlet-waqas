@@ -1,4 +1,5 @@
 import { useMemo, useRef, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { useMutation, usePaginatedQuery, useQuery } from 'convex/react';
 import { api } from '../../convex/_generated/api';
 import type { Id } from '../../convex/_generated/dataModel';
@@ -39,7 +40,7 @@ import {
   CheckCircle2, ArrowRight,
   Clock, Trophy, XCircle, Minus, Crown, Send, ChevronDown, ChevronUp,
   BarChart3, Search, Tag, Bold, Italic, Link2, List, ImageIcon,
-  Upload, Target, Users, MoreVertical, ChevronLeft, ChevronRight,
+  Upload, Target, Users, MoreVertical, ChevronLeft, ChevronRight, Sparkles,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { format, subDays } from 'date-fns';
@@ -48,6 +49,12 @@ import { americanToDecimal, decimalToAmerican, profitUnits } from '@/lib/odds';
 import { parsePostContent } from '@/lib/postContent';
 import { computeWinRate } from '../../convex/lib/results';
 import { segmentedItemClassName, segmentedTrackClassName } from '@/lib/segmentedControl';
+import {
+  CREATOR_PICKS_DEMO_METRICS,
+  CREATOR_PICKS_DEMO_ROWS,
+  isCreatorPicksDemoId,
+  shouldUseCreatorPicksDemo,
+} from '@/lib/creatorPicksDemo';
 
 const PAGE_SIZE = 50;
 const TABLE_PAGE_SIZE = 10;
@@ -205,6 +212,10 @@ function MatchCell({ event, sport }: { event: string; sport: string }) {
 }
 
 const CreatorPosts = () => {
+  const [searchParams] = useSearchParams();
+  const forceDemo = searchParams.get('demo') === '1';
+  const disableDemo = searchParams.get('demo') === '0';
+
   const creator = useQuery(api.creators.queries.myCreator);
   const subscriptions = useQuery(api.subscriptions.mutations.listForMyCreator);
   const { results: postsRaw, status: postsStatus, loadMore } = usePaginatedQuery(
@@ -219,7 +230,7 @@ const CreatorPosts = () => {
   const loading = creator === undefined || postsStatus === 'LoadingFirstPage';
   const creatorId = creator?._id ?? null;
 
-  const posts = useMemo(
+  const realPosts = useMemo(
     () =>
       (postsRaw ?? []).map((p) => ({
         id: p._id,
@@ -234,12 +245,32 @@ const CreatorPosts = () => {
     [postsRaw],
   );
 
+  const useDemo = shouldUseCreatorPicksDemo({
+    postCount: realPosts.length,
+    forceDemo,
+    disableDemo,
+  });
+
+  const posts = useMemo((): Post[] => {
+    if (!useDemo) return realPosts;
+    return CREATOR_PICKS_DEMO_ROWS.map((row) => ({
+      id: row.id,
+      title: row.title,
+      content: row.content,
+      is_premium: row.is_premium,
+      created_at: new Date(row.createdAtMs).toISOString(),
+      createdAtMs: row.createdAtMs,
+      result: row.result,
+      tracking_mode: row.tracking_mode,
+    }));
+  }, [realPosts, useDemo]);
+
   const enriched = useMemo(() => posts.map(enrichPost), [posts]);
 
-  const activeSubscribers = useMemo(
-    () => (subscriptions ?? []).filter((s) => s.status === 'active').length,
-    [subscriptions],
-  );
+  const activeSubscribers = useMemo(() => {
+    if (useDemo) return CREATOR_PICKS_DEMO_METRICS.subscribers;
+    return (subscriptions ?? []).filter((s) => s.status === 'active').length;
+  }, [subscriptions, useDemo]);
 
   const [mode, setMode] = useState<'list' | 'create'>('list');
   const [saving, setSaving] = useState(false);
@@ -316,6 +347,19 @@ const CreatorPosts = () => {
   );
 
   const metrics = useMemo(() => {
+    if (useDemo) {
+      return {
+        totalPicks: CREATOR_PICKS_DEMO_METRICS.totalPicks,
+        totalPicksDelta: CREATOR_PICKS_DEMO_METRICS.totalPicksDelta,
+        winRate: CREATOR_PICKS_DEMO_METRICS.winRate,
+        winRateDelta: CREATOR_PICKS_DEMO_METRICS.winRateDelta,
+        profit: CREATOR_PICKS_DEMO_METRICS.profit,
+        profitDelta: CREATOR_PICKS_DEMO_METRICS.profitDelta,
+        subscribers: CREATOR_PICKS_DEMO_METRICS.subscribers,
+        subscribersDelta: CREATOR_PICKS_DEMO_METRICS.subscribersDelta,
+      };
+    }
+
     const now = Date.now();
     const windowMs = dateRange === 'all' ? 30 * 86400000 : Number(dateRange) * 86400000;
     const currentStart = now - windowMs;
@@ -345,8 +389,19 @@ const CreatorPosts = () => {
       profit: Number(currentProfit.toFixed(1)),
       profitDelta: pctDelta(currentProfit, previousProfit),
       subscribers: activeSubscribers,
+      subscribersDelta: null as number | null,
     };
-  }, [enriched, dateRange, activeSubscribers]);
+  }, [enriched, dateRange, activeSubscribers, useDemo]);
+
+  const guardDemoAction = (id?: string): boolean => {
+    if (useDemo || (id && isCreatorPicksDemoId(id))) {
+      toast.message('Sample preview data', {
+        description: 'Publish a real pick to edit, settle, or delete live rows. Add ?demo=0 to hide samples.',
+      });
+      return true;
+    }
+    return false;
+  };
 
   const resetForm = () => {
     setEditId(null);
@@ -371,6 +426,7 @@ const CreatorPosts = () => {
   };
 
   const openEdit = (post: Post) => {
+    if (guardDemoAction(post.id)) return;
     resetForm();
     const parsed = parsePostContent(post.content);
     setEditId(post.id);
@@ -461,7 +517,7 @@ const CreatorPosts = () => {
   };
 
   const confirmDelete = async () => {
-    if (!deleteId) return;
+    if (!deleteId || guardDemoAction(deleteId)) return;
     setDeleting(true);
     try {
       await removePost({ postId: deleteId as Id<'posts'> });
@@ -480,6 +536,7 @@ const CreatorPosts = () => {
   };
 
   const handleResultChange = async (postId: string, newResult: string) => {
+    if (guardDemoAction(postId)) return;
     try {
       await setResultMut({ postId: postId as Id<'posts'>, result: newResult });
       toast.success(`Marked as ${newResult}`);
@@ -494,6 +551,7 @@ const CreatorPosts = () => {
   };
 
   const handleImportFile = async (file: File) => {
+    if (guardDemoAction()) return;
     if (!creatorId) {
       toast.error('Creator profile not ready');
       return;
@@ -957,7 +1015,7 @@ const CreatorPosts = () => {
     {
       label: 'Active Subscribers',
       value: String(metrics.subscribers),
-      delta: null as number | null,
+      delta: metrics.subscribersDelta,
       icon: Users,
     },
   ];
@@ -1005,7 +1063,7 @@ const CreatorPosts = () => {
             type="button"
             variant="outline"
             className="min-h-11 rounded-xl"
-            disabled={importing || !creatorId}
+            disabled={importing || !creatorId || useDemo}
             onClick={() => importRef.current?.click()}
           >
             {importing ? (
@@ -1020,6 +1078,17 @@ const CreatorPosts = () => {
           </Button>
         </div>
       </header>
+
+      {useDemo ? (
+        <div className="mb-6 flex items-start gap-3 rounded-2xl border border-amber-500/30 bg-amber-500/10 px-4 py-3.5 text-amber-950 dark:text-amber-100 sm:items-center sm:px-5">
+          <Sparkles className="mt-0.5 h-5 w-5 shrink-0 text-amber-600 dark:text-amber-400 sm:mt-0" aria-hidden />
+          <p className="min-w-0 flex-1 text-sm font-semibold leading-snug">
+            Sample preview data — metrics and table rows are mock content so you can review the layout.
+            Publish a real pick to replace them, or add{' '}
+            <span className="font-mono text-xs">?demo=0</span> to see the empty state.
+          </p>
+        </div>
+      ) : null}
 
       <section className="mb-6 grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
         {metricCards.map((card) => {
@@ -1284,7 +1353,7 @@ const CreatorPosts = () => {
           <div className="flex flex-col gap-3 border-t border-border px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
             <p className="text-support text-muted-foreground">
               Showing {showingFrom}–{showingTo} of {filtered.length} picks
-              {postsStatus === 'CanLoadMore' || postsStatus === 'LoadingMore'
+              {!useDemo && (postsStatus === 'CanLoadMore' || postsStatus === 'LoadingMore')
                 ? ' (load more for older picks)'
                 : ''}
             </p>
@@ -1328,7 +1397,7 @@ const CreatorPosts = () => {
               >
                 <ChevronRight className="h-4 w-4" />
               </Button>
-              {(postsStatus === 'CanLoadMore' || postsStatus === 'LoadingMore') && (
+              {(postsStatus === 'CanLoadMore' || postsStatus === 'LoadingMore') && !useDemo && (
                 <Button
                   type="button"
                   variant="ghost"
