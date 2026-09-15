@@ -11,6 +11,15 @@ function sanitizeUsername(raw: string | undefined | null): string | undefined {
   return cleaned.length >= 2 ? cleaned : undefined;
 }
 
+/** Strip nulls — Convex `v.optional(v.string())` rejects explicit null. */
+function omitNullish<T extends Record<string, unknown>>(obj: T): Partial<T> {
+  const out: Record<string, unknown> = {};
+  for (const [k, v] of Object.entries(obj)) {
+    if (v !== null && v !== undefined) out[k] = v;
+  }
+  return out as Partial<T>;
+}
+
 const passwordProvider = Password<DataModel>({
   profile(params) {
     const email = String(params.email ?? "").trim().toLowerCase();
@@ -48,68 +57,59 @@ const providers = [
   ...(socialConfigured.twitter
     ? [
         Twitter({
-          // Stick to fields available on standard X OAuth 2 apps.
-          // `confirmed_email` needs users.email + portal "Request email" and
-          // breaks the whole /2/users/me call when unauthorized → Auth Server Error.
-          userinfo: {
-            url: "https://api.twitter.com/2/users/me",
-            params: {
-              "user.fields": "profile_image_url,username,name,description",
-            },
+          // X OAuth 2 confidential clients expect client_id/secret in the POST body
+          // for the token exchange (PKCE). Basic-auth-only can fail with Server Error
+          // after the user authorizes on x.com.
+          client: {
+            token_endpoint_auth_method: "client_secret_post",
           },
+          // Keep Auth.js stock endpoints (api.x.com). Do not override userinfo with
+          // elevated fields like confirmed_email — that breaks /2/users/me.
+          userinfo:
+            "https://api.x.com/2/users/me?user.fields=profile_image_url,description",
           profile(twitterProfile) {
-            const data = twitterProfile as {
-              id?: string | number;
-              id_str?: string;
-              name?: string;
-              username?: string;
-              screen_name?: string;
-              email?: string | null;
-              description?: string | null;
-              profile_image_url?: string;
-              profile_image_url_https?: string;
-              data?: {
-                id?: string;
-                name?: string;
-                username?: string;
-                profile_image_url?: string;
-                description?: string | null;
-                confirmed_email?: string | null;
-              };
-            };
-            const nested = data.data;
-            const id = String(nested?.id ?? data.id_str ?? data.id ?? "");
-            const handle = sanitizeUsername(
-              nested?.username ?? data.username ?? data.screen_name,
-            );
-            const imageRaw =
-              nested?.profile_image_url ??
-              data.profile_image_url_https ??
-              data.profile_image_url;
-            const image =
-              typeof imageRaw === "string"
-                ? imageRaw.replace("_normal", "")
-                : undefined;
-            const name = nested?.name ?? data.name ?? handle ?? "X user";
-            const description = (
-              nested?.description ??
-              data.description ??
-              ""
-            ).trim();
-            // Email only when X returns it (elevated apps); never required for sign-in.
-            const email =
-              nested?.confirmed_email ?? data.email ?? undefined;
+            const nested = (
+              twitterProfile as {
+                data?: {
+                  id?: string;
+                  name?: string;
+                  username?: string;
+                  profile_image_url?: string;
+                  description?: string | null;
+                  email?: string | null;
+                };
+              }
+            ).data;
+            if (!nested?.id) {
+              throw new Error("X profile response missing user id");
+            }
+            const handle = sanitizeUsername(nested.username);
+            const name = nested.name?.trim() || handle || "X user";
+            const image = nested.profile_image_url
+              ? nested.profile_image_url.replace("_normal", "")
+              : undefined;
+            const description = (nested.description ?? "").trim();
             const now = Date.now();
-            return {
-              id,
+            return omitNullish({
+              id: nested.id,
               name,
-              email: email || undefined,
+              email: nested.email ?? undefined,
               image,
               username: handle,
               fullName: name,
               bio: description ? description.slice(0, 300) : undefined,
               createdAt: now,
               updatedAt: now,
+            }) as {
+              id: string;
+              name: string;
+              email?: string;
+              image?: string;
+              username?: string;
+              fullName?: string;
+              bio?: string;
+              createdAt: number;
+              updatedAt: number;
             };
           },
         }),
@@ -137,7 +137,7 @@ const providers = [
                 ? `https://cdn.discordapp.com/avatars/${profile.id}/${profile.avatar}.png`
                 : undefined);
             const now = Date.now();
-            return {
+            return omitNullish({
               id: profile.id,
               name: display,
               email: profile.email ?? undefined,
@@ -148,6 +148,17 @@ const providers = [
               fullName: display,
               createdAt: now,
               updatedAt: now,
+            }) as {
+              id: string;
+              name: string;
+              email?: string;
+              image?: string;
+              discordId: string;
+              discordUsername?: string;
+              username?: string;
+              fullName?: string;
+              createdAt: number;
+              updatedAt: number;
             };
           },
         }),
@@ -155,6 +166,48 @@ const providers = [
     : []),
 ];
 
+/**
+ * Accept both apex and www when SITE_URL is the canonical www host.
+ * Prevents Invalid redirectTo Server Error if the browser origin differs slightly.
+ */
+function normalizeAppOrigin(url: string): string {
+  try {
+    const u = new URL(url);
+    if (u.hostname === "prizelet.com") {
+      u.hostname = "www.prizelet.com";
+    }
+    return u.toString().replace(/\/$/, "");
+  } catch {
+    return url.replace(/\/$/, "");
+  }
+}
+
 export const { auth, signIn, signOut, store, isAuthenticated } = convexAuth({
   providers,
+  callbacks: {
+    async redirect({ redirectTo }) {
+      const base = (process.env.SITE_URL ?? "").replace(/\/$/, "");
+      if (!base) {
+        throw new Error("SITE_URL is not configured");
+      }
+      if (redirectTo.startsWith("?") || redirectTo.startsWith("/")) {
+        return `${base}${redirectTo}`;
+      }
+      const want = normalizeAppOrigin(redirectTo);
+      const site = normalizeAppOrigin(base);
+      if (want === site || want.startsWith(`${site}/`) || want.startsWith(`${site}?`)) {
+        return want.startsWith("http") ? want : `${site}${want}`;
+      }
+      // Exact Auth.js / Convex Auth check, after apex→www normalization
+      if (redirectTo.startsWith(base)) {
+        const after = redirectTo[base.length];
+        if (after === undefined || after === "?" || after === "/") {
+          return redirectTo;
+        }
+      }
+      throw new Error(
+        `Invalid \`redirectTo\` ${redirectTo} for configured SITE_URL: ${base}`,
+      );
+    },
+  },
 });
