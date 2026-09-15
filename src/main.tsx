@@ -2,6 +2,7 @@ import { createRoot } from "react-dom/client";
 import App from "./App.tsx";
 import "./index.css";
 import { safeGetItem } from "./lib/safeStorage";
+import { ensureCanonicalAuthOrigin } from "./lib/authSession";
 
 // Apply saved theme on load (guarded for Safari private / blocked storage)
 const savedTheme = safeGetItem("theme");
@@ -11,4 +12,7 @@ if (savedTheme === "dark" || !savedTheme) {
   document.documentElement.classList.remove("dark");
 }
 
-createRoot(document.getElementById("root")!).render(<App />);
+// OAuth PKCE verifier is origin-scoped — stay on SITE_URL (www) before auth runs.
+if (!ensureCanonicalAuthOrigin()) {
+  createRoot(document.getElementById("root")!).render(<App />);
+}

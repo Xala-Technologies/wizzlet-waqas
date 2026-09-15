@@ -47,8 +47,8 @@ const AuthCallback = () => {
     setBusy(true);
     setError(null);
     try {
-      // If OAuth returned a code but we're still logged out, either complete the
-      // exchange (code still in the URL) or surface a clear failure (provider already tried).
+      // If the provider left ?code= in the URL, finish the exchange ourselves.
+      // If the code was already stripped, the provider already tried — wait for session.
       if (!authReady.current.isAuthenticated && oauthCodeRef.current) {
         const codeInUrl =
           searchParams.get('code') ??
@@ -62,15 +62,17 @@ const AuthCallback = () => {
               'Social sign-in could not be verified. Start again from the login page (don’t refresh mid-login).',
             );
           }
-        } else {
-          throw new Error(
-            'Social sign-in could not be verified. Start again from the login page (don’t refresh mid-login).',
-          );
         }
         oauthCodeRef.current = null;
       }
 
-      await waitForAuthenticated(() => authReady.current, 30_000);
+      try {
+        await waitForAuthenticated(() => authReady.current, 30_000);
+      } catch {
+        throw new Error(
+          'Social sign-in could not be verified. Start again from the login page (don’t refresh mid-login).',
+        );
+      }
       if (id !== runId.current) return;
       await withAuthRetry(() => ensureUser({})).catch(() => undefined);
       if (id !== runId.current) return;

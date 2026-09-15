@@ -1,5 +1,11 @@
 import { describe, expect, it, vi, afterEach } from "vitest";
-import { authCallbackUrl, isAuthOriginAligned, waitForAuthenticated } from "./authSession";
+import {
+  authCallbackUrl,
+  configuredAuthOrigin,
+  ensureCanonicalAuthOrigin,
+  isAuthOriginAligned,
+  waitForAuthenticated,
+} from "./authSession";
 
 describe("authCallbackUrl", () => {
   afterEach(() => {
@@ -28,6 +34,22 @@ describe("isAuthOriginAligned", () => {
   it("returns true when VITE_SITE_URL is unset", () => {
     vi.stubEnv("VITE_SITE_URL", "");
     expect(isAuthOriginAligned()).toBe(true);
+  });
+
+  it("reads configuredAuthOrigin from VITE_SITE_URL", () => {
+    vi.stubEnv("VITE_SITE_URL", "https://www.prizelet.com/");
+    expect(configuredAuthOrigin()).toBe("https://www.prizelet.com");
+  });
+});
+
+describe("ensureCanonicalAuthOrigin", () => {
+  afterEach(() => {
+    vi.unstubAllEnvs();
+  });
+
+  it("returns false when already on the configured origin", () => {
+    vi.stubEnv("VITE_SITE_URL", window.location.origin);
+    expect(ensureCanonicalAuthOrigin()).toBe(false);
   });
 });
 
