@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom';
 import { ArrowRight, Users } from 'lucide-react';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { cn } from '@/lib/utils';
 
 export type OverviewSubscriber = {
@@ -8,6 +9,8 @@ export type OverviewSubscriber = {
   whenLabel: string;
   tierLabel: string;
   tierTone?: 'vip' | 'monthly' | 'free' | 'default';
+  /** Auth user image or profile photo when available */
+  avatarUrl?: string | null;
 };
 
 const tierClass: Record<NonNullable<OverviewSubscriber['tierTone']>, string> = {
@@ -16,6 +19,13 @@ const tierClass: Record<NonNullable<OverviewSubscriber['tierTone']>, string> = {
   free: 'bg-muted text-muted-foreground border-border',
   default: 'bg-muted text-muted-foreground border-border',
 };
+
+function initials(name: string): string {
+  const parts = name.trim().split(/\s+/).filter(Boolean);
+  if (parts.length === 0) return '?';
+  if (parts.length === 1) return parts[0]!.slice(0, 2).toUpperCase();
+  return `${parts[0]!.charAt(0)}${parts[1]!.charAt(0)}`.toUpperCase();
+}
 
 export function OverviewRecentSubscribers({ rows }: { rows: OverviewSubscriber[] }) {
   return (
@@ -40,31 +50,28 @@ export function OverviewRecentSubscribers({ rows }: { rows: OverviewSubscriber[]
         </div>
       ) : (
         <ul className="space-y-3">
-          {rows.map((row) => {
-            const initial = row.name.charAt(0).toUpperCase();
-            return (
-              <li key={row.id} className="flex items-center gap-3">
-                <div
-                  className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary/15 text-sm font-bold text-primary"
-                  aria-hidden
-                >
-                  {initial}
-                </div>
-                <div className="min-w-0 flex-1">
-                  <p className="truncate text-sm font-bold text-foreground">{row.name}</p>
-                  <p className="text-xs text-muted-foreground">{row.whenLabel}</p>
-                </div>
-                <span
-                  className={cn(
-                    'shrink-0 rounded-full border px-2 py-0.5 text-[10px] font-bold',
-                    tierClass[row.tierTone ?? 'default'],
-                  )}
-                >
-                  {row.tierLabel}
-                </span>
-              </li>
-            );
-          })}
+          {rows.map((row) => (
+            <li key={row.id} className="flex items-center gap-3">
+              <Avatar className="h-10 w-10 border border-border">
+                {row.avatarUrl ? <AvatarImage src={row.avatarUrl} alt="" /> : null}
+                <AvatarFallback className="bg-primary/15 text-xs font-bold text-primary">
+                  {initials(row.name)}
+                </AvatarFallback>
+              </Avatar>
+              <div className="min-w-0 flex-1">
+                <p className="truncate text-sm font-bold text-foreground">{row.name}</p>
+                <p className="text-xs text-muted-foreground">{row.whenLabel}</p>
+              </div>
+              <span
+                className={cn(
+                  'shrink-0 rounded-full border px-2 py-0.5 text-[10px] font-bold',
+                  tierClass[row.tierTone ?? 'default'],
+                )}
+              >
+                {row.tierLabel}
+              </span>
+            </li>
+          ))}
         </ul>
       )}
     </section>

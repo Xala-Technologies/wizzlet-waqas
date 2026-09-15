@@ -1,6 +1,7 @@
 import { paginationOptsValidator, paginationResultValidator } from "convex/server";
 import { mutation, query } from "../_generated/server";
 import { ConvexError, v } from "convex/values";
+import type { Id } from "../_generated/dataModel";
 import { getCreatorForUser, requireAppUser, hasActiveSubscription } from "../lib/auth";
 import { canSendDirectMessage } from "../lib/messagingAccess";
 import { directMessageDocValidator } from "../lib/validators";
@@ -113,6 +114,89 @@ export const myCreatorInbox = query({
       .withIndex("by_creatorId", (q) => q.eq("creatorId", creator._id))
       .order("desc")
       .take(500);
+  },
+});
+
+/**
+ * Overview panel: latest DM threads with subscriber display name + avatar.
+ * Caps threads so the dashboard stays light at scale.
+ */
+export const overviewInboxThreads = query({
+  args: {},
+  returns: v.array(
+    v.object({
+      id: v.string(),
+      subscriberId: v.id("users"),
+      name: v.string(),
+      avatarUrl: v.union(v.string(), v.null()),
+      preview: v.string(),
+      createdAt: v.number(),
+      unread: v.number(),
+    }),
+  ),
+  handler: async (ctx) => {
+    const user = await requireAppUser(ctx);
+    const creator = await getCreatorForUser(ctx, user._id);
+    if (!creator) return [];
+
+    const rows = await ctx.db
+      .query("directMessages")
+      .withIndex("by_creatorId", (q) => q.eq("creatorId", creator._id))
+      .order("desc")
+      .take(200);
+
+    const bySub = new Map<
+      string,
+      {
+        id: string;
+        subscriberId: Id<"users">;
+        body: string;
+        createdAt: number;
+        unread: number;
+      }
+    >();
+
+    for (const m of rows) {
+      const key = m.subscriberId;
+      const existing = bySub.get(key);
+      const unreadInc = m.senderRole === "subscriber" && !m.read ? 1 : 0;
+      if (!existing || m.createdAt > existing.createdAt) {
+        bySub.set(key, {
+          id: m._id,
+          subscriberId: m.subscriberId,
+          body: m.body,
+          createdAt: m.createdAt,
+          unread: (existing?.unread ?? 0) + unreadInc,
+        });
+      } else if (unreadInc) {
+        existing.unread += unreadInc;
+      }
+    }
+
+    const threads = [...bySub.values()]
+      .sort((a, b) => b.createdAt - a.createdAt)
+      .slice(0, 5);
+
+    const out = [];
+    for (const t of threads) {
+      const sub = await ctx.db.get(t.subscriberId);
+      const name =
+        sub?.fullName?.trim() ||
+        sub?.username?.trim() ||
+        sub?.name?.trim() ||
+        sub?.email?.split("@")[0] ||
+        "Subscriber";
+      out.push({
+        id: t.id,
+        subscriberId: t.subscriberId,
+        name,
+        avatarUrl: sub?.image ?? null,
+        preview: t.body,
+        createdAt: t.createdAt,
+        unread: t.unread,
+      });
+    }
+    return out;
   },
 });
 

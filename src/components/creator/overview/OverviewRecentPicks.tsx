@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom';
 import { ArrowRight } from 'lucide-react';
+import { sportVisual } from '@/lib/sportVisual';
 import { cn } from '@/lib/utils';
 
 export type OverviewPickRow = {
@@ -47,7 +48,7 @@ export function OverviewRecentPicks({ rows }: { rows: OverviewPickRow[] }) {
         </div>
       ) : (
         <div className="-mx-1 overflow-x-auto">
-          <table className="w-full min-w-[32rem] border-collapse text-left text-sm">
+          <table className="w-full min-w-[34rem] border-collapse text-left text-sm">
             <thead>
               <tr className="border-b border-border text-xs font-bold uppercase tracking-wide text-muted-foreground">
                 <th className="px-2 py-2 font-bold">Date</th>
@@ -57,37 +58,58 @@ export function OverviewRecentPicks({ rows }: { rows: OverviewPickRow[] }) {
               </tr>
             </thead>
             <tbody>
-              {rows.map((row) => (
-                <tr key={row.id} className="border-b border-border/70 last:border-0">
-                  <td className="whitespace-nowrap px-2 py-3 text-muted-foreground">{row.dateLabel}</td>
-                  <td className="px-2 py-3">
-                    <p className="font-semibold text-foreground">{row.event}</p>
-                    <p className="text-xs font-medium text-muted-foreground">{row.sport}</p>
-                  </td>
-                  <td className="px-2 py-3">
-                    <span
+              {rows.map((row) => {
+                const visual = sportVisual(row.sport);
+                return (
+                  <tr key={row.id} className="border-b border-border/70 last:border-0">
+                    <td className="whitespace-nowrap px-2 py-3 text-muted-foreground">
+                      {row.dateLabel}
+                    </td>
+                    <td className="px-2 py-3">
+                      <div className="flex items-start gap-2.5">
+                        <span
+                          className={cn(
+                            'mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl text-base',
+                            visual.chipClass,
+                          )}
+                          aria-hidden
+                          title={row.sport}
+                        >
+                          {visual.emoji}
+                        </span>
+                        <div className="min-w-0">
+                          <p className="font-semibold leading-snug text-foreground">{row.event}</p>
+                          <p className="mt-0.5 text-xs font-medium text-muted-foreground">
+                            {row.sport}
+                          </p>
+                        </div>
+                      </div>
+                    </td>
+                    <td className="px-2 py-3">
+                      <span
+                        className={cn(
+                          'inline-flex rounded-full border px-2 py-0.5 text-xs font-bold capitalize',
+                          resultStyle[row.result],
+                        )}
+                      >
+                        {row.result}
+                      </span>
+                    </td>
+                    <td
                       className={cn(
-                        'inline-flex rounded-full border px-2 py-0.5 text-xs font-bold capitalize',
-                        resultStyle[row.result],
+                        'whitespace-nowrap px-2 py-3 text-right font-bold tabular-nums',
+                        row.profitPositive
+                          ? 'text-emerald-600 dark:text-emerald-400'
+                          : row.result === 'loss'
+                            ? 'text-rose-600 dark:text-rose-400'
+                            : 'text-foreground',
                       )}
                     >
-                      {row.result}
-                    </span>
-                  </td>
-                  <td
-                    className={cn(
-                      'whitespace-nowrap px-2 py-3 text-right font-bold tabular-nums',
-                      row.profitPositive
-                        ? 'text-emerald-600 dark:text-emerald-400'
-                        : row.result === 'loss'
-                          ? 'text-rose-600 dark:text-rose-400'
-                          : 'text-foreground',
-                    )}
-                  >
-                    {row.profitLabel}
-                  </td>
-                </tr>
-              ))}
+                      {row.profitLabel}
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         </div>

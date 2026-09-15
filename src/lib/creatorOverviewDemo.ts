@@ -1,7 +1,14 @@
 /**
  * Sample overview data for design / PO review when the creator account is empty.
  * Not billed as real metrics — UI shows a clear preview banner.
+ *
+ * Avatars use deterministic dicebear URLs (stable, no PII) so the layout matches
+ * production Avatar Image/Fallback behavior.
  */
+
+function demoAvatar(seed: string): string {
+  return `https://api.dicebear.com/9.x/avataaars/png?seed=${encodeURIComponent(seed)}&size=80&backgroundColor=b6e3f4,c0aede,d1d4f9`;
+}
 
 export const CREATOR_OVERVIEW_DEMO = {
   postCount: 24,
@@ -73,6 +80,7 @@ export const CREATOR_OVERVIEW_DEMO = {
       whenLabel: '2 hours ago',
       tierLabel: 'VIP',
       tierTone: 'vip' as const,
+      avatarUrl: demoAvatar('jordan-blake'),
     },
     {
       id: 'demo-sub-2',
@@ -80,6 +88,7 @@ export const CREATOR_OVERVIEW_DEMO = {
       whenLabel: '1 day ago',
       tierLabel: 'Monthly',
       tierTone: 'monthly' as const,
+      avatarUrl: demoAvatar('sam-rivera'),
     },
     {
       id: 'demo-sub-3',
@@ -87,6 +96,7 @@ export const CREATOR_OVERVIEW_DEMO = {
       whenLabel: '2 days ago',
       tierLabel: 'Monthly',
       tierTone: 'monthly' as const,
+      avatarUrl: demoAvatar('alex-chen'),
     },
     {
       id: 'demo-sub-4',
@@ -94,6 +104,7 @@ export const CREATOR_OVERVIEW_DEMO = {
       whenLabel: '3 days ago',
       tierLabel: 'VIP',
       tierTone: 'vip' as const,
+      avatarUrl: demoAvatar('casey-morgan'),
     },
   ],
   messages: [
@@ -103,6 +114,7 @@ export const CREATOR_OVERVIEW_DEMO = {
       preview: 'Loved the Lakers write-up — any lean on the rematch?',
       whenLabel: '35 minutes ago',
       unread: 2,
+      avatarUrl: demoAvatar('jordan-blake'),
     },
     {
       id: 'demo-msg-2',
@@ -110,6 +122,7 @@ export const CREATOR_OVERVIEW_DEMO = {
       preview: 'Can I upgrade to VIP mid-cycle?',
       whenLabel: '3 hours ago',
       unread: 0,
+      avatarUrl: demoAvatar('sam-rivera'),
     },
     {
       id: 'demo-msg-3',
@@ -117,24 +130,28 @@ export const CREATOR_OVERVIEW_DEMO = {
       preview: 'Thanks for the NFL card this week.',
       whenLabel: 'Yesterday',
       unread: 0,
+      avatarUrl: demoAvatar('alex-chen'),
     },
   ],
   topPicks: [
     {
       id: 'demo-top-1',
       label: 'NBA spreads',
+      sport: 'NBA',
       winRateLabel: '72% win · 18 settled',
       profitLabel: '+14.2u',
     },
     {
       id: 'demo-top-2',
       label: 'NFL moneylines',
+      sport: 'NFL',
       winRateLabel: '65% win · 12 settled',
       profitLabel: '+8.4u',
     },
     {
       id: 'demo-top-3',
       label: 'Soccer AH',
+      sport: 'Soccer',
       winRateLabel: '58% win · 8 settled',
       profitLabel: '+3.1u',
     },

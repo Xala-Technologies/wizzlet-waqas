@@ -303,22 +303,19 @@ export function CreatorSidebar({ mobile = false }: { mobile?: boolean } = {}) {
           </Button>
         </div>
 
-        <Button
-          variant="ghost"
-          size="sm"
-          className={cn(
-            'w-full justify-start text-sm',
-            dark
-              ? 'text-slate-300 hover:bg-white/5 hover:text-white'
-              : 'text-muted-foreground hover:text-foreground',
-          )}
-          asChild
-        >
-          <Link to="/support">
-            <HelpCircle className="mr-2 h-3.5 w-3.5" />
-            Help & Support
-          </Link>
-        </Button>
+        {mobile ? (
+          <Button
+            variant="ghost"
+            size="sm"
+            className="w-full justify-start text-sm text-muted-foreground hover:text-foreground"
+            asChild
+          >
+            <Link to="/support">
+              <HelpCircle className="mr-2 h-3.5 w-3.5" />
+              Help & Support
+            </Link>
+          </Button>
+        ) : null}
 
         {!mobile && (
           <div className="[&_button]:border-white/15 [&_button]:bg-white/5 [&_button]:text-slate-100 [&_button]:hover:bg-white/10 [&_button_.text-muted-foreground]:text-slate-400">
@@ -326,20 +323,17 @@ export function CreatorSidebar({ mobile = false }: { mobile?: boolean } = {}) {
           </div>
         )}
 
-        <Button
-          variant="ghost"
-          size="sm"
-          className={cn(
-            'w-full justify-start text-sm',
-            dark
-              ? 'text-slate-300 hover:bg-white/5 hover:text-white'
-              : 'text-muted-foreground hover:text-foreground',
-          )}
-          onClick={() => void handleSignOut()}
-        >
-          <LogOut className="mr-2 h-3.5 w-3.5" />
-          Log out
-        </Button>
+        {mobile ? (
+          <Button
+            variant="ghost"
+            size="sm"
+            className="w-full justify-start text-sm text-muted-foreground hover:text-foreground"
+            onClick={() => void handleSignOut()}
+          >
+            <LogOut className="mr-2 h-3.5 w-3.5" />
+            Log out
+          </Button>
+        ) : null}
       </div>
     </aside>
   );

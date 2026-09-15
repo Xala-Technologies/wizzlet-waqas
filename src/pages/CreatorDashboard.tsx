@@ -10,6 +10,7 @@ import {
   Megaphone,
   MessageSquare,
   PenLine,
+  Plus,
   Rocket,
   Sparkles,
   TrendingUp,
@@ -19,6 +20,7 @@ import {
 import { api } from '../../convex/_generated/api';
 import { computeWinRate } from '../../convex/lib/results';
 import { DashboardLayout } from '@/components/dashboard/DashboardLayout';
+import { Button } from '@/components/ui/button';
 import { Seo } from '@/components/Seo';
 import { OverviewKpiStrip } from '@/components/creator/overview/OverviewKpiStrip';
 import { OverviewRecentPicks } from '@/components/creator/overview/OverviewRecentPicks';
@@ -59,7 +61,7 @@ const CreatorDashboard = () => {
   const postsRaw = useQuery(api.posts.queries.listMine);
   const picksRaw = useQuery(api.picks.mutations.listMine);
   const earnings = useQuery(api.creators.earnings.myEarnings);
-  const inbox = useQuery(api.messaging.mutations.myCreatorInbox);
+  const inboxThreads = useQuery(api.messaging.mutations.overviewInboxThreads);
   const { results: recentSubRows, status: subsPageStatus } = usePaginatedQuery(
     api.subscriptions.mutations.listSubscribersDetailedPage,
     {},
@@ -78,7 +80,7 @@ const CreatorDashboard = () => {
     postsRaw === undefined ||
     picksRaw === undefined ||
     earnings === undefined ||
-    inbox === undefined ||
+    inboxThreads === undefined ||
     subsPageStatus === 'LoadingFirstPage';
 
   const picks = useMemo(
@@ -204,57 +206,35 @@ const CreatorDashboard = () => {
         whenLabel: formatDistanceToNowStrict(new Date(s.createdAt), { addSuffix: true }),
         tierLabel,
         tierTone,
+        avatarUrl: s.user?.image ?? null,
       };
     });
   }, [demo.recentSubscribers, recentSubRows, useDemo]);
 
   const messageRows = useMemo(() => {
     if (useDemo) return [...demo.messages];
-    const rows = inbox ?? [];
-    // Group by subscriber — show latest per thread
-    const bySub = new Map<
-      string,
-      { id: string; body: string; createdAt: number; unread: number; subscriberId: string }
-    >();
-    for (const m of rows) {
-      const key = m.subscriberId;
-      const existing = bySub.get(key);
-      const unreadInc = m.senderRole === 'subscriber' && !m.read ? 1 : 0;
-      if (!existing || m.createdAt > existing.createdAt) {
-        bySub.set(key, {
-          id: m._id,
-          body: m.body,
-          createdAt: m.createdAt,
-          unread: (existing?.unread ?? 0) + unreadInc,
-          subscriberId: m.subscriberId,
-        });
-      } else if (unreadInc) {
-        existing.unread += unreadInc;
-      }
-    }
-    return [...bySub.values()]
-      .sort((a, b) => b.createdAt - a.createdAt)
-      .slice(0, 4)
-      .map((t) => ({
-        id: t.id,
-        name: 'Subscriber',
-        preview: t.body,
-        whenLabel: formatDistanceToNowStrict(new Date(t.createdAt), { addSuffix: true }),
-        unread: t.unread,
-      }));
-  }, [demo.messages, inbox, useDemo]);
+    return (inboxThreads ?? []).map((t) => ({
+      id: t.id,
+      name: t.name,
+      preview: t.preview,
+      whenLabel: formatDistanceToNowStrict(new Date(t.createdAt), { addSuffix: true }),
+      unread: t.unread,
+      avatarUrl: t.avatarUrl,
+    }));
+  }, [demo.messages, inboxThreads, useDemo]);
 
   const topPicks = useMemo(() => {
     if (useDemo) return [...demo.topPicks];
     const settled = picks.filter((p) => p.result === 'win' || p.result === 'loss');
     const groups = new Map<
       string,
-      { label: string; wins: number; decided: number; units: number }
+      { label: string; sport: string; wins: number; decided: number; units: number }
     >();
     for (const p of settled) {
       const key = `${p.sport}|${p.pickEvent}`.toLowerCase();
       const g = groups.get(key) ?? {
         label: p.pickEvent || p.sport || 'Pick',
+        sport: p.sport || 'Other',
         wins: 0,
         decided: 0,
         units: 0,
@@ -268,15 +248,17 @@ const CreatorDashboard = () => {
       .map(([id, g]) => ({
         id,
         label: g.label,
+        sport: g.sport,
         winRateLabel: `${Math.round((g.wins / Math.max(g.decided, 1)) * 100)}% win · ${g.decided} settled`,
         profitLabel: `${g.units > 0 ? '+' : ''}${g.units.toFixed(1)}u`,
         units: g.units,
       }))
       .sort((a, b) => b.units - a.units)
       .slice(0, 4)
-      .map(({ id, label, winRateLabel, profitLabel }) => ({
+      .map(({ id, label, sport, winRateLabel, profitLabel }) => ({
         id,
         label,
+        sport,
         winRateLabel,
         profitLabel,
       }));
@@ -321,13 +303,25 @@ const CreatorDashboard = () => {
       />
 
       <header className="mb-6 sm:mb-8">
-        <p className="text-xs font-bold uppercase tracking-wide text-muted-foreground">{todayLabel}</p>
-        <h1 className="mt-1 text-2xl font-extrabold tracking-tight text-foreground sm:text-3xl md:text-4xl">
-          Welcome back, {displayName}!
-        </h1>
-        <p className="mt-2 text-sm font-medium text-muted-foreground sm:text-base">
-          Here’s your overview. Keep the momentum going.
-        </p>
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+          <div className="min-w-0">
+            <p className="text-xs font-bold uppercase tracking-wide text-muted-foreground">
+              {todayLabel}
+            </p>
+            <h1 className="mt-1 text-2xl font-extrabold tracking-tight text-foreground sm:text-3xl md:text-4xl">
+              Welcome back, {displayName}!
+            </h1>
+            <p className="mt-2 text-sm font-medium text-muted-foreground sm:text-base">
+              Here’s your overview. Keep the momentum going.
+            </p>
+          </div>
+          <Button asChild className="h-11 w-full shrink-0 gap-1.5 rounded-xl px-5 font-semibold sm:w-auto">
+            <Link to="/creator/posts">
+              <Plus className="h-4 w-4" aria-hidden />
+              New Pick
+            </Link>
+          </Button>
+        </div>
       </header>
 
       {useDemo ? (

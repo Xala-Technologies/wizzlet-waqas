@@ -187,7 +187,13 @@ export const listSubscribersDetailed = query({
       out.push({
         ...s,
         user: u
-          ? { _id: u._id, email: u.email, fullName: u.fullName, username: u.username }
+          ? {
+              _id: u._id,
+              email: u.email,
+              fullName: u.fullName,
+              username: u.username,
+              image: u.image,
+            }
           : null,
       });
     }
@@ -217,7 +223,13 @@ export const listSubscribersDetailedPage = query({
       page.push({
         ...s,
         user: u
-          ? { _id: u._id, email: u.email, fullName: u.fullName, username: u.username }
+          ? {
+              _id: u._id,
+              email: u.email,
+              fullName: u.fullName,
+              username: u.username,
+              image: u.image,
+            }
           : null,
       });
     }

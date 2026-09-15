@@ -128,6 +128,8 @@ export const subscriptionWithUserValidator = v.object({
       email: v.optional(v.string()),
       fullName: v.optional(v.string()),
       username: v.optional(v.string()),
+      /** Convex Auth profile image when present */
+      image: v.optional(v.string()),
     }),
     v.null(),
   ),
