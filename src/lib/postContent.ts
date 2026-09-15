@@ -7,6 +7,7 @@ export function parsePostContent(content: string | null): {
   usOdds: string;
   euOdds: string;
   units: string;
+  tags: string;
   notes: string;
 } {
   const empty = {
@@ -17,6 +18,7 @@ export function parsePostContent(content: string | null): {
     usOdds: '',
     euOdds: '',
     units: '1',
+    tags: '',
     notes: '',
   };
   if (!content?.trim()) return empty;
@@ -29,6 +31,7 @@ export function parsePostContent(content: string | null): {
   let usOdds = '';
   let euOdds = '';
   let units = '1';
+  let tags = '';
   const noteLines: string[] = [];
   let pastStructured = false;
 
@@ -69,6 +72,11 @@ export function parsePostContent(content: string | null): {
         units = unitsMatch[1];
         continue;
       }
+      const tagsMatch = /^Tags:\s*(.+)$/i.exec(line);
+      if (tagsMatch) {
+        tags = tagsMatch[1].trim();
+        continue;
+      }
       if (line.trim() === '') {
         pastStructured = true;
         continue;
@@ -88,6 +96,7 @@ export function parsePostContent(content: string | null): {
     usOdds,
     euOdds,
     units,
+    tags,
     notes: noteLines.join('\n').replace(/^\n+/, '').trimEnd(),
   };
 }
