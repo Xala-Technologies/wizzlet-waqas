@@ -48,12 +48,13 @@ const providers = [
   ...(socialConfigured.twitter
     ? [
         Twitter({
-          // Request profile fields needed for creator onboarding prefills.
+          // Stick to fields available on standard X OAuth 2 apps.
+          // `confirmed_email` needs users.email + portal "Request email" and
+          // breaks the whole /2/users/me call when unauthorized → Auth Server Error.
           userinfo: {
             url: "https://api.twitter.com/2/users/me",
             params: {
-              "user.fields":
-                "profile_image_url,username,name,description,url,confirmed_email",
+              "user.fields": "profile_image_url,username,name,description",
             },
           },
           profile(twitterProfile) {
@@ -95,6 +96,7 @@ const providers = [
               data.description ??
               ""
             ).trim();
+            // Email only when X returns it (elevated apps); never required for sign-in.
             const email =
               nested?.confirmed_email ?? data.email ?? undefined;
             const now = Date.now();
