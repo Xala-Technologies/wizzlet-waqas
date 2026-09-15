@@ -31,6 +31,7 @@ import { OverviewRecentSubscribers } from '@/components/creator/overview/Overvie
 import { OverviewMessagesPanel } from '@/components/creator/overview/OverviewMessagesPanel';
 import { OverviewTopPicks } from '@/components/creator/overview/OverviewTopPicks';
 import { safeGetItem, safeSetItem } from '@/lib/safeStorage';
+import { kpiIconTone } from '@/lib/kpiIconTones';
 import {
   CREATOR_OVERVIEW_DEMO,
   shouldUseCreatorOverviewDemo,
@@ -342,13 +343,13 @@ const CreatorDashboard = () => {
               label: 'Posts published',
               value: String(postCount),
               icon: FileText,
-              iconClassName: 'bg-violet-500/10 text-violet-600 dark:text-violet-400',
+              iconClassName: kpiIconTone.violet,
             },
             {
               label: 'Monthly revenue (net)',
               value: `$${mrrNet.toFixed(0)}`,
               icon: DollarSign,
-              iconClassName: 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400',
+              iconClassName: kpiIconTone.emerald,
               trendLabel: displayRevenueTrend?.label,
               trendPositive: displayRevenueTrend?.positive,
             },
@@ -356,13 +357,13 @@ const CreatorDashboard = () => {
               label: 'Win rate',
               value: winRateValue,
               icon: TrendingUp,
-              iconClassName: 'bg-sky-500/10 text-sky-600 dark:text-sky-400',
+              iconClassName: kpiIconTone.sky,
             },
             {
               label: 'Active subscribers',
               value: String(activeSubCount),
               icon: Users,
-              iconClassName: 'bg-amber-500/10 text-amber-700 dark:text-amber-400',
+              iconClassName: kpiIconTone.amber,
             },
           ]}
         />

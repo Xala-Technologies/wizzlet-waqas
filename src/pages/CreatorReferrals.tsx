@@ -3,9 +3,11 @@ import { Link } from 'react-router-dom';
 import { useMutation, useQuery } from 'convex/react';
 import { api } from '../../convex/_generated/api';
 import { DashboardLayout } from '@/components/dashboard/DashboardLayout';
+import { DashboardKpiStrip } from '@/components/dashboard/DashboardKpiStrip';
 import { DesktopTableRegion, MobileRecordCards } from '@/components/dashboard/MobileRecordList';
 import { Button } from '@/components/ui/button';
 import { buildReferralCode, useCreatorProfile } from '@/hooks/useCreatorProfile';
+import { kpiIconTone } from '@/lib/kpiIconTones';
 import { UserPlus, Users, DollarSign, Copy, Gift, Loader2 } from 'lucide-react';
 import { format } from 'date-fns';
 import { toast } from 'sonner';
@@ -122,28 +124,29 @@ const CreatorReferrals = () => {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-6">
-        <div className="rounded-xl border border-border bg-card p-4">
-          <div className="flex items-center gap-1.5 mb-1.5">
-            <Users className="h-3.5 w-3.5 text-muted-foreground" />
-            <p className="text-support text-muted-foreground">Referred users</p>
-          </div>
-          <p className="text-ui font-bold text-foreground">{referralRows.length}</p>
-        </div>
-        <div className="rounded-xl border border-border bg-card p-4">
-          <div className="flex items-center gap-1.5 mb-1.5">
-            <UserPlus className="h-3.5 w-3.5 text-muted-foreground" />
-            <p className="text-support text-muted-foreground">Attributed conversions</p>
-          </div>
-          <p className="text-ui font-bold text-foreground">{converted}</p>
-        </div>
-        <div className="rounded-xl border border-border bg-card p-4">
-          <div className="flex items-center gap-1.5 mb-1.5">
-            <DollarSign className="h-3.5 w-3.5 text-muted-foreground" />
-            <p className="text-support text-muted-foreground">Cash commission (not enabled)</p>
-          </div>
-          <p className="text-ui font-bold text-foreground">—</p>
-        </div>
+      <div className="mb-6">
+        <DashboardKpiStrip
+          items={[
+            {
+              label: 'Referred users',
+              value: String(referralRows.length),
+              icon: Users,
+              iconClassName: kpiIconTone.violet,
+            },
+            {
+              label: 'Attributed conversions',
+              value: String(converted),
+              icon: UserPlus,
+              iconClassName: kpiIconTone.sky,
+            },
+            {
+              label: 'Cash commission (not enabled)',
+              value: '—',
+              icon: DollarSign,
+              iconClassName: kpiIconTone.amber,
+            },
+          ]}
+        />
       </div>
 
       <h2 className="text-support font-medium text-muted-foreground mb-3">Referral activity</h2>

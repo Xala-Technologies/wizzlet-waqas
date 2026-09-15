@@ -2,6 +2,8 @@ import { useEffect, useMemo, useState } from 'react';
 import { useMutation, useQuery } from 'convex/react';
 import { api } from '../../convex/_generated/api';
 import { DashboardLayout } from '@/components/dashboard/DashboardLayout';
+import { DashboardKpiStrip } from '@/components/dashboard/DashboardKpiStrip';
+import { kpiIconTone } from '@/lib/kpiIconTones';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -121,27 +123,35 @@ const CreatorPayouts = () => {
         </p>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-        <div className="rounded-xl border border-border bg-card p-5">
-          <TrendingUp className="h-4 w-4 text-blue-400 mb-2" />
-          <p className="text-2xl font-bold">${earned.toFixed(2)}</p>
-          <p className="text-caption text-muted-foreground">Lifetime earned</p>
-        </div>
-        <div className="rounded-xl border border-border bg-card p-5">
-          <Wallet className="h-4 w-4 text-emerald-400 mb-2" />
-          <p className="text-2xl font-bold">${available.toFixed(2)}</p>
-          <p className="text-caption text-muted-foreground">Available</p>
-        </div>
-        <div className="rounded-xl border border-border bg-card p-5">
-          <Clock className="h-4 w-4 text-amber-400 mb-2" />
-          <p className="text-2xl font-bold">${pending.toFixed(2)}</p>
-          <p className="text-caption text-muted-foreground">Pending / requested</p>
-        </div>
-        <div className="rounded-xl border border-border bg-card p-5">
-          <CheckCircle2 className="h-4 w-4 text-muted-foreground mb-2" />
-          <p className="text-2xl font-bold">${paidOut.toFixed(2)}</p>
-          <p className="text-caption text-muted-foreground">Paid out</p>
-        </div>
+      <div className="mb-8">
+        <DashboardKpiStrip
+          items={[
+            {
+              label: 'Lifetime earned',
+              value: `$${earned.toFixed(2)}`,
+              icon: TrendingUp,
+              iconClassName: kpiIconTone.sky,
+            },
+            {
+              label: 'Available',
+              value: `$${available.toFixed(2)}`,
+              icon: Wallet,
+              iconClassName: kpiIconTone.emerald,
+            },
+            {
+              label: 'Pending / requested',
+              value: `$${pending.toFixed(2)}`,
+              icon: Clock,
+              iconClassName: kpiIconTone.amber,
+            },
+            {
+              label: 'Paid out',
+              value: `$${paidOut.toFixed(2)}`,
+              icon: CheckCircle2,
+              iconClassName: kpiIconTone.violet,
+            },
+          ]}
+        />
       </div>
 
       <div className="mb-8">
