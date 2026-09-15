@@ -3,6 +3,7 @@ import { CreatorSidebar } from './CreatorSidebar';
 import { AdminSidebar } from './AdminSidebar';
 import { MemberSidebar } from './MemberSidebar';
 import { MobileTopBar } from './MobileTopBar';
+import { CreatorTopBar } from './CreatorTopBar';
 import { AdminQueryBoundary } from './AdminQueryBoundary';
 import { UnreadMessageWatcher } from './UnreadMessageWatcher';
 import { DASHBOARD_CONTENT_CLASS } from '@/lib/dashboardSidebar';
@@ -23,16 +24,17 @@ export function DashboardLayout({ children, type }: DashboardLayoutProps) {
   const Sidebar = type === 'creator' ? CreatorSidebar : type === 'admin' ? AdminSidebar : MemberSidebar;
 
   const body = (
-    <div className="h-dvh flex overflow-hidden bg-background">
+    <div className="flex h-dvh overflow-hidden bg-background">
       <UnreadMessageWatcher />
       <Sidebar />
-      <main className="flex-1 min-h-0 min-w-0 overflow-x-hidden overflow-y-auto bg-background">
+      <main className="min-h-0 min-w-0 flex-1 overflow-x-hidden overflow-y-auto bg-muted/30">
         <MobileTopBar homeHref={HOME_HREF[type]}>
           <Sidebar mobile />
         </MobileTopBar>
+        {type === 'creator' ? <CreatorTopBar /> : null}
         <div
           className={cn(
-            'p-4 sm:p-6 md:p-8 pb-[max(1rem,env(safe-area-inset-bottom))]',
+            'p-4 pb-[max(1rem,env(safe-area-inset-bottom))] sm:p-6 md:p-8',
             DASHBOARD_CONTENT_CLASS,
           )}
         >

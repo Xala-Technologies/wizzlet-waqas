@@ -1,60 +1,76 @@
-import { useMemo } from 'react';
-import { Link } from 'react-router-dom';
-import { useMutation, useQuery } from 'convex/react';
-import { api } from '../../convex/_generated/api';
-import { DashboardLayout } from '@/components/dashboard/DashboardLayout';
-import { Button } from '@/components/ui/button';
-import { Progress } from '@/components/ui/progress';
+import { useMemo, useState } from 'react';
+import { Link, useSearchParams } from 'react-router-dom';
+import { usePaginatedQuery, useQuery } from 'convex/react';
+import { format, formatDistanceToNowStrict } from 'date-fns';
 import {
-  FileText,
-  Plus,
-  Loader2,
-  ArrowRight,
-  ShieldCheck,
   BarChart3,
-  Target,
-  Compass,
+  DollarSign,
+  FileText,
+  Loader2,
+  Megaphone,
+  MessageSquare,
+  PenLine,
+  Rocket,
+  Sparkles,
+  TrendingUp,
+  Users,
+  X,
 } from 'lucide-react';
-import { format } from 'date-fns';
+import { api } from '../../convex/_generated/api';
 import { computeWinRate } from '../../convex/lib/results';
+import { DashboardLayout } from '@/components/dashboard/DashboardLayout';
 import { Seo } from '@/components/Seo';
-import { creatorProfilePath } from '@/lib/creatorProfilePath';
-import { mapConvexSportEvent, todayBoundsMs } from '@/lib/events';
+import { OverviewKpiStrip } from '@/components/creator/overview/OverviewKpiStrip';
+import { OverviewRecentPicks } from '@/components/creator/overview/OverviewRecentPicks';
+import { OverviewEarningsChart } from '@/components/creator/overview/OverviewEarningsChart';
+import { OverviewProgressRing } from '@/components/creator/overview/OverviewProgressRing';
+import { OverviewQuickActions } from '@/components/creator/overview/OverviewQuickActions';
+import { OverviewRecentSubscribers } from '@/components/creator/overview/OverviewRecentSubscribers';
+import { OverviewMessagesPanel } from '@/components/creator/overview/OverviewMessagesPanel';
+import { OverviewTopPicks } from '@/components/creator/overview/OverviewTopPicks';
+import { safeGetItem, safeSetItem } from '@/lib/safeStorage';
 import {
-  GameMatchupCard,
-  countPicksForMatchup,
-} from '@/components/discover/GameMatchupCard';
-import { toast } from 'sonner';
+  CREATOR_OVERVIEW_DEMO,
+  shouldUseCreatorOverviewDemo,
+} from '@/lib/creatorOverviewDemo';
 
-interface PickEntry {
-  id: string;
-  result: string;
-  units_won_lost: number | null;
-  units_risked: number;
-  sport: string;
-  date: string;
-  pick_event: string;
+const MOMENTUM_DISMISS_KEY = 'prizelet.creator.momentumBanner.dismissed';
+
+function uiPickResult(result: string): 'win' | 'loss' | 'push' | 'pending' {
+  if (result === 'won' || result === 'win') return 'win';
+  if (result === 'lost' || result === 'loss') return 'loss';
+  if (result === 'push') return 'push';
+  return 'pending';
 }
 
-function uiPickResult(result: string): string {
-  if (result === 'won') return 'win';
-  if (result === 'lost') return 'loss';
-  return result;
+function profitLabel(units: number | null, result: string): { label: string; positive?: boolean } {
+  if (result === 'pending' || units == null) return { label: '—' };
+  const sign = units > 0 ? '+' : '';
+  return {
+    label: `${sign}${units.toFixed(2)}u`,
+    positive: units > 0,
+  };
 }
 
 const CreatorDashboard = () => {
+  const [searchParams] = useSearchParams();
   const creator = useQuery(api.creators.queries.myCreator);
   const subs = useQuery(api.subscriptions.mutations.listForMyCreator);
   const postsRaw = useQuery(api.posts.queries.listMine);
-  const products = useQuery(
-    api.products.mutations.listByCreator,
-    creator ? { creatorId: creator._id } : 'skip',
-  );
   const picksRaw = useQuery(api.picks.mutations.listMine);
   const earnings = useQuery(api.creators.earnings.myEarnings);
-  const dayBounds = useMemo(() => todayBoundsMs(), []);
-  const eventsRaw = useQuery(api.events.queries.listPublishedToday, dayBounds);
-  const seedTodayDev = useMutation(api.events.queries.seedTodayDev);
+  const inbox = useQuery(api.messaging.mutations.myCreatorInbox);
+  const { results: recentSubRows, status: subsPageStatus } = usePaginatedQuery(
+    api.subscriptions.mutations.listSubscribersDetailedPage,
+    {},
+    { initialNumItems: 5 },
+  );
+
+  const [momentumDismissed, setMomentumDismissed] = useState(
+    () => safeGetItem(MOMENTUM_DISMISS_KEY) === '1',
+  );
+  const forceDemo = searchParams.get('demo') === '1';
+  const disableDemo = searchParams.get('demo') === '0';
 
   const loading =
     creator === undefined ||
@@ -62,400 +78,377 @@ const CreatorDashboard = () => {
     postsRaw === undefined ||
     picksRaw === undefined ||
     earnings === undefined ||
-    (creator !== null && products === undefined);
-
-  const posts = useMemo(
-    () =>
-      (postsRaw ?? []).slice(0, 5).map((p) => ({
-        id: p._id,
-        title: p.title,
-        is_premium: p.isPremium,
-        created_at: new Date(p.createdAt).toISOString(),
-      })),
-    [postsRaw],
-  );
+    inbox === undefined ||
+    subsPageStatus === 'LoadingFirstPage';
 
   const picks = useMemo(
     () =>
       (picksRaw ?? []).map((p) => ({
         id: p._id,
         date: p.date,
-        pick_event: p.pickEvent,
+        pickEvent: p.pickEvent,
         sport: p.sport,
-        units_risked: p.unitsRisked,
+        unitsRisked: p.unitsRisked,
         result: uiPickResult(p.result),
-        units_won_lost: p.unitsWonLost ?? null,
-      })) as PickEntry[],
+        unitsWonLost: p.unitsWonLost ?? null,
+      })),
     [picksRaw],
   );
 
-  const todaysGames = useMemo(
-    () => (eventsRaw ?? []).map(mapConvexSportEvent).slice(0, 6),
-    [eventsRaw],
-  );
-
-  const subCount = (subs ?? []).filter((s) => s.status === 'active').length;
-  const activeMrrNet = (earnings?.netCents ?? 0) / 100;
-  const postCount = postsRaw?.length ?? 0;
-  const productCount = products?.length ?? 0;
-  const creatorUsername = creator?.username ?? null;
-  const isVerified = creator?.verificationStatus === 'verified';
-
-  const perfStats = useMemo(() => {
+  const perf = useMemo(() => {
     const { wins, winRatePct, decided } = computeWinRate(picks.map((p) => p.result));
-    const totalWonLost = picks.reduce((s, p) => s + (p.units_won_lost || 0), 0);
-    const decidedPicks = picks.filter((p) => p.result === 'win' || p.result === 'loss');
-    const totalRisked = decidedPicks.reduce((s, p) => s + (p.units_risked || 0), 0);
-    const roi = totalRisked > 0 ? Math.round((totalWonLost / totalRisked) * 100) : 0;
-    return { totalPicks: picks.length, wins, totalWonLost, winRate: winRatePct, roi, settled: decided };
+    const totalWonLost = picks.reduce((s, p) => s + (p.unitsWonLost || 0), 0);
+    return { wins, winRate: winRatePct, settled: decided, totalWonLost };
   }, [picks]);
 
-  const verification = useMemo(() => {
+  /** Honest month-over-month from earnings.monthly when ≥2 months exist. */
+  const revenueTrend = useMemo(() => {
+    const monthly = earnings?.monthly ?? [];
+    if (monthly.length < 2) return undefined;
+    const last = monthly[monthly.length - 1]!;
+    const prev = monthly[monthly.length - 2]!;
+    if (prev.revenueCents <= 0) return undefined;
+    const delta = ((last.revenueCents - prev.revenueCents) / prev.revenueCents) * 100;
+    if (!Number.isFinite(delta)) return undefined;
+    const rounded = Math.round(delta);
+    if (rounded === 0) return undefined;
+    return {
+      label: `${rounded > 0 ? '↑' : '↓'} ${Math.abs(rounded)}%`,
+      positive: rounded > 0,
+    };
+  }, [earnings?.monthly]);
+
+  const activeSubs = (subs ?? []).filter((s) => s.status === 'active');
+  const realPostCount = postsRaw?.length ?? 0;
+  const realMrrNet = (earnings?.netCents ?? 0) / 100;
+  const displayName =
+    creator?.displayName?.trim() ||
+    (creator?.username ? creator.username : 'creator');
+
+  const useDemo =
+    !disableDemo &&
+    (forceDemo ||
+      shouldUseCreatorOverviewDemo({
+        postCount: realPostCount,
+        settledPicks: perf.settled,
+        activeSubscribers: activeSubs.length,
+        netCents: earnings?.netCents ?? 0,
+        pickCount: picks.length,
+      }));
+
+  const demo = CREATOR_OVERVIEW_DEMO;
+  const postCount = useDemo ? demo.postCount : realPostCount;
+  const mrrNet = useDemo ? demo.mrrNet : realMrrNet;
+  const winRateValue = useDemo
+    ? `${demo.winRatePct}%`
+    : perf.settled > 0
+      ? `${perf.winRate}%`
+      : '—';
+  const activeSubCount = useDemo ? demo.activeSubscribers : activeSubs.length;
+  const displayRevenueTrend = useDemo ? demo.revenueTrend : revenueTrend;
+
+  const recentPickRows = useMemo(() => {
+    if (useDemo) return [...demo.recentPicks];
+    return [...picks]
+      .sort((a, b) => b.date.localeCompare(a.date))
+      .slice(0, 5)
+      .map((p) => {
+        const profit = profitLabel(p.unitsWonLost, p.result);
+        return {
+          id: p.id,
+          dateLabel: p.date,
+          event: p.pickEvent || 'Pick',
+          sport: p.sport || 'Other',
+          result: p.result,
+          profitLabel: profit.label,
+          profitPositive: profit.positive,
+        };
+      });
+  }, [demo.recentPicks, picks, useDemo]);
+
+  const earningsBars = useMemo(() => {
+    if (useDemo) return [...demo.earningsBars];
+    const monthly = earnings?.monthly ?? [];
+    const last = monthly.slice(-6);
+    return last.map((m) => ({
+      label: m.month.length >= 7 ? m.month.slice(5) : m.month,
+      valueCents: m.revenueCents,
+    }));
+  }, [demo.earningsBars, earnings?.monthly, useDemo]);
+
+  const verificationPct = useMemo(() => {
+    if (useDemo) return demo.verificationPercent;
     const minPicks = 50;
-    const progress = Math.min(100, Math.round((perfStats.settled / minPicks) * 100));
-    return { progress, settled: perfStats.settled, minPicks };
-  }, [perfStats]);
+    return Math.min(100, Math.round((perf.settled / minPicks) * 100));
+  }, [demo.verificationPercent, perf.settled, useDemo]);
+
+  const recentSubscribers = useMemo(() => {
+    if (useDemo) return [...demo.recentSubscribers];
+    return (recentSubRows ?? []).slice(0, 5).map((s) => {
+      const name = s.user?.fullName || s.user?.username || s.user?.email || 'Subscriber';
+      const tierLabel =
+        s.status === 'active'
+          ? s.amountCents >= 5000
+            ? 'VIP'
+            : 'Monthly'
+          : s.status;
+      const tierTone =
+        s.status !== 'active'
+          ? ('default' as const)
+          : s.amountCents >= 5000
+            ? ('vip' as const)
+            : ('monthly' as const);
+      return {
+        id: s._id,
+        name,
+        whenLabel: formatDistanceToNowStrict(new Date(s.createdAt), { addSuffix: true }),
+        tierLabel,
+        tierTone,
+      };
+    });
+  }, [demo.recentSubscribers, recentSubRows, useDemo]);
+
+  const messageRows = useMemo(() => {
+    if (useDemo) return [...demo.messages];
+    const rows = inbox ?? [];
+    // Group by subscriber — show latest per thread
+    const bySub = new Map<
+      string,
+      { id: string; body: string; createdAt: number; unread: number; subscriberId: string }
+    >();
+    for (const m of rows) {
+      const key = m.subscriberId;
+      const existing = bySub.get(key);
+      const unreadInc = m.senderRole === 'subscriber' && !m.read ? 1 : 0;
+      if (!existing || m.createdAt > existing.createdAt) {
+        bySub.set(key, {
+          id: m._id,
+          body: m.body,
+          createdAt: m.createdAt,
+          unread: (existing?.unread ?? 0) + unreadInc,
+          subscriberId: m.subscriberId,
+        });
+      } else if (unreadInc) {
+        existing.unread += unreadInc;
+      }
+    }
+    return [...bySub.values()]
+      .sort((a, b) => b.createdAt - a.createdAt)
+      .slice(0, 4)
+      .map((t) => ({
+        id: t.id,
+        name: 'Subscriber',
+        preview: t.body,
+        whenLabel: formatDistanceToNowStrict(new Date(t.createdAt), { addSuffix: true }),
+        unread: t.unread,
+      }));
+  }, [demo.messages, inbox, useDemo]);
+
+  const topPicks = useMemo(() => {
+    if (useDemo) return [...demo.topPicks];
+    const settled = picks.filter((p) => p.result === 'win' || p.result === 'loss');
+    const groups = new Map<
+      string,
+      { label: string; wins: number; decided: number; units: number }
+    >();
+    for (const p of settled) {
+      const key = `${p.sport}|${p.pickEvent}`.toLowerCase();
+      const g = groups.get(key) ?? {
+        label: p.pickEvent || p.sport || 'Pick',
+        wins: 0,
+        decided: 0,
+        units: 0,
+      };
+      g.decided += 1;
+      if (p.result === 'win') g.wins += 1;
+      g.units += p.unitsWonLost ?? 0;
+      groups.set(key, g);
+    }
+    return [...groups.entries()]
+      .map(([id, g]) => ({
+        id,
+        label: g.label,
+        winRateLabel: `${Math.round((g.wins / Math.max(g.decided, 1)) * 100)}% win · ${g.decided} settled`,
+        profitLabel: `${g.units > 0 ? '+' : ''}${g.units.toFixed(1)}u`,
+        units: g.units,
+      }))
+      .sort((a, b) => b.units - a.units)
+      .slice(0, 4)
+      .map(({ id, label, winRateLabel, profitLabel }) => ({
+        id,
+        label,
+        winRateLabel,
+        profitLabel,
+      }));
+  }, [demo.topPicks, picks, useDemo]);
+
+  const showMomentum =
+    !momentumDismissed && displayRevenueTrend?.positive === true;
 
   if (loading) {
     return (
       <DashboardLayout type="creator">
-        <div className="flex justify-center py-20">
-          <Loader2 className="h-5 w-5 animate-spin text-primary" />
+        <div className="flex justify-center py-24" aria-busy="true">
+          <Loader2 className="h-6 w-6 animate-spin text-primary" />
         </div>
       </DashboardLayout>
     );
   }
 
-  if (!creator) {
+  if (creator === null) {
     return (
       <DashboardLayout type="creator">
-        <p className="text-base text-secondary-foreground">Creator profile not found.</p>
+        <div className="rounded-2xl border border-border bg-card p-8 text-center">
+          <p className="text-base font-bold text-foreground">Finish creator setup</p>
+          <p className="mt-2 text-sm text-muted-foreground">
+            Create your creator profile to unlock the dashboard.
+          </p>
+          <Link to="/creator/onboarding" className="mt-4 inline-block text-sm font-bold text-primary">
+            Continue onboarding
+          </Link>
+        </div>
       </DashboardLayout>
     );
   }
 
-  const pendingPosts = (postsRaw ?? []).filter((p) => !p.result || p.result === 'pending').length;
-  const tasks: { href: string; label: string }[] = [];
-  if (!creator.isPublished) {
-    tasks.push({ href: '/creator/onboarding', label: 'Finish setup and publish your profile' });
-  }
-  if (!creator.monthlyPriceCents && productCount === 0) {
-    tasks.push({ href: '/creator/products', label: 'Set a subscription price or product' });
-  }
-  if (pendingPosts > 0) {
-    tasks.push({
-      href: '/creator/posts',
-      label: `${pendingPosts} published pick${pendingPosts === 1 ? '' : 's'} still pending settlement`,
-    });
-  }
-  if (!creator.stripeAccountId) {
-    tasks.push({ href: '/creator/payouts', label: 'Complete payout setup' });
-  }
-
-  const kpis = [
-    { label: 'Subscribers', value: String(subCount) },
-    { label: 'Active MRR net', value: `$${activeMrrNet.toFixed(0)}` },
-    { label: 'Posts', value: String(postCount) },
-    { label: 'Products', value: String(productCount) },
-  ];
-
-  const valColor = (v: number) =>
-    v > 0 ? 'text-emerald-600 dark:text-emerald-400' : v < 0 ? 'text-destructive' : 'text-secondary-foreground';
-
-  const handleSeedGames = async () => {
-    try {
-      const res = await seedTodayDev(dayBounds);
-      if (res.skipped) {
-        toast.message('Today’s slate already has games');
-      } else {
-        toast.success(`Seeded ${res.inserted} games for today (dev only)`);
-      }
-    } catch {
-      toast.error('Dev seed unavailable — set ALLOW_DEV_ADMIN_GRANT=true on Convex');
-    }
-  };
+  const todayLabel = format(new Date(), 'EEEE, MMM d, yyyy');
 
   return (
     <DashboardLayout type="creator">
       <Seo
-        title="Creator dashboard — Prizelet"
-        description="Your Prizelet creator dashboard: games slate, publish tools, and performance."
+        title="Creator overview — Prizelet"
+        description="Your Prizelet creator overview: picks, earnings, subscribers, and performance."
       />
 
-      <header className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-        <div className="min-w-0">
-          <h1 className="flex flex-wrap items-center gap-2 text-3xl font-bold tracking-tight text-foreground sm:text-4xl">
-            Dashboard
-            {isVerified && (
-              <span className="inline-flex items-center gap-1 rounded-full border border-emerald-500/25 bg-emerald-500/10 px-2.5 py-0.5 text-xs font-semibold text-emerald-700 dark:text-emerald-400">
-                <ShieldCheck className="h-3 w-3" aria-hidden />
-                Verified
-              </span>
-            )}
-          </h1>
-          <p className="mt-2 text-base text-secondary-foreground">
-            {creatorUsername ? `Welcome back, @${creatorUsername}` : 'Welcome back'}
-          </p>
-        </div>
-        <div className="flex flex-wrap gap-2">
-          <Button asChild variant="outline">
-            <Link to={creatorProfilePath(creator.username)}>View profile</Link>
-          </Button>
-          <Button asChild>
-            <Link to="/creator/posts" className="gap-1.5">
-              <Plus className="h-4 w-4" aria-hidden />
-              Publish post
-            </Link>
-          </Button>
-        </div>
+      <header className="mb-6 sm:mb-8">
+        <p className="text-xs font-bold uppercase tracking-wide text-muted-foreground">{todayLabel}</p>
+        <h1 className="mt-1 text-2xl font-extrabold tracking-tight text-foreground sm:text-3xl md:text-4xl">
+          Welcome back, {displayName}!
+        </h1>
+        <p className="mt-2 text-sm font-medium text-muted-foreground sm:text-base">
+          Here’s your overview. Keep the momentum going.
+        </p>
       </header>
 
-      {tasks.length > 0 && (
-        <section className="mb-8 rounded-2xl border border-border bg-card p-5">
-          <h2 className="mb-3 text-xs font-semibold uppercase tracking-wide text-secondary-foreground">
-            Next up
-          </h2>
-          <ul className="space-y-2">
-            {tasks.map((t) => (
-              <li key={t.href + t.label}>
-                <Link
-                  to={t.href}
-                  className="inline-flex items-center gap-1.5 text-base font-medium text-foreground hover:text-primary"
-                >
-                  {t.label}
-                  <ArrowRight className="h-4 w-4 shrink-0 opacity-70" aria-hidden />
-                </Link>
-              </li>
-            ))}
-          </ul>
-        </section>
-      )}
+      {useDemo ? (
+        <div className="mb-6 flex items-start gap-3 rounded-2xl border border-amber-500/30 bg-amber-500/10 px-4 py-3.5 text-amber-950 dark:text-amber-100 sm:items-center sm:px-5">
+          <Sparkles className="mt-0.5 h-5 w-5 shrink-0 text-amber-600 dark:text-amber-400 sm:mt-0" aria-hidden />
+          <p className="min-w-0 flex-1 text-sm font-semibold leading-snug">
+            Sample preview data — numbers and lists below are mock content for design review, not live
+            account metrics. Add{' '}
+            <span className="font-mono text-xs">?demo=0</span> to see empty real states.
+          </p>
+        </div>
+      ) : null}
 
-      <section className="mb-8 grid grid-cols-2 gap-3 lg:grid-cols-4 lg:gap-4">
-        {kpis.map((stat) => (
-          <div key={stat.label} className="rounded-2xl border border-border bg-card p-5">
-            <p className="text-2xl font-bold tabular-nums tracking-tight text-foreground sm:text-3xl">
-              {stat.value}
-            </p>
-            <p className="mt-1 text-sm font-medium text-secondary-foreground">{stat.label}</p>
-          </div>
-        ))}
-      </section>
+      <div className="mb-6 sm:mb-8">
+        <OverviewKpiStrip
+          items={[
+            {
+              label: 'Posts published',
+              value: String(postCount),
+              icon: FileText,
+              iconClassName: 'bg-violet-500/10 text-violet-600 dark:text-violet-400',
+            },
+            {
+              label: 'Monthly revenue (net)',
+              value: `$${mrrNet.toFixed(0)}`,
+              icon: DollarSign,
+              iconClassName: 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400',
+              trendLabel: displayRevenueTrend?.label,
+              trendPositive: displayRevenueTrend?.positive,
+            },
+            {
+              label: 'Win rate',
+              value: winRateValue,
+              icon: TrendingUp,
+              iconClassName: 'bg-sky-500/10 text-sky-600 dark:text-sky-400',
+            },
+            {
+              label: 'Active subscribers',
+              value: String(activeSubCount),
+              icon: Users,
+              iconClassName: 'bg-amber-500/10 text-amber-700 dark:text-amber-400',
+            },
+          ]}
+        />
+      </div>
 
-      {/* Today's Games */}
-      <section className="mb-8 rounded-2xl border border-border bg-card p-5 sm:p-6">
-        <div className="mb-5 flex flex-wrap items-end justify-between gap-3">
-          <div>
-            <h2 className="text-xl font-bold tracking-tight text-foreground">Today’s Games</h2>
-            <p className="mt-1 text-sm text-secondary-foreground">
-              Live slate — your pick counts only (no invented market bars).
-            </p>
-          </div>
-          <Link
-            to="/discover#todays-games"
-            className="inline-flex items-center gap-1 text-sm font-semibold text-foreground hover:text-primary"
+      <div className="mb-6 grid grid-cols-1 gap-4 xl:grid-cols-12 xl:gap-5">
+        <div className="xl:col-span-5">
+          <OverviewRecentPicks rows={recentPickRows} />
+        </div>
+        <div className="xl:col-span-4">
+          <OverviewEarningsChart
+            totalLabel={`$${mrrNet.toFixed(0)}`}
+            bars={earningsBars}
+          />
+        </div>
+        <div className="flex flex-col gap-4 xl:col-span-3">
+          <OverviewProgressRing
+            percent={
+              useDemo
+                ? demo.verificationPercent
+                : creator.verificationStatus === 'verified' && creator.isPublished
+                  ? 100
+                  : Math.max(verificationPct, creator.isPublished ? 60 : 25)
+            }
+            title={
+              useDemo
+                ? demo.verificationTitle
+                : creator.verificationStatus === 'verified'
+                  ? 'Verified creator'
+                  : creator.isPublished
+                    ? 'Published profile'
+                    : 'Profile setup'
+            }
+            detail={
+              useDemo
+                ? demo.verificationDetail
+                : creator.verificationStatus === 'verified'
+                  ? 'You’re verified on Prizelet.'
+                  : `${perf.settled}/50 settled picks toward verification readiness.`
+            }
+            href="/creator/settings"
+            ctaLabel="View plan"
+          />
+          <OverviewQuickActions
+            actions={[
+              { label: 'Create New Pick', href: '/creator/posts', icon: PenLine },
+              { label: 'Share Promo Code', href: '/creator/promo', icon: Megaphone },
+              { label: 'Message Subscribers', href: '/creator/messages', icon: MessageSquare },
+              { label: 'View Analytics', href: '/creator/performance-tracker', icon: BarChart3 },
+            ]}
+          />
+        </div>
+      </div>
+
+      {showMomentum ? (
+        <div className="mb-6 flex items-start gap-3 rounded-2xl bg-primary px-4 py-3.5 text-primary-foreground sm:items-center sm:px-5">
+          <Rocket className="mt-0.5 h-5 w-5 shrink-0 sm:mt-0" aria-hidden />
+          <p className="min-w-0 flex-1 text-sm font-semibold leading-snug">
+            You’re on a roll! Net earnings are up{' '}
+            {displayRevenueTrend?.label.replace(/^[↑↓]\s*/, '')} vs the prior month.
+          </p>
+          <button
+            type="button"
+            aria-label="Dismiss"
+            className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg hover:bg-white/15"
+            onClick={() => {
+              safeSetItem(MOMENTUM_DISMISS_KEY, '1');
+              setMomentumDismissed(true);
+            }}
           >
-            Browse games
-            <ArrowRight className="h-4 w-4" aria-hidden />
-          </Link>
+            <X className="h-4 w-4" />
+          </button>
         </div>
+      ) : null}
 
-        {eventsRaw === undefined ? (
-          <div className="flex justify-center py-12" aria-busy="true">
-            <Loader2 className="h-5 w-5 animate-spin text-primary" />
-          </div>
-        ) : todaysGames.length === 0 ? (
-          <div className="rounded-xl border border-dashed border-border px-4 py-12 text-center">
-            <p className="text-base font-semibold text-foreground">No games published today</p>
-            <p className="mt-1 text-sm text-secondary-foreground">
-              When the slate is live, matchups appear here with your pick counts.
-            </p>
-            {import.meta.env.DEV ? (
-              <Button type="button" variant="outline" className="mt-5" onClick={() => void handleSeedGames()}>
-                Seed today’s slate (dev)
-              </Button>
-            ) : null}
-          </div>
-        ) : (
-          <ul className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
-            {todaysGames.map((event) => {
-              const yourPickCount = countPicksForMatchup(
-                picks.map((p) => ({ pickEvent: p.pick_event, sport: p.sport })),
-                event,
-              );
-              return (
-                <li key={event.id} className="list-none">
-                  <GameMatchupCard
-                    event={event}
-                    yourPickCount={yourPickCount}
-                    actionHref="/creator/performance-tracker"
-                    actionLabel={yourPickCount > 0 ? 'View' : 'Track pick'}
-                  />
-                </li>
-              );
-            })}
-          </ul>
-        )}
-      </section>
-
-      {/* Discover / Publish strip */}
-      <section className="mb-8 grid gap-4 md:grid-cols-2">
-        <div className="rounded-2xl border border-border bg-card p-5 sm:p-6">
-          <div className="mb-2 flex items-center gap-2">
-            <Compass className="h-4 w-4 text-primary" aria-hidden />
-            <h2 className="text-lg font-bold tracking-tight text-foreground">Discover</h2>
-          </div>
-          <p className="mb-4 text-sm leading-relaxed text-secondary-foreground">
-            Browse the public creator directory and today’s full games slate.
-          </p>
-          <Button asChild variant="outline">
-            <Link to="/discover">Open Discover</Link>
-          </Button>
-        </div>
-        <div className="rounded-2xl border border-border bg-card p-5 sm:p-6">
-          <div className="mb-2 flex items-center gap-2">
-            <Plus className="h-4 w-4 text-primary" aria-hidden />
-            <h2 className="text-lg font-bold tracking-tight text-foreground">Publish</h2>
-          </div>
-          <p className="mb-4 text-sm leading-relaxed text-secondary-foreground">
-            Ship a post or update products and pricing for subscribers.
-          </p>
-          <div className="flex flex-wrap gap-2">
-            <Button asChild>
-              <Link to="/creator/posts">Create post</Link>
-            </Button>
-            <Button asChild variant="outline">
-              <Link to="/creator/products">Products & pricing</Link>
-            </Button>
-          </div>
-        </div>
-      </section>
-
-      {/* Recent posts + performance */}
-      <section className="mb-6 grid grid-cols-1 gap-6 md:grid-cols-2">
-        <div className="min-w-0">
-          <div className="mb-3 flex items-center justify-between gap-2">
-            <h2 className="text-sm font-semibold uppercase tracking-wide text-secondary-foreground">
-              Recent posts
-            </h2>
-            {posts.length > 0 && (
-              <Link
-                to="/creator/posts"
-                className="inline-flex items-center gap-1 text-sm font-semibold text-foreground hover:text-primary"
-              >
-                All posts <ArrowRight className="h-3.5 w-3.5" aria-hidden />
-              </Link>
-            )}
-          </div>
-
-          {posts.length === 0 ? (
-            <div className="rounded-2xl border border-border bg-card p-6 text-center">
-              <FileText className="mx-auto mb-3 h-8 w-8 text-secondary-foreground" aria-hidden />
-              <h3 className="mb-1 text-base font-semibold text-foreground">No posts yet</h3>
-              <p className="mx-auto mb-4 max-w-xs text-sm text-secondary-foreground">
-                Publish your first post to start engaging subscribers.
-              </p>
-              <Button asChild size="sm">
-                <Link to="/creator/posts">
-                  <Plus className="mr-1.5 h-3.5 w-3.5" aria-hidden /> Publish
-                </Link>
-              </Button>
-            </div>
-          ) : (
-            <ul className="space-y-2">
-              {posts.map((post) => (
-                <li key={post.id}>
-                  <Link
-                    to="/creator/posts"
-                    className="flex items-center justify-between gap-4 rounded-2xl border border-border bg-card p-4 transition-colors hover:border-foreground/25"
-                  >
-                    <div className="flex min-w-0 items-center gap-3">
-                      <div
-                        className={`h-2 w-2 shrink-0 rounded-full ${
-                          post.is_premium ? 'bg-primary' : 'bg-muted-foreground/40'
-                        }`}
-                        aria-hidden
-                      />
-                      <div className="min-w-0">
-                        <p className="truncate text-sm font-semibold text-foreground">{post.title}</p>
-                        <p className="text-xs text-secondary-foreground">
-                          {post.is_premium ? 'Premium' : 'Free'} ·{' '}
-                          {format(new Date(post.created_at), 'MMM d')}
-                        </p>
-                      </div>
-                    </div>
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          )}
-        </div>
-
-        <div className="min-w-0">
-          {picks.length > 0 ? (
-            <div className="rounded-2xl border border-border bg-card p-5">
-              <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
-                <h2 className="flex items-center gap-1.5 text-sm font-semibold uppercase tracking-wide text-secondary-foreground">
-                  <BarChart3 className="h-3.5 w-3.5" aria-hidden /> Play performance
-                </h2>
-                <Link
-                  to="/creator/performance-tracker"
-                  className="inline-flex items-center gap-1 text-sm font-semibold text-foreground hover:text-primary"
-                >
-                  Full tracker <ArrowRight className="h-3.5 w-3.5" aria-hidden />
-                </Link>
-              </div>
-              <p className="mb-4 text-xs text-secondary-foreground">
-                Tracker picks only — settled Create Post results are separate.
-              </p>
-              <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
-                <div>
-                  <p className="text-xs uppercase tracking-wide text-secondary-foreground">Net</p>
-                  <p className={`text-lg font-bold tabular-nums ${valColor(perfStats.totalWonLost)}`}>
-                    {perfStats.totalWonLost > 0 ? '+' : ''}
-                    {perfStats.totalWonLost.toFixed(1)}u
-                  </p>
-                </div>
-                <div>
-                  <p className="text-xs uppercase tracking-wide text-secondary-foreground">Win rate</p>
-                  <p className="text-lg font-bold tabular-nums text-foreground">{perfStats.winRate}%</p>
-                </div>
-                <div>
-                  <p className="text-xs uppercase tracking-wide text-secondary-foreground">Picks</p>
-                  <p className="text-lg font-bold tabular-nums text-foreground">{perfStats.totalPicks}</p>
-                </div>
-              </div>
-            </div>
-          ) : (
-            <div className="rounded-2xl border border-border bg-card p-6 text-center">
-              <Target className="mx-auto mb-3 h-8 w-8 text-secondary-foreground" aria-hidden />
-              <h3 className="mb-1 text-base font-semibold text-foreground">Track your plays</h3>
-              <p className="mx-auto mb-4 max-w-xs text-sm text-secondary-foreground">
-                Log practice picks in Play performance to unlock win rate and ROI.
-              </p>
-              <Button asChild variant="outline" size="sm">
-                <Link to="/creator/performance-tracker">Open tracker</Link>
-              </Button>
-            </div>
-          )}
-
-          {!isVerified && picks.length > 0 && (
-            <div className="mt-4 rounded-2xl border border-border bg-card p-4">
-              <div className="mb-2 flex flex-wrap items-center gap-2">
-                <Target className="h-4 w-4 shrink-0 text-secondary-foreground" aria-hidden />
-                <p className="text-sm font-medium text-foreground">Tracker eligibility</p>
-                <span className="text-xs text-secondary-foreground sm:ml-auto">
-                  {verification.settled}/{verification.minPicks} settled
-                </span>
-              </div>
-              <Progress value={verification.progress} className="mb-1.5 h-1.5" />
-              <p className="text-xs text-secondary-foreground">
-                Verified badge is granted by the platform, not automatically.
-              </p>
-            </div>
-          )}
-        </div>
-      </section>
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3 xl:gap-5">
+        <OverviewRecentSubscribers rows={recentSubscribers} />
+        <OverviewMessagesPanel rows={messageRows} />
+        <OverviewTopPicks rows={topPicks} />
+      </div>
     </DashboardLayout>
   );
 };
