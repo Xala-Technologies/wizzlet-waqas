@@ -40,6 +40,11 @@ describe("isAuthOriginAligned", () => {
     vi.stubEnv("VITE_SITE_URL", "https://www.prizelet.com/");
     expect(configuredAuthOrigin()).toBe("https://www.prizelet.com");
   });
+
+  it("trims whitespace/newlines from VITE_SITE_URL", () => {
+    vi.stubEnv("VITE_SITE_URL", "https://www.prizelet.com\n");
+    expect(configuredAuthOrigin()).toBe("https://www.prizelet.com");
+  });
 });
 
 describe("ensureCanonicalAuthOrigin", () => {

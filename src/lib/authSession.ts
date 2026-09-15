@@ -65,6 +65,14 @@ export function useConvexAuthReady() {
   return ref;
 }
 
+/** Configured public app origin (Convex SITE_URL / VITE_SITE_URL), or null if unset. */
+export function configuredAuthOrigin(): string | null {
+  const configured = (import.meta.env.VITE_SITE_URL as string | undefined)
+    ?.trim()
+    .replace(/\/$/, "");
+  return configured || null;
+}
+
 /**
  * OAuth return URL for Convex Auth.
  * Must match the Convex deployment `SITE_URL` origin exactly.
@@ -74,24 +82,12 @@ export function useConvexAuthReady() {
  */
 export function authCallbackUrl(path = "/auth/callback"): string {
   const normalized = path.startsWith("/") ? path : `/${path}`;
-  const configured = (import.meta.env.VITE_SITE_URL as string | undefined)?.replace(
-    /\/$/,
-    "",
-  );
+  const configured = configuredAuthOrigin();
   if (configured) {
     return `${configured}${normalized}`;
   }
   if (typeof window === "undefined") return path;
   return `${window.location.origin}${normalized}`;
-}
-
-/** Configured public app origin (Convex SITE_URL / VITE_SITE_URL), or null if unset. */
-export function configuredAuthOrigin(): string | null {
-  const configured = (import.meta.env.VITE_SITE_URL as string | undefined)?.replace(
-    /\/$/,
-    "",
-  );
-  return configured || null;
 }
 
 /** True when the browser origin matches configured auth SITE_URL (local hygiene). */
@@ -112,6 +108,13 @@ export function ensureCanonicalAuthOrigin(): boolean {
   if (typeof window === "undefined") return false;
   const configured = configuredAuthOrigin();
   if (!configured || window.location.origin === configured) return false;
+  // Never bounce to a malformed origin (e.g. env value with embedded newline).
+  try {
+    const u = new URL(configured);
+    if (u.origin !== configured) return false;
+  } catch {
+    return false;
+  }
   const next = `${configured}${window.location.pathname}${window.location.search}${window.location.hash}`;
   window.location.replace(next);
   return true;
