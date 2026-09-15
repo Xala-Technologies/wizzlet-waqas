@@ -57,14 +57,12 @@ const providers = [
   ...(socialConfigured.twitter
     ? [
         Twitter({
-          // X OAuth 2 confidential clients expect client_id/secret in the POST body
-          // for the token exchange (PKCE). Basic-auth-only can fail with Server Error
-          // after the user authorizes on x.com.
+          // X confidential clients authenticate the token request with HTTP Basic
+          // (Auth.js default). client_secret_post is rejected by X for many apps.
           client: {
-            token_endpoint_auth_method: "client_secret_post",
+            token_endpoint_auth_method: "client_secret_basic",
           },
-          // Keep Auth.js stock endpoints (api.x.com). Do not override userinfo with
-          // elevated fields like confirmed_email — that breaks /2/users/me.
+          // Stock api.x.com userinfo — do not request confirmed_email (breaks /users/me).
           userinfo:
             "https://api.x.com/2/users/me?user.fields=profile_image_url,description",
           profile(twitterProfile) {

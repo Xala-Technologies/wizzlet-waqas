@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
+import { useAuthActions } from '@convex-dev/auth/react';
 import { useConvex, useConvexAuth, useMutation } from 'convex/react';
 import { api } from '../../convex/_generated/api';
 import { useAuth } from '@/contexts/AuthContext';
@@ -25,21 +26,51 @@ const AuthCallback = () => {
   const navigate = useNavigate();
   const convex = useConvex();
   const [searchParams] = useSearchParams();
+  const { signIn } = useAuthActions();
   const { refreshRole, clearDevBypass } = useAuth();
-  const { isLoading: authLoading } = useConvexAuth();
+  const { isLoading: authLoading, isAuthenticated } = useConvexAuth();
   const authReady = useConvexAuthReady();
   const ensureUser = useMutation(api.users.queries.ensureUser);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(true);
   const runId = useRef(0);
   const autoStarted = useRef(false);
+  // Capture before ConvexAuthProvider strips ?code= via history.replaceState.
+  const oauthCodeRef = useRef<string | null>(
+    typeof window !== 'undefined'
+      ? new URLSearchParams(window.location.search).get('code')
+      : null,
+  );
 
   const finishSignIn = useCallback(async () => {
     const id = ++runId.current;
     setBusy(true);
     setError(null);
     try {
-      await waitForAuthenticated(() => authReady.current);
+      // If OAuth returned a code but we're still logged out, either complete the
+      // exchange (code still in the URL) or surface a clear failure (provider already tried).
+      if (!authReady.current.isAuthenticated && oauthCodeRef.current) {
+        const codeInUrl =
+          searchParams.get('code') ??
+          (typeof window !== 'undefined'
+            ? new URLSearchParams(window.location.search).get('code')
+            : null);
+        if (codeInUrl) {
+          const result = await signIn(undefined, { code: codeInUrl });
+          if (!result.signingIn) {
+            throw new Error(
+              'Social sign-in could not be verified. Start again from the login page (don’t refresh mid-login).',
+            );
+          }
+        } else {
+          throw new Error(
+            'Social sign-in could not be verified. Start again from the login page (don’t refresh mid-login).',
+          );
+        }
+        oauthCodeRef.current = null;
+      }
+
+      await waitForAuthenticated(() => authReady.current, 30_000);
       if (id !== runId.current) return;
       await withAuthRetry(() => ensureUser({})).catch(() => undefined);
       if (id !== runId.current) return;
@@ -78,16 +109,27 @@ const AuthCallback = () => {
     navigate,
     refreshRole,
     searchParams,
+    signIn,
   ]);
 
-  // Wait until Convex Auth finishes the initial OAuth code exchange before starting
-  // (avoids racing an empty session on first paint).
+  // Wait until Convex Auth finishes loading / OAuth code exchange, then finish.
   useEffect(() => {
     if (autoStarted.current) return;
     if (authLoading) return;
     autoStarted.current = true;
+
+    // Provider failed or cancelled: landed on callback with no session and no code.
+    if (!isAuthenticated && !oauthCodeRef.current && !searchParams.get('code')) {
+      const message =
+        'Social sign-in did not complete. Please try again from the login page.';
+      setError(message);
+      setBusy(false);
+      toast.error(message);
+      return;
+    }
+
     void finishSignIn();
-  }, [authLoading, finishSignIn]);
+  }, [authLoading, finishSignIn, isAuthenticated, searchParams]);
 
   return (
     <main id="main-content" className="min-h-screen flex items-center justify-center bg-background px-4">
@@ -101,7 +143,10 @@ const AuthCallback = () => {
               variant="default"
               className="min-h-11"
               disabled={busy}
-              onClick={() => void finishSignIn()}
+              onClick={() => {
+                autoStarted.current = false;
+                void finishSignIn();
+              }}
             >
               {busy ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
               Try again
