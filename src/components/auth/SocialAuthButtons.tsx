@@ -5,7 +5,7 @@ import { api } from '@convex/_generated/api';
 import { Loader2 } from 'lucide-react';
 import { useState } from 'react';
 import { toast } from 'sonner';
-import { authCallbackUrl } from '@/lib/authSession';
+import { authCallbackUrl, ensureCanonicalAuthOrigin } from '@/lib/authSession';
 import { storeReturnTo } from '@/lib/safeReturnPath';
 
 type SocialProvider = 'twitter' | 'discord';
@@ -30,6 +30,8 @@ export function SocialAuthButtons({
   const start = async (provider: SocialProvider) => {
     setPending(provider);
     try {
+      // PKCE verifier is origin-scoped; OAuth must start and finish on SITE_URL.
+      if (ensureCanonicalAuthOrigin()) return;
       storeReturnTo(returnTo);
       // Must match Convex SITE_URL (see VITE_SITE_URL) — not the random Vite preview port.
       await signIn(provider, { redirectTo: authCallbackUrl(redirectTo) });

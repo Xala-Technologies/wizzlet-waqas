@@ -85,13 +85,34 @@ export function authCallbackUrl(path = "/auth/callback"): string {
   return `${window.location.origin}${normalized}`;
 }
 
-/** True when the browser origin matches configured auth SITE_URL (local hygiene). */
-export function isAuthOriginAligned(): boolean {
-  if (typeof window === "undefined") return true;
+/** Configured public app origin (Convex SITE_URL / VITE_SITE_URL), or null if unset. */
+export function configuredAuthOrigin(): string | null {
   const configured = (import.meta.env.VITE_SITE_URL as string | undefined)?.replace(
     /\/$/,
     "",
   );
+  return configured || null;
+}
+
+/** True when the browser origin matches configured auth SITE_URL (local hygiene). */
+export function isAuthOriginAligned(): boolean {
+  if (typeof window === "undefined") return true;
+  const configured = configuredAuthOrigin();
   if (!configured) return true;
   return window.location.origin === configured;
+}
+
+/**
+ * OAuth PKCE verifier lives in localStorage on the start origin. If the app is
+ * opened on apex (prizelet.com) while SITE_URL is www, bounce to www first so
+ * the verifier and the OAuth return land on the same origin.
+ * Returns true when a navigation was triggered (caller should abort).
+ */
+export function ensureCanonicalAuthOrigin(): boolean {
+  if (typeof window === "undefined") return false;
+  const configured = configuredAuthOrigin();
+  if (!configured || window.location.origin === configured) return false;
+  const next = `${configured}${window.location.pathname}${window.location.search}${window.location.hash}`;
+  window.location.replace(next);
+  return true;
 }
