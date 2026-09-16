@@ -4,6 +4,7 @@ import { useMutation, useQuery } from 'convex/react';
 import {
   CartesianGrid,
   Cell,
+  Legend as RechartsLegend,
   Line,
   LineChart,
   Pie,
@@ -14,18 +15,12 @@ import {
   YAxis,
 } from 'recharts';
 import {
-  ArrowRight,
-  Code2,
-  Gift,
-  Lightbulb,
-  Link2,
+  Calendar,
   Loader2,
-  Mail,
   Megaphone,
   MousePointerClick,
   Percent,
   Plus,
-  Share2,
   Sparkles,
   Trash2,
   TrendingUp,
@@ -68,30 +63,44 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { useCreatorProfile } from '@/hooks/useCreatorProfile';
-import { copyToClipboard } from '@/lib/clipboard';
-import { creatorProfilePath } from '@/lib/creatorProfilePath';
 import {
   CREATOR_MARKETING_DEMO_CAMPAIGNS,
-  CREATOR_MARKETING_DEMO_GROWTH,
   CREATOR_MARKETING_DEMO_METRICS,
+  CREATOR_MARKETING_DEMO_PLATFORMS,
+  CREATOR_MARKETING_DEMO_SERIES,
   CREATOR_MARKETING_DEMO_TRAFFIC,
   shouldUseCreatorMarketingDemo,
+  type DemoCampaignRow,
+  type DemoPlatformCard,
 } from '@/lib/creatorMarketingDemo';
 import { kpiIconTone } from '@/lib/kpiIconTones';
 import { cn } from '@/lib/utils';
 
 const THIRTY_DAYS_MS = 30 * 86_400_000;
 
-type CampaignStatus = 'active' | 'paused' | 'ended';
+const MARKETING_TABS = [
+  { id: 'overview', label: 'Overview', kind: 'page' as const },
+  { id: 'promo-codes', label: 'Promo Codes', kind: 'anchor' as const, href: '#promo-codes' },
+  { id: 'links', label: 'Links', kind: 'route' as const, href: '/creator/links' },
+  { id: 'referrals', label: 'Referrals', kind: 'route' as const, href: '/creator/referrals' },
+] as const;
 
-type CampaignRow = {
-  id: string;
-  name: string;
-  channel: string;
-  status: CampaignStatus;
-  reach: number;
-  conversions: number;
-};
+type CampaignStatus = DemoCampaignRow['status'];
+
+function money(cents: number): string {
+  return `$${(cents / 100).toLocaleString(undefined, {
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0,
+  })}`;
+}
+
+function formatShortDate(ms: number): string {
+  return new Date(ms).toLocaleDateString(undefined, {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+  });
+}
 
 function statusPill(status: CampaignStatus): string {
   if (status === 'active') {
@@ -100,7 +109,7 @@ function statusPill(status: CampaignStatus): string {
   if (status === 'paused') {
     return 'border-amber-500/25 bg-amber-500/10 text-amber-700 dark:text-amber-400';
   }
-  return 'border-border bg-muted text-muted-foreground';
+  return 'border-sky-500/25 bg-sky-500/10 text-sky-700 dark:text-sky-400';
 }
 
 const CreatorPromo = () => {
@@ -116,7 +125,7 @@ const CreatorPromo = () => {
   const upsertPromo = useMutation(api.creators.growth.upsertPromo);
   const removePromo = useMutation(api.creators.growth.removePromo);
 
-  const [range, setRange] = useState('30');
+  const [chartGranularity, setChartGranularity] = useState('daily');
   const [createOpen, setCreateOpen] = useState(false);
   const [code, setCode] = useState('');
   const [discount, setDiscount] = useState('15');
@@ -142,6 +151,9 @@ const CreatorPromo = () => {
   const realProfileViews = (analytics ?? []).filter((e) => e.eventType === 'profile_view').length;
   const cutoff = Date.now() - THIRTY_DAYS_MS;
   const realNewSubs = (subs ?? []).filter((s) => s.createdAt >= cutoff).length;
+  const realRevenueCents = (subs ?? [])
+    .filter((s) => s.status === 'active')
+    .reduce((sum, s) => sum + s.amountCents, 0);
 
   const useDemo = shouldUseCreatorMarketingDemo({
     linkClicks: realLinkClicks,
@@ -154,33 +166,21 @@ const CreatorPromo = () => {
   const metrics = useDemo
     ? CREATOR_MARKETING_DEMO_METRICS
     : {
-        newSubscribers: realNewSubs,
-        newSubscribersDelta: null as number | null,
-        profileViews: realProfileViews,
-        profileViewsDelta: null as number | null,
-        linkClicks: realLinkClicks,
-        linkClicksDelta: null as number | null,
-        conversionRate:
-          realLinkClicks > 0
-            ? Math.round((realConversions / realLinkClicks) * 1000) / 10
-            : realProfileViews > 0
-              ? Math.round((realNewSubs / realProfileViews) * 1000) / 10
-              : 0,
-        conversionRateDelta: null as number | null,
+        totalClicks: realLinkClicks,
+        totalClicksDelta: null as number | null,
+        signUps: realNewSubs,
+        signUpsDelta: null as number | null,
+        paidConversions: realConversions,
+        paidConversionsDelta: null as number | null,
+        revenueCents: realRevenueCents,
+        revenueDelta: null as number | null,
+        dateRangeLabel: 'Last 30 days',
       };
 
-  const growthSeries = useMemo(() => {
-    if (useDemo) return CREATOR_MARKETING_DEMO_GROWTH;
-    const active = (subs ?? []).filter((s) => s.status === 'active').length;
-    if (active === 0 && realNewSubs === 0) return [];
-    const base = Math.max(0, active - realNewSubs);
-    return [
-      { label: 'Week 1', subscribers: base },
-      { label: 'Week 2', subscribers: base + Math.round(realNewSubs * 0.3) },
-      { label: 'Week 3', subscribers: base + Math.round(realNewSubs * 0.65) },
-      { label: 'Week 4', subscribers: active },
-    ];
-  }, [useDemo, subs, realNewSubs]);
+  const series = useMemo(() => {
+    if (useDemo) return CREATOR_MARKETING_DEMO_SERIES;
+    return [] as typeof CREATOR_MARKETING_DEMO_SERIES;
+  }, [useDemo]);
 
   const trafficSources = useMemo(() => {
     if (useDemo) return CREATOR_MARKETING_DEMO_TRAFFIC;
@@ -192,41 +192,57 @@ const CreatorPromo = () => {
       {
         name: 'Tracking links',
         value: Math.round((linkShare / total) * 100) || (linkShare > 0 ? 1 : 0),
-        color: 'hsl(239 84% 67%)',
+        color: 'hsl(217 91% 60%)',
       },
       {
         name: 'Profile views',
         value: Math.round((directShare / total) * 100) || (directShare > 0 ? 1 : 0),
-        color: 'hsl(199 89% 48%)',
+        color: 'hsl(280 70% 55%)',
       },
     ].filter((s) => s.value > 0);
   }, [useDemo, linkRows.length, realLinkClicks, realProfileViews]);
 
-  const campaigns: CampaignRow[] = useMemo(() => {
+  const platforms: DemoPlatformCard[] = useMemo(() => {
+    if (useDemo) return CREATOR_MARKETING_DEMO_PLATFORMS;
+    if (realLinkClicks <= 0) return [];
+    return [
+      {
+        id: 'links',
+        name: 'Tracking links',
+        clicks: realLinkClicks,
+        delta: 0,
+        tone: 'bg-violet-500/15 text-violet-700 dark:text-violet-400',
+        href: '/creator/links',
+      },
+    ];
+  }, [useDemo, realLinkClicks]);
+
+  const campaigns: DemoCampaignRow[] = useMemo(() => {
     if (useDemo) return CREATOR_MARKETING_DEMO_CAMPAIGNS;
-    const fromPromos: CampaignRow[] = promoRows.slice(0, 4).map((p) => ({
+    const fromPromos: DemoCampaignRow[] = promoRows.slice(0, 4).map((p) => ({
       id: p._id,
+      dateLabel: formatShortDate(p._creationTime),
+      type: 'Promo Code' as const,
       name: p.code,
-      channel: 'Promo code',
-      status: p.isActive ? 'active' : 'paused',
-      reach: p.maxUses ?? p.usedCount * 4,
+      clicks: p.usedCount * 4,
+      signUps: p.usedCount,
       conversions: p.usedCount,
+      revenueCents: 0,
+      status: p.isActive ? ('active' as const) : ('paused' as const),
     }));
-    const fromLinks: CampaignRow[] = linkRows.slice(0, 4).map((l) => ({
+    const fromLinks: DemoCampaignRow[] = linkRows.slice(0, 4).map((l) => ({
       id: l._id,
+      dateLabel: formatShortDate(l._creationTime),
+      type: 'Link' as const,
       name: l.name,
-      channel: 'Tracking link',
-      status: 'active' as const,
-      reach: l.clicks,
+      clicks: l.clicks,
+      signUps: Math.max(0, l.conversions),
       conversions: l.conversions,
+      revenueCents: 0,
+      status: 'active' as const,
     }));
     return [...fromPromos, ...fromLinks].slice(0, 6);
   }, [useDemo, promoRows, linkRows]);
-
-  const profileUrl =
-    creator?.username != null && creator.username.trim()
-      ? `${typeof window !== 'undefined' ? window.location.origin : ''}${creatorProfilePath(creator.username)}`
-      : '';
 
   const reviewCode = code.trim().toUpperCase() || 'CODE';
   const reviewDiscount = Number(discount);
@@ -237,22 +253,6 @@ const CreatorPromo = () => {
     duration === 'forever' ? 'Forever' : 'Once',
     maxUses.trim() ? `max ${maxUses.trim()}` : 'unlimited',
   ].filter(Boolean);
-
-  const copyProfileLink = async () => {
-    if (!profileUrl) {
-      toast.error('Set a username on your profile first');
-      return;
-    }
-    const ok = await copyToClipboard(profileUrl);
-    if (ok) toast.success('Profile link copied');
-    else toast.error('Could not copy — try selecting the text manually');
-  };
-
-  const comingSoon = (label: string) => {
-    toast.message(`${label} coming soon`, {
-      description: 'This marketing tool is not live yet — use Shareable Link or Referrals for now.',
-    });
-  };
 
   const handleCreate = async () => {
     if (!creator || saving) return;
@@ -350,14 +350,9 @@ const CreatorPromo = () => {
     return (
       <DashboardLayout type="creator">
         <header className="mb-6">
-          <p className="text-caption font-semibold uppercase tracking-[0.14em] text-muted-foreground">
-            Marketing
-          </p>
-          <h1 className="mt-1 text-heading font-bold tracking-tight text-foreground">
-            Grow Your Audience
-          </h1>
+          <h1 className="text-heading font-bold tracking-tight text-foreground">Marketing</h1>
           <p className="mt-1.5 text-support text-muted-foreground">
-            Share links, run promos, and track how fans find you.
+            Grow your audience, drive more sales, and track what works.
           </p>
         </header>
         <div className="rounded-2xl border border-border bg-card p-10 text-center shadow-[var(--shadow-card)]">
@@ -374,74 +369,58 @@ const CreatorPromo = () => {
     );
   }
 
-  const tools = [
-    {
-      id: 'share',
-      title: 'Shareable Link',
-      description: 'Copy your public profile URL',
-      icon: Share2,
-      tone: kpiIconTone.violet,
-      action: () => void copyProfileLink(),
-    },
-    {
-      id: 'templates',
-      title: 'Social Templates',
-      description: 'Ready-to-post captions & graphics',
-      icon: Megaphone,
-      tone: kpiIconTone.sky,
-      action: () => comingSoon('Social templates'),
-    },
-    {
-      id: 'embed',
-      title: 'Embed',
-      description: 'Add a subscribe widget to your site',
-      icon: Code2,
-      tone: kpiIconTone.emerald,
-      action: () => comingSoon('Embed'),
-    },
-    {
-      id: 'email',
-      title: 'Email',
-      description: 'Blast announcements to subscribers',
-      icon: Mail,
-      tone: kpiIconTone.amber,
-      action: () => comingSoon('Email campaigns'),
-    },
-    {
-      id: 'referral',
-      title: 'Referral',
-      description: 'Share your referral link & track signups',
-      icon: Gift,
-      tone: kpiIconTone.rose,
-      href: '/creator/referrals',
-    },
-  ] as const;
+  const dateRangeLabel = metrics.dateRangeLabel;
 
   return (
     <DashboardLayout type="creator">
-      <header className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+      <header className="mb-4 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div className="min-w-0">
-          <p className="text-caption font-semibold uppercase tracking-[0.14em] text-muted-foreground">
+          <h1 className="text-heading font-bold tracking-tight text-foreground md:text-heading-lg">
             Marketing
-          </p>
-          <h1 className="mt-1 text-heading font-bold tracking-tight text-foreground md:text-heading-lg">
-            Grow Your Audience
           </h1>
           <p className="mt-1.5 text-support text-muted-foreground">
-            Track reach, share your profile, and convert fans with promos and links.
+            Grow your audience, drive more sales, and track what works.
           </p>
         </div>
-        <Select value={range} onValueChange={setRange}>
-          <SelectTrigger className="min-h-11 w-full rounded-xl sm:w-[10.5rem]" aria-label="Date range">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="7">Last 7 days</SelectItem>
-            <SelectItem value="30">Last 30 days</SelectItem>
-            <SelectItem value="90">Last 90 days</SelectItem>
-          </SelectContent>
-        </Select>
+        <div className="inline-flex min-h-11 items-center gap-2 rounded-full border border-border bg-card px-3.5 py-2 text-sm font-medium text-muted-foreground shadow-[var(--shadow-card)]">
+          <Calendar className="h-4 w-4 shrink-0" aria-hidden />
+          <span className="tabular-nums">{dateRangeLabel}</span>
+        </div>
       </header>
+
+      <nav
+        className="mb-6 flex gap-1 overflow-x-auto border-b border-border"
+        aria-label="Marketing sections"
+      >
+        {MARKETING_TABS.map((tab) => {
+          const active = tab.id === 'overview';
+          const className = cn(
+            'shrink-0 border-b-2 px-3 py-2.5 text-sm font-semibold transition-colors',
+            active
+              ? 'border-primary text-foreground'
+              : 'border-transparent text-muted-foreground hover:text-foreground',
+          );
+          if (tab.kind === 'page') {
+            return (
+              <span key={tab.id} className={className} aria-current="page">
+                {tab.label}
+              </span>
+            );
+          }
+          if (tab.kind === 'anchor') {
+            return (
+              <a key={tab.id} href={tab.href} className={className}>
+                {tab.label}
+              </a>
+            );
+          }
+          return (
+            <Link key={tab.id} to={tab.href} className={className}>
+              {tab.label}
+            </Link>
+          );
+        })}
+      </nav>
 
       {useDemo ? (
         <div className="mb-6 flex items-start gap-3 rounded-2xl border border-amber-500/30 bg-amber-500/10 px-4 py-3.5 text-amber-950 dark:text-amber-100 sm:items-center sm:px-5">
@@ -461,43 +440,39 @@ const CreatorPromo = () => {
         <DashboardKpiStrip
           items={[
             {
-              label: 'New Subscribers',
-              value: String(metrics.newSubscribers),
-              icon: UserPlus,
+              label: 'Total clicks',
+              value: metrics.totalClicks.toLocaleString(),
+              icon: MousePointerClick,
               iconClassName: kpiIconTone.violet,
               trendLabel:
-                metrics.newSubscribersDelta != null
-                  ? `↑ ${metrics.newSubscribersDelta}%`
-                  : undefined,
+                metrics.totalClicksDelta != null ? `↑ ${metrics.totalClicksDelta}%` : undefined,
               trendPositive: true,
             },
             {
-              label: 'Profile Views',
-              value: metrics.profileViews.toLocaleString(),
-              icon: Users,
+              label: 'Sign ups',
+              value: metrics.signUps.toLocaleString(),
+              icon: UserPlus,
               iconClassName: kpiIconTone.sky,
-              trendLabel:
-                metrics.profileViewsDelta != null ? `↑ ${metrics.profileViewsDelta}%` : undefined,
+              trendLabel: metrics.signUpsDelta != null ? `↑ ${metrics.signUpsDelta}%` : undefined,
               trendPositive: true,
             },
             {
-              label: 'Link Clicks',
-              value: metrics.linkClicks.toLocaleString(),
-              icon: MousePointerClick,
-              iconClassName: kpiIconTone.emerald,
+              label: 'Paid conversions',
+              value: metrics.paidConversions.toLocaleString(),
+              icon: Users,
+              iconClassName: kpiIconTone.violet,
               trendLabel:
-                metrics.linkClicksDelta != null ? `↑ ${metrics.linkClicksDelta}%` : undefined,
-              trendPositive: true,
-            },
-            {
-              label: 'Conversion Rate',
-              value: `${metrics.conversionRate}%`,
-              icon: TrendingUp,
-              iconClassName: kpiIconTone.amber,
-              trendLabel:
-                metrics.conversionRateDelta != null
-                  ? `↑ ${metrics.conversionRateDelta}%`
+                metrics.paidConversionsDelta != null
+                  ? `↑ ${metrics.paidConversionsDelta}%`
                   : undefined,
+              trendPositive: true,
+            },
+            {
+              label: 'Revenue from marketing',
+              value: money(metrics.revenueCents),
+              icon: TrendingUp,
+              iconClassName: kpiIconTone.emerald,
+              trendLabel: metrics.revenueDelta != null ? `↑ ${metrics.revenueDelta}%` : undefined,
               trendPositive: true,
             },
           ]}
@@ -506,17 +481,32 @@ const CreatorPromo = () => {
 
       <div className="mb-6 grid grid-cols-1 gap-4 xl:grid-cols-12">
         <section className="rounded-2xl border border-border bg-card p-5 shadow-[var(--shadow-card)] xl:col-span-8">
-          <h2 className="mb-4 text-base font-extrabold tracking-tight text-foreground">
-            Audience Growth
-          </h2>
+          <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <h2 className="text-base font-extrabold tracking-tight text-foreground">
+              Clicks, Sign ups & Revenue
+            </h2>
+            <Select value={chartGranularity} onValueChange={setChartGranularity}>
+              <SelectTrigger
+                className="min-h-11 w-full rounded-xl sm:w-[7.5rem]"
+                aria-label="Chart granularity"
+              >
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="daily">Daily</SelectItem>
+                <SelectItem value="weekly">Weekly</SelectItem>
+                <SelectItem value="monthly">Monthly</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
           <div className="h-72 min-w-0 w-full">
-            {growthSeries.length === 0 ? (
+            {series.length === 0 ? (
               <p className="py-20 text-center text-sm text-muted-foreground">
-                No subscriber growth to chart yet.
+                No click or conversion series to chart yet.
               </p>
             ) : (
               <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={growthSeries}>
+                <LineChart data={series}>
                   <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                   <XAxis
                     dataKey="label"
@@ -537,14 +527,33 @@ const CreatorPromo = () => {
                       fontSize: 13,
                     }}
                   />
+                  <RechartsLegend />
                   <Line
                     type="monotone"
-                    dataKey="subscribers"
-                    name="Subscribers"
-                    stroke="hsl(239 84% 55%)"
+                    dataKey="clicks"
+                    name="Clicks"
+                    stroke="hsl(217 91% 60%)"
                     strokeWidth={2.5}
-                    dot={{ r: 4, fill: 'hsl(239 84% 55%)' }}
-                    activeDot={{ r: 6 }}
+                    dot={{ r: 3, fill: 'hsl(217 91% 60%)' }}
+                    activeDot={{ r: 5 }}
+                  />
+                  <Line
+                    type="monotone"
+                    dataKey="signUps"
+                    name="Sign ups"
+                    stroke="hsl(270 70% 55%)"
+                    strokeWidth={2.5}
+                    dot={{ r: 3, fill: 'hsl(270 70% 55%)' }}
+                    activeDot={{ r: 5 }}
+                  />
+                  <Line
+                    type="monotone"
+                    dataKey="conversions"
+                    name="Conversions"
+                    stroke="hsl(160 84% 39%)"
+                    strokeWidth={2.5}
+                    dot={{ r: 3, fill: 'hsl(160 84% 39%)' }}
+                    activeDot={{ r: 5 }}
                   />
                 </LineChart>
               </ResponsiveContainer>
@@ -554,29 +563,37 @@ const CreatorPromo = () => {
 
         <section className="rounded-2xl border border-border bg-card p-5 shadow-[var(--shadow-card)] xl:col-span-4">
           <h2 className="mb-4 text-base font-extrabold tracking-tight text-foreground">
-            Traffic Sources
+            Top Traffic Sources
           </h2>
-          <div className="h-56">
+          <div className="relative h-56">
             {trafficSources.length === 0 ? (
               <p className="py-16 text-center text-sm text-muted-foreground">No traffic data yet.</p>
             ) : (
-              <ResponsiveContainer width="100%" height="100%">
-                <PieChart>
-                  <Pie
-                    data={trafficSources}
-                    dataKey="value"
-                    nameKey="name"
-                    innerRadius={55}
-                    outerRadius={80}
-                    paddingAngle={2}
-                  >
-                    {trafficSources.map((entry) => (
-                      <Cell key={entry.name} fill={entry.color} />
-                    ))}
-                  </Pie>
-                  <Tooltip />
-                </PieChart>
-              </ResponsiveContainer>
+              <>
+                <ResponsiveContainer width="100%" height="100%">
+                  <PieChart>
+                    <Pie
+                      data={trafficSources}
+                      dataKey="value"
+                      nameKey="name"
+                      innerRadius={58}
+                      outerRadius={82}
+                      paddingAngle={2}
+                    >
+                      {trafficSources.map((entry) => (
+                        <Cell key={entry.name} fill={entry.color} />
+                      ))}
+                    </Pie>
+                    <Tooltip />
+                  </PieChart>
+                </ResponsiveContainer>
+                <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center">
+                  <p className="text-xs font-medium text-muted-foreground">Total clicks</p>
+                  <p className="text-lg font-extrabold tabular-nums text-foreground">
+                    {metrics.totalClicks.toLocaleString()}
+                  </p>
+                </div>
+              </>
             )}
           </div>
           <ul className="mt-2 space-y-1.5">
@@ -593,192 +610,63 @@ const CreatorPromo = () => {
         </section>
       </div>
 
-      <div className="mb-6 grid grid-cols-1 gap-4 lg:grid-cols-2">
-        <section className="rounded-2xl border border-border bg-card p-5 shadow-[var(--shadow-card)]">
-          <h2 className="mb-4 text-base font-extrabold tracking-tight text-foreground">
-            Marketing Tools
-          </h2>
-          <ul className="space-y-2">
-            {tools.map((tool) => {
-              const inner = (
-                <>
-                  <div
-                    className={cn(
-                      'flex h-10 w-10 shrink-0 items-center justify-center rounded-xl',
-                      tool.tone,
-                    )}
-                  >
-                    <tool.icon className="h-5 w-5" aria-hidden />
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <p className="text-ui font-semibold text-foreground">{tool.title}</p>
-                    <p className="text-support text-muted-foreground">{tool.description}</p>
-                  </div>
-                  <ArrowRight className="h-4 w-4 shrink-0 text-muted-foreground" aria-hidden />
-                </>
-              );
-              if ('href' in tool && tool.href) {
-                return (
-                  <li key={tool.id}>
-                    <Link
-                      to={tool.href}
-                      className="flex min-h-11 items-center gap-3 rounded-xl border border-border bg-muted/20 px-3 py-3 transition-colors hover:bg-muted/40"
-                    >
-                      {inner}
-                    </Link>
-                  </li>
-                );
-              }
-              return (
-                <li key={tool.id}>
-                  <button
-                    type="button"
-                    onClick={'action' in tool ? tool.action : undefined}
-                    className="flex w-full min-h-11 items-center gap-3 rounded-xl border border-border bg-muted/20 px-3 py-3 text-left transition-colors hover:bg-muted/40"
-                  >
-                    {inner}
-                  </button>
-                </li>
-              );
-            })}
-          </ul>
-          {profileUrl ? (
-            <p className="mt-3 truncate font-mono text-caption text-muted-foreground">{profileUrl}</p>
-          ) : null}
-        </section>
-
-        <section className="rounded-2xl border border-border bg-card p-5 shadow-[var(--shadow-card)]">
-          <div className="mb-4 flex items-center justify-between gap-3">
-            <h2 className="text-base font-extrabold tracking-tight text-foreground">Promo Codes</h2>
-            <Button
-              type="button"
-              className="min-h-11 shrink-0 rounded-xl"
-              onClick={() => setCreateOpen(true)}
-            >
-              <Plus className="mr-1.5 h-3.5 w-3.5" /> Create Code
-            </Button>
+      <div className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-5">
+        {platforms.length === 0 ? (
+          <div className="rounded-2xl border border-dashed border-border bg-card p-5 text-sm text-muted-foreground shadow-[var(--shadow-card)] sm:col-span-2 xl:col-span-4">
+            No platform traffic yet — create tracking links to see clicks by channel.
           </div>
-          {promoRows.length === 0 ? (
-            <div className="rounded-xl border border-dashed border-border px-4 py-10 text-center">
-              <Percent className="mx-auto mb-3 h-8 w-8 text-muted-foreground" />
-              <p className="text-ui font-semibold text-foreground">No promo codes yet</p>
-              <p className="mt-1 text-support text-muted-foreground">
-                Create a percent-off code for first month or forever.
+        ) : (
+          platforms.map((p) => (
+            <section
+              key={p.id}
+              className="rounded-2xl border border-border bg-card p-5 shadow-[var(--shadow-card)]"
+            >
+              <div className="mb-3 flex items-center gap-2.5">
+                <span
+                  className={cn(
+                    'flex h-9 w-9 items-center justify-center rounded-xl text-sm font-bold',
+                    p.tone,
+                  )}
+                >
+                  {p.name.slice(0, 1)}
+                </span>
+                <h3 className="text-sm font-extrabold tracking-tight text-foreground">{p.name}</h3>
+              </div>
+              <p className="text-2xl font-extrabold tabular-nums tracking-tight text-foreground">
+                {p.clicks.toLocaleString()}
               </p>
-            </div>
-          ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full min-w-[22rem] text-left text-sm">
-                <thead>
-                  <tr className="border-b border-border text-xs font-bold uppercase tracking-wide text-muted-foreground">
-                    <th className="py-2 pr-2">Code</th>
-                    <th className="py-2 pr-2">Discount</th>
-                    <th className="py-2 pr-2">Used</th>
-                    <th className="py-2 pr-2 text-center">Active</th>
-                    <th className="py-2 text-right"> </th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {promoRows.map((p) => {
-                    const dur = resolveDiscountDuration(p);
-                    return (
-                      <tr key={p._id} className="border-b border-border/70 last:border-0">
-                        <td className="py-3 pr-2 font-mono font-semibold">{p.code}</td>
-                        <td className="py-3 pr-2 text-muted-foreground">
-                          {p.discountPercent}% · {dur === 'forever' ? 'forever' : 'once'}
-                        </td>
-                        <td className="py-3 pr-2 tabular-nums text-muted-foreground">
-                          {p.usedCount}
-                          {p.maxUses != null ? `/${p.maxUses}` : ''}
-                        </td>
-                        <td className="py-3 pr-2 text-center">
-                          <Switch
-                            aria-label={`Promo code ${p.code} active`}
-                            checked={p.isActive}
-                            onCheckedChange={(v) =>
-                              void handleToggle(p._id, v, {
-                                code: p.code,
-                                discountPercent: p.discountPercent,
-                                discountDuration: dur,
-                                maxUses: p.maxUses,
-                                expiresAt: p.expiresAt,
-                              })
-                            }
-                          />
-                        </td>
-                        <td className="py-3 text-right">
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="icon"
-                            className="min-h-11 min-w-11 text-destructive hover:text-destructive"
-                            onClick={() => setDeleteId(p._id)}
-                            aria-label={`Delete ${p.code}`}
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
-          )}
-          <p className="mt-3 text-caption text-muted-foreground">
-            Disabling or deleting a code does not change past purchases.
-          </p>
+              <p className="mt-0.5 text-xs text-muted-foreground">clicks</p>
+              {p.delta > 0 ? (
+                <p className="mt-2 text-xs font-semibold text-emerald-600 dark:text-emerald-400">
+                  ↑ {p.delta}%
+                </p>
+              ) : (
+                <p className="mt-2 text-xs text-muted-foreground">—</p>
+              )}
+              <Button asChild variant="outline" className="mt-4 min-h-11 w-full rounded-xl">
+                <Link to={p.href}>View Details →</Link>
+              </Button>
+            </section>
+          ))
+        )}
+
+        <section className="flex flex-col justify-between rounded-2xl bg-violet-600 p-5 text-white shadow-[var(--shadow-card)] xl:col-span-1">
+          <div>
+            <h3 className="text-base font-extrabold tracking-tight">Reach more people</h3>
+            <p className="mt-2 text-sm text-white/85">
+              Launch a promo or campaign to grow clicks and paid conversions.
+            </p>
+          </div>
+          <Button
+            type="button"
+            className="mt-5 min-h-11 w-full rounded-xl bg-white text-violet-700 hover:bg-white/90"
+            onClick={() => setCreateOpen(true)}
+          >
+            <Plus className="mr-1.5 h-3.5 w-3.5" />
+            Create Campaign
+          </Button>
         </section>
       </div>
-
-      <section className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-2">
-        <Link
-          to="/creator/links"
-          className="group flex items-start gap-4 rounded-2xl border border-border bg-card p-5 shadow-[var(--shadow-card)] transition-colors hover:border-primary/40"
-        >
-          <span
-            className={cn(
-              'flex h-11 w-11 shrink-0 items-center justify-center rounded-xl',
-              kpiIconTone.violet,
-            )}
-          >
-            <Link2 className="h-5 w-5" aria-hidden />
-          </span>
-          <div className="min-w-0 flex-1">
-            <div className="flex items-center justify-between gap-2">
-              <h3 className="text-base font-extrabold tracking-tight text-foreground">
-                Tracking Links
-              </h3>
-              <ArrowRight className="h-4 w-4 shrink-0 text-muted-foreground transition-transform group-hover:translate-x-0.5 group-hover:text-primary" />
-            </div>
-            <p className="mt-1 text-sm text-muted-foreground">
-              Create `/go/…` URLs, copy them into bios, and measure clicks vs conversions.
-            </p>
-          </div>
-        </Link>
-        <Link
-          to="/creator/referrals"
-          className="group flex items-start gap-4 rounded-2xl border border-border bg-card p-5 shadow-[var(--shadow-card)] transition-colors hover:border-primary/40"
-        >
-          <span
-            className={cn(
-              'flex h-11 w-11 shrink-0 items-center justify-center rounded-xl',
-              kpiIconTone.rose,
-            )}
-          >
-            <Gift className="h-5 w-5" aria-hidden />
-          </span>
-          <div className="min-w-0 flex-1">
-            <div className="flex items-center justify-between gap-2">
-              <h3 className="text-base font-extrabold tracking-tight text-foreground">Referrals</h3>
-              <ArrowRight className="h-4 w-4 shrink-0 text-muted-foreground transition-transform group-hover:translate-x-0.5 group-hover:text-primary" />
-            </div>
-            <p className="mt-1 text-sm text-muted-foreground">
-              Share your referral link and track attributed signups and conversions.
-            </p>
-          </div>
-        </Link>
-      </section>
 
       <section className="mb-6 rounded-2xl border border-border bg-card p-5 shadow-[var(--shadow-card)]">
         <div className="mb-4 flex items-center justify-between gap-3">
@@ -786,7 +674,7 @@ const CreatorPromo = () => {
             Recent Campaigns
           </h2>
           <Link to="/creator/links" className="text-xs font-bold text-primary hover:underline">
-            Manage links
+            View all
           </Link>
         </div>
         {campaigns.length === 0 ? (
@@ -795,22 +683,38 @@ const CreatorPromo = () => {
           </p>
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full min-w-[32rem] text-left text-sm">
+            <table className="w-full min-w-[48rem] text-left text-sm">
               <thead>
                 <tr className="border-b border-border text-xs font-bold uppercase tracking-wide text-muted-foreground">
-                  <th className="py-2 pr-2">Campaign</th>
-                  <th className="py-2 pr-2">Channel</th>
-                  <th className="py-2 pr-2">Status</th>
-                  <th className="py-2 pr-2 text-right">Reach</th>
-                  <th className="py-2 text-right">Conversions</th>
+                  <th className="py-2 pr-2">Date</th>
+                  <th className="py-2 pr-2">Type</th>
+                  <th className="py-2 pr-2">Name</th>
+                  <th className="py-2 pr-2 text-right">Clicks</th>
+                  <th className="py-2 pr-2 text-right">Sign ups</th>
+                  <th className="py-2 pr-2 text-right">Conversions</th>
+                  <th className="py-2 pr-2 text-right">Revenue</th>
+                  <th className="py-2">Status</th>
                 </tr>
               </thead>
               <tbody>
                 {campaigns.map((c) => (
                   <tr key={c.id} className="border-b border-border/70 last:border-0">
+                    <td className="py-3 pr-2 whitespace-nowrap text-muted-foreground">
+                      {c.dateLabel}
+                    </td>
+                    <td className="py-3 pr-2 text-muted-foreground">{c.type}</td>
                     <td className="py-3 pr-2 font-semibold text-foreground">{c.name}</td>
-                    <td className="py-3 pr-2 text-muted-foreground">{c.channel}</td>
-                    <td className="py-3 pr-2">
+                    <td className="py-3 pr-2 text-right tabular-nums text-muted-foreground">
+                      {c.clicks.toLocaleString()}
+                    </td>
+                    <td className="py-3 pr-2 text-right tabular-nums text-muted-foreground">
+                      {c.signUps.toLocaleString()}
+                    </td>
+                    <td className="py-3 pr-2 text-right font-bold tabular-nums">{c.conversions}</td>
+                    <td className="py-3 pr-2 text-right tabular-nums text-muted-foreground">
+                      {c.revenueCents > 0 ? money(c.revenueCents) : '—'}
+                    </td>
+                    <td className="py-3">
                       <span
                         className={cn(
                           'inline-flex rounded-full border px-2 py-0.5 text-xs font-bold capitalize',
@@ -820,10 +724,6 @@ const CreatorPromo = () => {
                         {c.status}
                       </span>
                     </td>
-                    <td className="py-3 pr-2 text-right tabular-nums text-muted-foreground">
-                      {c.reach.toLocaleString()}
-                    </td>
-                    <td className="py-3 text-right font-bold tabular-nums">{c.conversions}</td>
                   </tr>
                 ))}
               </tbody>
@@ -832,13 +732,91 @@ const CreatorPromo = () => {
         )}
       </section>
 
-      <div className="flex items-start gap-3 rounded-2xl border border-primary/20 bg-primary/5 px-4 py-3.5 sm:items-center sm:px-5">
-        <Lightbulb className="mt-0.5 h-5 w-5 shrink-0 text-primary sm:mt-0" aria-hidden />
-        <p className="text-sm font-semibold leading-snug text-foreground">
-          Pro tip: Put your shareable profile link in every social bio, then pair a limited promo
-          code with a tracking link so you can see which channel converts best.
+      <section
+        id="promo-codes"
+        className="mb-6 scroll-mt-24 rounded-2xl border border-border bg-card p-5 shadow-[var(--shadow-card)]"
+      >
+        <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <h2 className="text-base font-extrabold tracking-tight text-foreground">Promo Codes</h2>
+          <Button
+            type="button"
+            className="min-h-11 shrink-0 rounded-xl"
+            onClick={() => setCreateOpen(true)}
+          >
+            <Plus className="mr-1.5 h-3.5 w-3.5" /> Create Code
+          </Button>
+        </div>
+        {promoRows.length === 0 ? (
+          <div className="rounded-xl border border-dashed border-border px-4 py-10 text-center">
+            <Percent className="mx-auto mb-3 h-8 w-8 text-muted-foreground" />
+            <p className="text-ui font-semibold text-foreground">No promo codes yet</p>
+            <p className="mt-1 text-support text-muted-foreground">
+              Create a percent-off code for first month or forever.
+            </p>
+          </div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full min-w-[22rem] text-left text-sm">
+              <thead>
+                <tr className="border-b border-border text-xs font-bold uppercase tracking-wide text-muted-foreground">
+                  <th className="py-2 pr-2">Code</th>
+                  <th className="py-2 pr-2">Discount</th>
+                  <th className="py-2 pr-2">Used</th>
+                  <th className="py-2 pr-2 text-center">Active</th>
+                  <th className="py-2 text-right"> </th>
+                </tr>
+              </thead>
+              <tbody>
+                {promoRows.map((p) => {
+                  const dur = resolveDiscountDuration(p);
+                  return (
+                    <tr key={p._id} className="border-b border-border/70 last:border-0">
+                      <td className="py-3 pr-2 font-mono font-semibold">{p.code}</td>
+                      <td className="py-3 pr-2 text-muted-foreground">
+                        {p.discountPercent}% · {dur === 'forever' ? 'forever' : 'once'}
+                      </td>
+                      <td className="py-3 pr-2 tabular-nums text-muted-foreground">
+                        {p.usedCount}
+                        {p.maxUses != null ? `/${p.maxUses}` : ''}
+                      </td>
+                      <td className="py-3 pr-2 text-center">
+                        <Switch
+                          aria-label={`Promo code ${p.code} active`}
+                          checked={p.isActive}
+                          onCheckedChange={(v) =>
+                            void handleToggle(p._id, v, {
+                              code: p.code,
+                              discountPercent: p.discountPercent,
+                              discountDuration: dur,
+                              maxUses: p.maxUses,
+                              expiresAt: p.expiresAt,
+                            })
+                          }
+                        />
+                      </td>
+                      <td className="py-3 text-right">
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          className="min-h-11 min-w-11 text-destructive hover:text-destructive"
+                          onClick={() => setDeleteId(p._id)}
+                          aria-label={`Delete ${p.code}`}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
+        <p className="mt-3 text-caption text-muted-foreground">
+          Disabling or deleting a code does not change past purchases.
         </p>
-      </div>
+      </section>
 
       <Dialog open={createOpen} onOpenChange={setCreateOpen}>
         <DialogContent className="sm:max-w-md">
