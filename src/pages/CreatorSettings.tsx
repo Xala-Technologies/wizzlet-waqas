@@ -42,10 +42,12 @@ import {
   Link as LinkIcon,
   Loader2,
   Lock,
+  Monitor,
   MoreVertical,
   RefreshCw,
   Settings,
   Shield,
+  Smartphone,
   Sparkles,
   Trash2,
   Upload,
@@ -55,11 +57,15 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import {
+  CREATOR_ADVANCED_TIPS,
   CREATOR_BILLING_DEMO,
   CREATOR_BILLING_HISTORY,
   CREATOR_BRANDING_DEMO,
   CREATOR_BRANDING_INFO,
   CREATOR_BRANDING_TIPS,
+  CREATOR_INTEGRATIONS_TIPS,
+  CREATOR_NOTIFICATIONS_TIPS,
+  CREATOR_SECURITY_TIPS,
   CREATOR_SETTINGS_DEMO,
   CREATOR_SETTINGS_STATUS_COPY,
   CREATOR_TEAM_DEMO_MEMBERS,
@@ -183,6 +189,8 @@ const CreatorSettings = () => {
   const [notifPayments, setNotifPayments] = useState(true);
   const [notifPicks, setNotifPicks] = useState(true);
   const [notifMarketing, setNotifMarketing] = useState(false);
+  const [notifEmailDigest, setNotifEmailDigest] = useState(true);
+  const [notifMessages, setNotifMessages] = useState(true);
 
   const [teamMembers, setTeamMembers] = useState<DemoTeamMember[]>(CREATOR_TEAM_DEMO_MEMBERS);
   const [inviteEmail, setInviteEmail] = useState('');
@@ -279,6 +287,12 @@ const CreatorSettings = () => {
 
   const handleSave = async () => {
     if (!creator || saving) return;
+    if (tab === 'notifications') {
+      toast.success('Notification preferences saved', {
+        description: 'Stored on this device until server flags ship.',
+      });
+      return;
+    }
     if (useDemo && profileSparse) {
       toast.message('Sample preview — settings not saved', {
         description: 'Fill in your real profile or add ?demo=0 to save live settings.',
@@ -481,7 +495,8 @@ const CreatorSettings = () => {
   const busy =
     saving || uploadingAvatar || uploadingBanner || uploadingLogo || uploadingFavicon;
   const usernameLocked = Boolean(creator.username?.trim());
-  const showSave = tab === 'general' || tab === 'branding' || tab === 'integrations';
+  const showSave =
+    tab === 'general' || tab === 'branding' || tab === 'integrations' || tab === 'notifications';
   const stripeConnected = Boolean(creator.stripeAccountId?.trim());
   const liveEmail = me?.email || email;
 
@@ -1762,236 +1777,618 @@ const CreatorSettings = () => {
       ) : null}
 
       {tab === 'integrations' ? (
-        <section className={cn(cardClass, 'space-y-5')}>
-          <h2 className="text-base font-extrabold tracking-tight text-foreground">Integrations</h2>
-          <div className="flex items-start gap-3">
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-muted">
-              <LinkIcon className="h-4 w-4 text-muted-foreground" />
-            </div>
-            <div className="min-w-0 flex-1 space-y-4">
+        <div className="grid grid-cols-1 gap-4 xl:grid-cols-12">
+          <div className="flex flex-col gap-4 xl:col-span-8">
+            <section className={cn(cardClass, 'space-y-5')}>
               <div>
-                <p className="text-sm font-bold text-foreground">Discord subscriber roles</p>
-                <p className="mt-0.5 text-xs text-muted-foreground">
-                  When a member signs in with Discord and subscribes, the bot assigns this role.
+                <h2 className="text-base font-extrabold tracking-tight text-foreground">
+                  Connected apps
+                </h2>
+                <p className="mt-1 text-sm text-muted-foreground">
+                  Link tools that power subscriber access, login, and payouts.
                 </p>
               </div>
-              <div className="grid gap-4 sm:grid-cols-2">
-                <div className="space-y-2">
-                  <Label htmlFor="discord-guild">Server (guild) ID</Label>
-                  <Input
-                    id="discord-guild"
-                    className="min-h-11 rounded-xl font-mono"
-                    value={discordServerId}
-                    onChange={(e) => setDiscordServerId(e.target.value)}
-                    placeholder="123456789012345678"
-                  />
+
+              <div className="space-y-3">
+                <div className="rounded-xl border border-border bg-muted/20 p-4 sm:p-5">
+                  <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
+                    <div className="flex items-start gap-3">
+                      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-indigo-500/10 text-indigo-600 dark:text-indigo-400">
+                        <LinkIcon className="h-4 w-4" />
+                      </div>
+                      <div>
+                        <p className="text-sm font-bold text-foreground">Discord</p>
+                        <p className="text-xs text-muted-foreground">
+                          Auto-assign a role when someone subscribes.
+                        </p>
+                      </div>
+                    </div>
+                    <span
+                      className={cn(
+                        'inline-flex rounded-full border px-2.5 py-0.5 text-xs font-bold',
+                        discordServerId.trim() && discordRoleId.trim()
+                          ? 'border-emerald-500/25 bg-emerald-500/10 text-emerald-700 dark:text-emerald-400'
+                          : 'border-border bg-muted text-muted-foreground',
+                      )}
+                    >
+                      {discordServerId.trim() && discordRoleId.trim()
+                        ? 'Configured'
+                        : 'Not connected'}
+                    </span>
+                  </div>
+                  <div className="grid gap-4 sm:grid-cols-2">
+                    <div className="space-y-2">
+                      <Label htmlFor="discord-guild">Server (guild) ID</Label>
+                      <Input
+                        id="discord-guild"
+                        className="min-h-11 rounded-xl font-mono"
+                        value={discordServerId}
+                        onChange={(e) => setDiscordServerId(e.target.value)}
+                        placeholder="123456789012345678"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="discord-role">Role ID</Label>
+                      <Input
+                        id="discord-role"
+                        className="min-h-11 rounded-xl font-mono"
+                        value={discordRoleId}
+                        onChange={(e) => setDiscordRoleId(e.target.value)}
+                        placeholder="123456789012345678"
+                      />
+                    </div>
+                  </div>
+                  <p className="mt-3 text-xs text-muted-foreground">
+                    Requires platform env{' '}
+                    <span className="font-mono">DISCORD_BOT_TOKEN</span> and Manage Roles. Clear
+                    both fields and save to disconnect.
+                  </p>
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="discord-role">Role ID</Label>
-                  <Input
-                    id="discord-role"
-                    className="min-h-11 rounded-xl font-mono"
-                    value={discordRoleId}
-                    onChange={(e) => setDiscordRoleId(e.target.value)}
-                    placeholder="123456789012345678"
-                  />
+
+                <div className="flex flex-col gap-3 rounded-xl border border-border bg-muted/20 p-4 sm:flex-row sm:items-center sm:justify-between sm:p-5">
+                  <div className="flex items-start gap-3">
+                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-sky-500/10 text-sky-600 dark:text-sky-400">
+                      <RefreshCw className="h-4 w-4" />
+                    </div>
+                    <div>
+                      <p className="text-sm font-bold text-foreground">X / Twitter</p>
+                      <p className="text-xs text-muted-foreground">
+                        Sign-in with X is available at login. No separate connect control here.
+                      </p>
+                    </div>
+                  </div>
+                  <span className="inline-flex shrink-0 rounded-full border border-border bg-muted px-2.5 py-0.5 text-xs font-bold text-muted-foreground">
+                    Via login
+                  </span>
+                </div>
+
+                <div className="flex flex-col gap-3 rounded-xl border border-border bg-muted/20 p-4 sm:flex-row sm:items-center sm:justify-between sm:p-5">
+                  <div className="flex items-start gap-3">
+                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-violet-500/10 text-violet-600 dark:text-violet-400">
+                      <Banknote className="h-4 w-4" />
+                    </div>
+                    <div>
+                      <p className="text-sm font-bold text-foreground">Stripe Connect</p>
+                      <p className="text-xs text-muted-foreground">
+                        {stripeConnected
+                          ? `Connected · ${creator.stripeAccountId}`
+                          : 'Connect on Payouts to receive withdrawals.'}
+                      </p>
+                    </div>
+                  </div>
+                  <Button asChild variant="outline" className="min-h-11 shrink-0 rounded-xl">
+                    <Link to="/creator/payouts">
+                      {stripeConnected ? 'Manage' : 'Connect'}
+                    </Link>
+                  </Button>
                 </div>
               </div>
-            </div>
+            </section>
           </div>
-        </section>
+
+          <aside className="flex flex-col gap-4 xl:col-span-4">
+            <section className="rounded-2xl border border-violet-500/20 bg-violet-500/5 p-5 shadow-[var(--shadow-card)]">
+              <div className="mb-3 flex items-center gap-2">
+                <Sparkles className="h-4 w-4 text-violet-600 dark:text-violet-400" aria-hidden />
+                <h2 className="text-base font-extrabold tracking-tight text-foreground">
+                  Integration tips
+                </h2>
+              </div>
+              <ul className="space-y-2.5">
+                {CREATOR_INTEGRATIONS_TIPS.map((tip) => (
+                  <li key={tip} className="flex items-start gap-2.5 text-sm text-muted-foreground">
+                    <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-emerald-500/15 text-emerald-700 dark:text-emerald-400">
+                      <Check className="h-3 w-3" aria-hidden />
+                    </span>
+                    <span>{tip}</span>
+                  </li>
+                ))}
+              </ul>
+            </section>
+            <section className={cn(cardClass, 'space-y-3')}>
+              <div className="flex items-center gap-2">
+                <CircleHelp className="h-4 w-4 text-primary" aria-hidden />
+                <h2 className="text-base font-extrabold tracking-tight text-foreground">
+                  Need Help?
+                </h2>
+              </div>
+              <p className="text-sm text-muted-foreground">
+                Setup guides for Discord roles and Stripe Connect.
+              </p>
+              <Button
+                type="button"
+                variant="outline"
+                className="min-h-11 w-full rounded-xl gap-2"
+                onClick={() =>
+                  toast.message('Help Center', {
+                    description: 'Integration docs will open here soon.',
+                  })
+                }
+              >
+                View Help Center
+                <ExternalLink className="h-3.5 w-3.5" aria-hidden />
+              </Button>
+            </section>
+          </aside>
+        </div>
       ) : null}
 
       {tab === 'notifications' ? (
-        <section className={cn(cardClass, 'space-y-4')}>
-          <div className="flex items-start gap-3">
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-amber-500/10 text-amber-700">
-              <Bell className="h-4 w-4" />
-            </div>
-            <div>
-              <h2 className="text-base font-extrabold tracking-tight text-foreground">
-                Notifications
-              </h2>
-              <p className="mt-1 text-sm text-muted-foreground">
-                Preferences stay on this device until creator notification flags ship.
-              </p>
-            </div>
-          </div>
-          {(
-            [
-              {
-                label: 'New subscribers',
-                description: 'When someone subscribes to your channel',
-                checked: notifNewSubs,
-                onChange: setNotifNewSubs,
-              },
-              {
-                label: 'Payments & payouts',
-                description: 'Successful charges and payout status updates',
-                checked: notifPayments,
-                onChange: setNotifPayments,
-              },
-              {
-                label: 'Pick reminders',
-                description: 'Nudge when scheduled picks go live',
-                checked: notifPicks,
-                onChange: setNotifPicks,
-              },
-              {
-                label: 'Product updates',
-                description: 'Occasional tips and Prizelet product news',
-                checked: notifMarketing,
-                onChange: setNotifMarketing,
-              },
-            ] as const
-          ).map((row) => (
-            <div
-              key={row.label}
-              className="flex items-center justify-between gap-4 rounded-xl border border-border bg-muted/20 px-4 py-3.5"
-            >
-              <div className="min-w-0">
-                <p className="text-sm font-bold text-foreground">{row.label}</p>
-                <p className="text-xs text-muted-foreground">{row.description}</p>
+        <div className="grid grid-cols-1 gap-4 xl:grid-cols-12">
+          <div className="flex flex-col gap-4 xl:col-span-8">
+            <section className={cn(cardClass, 'space-y-4')}>
+              <div>
+                <h2 className="text-base font-extrabold tracking-tight text-foreground">
+                  Activity alerts
+                </h2>
+                <p className="mt-1 text-sm text-muted-foreground">
+                  Choose which creator events send you a notification.
+                </p>
               </div>
-              <Switch
-                checked={row.checked}
-                onCheckedChange={row.onChange}
-                aria-label={row.label}
-              />
-            </div>
-          ))}
-        </section>
+              {(
+                [
+                  {
+                    label: 'New subscribers',
+                    description: 'When someone subscribes to your channel',
+                    checked: notifNewSubs,
+                    onChange: setNotifNewSubs,
+                  },
+                  {
+                    label: 'Payments & payouts',
+                    description: 'Successful charges and payout status updates',
+                    checked: notifPayments,
+                    onChange: setNotifPayments,
+                  },
+                  {
+                    label: 'Direct messages',
+                    description: 'New subscriber messages in your inbox',
+                    checked: notifMessages,
+                    onChange: setNotifMessages,
+                  },
+                  {
+                    label: 'Pick reminders',
+                    description: 'Nudge when scheduled picks go live',
+                    checked: notifPicks,
+                    onChange: setNotifPicks,
+                  },
+                ] as const
+              ).map((row) => (
+                <div
+                  key={row.label}
+                  className="flex items-center justify-between gap-4 rounded-xl border border-border bg-muted/20 px-4 py-3.5"
+                >
+                  <div className="min-w-0">
+                    <p className="text-sm font-bold text-foreground">{row.label}</p>
+                    <p className="text-xs text-muted-foreground">{row.description}</p>
+                  </div>
+                  <Switch
+                    checked={row.checked}
+                    onCheckedChange={row.onChange}
+                    aria-label={row.label}
+                  />
+                </div>
+              ))}
+            </section>
+
+            <section className={cn(cardClass, 'space-y-4')}>
+              <div>
+                <h2 className="text-base font-extrabold tracking-tight text-foreground">
+                  Email & marketing
+                </h2>
+                <p className="mt-1 text-sm text-muted-foreground">
+                  Optional digests and product news from Prizelet.
+                </p>
+              </div>
+              {(
+                [
+                  {
+                    label: 'Weekly email digest',
+                    description: 'A summary of earnings, subscribers, and top posts',
+                    checked: notifEmailDigest,
+                    onChange: setNotifEmailDigest,
+                  },
+                  {
+                    label: 'Product updates',
+                    description: 'Occasional tips and Prizelet product news',
+                    checked: notifMarketing,
+                    onChange: setNotifMarketing,
+                  },
+                ] as const
+              ).map((row) => (
+                <div
+                  key={row.label}
+                  className="flex items-center justify-between gap-4 rounded-xl border border-border bg-muted/20 px-4 py-3.5"
+                >
+                  <div className="min-w-0">
+                    <p className="text-sm font-bold text-foreground">{row.label}</p>
+                    <p className="text-xs text-muted-foreground">{row.description}</p>
+                  </div>
+                  <Switch
+                    checked={row.checked}
+                    onCheckedChange={row.onChange}
+                    aria-label={row.label}
+                  />
+                </div>
+              ))}
+            </section>
+          </div>
+
+          <aside className="flex flex-col gap-4 xl:col-span-4">
+            <section className={cn(cardClass, 'space-y-3')}>
+              <div className="flex items-center gap-2">
+                <Bell className="h-4 w-4 text-amber-600 dark:text-amber-400" aria-hidden />
+                <h2 className="text-base font-extrabold tracking-tight text-foreground">
+                  Delivery
+                </h2>
+              </div>
+              <p className="text-sm text-muted-foreground">
+                Preferences stay on this device until creator notification flags ship to the
+                server.
+              </p>
+              <div className="rounded-xl border border-border bg-muted/20 px-3.5 py-3 text-xs text-muted-foreground">
+                In-app · Email (when digest is on)
+              </div>
+            </section>
+            <section className="rounded-2xl border border-violet-500/20 bg-violet-500/5 p-5 shadow-[var(--shadow-card)]">
+              <div className="mb-3 flex items-center gap-2">
+                <Sparkles className="h-4 w-4 text-violet-600 dark:text-violet-400" aria-hidden />
+                <h2 className="text-base font-extrabold tracking-tight text-foreground">
+                  Notification tips
+                </h2>
+              </div>
+              <ul className="space-y-2.5">
+                {CREATOR_NOTIFICATIONS_TIPS.map((tip) => (
+                  <li key={tip} className="flex items-start gap-2.5 text-sm text-muted-foreground">
+                    <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-emerald-500/15 text-emerald-700 dark:text-emerald-400">
+                      <Check className="h-3 w-3" aria-hidden />
+                    </span>
+                    <span>{tip}</span>
+                  </li>
+                ))}
+              </ul>
+            </section>
+          </aside>
+        </div>
       ) : null}
 
       {tab === 'security' ? (
-        <section className={cn(cardClass, 'space-y-4')}>
-          <div className="flex items-start gap-3">
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-emerald-500/10 text-emerald-600">
-              <Shield className="h-4 w-4" />
-            </div>
-            <div>
-              <h2 className="text-base font-extrabold tracking-tight text-foreground">Security</h2>
-              <p className="mt-1 text-sm text-muted-foreground">
-                Extra protection for your creator account.
-              </p>
-            </div>
-          </div>
-          <div className="flex flex-col gap-3 rounded-xl border border-border bg-muted/20 p-4 sm:flex-row sm:items-center sm:justify-between">
-            <div className="flex items-start gap-3">
-              <KeyRound className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />
+        <div className="grid grid-cols-1 gap-4 xl:grid-cols-12">
+          <div className="flex flex-col gap-4 xl:col-span-8">
+            <section className={cn(cardClass, 'space-y-4')}>
               <div>
-                <p className="text-sm font-bold text-foreground">Password</p>
-                <p className="text-xs text-muted-foreground">
-                  Change your password via your auth provider.
+                <h2 className="text-base font-extrabold tracking-tight text-foreground">
+                  Sign-in & authentication
+                </h2>
+                <p className="mt-1 text-sm text-muted-foreground">
+                  Protect your creator account and recovery options.
                 </p>
               </div>
-            </div>
-            <Button
-              type="button"
-              variant="outline"
-              className="min-h-11 shrink-0 rounded-xl"
-              onClick={() =>
-                quickAction(
-                  'Change password',
-                  'Use your sign-in provider or account recovery email.',
-                )
-              }
-            >
-              Change password
-            </Button>
-          </div>
-          <div className="flex flex-col gap-3 rounded-xl border border-border bg-muted/20 p-4 sm:flex-row sm:items-center sm:justify-between">
-            <div className="flex items-start gap-3">
-              <Lock className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />
-              <div>
-                <p className="text-sm font-bold text-foreground">Two-factor authentication</p>
-                <p className="text-xs text-muted-foreground">Add a second step when signing in.</p>
+              <div className="flex flex-col gap-3 rounded-xl border border-border bg-muted/20 p-4 sm:flex-row sm:items-center sm:justify-between">
+                <div className="flex items-start gap-3">
+                  <KeyRound className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />
+                  <div>
+                    <p className="text-sm font-bold text-foreground">Password</p>
+                    <p className="text-xs text-muted-foreground">
+                      Change your password via your auth provider.
+                    </p>
+                  </div>
+                </div>
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="min-h-11 shrink-0 rounded-xl"
+                  onClick={() =>
+                    quickAction(
+                      'Change password',
+                      'Use your sign-in provider or account recovery email.',
+                    )
+                  }
+                >
+                  Change password
+                </Button>
               </div>
-            </div>
-            <Button
-              type="button"
-              variant="outline"
-              className="min-h-11 shrink-0 rounded-xl"
-              onClick={() =>
-                quickAction('Enable 2FA', 'Two-factor authentication setup is coming soon.')
-              }
-            >
-              Enable
-            </Button>
+              <div className="flex flex-col gap-3 rounded-xl border border-border bg-muted/20 p-4 sm:flex-row sm:items-center sm:justify-between">
+                <div className="flex items-start gap-3">
+                  <Lock className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />
+                  <div>
+                    <p className="text-sm font-bold text-foreground">Two-factor authentication</p>
+                    <p className="text-xs text-muted-foreground">
+                      Add a second step when signing in.
+                    </p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="inline-flex rounded-full border border-amber-500/25 bg-amber-500/10 px-2.5 py-0.5 text-xs font-bold text-amber-700 dark:text-amber-400">
+                    Off
+                  </span>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="min-h-11 shrink-0 rounded-xl"
+                    onClick={() =>
+                      quickAction('Enable 2FA', 'Two-factor authentication setup is coming soon.')
+                    }
+                  >
+                    Enable
+                  </Button>
+                </div>
+              </div>
+            </section>
+
+            <section className={cn(cardClass, 'space-y-4')}>
+              <div>
+                <h2 className="text-base font-extrabold tracking-tight text-foreground">
+                  Active sessions
+                </h2>
+                <p className="mt-1 text-sm text-muted-foreground">
+                  Devices currently signed into your account.
+                </p>
+              </div>
+              <ul className="divide-y divide-border rounded-xl border border-border">
+                <li className="flex items-center justify-between gap-3 px-4 py-3.5">
+                  <div className="flex items-start gap-3">
+                    <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-emerald-500/10 text-emerald-700 dark:text-emerald-400">
+                      <Monitor className="h-4 w-4" />
+                    </span>
+                    <div>
+                      <p className="text-sm font-bold text-foreground">This browser</p>
+                      <p className="text-xs text-muted-foreground">Current session · just now</p>
+                    </div>
+                  </div>
+                  <span className="inline-flex rounded-full border border-emerald-500/25 bg-emerald-500/10 px-2.5 py-0.5 text-xs font-bold text-emerald-700 dark:text-emerald-400">
+                    Active
+                  </span>
+                </li>
+                <li className="flex items-center justify-between gap-3 px-4 py-3.5">
+                  <div className="flex items-start gap-3">
+                    <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-sky-500/10 text-sky-700 dark:text-sky-400">
+                      <Smartphone className="h-4 w-4" />
+                    </span>
+                    <div>
+                      <p className="text-sm font-bold text-foreground">Mobile Safari</p>
+                      <p className="text-xs text-muted-foreground">
+                        {useDemo ? 'Tallinn, EE · 2 days ago' : 'Session details unavailable'}
+                      </p>
+                    </div>
+                  </div>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    className="min-h-9 rounded-lg text-xs font-bold text-destructive hover:text-destructive"
+                    onClick={() =>
+                      toast.message('Sign out device', {
+                        description: 'Remote session revoke is coming soon.',
+                      })
+                    }
+                  >
+                    Sign out
+                  </Button>
+                </li>
+              </ul>
+            </section>
           </div>
-        </section>
+
+          <aside className="flex flex-col gap-4 xl:col-span-4">
+            <section className="rounded-2xl border border-violet-500/20 bg-violet-500/5 p-5 shadow-[var(--shadow-card)]">
+              <div className="mb-3 flex items-center gap-2">
+                <Shield className="h-4 w-4 text-violet-600 dark:text-violet-400" aria-hidden />
+                <h2 className="text-base font-extrabold tracking-tight text-foreground">
+                  Security tips
+                </h2>
+              </div>
+              <ul className="space-y-2.5">
+                {CREATOR_SECURITY_TIPS.map((tip) => (
+                  <li key={tip} className="flex items-start gap-2.5 text-sm text-muted-foreground">
+                    <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-emerald-500/15 text-emerald-700 dark:text-emerald-400">
+                      <Check className="h-3 w-3" aria-hidden />
+                    </span>
+                    <span>{tip}</span>
+                  </li>
+                ))}
+              </ul>
+            </section>
+            <section className={cn(cardClass, 'space-y-3')}>
+              <div className="flex items-center gap-2">
+                <CircleHelp className="h-4 w-4 text-primary" aria-hidden />
+                <h2 className="text-base font-extrabold tracking-tight text-foreground">
+                  Need Help?
+                </h2>
+              </div>
+              <p className="text-sm text-muted-foreground">
+                Account recovery and security best practices.
+              </p>
+              <Button
+                type="button"
+                variant="outline"
+                className="min-h-11 w-full rounded-xl gap-2"
+                onClick={() =>
+                  toast.message('Help Center', {
+                    description: 'Security help will open here soon.',
+                  })
+                }
+              >
+                View Help Center
+                <ExternalLink className="h-3.5 w-3.5" aria-hidden />
+              </Button>
+            </section>
+          </aside>
+        </div>
       ) : null}
 
       {tab === 'advanced' ? (
-        <div className="space-y-4">
-          <section className={cn(cardClass, 'space-y-4')}>
-            <div className="flex items-start gap-3">
-              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-muted">
-                <Banknote className="h-4 w-4 text-muted-foreground" />
+        <div className="grid grid-cols-1 gap-4 xl:grid-cols-12">
+          <div className="flex flex-col gap-4 xl:col-span-8">
+            <section className={cn(cardClass, 'space-y-4')}>
+              <div className="flex flex-wrap items-start justify-between gap-3">
+                <div>
+                  <h2 className="text-base font-extrabold tracking-tight text-foreground">
+                    Payout connection
+                  </h2>
+                  <p className="mt-1 text-sm text-muted-foreground">
+                    Stripe Connect powers withdrawals to your bank.
+                  </p>
+                </div>
+                <span
+                  className={
+                    stripeConnected
+                      ? 'inline-flex rounded-full bg-emerald-500/10 px-2.5 py-1 text-xs font-bold text-emerald-600 dark:text-emerald-400'
+                      : 'inline-flex rounded-full bg-muted px-2.5 py-1 text-xs font-bold text-muted-foreground'
+                  }
+                >
+                  {stripeConnected ? 'Connected' : 'Not connected'}
+                </span>
               </div>
-              <div className="min-w-0 flex-1">
-                <h2 className="text-base font-extrabold tracking-tight text-foreground">
-                  Payout connection
-                </h2>
-                <p className="mt-1 text-sm text-muted-foreground">
-                  {stripeConnected
-                    ? `Stripe Connect · ${creator.stripeAccountId}`
-                    : 'Not connected yet — finish setup on Payouts.'}
-                </p>
-              </div>
-              <span
-                className={
-                  stripeConnected
-                    ? 'inline-flex rounded-full bg-emerald-500/10 px-2.5 py-1 text-xs font-bold text-emerald-600 dark:text-emerald-400'
-                    : 'inline-flex rounded-full bg-muted px-2.5 py-1 text-xs font-bold text-muted-foreground'
-                }
-              >
-                {stripeConnected ? 'Connected' : 'Not connected'}
-              </span>
-            </div>
-            <Button asChild className="min-h-11 rounded-xl">
-              <Link to="/creator/payouts">Open Payouts</Link>
-            </Button>
-          </section>
+              <p className="text-sm text-muted-foreground">
+                {stripeConnected
+                  ? `Account · ${creator.stripeAccountId}`
+                  : 'Finish setup on Payouts when you are ready to withdraw.'}
+              </p>
+              <Button asChild className="min-h-11 w-full rounded-xl sm:w-auto">
+                <Link to="/creator/payouts">Open Payouts</Link>
+              </Button>
+            </section>
 
-          <section className="space-y-4 rounded-2xl border border-destructive/30 bg-card p-5 shadow-[var(--shadow-card)] sm:p-6">
-            <div className="flex items-start gap-3">
-              <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0 text-destructive" />
+            <section className={cn(cardClass, 'space-y-4')}>
               <div>
                 <h2 className="text-base font-extrabold tracking-tight text-foreground">
-                  Danger zone
+                  Data & exports
                 </h2>
                 <p className="mt-1 text-sm text-muted-foreground">
-                  These actions are not available yet — they only show a confirmation toast.
+                  Download a copy of your creator data for your records.
                 </p>
               </div>
-            </div>
-            <div className="flex flex-col gap-3 sm:flex-row">
+              <div className="flex flex-col gap-3 rounded-xl border border-border bg-muted/20 p-4 sm:flex-row sm:items-center sm:justify-between">
+                <div className="flex items-start gap-3">
+                  <Download className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />
+                  <div>
+                    <p className="text-sm font-bold text-foreground">Export my data</p>
+                    <p className="text-xs text-muted-foreground">
+                      Profile, products, and earnings summary (CSV/JSON).
+                    </p>
+                  </div>
+                </div>
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="min-h-11 shrink-0 rounded-xl"
+                  onClick={() =>
+                    toast.message(useDemo ? 'Sample preview — export' : 'Export requested', {
+                      description: 'Data export is not wired up in this preview.',
+                    })
+                  }
+                >
+                  Request export
+                </Button>
+              </div>
+            </section>
+
+            <section className="space-y-4 rounded-2xl border border-destructive/30 bg-card p-5 shadow-[var(--shadow-card)] sm:p-6">
+              <div className="flex items-start gap-3">
+                <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0 text-destructive" />
+                <div>
+                  <h2 className="text-base font-extrabold tracking-tight text-foreground">
+                    Danger zone
+                  </h2>
+                  <p className="mt-1 text-sm text-muted-foreground">
+                    These actions are not available yet — they only show a confirmation toast.
+                  </p>
+                </div>
+              </div>
+              <div className="flex flex-col gap-3 sm:flex-row">
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="min-h-11 rounded-xl text-destructive hover:text-destructive"
+                  onClick={() =>
+                    quickAction(
+                      'Deactivate account',
+                      'Account deactivation is not enabled in this preview.',
+                    )
+                  }
+                >
+                  Deactivate account
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="min-h-11 rounded-xl text-destructive hover:text-destructive"
+                  onClick={() =>
+                    quickAction(
+                      'Delete account',
+                      'Account deletion is not enabled in this preview.',
+                    )
+                  }
+                >
+                  Delete account
+                </Button>
+              </div>
+            </section>
+          </div>
+
+          <aside className="flex flex-col gap-4 xl:col-span-4">
+            <section className="rounded-2xl border border-violet-500/20 bg-violet-500/5 p-5 shadow-[var(--shadow-card)]">
+              <div className="mb-3 flex items-center gap-2">
+                <Sparkles className="h-4 w-4 text-violet-600 dark:text-violet-400" aria-hidden />
+                <h2 className="text-base font-extrabold tracking-tight text-foreground">
+                  Advanced tips
+                </h2>
+              </div>
+              <ul className="space-y-2.5">
+                {CREATOR_ADVANCED_TIPS.map((tip) => (
+                  <li key={tip} className="flex items-start gap-2.5 text-sm text-muted-foreground">
+                    <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-emerald-500/15 text-emerald-700 dark:text-emerald-400">
+                      <Check className="h-3 w-3" aria-hidden />
+                    </span>
+                    <span>{tip}</span>
+                  </li>
+                ))}
+              </ul>
+            </section>
+            <section className={cn(cardClass, 'space-y-3')}>
+              <div className="flex items-center gap-2">
+                <CircleHelp className="h-4 w-4 text-primary" aria-hidden />
+                <h2 className="text-base font-extrabold tracking-tight text-foreground">
+                  Need Help?
+                </h2>
+              </div>
+              <p className="text-sm text-muted-foreground">
+                Contact support before deleting or transferring your account.
+              </p>
               <Button
                 type="button"
                 variant="outline"
-                className="min-h-11 rounded-xl text-destructive hover:text-destructive"
+                className="min-h-11 w-full rounded-xl gap-2"
                 onClick={() =>
-                  quickAction(
-                    'Deactivate account',
-                    'Account deactivation is not enabled in this preview.',
-                  )
+                  toast.message('Help Center', {
+                    description: 'Advanced account help will open here soon.',
+                  })
                 }
               >
-                Deactivate account
+                View Help Center
+                <ExternalLink className="h-3.5 w-3.5" aria-hidden />
               </Button>
-              <Button
-                type="button"
-                variant="outline"
-                className="min-h-11 rounded-xl text-destructive hover:text-destructive"
-                onClick={() =>
-                  quickAction('Delete account', 'Account deletion is not enabled in this preview.')
-                }
-              >
-                Delete account
-              </Button>
-            </div>
-          </section>
+            </section>
+          </aside>
         </div>
       ) : null}
 

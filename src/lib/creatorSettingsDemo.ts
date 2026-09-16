@@ -142,6 +142,34 @@ export const CREATOR_BILLING_HISTORY: Array<{
   { id: 'inv-5', dateLabel: 'Sep 15, 2024', amount: '$49.00', status: 'paid' },
 ];
 
+export const CREATOR_INTEGRATIONS_TIPS = [
+  'Connect Discord to auto-assign subscriber roles.',
+  'Keep guild and role IDs private — only paste from Discord developer tools.',
+  'X / Twitter sign-in is managed from your login provider.',
+  'Reconnect after changing bots or permissions.',
+] as const;
+
+export const CREATOR_NOTIFICATIONS_TIPS = [
+  'Turn on payments alerts so you never miss a payout.',
+  'Use pick reminders if you schedule content ahead of time.',
+  'Product updates are optional marketing from Prizelet.',
+  'You can change these anytime — preferences are per device for now.',
+] as const;
+
+export const CREATOR_SECURITY_TIPS = [
+  'Use a unique password for your Prizelet account.',
+  'Enable 2FA when it becomes available.',
+  'Sign out of unused devices regularly.',
+  'Never share recovery codes or session links.',
+] as const;
+
+export const CREATOR_ADVANCED_TIPS = [
+  'Export your data before making destructive changes.',
+  'Stripe Connect is managed from the Payouts page.',
+  'Deactivate keeps your handle reserved; delete is permanent.',
+  'Contact support if you need help transferring ownership.',
+] as const;
+
 export function shouldUseCreatorSettingsDemo(opts: {
   profileSparse: boolean;
   forceDemo: boolean;
