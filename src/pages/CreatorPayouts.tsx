@@ -3,10 +3,15 @@ import { Link, useSearchParams } from 'react-router-dom';
 import { useMutation, useQuery } from 'convex/react';
 import { format } from 'date-fns';
 import {
-  ArrowDownToLine,
-  ArrowLeft,
-  CheckCircle2,
-  Clock,
+  ArrowUpFromLine,
+  Building2,
+  Calendar,
+  Check,
+  ChevronLeft,
+  ChevronRight,
+  CircleHelp,
+  ExternalLink,
+  Lightbulb,
   Loader2,
   Settings,
   Sparkles,
@@ -16,19 +21,43 @@ import {
 import { toast } from 'sonner';
 import { api } from '../../convex/_generated/api';
 import { DashboardLayout } from '@/components/dashboard/DashboardLayout';
-import { DashboardKpiStrip } from '@/components/dashboard/DashboardKpiStrip';
 import { EarningsSubnav } from '@/components/creator/EarningsSubnav';
 import { Button } from '@/components/ui/button';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import {
   CREATOR_PAYOUTS_DEMO_HISTORY,
   CREATOR_PAYOUTS_DEMO_KPIS,
+  CREATOR_PAYOUTS_TIPS,
   shouldUseCreatorPayoutsDemo,
 } from '@/lib/creatorPayoutsDemo';
 import { kpiIconTone } from '@/lib/kpiIconTones';
 import { cn } from '@/lib/utils';
+
+const PAGE_SIZE = 10;
+
+function money(amount: number): string {
+  return `$${amount.toLocaleString(undefined, {
+    minimumFractionDigits: amount % 1 === 0 ? 0 : 2,
+    maximumFractionDigits: 2,
+  })}`;
+}
+
+function moneyExact(amount: number): string {
+  return `$${amount.toLocaleString(undefined, {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  })}`;
+}
 
 function payoutStatusPill(status: string): string {
   const s = status.toLowerCase();
@@ -46,7 +75,17 @@ function payoutStatusPill(status: string): string {
 
 function payoutStatusLabel(status: string): string {
   if (status === 'paid') return 'Completed';
-  return status.replace(/_/g, ' ');
+  if (status === 'completed') return 'Completed';
+  return status.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
+}
+
+function methodDisplay(method: string): string {
+  const m = method.toLowerCase();
+  if (m.includes('wise')) return 'Wise (USD)';
+  if (m === 'bank_transfer' || m === 'bank') return 'Bank transfer';
+  if (m === 'paypal') return 'PayPal';
+  if (m === 'stripe') return 'Stripe';
+  return method;
 }
 
 const CreatorPayouts = () => {
@@ -63,10 +102,12 @@ const CreatorPayouts = () => {
 
   const [method, setMethod] = useState('bank_transfer');
   const [accountLabel, setAccountLabel] = useState('');
-  const [schedule, setSchedule] = useState('monthly');
+  const [schedule, setSchedule] = useState('weekly');
   const [minimumPayout, setMinimumPayout] = useState(50);
   const [savingSettings, setSavingSettings] = useState(false);
   const [requesting, setRequesting] = useState(false);
+  const [settingsOpen, setSettingsOpen] = useState(false);
+  const [tablePage, setTablePage] = useState(0);
 
   useEffect(() => {
     if (!settingsRow) return;
@@ -77,9 +118,7 @@ const CreatorPayouts = () => {
   }, [settingsRow]);
 
   const loading =
-    creator === undefined ||
-    payoutRows === undefined ||
-    balance === undefined;
+    creator === undefined || payoutRows === undefined || balance === undefined;
 
   const livePayouts = useMemo(
     () =>
@@ -88,6 +127,7 @@ const CreatorPayouts = () => {
         amount: p.amountCents / 100,
         status: p.status,
         method: p.method ?? '—',
+        referenceId: p._id.slice(-9),
         created_at: p.createdAt,
         processed_at: p.processedAt ?? null,
       })),
@@ -95,7 +135,6 @@ const CreatorPayouts = () => {
   );
 
   const liveAvailable = (balance?.availableCents ?? 0) / 100;
-  const liveEarned = (balance?.earnedCents ?? 0) / 100;
 
   const useDemo = shouldUseCreatorPayoutsDemo({
     historyCount: livePayouts.length,
@@ -106,31 +145,53 @@ const CreatorPayouts = () => {
 
   const payouts = useDemo ? CREATOR_PAYOUTS_DEMO_HISTORY : livePayouts;
 
+  const available = useDemo ? CREATOR_PAYOUTS_DEMO_KPIS.available : liveAvailable;
   const paidOut = useDemo
     ? CREATOR_PAYOUTS_DEMO_KPIS.paidOut
     : payouts
         .filter((p) => p.status === 'completed' || p.status === 'paid')
         .reduce((a, b) => a + b.amount, 0);
-  const pending = useDemo
-    ? CREATOR_PAYOUTS_DEMO_KPIS.pending
-    : payouts
-        .filter(
-          (p) =>
-            p.status === 'pending' ||
-            p.status === 'processing' ||
-            p.status === 'requested' ||
-            p.status === 'approved',
-        )
-        .reduce((a, b) => a + b.amount, 0);
-  const available = useDemo ? CREATOR_PAYOUTS_DEMO_KPIS.available : liveAvailable;
-  const earned = useDemo ? CREATOR_PAYOUTS_DEMO_KPIS.earned : liveEarned;
   const minPayout = useDemo ? CREATOR_PAYOUTS_DEMO_KPIS.minimumPayout : minimumPayout;
+
+  const methodMasked = useDemo
+    ? CREATOR_PAYOUTS_DEMO_KPIS.methodMasked
+    : accountLabel
+      ? accountLabel
+      : '—';
+  const methodLabel = useDemo
+    ? CREATOR_PAYOUTS_DEMO_KPIS.methodLabel
+    : methodDisplay(method);
+  const scheduleLabel = useDemo
+    ? CREATOR_PAYOUTS_DEMO_KPIS.scheduleLabel
+    : schedule === 'weekly'
+      ? 'Weekly (Fridays)'
+      : schedule === 'biweekly'
+        ? 'Biweekly'
+        : 'Monthly';
+  const nextPayoutLabel = useDemo ? CREATOR_PAYOUTS_DEMO_KPIS.nextPayoutLabel : '—';
+  const nextPayoutRemaining = useDemo ? CREATOR_PAYOUTS_DEMO_KPIS.nextPayoutRemaining : undefined;
+
+  const pageCount = Math.max(1, Math.ceil(payouts.length / PAGE_SIZE));
+  const safePage = Math.min(tablePage, pageCount - 1);
+  const pageRows = payouts.slice(safePage * PAGE_SIZE, safePage * PAGE_SIZE + PAGE_SIZE);
+  const showingFrom = payouts.length === 0 ? 0 : safePage * PAGE_SIZE + 1;
+  const showingTo = Math.min(payouts.length, (safePage + 1) * PAGE_SIZE);
+
+  const pageNumbers = useMemo(() => {
+    const total = pageCount;
+    if (total <= 5) return Array.from({ length: total }, (_, i) => i);
+    const start = Math.max(0, Math.min(safePage - 1, total - 3));
+    return [start, start + 1, start + 2].filter((p) => p < total);
+  }, [pageCount, safePage]);
+
+  const openSettings = () => setSettingsOpen(true);
 
   const saveSettings = async () => {
     if (useDemo) {
       toast.message('Sample preview — settings not saved', {
         description: 'Create real payout activity or add ?demo=0 to manage live settings.',
       });
+      setSettingsOpen(false);
       return;
     }
     setSavingSettings(true);
@@ -142,6 +203,7 @@ const CreatorPayouts = () => {
         minimumPayoutCents: Math.round(minimumPayout * 100),
       });
       toast.success('Payout settings saved');
+      setSettingsOpen(false);
     } catch (e) {
       toast.error(e instanceof Error ? e.message : 'Failed to save settings');
     } finally {
@@ -152,7 +214,7 @@ const CreatorPayouts = () => {
   const requestPayout = async () => {
     if (useDemo) {
       toast.message('Sample preview — payout not requested', {
-        description: 'This is mock data for design review. Real balances unlock Request payout.',
+        description: 'This is mock data for design review. Real balances unlock Withdraw Now.',
       });
       return;
     }
@@ -174,6 +236,12 @@ const CreatorPayouts = () => {
     }
   };
 
+  const viewPayout = (referenceId: string) => {
+    toast.message(useDemo ? 'Sample preview — payout detail' : 'Payout detail', {
+      description: `Reference ${referenceId}`,
+    });
+  };
+
   if (loading) {
     return (
       <DashboardLayout type="creator">
@@ -188,12 +256,9 @@ const CreatorPayouts = () => {
     return (
       <DashboardLayout type="creator">
         <header className="mb-6">
-          <p className="text-caption font-semibold uppercase tracking-[0.14em] text-muted-foreground">
-            Earnings
-          </p>
-          <h1 className="mt-1 text-heading font-bold tracking-tight text-foreground">Payouts</h1>
+          <h1 className="text-heading font-bold tracking-tight text-foreground">Payouts</h1>
           <p className="mt-1.5 text-support text-muted-foreground">
-            Request withdrawals and manage payout preferences.
+            Manage your payouts, payment method, and payout settings.
           </p>
         </header>
         <p className="py-12 text-center text-sm text-muted-foreground">Creator profile not found.</p>
@@ -205,37 +270,26 @@ const CreatorPayouts = () => {
     <DashboardLayout type="creator">
       <header className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div className="min-w-0">
-          <p className="text-caption font-semibold uppercase tracking-[0.14em] text-muted-foreground">
-            Earnings
-          </p>
-          <h1 className="mt-1 text-heading font-bold tracking-tight text-foreground md:text-heading-lg">
+          <h1 className="text-heading font-bold tracking-tight text-foreground md:text-heading-lg">
             Payouts
           </h1>
           <p className="mt-1.5 text-support text-muted-foreground">
-            Available = settled payments minus reserved payouts. Requests are manual — schedule is an
-            ops preference only.
+            Manage your payouts, payment method, and payout settings.
           </p>
         </div>
-        <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
-          <Button asChild variant="outline" className="min-h-11 shrink-0 rounded-xl">
-            <Link to="/creator/earnings">
-              <ArrowLeft className="mr-1.5 h-4 w-4" /> Back to Earnings
-            </Link>
-          </Button>
-          <Button
-            type="button"
-            className="min-h-11 shrink-0 rounded-xl gap-2"
-            onClick={() => void requestPayout()}
-            disabled={requesting || (!useDemo && available < minPayout)}
-          >
-            {requesting ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
-            ) : (
-              <ArrowDownToLine className="h-4 w-4" />
-            )}
-            Request payout
-          </Button>
-        </div>
+        <Button
+          type="button"
+          className="min-h-11 shrink-0 rounded-xl gap-2"
+          onClick={() => void requestPayout()}
+          disabled={requesting || (!useDemo && available < minPayout)}
+        >
+          {requesting ? (
+            <Loader2 className="h-4 w-4 animate-spin" />
+          ) : (
+            <ArrowUpFromLine className="h-4 w-4" />
+          )}
+          Withdraw Now
+        </Button>
       </header>
 
       <EarningsSubnav active="payouts" />
@@ -254,143 +308,388 @@ const CreatorPayouts = () => {
       ) : null}
 
       <div className="mb-6 sm:mb-8">
-        <DashboardKpiStrip
-          items={[
-            {
-              label: 'Lifetime earned',
-              value: `$${earned.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
-              icon: TrendingUp,
-              iconClassName: kpiIconTone.sky,
-            },
-            {
-              label: 'Available',
-              value: `$${available.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
-              icon: Wallet,
-              iconClassName: kpiIconTone.emerald,
-            },
-            {
-              label: 'Pending / requested',
-              value: `$${pending.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
-              icon: Clock,
-              iconClassName: kpiIconTone.amber,
-            },
-            {
-              label: 'Paid out',
-              value: `$${paidOut.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
-              icon: CheckCircle2,
-              iconClassName: kpiIconTone.violet,
-            },
-          ]}
-        />
+        <section className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
+          <div className="rounded-2xl border border-border bg-card p-4 shadow-[var(--shadow-card)] sm:p-5">
+            <div className="mb-3 flex items-start justify-between gap-2">
+              <div
+                className={cn(
+                  'flex h-10 w-10 items-center justify-center rounded-xl',
+                  kpiIconTone.emerald,
+                )}
+              >
+                <Wallet className="h-5 w-5" aria-hidden />
+              </div>
+            </div>
+            <p className="text-2xl font-extrabold tabular-nums tracking-tight text-foreground sm:text-3xl">
+              {money(available)}
+            </p>
+            <p className="mt-1 text-sm font-semibold text-muted-foreground">Available for payout</p>
+          </div>
+
+          <div className="rounded-2xl border border-border bg-card p-4 shadow-[var(--shadow-card)] sm:p-5">
+            <div className="mb-3 flex items-start justify-between gap-2">
+              <div
+                className={cn(
+                  'flex h-10 w-10 items-center justify-center rounded-xl',
+                  kpiIconTone.violet,
+                )}
+              >
+                <TrendingUp className="h-5 w-5" aria-hidden />
+              </div>
+              {useDemo ? (
+                <span className="rounded-full bg-emerald-500/10 px-2 py-0.5 text-[11px] font-bold text-emerald-600 dark:text-emerald-400">
+                  ↑ {CREATOR_PAYOUTS_DEMO_KPIS.paidOutDelta}% vs. last 3 months
+                </span>
+              ) : null}
+            </div>
+            <p className="text-2xl font-extrabold tabular-nums tracking-tight text-foreground sm:text-3xl">
+              {money(paidOut)}
+            </p>
+            <p className="mt-1 text-sm font-semibold text-muted-foreground">Total paid out</p>
+          </div>
+
+          <div className="rounded-2xl border border-border bg-card p-4 shadow-[var(--shadow-card)] sm:p-5">
+            <div className="mb-3 flex items-start justify-between gap-2">
+              <div
+                className={cn(
+                  'flex h-10 w-10 items-center justify-center rounded-xl',
+                  kpiIconTone.sky,
+                )}
+              >
+                <Calendar className="h-5 w-5" aria-hidden />
+              </div>
+            </div>
+            <p className="text-2xl font-extrabold tracking-tight text-foreground sm:text-3xl">
+              {nextPayoutLabel}
+            </p>
+            <p className="mt-1 text-sm font-semibold text-muted-foreground">Next payout date</p>
+            {nextPayoutRemaining ? (
+              <p className="mt-1 text-xs font-semibold text-muted-foreground">{nextPayoutRemaining}</p>
+            ) : null}
+          </div>
+
+          <div className="rounded-2xl border border-border bg-card p-4 shadow-[var(--shadow-card)] sm:p-5">
+            <div className="mb-3 flex items-start justify-between gap-2">
+              <div
+                className={cn(
+                  'flex h-10 w-10 items-center justify-center rounded-xl',
+                  kpiIconTone.amber,
+                )}
+              >
+                <Building2 className="h-5 w-5" aria-hidden />
+              </div>
+              <button
+                type="button"
+                onClick={openSettings}
+                className="text-[11px] font-bold text-primary hover:underline"
+              >
+                Change
+              </button>
+            </div>
+            <p className="text-2xl font-extrabold tracking-tight text-foreground sm:text-3xl">
+              {methodMasked}
+            </p>
+            <p className="mt-1 text-sm font-semibold text-muted-foreground">{methodLabel}</p>
+          </div>
+        </section>
       </div>
 
-      <section className="mb-6 rounded-2xl border border-border bg-card p-5 shadow-[var(--shadow-card)] sm:p-6">
-        <h2 className="mb-4 flex items-center gap-2 text-base font-extrabold tracking-tight text-foreground">
-          <Settings className="h-4 w-4 text-primary" /> Payout settings
-        </h2>
-        <div className="grid gap-4 sm:grid-cols-2">
-          <div className="space-y-2">
-            <Label>Method</Label>
-            <Select value={method} onValueChange={setMethod}>
-              <SelectTrigger className="min-h-11 rounded-xl">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="bank_transfer">Bank transfer</SelectItem>
-                <SelectItem value="paypal">PayPal</SelectItem>
-                <SelectItem value="stripe">Stripe</SelectItem>
-              </SelectContent>
-            </Select>
+      <div className="grid grid-cols-1 gap-4 xl:grid-cols-12">
+        <section className="rounded-2xl border border-border bg-card shadow-[var(--shadow-card)] xl:col-span-8">
+          <div className="border-b border-border px-4 py-4 sm:px-5">
+            <h2 className="text-base font-extrabold tracking-tight text-foreground">
+              Payout History
+            </h2>
           </div>
-          <div className="space-y-2">
-            <Label>Account label</Label>
-            <Input
-              value={accountLabel}
-              onChange={(e) => setAccountLabel(e.target.value)}
-              placeholder="Ending in 1234"
-              className="min-h-11 rounded-xl"
-            />
-          </div>
-          <div className="space-y-2">
-            <Label>Preferred schedule (ops preference)</Label>
-            <Select value={schedule} onValueChange={setSchedule}>
-              <SelectTrigger className="min-h-11 rounded-xl">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="weekly">Weekly</SelectItem>
-                <SelectItem value="biweekly">Biweekly</SelectItem>
-                <SelectItem value="monthly">Monthly</SelectItem>
-              </SelectContent>
-            </Select>
-            <p className="text-caption text-muted-foreground">
-              Saved for operators — payouts are not automatic. Use Request payout above.
-            </p>
-          </div>
-          <div className="space-y-2">
-            <Label>Minimum payout ($)</Label>
-            <Input
-              type="number"
-              value={minimumPayout}
-              onChange={(e) => setMinimumPayout(Number(e.target.value))}
-              className="min-h-11 rounded-xl"
-            />
-          </div>
-        </div>
-        <Button
-          type="button"
-          className="mt-4 min-h-11 rounded-xl"
-          onClick={() => void saveSettings()}
-          disabled={savingSettings}
-        >
-          {savingSettings ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Save settings'}
-        </Button>
-      </section>
 
-      <section className="rounded-2xl border border-border bg-card p-5 shadow-[var(--shadow-card)] sm:p-6">
-        <h2 className="mb-4 text-base font-extrabold tracking-tight text-foreground">
-          Payout history
-        </h2>
-        {payouts.length === 0 ? (
-          <p className="py-8 text-sm text-muted-foreground">No payouts yet.</p>
-        ) : (
-          <div className="space-y-3">
-            {payouts.map((p) => (
-              <div
-                key={p.id}
-                className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-border bg-background/50 px-4 py-3.5"
-              >
-                <div className="flex min-w-0 items-center gap-3">
-                  <span
-                    className={cn(
-                      'flex h-10 w-10 shrink-0 items-center justify-center rounded-xl',
-                      kpiIconTone.emerald,
-                    )}
-                  >
-                    <CheckCircle2 className="h-4 w-4" aria-hidden />
-                  </span>
-                  <div className="min-w-0">
-                    <p className="text-ui font-semibold text-foreground">
-                      ${p.amount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                    </p>
-                    <p className="text-caption text-muted-foreground">
-                      {p.method} · {format(p.created_at, 'MMM d, yyyy')}
-                    </p>
-                  </div>
-                </div>
-                <span
-                  className={cn(
-                    'inline-flex rounded-full border px-2.5 py-0.5 text-xs font-bold capitalize',
-                    payoutStatusPill(p.status),
-                  )}
-                >
-                  {payoutStatusLabel(p.status)}
-                </span>
+          {payouts.length === 0 ? (
+            <p className="px-4 py-12 text-center text-sm text-muted-foreground sm:px-5">
+              No payouts yet.
+            </p>
+          ) : (
+            <>
+              <div className="overflow-x-auto">
+                <table className="w-full min-w-[44rem] text-left text-sm">
+                  <thead>
+                    <tr className="border-b border-border text-xs font-bold uppercase tracking-wide text-muted-foreground">
+                      <th className="px-4 py-3 sm:px-5">Date</th>
+                      <th className="px-3 py-3">Amount</th>
+                      <th className="px-3 py-3">Payment method</th>
+                      <th className="px-3 py-3">Status</th>
+                      <th className="px-3 py-3">Reference ID</th>
+                      <th className="px-4 py-3 text-right sm:px-5">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {pageRows.map((p) => (
+                      <tr key={p.id} className="border-b border-border/70 last:border-0">
+                        <td className="whitespace-nowrap px-4 py-3.5 text-muted-foreground sm:px-5">
+                          {format(p.created_at, 'MMM d, yyyy')}
+                        </td>
+                        <td className="whitespace-nowrap px-3 py-3.5 font-semibold tabular-nums text-foreground">
+                          {moneyExact(p.amount)}
+                        </td>
+                        <td className="whitespace-nowrap px-3 py-3.5 text-muted-foreground">
+                          {methodDisplay(p.method)}
+                        </td>
+                        <td className="px-3 py-3.5">
+                          <span
+                            className={cn(
+                              'inline-flex rounded-full border px-2.5 py-0.5 text-xs font-bold',
+                              payoutStatusPill(p.status),
+                            )}
+                          >
+                            {payoutStatusLabel(p.status)}
+                          </span>
+                        </td>
+                        <td className="whitespace-nowrap px-3 py-3.5 font-mono text-xs text-muted-foreground">
+                          {p.referenceId}
+                        </td>
+                        <td className="px-4 py-3.5 text-right sm:px-5">
+                          <button
+                            type="button"
+                            className="text-sm font-bold text-primary hover:underline"
+                            onClick={() => viewPayout(p.referenceId)}
+                          >
+                            View
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
               </div>
-            ))}
+
+              <div className="flex flex-col gap-3 border-t border-border px-4 py-3 sm:flex-row sm:items-center sm:justify-between sm:px-5">
+                <p className="text-xs font-semibold text-muted-foreground">
+                  Showing {showingFrom}–{showingTo} of {payouts.length} payouts
+                </p>
+                <div className="flex items-center gap-1">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="icon"
+                    className="h-9 w-9 rounded-lg"
+                    disabled={safePage <= 0}
+                    onClick={() => setTablePage((p) => Math.max(0, p - 1))}
+                    aria-label="Previous page"
+                  >
+                    <ChevronLeft className="h-4 w-4" />
+                  </Button>
+                  {pageNumbers.map((p) => (
+                    <Button
+                      key={p}
+                      type="button"
+                      variant={p === safePage ? 'default' : 'outline'}
+                      className="h-9 min-w-9 rounded-lg px-2.5 text-xs font-bold"
+                      onClick={() => setTablePage(p)}
+                    >
+                      {p + 1}
+                    </Button>
+                  ))}
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="icon"
+                    className="h-9 w-9 rounded-lg"
+                    disabled={safePage >= pageCount - 1}
+                    onClick={() => setTablePage((p) => Math.min(pageCount - 1, p + 1))}
+                    aria-label="Next page"
+                  >
+                    <ChevronRight className="h-4 w-4" />
+                  </Button>
+                </div>
+              </div>
+            </>
+          )}
+        </section>
+
+        <aside className="flex flex-col gap-4 xl:col-span-4">
+          <section
+            id="payout-settings"
+            className="scroll-mt-24 rounded-2xl border border-border bg-card p-5 shadow-[var(--shadow-card)]"
+          >
+            <div className="mb-1 flex items-center gap-2">
+              <Settings className="h-4 w-4 text-primary" aria-hidden />
+              <h2 className="text-base font-extrabold tracking-tight text-foreground">
+                Payout Settings
+              </h2>
+            </div>
+            <p className="mb-4 text-xs text-muted-foreground">
+              Configure how and when you get paid.
+            </p>
+            <ul className="divide-y divide-border rounded-xl border border-border">
+              <li>
+                <button
+                  type="button"
+                  onClick={openSettings}
+                  className="flex w-full items-center justify-between gap-3 px-3.5 py-3 text-left transition-colors hover:bg-muted/40"
+                >
+                  <span>
+                    <span className="block text-xs font-semibold text-muted-foreground">
+                      Payment method
+                    </span>
+                    <span className="text-sm font-bold text-foreground">{methodLabel}</span>
+                  </span>
+                  <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" aria-hidden />
+                </button>
+              </li>
+              <li>
+                <button
+                  type="button"
+                  onClick={openSettings}
+                  className="flex w-full items-center justify-between gap-3 px-3.5 py-3 text-left transition-colors hover:bg-muted/40"
+                >
+                  <span>
+                    <span className="block text-xs font-semibold text-muted-foreground">
+                      Payout schedule
+                    </span>
+                    <span className="text-sm font-bold text-foreground">{scheduleLabel}</span>
+                  </span>
+                  <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" aria-hidden />
+                </button>
+              </li>
+              <li>
+                <button
+                  type="button"
+                  onClick={openSettings}
+                  className="flex w-full items-center justify-between gap-3 px-3.5 py-3 text-left transition-colors hover:bg-muted/40"
+                >
+                  <span>
+                    <span className="block text-xs font-semibold text-muted-foreground">
+                      Minimum payout amount
+                    </span>
+                    <span className="text-sm font-bold tabular-nums text-foreground">
+                      {moneyExact(minPayout)}
+                    </span>
+                  </span>
+                  <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" aria-hidden />
+                </button>
+              </li>
+            </ul>
+            <Button
+              type="button"
+              variant="outline"
+              className="mt-4 min-h-11 w-full rounded-xl border-primary/30 bg-primary/5 text-primary hover:bg-primary/10 hover:text-primary"
+              onClick={openSettings}
+            >
+              Edit Payout Settings
+            </Button>
+          </section>
+
+          <section className="rounded-2xl border border-border bg-card p-5 shadow-[var(--shadow-card)]">
+            <div className="mb-2 flex items-center gap-2">
+              <CircleHelp className="h-4 w-4 text-primary" aria-hidden />
+              <h2 className="text-base font-extrabold tracking-tight text-foreground">Need Help?</h2>
+            </div>
+            <p className="mb-4 text-sm text-muted-foreground">
+              Questions about payouts, timing, or payment methods? Our help center covers the
+              details.
+            </p>
+            <Button asChild variant="outline" className="min-h-11 w-full rounded-xl gap-2">
+              <Link to="/creator/settings">
+                View Help Center
+                <ExternalLink className="h-3.5 w-3.5" aria-hidden />
+              </Link>
+            </Button>
+          </section>
+
+          <section className="rounded-2xl border border-violet-500/20 bg-violet-500/5 p-5 shadow-[var(--shadow-card)]">
+            <div className="mb-3 flex items-center gap-2">
+              <Lightbulb className="h-4 w-4 text-amber-600 dark:text-amber-400" aria-hidden />
+              <h2 className="text-base font-extrabold tracking-tight text-foreground">
+                Tips for faster payouts
+              </h2>
+            </div>
+            <ul className="space-y-2.5">
+              {CREATOR_PAYOUTS_TIPS.map((tip) => (
+                <li key={tip} className="flex items-start gap-2.5 text-sm text-muted-foreground">
+                  <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-emerald-500/15 text-emerald-700 dark:text-emerald-400">
+                    <Check className="h-3 w-3" aria-hidden />
+                  </span>
+                  <span>{tip}</span>
+                </li>
+              ))}
+            </ul>
+          </section>
+        </aside>
+      </div>
+
+      <Dialog open={settingsOpen} onOpenChange={setSettingsOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Edit Payout Settings</DialogTitle>
+            <DialogDescription>
+              Preferred schedule is an ops preference — payouts are requested manually.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-4 py-2">
+            <div className="space-y-2">
+              <Label>Method</Label>
+              <Select value={method} onValueChange={setMethod}>
+                <SelectTrigger className="min-h-11 rounded-xl">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="bank_transfer">Bank transfer</SelectItem>
+                  <SelectItem value="paypal">PayPal</SelectItem>
+                  <SelectItem value="stripe">Stripe</SelectItem>
+                  <SelectItem value="wise">Wise (USD)</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label>Account label</Label>
+              <Input
+                value={accountLabel}
+                onChange={(e) => setAccountLabel(e.target.value)}
+                placeholder="**** 4582"
+                className="min-h-11 rounded-xl"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Preferred schedule</Label>
+              <Select value={schedule} onValueChange={setSchedule}>
+                <SelectTrigger className="min-h-11 rounded-xl">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="weekly">Weekly (Fridays)</SelectItem>
+                  <SelectItem value="biweekly">Biweekly</SelectItem>
+                  <SelectItem value="monthly">Monthly</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label>Minimum payout ($)</Label>
+              <Input
+                type="number"
+                value={minimumPayout}
+                onChange={(e) => setMinimumPayout(Number(e.target.value))}
+                className="min-h-11 rounded-xl"
+              />
+            </div>
           </div>
-        )}
-      </section>
+          <DialogFooter>
+            <Button
+              type="button"
+              variant="outline"
+              className="min-h-11 rounded-xl"
+              onClick={() => setSettingsOpen(false)}
+            >
+              Cancel
+            </Button>
+            <Button
+              type="button"
+              className="min-h-11 rounded-xl"
+              onClick={() => void saveSettings()}
+              disabled={savingSettings}
+            >
+              {savingSettings ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Save settings'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </DashboardLayout>
   );
 };
