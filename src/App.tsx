@@ -42,6 +42,7 @@ import CreatorPosts from "./pages/CreatorPosts";
 import CreatorProducts from "./pages/CreatorProducts";
 import CreatorSubscribers from "./pages/CreatorSubscribers";
 import CreatorPromo from "./pages/CreatorPromo";
+import CreatorPromoCodes from "./pages/CreatorPromoCodes";
 import CreatorPersonalGrowth from "./pages/CreatorPersonalGrowth";
 import CreatorResolutionCase from "./pages/CreatorResolutionCase";
 import CreatorSmartPricing from "./pages/CreatorSmartPricing";
@@ -157,6 +158,7 @@ const App = () => (
             <Route path="/creator/products" element={<ProtectedRoute allowedRoles={['creator']}><CreatorProducts /></ProtectedRoute>} />
             <Route path="/creator/subscribers" element={<ProtectedRoute allowedRoles={['creator']}><CreatorSubscribers /></ProtectedRoute>} />
             <Route path="/creator/promo" element={<ProtectedRoute allowedRoles={['creator']}><CreatorPromo /></ProtectedRoute>} />
+            <Route path="/creator/promo/codes" element={<ProtectedRoute allowedRoles={['creator']}><CreatorPromoCodes /></ProtectedRoute>} />
             <Route path="/creator/personal-growth-manager" element={<ProtectedRoute allowedRoles={['creator']}><CreatorPersonalGrowth /></ProtectedRoute>} />
             <Route path="/creator/resolution-case" element={<ProtectedRoute allowedRoles={['creator']}><CreatorResolutionCase /></ProtectedRoute>} />
             <Route path="/creator/smart-pricing" element={<ProtectedRoute allowedRoles={['creator']}><CreatorSmartPricing /></ProtectedRoute>} />

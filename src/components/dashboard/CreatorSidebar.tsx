@@ -85,6 +85,7 @@ function isActivePath(pathname: string, href: string): boolean {
   if (href === '/creator/promo') {
     return (
       pathname === href ||
+      pathname.startsWith('/creator/promo/codes') ||
       pathname.startsWith(`${href}/`) ||
       pathname.startsWith('/creator/links') ||
       pathname.startsWith('/creator/referrals')

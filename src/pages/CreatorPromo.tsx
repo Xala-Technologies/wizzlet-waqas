@@ -15,6 +15,7 @@ import {
   YAxis,
 } from 'recharts';
 import {
+  ArrowRight,
   Calendar,
   Loader2,
   Megaphone,
@@ -22,21 +23,19 @@ import {
   Percent,
   Plus,
   Sparkles,
-  Trash2,
   TrendingUp,
   UserPlus,
   Users,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { api } from '../../convex/_generated/api';
-import type { Id } from '../../convex/_generated/dataModel';
-import { resolveDiscountDuration, type PromoDiscountDuration } from '../../convex/lib/promoCodes';
+import { type PromoDiscountDuration } from '../../convex/lib/promoCodes';
 import { DashboardLayout } from '@/components/dashboard/DashboardLayout';
 import { DashboardKpiStrip } from '@/components/dashboard/DashboardKpiStrip';
+import { MarketingSubnav } from '@/components/creator/MarketingSubnav';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Switch } from '@/components/ui/switch';
 import {
   Select,
   SelectContent,
@@ -52,16 +51,6 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from '@/components/ui/alert-dialog';
 import { useCreatorProfile } from '@/hooks/useCreatorProfile';
 import {
   CREATOR_MARKETING_DEMO_CAMPAIGNS,
@@ -77,13 +66,6 @@ import { kpiIconTone } from '@/lib/kpiIconTones';
 import { cn } from '@/lib/utils';
 
 const THIRTY_DAYS_MS = 30 * 86_400_000;
-
-const MARKETING_TABS = [
-  { id: 'overview', label: 'Overview', kind: 'page' as const },
-  { id: 'promo-codes', label: 'Promo Codes', kind: 'anchor' as const, href: '#promo-codes' },
-  { id: 'links', label: 'Links', kind: 'route' as const, href: '/creator/links' },
-  { id: 'referrals', label: 'Referrals', kind: 'route' as const, href: '/creator/referrals' },
-] as const;
 
 type CampaignStatus = DemoCampaignRow['status'];
 
@@ -123,7 +105,6 @@ const CreatorPromo = () => {
   const analytics = useQuery(api.analytics.mutations.listForMyCreator);
   const subs = useQuery(api.subscriptions.mutations.listForMyCreator);
   const upsertPromo = useMutation(api.creators.growth.upsertPromo);
-  const removePromo = useMutation(api.creators.growth.removePromo);
 
   const [chartGranularity, setChartGranularity] = useState('daily');
   const [createOpen, setCreateOpen] = useState(false);
@@ -132,8 +113,6 @@ const CreatorPromo = () => {
   const [duration, setDuration] = useState<PromoDiscountDuration>('once');
   const [maxUses, setMaxUses] = useState('');
   const [saving, setSaving] = useState(false);
-  const [deleteId, setDeleteId] = useState<Id<'promoCodes'> | null>(null);
-  const [deleting, setDeleting] = useState(false);
 
   const loading =
     creatorLoading ||
@@ -144,7 +123,6 @@ const CreatorPromo = () => {
 
   const promoRows = promos ?? [];
   const linkRows = links ?? [];
-  const deleteTarget = promoRows.find((p) => p._id === deleteId);
 
   const realLinkClicks = linkRows.reduce((sum, l) => sum + l.clicks, 0);
   const realConversions = linkRows.reduce((sum, l) => sum + l.conversions, 0);
@@ -295,47 +273,6 @@ const CreatorPromo = () => {
     }
   };
 
-  const handleToggle = async (
-    promoId: Id<'promoCodes'>,
-    next: boolean,
-    existing: {
-      code: string;
-      discountPercent: number;
-      discountDuration: PromoDiscountDuration;
-      maxUses?: number;
-      expiresAt?: number;
-    },
-  ) => {
-    try {
-      await upsertPromo({
-        promoId,
-        code: existing.code,
-        discountPercent: existing.discountPercent,
-        discountDuration: existing.discountDuration,
-        maxUses: existing.maxUses,
-        expiresAt: existing.expiresAt,
-        isActive: next,
-      });
-      toast.success(next ? `${existing.code} enabled` : `${existing.code} disabled`);
-    } catch (e) {
-      toast.error(e instanceof Error ? e.message : 'Update failed');
-    }
-  };
-
-  const confirmDelete = async () => {
-    if (!deleteId) return;
-    setDeleting(true);
-    try {
-      await removePromo({ promoId: deleteId });
-      toast.success('Code removed');
-      setDeleteId(null);
-    } catch (e) {
-      toast.error(e instanceof Error ? e.message : 'Delete failed');
-    } finally {
-      setDeleting(false);
-    }
-  };
-
   if (loading) {
     return (
       <DashboardLayout type="creator">
@@ -388,39 +325,7 @@ const CreatorPromo = () => {
         </div>
       </header>
 
-      <nav
-        className="mb-6 flex gap-1 overflow-x-auto border-b border-border"
-        aria-label="Marketing sections"
-      >
-        {MARKETING_TABS.map((tab) => {
-          const active = tab.id === 'overview';
-          const className = cn(
-            'shrink-0 border-b-2 px-3 py-2.5 text-sm font-semibold transition-colors',
-            active
-              ? 'border-primary text-foreground'
-              : 'border-transparent text-muted-foreground hover:text-foreground',
-          );
-          if (tab.kind === 'page') {
-            return (
-              <span key={tab.id} className={className} aria-current="page">
-                {tab.label}
-              </span>
-            );
-          }
-          if (tab.kind === 'anchor') {
-            return (
-              <a key={tab.id} href={tab.href} className={className}>
-                {tab.label}
-              </a>
-            );
-          }
-          return (
-            <Link key={tab.id} to={tab.href} className={className}>
-              {tab.label}
-            </Link>
-          );
-        })}
-      </nav>
+      <MarketingSubnav active="overview" />
 
       {useDemo ? (
         <div className="mb-6 flex items-start gap-3 rounded-2xl border border-amber-500/30 bg-amber-500/10 px-4 py-3.5 text-amber-950 dark:text-amber-100 sm:items-center sm:px-5">
@@ -430,8 +335,7 @@ const CreatorPromo = () => {
           />
           <p className="min-w-0 flex-1 text-sm font-semibold leading-snug">
             Sample preview data — charts and campaigns are mock content for design review. Add{' '}
-            <span className="font-mono text-xs">?demo=0</span> to see empty real states. Promo codes
-            below stay live.
+            <span className="font-mono text-xs">?demo=0</span> to see empty real states.
           </p>
         </div>
       ) : null}
@@ -732,90 +636,34 @@ const CreatorPromo = () => {
         )}
       </section>
 
-      <section
-        id="promo-codes"
-        className="mb-6 scroll-mt-24 rounded-2xl border border-border bg-card p-5 shadow-[var(--shadow-card)]"
-      >
-        <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <h2 className="text-base font-extrabold tracking-tight text-foreground">Promo Codes</h2>
-          <Button
-            type="button"
-            className="min-h-11 shrink-0 rounded-xl"
-            onClick={() => setCreateOpen(true)}
-          >
-            <Plus className="mr-1.5 h-3.5 w-3.5" /> Create Code
-          </Button>
-        </div>
-        {promoRows.length === 0 ? (
-          <div className="rounded-xl border border-dashed border-border px-4 py-10 text-center">
-            <Percent className="mx-auto mb-3 h-8 w-8 text-muted-foreground" />
-            <p className="text-ui font-semibold text-foreground">No promo codes yet</p>
-            <p className="mt-1 text-support text-muted-foreground">
-              Create a percent-off code for first month or forever.
+      <section className="mb-6 rounded-2xl border border-border bg-card p-5 shadow-[var(--shadow-card)] sm:p-6">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <div className="min-w-0">
+            <h2 className="flex items-center gap-2 text-base font-extrabold tracking-tight text-foreground">
+              <Percent className="h-4 w-4 text-primary" /> Promo Codes
+            </h2>
+            <p className="mt-1.5 text-support text-muted-foreground">
+              Create discount codes, pause campaigns, and track uses on the dedicated Promo Codes
+              page.
             </p>
           </div>
-        ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full min-w-[22rem] text-left text-sm">
-              <thead>
-                <tr className="border-b border-border text-xs font-bold uppercase tracking-wide text-muted-foreground">
-                  <th className="py-2 pr-2">Code</th>
-                  <th className="py-2 pr-2">Discount</th>
-                  <th className="py-2 pr-2">Used</th>
-                  <th className="py-2 pr-2 text-center">Active</th>
-                  <th className="py-2 text-right"> </th>
-                </tr>
-              </thead>
-              <tbody>
-                {promoRows.map((p) => {
-                  const dur = resolveDiscountDuration(p);
-                  return (
-                    <tr key={p._id} className="border-b border-border/70 last:border-0">
-                      <td className="py-3 pr-2 font-mono font-semibold">{p.code}</td>
-                      <td className="py-3 pr-2 text-muted-foreground">
-                        {p.discountPercent}% · {dur === 'forever' ? 'forever' : 'once'}
-                      </td>
-                      <td className="py-3 pr-2 tabular-nums text-muted-foreground">
-                        {p.usedCount}
-                        {p.maxUses != null ? `/${p.maxUses}` : ''}
-                      </td>
-                      <td className="py-3 pr-2 text-center">
-                        <Switch
-                          aria-label={`Promo code ${p.code} active`}
-                          checked={p.isActive}
-                          onCheckedChange={(v) =>
-                            void handleToggle(p._id, v, {
-                              code: p.code,
-                              discountPercent: p.discountPercent,
-                              discountDuration: dur,
-                              maxUses: p.maxUses,
-                              expiresAt: p.expiresAt,
-                            })
-                          }
-                        />
-                      </td>
-                      <td className="py-3 text-right">
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="icon"
-                          className="min-h-11 min-w-11 text-destructive hover:text-destructive"
-                          onClick={() => setDeleteId(p._id)}
-                          aria-label={`Delete ${p.code}`}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+            <Button
+              type="button"
+              variant="outline"
+              className="min-h-11 shrink-0 rounded-xl"
+              onClick={() => setCreateOpen(true)}
+            >
+              <Plus className="mr-1.5 h-3.5 w-3.5" /> Create Code
+            </Button>
+            <Button asChild className="min-h-11 shrink-0 rounded-xl">
+              <Link to="/creator/promo/codes">
+                Manage all codes
+                <ArrowRight className="ml-1.5 h-3.5 w-3.5" />
+              </Link>
+            </Button>
           </div>
-        )}
-        <p className="mt-3 text-caption text-muted-foreground">
-          Disabling or deleting a code does not change past purchases.
-        </p>
+        </div>
       </section>
 
       <Dialog open={createOpen} onOpenChange={setCreateOpen}>
@@ -921,37 +769,6 @@ const CreatorPromo = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-
-      <AlertDialog
-        open={!!deleteId}
-        onOpenChange={(open) => {
-          if (!open) setDeleteId(null);
-        }}
-      >
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Delete this promo code?</AlertDialogTitle>
-            <AlertDialogDescription>
-              {deleteTarget
-                ? `“${deleteTarget.code}” will be removed from your catalogue. Existing purchases keep their original discount terms.`
-                : 'This code will be removed from your catalogue. Existing purchases keep their original discount terms.'}
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel disabled={deleting}>Cancel</AlertDialogCancel>
-            <AlertDialogAction
-              disabled={deleting}
-              onClick={(e) => {
-                e.preventDefault();
-                void confirmDelete();
-              }}
-            >
-              {deleting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-              Delete
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
     </DashboardLayout>
   );
 };
