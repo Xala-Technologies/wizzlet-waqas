@@ -32,7 +32,6 @@ import {
 import { api } from '../../convex/_generated/api';
 import { DashboardLayout } from '@/components/dashboard/DashboardLayout';
 import { DashboardKpiStrip } from '@/components/dashboard/DashboardKpiStrip';
-import { Button } from '@/components/ui/button';
 import {
   Select,
   SelectContent,
@@ -148,9 +147,10 @@ const CreatorPerformanceTracker = () => {
   const earnings = useQuery(api.creators.earnings.myEarnings);
   const subs = useQuery(api.subscriptions.mutations.listForMyCreator);
   const posts = useQuery(api.posts.queries.listMine);
+  const analytics = useQuery(api.analytics.mutations.listForMyCreator);
   const products = useQuery(
     api.products.mutations.listByCreator,
-    creator?._id ? { creatorId: creator._id } : 'skip',
+    creator?._id ? { creatorId: creator._id, activeOnly: true } : 'skip',
   );
 
   const [chartRange, setChartRange] = useState<ChartRange>('30D');
@@ -161,6 +161,7 @@ const CreatorPerformanceTracker = () => {
     earnings === undefined ||
     subs === undefined ||
     posts === undefined ||
+    analytics === undefined ||
     (creator?._id != null && products === undefined);
 
   const activeSubs = useMemo(
@@ -191,7 +192,7 @@ const CreatorPerformanceTracker = () => {
         mrrDelta: null as number | null,
         totalSubscribers: activeSubs.length,
         subscribersDelta: null as number | null,
-        postViews: posts?.length ? posts.length * 120 : 0,
+        postViews: (analytics ?? []).filter((e) => e.eventType === 'post_view').length,
         postViewsDelta: null as number | null,
         dateRangeLabel: 'Last 30 days',
       };
@@ -319,24 +320,17 @@ const CreatorPerformanceTracker = () => {
     <DashboardLayout type="creator">
       <header className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div className="min-w-0">
-          <p className="text-caption font-semibold uppercase tracking-[0.14em] text-muted-foreground">
-            Performance
-          </p>
-          <h1 className="mt-1 text-heading font-bold tracking-tight text-foreground md:text-heading-lg">
+          <h1 className="text-heading font-bold tracking-tight text-foreground md:text-heading-lg">
             Performance
           </h1>
           <p className="mt-1.5 max-w-xl text-support text-muted-foreground">
             Track your growth, analyze your content, and make smarter decisions.
           </p>
         </div>
-        <Button
-          type="button"
-          variant="outline"
-          className="min-h-11 shrink-0 gap-2 rounded-xl border-border bg-card shadow-[var(--shadow-card)]"
-        >
+        <div className="flex h-11 shrink-0 items-center gap-2 rounded-xl border border-border bg-card px-3.5 text-sm font-semibold text-foreground shadow-[var(--shadow-card)]">
           <Calendar className="h-4 w-4 text-muted-foreground" aria-hidden />
-          <span className="text-sm font-semibold">{metrics.dateRangeLabel}</span>
-        </Button>
+          <span className="tabular-nums">{metrics.dateRangeLabel}</span>
+        </div>
       </header>
 
       {useDemo ? (
@@ -362,7 +356,7 @@ const CreatorPerformanceTracker = () => {
               iconClassName: kpiIconTone.emerald,
               trendLabel:
                 metrics.totalRevenueDelta != null
-                  ? `↑ ${metrics.totalRevenueDelta}% vs. previous month`
+                  ? `↑ ${metrics.totalRevenueDelta}%`
                   : undefined,
               trendPositive: true,
             },
@@ -373,7 +367,7 @@ const CreatorPerformanceTracker = () => {
               iconClassName: kpiIconTone.violet,
               trendLabel:
                 metrics.mrrDelta != null
-                  ? `↑ ${metrics.mrrDelta}% vs. previous month`
+                  ? `↑ ${metrics.mrrDelta}%`
                   : undefined,
               trendPositive: true,
             },
@@ -384,7 +378,7 @@ const CreatorPerformanceTracker = () => {
               iconClassName: kpiIconTone.violet,
               trendLabel:
                 metrics.subscribersDelta != null
-                  ? `↑ ${metrics.subscribersDelta}% vs. previous month`
+                  ? `↑ ${metrics.subscribersDelta}%`
                   : undefined,
               trendPositive: true,
               href: '/creator/subscribers',
@@ -393,10 +387,10 @@ const CreatorPerformanceTracker = () => {
               label: 'Post views',
               value: formatCompactCount(metrics.postViews),
               icon: Eye,
-              iconClassName: kpiIconTone.sky,
+              iconClassName: kpiIconTone.violet,
               trendLabel:
                 metrics.postViewsDelta != null
-                  ? `↑ ${metrics.postViewsDelta}% vs. previous month`
+                  ? `↑ ${metrics.postViewsDelta}%`
                   : undefined,
               trendPositive: true,
             },
