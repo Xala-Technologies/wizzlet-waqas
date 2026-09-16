@@ -18,6 +18,12 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import {
   AlertTriangle,
   Banknote,
   Bell,
@@ -26,20 +32,24 @@ import {
   ChevronRight,
   CircleHelp,
   CreditCard,
+  Crown,
   Download,
   ExternalLink,
+  Eye,
   ImageIcon,
   Info,
   KeyRound,
   Link as LinkIcon,
   Loader2,
   Lock,
+  MoreVertical,
   RefreshCw,
   Settings,
   Shield,
   Sparkles,
   Trash2,
   Upload,
+  User,
   Users,
   Wallet,
 } from 'lucide-react';
@@ -50,7 +60,11 @@ import {
   CREATOR_BRANDING_TIPS,
   CREATOR_SETTINGS_DEMO,
   CREATOR_SETTINGS_STATUS_COPY,
+  CREATOR_TEAM_DEMO_MEMBERS,
+  CREATOR_TEAM_ROLE_PERMISSIONS,
   shouldUseCreatorSettingsDemo,
+  type DemoTeamMember,
+  type TeamRole,
 } from '@/lib/creatorSettingsDemo';
 import { cn } from '@/lib/utils';
 
@@ -91,6 +105,28 @@ function writeStoredBranding(creatorId: string, value: StoredBranding): void {
   } catch {
     // ignore quota / private mode
   }
+}
+
+
+function teamInitials(name: string): string {
+  const parts = name.trim().split(/\s+/);
+  const a = parts[0]?.[0] ?? '?';
+  const b = parts[1]?.[0] ?? '';
+  return `${a}${b}`.toUpperCase();
+}
+
+function teamRoleLabel(role: TeamRole): string {
+  if (role === 'owner') return 'Owner';
+  if (role === 'admin') return 'Admin';
+  if (role === 'member') return 'Member';
+  return 'Viewer';
+}
+
+function teamRoleIcon(role: TeamRole) {
+  if (role === 'owner') return Crown;
+  if (role === 'admin') return Users;
+  if (role === 'member') return User;
+  return Eye;
 }
 
 const CreatorSettings = () => {
@@ -145,6 +181,11 @@ const CreatorSettings = () => {
   const [notifPayments, setNotifPayments] = useState(true);
   const [notifPicks, setNotifPicks] = useState(true);
   const [notifMarketing, setNotifMarketing] = useState(false);
+
+  const [teamMembers, setTeamMembers] = useState<DemoTeamMember[]>(CREATOR_TEAM_DEMO_MEMBERS);
+  const [inviteEmail, setInviteEmail] = useState('');
+  const [inviteRole, setInviteRole] = useState<TeamRole>('member');
+  const [sendingInvite, setSendingInvite] = useState(false);
 
   useEffect(() => {
     if (!creator) {
@@ -1105,31 +1146,302 @@ const CreatorSettings = () => {
       ) : null}
 
       {tab === 'team' ? (
-        <section className={cn(cardClass, 'space-y-4')}>
-          <div className="flex items-start gap-3">
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-violet-500/10 text-violet-600">
-              <Users className="h-4 w-4" />
+        <div className="grid grid-cols-1 gap-4 xl:grid-cols-12">
+          <section className={cn(cardClass, 'overflow-hidden p-0 xl:col-span-8')}>
+            <div className="border-b border-border px-5 py-4">
+              <h2 className="text-base font-extrabold tracking-tight text-foreground">
+                Team Members
+              </h2>
             </div>
-            <div>
-              <h2 className="text-base font-extrabold tracking-tight text-foreground">Team</h2>
-              <p className="mt-1 text-sm text-muted-foreground">
-                Invite managers and editors to help run your channel. Team seats are coming soon.
+            <div className="overflow-x-auto">
+              <table className="w-full min-w-[40rem] text-left text-sm">
+                <thead>
+                  <tr className="border-b border-border text-xs font-bold uppercase tracking-wide text-muted-foreground">
+                    <th className="px-5 py-3">Member</th>
+                    <th className="px-3 py-3">Role</th>
+                    <th className="px-3 py-3">Status</th>
+                    <th className="px-3 py-3">Joined</th>
+                    <th className="w-12 px-5 py-3 text-right"> </th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {(useDemo
+                    ? teamMembers
+                    : [
+                        {
+                          id: 'you',
+                          name: displayName || me?.fullName || me?.name || 'You',
+                          email: me?.email || '—',
+                          role: 'owner' as TeamRole,
+                          status: 'active' as const,
+                          joinedLabel: '—',
+                          isYou: true,
+                          avatarTone:
+                            'bg-violet-500/15 text-violet-700 dark:text-violet-400',
+                        },
+                      ]
+                  ).map((member) => {
+                    return (
+                      <tr key={member.id} className="border-b border-border/70 last:border-0">
+                        <td className="px-5 py-3.5">
+                          <div className="flex min-w-0 items-center gap-3">
+                            <span
+                              className={cn(
+                                'flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-xs font-bold',
+                                member.avatarTone,
+                              )}
+                            >
+                              {teamInitials(member.name)}
+                            </span>
+                            <span className="min-w-0">
+                              <span className="block truncate font-bold text-foreground">
+                                {member.name}
+                                {member.isYou ? (
+                                  <span className="ml-1.5 text-xs font-semibold text-muted-foreground">
+                                    (You)
+                                  </span>
+                                ) : null}
+                              </span>
+                              <span className="block truncate text-xs text-muted-foreground">
+                                {member.email}
+                              </span>
+                            </span>
+                          </div>
+                        </td>
+                        <td className="px-3 py-3.5">
+                          {member.role === 'owner' ? (
+                            <span className="inline-flex items-center gap-1.5 rounded-full border border-violet-500/25 bg-violet-500/10 px-2.5 py-0.5 text-xs font-bold text-violet-700 dark:text-violet-400">
+                              <Crown className="h-3 w-3" aria-hidden />
+                              Owner
+                            </span>
+                          ) : (
+                            <Select
+                              value={member.role}
+                              onValueChange={(v) => {
+                                const next = v as TeamRole;
+                                if (useDemo) {
+                                  setTeamMembers((rows) =>
+                                    rows.map((r) =>
+                                      r.id === member.id ? { ...r, role: next } : r,
+                                    ),
+                                  );
+                                  toast.message('Sample preview — role updated locally');
+                                  return;
+                                }
+                                toast.message('Role change', {
+                                  description: 'Team roles are not wired to the backend yet.',
+                                });
+                              }}
+                            >
+                              <SelectTrigger className="h-9 w-[7.5rem] rounded-lg text-xs font-bold">
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="admin">Admin</SelectItem>
+                                <SelectItem value="member">Member</SelectItem>
+                                <SelectItem value="viewer">Viewer</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          )}
+                        </td>
+                        <td className="px-3 py-3.5">
+                          <span className="inline-flex rounded-full border border-emerald-500/25 bg-emerald-500/10 px-2.5 py-0.5 text-xs font-bold text-emerald-700 dark:text-emerald-400">
+                            Active
+                          </span>
+                        </td>
+                        <td className="whitespace-nowrap px-3 py-3.5 text-muted-foreground">
+                          {member.joinedLabel}
+                        </td>
+                        <td className="px-5 py-3.5 text-right">
+                          {member.role === 'owner' ? (
+                            <span className="text-xs text-muted-foreground">—</span>
+                          ) : (
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <Button
+                                  type="button"
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-8 w-8 rounded-lg"
+                                  aria-label={`Actions for ${member.name}`}
+                                >
+                                  <MoreVertical className="h-4 w-4" />
+                                </Button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="end">
+                                <DropdownMenuItem
+                                  onClick={() =>
+                                    toast.message(useDemo ? 'Sample preview' : 'Resend invite', {
+                                      description: member.email,
+                                    })
+                                  }
+                                >
+                                  Resend invite
+                                </DropdownMenuItem>
+                                <DropdownMenuItem
+                                  className="text-destructive focus:text-destructive"
+                                  onClick={() => {
+                                    if (useDemo) {
+                                      setTeamMembers((rows) =>
+                                        rows.filter((r) => r.id !== member.id),
+                                      );
+                                      toast.message('Sample preview — member removed locally');
+                                      return;
+                                    }
+                                    toast.message('Remove member', {
+                                      description: 'Team management is not enabled yet.',
+                                    });
+                                  }}
+                                >
+                                  Remove member
+                                </DropdownMenuItem>
+                              </DropdownMenuContent>
+                            </DropdownMenu>
+                          )}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </section>
+
+          <aside className="flex flex-col gap-4 xl:col-span-4">
+            <section className={cn(cardClass, 'space-y-4')}>
+              <h2 className="text-base font-extrabold tracking-tight text-foreground">
+                Invite Team Member
+              </h2>
+              <div className="space-y-2">
+                <Label htmlFor="invite-email">Email address</Label>
+                <Input
+                  id="invite-email"
+                  type="email"
+                  value={inviteEmail}
+                  onChange={(e) => setInviteEmail(e.target.value)}
+                  placeholder="name@company.com"
+                  className="min-h-11 rounded-xl"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>Role</Label>
+                <Select
+                  value={inviteRole}
+                  onValueChange={(v) => setInviteRole(v as TeamRole)}
+                >
+                  <SelectTrigger className="min-h-11 rounded-xl">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="admin">Admin</SelectItem>
+                    <SelectItem value="member">Member</SelectItem>
+                    <SelectItem value="viewer">Viewer</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <Button
+                type="button"
+                className="min-h-11 w-full rounded-xl"
+                disabled={sendingInvite}
+                onClick={() => {
+                  const email = inviteEmail.trim();
+                  if (!email || !email.includes('@')) {
+                    toast.error('Enter a valid email address');
+                    return;
+                  }
+                  if (inviteRole === 'owner') {
+                    toast.error('Owner role cannot be invited');
+                    return;
+                  }
+                  setSendingInvite(true);
+                  window.setTimeout(() => {
+                    if (useDemo) {
+                      const name = email.split('@')[0] || 'Invitee';
+                      setTeamMembers((rows) => [
+                        ...rows,
+                        {
+                          id: `demo-invite-${Date.now()}`,
+                          name: name.charAt(0).toUpperCase() + name.slice(1),
+                          email,
+                          role: inviteRole,
+                          status: 'active',
+                          joinedLabel: 'Pending',
+                          avatarTone:
+                            'bg-amber-500/15 text-amber-700 dark:text-amber-400',
+                        },
+                      ]);
+                      setInviteEmail('');
+                      toast.message('Sample preview — invite added locally', {
+                        description: `${email} as ${teamRoleLabel(inviteRole)}`,
+                      });
+                    } else {
+                      toast.message('Invite sent (preview)', {
+                        description: 'Team invites are not wired to the backend yet.',
+                      });
+                    }
+                    setSendingInvite(false);
+                  }, 350);
+                }}
+              >
+                {sendingInvite ? (
+                  <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />
+                ) : null}
+                Send Invite
+              </Button>
+            </section>
+
+            <section className={cn(cardClass, 'space-y-3')}>
+              <h2 className="text-base font-extrabold tracking-tight text-foreground">
+                Role Permissions
+              </h2>
+              <ul className="space-y-3">
+                {CREATOR_TEAM_ROLE_PERMISSIONS.map((item) => {
+                  const Icon = teamRoleIcon(item.role);
+                  return (
+                    <li key={item.role} className="flex items-start gap-3">
+                      <span className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-violet-500/10 text-violet-700 dark:text-violet-400">
+                        <Icon className="h-4 w-4" aria-hidden />
+                      </span>
+                      <span className="min-w-0">
+                        <span className="block text-sm font-bold text-foreground">
+                          {item.title}
+                        </span>
+                        <span className="block text-xs text-muted-foreground">
+                          {item.description}
+                        </span>
+                      </span>
+                    </li>
+                  );
+                })}
+              </ul>
+            </section>
+
+            <section className={cn(cardClass, 'space-y-3')}>
+              <div className="flex items-center gap-2">
+                <CircleHelp className="h-4 w-4 text-primary" aria-hidden />
+                <h2 className="text-base font-extrabold tracking-tight text-foreground">
+                  Need Help?
+                </h2>
+              </div>
+              <p className="text-sm text-muted-foreground">
+                Learn how team roles work and what each permission covers.
               </p>
-            </div>
-          </div>
-          <Button
-            type="button"
-            variant="outline"
-            className="min-h-11 rounded-xl"
-            onClick={() =>
-              toast.message('Invite teammate', {
-                description: 'Team invites are not available in this preview.',
-              })
-            }
-          >
-            Invite teammate
-          </Button>
-        </section>
+              <Button
+                type="button"
+                variant="outline"
+                className="min-h-11 w-full rounded-xl gap-2"
+                onClick={() =>
+                  toast.message('Help Center', {
+                    description: 'Team role docs will open here soon.',
+                  })
+                }
+              >
+                View Help Center
+                <ExternalLink className="h-3.5 w-3.5" aria-hidden />
+              </Button>
+            </section>
+          </aside>
+        </div>
       ) : null}
 
       {tab === 'billing' ? (

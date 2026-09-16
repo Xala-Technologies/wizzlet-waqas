@@ -43,6 +43,69 @@ export const CREATOR_BRANDING_TIPS = [
 export const CREATOR_BRANDING_INFO =
   'These branding settings appear on your public page, emails, and share links.';
 
+export type TeamRole = 'owner' | 'admin' | 'member' | 'viewer';
+export type TeamMemberStatus = 'active' | 'invited' | 'disabled';
+
+export type DemoTeamMember = {
+  id: string;
+  name: string;
+  email: string;
+  role: TeamRole;
+  status: TeamMemberStatus;
+  joinedLabel: string;
+  isYou?: boolean;
+  avatarTone: string;
+};
+
+export const CREATOR_TEAM_DEMO_MEMBERS: DemoTeamMember[] = [
+  {
+    id: 'demo-team-1',
+    name: 'AlexPicks',
+    email: 'alex@prizelet.com',
+    role: 'owner',
+    status: 'active',
+    joinedLabel: 'Jan 15, 2025',
+    isYou: true,
+    avatarTone: 'bg-violet-500/15 text-violet-700 dark:text-violet-400',
+  },
+  {
+    id: 'demo-team-2',
+    name: 'Waqas',
+    email: 'waqas@prizelet.com',
+    role: 'admin',
+    status: 'active',
+    joinedLabel: 'Jan 16, 2025',
+    avatarTone: 'bg-sky-500/15 text-sky-700 dark:text-sky-400',
+  },
+];
+
+export const CREATOR_TEAM_ROLE_PERMISSIONS: Array<{
+  role: TeamRole;
+  title: string;
+  description: string;
+}> = [
+  {
+    role: 'owner',
+    title: 'Owner',
+    description: 'Full access to all settings and features.',
+  },
+  {
+    role: 'admin',
+    title: 'Admin',
+    description: 'Manage content, products, and most settings.',
+  },
+  {
+    role: 'member',
+    title: 'Member',
+    description: 'Create and manage content.',
+  },
+  {
+    role: 'viewer',
+    title: 'Viewer',
+    description: 'View analytics and basic information.',
+  },
+];
+
 export function shouldUseCreatorSettingsDemo(opts: {
   profileSparse: boolean;
   forceDemo: boolean;
