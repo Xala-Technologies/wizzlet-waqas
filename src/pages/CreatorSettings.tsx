@@ -29,6 +29,7 @@ import {
   Download,
   ExternalLink,
   ImageIcon,
+  Info,
   KeyRound,
   Link as LinkIcon,
   Loader2,
@@ -44,6 +45,9 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import {
+  CREATOR_BRANDING_DEMO,
+  CREATOR_BRANDING_INFO,
+  CREATOR_BRANDING_TIPS,
   CREATOR_SETTINGS_DEMO,
   CREATOR_SETTINGS_STATUS_COPY,
   shouldUseCreatorSettingsDemo,
@@ -52,9 +56,42 @@ import { cn } from '@/lib/utils';
 
 const MAX_IMAGE_BYTES = 5 * 1024 * 1024;
 const BIO_MAX = 500;
+const BRAND_NAME_MAX = 50;
 
 const cardClass =
   'rounded-2xl border border-border bg-card p-5 sm:p-6 shadow-[var(--shadow-card)]';
+
+function brandingStorageKey(creatorId: string): string {
+  return `prizelet.creator.branding.${creatorId}`;
+}
+
+type StoredBranding = {
+  brandName?: string;
+  logoUrl?: string;
+  faviconUrl?: string;
+  primaryColor?: string;
+  secondaryColor?: string;
+  accentColor?: string;
+  font?: string;
+};
+
+function readStoredBranding(creatorId: string): StoredBranding | null {
+  try {
+    const raw = localStorage.getItem(brandingStorageKey(creatorId));
+    if (!raw) return null;
+    return JSON.parse(raw) as StoredBranding;
+  } catch {
+    return null;
+  }
+}
+
+function writeStoredBranding(creatorId: string, value: StoredBranding): void {
+  try {
+    localStorage.setItem(brandingStorageKey(creatorId), JSON.stringify(value));
+  } catch {
+    // ignore quota / private mode
+  }
+}
 
 const CreatorSettings = () => {
   const [searchParams] = useSearchParams();
@@ -68,12 +105,17 @@ const CreatorSettings = () => {
   const convex = useConvex();
   const bannerRef = useRef<HTMLInputElement>(null);
   const avatarRef = useRef<HTMLInputElement>(null);
+  const logoRef = useRef<HTMLInputElement>(null);
+  const faviconRef = useRef<HTMLInputElement>(null);
   const hydratedCreatorId = useRef<string | null>(null);
   const demoHydrated = useRef(false);
+  const brandingHydrated = useRef(false);
 
   const [saving, setSaving] = useState(false);
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
   const [uploadingBanner, setUploadingBanner] = useState(false);
+  const [uploadingLogo, setUploadingLogo] = useState(false);
+  const [uploadingFavicon, setUploadingFavicon] = useState(false);
   const [displayName, setDisplayName] = useState('');
   const [username, setUsername] = useState('');
   const [bio, setBio] = useState('');
@@ -82,6 +124,16 @@ const CreatorSettings = () => {
   const [discordServerId, setDiscordServerId] = useState('');
   const [discordRoleId, setDiscordRoleId] = useState('');
   const [email, setEmail] = useState('');
+
+  const [brandName, setBrandName] = useState('');
+  const [logoUrl, setLogoUrl] = useState('');
+  const [faviconUrl, setFaviconUrl] = useState('');
+  const [primaryColor, setPrimaryColor] = useState<string>(CREATOR_BRANDING_DEMO.primaryColor);
+  const [secondaryColor, setSecondaryColor] = useState<string>(
+    CREATOR_BRANDING_DEMO.secondaryColor,
+  );
+  const [accentColor, setAccentColor] = useState<string>(CREATOR_BRANDING_DEMO.accentColor);
+  const [brandFont, setBrandFont] = useState<string>(CREATOR_BRANDING_DEMO.font);
 
   const [language, setLanguage] = useState('en-US');
   const [timezone, setTimezone] = useState('Europe/Tallinn');
@@ -97,6 +149,7 @@ const CreatorSettings = () => {
   useEffect(() => {
     if (!creator) {
       hydratedCreatorId.current = null;
+      brandingHydrated.current = false;
       return;
     }
     if (hydratedCreatorId.current === creator._id) return;
@@ -108,6 +161,22 @@ const CreatorSettings = () => {
     setBannerUrl(creator.bannerUrl ?? '');
     setDiscordServerId(creator.discordServerId ?? '');
     setDiscordRoleId(creator.discordRoleId ?? '');
+    setBrandName(creator.displayName ?? '');
+    setLogoUrl(creator.avatarUrl ?? '');
+  }, [creator]);
+
+  useEffect(() => {
+    if (!creator || brandingHydrated.current) return;
+    brandingHydrated.current = true;
+    const stored = readStoredBranding(creator._id);
+    if (!stored) return;
+    if (stored.brandName) setBrandName(stored.brandName);
+    if (stored.logoUrl) setLogoUrl(stored.logoUrl);
+    if (stored.faviconUrl) setFaviconUrl(stored.faviconUrl);
+    if (stored.primaryColor) setPrimaryColor(stored.primaryColor);
+    if (stored.secondaryColor) setSecondaryColor(stored.secondaryColor);
+    if (stored.accentColor) setAccentColor(stored.accentColor);
+    if (stored.font) setBrandFont(stored.font);
   }, [creator]);
 
   useEffect(() => {
@@ -129,12 +198,17 @@ const CreatorSettings = () => {
     if (!displayName.trim()) setDisplayName(CREATOR_SETTINGS_DEMO.displayName);
     if (!bio.trim()) setBio(CREATOR_SETTINGS_DEMO.bio);
     if (!email.trim()) setEmail(CREATOR_SETTINGS_DEMO.email);
+    if (!brandName.trim()) setBrandName(CREATOR_BRANDING_DEMO.brandName);
     setLanguage(CREATOR_SETTINGS_DEMO.language);
     setTimezone(CREATOR_SETTINGS_DEMO.timezone);
     setDateFormat(CREATOR_SETTINGS_DEMO.dateFormat);
     setDraftByDefault(CREATOR_SETTINGS_DEMO.draftByDefault);
     setCommentsEnabled(CREATOR_SETTINGS_DEMO.commentsEnabled);
-  }, [useDemo, creator, displayName, bio, email]);
+    setPrimaryColor(CREATOR_BRANDING_DEMO.primaryColor);
+    setSecondaryColor(CREATOR_BRANDING_DEMO.secondaryColor);
+    setAccentColor(CREATOR_BRANDING_DEMO.accentColor);
+    setBrandFont(CREATOR_BRANDING_DEMO.font);
+  }, [useDemo, creator, displayName, bio, email, brandName]);
 
   const handleSave = async () => {
     if (!creator || saving) return;
@@ -146,14 +220,29 @@ const CreatorSettings = () => {
     }
     setSaving(true);
     try {
+      const nextDisplayName =
+        tab === 'branding' ? brandName.trim() || displayName.trim() : displayName.trim();
+      const nextAvatar =
+        tab === 'branding' ? logoUrl.trim() || avatarUrl.trim() : avatarUrl.trim();
       await updateSettings({
-        displayName: displayName.trim() || undefined,
+        displayName: nextDisplayName || undefined,
         bio: bio.trim() || undefined,
-        avatarUrl: avatarUrl.trim() || undefined,
+        avatarUrl: nextAvatar || undefined,
         bannerUrl: bannerUrl.trim() || undefined,
         discordServerId: discordServerId.trim() || null,
         discordRoleId: discordRoleId.trim() || null,
       });
+      writeStoredBranding(creator._id, {
+        brandName: brandName.trim() || nextDisplayName,
+        logoUrl: logoUrl.trim() || nextAvatar,
+        faviconUrl: faviconUrl.trim() || undefined,
+        primaryColor,
+        secondaryColor,
+        accentColor,
+        font: brandFont,
+      });
+      if (tab === 'branding' && nextDisplayName) setDisplayName(nextDisplayName);
+      if (tab === 'branding' && nextAvatar) setAvatarUrl(nextAvatar);
       toast.success('Settings saved');
     } catch (e) {
       toast.error(e instanceof Error ? e.message : 'Failed to save settings');
@@ -216,6 +305,52 @@ const CreatorSettings = () => {
     }
   };
 
+  const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = '';
+    if (!file || !creator) return;
+    if (useDemo && profileSparse) {
+      toast.message('Sample preview — upload disabled', {
+        description: 'Add real profile content or ?demo=0 to upload photos.',
+      });
+      return;
+    }
+    if (!validateImageFile(file)) return;
+    setUploadingLogo(true);
+    try {
+      const publicUrl = await uploadToConvexStorage(convex, file, 'creator-avatar');
+      setLogoUrl(publicUrl);
+      toast.success('Logo uploaded — save to publish');
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Upload failed');
+    } finally {
+      setUploadingLogo(false);
+    }
+  };
+
+  const handleFaviconUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = '';
+    if (!file || !creator) return;
+    if (useDemo && profileSparse) {
+      toast.message('Sample preview — upload disabled', {
+        description: 'Add real profile content or ?demo=0 to upload photos.',
+      });
+      return;
+    }
+    if (!validateImageFile(file)) return;
+    setUploadingFavicon(true);
+    try {
+      const publicUrl = await uploadToConvexStorage(convex, file, 'creator-favicon');
+      setFaviconUrl(publicUrl);
+      toast.success('Favicon uploaded — save to publish');
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Upload failed');
+    } finally {
+      setUploadingFavicon(false);
+    }
+  };
+
   const removeAvatar = () => {
     if (useDemo && profileSparse) {
       toast.message('Sample preview — photo not removed');
@@ -223,6 +358,24 @@ const CreatorSettings = () => {
     }
     setAvatarUrl('');
     toast.message('Photo removed — save to publish');
+  };
+
+  const removeLogo = () => {
+    if (useDemo && profileSparse) {
+      toast.message('Sample preview — logo not removed');
+      return;
+    }
+    setLogoUrl('');
+    toast.message('Logo removed — save to publish');
+  };
+
+  const removeFavicon = () => {
+    if (useDemo && profileSparse) {
+      toast.message('Sample preview — favicon not removed');
+      return;
+    }
+    setFaviconUrl('');
+    toast.message('Favicon removed — save to publish');
   };
 
   if (creator === undefined || me === undefined) {
@@ -258,7 +411,8 @@ const CreatorSettings = () => {
     );
   }
 
-  const busy = saving || uploadingAvatar || uploadingBanner;
+  const busy =
+    saving || uploadingAvatar || uploadingBanner || uploadingLogo || uploadingFavicon;
   const usernameLocked = Boolean(creator.username?.trim());
   const showSave = tab === 'general' || tab === 'branding' || tab === 'integrations';
   const stripeConnected = Boolean(creator.stripeAccountId?.trim());
@@ -620,48 +774,334 @@ const CreatorSettings = () => {
       ) : null}
 
       {tab === 'branding' ? (
-        <section className={cn(cardClass, 'space-y-5')}>
-          <h2 className="text-base font-extrabold tracking-tight text-foreground">Branding</h2>
-          <p className="text-sm text-muted-foreground">
-            Banner and profile imagery shown on your public page.
-          </p>
-          <div className="space-y-2">
-            <Label>Banner image</Label>
-            <button
-              type="button"
-              onClick={() => bannerRef.current?.click()}
-              disabled={uploadingBanner || saving}
-              className="relative flex h-40 w-full items-center justify-center overflow-hidden rounded-xl border border-dashed border-border bg-muted/30 transition-colors hover:border-primary/40 disabled:opacity-60"
-            >
-              {bannerUrl ? (
-                <img src={bannerUrl} alt="" className="h-full w-full object-cover" />
-              ) : (
-                <div className="px-4 text-center">
-                  {uploadingBanner ? (
-                    <Loader2 className="mx-auto mb-2 h-6 w-6 animate-spin text-muted-foreground" />
+        <div className="space-y-4">
+          <div className="grid grid-cols-1 gap-4 xl:grid-cols-12">
+            <section className={cn(cardClass, 'space-y-5 xl:col-span-8')}>
+              <div>
+                <h2 className="text-base font-extrabold tracking-tight text-foreground">
+                  Branding
+                </h2>
+                <p className="mt-1 text-sm text-muted-foreground">
+                  Customize your brand appearance across your page, emails, and share links.
+                </p>
+              </div>
+
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                <div className="rounded-xl border border-border bg-muted/20 p-4">
+                  <Label className="mb-3 block">Logo</Label>
+                  <div className="flex items-start gap-4">
+                    <div
+                      className="flex h-20 w-20 shrink-0 items-center justify-center overflow-hidden rounded-xl border border-border"
+                      style={{ backgroundColor: secondaryColor }}
+                    >
+                      {logoUrl ? (
+                        <img src={logoUrl} alt="" className="h-full w-full object-cover" />
+                      ) : (
+                        <span className="text-lg font-extrabold text-white">
+                          {(brandName || displayName || 'AP').slice(0, 2).toUpperCase()}
+                        </span>
+                      )}
+                    </div>
+                    <div className="min-w-0 flex-1 space-y-2">
+                      <input
+                        ref={logoRef}
+                        type="file"
+                        accept="image/jpeg,image/png,image/gif,image/webp"
+                        className="hidden"
+                        onChange={(e) => void handleLogoUpload(e)}
+                        disabled={uploadingLogo || saving}
+                      />
+                      <Button
+                        type="button"
+                        variant="outline"
+                        className="min-h-10 w-full rounded-xl gap-2"
+                        onClick={() => logoRef.current?.click()}
+                        disabled={uploadingLogo || saving}
+                      >
+                        {uploadingLogo ? (
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                        ) : (
+                          <Upload className="h-4 w-4" />
+                        )}
+                        Upload logo
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        className="min-h-9 w-full rounded-xl text-muted-foreground"
+                        onClick={removeLogo}
+                        disabled={!logoUrl || saving}
+                      >
+                        Remove
+                      </Button>
+                      <p className="text-[11px] text-muted-foreground">
+                        Square PNG or JPG. Recommended 512×512px.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="rounded-xl border border-border bg-muted/20 p-4">
+                  <Label className="mb-3 block">Favicon</Label>
+                  <div className="flex items-start gap-4">
+                    <div
+                      className="flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-lg border border-border"
+                      style={{ backgroundColor: secondaryColor }}
+                    >
+                      {faviconUrl || logoUrl ? (
+                        <img
+                          src={faviconUrl || logoUrl}
+                          alt=""
+                          className="h-full w-full object-cover"
+                        />
+                      ) : (
+                        <span className="text-xs font-extrabold text-white">
+                          {(brandName || displayName || 'AP').slice(0, 2).toUpperCase()}
+                        </span>
+                      )}
+                    </div>
+                    <div className="min-w-0 flex-1 space-y-2">
+                      <input
+                        ref={faviconRef}
+                        type="file"
+                        accept="image/jpeg,image/png,image/gif,image/webp,image/x-icon"
+                        className="hidden"
+                        onChange={(e) => void handleFaviconUpload(e)}
+                        disabled={uploadingFavicon || saving}
+                      />
+                      <Button
+                        type="button"
+                        variant="outline"
+                        className="min-h-10 w-full rounded-xl gap-2"
+                        onClick={() => faviconRef.current?.click()}
+                        disabled={uploadingFavicon || saving}
+                      >
+                        {uploadingFavicon ? (
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                        ) : (
+                          <Upload className="h-4 w-4" />
+                        )}
+                        Upload favicon
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        className="min-h-9 w-full rounded-xl text-muted-foreground"
+                        onClick={removeFavicon}
+                        disabled={!faviconUrl || saving}
+                      >
+                        Remove
+                      </Button>
+                      <p className="text-[11px] text-muted-foreground">
+                        Square icon. Recommended 32×32px.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <div className="flex items-center justify-between gap-2">
+                  <Label htmlFor="brand-name">Brand name</Label>
+                  <span className="text-xs tabular-nums text-muted-foreground">
+                    {brandName.length}/{BRAND_NAME_MAX}
+                  </span>
+                </div>
+                <Input
+                  id="brand-name"
+                  value={brandName}
+                  onChange={(e) => setBrandName(e.target.value.slice(0, BRAND_NAME_MAX))}
+                  className="min-h-11 rounded-xl"
+                  placeholder="Your brand"
+                  maxLength={BRAND_NAME_MAX}
+                />
+              </div>
+
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+                {(
+                  [
+                    {
+                      id: 'primary',
+                      label: 'Primary color',
+                      value: primaryColor,
+                      onChange: setPrimaryColor,
+                    },
+                    {
+                      id: 'secondary',
+                      label: 'Secondary color',
+                      value: secondaryColor,
+                      onChange: setSecondaryColor,
+                    },
+                    {
+                      id: 'accent',
+                      label: 'Accent color',
+                      value: accentColor,
+                      onChange: setAccentColor,
+                    },
+                  ] as const
+                ).map((swatch) => (
+                  <div key={swatch.id} className="space-y-2">
+                    <Label htmlFor={`color-${swatch.id}`}>{swatch.label}</Label>
+                    <div className="flex items-center gap-2 rounded-xl border border-border bg-background px-2 py-1.5">
+                      <input
+                        id={`color-${swatch.id}`}
+                        type="color"
+                        value={swatch.value}
+                        onChange={(e) => swatch.onChange(e.target.value.toUpperCase())}
+                        className="h-9 w-10 cursor-pointer rounded-md border-0 bg-transparent p-0"
+                        aria-label={swatch.label}
+                      />
+                      <Input
+                        value={swatch.value}
+                        onChange={(e) => {
+                          const next = e.target.value.toUpperCase();
+                          if (/^#[0-9A-F]{0,6}$/i.test(next)) swatch.onChange(next);
+                        }}
+                        className="h-9 min-h-9 border-0 bg-transparent px-1 font-mono text-sm shadow-none focus-visible:ring-0"
+                        maxLength={7}
+                      />
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              <div className="space-y-2">
+                <Label>Font (optional)</Label>
+                <Select value={brandFont} onValueChange={setBrandFont}>
+                  <SelectTrigger className="min-h-11 rounded-xl">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="inter">Inter (Default)</SelectItem>
+                    <SelectItem value="system">System UI</SelectItem>
+                    <SelectItem value="serif">Georgia (Serif)</SelectItem>
+                    <SelectItem value="mono">JetBrains Mono</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2 border-t border-border pt-5">
+                <Label>Page banner</Label>
+                <button
+                  type="button"
+                  onClick={() => bannerRef.current?.click()}
+                  disabled={uploadingBanner || saving}
+                  className="relative flex h-36 w-full items-center justify-center overflow-hidden rounded-xl border border-dashed border-border bg-muted/30 transition-colors hover:border-primary/40 disabled:opacity-60"
+                >
+                  {bannerUrl ? (
+                    <img src={bannerUrl} alt="" className="h-full w-full object-cover" />
                   ) : (
-                    <ImageIcon className="mx-auto mb-2 h-6 w-6 text-muted-foreground" />
+                    <div className="px-4 text-center">
+                      {uploadingBanner ? (
+                        <Loader2 className="mx-auto mb-2 h-6 w-6 animate-spin text-muted-foreground" />
+                      ) : (
+                        <ImageIcon className="mx-auto mb-2 h-6 w-6 text-muted-foreground" />
+                      )}
+                      <p className="text-sm text-muted-foreground">
+                        {uploadingBanner ? 'Uploading…' : 'Upload banner (1200×400 recommended)'}
+                      </p>
+                    </div>
                   )}
-                  <p className="text-sm text-muted-foreground">
-                    {uploadingBanner ? 'Uploading…' : 'Upload banner (1200×400 recommended)'}
-                  </p>
+                  {bannerUrl && !uploadingBanner ? (
+                    <div className="absolute inset-0 flex items-center justify-center bg-background/60 opacity-0 transition-opacity hover:opacity-100">
+                      <Camera className="h-5 w-5 text-foreground" />
+                    </div>
+                  ) : null}
+                </button>
+                <input
+                  ref={bannerRef}
+                  type="file"
+                  accept="image/jpeg,image/png,image/webp,image/gif"
+                  className="hidden"
+                  onChange={(e) => void handleBannerUpload(e)}
+                />
+              </div>
+            </section>
+
+            <aside className="flex flex-col gap-4 xl:col-span-4">
+              <section className={cn(cardClass, 'space-y-3 overflow-hidden p-0')}>
+                <div className="border-b border-border px-5 py-4">
+                  <h2 className="text-base font-extrabold tracking-tight text-foreground">
+                    Preview
+                  </h2>
                 </div>
-              )}
-              {bannerUrl && !uploadingBanner ? (
-                <div className="absolute inset-0 flex items-center justify-center bg-background/60 opacity-0 transition-opacity hover:opacity-100">
-                  <Camera className="h-5 w-5 text-foreground" />
+                <div className="px-5 pb-5">
+                  <div className="overflow-hidden rounded-xl border border-border shadow-sm">
+                    <div
+                      className="flex items-center gap-3 px-4 py-4"
+                      style={{ backgroundColor: secondaryColor }}
+                    >
+                      <div
+                        className="flex h-10 w-10 items-center justify-center overflow-hidden rounded-lg"
+                        style={{ backgroundColor: primaryColor }}
+                      >
+                        {logoUrl ? (
+                          <img src={logoUrl} alt="" className="h-full w-full object-cover" />
+                        ) : (
+                          <span className="text-xs font-extrabold text-white">
+                            {(brandName || displayName || 'AP').slice(0, 2).toUpperCase()}
+                          </span>
+                        )}
+                      </div>
+                      <div className="min-w-0">
+                        <p className="truncate text-sm font-bold text-white">
+                          {brandName || displayName || 'Your brand'}
+                        </p>
+                        <p className="truncate text-[11px] text-white/70">
+                          @{username || 'creator'}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="space-y-3 bg-card p-4">
+                      <p className="text-sm text-muted-foreground">
+                        {bio.trim() || CREATOR_BRANDING_DEMO.previewBio}
+                      </p>
+                      <Button
+                        type="button"
+                        className="min-h-10 w-full rounded-xl font-bold text-white hover:opacity-90"
+                        style={{ backgroundColor: primaryColor }}
+                        onClick={() =>
+                          toast.message('Preview only', {
+                            description: 'Subscribe is disabled in branding preview.',
+                          })
+                        }
+                      >
+                        Subscribe
+                      </Button>
+                      <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                        <span
+                          className="inline-block h-2.5 w-2.5 rounded-full"
+                          style={{ backgroundColor: accentColor }}
+                          aria-hidden
+                        />
+                        Accent · {accentColor}
+                      </div>
+                    </div>
+                  </div>
                 </div>
-              ) : null}
-            </button>
-            <input
-              ref={bannerRef}
-              type="file"
-              accept="image/jpeg,image/png,image/webp,image/gif"
-              className="hidden"
-              onChange={(e) => void handleBannerUpload(e)}
-            />
+              </section>
+
+              <section className="rounded-2xl border border-violet-500/20 bg-violet-500/5 p-5 shadow-[var(--shadow-card)]">
+                <div className="mb-3 flex items-center gap-2">
+                  <Sparkles className="h-4 w-4 text-violet-600 dark:text-violet-400" aria-hidden />
+                  <h2 className="text-base font-extrabold tracking-tight text-foreground">
+                    Branding Tips
+                  </h2>
+                </div>
+                <ul className="space-y-2.5">
+                  {CREATOR_BRANDING_TIPS.map((tip) => (
+                    <li key={tip} className="flex items-start gap-2.5 text-sm text-muted-foreground">
+                      <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-emerald-500/15 text-emerald-700 dark:text-emerald-400">
+                        <Check className="h-3 w-3" aria-hidden />
+                      </span>
+                      <span>{tip}</span>
+                    </li>
+                  ))}
+                </ul>
+              </section>
+            </aside>
           </div>
-        </section>
+        </div>
       ) : null}
 
       {tab === 'team' ? (
@@ -974,15 +1414,26 @@ const CreatorSettings = () => {
 
       {showSave ? (
         <div className="sticky bottom-0 -mx-1 mt-5 border-t border-border bg-background/95 px-1 py-3 backdrop-blur supports-[backdrop-filter]:bg-background/80 sm:static sm:border-0 sm:bg-transparent sm:py-0 sm:backdrop-blur-none">
-          <div className="flex justify-end">
+          <div
+            className={cn(
+              'flex flex-col gap-3 sm:flex-row sm:items-center',
+              tab === 'branding' ? 'sm:justify-between' : 'sm:justify-end',
+            )}
+          >
+            {tab === 'branding' ? (
+              <div className="flex min-w-0 items-start gap-2.5 rounded-xl border border-sky-500/25 bg-sky-500/10 px-3.5 py-2.5 text-sky-950 dark:text-sky-100 sm:max-w-xl">
+                <Info className="mt-0.5 h-4 w-4 shrink-0 text-sky-600 dark:text-sky-400" aria-hidden />
+                <p className="text-xs font-semibold leading-snug">{CREATOR_BRANDING_INFO}</p>
+              </div>
+            ) : null}
             <Button
               type="button"
-              className="min-h-11 w-full rounded-xl sm:w-auto"
+              className="min-h-11 w-full shrink-0 rounded-xl sm:w-auto"
               onClick={() => void handleSave()}
               disabled={busy}
             >
               {saving ? <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" /> : null}
-              Save changes
+              Save Changes
             </Button>
           </div>
         </div>
