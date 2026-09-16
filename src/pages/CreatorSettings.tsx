@@ -55,6 +55,8 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import {
+  CREATOR_BILLING_DEMO,
+  CREATOR_BILLING_HISTORY,
   CREATOR_BRANDING_DEMO,
   CREATOR_BRANDING_INFO,
   CREATOR_BRANDING_TIPS,
@@ -187,6 +189,14 @@ const CreatorSettings = () => {
   const [inviteRole, setInviteRole] = useState<TeamRole>('member');
   const [sendingInvite, setSendingInvite] = useState(false);
 
+  const [billingName, setBillingName] = useState('');
+  const [billingEmail, setBillingEmail] = useState('');
+  const [billingAddress, setBillingAddress] = useState('');
+  const [billingCity, setBillingCity] = useState('');
+  const [billingCountry, setBillingCountry] = useState('Estonia');
+  const [billingZip, setBillingZip] = useState('');
+  const [billingHydrated, setBillingHydrated] = useState(false);
+
   useEffect(() => {
     if (!creator) {
       hydratedCreatorId.current = null;
@@ -220,10 +230,6 @@ const CreatorSettings = () => {
     if (stored.font) setBrandFont(stored.font);
   }, [creator]);
 
-  useEffect(() => {
-    if (me?.email) setEmail(me.email);
-  }, [me?.email]);
-
   const profileSparse =
     !creator?.displayName?.trim() && !creator?.bio?.trim() && !creator?.avatarUrl?.trim();
 
@@ -232,6 +238,26 @@ const CreatorSettings = () => {
     forceDemo,
     disableDemo,
   });
+
+  useEffect(() => {
+    if (me?.email) setEmail(me.email);
+  }, [me?.email]);
+
+  useEffect(() => {
+    if (!creator || billingHydrated) return;
+    setBillingHydrated(true);
+    if (useDemo) {
+      setBillingName(CREATOR_BILLING_DEMO.billingName);
+      setBillingEmail(CREATOR_BILLING_DEMO.billingEmail);
+      setBillingAddress(CREATOR_BILLING_DEMO.billingAddress);
+      setBillingCity(CREATOR_BILLING_DEMO.billingCity);
+      setBillingCountry(CREATOR_BILLING_DEMO.billingCountry);
+      setBillingZip(CREATOR_BILLING_DEMO.billingZip);
+      return;
+    }
+    setBillingName(displayName || me?.fullName || me?.name || '');
+    setBillingEmail(me?.email || '');
+  }, [creator, billingHydrated, useDemo, displayName, me?.fullName, me?.name, me?.email]);
 
   useEffect(() => {
     if (!useDemo || !creator || demoHydrated.current) return;
@@ -1445,49 +1471,294 @@ const CreatorSettings = () => {
       ) : null}
 
       {tab === 'billing' ? (
-        <section className={cn(cardClass, 'space-y-5')}>
-          <div className="flex items-start gap-3">
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-sky-500/10 text-sky-600">
-              <CreditCard className="h-4 w-4" />
-            </div>
-            <div>
-              <h2 className="text-base font-extrabold tracking-tight text-foreground">Billing</h2>
-              <p className="mt-1 text-sm text-muted-foreground">
-                Your Prizelet creator plan and invoices.
-              </p>
-            </div>
-          </div>
-          <div className="flex flex-col gap-3 rounded-xl border border-border bg-muted/20 p-4 sm:flex-row sm:items-center sm:justify-between">
-            <div>
-              <div className="flex flex-wrap items-center gap-2">
-                <p className="text-sm font-bold text-foreground">Pro Plan</p>
-                <span className="inline-flex rounded-full bg-emerald-500/10 px-2.5 py-1 text-xs font-bold text-emerald-600 dark:text-emerald-400">
-                  Active
-                </span>
+        <div className="grid grid-cols-1 gap-4 xl:grid-cols-12">
+          <div className="flex flex-col gap-4 xl:col-span-8">
+            <section className={cn(cardClass, 'space-y-5')}>
+              <div>
+                <h2 className="text-base font-extrabold tracking-tight text-foreground">
+                  Billing Plan
+                </h2>
+                <p className="mt-1 text-sm text-muted-foreground">
+                  Manage your current plan and billing details.
+                </p>
               </div>
-              <p className="mt-1 text-xs text-muted-foreground">
-                Full creator tools, payouts, and subscriber messaging.
+              <div className="rounded-xl border border-border bg-muted/20 p-4 sm:p-5">
+                <div className="flex flex-wrap items-start justify-between gap-3">
+                  <div>
+                    <div className="flex flex-wrap items-center gap-2">
+                      <p className="text-lg font-extrabold tracking-tight text-foreground">
+                        {CREATOR_BILLING_DEMO.planName}
+                      </p>
+                      <span className="inline-flex rounded-full border border-emerald-500/25 bg-emerald-500/10 px-2.5 py-0.5 text-xs font-bold text-emerald-700 dark:text-emerald-400">
+                        Active
+                      </span>
+                    </div>
+                    <p className="mt-1 text-sm font-semibold text-muted-foreground">
+                      {CREATOR_BILLING_DEMO.planPriceLabel}
+                    </p>
+                  </div>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="min-h-11 shrink-0 rounded-xl"
+                    onClick={() =>
+                      toast.message('Change plan', {
+                        description: 'Plan changes are not wired up in this preview.',
+                      })
+                    }
+                  >
+                    Change Plan
+                  </Button>
+                </div>
+                <ul className="mt-4 grid gap-2 sm:grid-cols-2">
+                  {CREATOR_BILLING_DEMO.features.map((feature) => (
+                    <li
+                      key={feature}
+                      className="flex items-center gap-2 text-sm text-muted-foreground"
+                    >
+                      <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-emerald-500/15 text-emerald-700 dark:text-emerald-400">
+                        <Check className="h-3 w-3" aria-hidden />
+                      </span>
+                      {feature}
+                    </li>
+                  ))}
+                </ul>
+                <p className="mt-4 rounded-lg border border-border bg-background/70 px-3 py-2.5 text-xs text-muted-foreground">
+                  Next billing date{' '}
+                  <span className="font-semibold text-foreground">
+                    {CREATOR_BILLING_DEMO.nextBillingDate}
+                  </span>
+                  . Your card will be charged{' '}
+                  <span className="font-semibold text-foreground">
+                    {CREATOR_BILLING_DEMO.planAmount}
+                  </span>
+                  .
+                </p>
+              </div>
+            </section>
+
+            <section className={cn(cardClass, 'space-y-4')}>
+              <div>
+                <h2 className="text-base font-extrabold tracking-tight text-foreground">
+                  Billing Information
+                </h2>
+                <p className="mt-1 text-sm text-muted-foreground">
+                  Update your billing details and address.
+                </p>
+              </div>
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                <div className="space-y-2">
+                  <Label htmlFor="billing-name">Name</Label>
+                  <Input
+                    id="billing-name"
+                    value={billingName}
+                    onChange={(e) => setBillingName(e.target.value)}
+                    className="min-h-11 rounded-xl"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="billing-email">Email</Label>
+                  <Input
+                    id="billing-email"
+                    type="email"
+                    value={billingEmail}
+                    onChange={(e) => setBillingEmail(e.target.value)}
+                    className="min-h-11 rounded-xl"
+                  />
+                </div>
+                <div className="space-y-2 sm:col-span-2">
+                  <Label htmlFor="billing-address">Billing address</Label>
+                  <Input
+                    id="billing-address"
+                    value={billingAddress}
+                    onChange={(e) => setBillingAddress(e.target.value)}
+                    className="min-h-11 rounded-xl"
+                    placeholder="Street address"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="billing-city">City</Label>
+                  <Input
+                    id="billing-city"
+                    value={billingCity}
+                    onChange={(e) => setBillingCity(e.target.value)}
+                    className="min-h-11 rounded-xl"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Country</Label>
+                  <Select value={billingCountry} onValueChange={setBillingCountry}>
+                    <SelectTrigger className="min-h-11 rounded-xl">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="Estonia">Estonia</SelectItem>
+                      <SelectItem value="United States">United States</SelectItem>
+                      <SelectItem value="United Kingdom">United Kingdom</SelectItem>
+                      <SelectItem value="Germany">Germany</SelectItem>
+                      <SelectItem value="Canada">Canada</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2 sm:col-span-2 sm:max-w-xs">
+                  <Label htmlFor="billing-zip">Zip / Postal code</Label>
+                  <Input
+                    id="billing-zip"
+                    value={billingZip}
+                    onChange={(e) => setBillingZip(e.target.value)}
+                    className="min-h-11 rounded-xl"
+                  />
+                </div>
+              </div>
+              <Button
+                type="button"
+                className="min-h-11 rounded-xl"
+                onClick={() =>
+                  toast.message(
+                    useDemo ? 'Sample preview — billing not saved' : 'Billing details saved locally',
+                    {
+                      description: useDemo
+                        ? 'Add ?demo=0 once live billing is connected.'
+                        : 'Server-side billing address sync is coming soon.',
+                    },
+                  )
+                }
+              >
+                Save Changes
+              </Button>
+            </section>
+
+            <section className="space-y-3 rounded-2xl border border-destructive/30 bg-card p-5 shadow-[var(--shadow-card)] sm:p-6">
+              <h2 className="text-base font-extrabold tracking-tight text-foreground">
+                Cancel Subscription
+              </h2>
+              <p className="text-sm text-muted-foreground">
+                Your plan stays active until the end of the current billing period if you cancel.
               </p>
-            </div>
-            <Button
-              type="button"
-              variant="outline"
-              className="min-h-11 shrink-0 rounded-xl"
-              onClick={() =>
-                toast.message('Manage plan', {
-                  description: 'Plan management is not wired up in this preview.',
-                })
-              }
-            >
-              Manage plan
-            </Button>
+              <Button
+                type="button"
+                variant="outline"
+                className="min-h-11 rounded-xl border-destructive/40 text-destructive hover:bg-destructive/10 hover:text-destructive"
+                onClick={() =>
+                  toast.message('Cancel subscription', {
+                    description: 'Subscription cancellation is not enabled in this preview.',
+                  })
+                }
+              >
+                Cancel Subscription
+              </Button>
+            </section>
           </div>
-          <Button asChild variant="outline" className="min-h-11 rounded-xl gap-2">
-            <Link to="/creator/payouts">
-              <Wallet className="h-4 w-4" /> Open Payouts
-            </Link>
-          </Button>
-        </section>
+
+          <aside className="flex flex-col gap-4 xl:col-span-4">
+            <section className={cn(cardClass, 'space-y-4')}>
+              <h2 className="text-base font-extrabold tracking-tight text-foreground">
+                Payment Method
+              </h2>
+              <div className="flex items-center gap-3 rounded-xl border border-border bg-muted/20 px-4 py-3.5">
+                <span className="flex h-10 w-14 items-center justify-center rounded-md border border-border bg-background text-[10px] font-extrabold tracking-wide text-sky-700 dark:text-sky-400">
+                  VISA
+                </span>
+                <div className="min-w-0 flex-1">
+                  <p className="text-sm font-bold text-foreground">
+                    {CREATOR_BILLING_DEMO.paymentBrand} •••• {CREATOR_BILLING_DEMO.paymentLast4}
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    Expires {CREATOR_BILLING_DEMO.paymentExpiry}
+                  </p>
+                </div>
+              </div>
+              <Button
+                type="button"
+                variant="outline"
+                className="min-h-11 w-full rounded-xl"
+                onClick={() =>
+                  toast.message('Update payment method', {
+                    description: 'Card updates are not wired up in this preview.',
+                  })
+                }
+              >
+                Update Payment Method
+              </Button>
+            </section>
+
+            <section className={cn(cardClass, 'space-y-3')}>
+              <h2 className="text-base font-extrabold tracking-tight text-foreground">
+                Billing History
+              </h2>
+              <ul className="divide-y divide-border rounded-xl border border-border">
+                {CREATOR_BILLING_HISTORY.map((invoice) => (
+                  <li
+                    key={invoice.id}
+                    className="flex items-center justify-between gap-3 px-3.5 py-3"
+                  >
+                    <div className="min-w-0">
+                      <p className="text-sm font-semibold text-foreground">{invoice.dateLabel}</p>
+                      <p className="text-xs text-muted-foreground">{invoice.amount}</p>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="inline-flex rounded-full border border-emerald-500/25 bg-emerald-500/10 px-2 py-0.5 text-[11px] font-bold text-emerald-700 dark:text-emerald-400">
+                        Paid
+                      </span>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8 rounded-lg"
+                        aria-label={`Download invoice ${invoice.dateLabel}`}
+                        onClick={() =>
+                          toast.message(
+                            useDemo ? 'Sample preview — invoice' : 'Download invoice',
+                            { description: invoice.dateLabel },
+                          )
+                        }
+                      >
+                        <Download className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+              <Button
+                type="button"
+                variant="outline"
+                className="min-h-11 w-full rounded-xl"
+                onClick={() =>
+                  toast.message('View all invoices', {
+                    description: 'Full invoice history is coming soon.',
+                  })
+                }
+              >
+                View All Invoices
+              </Button>
+            </section>
+
+            <section className={cn(cardClass, 'space-y-3')}>
+              <div className="flex items-center gap-2">
+                <CircleHelp className="h-4 w-4 text-primary" aria-hidden />
+                <h2 className="text-base font-extrabold tracking-tight text-foreground">
+                  Need Help?
+                </h2>
+              </div>
+              <p className="text-sm text-muted-foreground">
+                Questions about billing, invoices, or your plan? Visit the Help Center.
+              </p>
+              <Button
+                type="button"
+                variant="outline"
+                className="min-h-11 w-full rounded-xl gap-2"
+                onClick={() =>
+                  toast.message('Help Center', {
+                    description: 'Billing help articles will open here soon.',
+                  })
+                }
+              >
+                View Help Center
+                <ExternalLink className="h-3.5 w-3.5" aria-hidden />
+              </Button>
+            </section>
+          </aside>
+        </div>
       ) : null}
 
       {tab === 'integrations' ? (

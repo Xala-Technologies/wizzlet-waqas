@@ -106,6 +106,42 @@ export const CREATOR_TEAM_ROLE_PERMISSIONS: Array<{
   },
 ];
 
+export const CREATOR_BILLING_DEMO = {
+  planName: 'Pro Plan',
+  planPriceLabel: '$49/month',
+  planAmount: '$49.00',
+  nextBillingDate: 'Feb 15, 2025',
+  features: [
+    'Unlimited products',
+    'Unlimited subscribers',
+    'Advanced analytics',
+    'Custom domain',
+    'Priority support',
+  ],
+  paymentBrand: 'Visa',
+  paymentLast4: '4242',
+  paymentExpiry: '04/2027',
+  billingName: 'AlexPicks',
+  billingEmail: 'alex@prizelet.com',
+  billingAddress: '123 Creator St',
+  billingCity: 'Tallinn',
+  billingCountry: 'Estonia',
+  billingZip: '10115',
+} as const;
+
+export const CREATOR_BILLING_HISTORY: Array<{
+  id: string;
+  dateLabel: string;
+  amount: string;
+  status: 'paid';
+}> = [
+  { id: 'inv-1', dateLabel: 'Jan 15, 2025', amount: '$49.00', status: 'paid' },
+  { id: 'inv-2', dateLabel: 'Dec 15, 2024', amount: '$49.00', status: 'paid' },
+  { id: 'inv-3', dateLabel: 'Nov 15, 2024', amount: '$49.00', status: 'paid' },
+  { id: 'inv-4', dateLabel: 'Oct 15, 2024', amount: '$49.00', status: 'paid' },
+  { id: 'inv-5', dateLabel: 'Sep 15, 2024', amount: '$49.00', status: 'paid' },
+];
+
 export function shouldUseCreatorSettingsDemo(opts: {
   profileSparse: boolean;
   forceDemo: boolean;
