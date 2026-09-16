@@ -1,5 +1,5 @@
 import { useCallback, useMemo, useState } from 'react';
-import { Link, useSearchParams } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useMutation, useQuery } from 'convex/react';
 import { format, subDays } from 'date-fns';
 import {
@@ -18,9 +18,11 @@ import {
   YAxis,
 } from 'recharts';
 import {
+  ArrowRight,
   ChevronDown,
   Loader2,
   Percent,
+  PenLine,
   Plus,
   Sparkles,
   Target,
@@ -28,6 +30,7 @@ import {
   Trophy,
   Pencil,
   Trash2,
+  Users,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { api } from '../../convex/_generated/api';
@@ -46,6 +49,7 @@ import {
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
@@ -173,6 +177,7 @@ function MatchCell({ match, sport }: { match: string; sport: string }) {
 }
 
 const CreatorPerformanceTracker = () => {
+  const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const forceDemo = searchParams.get('demo') === '1';
   const disableDemo = searchParams.get('demo') === '0';
@@ -443,7 +448,15 @@ const CreatorPerformanceTracker = () => {
 
   const openEdit = (pick: PracticePick) => {
     if (isCreatorPerformanceDemoId(pick.id)) {
-      toast.message('Sample data — create a real practice pick to edit.');
+      toast.message('Sample preview', {
+        description: 'Edit is available for live practice picks only. Create real picks on Your Picks.',
+        action: {
+          label: 'Open Picks',
+          onClick: () => {
+            navigate('/creator/posts');
+          },
+        },
+      });
       return;
     }
     setForm({
@@ -462,7 +475,15 @@ const CreatorPerformanceTracker = () => {
 
   const handleSave = async () => {
     if (editId && isCreatorPerformanceDemoId(editId)) {
-      toast.message('Sample data — create a real practice pick instead.');
+      toast.message('Sample preview', {
+        description: 'Create a real practice pick when not in demo mode — or open Your Picks.',
+        action: {
+          label: 'Open Picks',
+          onClick: () => {
+            navigate('/creator/posts');
+          },
+        },
+      });
       return;
     }
     if (!form.pickEvent.trim()) {
@@ -498,7 +519,15 @@ const CreatorPerformanceTracker = () => {
   const confirmDelete = async () => {
     if (!deleteId) return;
     if (isCreatorPerformanceDemoId(deleteId)) {
-      toast.message('Sample data — nothing to delete.');
+      toast.message('Sample preview', {
+        description: 'Sample rows cannot be deleted. Create real picks on Your Picks.',
+        action: {
+          label: 'Open Picks',
+          onClick: () => {
+            navigate('/creator/posts');
+          },
+        },
+      });
       setDeleteId(null);
       return;
     }
@@ -541,7 +570,7 @@ const CreatorPerformanceTracker = () => {
           <h1 className="mt-1 text-heading font-bold tracking-tight text-foreground md:text-heading-lg">
             Your Performance
           </h1>
-          <p className="mt-1.5 text-support text-muted-foreground">
+          <p className="mt-1.5 max-w-xl text-support text-muted-foreground">
             Win rate, profit, and sport breakdowns from your settled picks.
           </p>
         </div>
@@ -618,6 +647,53 @@ const CreatorPerformanceTracker = () => {
           ]}
         />
       </div>
+
+      <section className="mb-8 grid grid-cols-1 gap-4 sm:grid-cols-2">
+        <Link
+          to="/creator/posts"
+          className="group flex items-start gap-4 rounded-2xl border border-border bg-card p-5 shadow-[var(--shadow-card)] transition-colors hover:border-primary/40"
+        >
+          <span
+            className={cn(
+              'flex h-11 w-11 shrink-0 items-center justify-center rounded-xl',
+              kpiIconTone.violet,
+            )}
+          >
+            <PenLine className="h-5 w-5" aria-hidden />
+          </span>
+          <div className="min-w-0 flex-1">
+            <div className="flex items-center justify-between gap-2">
+              <h3 className="text-base font-extrabold tracking-tight text-foreground">Your Picks</h3>
+              <ArrowRight className="h-4 w-4 shrink-0 text-muted-foreground transition-transform group-hover:translate-x-0.5 group-hover:text-primary" />
+            </div>
+            <p className="mt-1 text-sm text-muted-foreground">
+              Create and settle picks that feed these charts.
+            </p>
+          </div>
+        </Link>
+        <Link
+          to="/creator/subscribers"
+          className="group flex items-start gap-4 rounded-2xl border border-border bg-card p-5 shadow-[var(--shadow-card)] transition-colors hover:border-primary/40"
+        >
+          <span
+            className={cn(
+              'flex h-11 w-11 shrink-0 items-center justify-center rounded-xl',
+              kpiIconTone.amber,
+            )}
+          >
+            <Users className="h-5 w-5" aria-hidden />
+          </span>
+          <div className="min-w-0 flex-1">
+            <div className="flex items-center justify-between gap-2">
+              <h3 className="text-base font-extrabold tracking-tight text-foreground">Subscribers</h3>
+              <ArrowRight className="h-4 w-4 shrink-0 text-muted-foreground transition-transform group-hover:translate-x-0.5 group-hover:text-primary" />
+            </div>
+            <p className="mt-1 text-sm text-muted-foreground">
+              See who follows your track record.
+            </p>
+          </div>
+        </Link>
+      </section>
 
       <div className="mb-6 grid grid-cols-1 gap-4 xl:grid-cols-12">
         <section className="rounded-2xl border border-border bg-card p-5 shadow-[var(--shadow-card)] xl:col-span-8">
@@ -1046,17 +1122,42 @@ const CreatorPerformanceTracker = () => {
           else setDialogOpen(true);
         }}
       >
-        <DialogContent className="sm:max-w-lg">
-          <DialogHeader>
-            <DialogTitle>{editId ? 'Edit practice pick' : 'Add practice pick'}</DialogTitle>
+        <DialogContent
+          overlayClassName="bg-black/50"
+          className="gap-0 overflow-hidden rounded-2xl border-border bg-card p-0 shadow-[var(--shadow-card)] sm:max-w-lg sm:rounded-2xl"
+        >
+          <DialogHeader className="space-y-3 border-b border-border px-5 pb-4 pt-5 text-left sm:px-6 sm:pt-6">
+            <div className="flex items-start gap-3 pr-8">
+              <span
+                className={cn(
+                  'flex h-11 w-11 shrink-0 items-center justify-center rounded-xl',
+                  kpiIconTone.violet,
+                )}
+              >
+                <Target className="h-5 w-5" aria-hidden />
+              </span>
+              <div className="min-w-0">
+                <p className="text-caption font-semibold uppercase tracking-[0.14em] text-muted-foreground">
+                  Performance
+                </p>
+                <DialogTitle className="mt-1 text-heading font-bold tracking-tight">
+                  {editId ? 'Edit practice pick' : 'Add practice pick'}
+                </DialogTitle>
+                <DialogDescription className="mt-1.5 text-support text-muted-foreground">
+                  {editId
+                    ? 'Update odds, units, and result for this private ledger entry.'
+                    : 'Log a practice pick to track results alongside your published picks.'}
+                </DialogDescription>
+              </div>
+            </div>
           </DialogHeader>
-          <div className="grid gap-3 py-2">
+          <div className="grid gap-3 px-5 py-5 sm:px-6">
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
               <div>
                 <label className="mb-1.5 block text-sm text-muted-foreground">Date</label>
                 <Input
                   type="date"
-                  className="h-11"
+                  className="h-11 rounded-xl"
                   value={form.date}
                   onChange={(e) => setForm((f) => ({ ...f, date: e.target.value }))}
                 />
@@ -1067,7 +1168,7 @@ const CreatorPerformanceTracker = () => {
                   value={form.sport}
                   onValueChange={(v) => setForm((f) => ({ ...f, sport: v }))}
                 >
-                  <SelectTrigger className="h-11">
+                  <SelectTrigger className="h-11 rounded-xl">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -1083,7 +1184,7 @@ const CreatorPerformanceTracker = () => {
             <div>
               <label className="mb-1.5 block text-sm text-muted-foreground">Pick / Event</label>
               <Input
-                className="h-11"
+                className="h-11 rounded-xl"
                 placeholder="Chiefs -3.5"
                 value={form.pickEvent}
                 onChange={(e) => setForm((f) => ({ ...f, pickEvent: e.target.value }))}
@@ -1096,7 +1197,7 @@ const CreatorPerformanceTracker = () => {
                   type="number"
                   step="0.01"
                   min="1.01"
-                  className="h-11"
+                  className="h-11 rounded-xl"
                   placeholder="1.91"
                   value={form.euOdds}
                   onChange={(e) => handleEuChange(e.target.value)}
@@ -1105,7 +1206,7 @@ const CreatorPerformanceTracker = () => {
               <div>
                 <label className="mb-1.5 block text-sm text-muted-foreground">US Odds</label>
                 <Input
-                  className="h-11"
+                  className="h-11 rounded-xl"
                   placeholder="-110"
                   value={form.usOdds}
                   onChange={(e) => handleUsChange(e.target.value)}
@@ -1118,7 +1219,7 @@ const CreatorPerformanceTracker = () => {
                 <Input
                   type="number"
                   step="0.5"
-                  className="h-11"
+                  className="h-11 rounded-xl"
                   value={form.unitsRisked}
                   onChange={(e) => setForm((f) => ({ ...f, unitsRisked: e.target.value }))}
                 />
@@ -1129,7 +1230,7 @@ const CreatorPerformanceTracker = () => {
                   value={form.result}
                   onValueChange={(v) => setForm((f) => ({ ...f, result: v }))}
                 >
-                  <SelectTrigger className="h-11">
+                  <SelectTrigger className="h-11 rounded-xl">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -1146,18 +1247,29 @@ const CreatorPerformanceTracker = () => {
                 <Input
                   type="number"
                   step="0.1"
-                  className="h-11"
+                  className="h-11 rounded-xl"
                   value={form.unitsWonLost}
                   onChange={(e) => setForm((f) => ({ ...f, unitsWonLost: e.target.value }))}
                 />
               </div>
             </div>
           </div>
-          <DialogFooter className="gap-2">
-            <Button type="button" variant="outline" onClick={resetForm}>
+          <DialogFooter className="gap-2 border-t border-border bg-muted/20 px-5 py-4 sm:flex-row sm:justify-end sm:space-x-0 sm:gap-2 sm:px-6">
+            <Button
+              type="button"
+              variant="outline"
+              className="min-h-11 rounded-xl"
+              onClick={resetForm}
+            >
               Cancel
             </Button>
-            <Button type="button" disabled={saving} onClick={() => void handleSave()}>
+            <Button
+              type="button"
+              className="min-h-11 rounded-xl"
+              disabled={saving}
+              onClick={() => void handleSave()}
+            >
+              {saving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
               {saving ? 'Saving…' : editId ? 'Save changes' : 'Add pick'}
             </Button>
           </DialogFooter>
@@ -1165,22 +1277,46 @@ const CreatorPerformanceTracker = () => {
       </Dialog>
 
       <AlertDialog open={Boolean(deleteId)} onOpenChange={(o) => !o && setDeleteId(null)}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Delete practice pick?</AlertDialogTitle>
-            <AlertDialogDescription>
-              This removes the pick from your private ledger. This cannot be undone.
-            </AlertDialogDescription>
+        <AlertDialogContent
+          overlayClassName="bg-black/50"
+          className="gap-0 overflow-hidden rounded-2xl border-border bg-card p-0 shadow-[var(--shadow-card)] sm:rounded-2xl"
+        >
+          <AlertDialogHeader className="space-y-3 px-5 pb-2 pt-5 text-left sm:px-6 sm:pt-6">
+            <div className="flex items-start gap-3">
+              <span
+                className={cn(
+                  'flex h-11 w-11 shrink-0 items-center justify-center rounded-xl',
+                  kpiIconTone.rose,
+                )}
+              >
+                <Trash2 className="h-5 w-5" aria-hidden />
+              </span>
+              <div className="min-w-0">
+                <p className="text-caption font-semibold uppercase tracking-[0.14em] text-muted-foreground">
+                  Performance
+                </p>
+                <AlertDialogTitle className="mt-1 text-heading font-bold tracking-tight">
+                  Delete practice pick?
+                </AlertDialogTitle>
+                <AlertDialogDescription className="mt-1.5 text-support text-muted-foreground">
+                  This removes the pick from your private ledger. This cannot be undone.
+                </AlertDialogDescription>
+              </div>
+            </div>
           </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel disabled={deleting}>Cancel</AlertDialogCancel>
+          <AlertDialogFooter className="gap-2 border-t border-border bg-muted/20 px-5 py-4 sm:flex-row sm:justify-end sm:space-x-0 sm:gap-2 sm:px-6">
+            <AlertDialogCancel disabled={deleting} className="mt-0 min-h-11 rounded-xl">
+              Cancel
+            </AlertDialogCancel>
             <AlertDialogAction
               disabled={deleting}
+              className="min-h-11 rounded-xl bg-destructive text-destructive-foreground hover:bg-destructive/90"
               onClick={(e) => {
                 e.preventDefault();
                 void confirmDelete();
               }}
             >
+              {deleting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
               {deleting ? 'Deleting…' : 'Delete'}
             </AlertDialogAction>
           </AlertDialogFooter>
