@@ -11,7 +11,7 @@ import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { useCreatorProfile } from '@/hooks/useCreatorProfile';
-import { Lock, Unlock, Users, AlertTriangle, Loader2, PackageOpen } from 'lucide-react';
+import { ArrowLeft, Lock, Unlock, Users, AlertTriangle, Loader2, PackageOpen } from 'lucide-react';
 import { toast } from 'sonner';
 
 const CreatorAccessControl = () => {
@@ -93,15 +93,20 @@ const CreatorAccessControl = () => {
     return (
       <DashboardLayout type="creator">
         <header className="mb-6">
-          <h1 className="text-heading font-bold text-foreground">Access Control</h1>
-          <p className="text-support text-muted-foreground mt-0.5">
+          <p className="text-caption font-semibold uppercase tracking-[0.14em] text-muted-foreground">
+            Products
+          </p>
+          <h1 className="mt-1 text-heading font-bold tracking-tight text-foreground">
+            Access Control
+          </h1>
+          <p className="mt-1.5 text-support text-muted-foreground">
             Manage subscriber limits and exclusivity for your products.
           </p>
         </header>
-        <div className="rounded-xl border border-border bg-card p-10 text-center">
-          <Lock className="h-10 w-10 text-muted-foreground mx-auto mb-4" />
-          <h3 className="text-ui font-semibold text-foreground mb-2">No creator profile yet</h3>
-          <p className="text-support text-muted-foreground max-w-xs mx-auto mb-5">
+        <div className="rounded-2xl border border-border bg-card p-10 text-center shadow-[var(--shadow-card)]">
+          <Lock className="mx-auto mb-4 h-10 w-10 text-muted-foreground" />
+          <h3 className="mb-2 text-ui font-semibold text-foreground">No creator profile yet</h3>
+          <p className="mx-auto mb-5 max-w-xs text-support text-muted-foreground">
             Finish onboarding to manage product access.
           </p>
           <Button asChild className="min-h-11">
@@ -114,18 +119,30 @@ const CreatorAccessControl = () => {
 
   return (
     <DashboardLayout type="creator">
-      <header className="mb-6">
-        <h1 className="text-heading font-bold text-foreground">Access Control</h1>
-        <p className="text-support text-muted-foreground mt-0.5">
-          Close sales or cap new subscribers. Existing members keep their access.
-        </p>
+      <header className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+        <div className="min-w-0">
+          <p className="text-caption font-semibold uppercase tracking-[0.14em] text-muted-foreground">
+            Products
+          </p>
+          <h1 className="mt-1 text-heading font-bold tracking-tight text-foreground md:text-heading-lg">
+            Access Control
+          </h1>
+          <p className="mt-1.5 text-support text-muted-foreground">
+            Close sales or cap new subscribers. Existing members keep their access.
+          </p>
+        </div>
+        <Button asChild variant="outline" className="min-h-11 shrink-0 rounded-xl">
+          <Link to="/creator/products">
+            <ArrowLeft className="mr-1.5 h-4 w-4" /> Back to Products
+          </Link>
+        </Button>
       </header>
 
       {items.length === 0 ? (
-        <div className="rounded-xl border border-border bg-card p-10 text-center">
-          <PackageOpen className="h-10 w-10 text-muted-foreground mx-auto mb-4" />
-          <h3 className="text-ui font-semibold text-foreground mb-2">No active products yet</h3>
-          <p className="text-support text-muted-foreground max-w-sm mx-auto mb-5">
+        <div className="rounded-2xl border border-border bg-card p-10 text-center shadow-[var(--shadow-card)]">
+          <PackageOpen className="mx-auto mb-4 h-10 w-10 text-muted-foreground" />
+          <h3 className="mb-2 text-ui font-semibold text-foreground">No active products yet</h3>
+          <p className="mx-auto mb-5 max-w-sm text-support text-muted-foreground">
             Create a product first, then return here to set limits and exclusivity.
           </p>
           <Button asChild className="min-h-11">
@@ -148,7 +165,10 @@ const CreatorAccessControl = () => {
             const spotsId = `spots-${product.id}`;
 
             return (
-              <div key={product.id} className="rounded-xl border border-border bg-card p-5 space-y-4">
+              <div
+                key={product.id}
+                className="space-y-4 rounded-2xl border border-border bg-card p-5 shadow-[var(--shadow-card)]"
+              >
                 <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                   <div className="min-w-0 flex-1">
                     <div className="flex flex-wrap items-center gap-2 mb-1">

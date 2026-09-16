@@ -4,10 +4,12 @@ import { useMutation, useQuery } from 'convex/react';
 import { api } from '../../convex/_generated/api';
 import type { Id } from '../../convex/_generated/dataModel';
 import { DashboardLayout } from '@/components/dashboard/DashboardLayout';
+import { DashboardKpiStrip } from '@/components/dashboard/DashboardKpiStrip';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Progress } from '@/components/ui/progress';
 import { useCreatorProfile } from '@/hooks/useCreatorProfile';
+import { kpiIconTone } from '@/lib/kpiIconTones';
 import {
   Send,
   Users,
@@ -19,6 +21,9 @@ import {
   Zap,
   ArrowUpRight,
   Loader2,
+  DollarSign,
+  UserPlus,
+  Percent,
 } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { toast } from 'sonner';
@@ -238,15 +243,20 @@ const CreatorPersonalGrowth = () => {
     return (
       <DashboardLayout type="creator">
         <header className="mb-6">
-          <h1 className="text-heading font-bold text-foreground">Personal Growth Manager</h1>
-          <p className="text-support text-muted-foreground mt-0.5">
-            Human coaching via message thread — not an automated AI
+          <p className="text-caption font-semibold uppercase tracking-[0.14em] text-muted-foreground">
+            Support
+          </p>
+          <h1 className="mt-1 text-heading font-bold tracking-tight text-foreground">
+            Growth Manager
+          </h1>
+          <p className="mt-1.5 text-support text-muted-foreground">
+            Human coaching thread — distinct from Performance analytics and subscriber Messages.
           </p>
         </header>
-        <div className="rounded-xl border border-border bg-card p-10 text-center">
-          <Users className="h-10 w-10 text-muted-foreground mx-auto mb-4" />
-          <h3 className="text-ui font-semibold text-foreground mb-2">No creator profile yet</h3>
-          <p className="text-support text-muted-foreground max-w-xs mx-auto mb-5">
+        <div className="rounded-2xl border border-border bg-card p-10 text-center shadow-[var(--shadow-card)]">
+          <Users className="mx-auto mb-4 h-10 w-10 text-muted-foreground" />
+          <h3 className="mb-2 text-ui font-semibold text-foreground">No creator profile yet</h3>
+          <p className="mx-auto mb-5 max-w-xs text-support text-muted-foreground">
             Finish onboarding to unlock growth coaching from the Prizelet team.
           </p>
           <Button asChild className="min-h-11">
@@ -301,21 +311,58 @@ const CreatorPersonalGrowth = () => {
   return (
     <DashboardLayout type="creator">
       <header className="mb-6">
-        <h1 className="text-heading font-bold text-foreground">Personal Growth Manager</h1>
-        <p className="text-support text-muted-foreground mt-0.5">
-          Human coaching via message thread — not an automated AI
+        <p className="text-caption font-semibold uppercase tracking-[0.14em] text-muted-foreground">
+          Support
+        </p>
+        <h1 className="mt-1 text-heading font-bold tracking-tight text-foreground md:text-heading-lg">
+          Growth Manager
+        </h1>
+        <p className="mt-1.5 text-support text-muted-foreground">
+          Human coaching via message thread — not an automated AI. For charts use Performance; for
+          fans use Messages.
         </p>
       </header>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-5 lg:gap-6">
-        <div className="lg:col-span-2 flex flex-col min-w-0">
-          <div className="rounded-xl border border-border bg-card p-4 mb-4 flex items-center gap-4">
-            <div className="flex h-11 w-11 items-center justify-center rounded-full bg-primary/10 shrink-0">
+      <div className="mb-6">
+        <DashboardKpiStrip
+          items={[
+            {
+              label: 'Performance score',
+              value: String(metrics.score),
+              icon: Target,
+              iconClassName: kpiIconTone.violet,
+            },
+            {
+              label: '30d earnings',
+              value: `$${metrics.revenue30.toFixed(0)}`,
+              icon: DollarSign,
+              iconClassName: kpiIconTone.emerald,
+            },
+            {
+              label: 'New subs (30d)',
+              value: String(metrics.newSubs30),
+              icon: UserPlus,
+              iconClassName: kpiIconTone.sky,
+            },
+            {
+              label: 'Churn rate',
+              value: `${metrics.churnRate.toFixed(1)}%`,
+              icon: Percent,
+              iconClassName: kpiIconTone.amber,
+            },
+          ]}
+        />
+      </div>
+
+      <div className="grid grid-cols-1 gap-5 lg:grid-cols-3 lg:gap-6">
+        <div className="flex min-w-0 flex-col lg:col-span-2">
+          <div className="mb-4 flex items-center gap-4 rounded-2xl border border-border bg-card p-4 shadow-[var(--shadow-card)]">
+            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-primary/10">
               <Users className="h-5 w-5 text-primary" />
             </div>
-            <div className="flex-1 min-w-0">
+            <div className="min-w-0 flex-1">
               <h2 className="text-ui font-semibold text-foreground">Prizelet Growth Team</h2>
-              <p className="text-support text-muted-foreground mt-0.5">
+              <p className="mt-0.5 text-support text-muted-foreground">
                 {growthEnabled
                   ? 'Ask about pricing, retention, or content — a teammate replies in this thread.'
                   : 'Growth Manager chat is currently turned off by the platform.'}
@@ -324,23 +371,23 @@ const CreatorPersonalGrowth = () => {
           </div>
 
           {!growthEnabled ? (
-            <div className="rounded-xl border border-border bg-card p-10 text-center">
-              <Users className="h-8 w-8 text-muted-foreground mx-auto mb-3" />
-              <h3 className="text-ui font-semibold text-foreground mb-2">Chat unavailable</h3>
-              <p className="text-support text-muted-foreground max-w-sm mx-auto">
+            <div className="rounded-2xl border border-border bg-card p-10 text-center shadow-[var(--shadow-card)]">
+              <Users className="mx-auto mb-3 h-8 w-8 text-muted-foreground" />
+              <h3 className="mb-2 text-ui font-semibold text-foreground">Chat unavailable</h3>
+              <p className="mx-auto max-w-sm text-support text-muted-foreground">
                 Messaging the growth team is disabled right now. Your activity estimates below still
                 update from your account data.
               </p>
             </div>
           ) : (
             <>
-          <div className="rounded-xl border border-border bg-card flex flex-col flex-1 min-h-[420px] max-h-[min(70vh,720px)] lg:max-h-none">
-            <div className="flex-1 overflow-y-auto p-4 space-y-3 min-h-0">
+          <div className="flex max-h-[min(70vh,720px)] min-h-[420px] flex-1 flex-col rounded-2xl border border-border bg-card shadow-[var(--shadow-card)] lg:max-h-none">
+            <div className="min-h-0 flex-1 space-y-3 overflow-y-auto p-4">
               {messages.length === 0 ? (
-                <div className="h-full min-h-[200px] flex flex-col items-center justify-center text-center py-10 px-4">
-                  <Users className="h-8 w-8 text-muted-foreground mb-3" />
-                  <p className="text-ui font-medium text-foreground mb-1">No conversation yet</p>
-                  <p className="text-support text-muted-foreground max-w-xs">
+                <div className="flex h-full min-h-[200px] flex-col items-center justify-center px-4 py-10 text-center">
+                  <Users className="mb-3 h-8 w-8 text-muted-foreground" />
+                  <p className="mb-1 text-ui font-medium text-foreground">No conversation yet</p>
+                  <p className="max-w-xs text-support text-muted-foreground">
                     Send a question and the Prizelet growth team will reply here.
                   </p>
                 </div>
@@ -351,7 +398,7 @@ const CreatorPersonalGrowth = () => {
                     className={`flex gap-2.5 ${msg.sender_role === 'creator' ? 'justify-end' : 'justify-start'}`}
                   >
                     {msg.sender_role !== 'creator' && (
-                      <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full mt-0.5 bg-primary/10">
+                      <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary/10">
                         <Users className="h-3.5 w-3.5 text-primary" />
                       </div>
                     )}
@@ -379,7 +426,7 @@ const CreatorPersonalGrowth = () => {
                       </div>
                     </div>
                     {msg.sender_role === 'creator' && (
-                      <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-secondary mt-0.5">
+                      <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-secondary">
                         <User className="h-3.5 w-3.5 text-muted-foreground" />
                       </div>
                     )}
@@ -392,16 +439,16 @@ const CreatorPersonalGrowth = () => {
             <div className="hidden lg:block">{composer}</div>
           </div>
 
-          <div className="lg:hidden sticky bottom-0 z-20 -mx-4 sm:-mx-6 px-4 sm:px-6 pb-[max(0.5rem,env(safe-area-inset-bottom))] bg-background mt-3">
+          <div className="sticky bottom-0 z-20 mt-3 -mx-4 bg-background px-4 pb-[max(0.5rem,env(safe-area-inset-bottom))] sm:-mx-6 sm:px-6 lg:hidden">
             {composer}
           </div>
             </>
           )}
         </div>
 
-        <div className="space-y-4 order-last">
-          <div className="rounded-xl border border-border bg-card p-5">
-            <div className="flex items-center justify-between mb-3 gap-2">
+        <div className="order-last space-y-4">
+          <div className="rounded-2xl border border-border bg-card p-5 shadow-[var(--shadow-card)]">
+            <div className="mb-3 flex items-center justify-between gap-2">
               <h3 className="text-support font-medium text-muted-foreground">
                 Performance Score (estimate)
               </h3>
@@ -409,8 +456,8 @@ const CreatorPersonalGrowth = () => {
                 {scoreLevel(metrics.score)}
               </span>
             </div>
-            <div className="flex items-center gap-4 mb-3">
-              <div className="relative flex items-center justify-center shrink-0">
+            <div className="mb-3 flex items-center gap-4">
+              <div className="relative flex shrink-0 items-center justify-center">
                 <svg className="h-20 w-20 -rotate-90" viewBox="0 0 36 36" aria-hidden>
                   <path
                     d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
@@ -431,9 +478,9 @@ const CreatorPersonalGrowth = () => {
                   {metrics.score}
                 </span>
               </div>
-              <div className="text-support text-muted-foreground space-y-1 min-w-0">
+              <div className="min-w-0 space-y-1 text-support text-muted-foreground">
                 <p>
-                  <span className="text-foreground font-medium">{metrics.activeSubs}</span> active
+                  <span className="font-medium text-foreground">{metrics.activeSubs}</span> active
                   subscribers
                 </p>
                 <p className="flex items-center gap-1">
@@ -451,16 +498,16 @@ const CreatorPersonalGrowth = () => {
                 { label: 'Revenue', value: metrics.revenueScore },
               ].map((m) => (
                 <div key={m.label} className="flex items-center gap-3">
-                  <span className="text-support text-muted-foreground w-20 shrink-0">{m.label}</span>
-                  <Progress value={m.value} className="flex-1 h-1.5" />
-                  <span className="text-support font-medium w-8 text-right">{m.value}</span>
+                  <span className="w-20 shrink-0 text-support text-muted-foreground">{m.label}</span>
+                  <Progress value={m.value} className="h-1.5 flex-1" />
+                  <span className="w-8 text-right text-support font-medium">{m.value}</span>
                 </div>
               ))}
             </div>
           </div>
 
-          <div className="rounded-xl border border-border bg-card p-5">
-            <h3 className="text-support font-medium text-muted-foreground mb-3">Last 30 Days</h3>
+          <div className="rounded-2xl border border-border bg-card p-5 shadow-[var(--shadow-card)]">
+            <h3 className="mb-3 text-support font-medium text-muted-foreground">Last 30 Days</h3>
             <div className="grid grid-cols-2 gap-3">
               {[
                 { label: 'Earnings', value: `$${metrics.revenue30.toFixed(2)}` },
@@ -468,16 +515,16 @@ const CreatorPersonalGrowth = () => {
                 { label: 'Conversion', value: `${metrics.conversion.toFixed(1)}%` },
                 { label: 'New Subs', value: `${metrics.newSubs30}` },
               ].map((m) => (
-                <div key={m.label} className="p-3 rounded-lg border border-border bg-background">
+                <div key={m.label} className="rounded-lg border border-border bg-background p-3">
                   <p className="text-support text-muted-foreground">{m.label}</p>
-                  <p className="text-ui font-bold mt-0.5 text-foreground">{m.value}</p>
+                  <p className="mt-0.5 text-ui font-bold text-foreground">{m.value}</p>
                 </div>
               ))}
             </div>
           </div>
 
-          <div className="rounded-xl border border-border bg-card p-5">
-            <h3 className="text-support font-medium text-muted-foreground mb-3 flex items-center gap-2">
+          <div className="rounded-2xl border border-border bg-card p-5 shadow-[var(--shadow-card)]">
+            <h3 className="mb-3 flex items-center gap-2 text-support font-medium text-muted-foreground">
               <Zap className="h-3.5 w-3.5 text-primary" /> Growth Insights
             </h3>
             {insights.length === 0 ? (
@@ -489,7 +536,7 @@ const CreatorPersonalGrowth = () => {
                 {insights.map((insight, i) => (
                   <div key={i} className="flex items-start gap-2.5 text-support">
                     <insight.icon
-                      className={`h-3.5 w-3.5 mt-0.5 shrink-0 ${
+                      className={`mt-0.5 h-3.5 w-3.5 shrink-0 ${
                         insight.trend === 'up' ? 'text-emerald-500' : 'text-amber-500'
                       }`}
                     />

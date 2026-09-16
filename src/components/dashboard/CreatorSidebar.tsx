@@ -26,10 +26,9 @@ import {
   LogOut,
   ChevronDown,
   Brain,
-  Lock,
-  Bell,
   HelpCircle,
   ShieldCheck,
+  Ellipsis,
 } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { RoleSwitcher } from './RoleSwitcher';
@@ -56,15 +55,16 @@ const primaryItems: NavItem[] = [
   { label: 'Settings', href: '/creator/settings', icon: Settings },
 ];
 
+/**
+ * Secondary tools — kept out of primary nav to reduce clutter.
+ * Access Control + Smart Pricing live under Products; Notifications via top-bar bell.
+ */
 const moreItems: NavItem[] = [
-  { label: 'Growth Manager', href: '/creator/personal-growth-manager', icon: Brain },
+  { label: 'Payouts', href: '/creator/payouts', icon: Wallet },
   { label: 'Links', href: '/creator/links', icon: Link2 },
   { label: 'Referrals', href: '/creator/referrals', icon: UserPlus },
-  { label: 'Access Control', href: '/creator/access-control', icon: Lock },
-  { label: 'Smart Pricing', href: '/creator/smart-pricing', icon: TrendingUp },
-  { label: 'Payouts', href: '/creator/payouts', icon: Wallet },
+  { label: 'Growth Manager', href: '/creator/personal-growth-manager', icon: Brain },
   { label: 'Resolution Case', href: '/creator/resolution-case', icon: FileWarning },
-  { label: 'Notifications', href: '/creator/notifications', icon: Bell },
 ];
 
 function formatBadge(n: number): string | undefined {
@@ -74,6 +74,29 @@ function formatBadge(n: number): string | undefined {
 
 function isActivePath(pathname: string, href: string): boolean {
   if (href === '/creator') return pathname === '/creator';
+  if (href === '/creator/products') {
+    return (
+      pathname === href ||
+      pathname.startsWith(`${href}/`) ||
+      pathname.startsWith('/creator/access-control') ||
+      pathname.startsWith('/creator/smart-pricing')
+    );
+  }
+  if (href === '/creator/promo') {
+    return (
+      pathname === href ||
+      pathname.startsWith(`${href}/`) ||
+      pathname.startsWith('/creator/links') ||
+      pathname.startsWith('/creator/referrals')
+    );
+  }
+  if (href === '/creator/earnings') {
+    return (
+      pathname === href ||
+      pathname.startsWith(`${href}/`) ||
+      pathname.startsWith('/creator/payouts')
+    );
+  }
   return pathname === href || pathname.startsWith(`${href}/`);
 }
 
@@ -146,8 +169,6 @@ export function CreatorSidebar({ mobile = false }: { mobile?: boolean } = {}) {
     api.resolution.mutations.unreadCountCreator,
     user ? {} : 'skip',
   );
-  const notifUnread = useQuery(api.notifications.mutations.unreadCount, user ? {} : 'skip');
-
   const moreHasActive = moreItems.some((i) => isActivePath(pathname, i.href));
   const [moreOpen, setMoreOpen] = useState(moreHasActive);
 
@@ -167,10 +188,6 @@ export function CreatorSidebar({ mobile = false }: { mobile?: boolean } = {}) {
     }
     if (item.href === '/creator/resolution-case') {
       const badge = formatBadge(resolutionUnread ?? 0);
-      return badge ? { ...item, badge } : item;
-    }
-    if (item.href === '/creator/notifications') {
-      const badge = formatBadge(notifUnread ?? 0);
       return badge ? { ...item, badge } : item;
     }
     return item;
@@ -221,16 +238,43 @@ export function CreatorSidebar({ mobile = false }: { mobile?: boolean } = {}) {
         <Collapsible open={moreOpen} onOpenChange={setMoreOpen}>
           <CollapsibleTrigger
             className={cn(
-              'mt-2 flex w-full items-center justify-between rounded-xl px-3 py-2 text-sm font-medium',
-              dark ? 'text-slate-400 hover:bg-white/5 hover:text-white' : 'text-muted-foreground hover:bg-muted/60',
+              'group mt-2 flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-colors',
+              dark
+                ? moreHasActive
+                  ? 'bg-white/10 text-white'
+                  : 'text-slate-300 hover:bg-white/5 hover:text-white'
+                : moreHasActive
+                  ? 'bg-muted text-foreground'
+                  : 'text-foreground hover:bg-muted/60',
             )}
           >
-            More
+            <Ellipsis
+              className={cn(
+                'h-4 w-4 shrink-0',
+                dark
+                  ? moreHasActive
+                    ? 'text-white'
+                    : 'text-slate-400 group-hover:text-white'
+                  : moreHasActive
+                    ? 'text-foreground'
+                    : 'text-muted-foreground group-hover:text-foreground',
+              )}
+            />
+            <span className="flex-1 truncate text-left">More</span>
             <ChevronDown
-              className={cn('h-3.5 w-3.5 transition-transform', moreOpen ? 'rotate-0' : '-rotate-90')}
+              className={cn(
+                'h-3.5 w-3.5 shrink-0 transition-transform',
+                moreOpen ? 'rotate-0' : '-rotate-90',
+                dark ? 'text-slate-400' : 'text-muted-foreground',
+              )}
             />
           </CollapsibleTrigger>
-          <CollapsibleContent className="mt-1 space-y-0.5">
+          <CollapsibleContent
+            className={cn(
+              'mt-1 ml-4 space-y-0.5 border-l pl-2',
+              dark ? 'border-white/10' : 'border-border',
+            )}
+          >
             {moreItems.map((item) => (
               <NavItemLink
                 key={item.href}
