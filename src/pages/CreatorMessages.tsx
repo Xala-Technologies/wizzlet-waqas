@@ -6,26 +6,42 @@ import {
   Archive,
   ArrowLeft,
   Ban,
+  CheckCheck,
+  Gift,
   Loader2,
+  MapPin,
   MessageSquare,
+  MoreVertical,
+  Paperclip,
+  Pencil,
+  Percent,
   Power,
+  Radio,
   Search,
   Send,
   Shield,
+  SlidersHorizontal,
+  Smile,
   Sparkles,
   Star,
-  MailOpen,
+  User,
+  UserMinus,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { api } from '../../convex/_generated/api';
 import type { Id } from '../../convex/_generated/dataModel';
 import { DashboardLayout } from '@/components/dashboard/DashboardLayout';
 import { MessageSeenReceipt } from '@/components/messaging/MessageSeenReceipt';
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Switch } from '@/components/ui/switch';
 import { Textarea } from '@/components/ui/textarea';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import { useCreatorProfile } from '@/hooks/useCreatorProfile';
 import {
   CREATOR_MESSAGES_DEMO_THREADS,
@@ -34,14 +50,14 @@ import {
   type DemoMessageThread,
 } from '@/lib/creatorMessagesDemo';
 import { initialsFromName } from '@/lib/creatorSubscribersDemo';
-import { segmentedItemClassName, segmentedTrackClassName } from '@/lib/segmentedControl';
+import { kpiIconTone } from '@/lib/kpiIconTones';
 import { cn } from '@/lib/utils';
 
 const PAGE_SIZE = 25;
 const SUPPORT_THREAD_ID = '__prizelet_support__';
 const NOTES_KEY_PREFIX = 'prizelet:creator-msg-notes:';
 
-type InboxTab = 'all' | 'unread' | 'starred' | 'archive';
+type InboxTab = 'inbox' | 'unread' | 'starred' | 'archive' | 'broadcasts';
 type ThreadKind = 'subscriber' | 'support' | 'demo';
 type SubStatus = 'active' | 'cancelled' | 'trial';
 
@@ -53,21 +69,31 @@ interface ChatMessage {
   created_at: string;
 }
 
+interface ThreadNote {
+  id: string;
+  body: string;
+  createdAtMs: number;
+}
+
 interface Thread {
   id: string;
   kind: ThreadKind;
   name: string;
   email: string;
+  location: string | null;
   messages: ChatMessage[];
   unread: number;
   lastAt: string;
   online: boolean;
+  lastActiveLabel: string | null;
   starred: boolean;
   archived: boolean;
   plan: string;
+  planPriceCents: number | null;
   status: SubStatus | 'support';
   memberSinceMs: number | null;
   totalSpentCents: number | null;
+  noteHistory: ThreadNote[];
   isDemo: boolean;
 }
 
@@ -117,16 +143,24 @@ function demoToThread(d: DemoMessageThread): Thread {
     kind: 'demo',
     name: d.name,
     email: d.email,
+    location: d.location,
     messages,
     unread: d.unread,
     lastAt: messages[messages.length - 1]?.created_at ?? new Date(d.memberSinceMs).toISOString(),
     online: d.online,
+    lastActiveLabel: d.lastActiveLabel,
     starred: d.starred,
     archived: d.archived,
     plan: d.plan,
+    planPriceCents: d.planPriceCents,
     status: d.status,
     memberSinceMs: d.memberSinceMs,
     totalSpentCents: d.totalSpentCents,
+    noteHistory: d.notes.map((n) => ({
+      id: n.id,
+      body: n.body,
+      createdAtMs: n.createdAtMs,
+    })),
     isDemo: true,
   };
 }
@@ -174,8 +208,9 @@ const CreatorMessages = () => {
   const [sending, setSending] = useState(false);
   const [messagingEnabled, setMessagingEnabled] = useState(true);
   const [savingToggle, setSavingToggle] = useState(false);
-  const [tab, setTab] = useState<InboxTab>('all');
+  const [tab, setTab] = useState<InboxTab>('inbox');
   const [search, setSearch] = useState('');
+  const [noteDraft, setNoteDraft] = useState('');
   const [starredIds, setStarredIds] = useState<Set<string>>(
     () => new Set(CREATOR_MESSAGES_DEMO_THREADS.filter((t) => t.starred).map((t) => t.id)),
   );
@@ -185,6 +220,7 @@ const CreatorMessages = () => {
   const [notes, setNotes] = useState('');
   const markedRef = useRef<Set<string>>(new Set());
   const prevActiveIdRef = useRef<string | null>(activeId);
+  const chatEndRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
     if (threadParam === 'support') setActiveId(SUPPORT_THREAD_ID);
@@ -238,16 +274,20 @@ const CreatorMessages = () => {
       kind: 'support',
       name: 'Prizelet Support',
       email: 'support@prizelet.com',
+      location: null,
       messages: msgs,
       unread: msgs.filter((m) => m.sender_role === 'admin' && !m.read).length,
       lastAt: msgs[msgs.length - 1]?.created_at ?? '',
       online: true,
+      lastActiveLabel: null,
       starred: starredIds.has(SUPPORT_THREAD_ID),
       archived: archivedIds.has(SUPPORT_THREAD_ID),
       plan: '—',
+      planPriceCents: null,
       status: 'support',
       memberSinceMs: null,
       totalSpentCents: null,
+      noteHistory: [],
       isDemo: false,
     };
   }, [supportRows, starredIds, archivedIds]);
@@ -261,6 +301,7 @@ const CreatorMessages = () => {
           name: s.user?.fullName || s.user?.username || s.user?.email || 'Subscriber',
           email: s.user?.email || '—',
           plan: mapPlan(s.amountCents),
+          planPriceCents: s.amountCents ?? null,
           status: mapStatus(s.status),
           memberSinceMs: s.createdAt,
           totalSpentCents: s.amountCents ?? 0,
@@ -287,16 +328,20 @@ const CreatorMessages = () => {
           kind: 'subscriber' as const,
           name: detail?.name ?? 'Subscriber',
           email: detail?.email ?? '—',
+          location: null,
           messages: sorted,
           unread: sorted.filter((m) => m.sender_role === 'subscriber' && !m.read).length,
           lastAt: sorted[sorted.length - 1]?.created_at ?? '',
           online: false,
+          lastActiveLabel: null,
           starred: starredIds.has(subscriberId),
           archived: archivedIds.has(subscriberId),
           plan: detail?.plan ?? '—',
+          planPriceCents: detail?.planPriceCents ?? null,
           status: detail?.status ?? ('trial' as const),
           memberSinceMs: detail?.memberSinceMs ?? null,
           totalSpentCents: detail?.totalSpentCents ?? null,
+          noteHistory: [],
           isDemo: false,
         };
       })
@@ -333,10 +378,11 @@ const CreatorMessages = () => {
   const filteredThreads = useMemo(() => {
     const q = search.trim().toLowerCase();
     return threads.filter((t) => {
-      if (tab === 'all' && t.archived) return false;
+      if (tab === 'inbox' && (t.archived || t.kind === 'support')) return false;
       if (tab === 'unread' && (t.unread <= 0 || t.archived)) return false;
       if (tab === 'starred' && (!t.starred || t.archived)) return false;
       if (tab === 'archive' && !t.archived) return false;
+      if (tab === 'broadcasts' && t.kind !== 'support') return false;
       if (!q) return true;
       return (
         t.name.toLowerCase().includes(q) ||
@@ -345,6 +391,11 @@ const CreatorMessages = () => {
       );
     });
   }, [threads, tab, search]);
+
+  const inboxUnread = useMemo(
+    () => threads.filter((t) => t.unread > 0 && !t.archived && t.kind !== 'support').length,
+    [threads],
+  );
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
@@ -624,35 +675,93 @@ const CreatorMessages = () => {
     );
   }
 
+
   const isMine = (role: string) => role === 'creator';
   const showList = !activeId;
   const showChat = Boolean(activeId);
 
+  const saveNote = () => {
+    if (!activeId || !noteDraft.trim()) return;
+    const existing = readNotes(activeId);
+    const next = existing ? `${existing}\n---\n${noteDraft.trim()}` : noteDraft.trim();
+    writeNotes(activeId, next);
+    setNotes(next);
+    setNoteDraft('');
+    toast.success('Note saved');
+  };
+
+  const statusLabel =
+    active?.status === 'active'
+      ? 'Active subscriber'
+      : active?.status === 'cancelled'
+        ? 'Canceled'
+        : active?.status === 'trial'
+          ? 'Trial'
+          : active?.status === 'support'
+            ? 'Support'
+            : '';
+
+  const tabs: { id: InboxTab; label: string; count?: number }[] = [
+    { id: 'inbox', label: 'Inbox', count: threads.filter((t) => !t.archived && t.kind !== 'support').length },
+    { id: 'unread', label: 'Unread', count: inboxUnread },
+    { id: 'starred', label: 'Starred' },
+    { id: 'archive', label: 'Archived' },
+    { id: 'broadcasts', label: 'Broadcasts' },
+  ];
+
   const composer = (
-    <div className="flex items-end gap-2 border-t border-border bg-card p-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
-      <Textarea
-        placeholder="Write a reply…"
-        value={reply}
-        onChange={(e) => setReply(e.target.value)}
-        rows={2}
-        className="min-h-[2.75rem] min-w-0 flex-1 resize-none text-ui"
-        disabled={sending}
-        onKeyDown={(e) => {
-          if (e.key === 'Enter' && !e.shiftKey) {
-            e.preventDefault();
-            void send();
-          }
-        }}
-      />
-      <Button
-        type="button"
-        onClick={() => void send()}
-        disabled={sending || !reply.trim()}
-        className="h-11 min-h-11 w-11 min-w-11 shrink-0"
-        aria-label="Send reply"
-      >
-        {sending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
-      </Button>
+    <div className="border-t border-border bg-card px-3 py-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] sm:px-4">
+      <div className="flex items-end gap-2 rounded-2xl border border-border bg-muted/20 p-2">
+        <div className="flex shrink-0 items-center gap-0.5 pb-1">
+          <button
+            type="button"
+            className="inline-flex h-9 w-9 items-center justify-center rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground"
+            aria-label="Attach file"
+            onClick={() => toast.message('Attachments coming soon')}
+          >
+            <Paperclip className="h-4 w-4" />
+          </button>
+          <button
+            type="button"
+            className="inline-flex h-9 w-9 items-center justify-center rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground"
+            aria-label="Emoji"
+            onClick={() => toast.message('Emoji picker coming soon')}
+          >
+            <Smile className="h-4 w-4" />
+          </button>
+          <button
+            type="button"
+            className="inline-flex h-9 w-9 items-center justify-center rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground"
+            aria-label="GIF"
+            onClick={() => toast.message('GIFs coming soon')}
+          >
+            <Gift className="h-4 w-4" />
+          </button>
+        </div>
+        <Textarea
+          placeholder="Write a message..."
+          value={reply}
+          onChange={(e) => setReply(e.target.value)}
+          rows={1}
+          className="min-h-[2.5rem] min-w-0 flex-1 resize-none border-0 bg-transparent px-1 py-2 shadow-none focus-visible:ring-0"
+          disabled={sending}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' && !e.shiftKey) {
+              e.preventDefault();
+              void send();
+            }
+          }}
+        />
+        <Button
+          type="button"
+          onClick={() => void send()}
+          disabled={sending || !reply.trim()}
+          className="min-h-10 shrink-0 rounded-xl px-4"
+        >
+          {sending ? <Loader2 className="mr-1.5 h-4 w-4 animate-spin" /> : <Send className="mr-1.5 h-4 w-4" />}
+          Send
+        </Button>
+      </div>
     </div>
   );
 
@@ -664,15 +773,48 @@ const CreatorMessages = () => {
     </div>
   );
 
-  const tabs: { id: InboxTab; label: string }[] = [
-    { id: 'all', label: 'All' },
-    { id: 'unread', label: 'Unread' },
-    { id: 'starred', label: 'Starred' },
-    { id: 'archive', label: 'Archive' },
-  ];
-
   return (
     <DashboardLayout type="creator">
+      <header className="mb-5 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+        <div className="min-w-0">
+          <h1 className="text-heading font-bold tracking-tight text-foreground md:text-heading-lg">
+            Messages
+          </h1>
+          <p className="mt-1.5 max-w-xl text-support text-muted-foreground">
+            Chat with subscribers, manage conversations, and keep notes in one place.
+          </p>
+        </div>
+        <div className="flex flex-wrap items-center gap-2">
+          <div className="flex items-center gap-2 rounded-xl border border-border bg-card px-3 py-2 text-sm shadow-[var(--shadow-card)]">
+            <Power
+              className={cn(
+                'h-3.5 w-3.5',
+                messagingEnabled ? 'text-emerald-500' : 'text-muted-foreground',
+              )}
+            />
+            <span className="text-xs font-semibold text-muted-foreground">Messaging</span>
+            <Switch
+              aria-label="Accept subscriber messages"
+              checked={messagingEnabled}
+              onCheckedChange={(v) => void toggleMessaging(v)}
+              disabled={savingToggle}
+              className="scale-90"
+            />
+          </div>
+          <Button
+            type="button"
+            className="min-h-11 rounded-xl"
+            onClick={() =>
+              toast.message('New message', {
+                description: 'Pick a subscriber from the list, or message them from Subscribers.',
+              })
+            }
+          >
+            <Pencil className="mr-1.5 h-4 w-4" /> New Message
+          </Button>
+        </div>
+      </header>
+
       {useDemo ? (
         <div className="mb-4 flex items-start gap-3 rounded-2xl border border-amber-500/30 bg-amber-500/10 px-4 py-3.5 text-amber-950 dark:text-amber-100 sm:items-center sm:px-5">
           <Sparkles
@@ -687,67 +829,66 @@ const CreatorMessages = () => {
       ) : null}
 
       {!messagingEnabled && supportThread ? (
-        <p className="mb-4 rounded-lg border border-border bg-muted/40 px-3 py-2 text-support text-muted-foreground">
-          Subscriber messaging is off. You can still read Prizelet Support below.
+        <p className="mb-4 rounded-xl border border-border bg-muted/40 px-3 py-2 text-support text-muted-foreground">
+          Subscriber messaging is off. You can still read Prizelet Support in Broadcasts.
         </p>
       ) : null}
 
-      <div className="grid min-h-[min(70vh,640px)] grid-cols-1 gap-4 lg:grid-cols-[minmax(260px,300px)_minmax(0,1fr)_minmax(240px,280px)] lg:gap-5">
-        {/* Left: thread list */}
+      <div className="mb-4 flex gap-1 overflow-x-auto border-b border-border pb-px">
+        {tabs.map((t) => (
+          <button
+            key={t.id}
+            type="button"
+            onClick={() => setTab(t.id)}
+            className={cn(
+              'relative shrink-0 px-3 pb-3 pt-1 text-sm font-semibold transition-colors',
+              tab === t.id
+                ? 'text-foreground'
+                : 'text-muted-foreground hover:text-foreground',
+            )}
+          >
+            {t.label}
+            {t.count != null && t.count > 0 ? (
+              <span className="ml-1.5 tabular-nums text-muted-foreground">({t.count})</span>
+            ) : null}
+            {tab === t.id ? (
+              <span className="absolute inset-x-2 bottom-0 h-0.5 rounded-full bg-primary" />
+            ) : null}
+          </button>
+        ))}
+      </div>
+
+      <div className="grid min-h-[min(72vh,720px)] grid-cols-1 gap-0 overflow-hidden rounded-2xl border border-border bg-card shadow-[var(--shadow-card)] lg:grid-cols-[minmax(280px,320px)_minmax(0,1fr)_minmax(280px,320px)]">
+        {/* Inbox list */}
         <section
           className={cn(
-            'flex min-h-0 flex-col rounded-2xl border border-border bg-card shadow-[var(--shadow-card)]',
+            'flex min-h-0 flex-col border-border lg:border-r',
             showChat ? 'hidden lg:flex' : 'flex',
           )}
         >
-          <div className="space-y-3 border-b border-border p-4">
-            <div className="flex items-start justify-between gap-2">
-              <div className="min-w-0">
-                <h1 className="text-ui font-bold text-foreground">Your Messages</h1>
-                <p className="mt-0.5 text-caption text-muted-foreground">Inbox &amp; support</p>
-              </div>
-              <div className="flex shrink-0 items-center gap-1.5" title="Accept subscriber messages">
-                <Power
-                  className={cn(
-                    'h-3.5 w-3.5',
-                    messagingEnabled ? 'text-emerald-500' : 'text-muted-foreground',
-                  )}
-                />
-                <Switch
-                  aria-label="Accept subscriber messages"
-                  checked={messagingEnabled}
-                  onCheckedChange={(v) => void toggleMessaging(v)}
-                  disabled={savingToggle}
-                  className="scale-90"
-                />
-              </div>
-            </div>
-            <div className="relative">
+          <div className="flex items-center gap-2 border-b border-border p-3">
+            <div className="relative min-w-0 flex-1">
               <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
               <Input
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                placeholder="Search messages…"
-                className="h-11 rounded-xl ps-9"
+                placeholder="Search conversations..."
+                className="h-10 rounded-xl border-border bg-muted/30 ps-9"
               />
             </div>
-            <div className={cn(segmentedTrackClassName, 'w-full overflow-x-auto')}>
-              {tabs.map((t) => (
-                <button
-                  key={t.id}
-                  type="button"
-                  className={segmentedItemClassName(tab === t.id)}
-                  onClick={() => setTab(t.id)}
-                >
-                  {t.label}
-                </button>
-              ))}
-            </div>
+            <button
+              type="button"
+              className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-border text-muted-foreground hover:bg-muted"
+              aria-label="Filter conversations"
+              onClick={() => toast.message('Sort & filter coming soon')}
+            >
+              <SlidersHorizontal className="h-4 w-4" />
+            </button>
           </div>
 
           <div className="min-h-0 flex-1 overflow-y-auto p-2">
             {filteredThreads.length === 0 ? (
-              <p className="px-3 py-8 text-center text-support text-muted-foreground">
+              <p className="px-3 py-10 text-center text-sm text-muted-foreground">
                 No conversations in this view.
               </p>
             ) : (
@@ -760,17 +901,19 @@ const CreatorMessages = () => {
                     type="button"
                     onClick={() => openThread(thread)}
                     className={cn(
-                      'mb-1 flex w-full min-h-14 items-start gap-3 rounded-xl px-3 py-3 text-left transition-colors',
-                      selected ? 'bg-primary/5 ring-1 ring-primary/30' : 'hover:bg-muted/50',
+                      'relative mb-0.5 flex w-full items-start gap-3 rounded-xl px-3 py-3 text-left transition-colors',
+                      selected
+                        ? 'bg-primary/8 before:absolute before:inset-y-2 before:left-0 before:w-1 before:rounded-full before:bg-primary'
+                        : 'hover:bg-muted/50',
                     )}
                   >
                     <div className="relative shrink-0">
                       <div
                         className={cn(
-                          'flex h-10 w-10 items-center justify-center rounded-full text-caption font-bold',
+                          'flex h-11 w-11 items-center justify-center rounded-full text-xs font-bold',
                           thread.kind === 'support'
                             ? 'bg-sky-500/15 text-sky-700 dark:text-sky-300'
-                            : 'bg-muted text-foreground',
+                            : cn('bg-violet-500/15 text-violet-700 dark:text-violet-300'),
                         )}
                       >
                         {thread.kind === 'support' ? (
@@ -780,25 +923,22 @@ const CreatorMessages = () => {
                         )}
                       </div>
                       {thread.online && thread.kind !== 'support' ? (
-                        <span
-                          className="absolute bottom-0 right-0 h-2.5 w-2.5 rounded-full border-2 border-card bg-emerald-500"
-                          aria-label="Online"
-                        />
+                        <span className="absolute bottom-0 right-0 h-2.5 w-2.5 rounded-full border-2 border-card bg-emerald-500" />
                       ) : null}
                     </div>
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center justify-between gap-2">
-                        <p className="truncate text-ui font-semibold text-foreground">{thread.name}</p>
-                        <span className="shrink-0 text-caption text-muted-foreground">
+                        <p className="truncate text-sm font-bold text-foreground">{thread.name}</p>
+                        <span className="shrink-0 text-[11px] font-medium text-muted-foreground">
                           {thread.lastAt ? shortTime(thread.lastAt) : ''}
                         </span>
                       </div>
-                      <div className="mt-0.5 flex items-center justify-between gap-2">
-                        <p className="truncate text-support text-muted-foreground">{snippet}</p>
+                      <div className="mt-0.5 flex items-center gap-2">
+                        <p className="min-w-0 flex-1 truncate text-xs text-muted-foreground">
+                          {snippet}
+                        </p>
                         {thread.unread > 0 ? (
-                          <Badge className="h-5 min-w-5 shrink-0 justify-center px-1.5 text-caption">
-                            {thread.unread}
-                          </Badge>
+                          <span className="h-2 w-2 shrink-0 rounded-full bg-primary" aria-label="Unread" />
                         ) : null}
                       </div>
                     </div>
@@ -813,7 +953,7 @@ const CreatorMessages = () => {
                   <Button
                     type="button"
                     variant="outline"
-                    className="min-h-11"
+                    className="min-h-10 rounded-xl"
                     disabled={inboxStatus === 'LoadingMore'}
                     onClick={() => loadMore(PAGE_SIZE)}
                   >
@@ -827,57 +967,72 @@ const CreatorMessages = () => {
           </div>
         </section>
 
-        {/* Center: chat */}
+        {/* Chat */}
         <section
           className={cn(
-            'min-h-0 flex-col rounded-2xl border border-border bg-card shadow-[var(--shadow-card)]',
+            'min-h-0 flex-col border-border lg:border-r',
             showList ? 'hidden lg:flex' : 'flex',
             !active && 'lg:flex',
           )}
         >
           {active ? (
             <>
-              <div className="flex items-center gap-2 border-b border-border px-3 py-3 sm:px-5">
+              <div className="flex items-center gap-3 border-b border-border px-3 py-3.5 sm:px-5">
                 <button
                   type="button"
-                  className="inline-flex h-11 w-11 items-center justify-center rounded-lg text-muted-foreground hover:bg-muted/60 hover:text-foreground lg:hidden"
+                  className="inline-flex h-10 w-10 items-center justify-center rounded-lg text-muted-foreground hover:bg-muted lg:hidden"
                   aria-label="Back to conversations"
                   onClick={backToList}
                 >
                   <ArrowLeft className="h-5 w-5" />
                 </button>
-                <div className="relative shrink-0">
-                  <div
-                    className={cn(
-                      'flex h-10 w-10 items-center justify-center rounded-full text-caption font-bold',
-                      active.kind === 'support'
-                        ? 'bg-sky-500/15 text-sky-700 dark:text-sky-300'
-                        : 'bg-muted text-foreground',
-                    )}
-                  >
-                    {active.kind === 'support' ? (
-                      <Shield className="h-4 w-4" />
-                    ) : (
-                      initialsFromName(active.name)
-                    )}
-                  </div>
-                  {active.online && active.kind !== 'support' ? (
-                    <span className="absolute bottom-0 right-0 h-2.5 w-2.5 rounded-full border-2 border-card bg-emerald-500" />
-                  ) : null}
-                </div>
                 <div className="min-w-0 flex-1">
-                  <p className="truncate text-ui font-semibold text-foreground">{active.name}</p>
-                  <p className="text-caption text-muted-foreground">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <p className="truncate text-base font-bold text-foreground">{active.name}</p>
+                    {active.kind !== 'support' ? (
+                      <span
+                        className={cn(
+                          'inline-flex rounded-full border px-2 py-0.5 text-[11px] font-bold',
+                          statusPill(active.status),
+                        )}
+                      >
+                        {statusLabel}
+                      </span>
+                    ) : null}
+                  </div>
+                  <p className="mt-0.5 truncate text-xs text-muted-foreground">
                     {active.kind === 'support'
-                      ? 'Official announcements'
-                      : active.online
-                        ? 'Active now'
-                        : 'Offline'}
+                      ? 'Official Prizelet announcements'
+                      : [
+                          active.plan !== '—' ? active.plan : null,
+                          active.memberSinceMs
+                            ? `Member since ${format(new Date(active.memberSinceMs), 'MMM yyyy')}`
+                            : null,
+                        ]
+                          .filter(Boolean)
+                          .join(' · ') || 'Subscriber'}
                   </p>
                 </div>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button type="button" variant="ghost" size="icon" className="h-10 w-10 rounded-xl">
+                      <MoreVertical className="h-4 w-4" />
+                      <span className="sr-only">Conversation actions</span>
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="w-48">
+                    <DropdownMenuItem onClick={() => toggleStar(active.id)}>
+                      <Star className="mr-2 h-4 w-4" /> {active.starred ? 'Unstar' : 'Star'}
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => toggleArchive(active.id)}>
+                      <Archive className="mr-2 h-4 w-4" />{' '}
+                      {active.archived ? 'Unarchive' : 'Archive'}
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
               </div>
 
-              <div className="min-h-0 flex-1 space-y-3 overflow-y-auto p-4">
+              <div className="min-h-0 flex-1 space-y-3 overflow-y-auto bg-muted/10 p-4 sm:p-5">
                 {active.messages.map((msg) => (
                   <div
                     key={msg.id}
@@ -885,160 +1040,264 @@ const CreatorMessages = () => {
                   >
                     <div
                       className={cn(
-                        'max-w-[80%] rounded-2xl px-3.5 py-2.5 text-ui',
+                        'max-w-[min(85%,28rem)] px-3.5 py-2.5 text-sm leading-relaxed shadow-sm',
                         isMine(msg.sender_role)
-                          ? 'bg-primary text-primary-foreground'
-                          : 'bg-muted/60 text-foreground',
+                          ? 'rounded-2xl rounded-br-md bg-primary text-primary-foreground'
+                          : 'rounded-2xl rounded-bl-md border border-border bg-card text-foreground',
                       )}
                     >
                       <p className="whitespace-pre-line">{msg.body}</p>
                       <div
                         className={cn(
-                          'mt-1 flex items-center justify-between gap-2 text-caption',
+                          'mt-1.5 flex items-center justify-end gap-1.5 text-[11px]',
                           isMine(msg.sender_role)
-                            ? 'text-primary-foreground/60'
+                            ? 'text-primary-foreground/70'
                             : 'text-muted-foreground',
                         )}
                       >
                         <span>
-                          {formatDistanceToNow(new Date(msg.created_at), { addSuffix: true })}
+                          {format(new Date(msg.created_at), 'h:mm a')}
                         </span>
                         {isMine(msg.sender_role) && !active.isDemo ? (
                           <MessageSeenReceipt seen={msg.read} light />
+                        ) : isMine(msg.sender_role) && msg.read ? (
+                          <CheckCheck className="h-3.5 w-3.5" aria-hidden />
                         ) : null}
                       </div>
                     </div>
                   </div>
                 ))}
+                <div ref={chatEndRef} />
               </div>
 
               {active.kind === 'support' ? supportReadOnlyNote : composer}
             </>
           ) : (
-            <div className="flex flex-1 items-center justify-center p-6 text-support text-muted-foreground">
-              Select a conversation
+            <div className="flex flex-1 flex-col items-center justify-center gap-2 p-8 text-center">
+              <MessageSquare className="h-10 w-10 text-muted-foreground/50" />
+              <p className="text-sm font-semibold text-foreground">Select a conversation</p>
+              <p className="max-w-xs text-xs text-muted-foreground">
+                Choose a subscriber from the inbox to read and reply.
+              </p>
             </div>
           )}
         </section>
 
-        {/* Right: subscriber details */}
+        {/* CRM panel */}
         <aside
           className={cn(
-            'hidden min-h-0 flex-col rounded-2xl border border-border bg-card shadow-[var(--shadow-card)] lg:flex',
-            !active || active.kind === 'support' ? 'opacity-60' : '',
+            'hidden min-h-0 flex-col overflow-y-auto lg:flex',
+            !active || active.kind === 'support' ? 'opacity-55' : '',
           )}
         >
           {active && active.kind !== 'support' ? (
             <>
-              <div className="border-b border-border p-5 text-center">
-                <div className="mx-auto mb-3 flex h-16 w-16 items-center justify-center rounded-full bg-muted text-lg font-bold text-foreground">
+              <div className="border-b border-border px-5 pb-5 pt-6 text-center">
+                <div
+                  className={cn(
+                    'mx-auto mb-3 flex h-16 w-16 items-center justify-center rounded-full text-lg font-bold',
+                    kpiIconTone.violet,
+                  )}
+                >
                   {initialsFromName(active.name)}
                 </div>
-                <p className="text-ui font-semibold text-foreground">{active.name}</p>
-                <p className="mt-0.5 truncate text-support text-muted-foreground">{active.email}</p>
+                <p className="text-base font-bold text-foreground">{active.name}</p>
+                <p className="mt-0.5 truncate text-xs text-muted-foreground">{active.email}</p>
+                <div className="mt-2 flex flex-wrap items-center justify-center gap-2 text-[11px] text-muted-foreground">
+                  {active.location ? (
+                    <span className="inline-flex items-center gap-1">
+                      <MapPin className="h-3 w-3" aria-hidden />
+                      {active.location}
+                    </span>
+                  ) : null}
+                  {active.memberSinceMs ? (
+                    <span>Joined {format(new Date(active.memberSinceMs), 'MMM d, yyyy')}</span>
+                  ) : null}
+                </div>
                 <span
                   className={cn(
-                    'mt-3 inline-flex rounded-full border px-2.5 py-0.5 text-caption font-semibold capitalize',
+                    'mt-3 inline-flex rounded-full border px-2.5 py-0.5 text-[11px] font-bold',
                     statusPill(active.status),
                   )}
                 >
-                  {active.status}
+                  {statusLabel}
                 </span>
               </div>
 
-              <div className="grid grid-cols-1 gap-3 border-b border-border p-4">
-                <div className="rounded-xl border border-border bg-muted/30 px-3 py-2.5">
-                  <p className="text-caption text-muted-foreground">Member Since</p>
-                  <p className="mt-0.5 text-support font-semibold text-foreground">
-                    {active.memberSinceMs
-                      ? format(new Date(active.memberSinceMs), 'MMM d, yyyy')
+              <div className="grid grid-cols-3 gap-2 border-b border-border p-4">
+                <div className="rounded-xl border border-border bg-muted/20 px-2 py-2.5 text-center">
+                  <p className="text-[10px] font-bold uppercase tracking-wide text-muted-foreground">
+                    Spent
+                  </p>
+                  <p className="mt-1 text-sm font-extrabold tabular-nums text-foreground">
+                    {active.totalSpentCents != null
+                      ? `$${(active.totalSpentCents / 100).toFixed(2)}`
                       : '—'}
                   </p>
                 </div>
-                <div className="rounded-xl border border-border bg-muted/30 px-3 py-2.5">
-                  <p className="text-caption text-muted-foreground">Plan</p>
-                  <p className="mt-0.5 text-support font-semibold text-foreground">{active.plan}</p>
+                <div className="rounded-xl border border-border bg-muted/20 px-2 py-2.5 text-center">
+                  <p className="text-[10px] font-bold uppercase tracking-wide text-muted-foreground">
+                    Messages
+                  </p>
+                  <p className="mt-1 text-sm font-extrabold tabular-nums text-foreground">
+                    {active.messages.length}
+                  </p>
                 </div>
-                <div className="rounded-xl border border-border bg-muted/30 px-3 py-2.5">
-                  <p className="text-caption text-muted-foreground">Total Spent</p>
-                  <p className="mt-0.5 text-support font-semibold text-foreground">
-                    {active.totalSpentCents != null
-                      ? `$${(active.totalSpentCents / 100).toLocaleString(undefined, {
-                          minimumFractionDigits: 2,
-                          maximumFractionDigits: 2,
-                        })}`
-                      : '—'}
+                <div className="rounded-xl border border-border bg-muted/20 px-2 py-2.5 text-center">
+                  <p className="text-[10px] font-bold uppercase tracking-wide text-muted-foreground">
+                    Active
+                  </p>
+                  <p className="mt-1 text-[11px] font-bold leading-tight text-foreground">
+                    {active.lastActiveLabel ??
+                      (active.online ? 'Now' : active.lastAt ? shortTime(active.lastAt) : '—')}
                   </p>
                 </div>
               </div>
 
               <div className="border-b border-border p-4">
-                <label htmlFor="creator-msg-notes" className="text-support font-semibold text-foreground">
-                  Notes
-                </label>
-                <Textarea
-                  id="creator-msg-notes"
-                  value={notes}
-                  onChange={(e) => {
-                    const v = e.target.value;
-                    setNotes(v);
-                    if (activeId) writeNotes(activeId, v);
-                  }}
-                  placeholder="Private notes about this subscriber…"
-                  rows={4}
-                  className="mt-2 resize-none text-ui"
-                />
+                <div className="rounded-xl border border-border bg-muted/15 p-3">
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="min-w-0">
+                      <p className="text-[10px] font-bold uppercase tracking-wide text-muted-foreground">
+                        Subscription
+                      </p>
+                      <p className="mt-1 truncate text-sm font-bold text-foreground">{active.plan}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {active.planPriceCents != null
+                          ? `$${(active.planPriceCents / 100).toFixed(2)} / month`
+                          : '—'}
+                      </p>
+                    </div>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      className="h-8 shrink-0 rounded-lg"
+                      asChild
+                    >
+                      <Link to="/creator/subscribers">Manage</Link>
+                    </Button>
+                  </div>
+                </div>
               </div>
 
-              <div className="flex flex-col gap-2 p-4">
-                <p className="text-support font-semibold text-foreground">Quick actions</p>
+              <div className="space-y-1 border-b border-border p-3">
+                <p className="px-2 pb-1 text-xs font-bold uppercase tracking-wide text-muted-foreground">
+                  Quick actions
+                </p>
                 <Button
                   type="button"
-                  variant="outline"
-                  className="min-h-11 justify-start"
+                  variant="ghost"
+                  className="h-10 w-full justify-start rounded-xl px-2"
+                  asChild
+                >
+                  <Link to="/creator/subscribers">
+                    <User className="mr-2 h-4 w-4" /> View Profile
+                  </Link>
+                </Button>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  className="h-10 w-full justify-start rounded-xl px-2"
+                  asChild
+                >
+                  <Link to="/creator/products">
+                    <Percent className="mr-2 h-4 w-4" /> Update Subscription
+                  </Link>
+                </Button>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  className="h-10 w-full justify-start rounded-xl px-2"
                   onClick={() =>
-                    toast.message('Marked unread', {
-                      description: 'Unread state is preview-only for now.',
+                    toast.message('Discounts', {
+                      description: 'Offer discounts from Products or promo tools.',
                     })
                   }
                 >
-                  <MailOpen className="mr-2 h-4 w-4" /> Mark unread
+                  <Gift className="mr-2 h-4 w-4" /> Give a Discount
                 </Button>
                 <Button
                   type="button"
-                  variant="outline"
-                  className="min-h-11 justify-start"
-                  onClick={() => toggleStar(active.id)}
+                  variant="ghost"
+                  className="h-10 w-full justify-start rounded-xl px-2"
+                  onClick={() => setTab('broadcasts')}
                 >
-                  <Star className="mr-2 h-4 w-4" /> Star
+                  <Radio className="mr-2 h-4 w-4" /> Send Broadcast
                 </Button>
                 <Button
                   type="button"
-                  variant="outline"
-                  className="min-h-11 justify-start"
+                  variant="ghost"
+                  className="h-10 w-full justify-start rounded-xl px-2 text-rose-600 hover:bg-rose-500/10 hover:text-rose-700 dark:text-rose-400"
                   onClick={() =>
                     toast.message('Blocked', {
                       description: 'Blocking is preview-only and does not write to Convex.',
                     })
                   }
                 >
-                  <Ban className="mr-2 h-4 w-4" /> Block
+                  <Ban className="mr-2 h-4 w-4" /> Block User
                 </Button>
-                <Button
-                  type="button"
-                  variant="outline"
-                  className="min-h-11 justify-start"
-                  onClick={() => toggleArchive(active.id)}
-                >
-                  <Archive className="mr-2 h-4 w-4" /> Archive
-                </Button>
+              </div>
+
+              <div className="space-y-3 p-4">
+                <p className="text-xs font-bold uppercase tracking-wide text-muted-foreground">
+                  Notes
+                </p>
+                <div className="flex gap-2">
+                  <Input
+                    value={noteDraft}
+                    onChange={(e) => setNoteDraft(e.target.value)}
+                    placeholder="Add a note..."
+                    className="h-10 rounded-xl"
+                  />
+                  <Button
+                    type="button"
+                    className="h-10 shrink-0 rounded-xl"
+                    disabled={!noteDraft.trim()}
+                    onClick={saveNote}
+                  >
+                    Save
+                  </Button>
+                </div>
+                <ul className="space-y-2">
+                  {active.noteHistory.map((n) => (
+                    <li
+                      key={n.id}
+                      className="rounded-xl border border-border bg-muted/20 px-3 py-2.5"
+                    >
+                      <p className="text-xs leading-snug text-foreground">{n.body}</p>
+                      <p className="mt-1 text-[10px] font-medium text-muted-foreground">
+                        {format(n.createdAtMs, 'MMM d, yyyy')}
+                      </p>
+                    </li>
+                  ))}
+                  {notes
+                    ? notes.split('\n---\n').filter(Boolean).map((body, i) => (
+                        <li
+                          key={`local-note-${i}`}
+                          className="rounded-xl border border-border bg-muted/20 px-3 py-2.5"
+                        >
+                          <p className="text-xs leading-snug text-foreground">{body}</p>
+                          <p className="mt-1 text-[10px] font-medium text-muted-foreground">
+                            Saved locally
+                          </p>
+                        </li>
+                      ))
+                    : null}
+                  {active.noteHistory.length === 0 && !notes ? (
+                    <p className="text-xs text-muted-foreground">No notes yet.</p>
+                  ) : null}
+                </ul>
               </div>
             </>
           ) : (
-            <div className="flex flex-1 items-center justify-center p-6 text-center text-support text-muted-foreground">
-              {active?.kind === 'support'
-                ? 'Support threads have no subscriber details.'
-                : 'Select a subscriber conversation for details.'}
+            <div className="flex flex-1 flex-col items-center justify-center gap-2 p-6 text-center">
+              <UserMinus className="h-8 w-8 text-muted-foreground/40" />
+              <p className="text-sm text-muted-foreground">
+                {active?.kind === 'support'
+                  ? 'Support broadcasts have no subscriber profile.'
+                  : 'Select a conversation to see subscriber details.'}
+              </p>
             </div>
           )}
         </aside>
