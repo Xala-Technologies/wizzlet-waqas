@@ -30,24 +30,6 @@ import type { Id } from '../../convex/_generated/dataModel';
 import { DashboardLayout } from '@/components/dashboard/DashboardLayout';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
-import { Switch } from '@/components/ui/switch';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -84,7 +66,17 @@ import {
   type DemoProductRow,
   type ProductBillingType,
 } from '@/lib/creatorProductsDemo';
-
+import {
+  CreateProductForm,
+  type CreateProductInitial,
+} from '@/components/creator/CreateProductForm';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 const TABLE_PAGE = 6;
 
 type TypeFilter = 'all' | ProductBillingType;
@@ -93,6 +85,7 @@ type LiveProduct = {
   id: string;
   name: string;
   description: string;
+  shortDescription?: string;
   type: ProductBillingType;
   billingPeriod: string;
   priceCents: number;
@@ -103,6 +96,7 @@ type LiveProduct = {
   maxSpots?: number | null;
   isLimited: boolean;
   isClosed: boolean;
+  imageStorageId?: Id<'_storage'> | null;
 };
 
 function productIcon(name: string, type: ProductBillingType, featured: boolean) {
@@ -163,7 +157,6 @@ const CreatorProducts = () => {
     creator?._id ? { creatorId: creator._id } : 'skip',
   );
   const subs = useQuery(api.subscriptions.mutations.listForMyCreator);
-  const upsertProduct = useMutation(api.products.mutations.upsert);
   const removeProduct = useMutation(api.products.mutations.remove);
 
   const loading = creator === undefined || (creator && products === undefined);
@@ -182,6 +175,7 @@ const CreatorProducts = () => {
       id: p._id,
       name: p.name,
       description: p.description ?? '',
+      shortDescription: p.shortDescription,
       type: p.billingPeriod === 'one-time' ? 'one-time' : 'subscription',
       billingPeriod: p.billingPeriod,
       priceCents: p.priceCents,
@@ -192,6 +186,7 @@ const CreatorProducts = () => {
       maxSpots: p.maxSpots,
       isLimited: p.isLimited,
       isClosed: p.isClosed,
+      imageStorageId: p.imageStorageId,
     }));
   }, [products, subCountByProduct]);
 
@@ -226,17 +221,10 @@ const CreatorProducts = () => {
   const [typeFilter, setTypeFilter] = useState<TypeFilter>('all');
   const [tablePage, setTablePage] = useState(0);
 
-  const [dialogOpen, setDialogOpen] = useState(false);
-  const [editingId, setEditingId] = useState<string | null>(null);
-  const [saving, setSaving] = useState(false);
+  const [formOpen, setFormOpen] = useState(false);
+  const [formInitial, setFormInitial] = useState<CreateProductInitial | null>(null);
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [deleting, setDeleting] = useState(false);
-
-  const [name, setName] = useState('');
-  const [description, setDescription] = useState('');
-  const [price, setPrice] = useState('9.99');
-  const [billingPeriod, setBillingPeriod] = useState('monthly');
-  const [isFeatured, setIsFeatured] = useState(false);
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
@@ -256,23 +244,15 @@ const CreatorProducts = () => {
   const showingFrom = filtered.length === 0 ? 0 : safePage * TABLE_PAGE + 1;
   const showingTo = Math.min(filtered.length, (safePage + 1) * TABLE_PAGE);
 
-  const resetForm = () => {
-    setName('');
-    setDescription('');
-    setPrice('9.99');
-    setBillingPeriod('monthly');
-    setIsFeatured(false);
-    setEditingId(null);
-  };
-
   const openCreate = () => {
     if (useDemo) {
       toast.message('Sample preview', {
-        description: 'Create a real product after leaving demo mode — or add products on an empty account with ?demo=0 then Add Product.',
+        description:
+          'You can explore the create form; publishing requires leaving demo (add a real product or use ?demo=0).',
       });
     }
-    resetForm();
-    setDialogOpen(true);
+    setFormInitial(null);
+    setFormOpen(true);
   };
 
   const openEdit = (row: LiveProduct | DemoProductRow) => {
@@ -283,59 +263,21 @@ const CreatorProducts = () => {
       return;
     }
     const live = row as LiveProduct;
-    setEditingId(live.id);
-    setName(live.name);
-    setDescription(live.description);
-    setPrice((live.priceCents / 100).toFixed(2));
-    setBillingPeriod(live.billingPeriod);
-    setIsFeatured(live.isFeatured);
-    setDialogOpen(true);
-  };
-
-  const handleSave = async () => {
-    if (useDemo || (editingId && isCreatorProductsDemoId(editingId))) {
-      toast.message('Sample preview — create real products when not in demo mode');
-      return;
-    }
-    if (!creator?._id) {
-      toast.error('Creator profile not ready');
-      return;
-    }
-    if (!name.trim()) {
-      toast.error('Product name is required');
-      return;
-    }
-    const numPrice = parseFloat(price);
-    if (Number.isNaN(numPrice) || numPrice <= 0) {
-      toast.error('Enter a valid price');
-      return;
-    }
-    setSaving(true);
-    try {
-      const existing = editingId
-        ? liveRows.find((p) => p.id === editingId)
-        : undefined;
-      await upsertProduct({
-        productId: editingId ? (editingId as Id<'products'>) : undefined,
-        creatorId: creator._id,
-        name: name.trim(),
-        description: description.trim() || undefined,
-        priceCents: Math.round(numPrice * 100),
-        billingPeriod,
-        isFeatured,
-        isActive: true,
-        isLimited: existing?.isLimited ?? false,
-        isClosed: existing?.isClosed ?? false,
-        maxSpots: existing?.maxSpots ?? undefined,
-      });
-      toast.success(editingId ? 'Product updated' : 'Product created');
-      setDialogOpen(false);
-      resetForm();
-    } catch (e) {
-      toast.error(e instanceof Error ? e.message : 'Failed to save product');
-    } finally {
-      setSaving(false);
-    }
+    setFormInitial({
+      id: live.id,
+      name: live.name,
+      shortDescription: live.shortDescription,
+      description: live.description,
+      priceCents: live.priceCents,
+      billingPeriod: live.billingPeriod,
+      isFeatured: live.isFeatured,
+      isActive: live.status === 'active',
+      isLimited: live.isLimited,
+      isClosed: live.isClosed,
+      maxSpots: live.maxSpots,
+      imageStorageId: live.imageStorageId,
+    });
+    setFormOpen(true);
   };
 
   const confirmDelete = async () => {
@@ -370,6 +312,28 @@ const CreatorProducts = () => {
     return (
       <DashboardLayout type="creator">
         <p className="text-support text-muted-foreground">Creator profile not found.</p>
+      </DashboardLayout>
+    );
+  }
+
+  if (formOpen) {
+    return (
+      <DashboardLayout type="creator">
+        <CreateProductForm
+          creatorId={creator._id}
+          creatorName={creator.displayName || creator.username || 'Creator'}
+          creatorAvatarUrl={null}
+          initial={formInitial}
+          demoMode={useDemo}
+          onCancel={() => {
+            setFormOpen(false);
+            setFormInitial(null);
+          }}
+          onSaved={() => {
+            setFormOpen(false);
+            setFormInitial(null);
+          }}
+        />
       </DashboardLayout>
     );
   }
@@ -685,160 +649,6 @@ const CreatorProducts = () => {
           </>
         )}
       </section>
-
-      <Dialog
-        open={dialogOpen}
-        onOpenChange={(open) => {
-          setDialogOpen(open);
-          if (!open) resetForm();
-        }}
-      >
-        <DialogContent
-          overlayClassName="bg-black/50"
-          className="gap-0 overflow-hidden rounded-2xl border-border bg-card p-0 shadow-[var(--shadow-card)] sm:max-w-lg sm:rounded-2xl"
-        >
-          <DialogHeader className="space-y-3 border-b border-border px-5 pb-4 pt-5 text-left sm:px-6 sm:pt-6">
-            <div className="flex items-start gap-3 pr-8">
-              <span
-                className={cn(
-                  'flex h-11 w-11 shrink-0 items-center justify-center rounded-xl',
-                  isFeatured ? kpiIconTone.amber : kpiIconTone.violet,
-                )}
-              >
-                {isFeatured ? (
-                  <Star className="h-5 w-5" aria-hidden />
-                ) : (
-                  <Crown className="h-5 w-5" aria-hidden />
-                )}
-              </span>
-              <div className="min-w-0">
-                <p className="text-caption font-semibold uppercase tracking-[0.14em] text-muted-foreground">
-                  Products
-                </p>
-                <DialogTitle className="mt-1 text-heading font-bold tracking-tight">
-                  {editingId ? 'Edit Product' : 'Add Product'}
-                </DialogTitle>
-                <DialogDescription className="mt-1.5 text-support text-muted-foreground">
-                  {editingId
-                    ? 'Update pricing and details for this plan on your storefront.'
-                    : 'Create a subscription or one-time offer. Turn expertise into revenue.'}
-                </DialogDescription>
-              </div>
-            </div>
-          </DialogHeader>
-
-          <div className="space-y-4 px-5 py-5 sm:px-6">
-            <div
-              className={cn(
-                'relative rounded-2xl border bg-card p-4 shadow-[var(--shadow-card)]',
-                isFeatured ? 'border-primary/50 ring-1 ring-primary/25' : 'border-border',
-              )}
-            >
-              {isFeatured ? (
-                <span className="absolute -top-2.5 left-4 inline-flex items-center gap-1 rounded-full bg-primary px-2.5 py-0.5 text-caption font-semibold uppercase tracking-wide text-primary-foreground">
-                  <Star className="h-3 w-3" aria-hidden />
-                  Most Popular
-                </span>
-              ) : null}
-              <p className="text-lg font-extrabold tracking-tight text-foreground">
-                {name.trim() || 'Untitled plan'}
-              </p>
-              <p className="mt-1 text-2xl font-extrabold tabular-nums text-foreground">
-                {formatProductPrice(
-                  Math.round((Number.parseFloat(price) || 0) * 100),
-                  billingPeriod,
-                )}
-              </p>
-              {description.trim() ? (
-                <p className="mt-2 line-clamp-2 text-sm text-muted-foreground">{description.trim()}</p>
-              ) : (
-                <p className="mt-2 text-sm text-muted-foreground">Preview updates as you type.</p>
-              )}
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="product-name">Name</Label>
-              <Input
-                id="product-name"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                placeholder="e.g. Premium Plan"
-                className="h-11 rounded-xl"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="product-desc">Description</Label>
-              <Textarea
-                id="product-desc"
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
-                placeholder="What subscribers get…"
-                rows={3}
-                className="rounded-xl"
-              />
-            </div>
-            <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-2">
-                <Label htmlFor="product-price">Price (USD)</Label>
-                <Input
-                  id="product-price"
-                  type="number"
-                  min="0.01"
-                  step="0.01"
-                  value={price}
-                  onChange={(e) => setPrice(e.target.value)}
-                  className="h-11 rounded-xl"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label>Billing</Label>
-                <Select value={billingPeriod} onValueChange={setBillingPeriod}>
-                  <SelectTrigger className="h-11 rounded-xl">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="monthly">Monthly</SelectItem>
-                    <SelectItem value="weekly">Weekly</SelectItem>
-                    <SelectItem value="yearly">Yearly</SelectItem>
-                    <SelectItem value="one-time">One-time</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-            <div className="flex items-center justify-between rounded-xl border border-border bg-muted/30 px-3 py-2.5">
-              <div>
-                <p className="text-sm font-semibold">Featured / Most Popular</p>
-                <p className="text-xs text-muted-foreground">Highlighted on your storefront</p>
-              </div>
-              <Switch checked={isFeatured} onCheckedChange={setIsFeatured} />
-            </div>
-          </div>
-
-          <DialogFooter className="gap-2 border-t border-border bg-muted/20 px-5 py-4 sm:flex-row sm:justify-end sm:space-x-0 sm:gap-2 sm:px-6">
-            <Button
-              type="button"
-              variant="outline"
-              className="min-h-11 rounded-xl"
-              disabled={saving}
-              onClick={() => {
-                setDialogOpen(false);
-                resetForm();
-              }}
-            >
-              Cancel
-            </Button>
-            <Button
-              type="button"
-              className="min-h-11 rounded-xl"
-              disabled={saving}
-              onClick={() => void handleSave()}
-            >
-              {saving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-              {editingId ? 'Save changes' : 'Create product'}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
 
       <AlertDialog open={!!deleteId} onOpenChange={(open) => { if (!open) setDeleteId(null); }}>
         <AlertDialogContent

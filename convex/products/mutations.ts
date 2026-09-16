@@ -13,20 +13,28 @@ export const listPublicByCreator = query({
       .query("products")
       .withIndex("by_creatorId", (q) => q.eq("creatorId", args.creatorId))
       .collect();
-    return rows
-      .filter((p) => p.isActive && !p.isClosed)
-      .map((p) => ({
+    const out = [];
+    for (const p of rows) {
+      if (!p.isActive || p.isClosed) continue;
+      const imageUrl = p.imageStorageId
+        ? await ctx.storage.getUrl(p.imageStorageId)
+        : null;
+      out.push({
         _id: p._id,
         creatorId: p.creatorId,
         name: p.name,
         description: p.description,
+        shortDescription: p.shortDescription,
+        imageUrl,
         priceCents: p.priceCents,
         billingPeriod: p.billingPeriod,
         isFeatured: p.isFeatured,
         isLimited: p.isLimited,
         maxSpots: p.maxSpots,
         isClosed: p.isClosed,
-      }));
+      });
+    }
+    return out;
   },
 });
 
@@ -50,6 +58,8 @@ export const upsert = mutation({
     creatorId: v.id("creators"),
     name: v.string(),
     description: v.optional(v.string()),
+    shortDescription: v.optional(v.string()),
+    imageStorageId: v.optional(v.union(v.id("_storage"), v.null())),
     priceCents: v.number(),
     billingPeriod: v.string(),
     isFeatured: v.boolean(),
@@ -64,7 +74,6 @@ export const upsert = mutation({
     const billingPeriod = normalizeBillingPeriod(args.billingPeriod);
     const now = Date.now();
 
-    // Featured atomicity: at most one featured product per creator
     if (args.isFeatured) {
       const siblings = await ctx.db
         .query("products")
@@ -77,6 +86,14 @@ export const upsert = mutation({
       }
     }
 
+    const imagePatch =
+      args.imageStorageId === undefined
+        ? {}
+        : {
+            imageStorageId:
+              args.imageStorageId === null ? undefined : args.imageStorageId,
+          };
+
     if (args.productId) {
       const existing = await ctx.db.get(args.productId);
       if (!existing || existing.creatorId !== args.creatorId) {
@@ -85,6 +102,8 @@ export const upsert = mutation({
       await ctx.db.patch(args.productId, {
         name: args.name,
         description: args.description,
+        shortDescription: args.shortDescription,
+        ...imagePatch,
         priceCents: args.priceCents,
         billingPeriod,
         isFeatured: args.isFeatured,
@@ -106,6 +125,11 @@ export const upsert = mutation({
       creatorId: args.creatorId,
       name: args.name,
       description: args.description,
+      shortDescription: args.shortDescription,
+      imageStorageId:
+        args.imageStorageId === null || args.imageStorageId === undefined
+          ? undefined
+          : args.imageStorageId,
       priceCents: args.priceCents,
       billingPeriod,
       isFeatured: args.isFeatured,

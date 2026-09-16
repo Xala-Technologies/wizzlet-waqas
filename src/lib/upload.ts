@@ -18,9 +18,22 @@ export async function uploadToConvexStorage(
   file: File,
   purpose = "image",
 ): Promise<string> {
+  const { url } = await uploadImageToConvex(client, file, purpose);
+  return url;
+}
+
+/** Upload image and return both storage id and public URL. */
+export async function uploadImageToConvex(
+  client: ConvexReactClient,
+  file: File,
+  purpose = "image",
+): Promise<{ storageId: Id<"_storage">; url: string }> {
   const contentType = file.type || "application/octet-stream";
   if (file.type && !ALLOWED_IMAGE_TYPES.has(file.type) && purpose === "image") {
     throw new Error("Use a JPG, PNG, or WebP image");
+  }
+  if (file.size > 5 * 1024 * 1024) {
+    throw new Error("Image must be 5MB or smaller");
   }
 
   const uploadUrl = await client.mutation(api.files.storage.generateUploadUrl, {});
@@ -43,7 +56,6 @@ export async function uploadToConvexStorage(
     throw new Error("Upload failed: missing storage id");
   }
 
-  // Ownership must be registered before getUrl will resolve (auth gate).
   await client.mutation(api.files.storage.registerOwnedFile, {
     storageId: body.storageId,
     purpose,
@@ -53,5 +65,5 @@ export async function uploadToConvexStorage(
     storageId: body.storageId,
   });
   if (!url) throw new Error("Failed to resolve file URL");
-  return url;
+  return { storageId: body.storageId, url };
 }

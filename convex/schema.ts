@@ -100,6 +100,8 @@ export default defineSchema({
     creatorId: v.id("creators"),
     name: v.string(),
     description: v.optional(v.string()),
+    shortDescription: v.optional(v.string()),
+    imageStorageId: v.optional(v.id("_storage")),
     priceCents: v.number(),
     billingPeriod: v.string(),
     isFeatured: v.boolean(),
