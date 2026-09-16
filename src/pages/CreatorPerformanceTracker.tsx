@@ -1,44 +1,38 @@
-import { useCallback, useMemo, useState } from 'react';
-import { Link, useNavigate, useSearchParams } from 'react-router-dom';
-import { useMutation, useQuery } from 'convex/react';
-import { format, subDays } from 'date-fns';
+import { useMemo, useState } from 'react';
+import { Link, useSearchParams } from 'react-router-dom';
+import { useQuery } from 'convex/react';
 import {
   Area,
-  Bar,
-  BarChart,
+  AreaChart,
   CartesianGrid,
-  Cell,
-  ComposedChart,
-  Line,
-  Pie,
-  PieChart,
   ResponsiveContainer,
   Tooltip,
   XAxis,
   YAxis,
 } from 'recharts';
 import {
-  ArrowRight,
-  ChevronDown,
+  ArrowDownRight,
+  ArrowUpRight,
+  BarChart3,
+  Calendar,
+  DollarSign,
+  Eye,
+  FileText,
+  Image as ImageIcon,
+  Lightbulb,
   Loader2,
-  Percent,
-  PenLine,
-  Plus,
+  Package,
   Sparkles,
-  Target,
+  Star,
+  TrendingDown,
   TrendingUp,
-  Trophy,
-  Pencil,
-  Trash2,
   Users,
+  Video,
 } from 'lucide-react';
-import { toast } from 'sonner';
 import { api } from '../../convex/_generated/api';
-import type { Id } from '../../convex/_generated/dataModel';
 import { DashboardLayout } from '@/components/dashboard/DashboardLayout';
 import { DashboardKpiStrip } from '@/components/dashboard/DashboardKpiStrip';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import {
   Select,
   SelectContent,
@@ -46,502 +40,270 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from '@/components/ui/alert-dialog';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table';
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
-import { americanToDecimal, decimalToAmerican, profitUnits } from '@/lib/odds';
-import { parsePostContent } from '@/lib/postContent';
-import { kpiIconTone, resultPillTone } from '@/lib/kpiIconTones';
-import { sportVisual } from '@/lib/sportVisual';
+import { kpiIconTone } from '@/lib/kpiIconTones';
+import { segmentedItemClassName, segmentedTrackClassName } from '@/lib/segmentedControl';
 import { cn } from '@/lib/utils';
 import {
+  CREATOR_PERFORMANCE_DEMO_GROWTH,
+  CREATOR_PERFORMANCE_DEMO_INSIGHTS,
   CREATOR_PERFORMANCE_DEMO_METRICS,
-  CREATOR_PERFORMANCE_DEMO_MONTHLY,
-  CREATOR_PERFORMANCE_DEMO_PRACTICE,
-  CREATOR_PERFORMANCE_DEMO_PROFIT_BY_SPORT,
-  CREATOR_PERFORMANCE_DEMO_PROFIT_SERIES,
-  CREATOR_PERFORMANCE_DEMO_RECENT,
-  CREATOR_PERFORMANCE_DEMO_RESULTS,
-  CREATOR_PERFORMANCE_DEMO_WINRATE_BY_SPORT,
-  isCreatorPerformanceDemoId,
+  CREATOR_PERFORMANCE_DEMO_REVENUE_SERIES,
+  CREATOR_PERFORMANCE_DEMO_TOP_POSTS,
+  CREATOR_PERFORMANCE_DEMO_TOP_PRODUCTS,
+  formatCompactCount,
   shouldUseCreatorPerformanceDemo,
-  type PerformanceResult,
+  type ChartRange,
+  type DemoGrowthCard,
+  type DemoInsight,
+  type DemoTopPost,
+  type DemoTopProduct,
 } from '@/lib/creatorPerformanceDemo';
 
-type DateRangeKey = '7' | '30' | '90';
+const CHART_RANGES: ChartRange[] = ['7D', '30D', '90D', '1Y', 'All'];
 
-type AnalyticsPick = {
-  id: string;
-  dateMs: number;
-  dateLabel: string;
-  match: string;
-  pick: string;
-  sport: string;
-  result: PerformanceResult;
-  units: number;
-  usOdds: string;
-  profit: number;
-};
+const insightIcon = {
+  emerald: TrendingUp,
+  violet: Users,
+  sky: Eye,
+  amber: Star,
+  rose: TrendingDown,
+} as const;
 
-type PracticePick = {
-  id: string;
-  date: string;
-  pickEvent: string;
-  sport: string;
-  usOdds: string;
-  euOdds: number | null;
-  unitsRisked: number;
-  result: string;
-  unitsWonLost: number;
-};
+const insightToneClass = {
+  emerald: 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-400',
+  violet: 'bg-violet-500/15 text-violet-700 dark:text-violet-400',
+  sky: 'bg-sky-500/15 text-sky-700 dark:text-sky-400',
+  amber: 'bg-amber-500/15 text-amber-700 dark:text-amber-400',
+  rose: 'bg-rose-500/15 text-rose-700 dark:text-rose-400',
+} as const;
 
-const SPORTS = ['NFL', 'NBA', 'MLB', 'NHL', 'Soccer', 'MMA', 'Tennis', 'Other'];
-const RESULTS = ['won', 'lost', 'push', 'pending'] as const;
-
-const defaultForm = {
-  date: new Date().toISOString().split('T')[0]!,
-  pickEvent: '',
-  sport: 'NFL',
-  euOdds: '',
-  usOdds: '',
-  unitsRisked: '1',
-  result: 'pending',
-  unitsWonLost: '0',
-};
-
-function normalizeResult(raw: string | undefined | null): PerformanceResult {
-  if (raw === 'won' || raw === 'win') return 'won';
-  if (raw === 'lost' || raw === 'loss') return 'lost';
-  if (raw === 'push') return 'push';
-  return 'pending';
+function postTypeIcon(type: DemoTopPost['type']) {
+  if (type === 'Video') return Video;
+  if (type === 'Image') return ImageIcon;
+  return FileText;
 }
 
-function resultLabel(result: PerformanceResult): string {
-  if (result === 'won') return 'Win';
-  if (result === 'lost') return 'Loss';
-  if (result === 'push') return 'Push';
-  return 'Pending';
+function money(cents: number): string {
+  return `$${(cents / 100).toLocaleString(undefined, {
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0,
+  })}`;
 }
 
-function fmtUnits(v: number): string {
-  const sign = v > 0 ? '+' : '';
-  return `${sign}${v.toFixed(1)}u`;
-}
+function GrowthMiniChart({ card }: { card: DemoGrowthCard }) {
+  const data = card.series.map((v, i) => ({ i, v }));
+  const positive =
+    card.invertTrend ? card.trendPct <= 0 : card.trendPct >= 0;
+  const TrendIcon = card.trendPct >= 0 ? ArrowUpRight : ArrowDownRight;
 
-function MatchCell({ match, sport }: { match: string; sport: string }) {
-  const visual = sportVisual(sport);
   return (
-    <div className="flex min-w-0 items-center gap-2.5">
-      <span
-        className={cn(
-          'flex h-9 w-9 shrink-0 items-center justify-center rounded-xl text-base',
-          visual.chipClass,
-        )}
-        aria-hidden
-        title={sport || 'Sport'}
-      >
-        {visual.emoji}
-      </span>
-      <div className="min-w-0">
-        <p className="truncate text-sm font-semibold text-foreground">{match || '—'}</p>
-        {sport ? (
-          <p className="truncate text-xs font-medium text-muted-foreground">{sport}</p>
-        ) : null}
+    <section className="rounded-2xl border border-border bg-card p-5 shadow-[var(--shadow-card)]">
+      <div className="mb-1 flex items-start justify-between gap-2">
+        <p className="text-sm font-semibold text-muted-foreground">{card.label}</p>
+        <span
+          className={cn(
+            'inline-flex items-center gap-0.5 rounded-full px-2 py-0.5 text-[11px] font-bold',
+            positive
+              ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400'
+              : 'bg-rose-500/10 text-rose-600 dark:text-rose-400',
+          )}
+        >
+          <TrendIcon className="h-3 w-3" aria-hidden />
+          {Math.abs(card.trendPct)}%
+        </span>
       </div>
-    </div>
+      <p className="text-2xl font-extrabold tabular-nums tracking-tight text-foreground">
+        {card.value}
+      </p>
+      <div className="mt-3 h-16 w-full">
+        <ResponsiveContainer width="100%" height="100%">
+          <AreaChart data={data} margin={{ top: 4, right: 0, left: 0, bottom: 0 }}>
+            <defs>
+              <linearGradient id={`growth-${card.id}`} x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor={card.stroke} stopOpacity={0.35} />
+                <stop offset="100%" stopColor={card.stroke} stopOpacity={0} />
+              </linearGradient>
+            </defs>
+            <Area
+              type="monotone"
+              dataKey="v"
+              stroke={card.stroke}
+              strokeWidth={2}
+              fill={`url(#growth-${card.id})`}
+              isAnimationActive={false}
+            />
+          </AreaChart>
+        </ResponsiveContainer>
+      </div>
+    </section>
   );
 }
 
 const CreatorPerformanceTracker = () => {
-  const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const forceDemo = searchParams.get('demo') === '1';
   const disableDemo = searchParams.get('demo') === '0';
 
-  const picksRaw = useQuery(api.picks.mutations.listMine);
-  const postsRaw = useQuery(api.posts.queries.listMine);
-  const upsertPick = useMutation(api.picks.mutations.upsert);
-  const removePick = useMutation(api.picks.mutations.remove);
+  const creator = useQuery(api.creators.queries.myCreator);
+  const earnings = useQuery(api.creators.earnings.myEarnings);
+  const subs = useQuery(api.subscriptions.mutations.listForMyCreator);
+  const posts = useQuery(api.posts.queries.listMine);
+  const products = useQuery(
+    api.products.mutations.listByCreator,
+    creator?._id ? { creatorId: creator._id } : 'skip',
+  );
 
-  const [dateRange, setDateRange] = useState<DateRangeKey>('30');
-  const [practiceOpen, setPracticeOpen] = useState(false);
-  const [form, setForm] = useState(defaultForm);
-  const [editId, setEditId] = useState<string | null>(null);
-  const [dialogOpen, setDialogOpen] = useState(false);
-  const [saving, setSaving] = useState(false);
-  const [deleteId, setDeleteId] = useState<string | null>(null);
-  const [deleting, setDeleting] = useState(false);
+  const [chartRange, setChartRange] = useState<ChartRange>('30D');
+  const [metricKey, setMetricKey] = useState('revenue');
 
-  const loading = picksRaw === undefined || postsRaw === undefined;
+  const loading =
+    creator === undefined ||
+    earnings === undefined ||
+    subs === undefined ||
+    posts === undefined ||
+    (creator?._id != null && products === undefined);
+
+  const activeSubs = useMemo(
+    () => (subs ?? []).filter((s) => s.status === 'active'),
+    [subs],
+  );
+
+  const hasMeaningfulActivity =
+    (earnings?.grossCents ?? 0) > 0 ||
+    activeSubs.length > 0 ||
+    (posts?.length ?? 0) > 0 ||
+    (products?.length ?? 0) > 0;
 
   const useDemo = shouldUseCreatorPerformanceDemo({
-    pickCount: picksRaw?.length ?? 0,
-    postCount: postsRaw?.length ?? 0,
+    hasMeaningfulActivity,
     forceDemo,
     disableDemo,
   });
 
-  const practicePicks: PracticePick[] = useMemo(() => {
-    if (useDemo) {
-      return CREATOR_PERFORMANCE_DEMO_PRACTICE.map((p) => ({
-        id: p.id,
-        date: p.date,
-        pickEvent: p.pickEvent,
-        sport: p.sport,
-        usOdds: p.usOdds,
-        euOdds: p.euOdds,
-        unitsRisked: p.unitsRisked,
-        result: p.result,
-        unitsWonLost: p.unitsWonLost,
-      }));
-    }
-    return (picksRaw ?? []).map((p) => ({
-      id: p._id,
-      date: p.date,
-      pickEvent: p.pickEvent,
-      sport: p.sport,
-      usOdds: p.usOdds ?? '',
-      euOdds: p.euOdds ?? null,
-      unitsRisked: p.unitsRisked,
-      result: normalizeResult(p.result),
-      unitsWonLost: p.unitsWonLost ?? 0,
+  const metrics = useDemo
+    ? CREATOR_PERFORMANCE_DEMO_METRICS
+    : {
+        totalRevenueCents: earnings?.grossCents ?? 0,
+        totalRevenueDelta: null as number | null,
+        mrrCents: Math.round(
+          activeSubs.reduce((sum, s) => sum + (s.amountCents ?? 0), 0),
+        ),
+        mrrDelta: null as number | null,
+        totalSubscribers: activeSubs.length,
+        subscribersDelta: null as number | null,
+        postViews: posts?.length ? posts.length * 120 : 0,
+        postViewsDelta: null as number | null,
+        dateRangeLabel: 'Last 30 days',
+      };
+
+  const revenueSeries = useMemo(() => {
+    if (useDemo) return CREATOR_PERFORMANCE_DEMO_REVENUE_SERIES;
+    const monthly = earnings?.monthly ?? [];
+    if (monthly.length === 0) return [];
+    return monthly.slice(-12).map((m) => ({
+      label: m.month.length >= 7 ? m.month.slice(5) : m.month,
+      fullLabel: m.month,
+      revenue: Math.round(m.revenueCents) / 100,
     }));
-  }, [picksRaw, useDemo]);
+  }, [useDemo, earnings?.monthly]);
 
-  const liveAnalyticsPicks: AnalyticsPick[] = useMemo(() => {
-    const fromPosts: AnalyticsPick[] = (postsRaw ?? []).map((p) => {
-      const parsed = parsePostContent(p.content ?? null);
-      const result = normalizeResult(p.result);
-      const units = Number.parseFloat(parsed.units) || 1;
-      const usOdds = parsed.usOdds || '-110';
-      const profit = profitUnits(result, units, usOdds);
-      return {
+  const insights: DemoInsight[] = useDemo
+    ? CREATOR_PERFORMANCE_DEMO_INSIGHTS
+    : [
+        {
+          id: 'live-1',
+          tone: 'violet',
+          text:
+            activeSubs.length > 0
+              ? `You have ${activeSubs.length} active subscriber${activeSubs.length === 1 ? '' : 's'}.`
+              : 'No active subscribers yet — share your profile to grow.',
+        },
+        {
+          id: 'live-2',
+          tone: 'emerald',
+          text:
+            (earnings?.grossCents ?? 0) > 0
+              ? `Gross revenue so far: ${money(earnings!.grossCents)}.`
+              : 'Revenue will appear here after your first payment.',
+        },
+        {
+          id: 'live-3',
+          tone: 'sky',
+          text:
+            (posts?.length ?? 0) > 0
+              ? `${posts!.length} published pick${posts!.length === 1 ? '' : 's'} in Your Picks.`
+              : 'Publish picks to start tracking content performance.',
+        },
+      ];
+
+  const growthCards = useDemo
+    ? CREATOR_PERFORMANCE_DEMO_GROWTH
+    : ([
+        {
+          id: 'subs',
+          label: 'Subscribers Growth',
+          value: String(activeSubs.length),
+          trendPct: 0,
+          series: [Math.max(0, activeSubs.length - 2), activeSubs.length],
+          stroke: 'hsl(239 84% 60%)',
+          fill: 'hsl(239 84% 60% / 0.18)',
+        },
+        {
+          id: 'conv',
+          label: 'Conversion Rate',
+          value: '—',
+          trendPct: 0,
+          series: [1, 1],
+          stroke: 'hsl(160 84% 39%)',
+          fill: 'hsl(160 84% 39% / 0.18)',
+        },
+        {
+          id: 'churn',
+          label: 'Churn Rate',
+          value: '—',
+          trendPct: 0,
+          invertTrend: true,
+          series: [1, 1],
+          stroke: 'hsl(0 84% 60%)',
+          fill: 'hsl(0 84% 60% / 0.16)',
+        },
+      ] satisfies DemoGrowthCard[]);
+
+  const topPosts: DemoTopPost[] = useDemo
+    ? CREATOR_PERFORMANCE_DEMO_TOP_POSTS
+    : (posts ?? []).slice(0, 5).map((p, i) => ({
         id: p._id,
-        dateMs: p.createdAt,
-        dateLabel: format(p.createdAt, 'MMM d'),
-        match: parsed.event || p.title,
-        pick: parsed.pick || p.title,
-        sport: parsed.sport || 'Other',
-        result,
-        units,
-        usOdds,
-        profit,
-      };
-    });
+        rank: i + 1,
+        title: p.title,
+        subtitle: p.isPremium ? 'Premium pick' : 'Free pick',
+        type: 'Text' as const,
+        views: 0,
+        likes: 0,
+        comments: 0,
+        conversions: 0,
+        revenueCents: 0,
+        thumbTone: 'bg-violet-500/15 text-violet-700',
+      }));
 
-    if (fromPosts.length > 0) return fromPosts;
-
-    return (picksRaw ?? []).map((p) => {
-      const result = normalizeResult(p.result);
-      const usOdds = p.usOdds || (p.euOdds != null ? decimalToAmerican(p.euOdds) : '-110');
-      const profit =
-        p.unitsWonLost != null
-          ? p.unitsWonLost
-          : profitUnits(result, p.unitsRisked, usOdds || '-110');
-      const dateMs = Date.parse(p.date) || p.createdAt;
-      return {
-        id: p._id,
-        dateMs,
-        dateLabel: format(dateMs, 'MMM d'),
-        match: p.pickEvent,
-        pick: p.pickEvent,
-        sport: p.sport || 'Other',
-        result,
-        units: p.unitsRisked,
-        usOdds: usOdds || '-110',
-        profit,
-      };
-    });
-  }, [postsRaw, picksRaw]);
-
-  const rangeCutoffMs = useMemo(
-    () => subDays(new Date(), Number(dateRange)).getTime(),
-    [dateRange],
-  );
-
-  const rangedPicks = useMemo(
-    () => liveAnalyticsPicks.filter((p) => p.dateMs >= rangeCutoffMs),
-    [liveAnalyticsPicks, rangeCutoffMs],
-  );
-
-  const metrics = useMemo(() => {
-    if (useDemo) return CREATOR_PERFORMANCE_DEMO_METRICS;
-
-    const settled = rangedPicks.filter((p) => p.result === 'won' || p.result === 'lost');
-    const wins = settled.filter((p) => p.result === 'won').length;
-    const winRate = settled.length > 0 ? Number(((wins / settled.length) * 100).toFixed(1)) : 0;
-    const totalProfit = Number(rangedPicks.reduce((s, p) => s + p.profit, 0).toFixed(1));
-    const risked = settled.reduce((s, p) => s + p.units, 0);
-    const roi = risked > 0 ? Number(((totalProfit / risked) * 100).toFixed(1)) : 0;
-
-    return {
-      winRate,
-      winRateDelta: null as number | null,
-      settledPicks: settled.length,
-      settledDelta: null as number | null,
-      totalProfit,
-      profitDelta: null as number | null,
-      roi,
-      roiDelta: null as number | null,
-    };
-  }, [useDemo, rangedPicks]);
-
-  const profitSeries = useMemo(() => {
-    if (useDemo) return CREATOR_PERFORMANCE_DEMO_PROFIT_SERIES;
-    const settled = [...rangedPicks]
-      .filter((p) => p.result !== 'pending')
-      .sort((a, b) => a.dateMs - b.dateMs);
-    let running = 0;
-    return settled.map((p) => {
-      running += p.profit;
-      return { label: p.dateLabel, profit: Number(running.toFixed(1)) };
-    });
-  }, [useDemo, rangedPicks]);
-
-  const resultsPie = useMemo(() => {
-    if (useDemo) return CREATOR_PERFORMANCE_DEMO_RESULTS;
-    const wins = rangedPicks.filter((p) => p.result === 'won').length;
-    const losses = rangedPicks.filter((p) => p.result === 'lost').length;
-    const pushes = rangedPicks.filter((p) => p.result === 'push').length;
-    return [
-      { name: 'Wins', value: wins, color: 'hsl(160 84% 39%)' },
-      { name: 'Losses', value: losses, color: 'hsl(0 84% 60%)' },
-      { name: 'Pushes', value: pushes, color: 'hsl(215 16% 55%)' },
-    ].filter((d) => d.value > 0);
-  }, [useDemo, rangedPicks]);
-
-  const profitBySport = useMemo(() => {
-    if (useDemo) return CREATOR_PERFORMANCE_DEMO_PROFIT_BY_SPORT;
-    const map = new Map<string, number>();
-    for (const p of rangedPicks) {
-      if (p.result === 'pending') continue;
-      map.set(p.sport, (map.get(p.sport) ?? 0) + p.profit);
-    }
-    return Array.from(map.entries())
-      .map(([sport, profit]) => ({ sport, profit: Number(profit.toFixed(1)) }))
-      .sort((a, b) => b.profit - a.profit)
-      .slice(0, 6);
-  }, [useDemo, rangedPicks]);
-
-  const winRateBySport = useMemo(() => {
-    if (useDemo) return CREATOR_PERFORMANCE_DEMO_WINRATE_BY_SPORT;
-    const map = new Map<string, { wins: number; settled: number }>();
-    for (const p of rangedPicks) {
-      if (p.result !== 'won' && p.result !== 'lost') continue;
-      const cur = map.get(p.sport) ?? { wins: 0, settled: 0 };
-      cur.settled += 1;
-      if (p.result === 'won') cur.wins += 1;
-      map.set(p.sport, cur);
-    }
-    return Array.from(map.entries())
-      .map(([sport, d]) => ({
-        sport,
-        winRate: d.settled > 0 ? Math.round((d.wins / d.settled) * 100) : 0,
-      }))
-      .sort((a, b) => b.winRate - a.winRate)
-      .slice(0, 6);
-  }, [useDemo, rangedPicks]);
-
-  const recentRows = useMemo(() => {
-    if (useDemo) return CREATOR_PERFORMANCE_DEMO_RECENT;
-    return [...rangedPicks].sort((a, b) => b.dateMs - a.dateMs).slice(0, 10);
-  }, [useDemo, rangedPicks]);
-
-  const monthlyRows = useMemo(() => {
-    if (useDemo) return CREATOR_PERFORMANCE_DEMO_MONTHLY;
-    const map = new Map<
-      string,
-      { label: string; picks: number; wins: number; settled: number; risked: number; profit: number }
-    >();
-    for (const p of liveAnalyticsPicks) {
-      const key = format(p.dateMs, 'yyyy-MM');
-      const label = format(p.dateMs, 'MMM yyyy');
-      const cur = map.get(key) ?? {
-        label,
-        picks: 0,
-        wins: 0,
-        settled: 0,
-        risked: 0,
-        profit: 0,
-      };
-      cur.picks += 1;
-      if (p.result === 'won' || p.result === 'lost') {
-        cur.settled += 1;
-        if (p.result === 'won') cur.wins += 1;
-        cur.risked += p.units;
-      }
-      if (p.result !== 'pending') cur.profit += p.profit;
-      map.set(key, cur);
-    }
-    return Array.from(map.entries())
-      .sort((a, b) => b[0].localeCompare(a[0]))
-      .slice(0, 6)
-      .map(([, d]) => {
-        const winRate =
-          d.settled > 0 ? Number(((d.wins / d.settled) * 100).toFixed(1)) : 0;
-        const roi = d.risked > 0 ? Number(((d.profit / d.risked) * 100).toFixed(1)) : 0;
+  const topProducts: DemoTopProduct[] = useDemo
+    ? CREATOR_PERFORMANCE_DEMO_TOP_PRODUCTS
+    : (products ?? []).slice(0, 5).map((p, i) => {
+        const count = activeSubs.filter((s) => s.productId === p._id).length;
         return {
-          month: d.label,
-          picks: d.picks,
-          wins: d.wins,
-          winRate,
-          risked: Number(d.risked.toFixed(1)),
-          profit: Number(d.profit.toFixed(1)),
-          roi,
+          id: p._id,
+          rank: i + 1,
+          name: p.name,
+          subscribers: count,
+          revenueCents: count * (p.priceCents ?? 0),
+          conversionPct: 0,
+          iconTone:
+            i === 0
+              ? 'bg-sky-500/15 text-sky-700'
+              : i === 1
+                ? 'bg-rose-500/15 text-rose-700'
+                : 'bg-violet-500/15 text-violet-700',
         };
       });
-  }, [useDemo, liveAnalyticsPicks]);
-
-  const resetForm = () => {
-    setForm(defaultForm);
-    setEditId(null);
-    setDialogOpen(false);
-  };
-
-  const handleEuChange = useCallback((val: string) => {
-    const eu = parseFloat(val);
-    setForm((f) => ({
-      ...f,
-      euOdds: val,
-      usOdds: !Number.isNaN(eu) && eu > 1 ? decimalToAmerican(eu) : f.usOdds,
-    }));
-  }, []);
-
-  const handleUsChange = useCallback((val: string) => {
-    const eu = americanToDecimal(val);
-    setForm((f) => ({
-      ...f,
-      usOdds: val,
-      euOdds: eu !== null ? String(eu) : f.euOdds,
-    }));
-  }, []);
-
-  const openAdd = () => {
-    setForm(defaultForm);
-    setEditId(null);
-    setDialogOpen(true);
-  };
-
-  const openEdit = (pick: PracticePick) => {
-    if (isCreatorPerformanceDemoId(pick.id)) {
-      toast.message('Sample preview', {
-        description: 'Edit is available for live practice picks only. Create real picks on Your Picks.',
-        action: {
-          label: 'Open Picks',
-          onClick: () => {
-            navigate('/creator/posts');
-          },
-        },
-      });
-      return;
-    }
-    setForm({
-      date: pick.date,
-      pickEvent: pick.pickEvent,
-      sport: pick.sport,
-      euOdds: pick.euOdds != null ? String(pick.euOdds) : '',
-      usOdds: pick.usOdds,
-      unitsRisked: String(pick.unitsRisked),
-      result: normalizeResult(pick.result),
-      unitsWonLost: String(pick.unitsWonLost),
-    });
-    setEditId(pick.id);
-    setDialogOpen(true);
-  };
-
-  const handleSave = async () => {
-    if (editId && isCreatorPerformanceDemoId(editId)) {
-      toast.message('Sample preview', {
-        description: 'Create a real practice pick when not in demo mode — or open Your Picks.',
-        action: {
-          label: 'Open Picks',
-          onClick: () => {
-            navigate('/creator/posts');
-          },
-        },
-      });
-      return;
-    }
-    if (!form.pickEvent.trim()) {
-      toast.error('Pick / event is required');
-      return;
-    }
-    if (!form.euOdds && !form.usOdds) {
-      toast.error('Enter EU or US odds');
-      return;
-    }
-    setSaving(true);
-    try {
-      await upsertPick({
-        pickId: editId ? (editId as Id<'pickTracker'>) : undefined,
-        date: form.date,
-        pickEvent: form.pickEvent.trim(),
-        sport: form.sport,
-        euOdds: form.euOdds ? parseFloat(form.euOdds) : undefined,
-        usOdds: form.usOdds || undefined,
-        unitsRisked: parseFloat(form.unitsRisked) || 1,
-        unitsWonLost: parseFloat(form.unitsWonLost) || 0,
-        result: form.result,
-      });
-      toast.success(editId ? 'Pick updated' : 'Pick added');
-      resetForm();
-    } catch {
-      toast.error('Failed to save pick');
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  const confirmDelete = async () => {
-    if (!deleteId) return;
-    if (isCreatorPerformanceDemoId(deleteId)) {
-      toast.message('Sample preview', {
-        description: 'Sample rows cannot be deleted. Create real picks on Your Picks.',
-        action: {
-          label: 'Open Picks',
-          onClick: () => {
-            navigate('/creator/posts');
-          },
-        },
-      });
-      setDeleteId(null);
-      return;
-    }
-    setDeleting(true);
-    try {
-      await removePick({ pickId: deleteId as Id<'pickTracker'> });
-      toast.success('Pick deleted');
-      setDeleteId(null);
-    } catch {
-      toast.error('Failed to delete');
-    } finally {
-      setDeleting(false);
-    }
-  };
 
   if (loading) {
     return (
@@ -553,13 +315,6 @@ const CreatorPerformanceTracker = () => {
     );
   }
 
-  const chartTooltipStyle = {
-    backgroundColor: 'hsl(var(--card))',
-    border: '1px solid hsl(var(--border))',
-    borderRadius: '8px',
-    fontSize: 13,
-  };
-
   return (
     <DashboardLayout type="creator">
       <header className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
@@ -568,29 +323,20 @@ const CreatorPerformanceTracker = () => {
             Performance
           </p>
           <h1 className="mt-1 text-heading font-bold tracking-tight text-foreground md:text-heading-lg">
-            Your Performance
+            Performance
           </h1>
           <p className="mt-1.5 max-w-xl text-support text-muted-foreground">
-            Win rate, profit, and sport breakdowns from your settled picks.
+            Track your growth, analyze your content, and make smarter decisions.
           </p>
         </div>
-        <div className="flex flex-wrap items-center gap-2">
-          <Select value={dateRange} onValueChange={(v) => setDateRange(v as DateRangeKey)}>
-            <SelectTrigger className="h-11 w-full rounded-xl sm:w-[160px]">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="7">Last 7 days</SelectItem>
-              <SelectItem value="30">Last 30 days</SelectItem>
-              <SelectItem value="90">Last 90 days</SelectItem>
-            </SelectContent>
-          </Select>
-          <Button asChild className="min-h-11 rounded-xl">
-            <Link to="/creator/posts">
-              <Plus className="mr-1.5 h-4 w-4" /> Add Pick
-            </Link>
-          </Button>
-        </div>
+        <Button
+          type="button"
+          variant="outline"
+          className="min-h-11 shrink-0 gap-2 rounded-xl border-border bg-card shadow-[var(--shadow-card)]"
+        >
+          <Calendar className="h-4 w-4 text-muted-foreground" aria-hidden />
+          <span className="text-sm font-semibold">{metrics.dateRangeLabel}</span>
+        </Button>
       </header>
 
       {useDemo ? (
@@ -610,109 +356,121 @@ const CreatorPerformanceTracker = () => {
         <DashboardKpiStrip
           items={[
             {
-              label: 'Win Rate',
-              value: `${metrics.winRate}%`,
-              icon: Trophy,
-              iconClassName: kpiIconTone.violet,
-              trendLabel:
-                metrics.winRateDelta != null ? `↑ ${metrics.winRateDelta}%` : undefined,
-              trendPositive: true,
-            },
-            {
-              label: 'Settled Picks',
-              value: String(metrics.settledPicks),
-              icon: Target,
-              iconClassName: kpiIconTone.sky,
-              trendLabel:
-                metrics.settledDelta != null ? `↑ ${metrics.settledDelta}%` : undefined,
-              trendPositive: true,
-            },
-            {
-              label: 'Total Profit',
-              value: fmtUnits(metrics.totalProfit),
-              icon: TrendingUp,
+              label: 'Total revenue',
+              value: money(metrics.totalRevenueCents),
+              icon: DollarSign,
               iconClassName: kpiIconTone.emerald,
               trendLabel:
-                metrics.profitDelta != null ? `↑ ${metrics.profitDelta}%` : undefined,
-              trendPositive: metrics.totalProfit >= 0,
+                metrics.totalRevenueDelta != null
+                  ? `↑ ${metrics.totalRevenueDelta}% vs. previous month`
+                  : undefined,
+              trendPositive: true,
             },
             {
-              label: 'ROI%',
-              value: `${metrics.roi >= 0 ? '+' : ''}${metrics.roi}%`,
-              icon: Percent,
-              iconClassName: kpiIconTone.amber,
-              trendLabel: metrics.roiDelta != null ? `↑ ${metrics.roiDelta}%` : undefined,
-              trendPositive: metrics.roi >= 0,
+              label: 'Monthly recurring revenue',
+              value: money(metrics.mrrCents),
+              icon: BarChart3,
+              iconClassName: kpiIconTone.violet,
+              trendLabel:
+                metrics.mrrDelta != null
+                  ? `↑ ${metrics.mrrDelta}% vs. previous month`
+                  : undefined,
+              trendPositive: true,
+            },
+            {
+              label: 'Total subscribers',
+              value: metrics.totalSubscribers.toLocaleString(),
+              icon: Users,
+              iconClassName: kpiIconTone.violet,
+              trendLabel:
+                metrics.subscribersDelta != null
+                  ? `↑ ${metrics.subscribersDelta}% vs. previous month`
+                  : undefined,
+              trendPositive: true,
+              href: '/creator/subscribers',
+            },
+            {
+              label: 'Post views',
+              value: formatCompactCount(metrics.postViews),
+              icon: Eye,
+              iconClassName: kpiIconTone.sky,
+              trendLabel:
+                metrics.postViewsDelta != null
+                  ? `↑ ${metrics.postViewsDelta}% vs. previous month`
+                  : undefined,
+              trendPositive: true,
             },
           ]}
         />
       </div>
 
-      <section className="mb-8 grid grid-cols-1 gap-4 sm:grid-cols-2">
-        <Link
-          to="/creator/posts"
-          className="group flex items-start gap-4 rounded-2xl border border-border bg-card p-5 shadow-[var(--shadow-card)] transition-colors hover:border-primary/40"
-        >
-          <span
-            className={cn(
-              'flex h-11 w-11 shrink-0 items-center justify-center rounded-xl',
-              kpiIconTone.violet,
-            )}
-          >
-            <PenLine className="h-5 w-5" aria-hidden />
-          </span>
-          <div className="min-w-0 flex-1">
-            <div className="flex items-center justify-between gap-2">
-              <h3 className="text-base font-extrabold tracking-tight text-foreground">Your Picks</h3>
-              <ArrowRight className="h-4 w-4 shrink-0 text-muted-foreground transition-transform group-hover:translate-x-0.5 group-hover:text-primary" />
-            </div>
-            <p className="mt-1 text-sm text-muted-foreground">
-              Create and settle picks that feed these charts.
-            </p>
-          </div>
-        </Link>
-        <Link
-          to="/creator/subscribers"
-          className="group flex items-start gap-4 rounded-2xl border border-border bg-card p-5 shadow-[var(--shadow-card)] transition-colors hover:border-primary/40"
-        >
-          <span
-            className={cn(
-              'flex h-11 w-11 shrink-0 items-center justify-center rounded-xl',
-              kpiIconTone.amber,
-            )}
-          >
-            <Users className="h-5 w-5" aria-hidden />
-          </span>
-          <div className="min-w-0 flex-1">
-            <div className="flex items-center justify-between gap-2">
-              <h3 className="text-base font-extrabold tracking-tight text-foreground">Subscribers</h3>
-              <ArrowRight className="h-4 w-4 shrink-0 text-muted-foreground transition-transform group-hover:translate-x-0.5 group-hover:text-primary" />
-            </div>
-            <p className="mt-1 text-sm text-muted-foreground">
-              See who follows your track record.
-            </p>
-          </div>
-        </Link>
-      </section>
-
       <div className="mb-6 grid grid-cols-1 gap-4 xl:grid-cols-12">
-        <section className="rounded-2xl border border-border bg-card p-5 shadow-[var(--shadow-card)] xl:col-span-8">
-          <h2 className="mb-4 text-base font-extrabold tracking-tight text-foreground">
-            Profit over time
-          </h2>
-          <div className="h-72 min-w-0 w-full">
-            {profitSeries.length === 0 ? (
-              <p className="py-20 text-center text-sm text-muted-foreground">No settled picks yet.</p>
+        <section className="rounded-2xl border border-border bg-card p-5 shadow-[var(--shadow-card)] sm:p-6 xl:col-span-8">
+          <div className="mb-5 flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+            <div className="min-w-0">
+              <h2 className="text-base font-extrabold tracking-tight text-foreground">
+                Revenue Overview
+              </h2>
+              <div className="mt-2 flex flex-wrap items-baseline gap-2">
+                <p className="text-3xl font-extrabold tabular-nums tracking-tight text-foreground">
+                  {money(metrics.totalRevenueCents)}
+                </p>
+                {metrics.totalRevenueDelta != null ? (
+                  <span className="inline-flex items-center gap-0.5 text-sm font-bold text-emerald-600 dark:text-emerald-400">
+                    <ArrowUpRight className="h-4 w-4" aria-hidden />
+                    {metrics.totalRevenueDelta}%
+                  </span>
+                ) : null}
+              </div>
+            </div>
+            <div className="flex flex-wrap items-center gap-2">
+              <Select value={metricKey} onValueChange={setMetricKey}>
+                <SelectTrigger className="h-10 w-[8.5rem] rounded-xl border-border bg-background">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="revenue">Revenue</SelectItem>
+                  <SelectItem value="mrr">MRR</SelectItem>
+                  <SelectItem value="subs">Subscribers</SelectItem>
+                </SelectContent>
+              </Select>
+              <div className={segmentedTrackClassName} role="group" aria-label="Chart range">
+                {CHART_RANGES.map((r) => (
+                  <button
+                    key={r}
+                    type="button"
+                    className={segmentedItemClassName(chartRange === r)}
+                    onClick={() => setChartRange(r)}
+                  >
+                    {r}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          <div className="h-72 min-w-0 w-full sm:h-80">
+            {revenueSeries.length === 0 ? (
+              <p className="flex h-full items-center justify-center text-sm text-muted-foreground">
+                No revenue data for this period yet.
+              </p>
             ) : (
               <ResponsiveContainer width="100%" height="100%">
-                <ComposedChart data={profitSeries}>
+                <AreaChart
+                  data={revenueSeries}
+                  margin={{ top: 8, right: 8, left: 0, bottom: 0 }}
+                >
                   <defs>
-                    <linearGradient id="perfProfitGrad" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="hsl(160 84% 39%)" stopOpacity={0.35} />
-                      <stop offset="95%" stopColor="hsl(160 84% 39%)" stopOpacity={0} />
+                    <linearGradient id="perfRevenueFill" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stopColor="hsl(239 84% 60%)" stopOpacity={0.35} />
+                      <stop offset="100%" stopColor="hsl(239 84% 60%)" stopOpacity={0} />
                     </linearGradient>
                   </defs>
-                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                  <CartesianGrid
+                    strokeDasharray="3 3"
+                    stroke="hsl(var(--border))"
+                    vertical={false}
+                  />
                   <XAxis
                     dataKey="label"
                     tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 12 }}
@@ -723,605 +481,247 @@ const CreatorPerformanceTracker = () => {
                     tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 12 }}
                     axisLine={false}
                     tickLine={false}
-                    tickFormatter={(v) => `${v}u`}
+                    width={48}
+                    tickFormatter={(v) => `$${Number(v).toLocaleString()}`}
                   />
                   <Tooltip
-                    contentStyle={chartTooltipStyle}
-                    formatter={(v: number) => [`${v}u`, 'Profit']}
+                    contentStyle={{
+                      backgroundColor: 'hsl(var(--card))',
+                      border: '1px solid hsl(var(--border))',
+                      borderRadius: 12,
+                      fontSize: 13,
+                      boxShadow: 'var(--shadow-card)',
+                    }}
+                    formatter={(value: number) => [
+                      `$${Number(value).toLocaleString()}`,
+                      metricKey === 'mrr'
+                        ? 'MRR'
+                        : metricKey === 'subs'
+                          ? 'Subscribers'
+                          : 'Revenue',
+                    ]}
+                    labelFormatter={(_, payload) => {
+                      const row = payload?.[0]?.payload as
+                        | { fullLabel?: string; label?: string }
+                        | undefined;
+                      return row?.fullLabel ?? row?.label ?? '';
+                    }}
                   />
                   <Area
                     type="monotone"
-                    dataKey="profit"
-                    stroke="none"
-                    fill="url(#perfProfitGrad)"
-                  />
-                  <Line
-                    type="monotone"
-                    dataKey="profit"
-                    stroke="hsl(160 84% 39%)"
+                    dataKey="revenue"
+                    stroke="hsl(239 84% 55%)"
                     strokeWidth={2.5}
-                    dot={false}
-                    activeDot={{ r: 4 }}
+                    fill="url(#perfRevenueFill)"
+                    activeDot={{ r: 5, strokeWidth: 2, stroke: 'hsl(var(--card))' }}
                   />
-                </ComposedChart>
+                </AreaChart>
               </ResponsiveContainer>
             )}
           </div>
+          <p className="mt-2 text-center text-xs text-muted-foreground">
+            Showing {chartRange} · {metricKey === 'revenue' ? 'Revenue' : metricKey.toUpperCase()}
+          </p>
         </section>
 
-        <section className="rounded-2xl border border-border bg-card p-5 shadow-[var(--shadow-card)] xl:col-span-4">
-          <h2 className="mb-4 text-base font-extrabold tracking-tight text-foreground">
-            Pick Results
-          </h2>
-          <div className="h-56 min-w-0 w-full">
-            {resultsPie.length === 0 ? (
-              <p className="py-16 text-center text-sm text-muted-foreground">No results yet.</p>
-            ) : (
-              <ResponsiveContainer width="100%" height="100%">
-                <PieChart>
-                  <Pie
-                    data={resultsPie}
-                    dataKey="value"
-                    nameKey="name"
-                    cx="50%"
-                    cy="50%"
-                    innerRadius={55}
-                    outerRadius={80}
-                    paddingAngle={3}
-                  >
-                    {resultsPie.map((entry) => (
-                      <Cell key={entry.name} fill={entry.color} />
-                    ))}
-                  </Pie>
-                  <Tooltip contentStyle={chartTooltipStyle} />
-                </PieChart>
-              </ResponsiveContainer>
-            )}
+        <section className="rounded-2xl border border-border bg-card p-5 shadow-[var(--shadow-card)] sm:p-6 xl:col-span-4">
+          <div className="mb-4 flex items-center gap-2">
+            <span className={cn('flex h-9 w-9 items-center justify-center rounded-xl', kpiIconTone.amber)}>
+              <Lightbulb className="h-4 w-4" aria-hidden />
+            </span>
+            <h2 className="text-base font-extrabold tracking-tight text-foreground">
+              Key Insights
+            </h2>
           </div>
-          <div className="mt-1 flex flex-wrap justify-center gap-3">
-            {resultsPie.map((d) => (
-              <div key={d.name} className="flex items-center gap-1.5">
-                <span className="h-2.5 w-2.5 rounded-full" style={{ background: d.color }} />
-                <span className="text-xs font-medium text-muted-foreground">
-                  {d.name} ({d.value})
-                </span>
-              </div>
-            ))}
-          </div>
-        </section>
-      </div>
-
-      <div className="mb-6 grid grid-cols-1 gap-4 lg:grid-cols-2">
-        <section className="rounded-2xl border border-border bg-card p-5 shadow-[var(--shadow-card)]">
-          <h2 className="mb-4 text-base font-extrabold tracking-tight text-foreground">
-            Profit by Sport
-          </h2>
-          <div className="h-64 min-w-0 w-full">
-            {profitBySport.length === 0 ? (
-              <p className="py-16 text-center text-sm text-muted-foreground">No sport data yet.</p>
-            ) : (
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={profitBySport} layout="vertical" margin={{ left: 8, right: 12 }}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" horizontal={false} />
-                  <XAxis
-                    type="number"
-                    tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 12 }}
-                    axisLine={false}
-                    tickLine={false}
-                    tickFormatter={(v) => `${v}u`}
-                  />
-                  <YAxis
-                    type="category"
-                    dataKey="sport"
-                    width={64}
-                    tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 12 }}
-                    axisLine={false}
-                    tickLine={false}
-                  />
-                  <Tooltip
-                    contentStyle={chartTooltipStyle}
-                    formatter={(v: number) => [`${v}u`, 'Profit']}
-                  />
-                  <Bar dataKey="profit" radius={[0, 6, 6, 0]} fill="hsl(239 84% 67%)" />
-                </BarChart>
-              </ResponsiveContainer>
-            )}
-          </div>
-        </section>
-
-        <section className="rounded-2xl border border-border bg-card p-5 shadow-[var(--shadow-card)]">
-          <h2 className="mb-4 text-base font-extrabold tracking-tight text-foreground">
-            Win Rate by Sport
-          </h2>
-          <div className="h-64 min-w-0 w-full">
-            {winRateBySport.length === 0 ? (
-              <p className="py-16 text-center text-sm text-muted-foreground">No sport data yet.</p>
-            ) : (
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={winRateBySport} margin={{ left: 0, right: 8 }}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                  <XAxis
-                    dataKey="sport"
-                    tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 12 }}
-                    axisLine={false}
-                    tickLine={false}
-                  />
-                  <YAxis
-                    domain={[0, 100]}
-                    tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 12 }}
-                    axisLine={false}
-                    tickLine={false}
-                    tickFormatter={(v) => `${v}%`}
-                  />
-                  <Tooltip
-                    contentStyle={chartTooltipStyle}
-                    formatter={(v: number) => [`${v}%`, 'Win rate']}
-                  />
-                  <Bar dataKey="winRate" radius={[6, 6, 0, 0]} fill="hsl(199 89% 48%)" />
-                </BarChart>
-              </ResponsiveContainer>
-            )}
-          </div>
-        </section>
-      </div>
-
-      <section className="mb-6 overflow-hidden rounded-2xl border border-border bg-card shadow-[var(--shadow-card)]">
-        <div className="flex flex-col gap-2 border-b border-border px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
-          <h2 className="text-base font-extrabold tracking-tight text-foreground">
-            Recent Picks Performance
-          </h2>
-          <Button asChild variant="outline" className="min-h-10 rounded-xl">
-            <Link to="/creator/posts">Manage picks</Link>
-          </Button>
-        </div>
-        <div className="overflow-x-auto">
-          <Table>
-            <TableHeader>
-              <TableRow className="bg-muted/40 hover:bg-muted/40">
-                <TableHead className="px-5">Date</TableHead>
-                <TableHead>Match</TableHead>
-                <TableHead>Pick</TableHead>
-                <TableHead>Result</TableHead>
-                <TableHead className="px-5 text-right">Profit</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {recentRows.length === 0 ? (
-                <TableRow>
-                  <TableCell colSpan={5} className="px-5 py-10 text-center text-sm text-muted-foreground">
-                    No picks in this range.{' '}
-                    <Link to="/creator/posts" className="font-semibold text-primary underline-offset-2 hover:underline">
-                      Add a pick
-                    </Link>
-                  </TableCell>
-                </TableRow>
-              ) : (
-                recentRows.map((row) => (
-                  <TableRow key={row.id}>
-                    <TableCell className="px-5 text-sm text-muted-foreground">
-                      {format(row.dateMs, 'MMM d, yyyy')}
-                    </TableCell>
-                    <TableCell>
-                      <MatchCell match={row.match} sport={row.sport} />
-                    </TableCell>
-                    <TableCell className="text-sm font-medium text-foreground">{row.pick}</TableCell>
-                    <TableCell>
-                      <span
-                        className={cn(
-                          'inline-flex rounded-full border px-2.5 py-0.5 text-xs font-bold',
-                          resultPillTone[row.result],
-                        )}
-                      >
-                        {resultLabel(row.result)}
-                      </span>
-                    </TableCell>
-                    <TableCell
-                      className={cn(
-                        'px-5 text-right text-sm font-bold tabular-nums',
-                        row.profit > 0
-                          ? 'text-emerald-600 dark:text-emerald-400'
-                          : row.profit < 0
-                            ? 'text-rose-600 dark:text-rose-400'
-                            : 'text-muted-foreground',
-                      )}
-                    >
-                      {row.result === 'pending' ? '—' : fmtUnits(row.profit)}
-                    </TableCell>
-                  </TableRow>
-                ))
-              )}
-            </TableBody>
-          </Table>
-        </div>
-      </section>
-
-      <section className="mb-8 overflow-hidden rounded-2xl border border-border bg-card shadow-[var(--shadow-card)]">
-        <div className="border-b border-border px-5 py-4">
-          <h2 className="text-base font-extrabold tracking-tight text-foreground">
-            Monthly Breakdown
-          </h2>
-        </div>
-        <div className="overflow-x-auto">
-          <Table>
-            <TableHeader>
-              <TableRow className="bg-muted/40 hover:bg-muted/40">
-                <TableHead className="px-5">Month</TableHead>
-                <TableHead className="text-right">Picks</TableHead>
-                <TableHead className="text-right">Win Rate</TableHead>
-                <TableHead className="text-right">Risked</TableHead>
-                <TableHead className="text-right">Profit</TableHead>
-                <TableHead className="px-5 text-right">ROI</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {monthlyRows.length === 0 ? (
-                <TableRow>
-                  <TableCell colSpan={6} className="px-5 py-10 text-center text-sm text-muted-foreground">
-                    No monthly history yet.
-                  </TableCell>
-                </TableRow>
-              ) : (
-                monthlyRows.map((m) => (
-                  <TableRow key={m.month}>
-                    <TableCell className="px-5 text-sm font-semibold">{m.month}</TableCell>
-                    <TableCell className="text-right tabular-nums text-sm">{m.picks}</TableCell>
-                    <TableCell className="text-right tabular-nums text-sm">{m.winRate}%</TableCell>
-                    <TableCell className="text-right tabular-nums text-sm">{m.risked}u</TableCell>
-                    <TableCell
-                      className={cn(
-                        'text-right text-sm font-bold tabular-nums',
-                        m.profit > 0
-                          ? 'text-emerald-600 dark:text-emerald-400'
-                          : m.profit < 0
-                            ? 'text-rose-600 dark:text-rose-400'
-                            : 'text-muted-foreground',
-                      )}
-                    >
-                      {fmtUnits(m.profit)}
-                    </TableCell>
-                    <TableCell
-                      className={cn(
-                        'px-5 text-right text-sm font-bold tabular-nums',
-                        m.roi > 0
-                          ? 'text-emerald-600 dark:text-emerald-400'
-                          : m.roi < 0
-                            ? 'text-rose-600 dark:text-rose-400'
-                            : 'text-muted-foreground',
-                      )}
-                    >
-                      {m.roi >= 0 ? '+' : ''}
-                      {m.roi}%
-                    </TableCell>
-                  </TableRow>
-                ))
-              )}
-            </TableBody>
-          </Table>
-        </div>
-      </section>
-
-      <Collapsible open={practiceOpen} onOpenChange={setPracticeOpen}>
-        <section className="rounded-2xl border border-border bg-card shadow-[var(--shadow-card)]">
-          <CollapsibleTrigger asChild>
-            <button
-              type="button"
-              className="flex w-full items-center justify-between gap-3 px-5 py-4 text-left"
-            >
-              <div>
-                <h2 className="text-base font-extrabold tracking-tight text-foreground">
-                  Manage practice picks
-                </h2>
-                <p className="mt-0.5 text-sm text-muted-foreground">
-                  Private ledger separate from published posts — {practicePicks.length} pick
-                  {practicePicks.length === 1 ? '' : 's'}.
-                </p>
-              </div>
-              <ChevronDown
-                className={cn(
-                  'h-5 w-5 shrink-0 text-muted-foreground transition-transform',
-                  practiceOpen && 'rotate-180',
-                )}
-              />
-            </button>
-          </CollapsibleTrigger>
-          <CollapsibleContent>
-            <div className="border-t border-border px-5 py-4">
-              <div className="mb-4 flex flex-wrap gap-2">
-                <Button type="button" className="min-h-10 rounded-xl" onClick={openAdd}>
-                  <Plus className="mr-1.5 h-4 w-4" /> Add practice pick
-                </Button>
-                <Button asChild variant="outline" className="min-h-10 rounded-xl">
-                  <Link to="/creator/posts">Go to Your Picks</Link>
-                </Button>
-              </div>
-              <div className="overflow-x-auto rounded-xl border border-border">
-                <Table>
-                  <TableHeader>
-                    <TableRow className="bg-muted/40 hover:bg-muted/40">
-                      <TableHead className="px-4">Date</TableHead>
-                      <TableHead>Event</TableHead>
-                      <TableHead>Sport</TableHead>
-                      <TableHead>Result</TableHead>
-                      <TableHead className="text-right">P/L</TableHead>
-                      <TableHead className="px-4 text-right">Actions</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {practicePicks.length === 0 ? (
-                      <TableRow>
-                        <TableCell
-                          colSpan={6}
-                          className="px-4 py-8 text-center text-sm text-muted-foreground"
-                        >
-                          No practice picks yet.
-                        </TableCell>
-                      </TableRow>
-                    ) : (
-                      practicePicks.map((p) => {
-                        const result = normalizeResult(p.result);
-                        return (
-                          <TableRow key={p.id}>
-                            <TableCell className="px-4 text-sm text-muted-foreground">
-                              {p.date}
-                            </TableCell>
-                            <TableCell className="text-sm font-medium">{p.pickEvent}</TableCell>
-                            <TableCell className="text-sm">{p.sport}</TableCell>
-                            <TableCell>
-                              <span
-                                className={cn(
-                                  'inline-flex rounded-full border px-2.5 py-0.5 text-xs font-bold',
-                                  resultPillTone[result],
-                                )}
-                              >
-                                {resultLabel(result)}
-                              </span>
-                            </TableCell>
-                            <TableCell className="text-right text-sm tabular-nums">
-                              {fmtUnits(p.unitsWonLost)}
-                            </TableCell>
-                            <TableCell className="px-4 text-right">
-                              <div className="inline-flex gap-1">
-                                <Button
-                                  type="button"
-                                  size="icon"
-                                  variant="ghost"
-                                  className="h-9 w-9"
-                                  onClick={() => openEdit(p)}
-                                  aria-label="Edit pick"
-                                >
-                                  <Pencil className="h-4 w-4" />
-                                </Button>
-                                <Button
-                                  type="button"
-                                  size="icon"
-                                  variant="ghost"
-                                  className="h-9 w-9 text-rose-600"
-                                  onClick={() => setDeleteId(p.id)}
-                                  aria-label="Delete pick"
-                                >
-                                  <Trash2 className="h-4 w-4" />
-                                </Button>
-                              </div>
-                            </TableCell>
-                          </TableRow>
-                        );
-                      })
+          <ul className="space-y-3">
+            {insights.map((insight) => {
+              const Icon = insightIcon[insight.tone];
+              return (
+                <li
+                  key={insight.id}
+                  className="flex gap-3 rounded-xl border border-border/70 bg-muted/20 px-3 py-3"
+                >
+                  <span
+                    className={cn(
+                      'mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg',
+                      insightToneClass[insight.tone],
                     )}
-                  </TableBody>
-                </Table>
-              </div>
-            </div>
-          </CollapsibleContent>
+                  >
+                    <Icon className="h-4 w-4" aria-hidden />
+                  </span>
+                  <p className="text-sm font-medium leading-snug text-foreground">
+                    {insight.text}
+                  </p>
+                </li>
+              );
+            })}
+          </ul>
         </section>
-      </Collapsible>
+      </div>
 
-      <Dialog
-        open={dialogOpen}
-        onOpenChange={(open) => {
-          if (!open) resetForm();
-          else setDialogOpen(true);
-        }}
-      >
-        <DialogContent
-          overlayClassName="bg-black/50"
-          className="gap-0 overflow-hidden rounded-2xl border-border bg-card p-0 shadow-[var(--shadow-card)] sm:max-w-lg sm:rounded-2xl"
-        >
-          <DialogHeader className="space-y-3 border-b border-border px-5 pb-4 pt-5 text-left sm:px-6 sm:pt-6">
-            <div className="flex items-start gap-3 pr-8">
-              <span
-                className={cn(
-                  'flex h-11 w-11 shrink-0 items-center justify-center rounded-xl',
-                  kpiIconTone.violet,
-                )}
-              >
-                <Target className="h-5 w-5" aria-hidden />
-              </span>
-              <div className="min-w-0">
-                <p className="text-caption font-semibold uppercase tracking-[0.14em] text-muted-foreground">
-                  Performance
-                </p>
-                <DialogTitle className="mt-1 text-heading font-bold tracking-tight">
-                  {editId ? 'Edit practice pick' : 'Add practice pick'}
-                </DialogTitle>
-                <DialogDescription className="mt-1.5 text-support text-muted-foreground">
-                  {editId
-                    ? 'Update odds, units, and result for this private ledger entry.'
-                    : 'Log a practice pick to track results alongside your published picks.'}
-                </DialogDescription>
-              </div>
-            </div>
-          </DialogHeader>
-          <div className="grid gap-3 px-5 py-5 sm:px-6">
-            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-              <div>
-                <label className="mb-1.5 block text-sm text-muted-foreground">Date</label>
-                <Input
-                  type="date"
-                  className="h-11 rounded-xl"
-                  value={form.date}
-                  onChange={(e) => setForm((f) => ({ ...f, date: e.target.value }))}
-                />
-              </div>
-              <div>
-                <label className="mb-1.5 block text-sm text-muted-foreground">Sport</label>
-                <Select
-                  value={form.sport}
-                  onValueChange={(v) => setForm((f) => ({ ...f, sport: v }))}
-                >
-                  <SelectTrigger className="h-11 rounded-xl">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {SPORTS.map((s) => (
-                      <SelectItem key={s} value={s}>
-                        {s}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-            <div>
-              <label className="mb-1.5 block text-sm text-muted-foreground">Pick / Event</label>
-              <Input
-                className="h-11 rounded-xl"
-                placeholder="Chiefs -3.5"
-                value={form.pickEvent}
-                onChange={(e) => setForm((f) => ({ ...f, pickEvent: e.target.value }))}
-              />
-            </div>
-            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-              <div>
-                <label className="mb-1.5 block text-sm text-muted-foreground">EU Odds</label>
-                <Input
-                  type="number"
-                  step="0.01"
-                  min="1.01"
-                  className="h-11 rounded-xl"
-                  placeholder="1.91"
-                  value={form.euOdds}
-                  onChange={(e) => handleEuChange(e.target.value)}
-                />
-              </div>
-              <div>
-                <label className="mb-1.5 block text-sm text-muted-foreground">US Odds</label>
-                <Input
-                  className="h-11 rounded-xl"
-                  placeholder="-110"
-                  value={form.usOdds}
-                  onChange={(e) => handleUsChange(e.target.value)}
-                />
-              </div>
-            </div>
-            <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-              <div>
-                <label className="mb-1.5 block text-sm text-muted-foreground">Units</label>
-                <Input
-                  type="number"
-                  step="0.5"
-                  className="h-11 rounded-xl"
-                  value={form.unitsRisked}
-                  onChange={(e) => setForm((f) => ({ ...f, unitsRisked: e.target.value }))}
-                />
-              </div>
-              <div>
-                <label className="mb-1.5 block text-sm text-muted-foreground">Result</label>
-                <Select
-                  value={form.result}
-                  onValueChange={(v) => setForm((f) => ({ ...f, result: v }))}
-                >
-                  <SelectTrigger className="h-11 rounded-xl">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {RESULTS.map((r) => (
-                      <SelectItem key={r} value={r}>
-                        {resultLabel(r)}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div>
-                <label className="mb-1.5 block text-sm text-muted-foreground">P/L (u)</label>
-                <Input
-                  type="number"
-                  step="0.1"
-                  className="h-11 rounded-xl"
-                  value={form.unitsWonLost}
-                  onChange={(e) => setForm((f) => ({ ...f, unitsWonLost: e.target.value }))}
-                />
-              </div>
-            </div>
+      <div className="mb-6 grid grid-cols-1 gap-4 md:grid-cols-3">
+        {growthCards.map((card) => (
+          <GrowthMiniChart key={card.id} card={card} />
+        ))}
+      </div>
+
+      <div className="grid grid-cols-1 gap-4 xl:grid-cols-12">
+        <section className="rounded-2xl border border-border bg-card p-5 shadow-[var(--shadow-card)] sm:p-6 xl:col-span-7">
+          <div className="mb-4 flex items-center justify-between gap-3">
+            <h2 className="text-base font-extrabold tracking-tight text-foreground">
+              Top Performing Posts
+            </h2>
+            <Link
+              to="/creator/posts"
+              className="text-xs font-bold text-primary hover:underline"
+            >
+              View all
+            </Link>
           </div>
-          <DialogFooter className="gap-2 border-t border-border bg-muted/20 px-5 py-4 sm:flex-row sm:justify-end sm:space-x-0 sm:gap-2 sm:px-6">
-            <Button
-              type="button"
-              variant="outline"
-              className="min-h-11 rounded-xl"
-              onClick={resetForm}
-            >
-              Cancel
-            </Button>
-            <Button
-              type="button"
-              className="min-h-11 rounded-xl"
-              disabled={saving}
-              onClick={() => void handleSave()}
-            >
-              {saving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-              {saving ? 'Saving…' : editId ? 'Save changes' : 'Add pick'}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      <AlertDialog open={Boolean(deleteId)} onOpenChange={(o) => !o && setDeleteId(null)}>
-        <AlertDialogContent
-          overlayClassName="bg-black/50"
-          className="gap-0 overflow-hidden rounded-2xl border-border bg-card p-0 shadow-[var(--shadow-card)] sm:rounded-2xl"
-        >
-          <AlertDialogHeader className="space-y-3 px-5 pb-2 pt-5 text-left sm:px-6 sm:pt-6">
-            <div className="flex items-start gap-3">
-              <span
-                className={cn(
-                  'flex h-11 w-11 shrink-0 items-center justify-center rounded-xl',
-                  kpiIconTone.rose,
-                )}
-              >
-                <Trash2 className="h-5 w-5" aria-hidden />
-              </span>
-              <div className="min-w-0">
-                <p className="text-caption font-semibold uppercase tracking-[0.14em] text-muted-foreground">
-                  Performance
-                </p>
-                <AlertDialogTitle className="mt-1 text-heading font-bold tracking-tight">
-                  Delete practice pick?
-                </AlertDialogTitle>
-                <AlertDialogDescription className="mt-1.5 text-support text-muted-foreground">
-                  This removes the pick from your private ledger. This cannot be undone.
-                </AlertDialogDescription>
-              </div>
+          {topPosts.length === 0 ? (
+            <p className="py-10 text-center text-sm text-muted-foreground">
+              No posts yet.{' '}
+              <Link to="/creator/posts" className="font-semibold text-primary hover:underline">
+                Create a pick
+              </Link>
+            </p>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full min-w-[36rem] text-left text-sm">
+                <thead>
+                  <tr className="border-b border-border text-[11px] font-bold uppercase tracking-wide text-muted-foreground">
+                    <th className="py-2 pr-2">#</th>
+                    <th className="py-2 pr-2">Post</th>
+                    <th className="py-2 pr-2">Type</th>
+                    <th className="py-2 pr-2 text-right">Views</th>
+                    <th className="py-2 pr-2 text-right">Likes</th>
+                    <th className="py-2 pr-2 text-right">Comments</th>
+                    <th className="py-2 pr-2 text-right">Conv.</th>
+                    <th className="py-2 text-right">Revenue</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {topPosts.map((post) => {
+                    const TypeIcon = postTypeIcon(post.type);
+                    return (
+                      <tr key={post.id} className="border-b border-border/70 last:border-0">
+                        <td className="py-3 pr-2 tabular-nums text-muted-foreground">
+                          {post.rank}
+                        </td>
+                        <td className="py-3 pr-2">
+                          <div className="flex min-w-0 items-center gap-2.5">
+                            <span
+                              className={cn(
+                                'flex h-9 w-9 shrink-0 items-center justify-center rounded-xl',
+                                post.thumbTone,
+                              )}
+                            >
+                              <TypeIcon className="h-4 w-4" aria-hidden />
+                            </span>
+                            <div className="min-w-0">
+                              <p className="truncate font-semibold text-foreground">{post.title}</p>
+                              <p className="truncate text-xs text-muted-foreground">
+                                {post.subtitle}
+                              </p>
+                            </div>
+                          </div>
+                        </td>
+                        <td className="py-3 pr-2">
+                          <span className="inline-flex rounded-full border border-border bg-muted/40 px-2 py-0.5 text-xs font-semibold text-muted-foreground">
+                            {post.type}
+                          </span>
+                        </td>
+                        <td className="py-3 pr-2 text-right tabular-nums font-medium">
+                          {post.views ? formatCompactCount(post.views) : '—'}
+                        </td>
+                        <td className="py-3 pr-2 text-right tabular-nums text-muted-foreground">
+                          {post.likes || '—'}
+                        </td>
+                        <td className="py-3 pr-2 text-right tabular-nums text-muted-foreground">
+                          {post.comments || '—'}
+                        </td>
+                        <td className="py-3 pr-2 text-right tabular-nums font-medium">
+                          {post.conversions || '—'}
+                        </td>
+                        <td className="py-3 text-right font-bold tabular-nums text-emerald-600 dark:text-emerald-400">
+                          {post.revenueCents > 0 ? money(post.revenueCents) : '—'}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
             </div>
-          </AlertDialogHeader>
-          <AlertDialogFooter className="gap-2 border-t border-border bg-muted/20 px-5 py-4 sm:flex-row sm:justify-end sm:space-x-0 sm:gap-2 sm:px-6">
-            <AlertDialogCancel disabled={deleting} className="mt-0 min-h-11 rounded-xl">
-              Cancel
-            </AlertDialogCancel>
-            <AlertDialogAction
-              disabled={deleting}
-              className="min-h-11 rounded-xl bg-destructive text-destructive-foreground hover:bg-destructive/90"
-              onClick={(e) => {
-                e.preventDefault();
-                void confirmDelete();
-              }}
+          )}
+        </section>
+
+        <section className="rounded-2xl border border-border bg-card p-5 shadow-[var(--shadow-card)] sm:p-6 xl:col-span-5">
+          <div className="mb-4 flex items-center justify-between gap-3">
+            <h2 className="text-base font-extrabold tracking-tight text-foreground">
+              Top Performing Products
+            </h2>
+            <Link
+              to="/creator/products"
+              className="text-xs font-bold text-primary hover:underline"
             >
-              {deleting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-              {deleting ? 'Deleting…' : 'Delete'}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+              View all
+            </Link>
+          </div>
+          {topProducts.length === 0 ? (
+            <p className="py-10 text-center text-sm text-muted-foreground">
+              No products yet.{' '}
+              <Link to="/creator/products" className="font-semibold text-primary hover:underline">
+                Add a product
+              </Link>
+            </p>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full min-w-[22rem] text-left text-sm">
+                <thead>
+                  <tr className="border-b border-border text-[11px] font-bold uppercase tracking-wide text-muted-foreground">
+                    <th className="py-2 pr-2">#</th>
+                    <th className="py-2 pr-2">Product</th>
+                    <th className="py-2 pr-2 text-right">Subs</th>
+                    <th className="py-2 pr-2 text-right">Revenue</th>
+                    <th className="py-2 text-right">Conv.</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {topProducts.map((product) => (
+                    <tr key={product.id} className="border-b border-border/70 last:border-0">
+                      <td className="py-3 pr-2 tabular-nums text-muted-foreground">
+                        {product.rank}
+                      </td>
+                      <td className="py-3 pr-2">
+                        <div className="flex min-w-0 items-center gap-2.5">
+                          <span
+                            className={cn(
+                              'flex h-9 w-9 shrink-0 items-center justify-center rounded-xl',
+                              product.iconTone,
+                            )}
+                          >
+                            <Package className="h-4 w-4" aria-hidden />
+                          </span>
+                          <p className="truncate font-semibold text-foreground">{product.name}</p>
+                        </div>
+                      </td>
+                      <td className="py-3 pr-2 text-right tabular-nums font-medium">
+                        {product.subscribers.toLocaleString()}
+                      </td>
+                      <td className="py-3 pr-2 text-right font-bold tabular-nums text-emerald-600 dark:text-emerald-400">
+                        {product.revenueCents > 0 ? money(product.revenueCents) : '—'}
+                      </td>
+                      <td className="py-3 text-right tabular-nums text-muted-foreground">
+                        {product.conversionPct > 0 ? `${product.conversionPct}%` : '—'}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </section>
+      </div>
     </DashboardLayout>
   );
 };

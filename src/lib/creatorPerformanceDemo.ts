@@ -1,222 +1,257 @@
 /**
- * Sample Your Performance data for design review when the creator has no picks yet.
- * Aligned to the Prizelet Performance mockup (~67.2% WR, +86.4u).
+ * Sample Performance (growth analytics) data aligned to the Prizelet mockup.
  */
 
-const day = 86_400_000;
+export type ChartRange = '7D' | '30D' | '90D' | '1Y' | 'All';
 
-function daysAgo(n: number): number {
-  return Date.now() - n * day;
-}
-
-function isoDaysAgo(n: number): string {
-  return new Date(daysAgo(n)).toISOString().slice(0, 10);
-}
-
-export type PerformanceResult = 'won' | 'lost' | 'push' | 'pending';
-
-export type DemoRecentPick = {
+export type DemoInsight = {
   id: string;
-  dateMs: number;
-  match: string;
-  pick: string;
-  sport: string;
-  result: PerformanceResult;
-  profit: number;
+  tone: 'emerald' | 'violet' | 'sky' | 'amber' | 'rose';
+  text: string;
 };
 
-export type DemoMonthlyRow = {
-  month: string;
-  picks: number;
-  wins: number;
-  winRate: number;
-  risked: number;
-  profit: number;
-  roi: number;
+export type DemoGrowthCard = {
+  id: string;
+  label: string;
+  value: string;
+  trendPct: number;
+  /** When true, a negative trend is good (e.g. churn down). */
+  invertTrend?: boolean;
+  series: number[];
+  stroke: string;
+  fill: string;
 };
 
-/** KPI strip values aligned to the Performance mockup. */
+export type DemoTopPost = {
+  id: string;
+  rank: number;
+  title: string;
+  subtitle: string;
+  type: 'Text' | 'Video' | 'Image';
+  views: number;
+  likes: number;
+  comments: number;
+  conversions: number;
+  revenueCents: number;
+  thumbTone: string;
+};
+
+export type DemoTopProduct = {
+  id: string;
+  rank: number;
+  name: string;
+  subscribers: number;
+  revenueCents: number;
+  conversionPct: number;
+  iconTone: string;
+};
+
 export const CREATOR_PERFORMANCE_DEMO_METRICS = {
-  winRate: 67.2,
-  winRateDelta: 5.4,
-  settledPicks: 98,
-  settledDelta: 12,
-  totalProfit: 86.4,
-  profitDelta: 42,
-  roi: 18.5,
-  roiDelta: 3.2,
+  totalRevenueCents: 5_268_000,
+  totalRevenueDelta: 34,
+  mrrCents: 432_000,
+  mrrDelta: 27,
+  totalSubscribers: 1_248,
+  subscribersDelta: 18,
+  postViews: 48_320,
+  postViewsDelta: 41,
+  dateRangeLabel: 'Jan 1, 2025 – Jan 31, 2025',
 } as const;
 
-/** Cumulative profit series (units) for the line/area chart. */
-export const CREATOR_PERFORMANCE_DEMO_PROFIT_SERIES = [
-  { label: 'Week 1', profit: 8.2 },
-  { label: 'Week 2', profit: 14.6 },
-  { label: 'Week 3', profit: 11.1 },
-  { label: 'Week 4', profit: 22.4 },
-  { label: 'Week 5', profit: 31.8 },
-  { label: 'Week 6', profit: 28.5 },
-  { label: 'Week 7', profit: 45.2 },
-  { label: 'Week 8', profit: 52.9 },
-  { label: 'Week 9', profit: 61.3 },
-  { label: 'Week 10', profit: 74.8 },
-  { label: 'Week 11', profit: 81.2 },
-  { label: 'Week 12', profit: 86.4 },
+/** Daily revenue points for the 30D overview chart (mockup Jan 2025). */
+export const CREATOR_PERFORMANCE_DEMO_REVENUE_SERIES: Array<{
+  label: string;
+  fullLabel: string;
+  revenue: number;
+}> = [
+  { label: 'Jan 1', fullLabel: 'Jan 1, 2025', revenue: 1_820 },
+  { label: 'Jan 4', fullLabel: 'Jan 4, 2025', revenue: 2_140 },
+  { label: 'Jan 7', fullLabel: 'Jan 7, 2025', revenue: 2_680 },
+  { label: 'Jan 10', fullLabel: 'Jan 10, 2025', revenue: 3_120 },
+  { label: 'Jan 13', fullLabel: 'Jan 13, 2025', revenue: 3_540 },
+  { label: 'Jan 16', fullLabel: 'Jan 16, 2025', revenue: 4_180 },
+  { label: 'Jan 19', fullLabel: 'Jan 19, 2025', revenue: 4_860 },
+  { label: 'Jan 22', fullLabel: 'Jan 22, 2025', revenue: 5_420 },
+  { label: 'Jan 24', fullLabel: 'Jan 24, 2025', revenue: 6_420 },
+  { label: 'Jan 27', fullLabel: 'Jan 27, 2025', revenue: 5_780 },
+  { label: 'Jan 29', fullLabel: 'Jan 29, 2025', revenue: 5_210 },
+  { label: 'Jan 31', fullLabel: 'Jan 31, 2025', revenue: 4_960 },
 ];
 
-export const CREATOR_PERFORMANCE_DEMO_RESULTS = [
-  { name: 'Wins', value: 66, color: 'hsl(160 84% 39%)' },
-  { name: 'Losses', value: 28, color: 'hsl(0 84% 60%)' },
-  { name: 'Pushes', value: 4, color: 'hsl(215 16% 55%)' },
-];
-
-export const CREATOR_PERFORMANCE_DEMO_PROFIT_BY_SPORT = [
-  { sport: 'NBA', profit: 32.4 },
-  { sport: 'NFL', profit: 28.1 },
-  { sport: 'Soccer', profit: 14.6 },
-  { sport: 'MLB', profit: 6.8 },
-  { sport: 'NHL', profit: 4.5 },
-];
-
-export const CREATOR_PERFORMANCE_DEMO_WINRATE_BY_SPORT = [
-  { sport: 'NBA', winRate: 72 },
-  { sport: 'NFL', winRate: 68 },
-  { sport: 'Soccer', winRate: 64 },
-  { sport: 'MLB', winRate: 58 },
-  { sport: 'NHL', winRate: 61 },
-];
-
-export const CREATOR_PERFORMANCE_DEMO_RECENT: DemoRecentPick[] = [
+export const CREATOR_PERFORMANCE_DEMO_INSIGHTS: DemoInsight[] = [
   {
-    id: 'demo-perf-1',
-    dateMs: daysAgo(1),
-    match: 'Lakers vs Nuggets',
-    pick: 'Over 224.5',
-    sport: 'NBA',
-    result: 'won',
-    profit: 1.82,
+    id: 'i1',
+    tone: 'emerald',
+    text: 'Revenue increased 34% compared to last month.',
   },
   {
-    id: 'demo-perf-2',
-    dateMs: daysAgo(2),
-    match: 'Chiefs vs Bills',
-    pick: 'Chiefs +1.5',
-    sport: 'NFL',
-    result: 'won',
-    profit: 0.95,
+    id: 'i2',
+    tone: 'violet',
+    text: 'Subscriber growth accelerated — +18% MoM.',
   },
   {
-    id: 'demo-perf-3',
-    dateMs: daysAgo(3),
-    match: 'Real Madrid vs Sevilla',
-    pick: 'Real Madrid ML',
-    sport: 'Soccer',
-    result: 'lost',
-    profit: -1,
+    id: 'i3',
+    tone: 'sky',
+    text: 'Post views are up 41% with stronger engagement.',
   },
   {
-    id: 'demo-perf-4',
-    dateMs: daysAgo(4),
-    match: 'Celtics vs Heat',
-    pick: 'Celtics -4.5',
-    sport: 'NBA',
-    result: 'won',
-    profit: 1.82,
+    id: 'i4',
+    tone: 'amber',
+    text: 'Best performing product: Premium Picks generated $25,230 (48% of revenue).',
   },
   {
-    id: 'demo-perf-5',
-    dateMs: daysAgo(5),
-    match: 'Yankees vs Dodgers',
-    pick: 'Over 8.5',
-    sport: 'MLB',
-    result: 'lost',
-    profit: -1,
-  },
-  {
-    id: 'demo-perf-6',
-    dateMs: daysAgo(6),
-    match: 'Djokovic vs Alcaraz',
-    pick: 'Djokovic ML',
-    sport: 'Tennis',
-    result: 'pending',
-    profit: 0,
-  },
-  {
-    id: 'demo-perf-7',
-    dateMs: daysAgo(7),
-    match: 'Arsenal vs Tottenham',
-    pick: 'Arsenal -0.5',
-    sport: 'Soccer',
-    result: 'push',
-    profit: 0,
-  },
-  {
-    id: 'demo-perf-8',
-    dateMs: daysAgo(8),
-    match: 'Chiefs vs Raiders',
-    pick: 'Mahomes Over 1.5 Pass TD',
-    sport: 'NFL',
-    result: 'won',
-    profit: 1.74,
+    id: 'i5',
+    tone: 'emerald',
+    text: 'Conversion rate improved to 6.2% (+29% vs prior period).',
   },
 ];
 
-export const CREATOR_PERFORMANCE_DEMO_MONTHLY: DemoMonthlyRow[] = [
-  { month: 'Jan 2026', picks: 28, wins: 19, winRate: 70.4, risked: 42, profit: 18.6, roi: 44.3 },
-  { month: 'Dec 2025', picks: 32, wins: 21, winRate: 67.7, risked: 48, profit: 22.4, roi: 46.7 },
-  { month: 'Nov 2025', picks: 24, wins: 15, winRate: 65.2, risked: 36, profit: 14.1, roi: 39.2 },
-  { month: 'Oct 2025', picks: 30, wins: 19, winRate: 65.5, risked: 45, profit: 16.8, roi: 37.3 },
-  { month: 'Sep 2025', picks: 22, wins: 14, winRate: 66.7, risked: 33, profit: 9.2, roi: 27.9 },
-  { month: 'Aug 2025', picks: 18, wins: 11, winRate: 64.7, risked: 27, profit: 5.3, roi: 19.6 },
+export const CREATOR_PERFORMANCE_DEMO_GROWTH: DemoGrowthCard[] = [
+  {
+    id: 'subs',
+    label: 'Subscribers Growth',
+    value: '1,248',
+    trendPct: 18,
+    series: [820, 860, 910, 980, 1_040, 1_100, 1_160, 1_210, 1_248],
+    stroke: 'hsl(239 84% 60%)',
+    fill: 'hsl(239 84% 60% / 0.18)',
+  },
+  {
+    id: 'conv',
+    label: 'Conversion Rate',
+    value: '6.2%',
+    trendPct: 29,
+    series: [3.8, 4.1, 4.4, 4.8, 5.1, 5.4, 5.7, 5.9, 6.2],
+    stroke: 'hsl(160 84% 39%)',
+    fill: 'hsl(160 84% 39% / 0.18)',
+  },
+  {
+    id: 'churn',
+    label: 'Churn Rate',
+    value: '2.1%',
+    trendPct: -12,
+    invertTrend: true,
+    series: [3.4, 3.2, 3.0, 2.8, 2.6, 2.5, 2.3, 2.2, 2.1],
+    stroke: 'hsl(0 84% 60%)',
+    fill: 'hsl(0 84% 60% / 0.16)',
+  },
 ];
 
-/** Sample practice-ledger rows for the manage section when empty. */
-export const CREATOR_PERFORMANCE_DEMO_PRACTICE = [
+export const CREATOR_PERFORMANCE_DEMO_TOP_POSTS: DemoTopPost[] = [
   {
-    id: 'demo-practice-1',
-    date: isoDaysAgo(1),
-    pickEvent: 'Lakers -3.5',
-    sport: 'NBA',
-    usOdds: '-110',
-    euOdds: 1.91,
-    unitsRisked: 1,
-    result: 'won' as const,
-    unitsWonLost: 0.91,
+    id: 'demo-post-1',
+    rank: 1,
+    title: 'NBA Picks Tonight',
+    subtitle: 'Lakers vs Celtics slate',
+    type: 'Text',
+    views: 12_400,
+    likes: 842,
+    comments: 126,
+    conversions: 48,
+    revenueCents: 423_000,
+    thumbTone: 'bg-violet-500/15 text-violet-700',
   },
   {
-    id: 'demo-practice-2',
-    date: isoDaysAgo(3),
-    pickEvent: 'Chiefs ML',
-    sport: 'NFL',
-    usOdds: '+120',
-    euOdds: 2.2,
-    unitsRisked: 1,
-    result: 'lost' as const,
-    unitsWonLost: -1,
+    id: 'demo-post-2',
+    rank: 2,
+    title: 'NFL Sunday Card',
+    subtitle: 'Week 12 lock list',
+    type: 'Video',
+    views: 9_820,
+    likes: 610,
+    comments: 94,
+    conversions: 36,
+    revenueCents: 318_000,
+    thumbTone: 'bg-sky-500/15 text-sky-700',
   },
   {
-    id: 'demo-practice-3',
-    date: isoDaysAgo(5),
-    pickEvent: 'Over 47.5',
-    sport: 'NFL',
-    usOdds: '-105',
-    euOdds: 1.95,
-    unitsRisked: 2,
-    result: 'pending' as const,
-    unitsWonLost: 0,
+    id: 'demo-post-3',
+    rank: 3,
+    title: 'Soccer Value Bets',
+    subtitle: 'EPL + La Liga',
+    type: 'Text',
+    views: 7_640,
+    likes: 402,
+    comments: 71,
+    conversions: 28,
+    revenueCents: 241_000,
+    thumbTone: 'bg-emerald-500/15 text-emerald-700',
+  },
+  {
+    id: 'demo-post-4',
+    rank: 4,
+    title: 'MLB Underdogs',
+    subtitle: 'Night slate specials',
+    type: 'Image',
+    views: 5_210,
+    likes: 288,
+    comments: 42,
+    conversions: 19,
+    revenueCents: 156_000,
+    thumbTone: 'bg-amber-500/15 text-amber-700',
+  },
+  {
+    id: 'demo-post-5',
+    rank: 5,
+    title: 'NHL Parlay Pack',
+    subtitle: '3-leg same-game',
+    type: 'Text',
+    views: 4_180,
+    likes: 214,
+    comments: 33,
+    conversions: 14,
+    revenueCents: 98_000,
+    thumbTone: 'bg-rose-500/15 text-rose-700',
+  },
+];
+
+export const CREATOR_PERFORMANCE_DEMO_TOP_PRODUCTS: DemoTopProduct[] = [
+  {
+    id: 'demo-prod-1',
+    rank: 1,
+    name: 'Premium Picks',
+    subscribers: 842,
+    revenueCents: 2_523_000,
+    conversionPct: 8.4,
+    iconTone: 'bg-sky-500/15 text-sky-700',
+  },
+  {
+    id: 'demo-prod-2',
+    rank: 2,
+    name: 'VIP All Access',
+    subscribers: 218,
+    revenueCents: 1_642_000,
+    conversionPct: 5.1,
+    iconTone: 'bg-rose-500/15 text-rose-700',
+  },
+  {
+    id: 'demo-prod-3',
+    rank: 3,
+    name: 'Monthly Card',
+    subscribers: 188,
+    revenueCents: 1_103_000,
+    conversionPct: 4.2,
+    iconTone: 'bg-violet-500/15 text-violet-700',
   },
 ];
 
 export function shouldUseCreatorPerformanceDemo(input: {
-  pickCount: number;
-  postCount: number;
+  hasMeaningfulActivity: boolean;
   forceDemo: boolean;
   disableDemo: boolean;
 }): boolean {
   if (input.disableDemo) return false;
   if (input.forceDemo) return true;
-  return input.pickCount === 0 && input.postCount === 0;
+  return !input.hasMeaningfulActivity;
 }
 
 export function isCreatorPerformanceDemoId(id: string): boolean {
   return id.startsWith('demo-');
+}
+
+export function formatCompactCount(n: number): string {
+  if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`;
+  if (n >= 10_000) return `${(n / 1_000).toFixed(1)}K`;
+  if (n >= 1_000) return `${(n / 1_000).toFixed(1)}K`;
+  return n.toLocaleString();
 }
