@@ -27,4 +27,11 @@ export const resultPillTone = {
   push: 'bg-muted text-muted-foreground border-border',
   pending: 'bg-amber-500/10 text-amber-700 border-amber-500/25 dark:text-amber-400',
   published: 'bg-emerald-500/10 text-emerald-600 border-emerald-500/25 dark:text-emerald-400',
+  active: 'bg-emerald-500/10 text-emerald-700 border-emerald-500/25 dark:text-emerald-400',
+  cancelled: 'bg-rose-500/10 text-rose-700 border-rose-500/25 dark:text-rose-400',
+  canceled: 'bg-rose-500/10 text-rose-700 border-rose-500/25 dark:text-rose-400',
+  trial: 'bg-amber-500/10 text-amber-700 border-amber-500/25 dark:text-amber-400',
+  vip: 'bg-rose-500/10 text-rose-700 border-rose-500/25 dark:text-rose-400',
+  premium: 'bg-sky-500/10 text-sky-700 border-sky-500/25 dark:text-sky-400',
+  monthly: 'bg-violet-500/10 text-violet-700 border-violet-500/25 dark:text-violet-400',
 } as const;

@@ -3,7 +3,6 @@ import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { usePaginatedQuery, useQuery } from 'convex/react';
 import { format } from 'date-fns';
 import {
-  ArrowRight,
   CheckCircle2,
   ChevronLeft,
   ChevronRight,
@@ -13,7 +12,6 @@ import {
   Loader2,
   MessageSquare,
   MoreVertical,
-  Package,
   Search,
   Sparkles,
   UserMinus,
@@ -24,6 +22,7 @@ import { toast } from 'sonner';
 import { api } from '../../convex/_generated/api';
 import { DashboardLayout } from '@/components/dashboard/DashboardLayout';
 import { DashboardKpiStrip } from '@/components/dashboard/DashboardKpiStrip';
+import { DesktopTableRegion, MobileRecordCards } from '@/components/dashboard/MobileRecordList';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
@@ -47,16 +46,9 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { creatorProfilePath } from '@/lib/creatorProfilePath';
-import { kpiIconTone } from '@/lib/kpiIconTones';
+import { kpiIconTone, resultPillTone } from '@/lib/kpiIconTones';
 import { cn } from '@/lib/utils';
 import { segmentedItemClassName, segmentedTrackClassName } from '@/lib/segmentedControl';
 import { copyToClipboard } from '@/lib/clipboard';
@@ -68,6 +60,7 @@ import {
   shouldUseCreatorSubscribersDemo,
   type DemoSubscriberRow,
 } from '@/lib/creatorSubscribersDemo';
+import { SubscriberDetailDialog } from '@/components/creator/SubscriberDetailDialog';
 
 const PAGE_SIZE = 50;
 const TABLE_PAGE = 10;
@@ -75,6 +68,7 @@ const TABLE_PAGE = 10;
 type StatusTab = 'all' | 'active' | 'cancelled' | 'trial';
 type UiStatus = 'active' | 'cancelled' | 'trial';
 type PlanLabel = 'Premium' | 'Monthly' | 'VIP' | '—';
+type SortKey = 'newest' | 'oldest' | 'spent';
 
 type Row = {
   id: string;
@@ -86,6 +80,7 @@ type Row = {
   joinedAtMs: number;
   renewalAtMs: number | null;
   totalSpentCents: number;
+  avatarUrl: string | null;
 };
 
 function mapPlan(amountCents: number | undefined): PlanLabel {
@@ -101,17 +96,17 @@ function mapStatus(status: string): UiStatus {
   return 'trial';
 }
 
-function planPill(plan: PlanLabel): string {
-  if (plan === 'VIP') return 'bg-rose-500/10 text-rose-700 border-rose-500/25 dark:text-rose-400';
-  if (plan === 'Premium') return 'bg-sky-500/10 text-sky-700 border-sky-500/25 dark:text-sky-400';
-  if (plan === 'Monthly') return 'bg-violet-500/10 text-violet-700 border-violet-500/25 dark:text-violet-400';
+function planTone(plan: PlanLabel): string {
+  if (plan === 'VIP') return resultPillTone.vip;
+  if (plan === 'Premium') return resultPillTone.premium;
+  if (plan === 'Monthly') return resultPillTone.monthly;
   return 'bg-muted text-muted-foreground border-border';
 }
 
-function statusPill(status: UiStatus): string {
-  if (status === 'active') return 'bg-emerald-500/10 text-emerald-700 border-emerald-500/25 dark:text-emerald-400';
-  if (status === 'cancelled') return 'bg-rose-500/10 text-rose-700 border-rose-500/25 dark:text-rose-400';
-  return 'bg-amber-500/10 text-amber-700 border-amber-500/25 dark:text-amber-400';
+function statusTone(status: UiStatus): string {
+  if (status === 'active') return resultPillTone.active;
+  if (status === 'cancelled') return resultPillTone.cancelled;
+  return resultPillTone.trial;
 }
 
 function avatarTone(plan: PlanLabel): string {
@@ -132,6 +127,7 @@ function demoToRow(d: DemoSubscriberRow): Row {
     joinedAtMs: d.joinedAtMs,
     renewalAtMs: d.renewalAtMs,
     totalSpentCents: d.totalSpentCents,
+    avatarUrl: d.avatarUrl,
   };
 }
 
@@ -169,6 +165,7 @@ const CreatorSubscribers = () => {
         joinedAtMs: s.createdAt,
         renewalAtMs: s.currentPeriodEnd ?? null,
         totalSpentCents: s.amountCents ?? 0,
+        avatarUrl: s.user?.image ?? null,
       })),
     [rowsRaw],
   );
@@ -184,12 +181,13 @@ const CreatorSubscribers = () => {
   const [tab, setTab] = useState<StatusTab>('all');
   const [search, setSearch] = useState('');
   const [planFilter, setPlanFilter] = useState('all');
+  const [sortKey, setSortKey] = useState<SortKey>('newest');
   const [tablePage, setTablePage] = useState(0);
   const [detailRow, setDetailRow] = useState<Row | null>(null);
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
-    return rows.filter((r) => {
+    let list = rows.filter((r) => {
       if (tab === 'active' && r.status !== 'active') return false;
       if (tab === 'cancelled' && r.status !== 'cancelled') return false;
       if (tab === 'trial' && r.status !== 'trial') return false;
@@ -197,7 +195,13 @@ const CreatorSubscribers = () => {
       if (!q) return true;
       return r.name.toLowerCase().includes(q) || r.email.toLowerCase().includes(q);
     });
-  }, [rows, tab, search, planFilter]);
+    list = [...list].sort((a, b) => {
+      if (sortKey === 'oldest') return a.joinedAtMs - b.joinedAtMs;
+      if (sortKey === 'spent') return b.totalSpentCents - a.totalSpentCents;
+      return b.joinedAtMs - a.joinedAtMs;
+    });
+    return list;
+  }, [rows, tab, search, planFilter, sortKey]);
 
   const counts = useMemo(() => {
     if (useDemo) {
@@ -315,14 +319,11 @@ const CreatorSubscribers = () => {
     <DashboardLayout type="creator">
       <header className="mb-6 flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
         <div className="min-w-0">
-          <p className="text-caption font-semibold uppercase tracking-[0.14em] text-muted-foreground">
-            Community
-          </p>
-          <h1 className="mt-1 text-heading font-bold tracking-tight text-foreground md:text-heading-lg">
+          <h1 className="text-heading font-bold tracking-tight text-foreground md:text-heading-lg">
             Your Subscribers
           </h1>
           <p className="mt-1.5 max-w-xl text-support text-muted-foreground">
-            Track who pays for your picks, follow renewals, and grow your community.
+            Manage your audience, track renewals, and grow recurring revenue.
           </p>
         </div>
         <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row">
@@ -353,27 +354,43 @@ const CreatorSubscribers = () => {
         </div>
       ) : null}
 
+      <div className={cn(segmentedTrackClassName, "mb-6 w-full overflow-x-auto")}>
+        {tabs.map((t) => (
+          <button
+            key={t.id}
+            type="button"
+            className={segmentedItemClassName(tab === t.id)}
+            onClick={() => {
+              setTab(t.id);
+              setTablePage(0);
+            }}
+          >
+            {t.label} ({t.count})
+          </button>
+        ))}
+      </div>
+
       <div className="mb-6 sm:mb-8">
         <DashboardKpiStrip
           items={[
             {
-              label: 'Total Subscribers',
-              value: String(metrics.total),
+              label: "Total subscribers",
+              value: metrics.total.toLocaleString(),
               icon: Users,
               iconClassName: kpiIconTone.violet,
               trendLabel: trendLabel(metrics.totalDelta),
               trendPositive: (metrics.totalDelta ?? 0) >= 0,
             },
             {
-              label: 'Active Subscribers',
-              value: String(metrics.active),
+              label: "Active",
+              value: metrics.active.toLocaleString(),
               icon: Crown,
               iconClassName: kpiIconTone.sky,
               trendLabel: trendLabel(metrics.activeDelta),
               trendPositive: (metrics.activeDelta ?? 0) >= 0,
             },
             {
-              label: 'Canceled',
+              label: "Canceled",
               value: String(metrics.canceled),
               icon: UserMinus,
               iconClassName: kpiIconTone.rose,
@@ -381,7 +398,7 @@ const CreatorSubscribers = () => {
               trendPositive: (metrics.canceledDelta ?? 0) <= 0,
             },
             {
-              label: 'Gross revenue',
+              label: "Gross revenue",
               value: `$${((metrics.mrrCents ?? 0) / 100).toLocaleString()}`,
               icon: DollarSign,
               iconClassName: kpiIconTone.emerald,
@@ -392,48 +409,11 @@ const CreatorSubscribers = () => {
         />
       </div>
 
-      <section className="mb-8 grid grid-cols-1 gap-4 sm:grid-cols-2">
-        <Link
-          to="/creator/messages"
-          className="group flex items-start gap-4 rounded-2xl border border-border bg-card p-5 shadow-[var(--shadow-card)] transition-colors hover:border-primary/40"
-        >
-          <span className={cn('flex h-11 w-11 shrink-0 items-center justify-center rounded-xl', kpiIconTone.sky)}>
-            <MessageSquare className="h-5 w-5" aria-hidden />
-          </span>
-          <div className="min-w-0 flex-1">
-            <div className="flex items-center justify-between gap-2">
-              <h3 className="text-base font-extrabold tracking-tight text-foreground">Message fans</h3>
-              <ArrowRight className="h-4 w-4 shrink-0 text-muted-foreground transition-transform group-hover:translate-x-0.5 group-hover:text-primary" />
-            </div>
-            <p className="mt-1 text-sm text-muted-foreground">
-              Open your inbox to chat with active subscribers one-to-one.
-            </p>
-          </div>
-        </Link>
-        <Link
-          to="/creator/products"
-          className="group flex items-start gap-4 rounded-2xl border border-border bg-card p-5 shadow-[var(--shadow-card)] transition-colors hover:border-primary/40"
-        >
-          <span className={cn('flex h-11 w-11 shrink-0 items-center justify-center rounded-xl', kpiIconTone.violet)}>
-            <Package className="h-5 w-5" aria-hidden />
-          </span>
-          <div className="min-w-0 flex-1">
-            <div className="flex items-center justify-between gap-2">
-              <h3 className="text-base font-extrabold tracking-tight text-foreground">Plans & access</h3>
-              <ArrowRight className="h-4 w-4 shrink-0 text-muted-foreground transition-transform group-hover:translate-x-0.5 group-hover:text-primary" />
-            </div>
-            <p className="mt-1 text-sm text-muted-foreground">
-              Manage pricing tiers and capacity that drive this subscriber list.
-            </p>
-          </div>
-        </Link>
-      </section>
-
       {!useDemo && rows.length === 0 ? (
         <div className="rounded-2xl border border-border bg-card p-10 text-center shadow-[var(--shadow-card)]">
           <span
             className={cn(
-              'mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-xl',
+              "mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-xl",
               kpiIconTone.violet,
             )}
           >
@@ -444,61 +424,57 @@ const CreatorSubscribers = () => {
             Share your profile link so fans can subscribe to your picks.
           </p>
           <Button asChild className="min-h-11 rounded-xl">
-            <Link to={emptyCtaHref}>{profileReady ? 'View your profile' : 'Set up your profile'}</Link>
+            <Link to={emptyCtaHref}>{profileReady ? "View your profile" : "Set up your profile"}</Link>
           </Button>
         </div>
       ) : (
         <section className="overflow-hidden rounded-2xl border border-border bg-card shadow-[var(--shadow-card)]">
-          <div className="flex flex-col gap-3 border-b border-border p-4 sm:p-5">
-            <div className="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
-              <h2 className="text-base font-extrabold tracking-tight text-foreground">All subscribers</h2>
-              <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
-                <div className="relative w-full sm:w-[220px]">
-                  <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                  <Input
-                    value={search}
-                    onChange={(e) => {
-                      setSearch(e.target.value);
-                      setTablePage(0);
-                    }}
-                    placeholder="Search subscribers..."
-                    className="h-11 rounded-xl ps-9"
-                  />
-                </div>
-                <Select
-                  value={planFilter}
-                  onValueChange={(v) => {
-                    setPlanFilter(v);
-                    setTablePage(0);
-                  }}
-                >
-                  <SelectTrigger className="h-11 w-full rounded-xl sm:w-[140px]">
-                    <SelectValue placeholder="All Plans" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All Plans</SelectItem>
-                    <SelectItem value="Monthly">Monthly</SelectItem>
-                    <SelectItem value="Premium">Premium</SelectItem>
-                    <SelectItem value="VIP">VIP</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
+          <div className="flex flex-col gap-3 border-b border-border p-4 sm:flex-row sm:flex-wrap sm:items-center sm:p-5">
+            <div className="relative min-w-[200px] flex-1">
+              <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+              <Input
+                value={search}
+                onChange={(e) => {
+                  setSearch(e.target.value);
+                  setTablePage(0);
+                }}
+                placeholder="Search subscribers..."
+                className="h-11 rounded-xl ps-9"
+              />
             </div>
-            <div className={cn(segmentedTrackClassName, 'w-full overflow-x-auto')}>
-              {tabs.map((t) => (
-                <button
-                  key={t.id}
-                  type="button"
-                  className={segmentedItemClassName(tab === t.id)}
-                  onClick={() => {
-                    setTab(t.id);
-                    setTablePage(0);
-                  }}
-                >
-                  {t.label} ({t.count})
-                </button>
-              ))}
-            </div>
+            <Select
+              value={planFilter}
+              onValueChange={(v) => {
+                setPlanFilter(v);
+                setTablePage(0);
+              }}
+            >
+              <SelectTrigger className="h-11 w-full rounded-xl sm:w-[140px]">
+                <SelectValue placeholder="All plans" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All plans</SelectItem>
+                <SelectItem value="Monthly">Monthly</SelectItem>
+                <SelectItem value="Premium">Premium</SelectItem>
+                <SelectItem value="VIP">VIP</SelectItem>
+              </SelectContent>
+            </Select>
+            <Select
+              value={sortKey}
+              onValueChange={(v) => {
+                setSortKey(v as SortKey);
+                setTablePage(0);
+              }}
+            >
+              <SelectTrigger className="h-11 w-full rounded-xl sm:w-[160px]">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="newest">Newest first</SelectItem>
+                <SelectItem value="oldest">Oldest first</SelectItem>
+                <SelectItem value="spent">Highest spend</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
 
           {filtered.length === 0 ? (
@@ -508,68 +484,26 @@ const CreatorSubscribers = () => {
             </div>
           ) : (
             <>
-              <Table>
-                <TableHeader>
-                  <TableRow className="hover:bg-transparent">
-                    <TableHead>Subscriber</TableHead>
-                    <TableHead>Plan</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead className="hidden lg:table-cell">Joined</TableHead>
-                    <TableHead className="hidden md:table-cell">Renewal</TableHead>
-                    <TableHead>Spent</TableHead>
-                    <TableHead className="w-12 text-right">Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
+              <div className="space-y-3 p-4 md:hidden">
+                <MobileRecordCards>
                   {pageRows.map((row) => (
-                    <TableRow key={row.id}>
-                      <TableCell>
+                    <li
+                      key={row.id}
+                      className="rounded-xl border border-border bg-background/60 p-4 shadow-[var(--shadow-card)]"
+                    >
+                      <div className="flex items-start justify-between gap-2">
                         <div className="flex min-w-0 items-center gap-3">
-                          <span
-                            className={cn(
-                              'flex h-9 w-9 shrink-0 items-center justify-center rounded-xl text-xs font-bold',
-                              avatarTone(row.plan),
-                            )}
-                          >
-                            {initialsFromName(row.name)}
-                          </span>
+                          <Avatar className="h-10 w-10 border border-border">
+                            {row.avatarUrl ? <AvatarImage src={row.avatarUrl} alt="" /> : null}
+                            <AvatarFallback className={cn("text-xs font-bold", avatarTone(row.plan))}>
+                              {initialsFromName(row.name)}
+                            </AvatarFallback>
+                          </Avatar>
                           <div className="min-w-0">
-                            <p className="truncate font-semibold text-foreground">{row.name}</p>
+                            <p className="truncate text-sm font-bold text-foreground">{row.name}</p>
                             <p className="truncate text-xs text-muted-foreground">{row.email}</p>
                           </div>
                         </div>
-                      </TableCell>
-                      <TableCell>
-                        <span
-                          className={cn(
-                            'inline-flex rounded-full border px-2 py-0.5 text-xs font-bold',
-                            planPill(row.plan),
-                          )}
-                        >
-                          {row.plan}
-                        </span>
-                      </TableCell>
-                      <TableCell>
-                        <span
-                          className={cn(
-                            'inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-xs font-bold capitalize',
-                            statusPill(row.status),
-                          )}
-                        >
-                          {row.status === 'active' ? <CheckCircle2 className="h-3 w-3" /> : null}
-                          {row.status === 'cancelled' ? 'Canceled' : row.status}
-                        </span>
-                      </TableCell>
-                      <TableCell className="hidden whitespace-nowrap text-support text-muted-foreground lg:table-cell">
-                        {format(row.joinedAtMs, 'MMM d, yyyy')}
-                      </TableCell>
-                      <TableCell className="hidden whitespace-nowrap text-support text-muted-foreground md:table-cell">
-                        {row.renewalAtMs ? format(row.renewalAtMs, 'MMM d, yyyy') : '—'}
-                      </TableCell>
-                      <TableCell className="font-semibold tabular-nums">
-                        ${(row.totalSpentCents / 100).toFixed(2)}
-                      </TableCell>
-                      <TableCell className="text-right">
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
                             <Button variant="ghost" size="icon" className="h-9 w-9" aria-label="Actions">
@@ -580,16 +514,95 @@ const CreatorSubscribers = () => {
                             <DropdownMenuItem onClick={() => setDetailRow(row)}>
                               View details
                             </DropdownMenuItem>
-                            <DropdownMenuItem onClick={() => openMessage(row)}>
-                              Message
-                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => openMessage(row)}>Message</DropdownMenuItem>
                           </DropdownMenuContent>
                         </DropdownMenu>
-                      </TableCell>
-                    </TableRow>
+                      </div>
+                      <div className="mt-3 flex flex-wrap items-center gap-2">
+                        <span className={cn("inline-flex rounded-full border px-2 py-0.5 text-xs font-bold", planTone(row.plan))}>
+                          {row.plan}
+                        </span>
+                        <span className={cn("inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-xs font-bold capitalize", statusTone(row.status))}>
+                          {row.status === "active" ? <CheckCircle2 className="h-3 w-3" /> : null}
+                          {row.status === "cancelled" ? "Canceled" : row.status}
+                        </span>
+                        <span className="text-xs font-semibold tabular-nums text-muted-foreground">
+                          ${(row.totalSpentCents / 100).toFixed(2)} spent
+                        </span>
+                      </div>
+                    </li>
                   ))}
-                </TableBody>
-              </Table>
+                </MobileRecordCards>
+              </div>
+
+              <DesktopTableRegion label="Subscribers table" className="rounded-none border-0 border-t border-border">
+                <Table>
+                  <TableHeader>
+                    <TableRow className="hover:bg-transparent">
+                      <TableHead>Subscriber</TableHead>
+                      <TableHead>Plan</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead className="hidden lg:table-cell">Joined</TableHead>
+                      <TableHead className="hidden md:table-cell">Renewal</TableHead>
+                      <TableHead>Spent</TableHead>
+                      <TableHead className="w-12 text-right">Actions</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {pageRows.map((row) => (
+                      <TableRow key={row.id}>
+                        <TableCell>
+                          <div className="flex min-w-0 items-center gap-3">
+                            <Avatar className="h-9 w-9 border border-border">
+                              {row.avatarUrl ? <AvatarImage src={row.avatarUrl} alt="" /> : null}
+                              <AvatarFallback className={cn("text-xs font-bold", avatarTone(row.plan))}>
+                                {initialsFromName(row.name)}
+                              </AvatarFallback>
+                            </Avatar>
+                            <div className="min-w-0">
+                              <p className="truncate font-semibold text-foreground">{row.name}</p>
+                              <p className="truncate text-xs text-muted-foreground">{row.email}</p>
+                            </div>
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <span className={cn("inline-flex rounded-full border px-2 py-0.5 text-xs font-bold", planTone(row.plan))}>
+                            {row.plan}
+                          </span>
+                        </TableCell>
+                        <TableCell>
+                          <span className={cn("inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-xs font-bold capitalize", statusTone(row.status))}>
+                            {row.status === "active" ? <CheckCircle2 className="h-3 w-3" /> : null}
+                            {row.status === "cancelled" ? "Canceled" : row.status}
+                          </span>
+                        </TableCell>
+                        <TableCell className="hidden whitespace-nowrap text-support text-muted-foreground lg:table-cell">
+                          {format(row.joinedAtMs, "MMM d, yyyy")}
+                        </TableCell>
+                        <TableCell className="hidden whitespace-nowrap text-support text-muted-foreground md:table-cell">
+                          {row.renewalAtMs ? format(row.renewalAtMs, "MMM d, yyyy") : "—"}
+                        </TableCell>
+                        <TableCell className="font-semibold tabular-nums">
+                          ${(row.totalSpentCents / 100).toFixed(2)}
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button variant="ghost" size="icon" className="h-9 w-9" aria-label="Actions">
+                                <MoreVertical className="h-4 w-4" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              <DropdownMenuItem onClick={() => setDetailRow(row)}>View details</DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => openMessage(row)}>Message</DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </DesktopTableRegion>
 
               <div className="flex flex-col gap-3 border-t border-border px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
                 <p className="text-support text-muted-foreground">
@@ -610,7 +623,7 @@ const CreatorSubscribers = () => {
                     <Button
                       key={i}
                       type="button"
-                      variant={i === safePage ? 'default' : 'outline'}
+                      variant={i === safePage ? "default" : "outline"}
                       className="h-9 min-w-9 px-2"
                       onClick={() => setTablePage(i)}
                     >
@@ -627,15 +640,15 @@ const CreatorSubscribers = () => {
                   >
                     <ChevronRight className="h-4 w-4" />
                   </Button>
-                  {!useDemo && (pageStatus === 'CanLoadMore' || pageStatus === 'LoadingMore') ? (
+                  {!useDemo && (pageStatus === "CanLoadMore" || pageStatus === "LoadingMore") ? (
                     <Button
                       type="button"
                       variant="ghost"
                       className="ml-1 min-h-9"
-                      disabled={pageStatus === 'LoadingMore'}
+                      disabled={pageStatus === "LoadingMore"}
                       onClick={() => loadMore(PAGE_SIZE)}
                     >
-                      {pageStatus === 'LoadingMore' ? (
+                      {pageStatus === "LoadingMore" ? (
                         <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
                       ) : null}
                       Load more
@@ -648,103 +661,18 @@ const CreatorSubscribers = () => {
         </section>
       )}
 
-      <Dialog open={!!detailRow} onOpenChange={(open) => { if (!open) setDetailRow(null); }}>
-        <DialogContent
-          overlayClassName="bg-black/50"
-          className="gap-0 overflow-hidden rounded-2xl border-border bg-card p-0 shadow-[var(--shadow-card)] sm:max-w-md sm:rounded-2xl"
-        >
-          {detailRow ? (
-            <>
-              <DialogHeader className="space-y-3 border-b border-border px-5 pb-4 pt-5 text-left sm:px-6 sm:pt-6">
-                <div className="flex items-start gap-3 pr-8">
-                  <span
-                    className={cn(
-                      'flex h-11 w-11 shrink-0 items-center justify-center rounded-xl text-sm font-bold',
-                      avatarTone(detailRow.plan),
-                    )}
-                  >
-                    {initialsFromName(detailRow.name)}
-                  </span>
-                  <div className="min-w-0">
-                    <p className="text-caption font-semibold uppercase tracking-[0.14em] text-muted-foreground">
-                      Subscriber
-                    </p>
-                    <DialogTitle className="mt-1 text-heading font-bold tracking-tight">
-                      {detailRow.name}
-                    </DialogTitle>
-                    <DialogDescription className="mt-1.5 truncate text-support text-muted-foreground">
-                      {detailRow.email}
-                    </DialogDescription>
-                  </div>
-                </div>
-              </DialogHeader>
-              <div className="space-y-3 px-5 py-5 sm:px-6">
-                <div className="flex items-center justify-between gap-3 rounded-xl border border-border bg-muted/30 px-3 py-2.5">
-                  <span className="text-sm text-muted-foreground">Plan</span>
-                  <span
-                    className={cn(
-                      'inline-flex rounded-full border px-2 py-0.5 text-xs font-bold',
-                      planPill(detailRow.plan),
-                    )}
-                  >
-                    {detailRow.plan}
-                  </span>
-                </div>
-                <div className="flex items-center justify-between gap-3 rounded-xl border border-border bg-muted/30 px-3 py-2.5">
-                  <span className="text-sm text-muted-foreground">Status</span>
-                  <span
-                    className={cn(
-                      'inline-flex rounded-full border px-2 py-0.5 text-xs font-bold capitalize',
-                      statusPill(detailRow.status),
-                    )}
-                  >
-                    {detailRow.status === 'cancelled' ? 'Canceled' : detailRow.status}
-                  </span>
-                </div>
-                <div className="flex items-center justify-between gap-3 rounded-xl border border-border bg-muted/30 px-3 py-2.5">
-                  <span className="text-sm text-muted-foreground">Joined</span>
-                  <span className="text-sm font-semibold tabular-nums">
-                    {format(detailRow.joinedAtMs, 'MMM d, yyyy')}
-                  </span>
-                </div>
-                <div className="flex items-center justify-between gap-3 rounded-xl border border-border bg-muted/30 px-3 py-2.5">
-                  <span className="text-sm text-muted-foreground">Renewal</span>
-                  <span className="text-sm font-semibold tabular-nums">
-                    {detailRow.renewalAtMs ? format(detailRow.renewalAtMs, 'MMM d, yyyy') : '—'}
-                  </span>
-                </div>
-                <div className="flex items-center justify-between gap-3 rounded-xl border border-border bg-muted/30 px-3 py-2.5">
-                  <span className="text-sm text-muted-foreground">Total spent</span>
-                  <span className="text-sm font-extrabold tabular-nums">
-                    ${(detailRow.totalSpentCents / 100).toFixed(2)}
-                  </span>
-                </div>
-              </div>
-              <DialogFooter className="gap-2 border-t border-border bg-muted/20 px-5 py-4 sm:flex-row sm:justify-end sm:space-x-0 sm:gap-2 sm:px-6">
-                <Button
-                  type="button"
-                  variant="outline"
-                  className="min-h-11 rounded-xl"
-                  onClick={() => setDetailRow(null)}
-                >
-                  Close
-                </Button>
-                <Button
-                  type="button"
-                  className="min-h-11 rounded-xl"
-                  onClick={() => {
-                    const row = detailRow;
-                    setDetailRow(null);
-                    openMessage(row);
-                  }}
-                >
-                  <MessageSquare className="mr-1.5 h-4 w-4" /> Message
-                </Button>
-              </DialogFooter>
-            </>
-          ) : null}
-        </DialogContent>
-      </Dialog>
+      <SubscriberDetailDialog
+        row={detailRow}
+        open={!!detailRow}
+        onOpenChange={(open) => {
+          if (!open) setDetailRow(null);
+        }}
+        onMessage={() => {
+          const row = detailRow;
+          setDetailRow(null);
+          if (row) openMessage(row);
+        }}
+      />
     </DashboardLayout>
   );
 };
