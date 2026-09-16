@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
+import { Link, useSearchParams } from 'react-router-dom';
 import { useMutation, useQuery } from 'convex/react';
-import { useSearchParams } from 'react-router-dom';
 import { api } from '../../convex/_generated/api';
 import type { Id } from '../../convex/_generated/dataModel';
 import { DashboardLayout } from '@/components/dashboard/DashboardLayout';
@@ -68,7 +68,10 @@ const CreatorResolutionCase = () => {
 
   const createCaseHandler = async () => {
     if (!creator) return;
-    if (!subject.trim()) { toast.error('Add a subject'); return; }
+    if (!subject.trim()) {
+      toast.error('Add a subject');
+      return;
+    }
     setSaving(true);
     try {
       const id = await createCase({
@@ -134,22 +137,38 @@ const CreatorResolutionCase = () => {
 
   return (
     <DashboardLayout type="creator">
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold">Resolution Center</h1>
-        <p className="text-muted-foreground text-sm mt-0.5">Raise an issue with the Prizelet team and track its progress</p>
-      </div>
+      <header className="mb-6">
+        <p className="text-caption font-semibold uppercase tracking-[0.14em] text-muted-foreground">
+          Support
+        </p>
+        <h1 className="mt-1 text-heading font-bold tracking-tight text-foreground md:text-heading-lg">
+          Resolution Case
+        </h1>
+        <p className="mt-1.5 text-support text-muted-foreground">
+          Raise an issue with the Prizelet team and track its progress.
+        </p>
+      </header>
 
-      <div className="rounded-xl border border-border bg-card p-6 mb-8">
-        <h2 className="text-sm font-semibold mb-4">Open a New Case</h2>
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+      <section className="mb-8 rounded-2xl border border-border bg-card p-5 shadow-[var(--shadow-card)] sm:p-6">
+        <h2 className="mb-4 text-base font-extrabold tracking-tight text-foreground">
+          Open a New Case
+        </h2>
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
           <div className="sm:col-span-1">
             <Label className="text-caption text-muted-foreground">Subject</Label>
-            <Input className="mt-1.5" placeholder="Short summary" value={subject} onChange={e => setSubject(e.target.value)} />
+            <Input
+              className="mt-1.5 min-h-11"
+              placeholder="Short summary"
+              value={subject}
+              onChange={(e) => setSubject(e.target.value)}
+            />
           </div>
           <div>
             <Label className="text-caption text-muted-foreground">Category</Label>
             <Select value={category} onValueChange={setCategory}>
-              <SelectTrigger className="mt-1.5"><SelectValue /></SelectTrigger>
+              <SelectTrigger className="mt-1.5 min-h-11">
+                <SelectValue />
+              </SelectTrigger>
               <SelectContent>
                 <SelectItem value="payout">Payout</SelectItem>
                 <SelectItem value="subscriber">Subscriber dispute</SelectItem>
@@ -162,7 +181,9 @@ const CreatorResolutionCase = () => {
           <div>
             <Label className="text-caption text-muted-foreground">Priority</Label>
             <Select value={priority} onValueChange={setPriority}>
-              <SelectTrigger className="mt-1.5"><SelectValue /></SelectTrigger>
+              <SelectTrigger className="mt-1.5 min-h-11">
+                <SelectValue />
+              </SelectTrigger>
               <SelectContent>
                 <SelectItem value="low">Low</SelectItem>
                 <SelectItem value="normal">Normal</SelectItem>
@@ -173,50 +194,95 @@ const CreatorResolutionCase = () => {
         </div>
         <div className="mt-4">
           <Label className="text-caption text-muted-foreground">Details</Label>
-          <Textarea className="mt-1.5" rows={3} placeholder="Describe what happened…" value={description} onChange={e => setDescription(e.target.value)} />
+          <Textarea
+            className="mt-1.5"
+            rows={3}
+            placeholder="Describe what happened…"
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+          />
         </div>
-        <Button variant="hero" size="sm" className="mt-4" onClick={() => void createCaseHandler()} disabled={saving || !creator}>
+        <Button
+          variant="hero"
+          className="mt-4 min-h-11"
+          onClick={() => void createCaseHandler()}
+          disabled={saving || !creator}
+        >
           {saving && <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />} Submit Case
         </Button>
-      </div>
+      </section>
 
-      <h2 className="text-sm font-medium text-muted-foreground uppercase tracking-wider mb-3">Your Cases</h2>
+      <h2 className="mb-3 text-support font-medium uppercase tracking-wider text-muted-foreground">
+        Your Cases
+      </h2>
       {loading ? (
-        <div className="flex justify-center py-16"><Loader2 className="h-5 w-5 animate-spin text-primary" /></div>
+        <div className="flex justify-center py-16">
+          <Loader2 className="h-5 w-5 animate-spin text-primary" />
+        </div>
       ) : caseRows.length === 0 ? (
-        <div className="rounded-xl border border-border bg-card p-10 text-center">
-          <FileWarning className="h-10 w-10 text-muted-foreground mx-auto mb-3" />
+        <div className="rounded-2xl border border-border bg-card p-10 text-center shadow-[var(--shadow-card)]">
+          <FileWarning className="mx-auto mb-3 h-10 w-10 text-muted-foreground" />
           <p className="text-sm text-muted-foreground">No cases yet.</p>
+          <Button asChild variant="outline" className="mt-4 min-h-11 rounded-xl">
+            <Link to="/creator/personal-growth-manager">Growth Manager</Link>
+          </Button>
         </div>
       ) : (
         <div className="space-y-3">
-          {caseRows.map(c => (
-            <div key={c.id} className="rounded-xl border border-border bg-card p-5">
+          {caseRows.map((c) => (
+            <div
+              key={c.id}
+              className="rounded-2xl border border-border bg-card p-5 shadow-[var(--shadow-card)]"
+            >
               <div className="flex flex-wrap items-start justify-between gap-3">
                 <div className="min-w-0">
-                  <div className="flex items-center gap-2 mb-1">
-                    <p className="text-sm font-semibold">{c.subject}</p>
-                    <Badge variant="outline" className={`text-caption capitalize ${statusColors[c.status] ?? ''}`}>{c.status.replace('_', ' ')}</Badge>
+                  <div className="mb-1 flex flex-wrap items-center gap-2">
+                    <p className="text-sm font-semibold text-foreground">{c.subject}</p>
+                    <Badge
+                      variant="outline"
+                      className={`text-caption capitalize ${statusColors[c.status] ?? ''}`}
+                    >
+                      {c.status.replace('_', ' ')}
+                    </Badge>
                   </div>
                   <div className="flex items-center gap-3 text-caption text-muted-foreground">
                     <span className="capitalize">{c.category}</span>
-                    <span className="flex items-center gap-1"><Clock className="h-3 w-3" /> {format(new Date(c.created_at), 'MMM d, yyyy')}</span>
+                    <span className="flex items-center gap-1">
+                      <Clock className="h-3 w-3" /> {format(new Date(c.created_at), 'MMM d, yyyy')}
+                    </span>
                   </div>
-                  {c.description && <p className="text-caption text-muted-foreground mt-2">{c.description}</p>}
+                  {c.description && (
+                    <p className="mt-2 text-caption text-muted-foreground">{c.description}</p>
+                  )}
                 </div>
-                <Button variant="outline" size="sm" className="h-8 text-caption" onClick={() => openCase(c.id)}>
-                  <MessageSquare className="mr-1 h-3 w-3" /> {selected === c.id ? 'Hide' : 'Thread'}
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="h-8 text-caption"
+                  onClick={() => openCase(c.id)}
+                >
+                  <MessageSquare className="mr-1 h-3 w-3" />{' '}
+                  {selected === c.id ? 'Hide' : 'Thread'}
                 </Button>
               </div>
 
               {selected === c.id && (
                 <div className="mt-4 border-t border-border pt-4">
-                  <div className="space-y-2 max-h-64 overflow-y-auto mb-3">
-                    {messageRows.length === 0 && <p className="text-caption text-muted-foreground">No messages yet.</p>}
-                    {messageRows.map(m => (
-                      <div key={m.id} className={`rounded-lg p-3 text-caption ${m.sender_role === 'creator' ? 'bg-primary/10 ml-8' : 'bg-muted/40 mr-8'}`}>
-                        <p className="font-medium mb-1 capitalize">{m.sender_role === 'creator' ? 'You' : 'Prizelet team'}</p>
-                        <p className="text-muted-foreground whitespace-pre-wrap">{m.body}</p>
+                  <div className="mb-3 max-h-64 space-y-2 overflow-y-auto">
+                    {messageRows.length === 0 && (
+                      <p className="text-caption text-muted-foreground">No messages yet.</p>
+                    )}
+                    {messageRows.map((m) => (
+                      <div
+                        key={m.id}
+                        className={`rounded-lg p-3 text-caption ${
+                          m.sender_role === 'creator' ? 'ml-8 bg-primary/10' : 'mr-8 bg-muted/40'
+                        }`}
+                      >
+                        <p className="mb-1 font-medium capitalize">
+                          {m.sender_role === 'creator' ? 'You' : 'Prizelet team'}
+                        </p>
+                        <p className="whitespace-pre-wrap text-muted-foreground">{m.body}</p>
                         <div className="mt-1 flex items-center justify-between gap-2 text-caption text-muted-foreground/70">
                           <span>{format(new Date(m.created_at), 'MMM d, HH:mm')}</span>
                           {m.sender_role === 'creator' && <MessageSeenReceipt seen={m.read} />}
@@ -225,9 +291,24 @@ const CreatorResolutionCase = () => {
                     ))}
                   </div>
                   <div className="flex gap-2">
-                    <Textarea rows={2} placeholder="Add a message…" value={reply} onChange={e => setReply(e.target.value)} />
-                    <Button variant="hero" size="sm" onClick={() => void sendReply()} disabled={sending || !reply.trim()}>
-                      {sending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Send className="h-3.5 w-3.5" />}
+                    <Textarea
+                      rows={2}
+                      placeholder="Add a message…"
+                      value={reply}
+                      onChange={(e) => setReply(e.target.value)}
+                    />
+                    <Button
+                      variant="hero"
+                      size="sm"
+                      className="min-h-11 shrink-0"
+                      onClick={() => void sendReply()}
+                      disabled={sending || !reply.trim()}
+                    >
+                      {sending ? (
+                        <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                      ) : (
+                        <Send className="h-3.5 w-3.5" />
+                      )}
                     </Button>
                   </div>
                 </div>

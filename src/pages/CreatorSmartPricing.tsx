@@ -11,6 +11,7 @@ import { Badge } from '@/components/ui/badge';
 import { useCreatorProfile } from '@/hooks/useCreatorProfile';
 import { kpiIconTone } from '@/lib/kpiIconTones';
 import {
+  ArrowLeft,
   DollarSign,
   BarChart3,
   Target,
@@ -137,15 +138,20 @@ const CreatorSmartPricing = () => {
     return (
       <DashboardLayout type="creator">
         <header className="mb-6">
-          <h1 className="text-heading font-bold text-foreground">Smart Pricing</h1>
-          <p className="text-support text-muted-foreground mt-0.5">
+          <p className="text-caption font-semibold uppercase tracking-[0.14em] text-muted-foreground">
+            Products
+          </p>
+          <h1 className="mt-1 text-heading font-bold tracking-tight text-foreground">
+            Smart Pricing
+          </h1>
+          <p className="mt-1.5 text-support text-muted-foreground">
             Illustrative pricing guidance from your live metrics — not a guarantee.
           </p>
         </header>
-        <div className="rounded-xl border border-border bg-card p-10 text-center">
-          <DollarSign className="h-10 w-10 text-muted-foreground mx-auto mb-4" />
-          <h3 className="text-ui font-semibold text-foreground mb-2">No creator profile yet</h3>
-          <p className="text-support text-muted-foreground max-w-xs mx-auto mb-5">
+        <div className="rounded-2xl border border-border bg-card p-10 text-center shadow-[var(--shadow-card)]">
+          <DollarSign className="mx-auto mb-4 h-10 w-10 text-muted-foreground" />
+          <h3 className="mb-2 text-ui font-semibold text-foreground">No creator profile yet</h3>
+          <p className="mx-auto mb-5 max-w-xs text-support text-muted-foreground">
             Finish onboarding to see pricing guidance and set your list price.
           </p>
           <Button asChild className="min-h-11">
@@ -185,21 +191,33 @@ const CreatorSmartPricing = () => {
 
   return (
     <DashboardLayout type="creator">
-      <header className="mb-6">
-        <h1 className="text-heading font-bold text-foreground">Smart Pricing</h1>
-        <p className="text-support text-muted-foreground mt-0.5">
-          Illustrative pricing guidance from your live metrics — not a guarantee.
-        </p>
+      <header className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+        <div className="min-w-0">
+          <p className="text-caption font-semibold uppercase tracking-[0.14em] text-muted-foreground">
+            Products
+          </p>
+          <h1 className="mt-1 text-heading font-bold tracking-tight text-foreground md:text-heading-lg">
+            Smart Pricing
+          </h1>
+          <p className="mt-1.5 text-support text-muted-foreground">
+            Illustrative pricing guidance from your live metrics — not a guarantee.
+          </p>
+        </div>
+        <Button asChild variant="outline" className="min-h-11 shrink-0 rounded-xl">
+          <Link to="/creator/products">
+            <ArrowLeft className="mr-1.5 h-4 w-4" /> Back to Products
+          </Link>
+        </Button>
       </header>
 
-      <div className="rounded-xl border border-border bg-card p-4 sm:p-5 mb-6 flex flex-col sm:flex-row sm:items-center gap-3 justify-between">
-        <div className="flex items-start gap-3 min-w-0">
-          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-muted">
+      <div className="mb-6 flex flex-col justify-between gap-3 rounded-2xl border border-border bg-card p-4 shadow-[var(--shadow-card)] sm:flex-row sm:items-center sm:p-5">
+        <div className="flex min-w-0 items-start gap-3">
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-muted">
             <Package className="h-4 w-4 text-muted-foreground" />
           </div>
           <div className="min-w-0">
             <p className="text-ui font-semibold text-foreground">Edit sellable product prices in Products</p>
-            <p className="text-support text-muted-foreground mt-0.5">
+            <p className="mt-0.5 text-support text-muted-foreground">
               Subscription tiers and product pricing live on the Products page. Use the control below
               only for your featured / list monthly price.
             </p>
@@ -241,8 +259,8 @@ const CreatorSmartPricing = () => {
         </p>
       </div>
 
-      <div className="rounded-xl border border-border bg-card p-5 sm:p-6 mb-6 space-y-4">
-        <h2 className="text-ui font-semibold text-foreground flex items-center gap-2">
+      <div className="mb-6 space-y-4 rounded-2xl border border-border bg-card p-5 shadow-[var(--shadow-card)] sm:p-6">
+        <h2 className="flex items-center gap-2 text-ui font-semibold text-foreground">
           <DollarSign className="h-4 w-4 text-primary" /> Update featured / list price
         </h2>
         <p className="text-support text-muted-foreground">
@@ -250,7 +268,7 @@ const CreatorSmartPricing = () => {
           sellable product prices, use Products. Changing the input alone does not save until you
           apply.
         </p>
-        <div className="flex flex-col sm:flex-row sm:flex-wrap sm:items-end gap-3">
+        <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-end">
           <div className="space-y-2">
             <Label htmlFor="list-price" className="text-support text-muted-foreground">
               Monthly price ($)
@@ -262,7 +280,7 @@ const CreatorSmartPricing = () => {
               step="0.01"
               value={priceInput}
               onChange={(e) => setPriceInput(e.target.value)}
-              className="h-11 min-h-11 w-full sm:w-40 text-ui"
+              className="h-11 min-h-11 w-full text-ui sm:w-40"
             />
           </div>
           <Button
@@ -286,9 +304,9 @@ const CreatorSmartPricing = () => {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div className="rounded-xl border border-border bg-card p-5 sm:p-6">
-          <h2 className="text-ui font-semibold text-foreground mb-4 flex items-center gap-2">
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+        <div className="rounded-2xl border border-border bg-card p-5 shadow-[var(--shadow-card)] sm:p-6">
+          <h2 className="mb-4 flex items-center gap-2 text-ui font-semibold text-foreground">
             <BarChart3 className="h-4 w-4 text-primary" /> Live metrics
           </h2>
           <div className="space-y-3">
@@ -301,7 +319,7 @@ const CreatorSmartPricing = () => {
             ].map(([label, value]) => (
               <div
                 key={label}
-                className="flex items-center justify-between border-b border-border last:border-0 pb-2 last:pb-0"
+                className="flex items-center justify-between border-b border-border pb-2 last:border-0 last:pb-0"
               >
                 <span className="text-support text-muted-foreground">{label}</span>
                 <span className="text-ui font-semibold text-foreground">{value}</span>
@@ -310,8 +328,8 @@ const CreatorSmartPricing = () => {
           </div>
         </div>
 
-        <div className="rounded-xl border border-border bg-card p-5 sm:p-6">
-          <h2 className="text-ui font-semibold text-foreground mb-4 flex items-center gap-2">
+        <div className="rounded-2xl border border-border bg-card p-5 shadow-[var(--shadow-card)] sm:p-6">
+          <h2 className="mb-4 flex items-center gap-2 text-ui font-semibold text-foreground">
             <Lightbulb className="h-4 w-4 text-muted-foreground" /> Recommendations
           </h2>
           <div className="space-y-3">
@@ -320,7 +338,7 @@ const CreatorSmartPricing = () => {
                 <Badge variant="outline" className="h-5 shrink-0 text-caption">
                   {i + 1}
                 </Badge>
-                <p className="text-support text-muted-foreground leading-relaxed">{text}</p>
+                <p className="text-support leading-relaxed text-muted-foreground">{text}</p>
               </div>
             ))}
           </div>

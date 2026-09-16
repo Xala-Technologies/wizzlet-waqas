@@ -18,6 +18,7 @@ import {
   Code2,
   Gift,
   Lightbulb,
+  Link2,
   Loader2,
   Mail,
   Megaphone,
@@ -729,6 +730,55 @@ const CreatorPromo = () => {
           </p>
         </section>
       </div>
+
+      <section className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-2">
+        <Link
+          to="/creator/links"
+          className="group flex items-start gap-4 rounded-2xl border border-border bg-card p-5 shadow-[var(--shadow-card)] transition-colors hover:border-primary/40"
+        >
+          <span
+            className={cn(
+              'flex h-11 w-11 shrink-0 items-center justify-center rounded-xl',
+              kpiIconTone.violet,
+            )}
+          >
+            <Link2 className="h-5 w-5" aria-hidden />
+          </span>
+          <div className="min-w-0 flex-1">
+            <div className="flex items-center justify-between gap-2">
+              <h3 className="text-base font-extrabold tracking-tight text-foreground">
+                Tracking Links
+              </h3>
+              <ArrowRight className="h-4 w-4 shrink-0 text-muted-foreground transition-transform group-hover:translate-x-0.5 group-hover:text-primary" />
+            </div>
+            <p className="mt-1 text-sm text-muted-foreground">
+              Create `/go/…` URLs, copy them into bios, and measure clicks vs conversions.
+            </p>
+          </div>
+        </Link>
+        <Link
+          to="/creator/referrals"
+          className="group flex items-start gap-4 rounded-2xl border border-border bg-card p-5 shadow-[var(--shadow-card)] transition-colors hover:border-primary/40"
+        >
+          <span
+            className={cn(
+              'flex h-11 w-11 shrink-0 items-center justify-center rounded-xl',
+              kpiIconTone.rose,
+            )}
+          >
+            <Gift className="h-5 w-5" aria-hidden />
+          </span>
+          <div className="min-w-0 flex-1">
+            <div className="flex items-center justify-between gap-2">
+              <h3 className="text-base font-extrabold tracking-tight text-foreground">Referrals</h3>
+              <ArrowRight className="h-4 w-4 shrink-0 text-muted-foreground transition-transform group-hover:translate-x-0.5 group-hover:text-primary" />
+            </div>
+            <p className="mt-1 text-sm text-muted-foreground">
+              Share your referral link and track attributed signups and conversions.
+            </p>
+          </div>
+        </Link>
+      </section>
 
       <section className="mb-6 rounded-2xl border border-border bg-card p-5 shadow-[var(--shadow-card)]">
         <div className="mb-4 flex items-center justify-between gap-3">

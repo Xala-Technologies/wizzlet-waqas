@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import { useMutation, useQuery } from 'convex/react';
 import { api } from '../../convex/_generated/api';
 import { DashboardLayout } from '@/components/dashboard/DashboardLayout';
@@ -7,13 +7,32 @@ import { DashboardKpiStrip } from '@/components/dashboard/DashboardKpiStrip';
 import { DesktopTableRegion, MobileRecordCards } from '@/components/dashboard/MobileRecordList';
 import { Button } from '@/components/ui/button';
 import { buildReferralCode, useCreatorProfile } from '@/hooks/useCreatorProfile';
-import { kpiIconTone } from '@/lib/kpiIconTones';
-import { UserPlus, Users, DollarSign, Copy, Gift, Loader2 } from 'lucide-react';
+import {
+  CREATOR_REFERRALS_DEMO_ROWS,
+  shouldUseCreatorReferralsDemo,
+} from '@/lib/creatorReferralsDemo';
+import { kpiIconTone, resultPillTone } from '@/lib/kpiIconTones';
+import { cn } from '@/lib/utils';
+import {
+  ArrowLeft,
+  UserPlus,
+  Users,
+  DollarSign,
+  Copy,
+  Gift,
+  Loader2,
+  Link2,
+  Sparkles,
+} from 'lucide-react';
 import { format } from 'date-fns';
 import { toast } from 'sonner';
 import { copyToClipboard } from '@/lib/clipboard';
 
 const CreatorReferrals = () => {
+  const [searchParams] = useSearchParams();
+  const forceDemo = searchParams.get('demo') === '1';
+  const disableDemo = searchParams.get('demo') === '0';
+
   const { creator, loading: creatorLoading } = useCreatorProfile();
   const rows = useQuery(api.creators.growth.listMyReferrals);
   const updateSettings = useMutation(api.creators.queries.updateSettings);
@@ -41,12 +60,21 @@ const CreatorReferrals = () => {
   }, [creator, creatorLoading, updateSettings]);
 
   const loading = creatorLoading || rows === undefined || (!!creator && (savingCode || !code));
-  const referralRows = (rows ?? []).map((r) => ({
+
+  const liveRows = (rows ?? []).map((r) => ({
     id: r._id,
     referred_email: r.referredEmail ?? null,
     converted: r.converted,
     created_at: new Date(r.createdAt).toISOString(),
   }));
+
+  const useDemo = shouldUseCreatorReferralsDemo({
+    count: liveRows.length,
+    forceDemo,
+    disableDemo,
+  });
+
+  const referralRows = useDemo ? CREATOR_REFERRALS_DEMO_ROWS : liveRows;
 
   const referralLink = code ? `${window.location.origin}/signup?ref=${code}` : '';
   const converted = referralRows.filter((r) => r.converted).length;
@@ -72,15 +100,18 @@ const CreatorReferrals = () => {
     return (
       <DashboardLayout type="creator">
         <header className="mb-6">
-          <h1 className="text-heading font-bold text-foreground">Referrals</h1>
-          <p className="text-support text-muted-foreground mt-0.5">
+          <p className="text-caption font-semibold uppercase tracking-[0.14em] text-muted-foreground">
+            Marketing
+          </p>
+          <h1 className="mt-1 text-heading font-bold tracking-tight text-foreground">Referrals</h1>
+          <p className="mt-1.5 text-support text-muted-foreground">
             Share your link to attribute signups. Conversions mark when they subscribe.
           </p>
         </header>
-        <div className="rounded-xl border border-border bg-card p-10 text-center">
-          <Gift className="h-10 w-10 text-muted-foreground mx-auto mb-4" />
-          <h3 className="text-ui font-semibold text-foreground mb-2">No creator profile yet</h3>
-          <p className="text-support text-muted-foreground max-w-xs mx-auto mb-5">
+        <div className="rounded-2xl border border-border bg-card p-10 text-center shadow-[var(--shadow-card)]">
+          <Gift className="mx-auto mb-4 h-10 w-10 text-muted-foreground" />
+          <h3 className="mb-2 text-ui font-semibold text-foreground">No creator profile yet</h3>
+          <p className="mx-auto mb-5 max-w-xs text-support text-muted-foreground">
             Finish onboarding to get a referral link.
           </p>
           <Button asChild className="min-h-11">
@@ -93,29 +124,62 @@ const CreatorReferrals = () => {
 
   return (
     <DashboardLayout type="creator">
-      <header className="mb-6">
-        <h1 className="text-heading font-bold text-foreground">Referrals</h1>
-        <p className="text-support text-muted-foreground mt-0.5">
-          Share your link to attribute signups. Conversions mark when they subscribe.
-        </p>
+      <header className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+        <div className="min-w-0">
+          <p className="text-caption font-semibold uppercase tracking-[0.14em] text-muted-foreground">
+            Marketing
+          </p>
+          <h1 className="mt-1 text-heading font-bold tracking-tight text-foreground md:text-heading-lg">
+            Referrals
+          </h1>
+          <p className="mt-1.5 text-support text-muted-foreground">
+            Share your link to attribute signups. Conversions mark when they subscribe.
+          </p>
+        </div>
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+          <Button asChild variant="outline" className="min-h-11 shrink-0 rounded-xl">
+            <Link to="/creator/promo">
+              <ArrowLeft className="mr-1.5 h-4 w-4" /> Back to Marketing
+            </Link>
+          </Button>
+          <Button asChild variant="outline" className="min-h-11 shrink-0 rounded-xl">
+            <Link to="/creator/links">
+              <Link2 className="mr-1.5 h-4 w-4" /> Tracking Links
+            </Link>
+          </Button>
+        </div>
       </header>
 
-      <div className="rounded-xl border border-border bg-card p-5 sm:p-6 mb-6 space-y-4">
-        <h2 className="text-ui font-semibold text-foreground flex items-center gap-2">
+      {useDemo ? (
+        <div className="mb-6 flex items-start gap-3 rounded-2xl border border-amber-500/30 bg-amber-500/10 px-4 py-3.5 text-amber-950 dark:text-amber-100 sm:items-center sm:px-5">
+          <Sparkles
+            className="mt-0.5 h-5 w-5 shrink-0 text-amber-600 dark:text-amber-400 sm:mt-0"
+            aria-hidden
+          />
+          <p className="min-w-0 flex-1 text-sm font-semibold leading-snug">
+            Sample preview data — referral activity is mock content for design review. Add{' '}
+            <span className="font-mono text-xs">?demo=0</span> to see empty real states. Your
+            referral link below stays live.
+          </p>
+        </div>
+      ) : null}
+
+      <div className="mb-6 space-y-4 rounded-2xl border border-border bg-card p-5 shadow-[var(--shadow-card)] sm:p-6">
+        <h2 className="flex items-center gap-2 text-ui font-semibold text-foreground">
           <Gift className="h-4 w-4 text-primary" /> Your referral link
         </h2>
         <p className="text-support text-muted-foreground">
           Share this link to attribute signups. Conversion marks when they subscribe; cash
           commission payouts are not enabled yet.
         </p>
-        <div className="flex flex-col sm:flex-row gap-2">
-          <div className="min-w-0 flex-1 rounded-lg border border-border bg-muted/30 px-4 py-2.5 min-h-11 flex items-center text-ui text-muted-foreground font-mono truncate">
+        <div className="flex flex-col gap-2 sm:flex-row">
+          <div className="flex min-h-11 min-w-0 flex-1 items-center truncate rounded-lg border border-border bg-muted/30 px-4 py-2.5 font-mono text-ui text-muted-foreground">
             {referralLink || 'Generating…'}
           </div>
           <Button
             type="button"
             variant="hero"
-            className="min-h-11 w-full sm:w-auto shrink-0"
+            className="min-h-11 w-full shrink-0 sm:w-auto"
             disabled={!referralLink}
             onClick={() => void copyReferral()}
           >
@@ -149,38 +213,39 @@ const CreatorReferrals = () => {
         />
       </div>
 
-      <h2 className="text-support font-medium text-muted-foreground mb-3">Referral activity</h2>
+      <h2 className="mb-3 text-support font-medium text-muted-foreground">Referral activity</h2>
       {referralRows.length === 0 ? (
-        <div className="rounded-xl border border-border bg-card p-10 text-center">
-          <Gift className="h-10 w-10 text-muted-foreground mx-auto mb-4" />
-          <h3 className="text-ui font-semibold text-foreground mb-2">No referrals yet</h3>
-          <p className="text-support text-muted-foreground max-w-sm mx-auto">
+        <div className="rounded-2xl border border-border bg-card p-10 text-center shadow-[var(--shadow-card)]">
+          <Gift className="mx-auto mb-4 h-10 w-10 text-muted-foreground" />
+          <h3 className="mb-2 text-ui font-semibold text-foreground">No referrals yet</h3>
+          <p className="mx-auto max-w-sm text-support text-muted-foreground">
             Share your referral link above to attribute signups.
           </p>
         </div>
       ) : (
-        <>
+        <div className="overflow-hidden rounded-2xl border border-border bg-card shadow-[var(--shadow-card)]">
           <MobileRecordCards>
             {referralRows.map((r) => (
               <li key={r.id} className="rounded-xl border border-border bg-card p-4">
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0">
-                    <p className="text-ui font-semibold text-foreground truncate">
+                    <p className="truncate text-ui font-semibold text-foreground">
                       {r.referred_email ?? 'Anonymous signup'}
                     </p>
-                    <p className="text-support text-muted-foreground mt-0.5">
+                    <p className="mt-0.5 text-support text-muted-foreground">
                       {format(new Date(r.created_at), 'MMM d, yyyy')}
                     </p>
                   </div>
                   <span
-                    className={`text-support font-medium shrink-0 ${
-                      r.converted ? 'text-emerald-500' : 'text-muted-foreground'
-                    }`}
+                    className={cn(
+                      'inline-flex shrink-0 rounded-full border px-2 py-0.5 text-xs font-bold',
+                      r.converted ? resultPillTone.win : resultPillTone.pending,
+                    )}
                   >
                     {r.converted ? 'Converted' : 'Pending'}
                   </span>
                 </div>
-                <p className="text-support text-muted-foreground mt-3">Commission —</p>
+                <p className="mt-3 text-support text-muted-foreground">Commission —</p>
               </li>
             ))}
           </MobileRecordCards>
@@ -189,16 +254,16 @@ const CreatorReferrals = () => {
             <table className="w-full min-w-[520px]">
               <thead>
                 <tr className="border-b border-border bg-muted/30">
-                  <th className="text-left text-support font-medium text-muted-foreground p-4">
+                  <th className="p-4 text-left text-support font-medium text-muted-foreground">
                     Referred
                   </th>
-                  <th className="text-left text-support font-medium text-muted-foreground p-4">
+                  <th className="p-4 text-left text-support font-medium text-muted-foreground">
                     Date
                   </th>
-                  <th className="text-left text-support font-medium text-muted-foreground p-4">
+                  <th className="p-4 text-left text-support font-medium text-muted-foreground">
                     Status
                   </th>
-                  <th className="text-right text-support font-medium text-muted-foreground p-4">
+                  <th className="p-4 text-right text-support font-medium text-muted-foreground">
                     Commission
                   </th>
                 </tr>
@@ -213,17 +278,22 @@ const CreatorReferrals = () => {
                       {format(new Date(r.created_at), 'MMM d, yyyy')}
                     </td>
                     <td className="p-4 text-support font-medium">
-                      <span className={r.converted ? 'text-emerald-500' : 'text-muted-foreground'}>
+                      <span
+                        className={cn(
+                          'inline-flex rounded-full border px-2 py-0.5 text-xs font-bold',
+                          r.converted ? resultPillTone.win : resultPillTone.pending,
+                        )}
+                      >
                         {r.converted ? 'Converted' : 'Pending'}
                       </span>
                     </td>
-                    <td className="p-4 text-ui text-muted-foreground text-right">—</td>
+                    <td className="p-4 text-right text-ui text-muted-foreground">—</td>
                   </tr>
                 ))}
               </tbody>
             </table>
           </DesktopTableRegion>
-        </>
+        </div>
       )}
     </DashboardLayout>
   );

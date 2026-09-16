@@ -1,8 +1,9 @@
 import { useMemo, useState } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import { useMutation, useQuery } from 'convex/react';
 import { format } from 'date-fns';
 import {
+  ArrowRight,
   BarChart3,
   BookOpen,
   Check,
@@ -10,7 +11,9 @@ import {
   ChevronRight,
   Crown,
   Gem,
+  Lightbulb,
   Loader2,
+  Lock,
   MoreVertical,
   Pencil,
   Plus,
@@ -40,6 +43,8 @@ import {
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
+  DialogFooter,
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
@@ -464,6 +469,43 @@ const CreatorProducts = () => {
         </article>
       </section>
 
+      <section className="mb-8 grid grid-cols-1 gap-4 sm:grid-cols-2">
+        <Link
+          to="/creator/access-control"
+          className="group flex items-start gap-4 rounded-2xl border border-border bg-card p-5 shadow-[var(--shadow-card)] transition-colors hover:border-primary/40"
+        >
+          <span className={cn('flex h-11 w-11 shrink-0 items-center justify-center rounded-xl', kpiIconTone.rose)}>
+            <Lock className="h-5 w-5" aria-hidden />
+          </span>
+          <div className="min-w-0 flex-1">
+            <div className="flex items-center justify-between gap-2">
+              <h3 className="text-base font-extrabold tracking-tight text-foreground">Access & capacity</h3>
+              <ArrowRight className="h-4 w-4 shrink-0 text-muted-foreground transition-transform group-hover:translate-x-0.5 group-hover:text-primary" />
+            </div>
+            <p className="mt-1 text-sm text-muted-foreground">
+              Cap subscriber spots, close sales to new buyers, and keep existing members.
+            </p>
+          </div>
+        </Link>
+        <Link
+          to="/creator/smart-pricing"
+          className="group flex items-start gap-4 rounded-2xl border border-border bg-card p-5 shadow-[var(--shadow-card)] transition-colors hover:border-primary/40"
+        >
+          <span className={cn('flex h-11 w-11 shrink-0 items-center justify-center rounded-xl', kpiIconTone.amber)}>
+            <Lightbulb className="h-5 w-5" aria-hidden />
+          </span>
+          <div className="min-w-0 flex-1">
+            <div className="flex items-center justify-between gap-2">
+              <h3 className="text-base font-extrabold tracking-tight text-foreground">List price guidance</h3>
+              <ArrowRight className="h-4 w-4 shrink-0 text-muted-foreground transition-transform group-hover:translate-x-0.5 group-hover:text-primary" />
+            </div>
+            <p className="mt-1 text-sm text-muted-foreground">
+              Heuristic tips for your featured monthly price — sellable tiers still edit here.
+            </p>
+          </div>
+        </Link>
+      </section>
+
       <section className="overflow-hidden rounded-2xl border border-border bg-card shadow-[var(--shadow-card)]">
         <div className="flex flex-col gap-3 border-b border-border p-4 sm:flex-row sm:items-center sm:justify-between sm:p-5">
           <h2 className="text-base font-extrabold tracking-tight text-foreground">All Products</h2>
@@ -651,11 +693,69 @@ const CreatorProducts = () => {
           if (!open) resetForm();
         }}
       >
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle>{editingId ? 'Edit Product' : 'Add Product'}</DialogTitle>
+        <DialogContent
+          overlayClassName="bg-black/50"
+          className="gap-0 overflow-hidden rounded-2xl border-border bg-card p-0 shadow-[var(--shadow-card)] sm:max-w-lg sm:rounded-2xl"
+        >
+          <DialogHeader className="space-y-3 border-b border-border px-5 pb-4 pt-5 text-left sm:px-6 sm:pt-6">
+            <div className="flex items-start gap-3 pr-8">
+              <span
+                className={cn(
+                  'flex h-11 w-11 shrink-0 items-center justify-center rounded-xl',
+                  isFeatured ? kpiIconTone.amber : kpiIconTone.violet,
+                )}
+              >
+                {isFeatured ? (
+                  <Star className="h-5 w-5" aria-hidden />
+                ) : (
+                  <Crown className="h-5 w-5" aria-hidden />
+                )}
+              </span>
+              <div className="min-w-0">
+                <p className="text-caption font-semibold uppercase tracking-[0.14em] text-muted-foreground">
+                  Products
+                </p>
+                <DialogTitle className="mt-1 text-heading font-bold tracking-tight">
+                  {editingId ? 'Edit Product' : 'Add Product'}
+                </DialogTitle>
+                <DialogDescription className="mt-1.5 text-support text-muted-foreground">
+                  {editingId
+                    ? 'Update pricing and details for this plan on your storefront.'
+                    : 'Create a subscription or one-time offer. Turn expertise into revenue.'}
+                </DialogDescription>
+              </div>
+            </div>
           </DialogHeader>
-          <div className="space-y-4 py-2">
+
+          <div className="space-y-4 px-5 py-5 sm:px-6">
+            <div
+              className={cn(
+                'relative rounded-2xl border bg-card p-4 shadow-[var(--shadow-card)]',
+                isFeatured ? 'border-primary/50 ring-1 ring-primary/25' : 'border-border',
+              )}
+            >
+              {isFeatured ? (
+                <span className="absolute -top-2.5 left-4 inline-flex items-center gap-1 rounded-full bg-primary px-2.5 py-0.5 text-caption font-semibold uppercase tracking-wide text-primary-foreground">
+                  <Star className="h-3 w-3" aria-hidden />
+                  Most Popular
+                </span>
+              ) : null}
+              <p className="text-lg font-extrabold tracking-tight text-foreground">
+                {name.trim() || 'Untitled plan'}
+              </p>
+              <p className="mt-1 text-2xl font-extrabold tabular-nums text-foreground">
+                {formatProductPrice(
+                  Math.round((Number.parseFloat(price) || 0) * 100),
+                  billingPeriod,
+                )}
+              </p>
+              {description.trim() ? (
+                <p className="mt-2 line-clamp-2 text-sm text-muted-foreground">{description.trim()}</p>
+              ) : (
+                <p className="mt-2 text-sm text-muted-foreground">Preview updates as you type.</p>
+              )}
+            </div>
+
             <div className="space-y-2">
               <Label htmlFor="product-name">Name</Label>
               <Input
@@ -705,39 +805,77 @@ const CreatorProducts = () => {
                 </Select>
               </div>
             </div>
-            <div className="flex items-center justify-between rounded-xl border border-border px-3 py-2.5">
+            <div className="flex items-center justify-between rounded-xl border border-border bg-muted/30 px-3 py-2.5">
               <div>
                 <p className="text-sm font-semibold">Featured / Most Popular</p>
                 <p className="text-xs text-muted-foreground">Highlighted on your storefront</p>
               </div>
               <Switch checked={isFeatured} onCheckedChange={setIsFeatured} />
             </div>
+          </div>
+
+          <DialogFooter className="gap-2 border-t border-border bg-muted/20 px-5 py-4 sm:flex-row sm:justify-end sm:space-x-0 sm:gap-2 sm:px-6">
             <Button
               type="button"
-              className="h-11 w-full rounded-xl"
+              variant="outline"
+              className="min-h-11 rounded-xl"
+              disabled={saving}
+              onClick={() => {
+                setDialogOpen(false);
+                resetForm();
+              }}
+            >
+              Cancel
+            </Button>
+            <Button
+              type="button"
+              className="min-h-11 rounded-xl"
               disabled={saving}
               onClick={() => void handleSave()}
             >
               {saving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
               {editingId ? 'Save changes' : 'Create product'}
             </Button>
-          </div>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
 
       <AlertDialog open={!!deleteId} onOpenChange={(open) => { if (!open) setDeleteId(null); }}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Delete this product?</AlertDialogTitle>
-            <AlertDialogDescription>
-              This removes the product listing. Existing subscribers are not automatically refunded.
-            </AlertDialogDescription>
+        <AlertDialogContent
+          overlayClassName="bg-black/50"
+          className="gap-0 overflow-hidden rounded-2xl border-border bg-card p-0 shadow-[var(--shadow-card)] sm:rounded-2xl"
+        >
+          <AlertDialogHeader className="space-y-3 px-5 pb-2 pt-5 text-left sm:px-6 sm:pt-6">
+            <div className="flex items-start gap-3">
+              <span
+                className={cn(
+                  'flex h-11 w-11 shrink-0 items-center justify-center rounded-xl',
+                  kpiIconTone.rose,
+                )}
+              >
+                <Trash2 className="h-5 w-5" aria-hidden />
+              </span>
+              <div className="min-w-0">
+                <p className="text-caption font-semibold uppercase tracking-[0.14em] text-muted-foreground">
+                  Products
+                </p>
+                <AlertDialogTitle className="mt-1 text-heading font-bold tracking-tight">
+                  Delete this product?
+                </AlertDialogTitle>
+                <AlertDialogDescription className="mt-1.5 text-support text-muted-foreground">
+                  This removes the product listing from your storefront. Existing subscribers keep
+                  access and are not automatically refunded.
+                </AlertDialogDescription>
+              </div>
+            </div>
           </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel disabled={deleting}>Cancel</AlertDialogCancel>
+          <AlertDialogFooter className="gap-2 border-t border-border bg-muted/20 px-5 py-4 sm:flex-row sm:justify-end sm:space-x-0 sm:gap-2 sm:px-6">
+            <AlertDialogCancel disabled={deleting} className="mt-0 min-h-11 rounded-xl">
+              Cancel
+            </AlertDialogCancel>
             <AlertDialogAction
               disabled={deleting}
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              className="min-h-11 rounded-xl bg-destructive text-destructive-foreground hover:bg-destructive/90"
               onClick={(e) => {
                 e.preventDefault();
                 void confirmDelete();
