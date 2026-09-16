@@ -1,5 +1,5 @@
 import { useMemo, useRef, useState } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import { useMutation, usePaginatedQuery, useQuery } from 'convex/react';
 import { api } from '../../convex/_generated/api';
 import type { Id } from '../../convex/_generated/dataModel';
@@ -9,13 +9,12 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
-import { Checkbox } from '@/components/ui/checkbox';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from '@/components/ui/table';
 import {
-  Dialog, DialogContent, DialogHeader, DialogTitle,
+  Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle,
 } from '@/components/ui/dialog';
 import {
   AlertDialog,
@@ -38,7 +37,7 @@ import {
   FileText, Plus, Loader2, Pencil, Trash2,
   CheckCircle2, ArrowRight,
   Clock, Trophy, XCircle, Minus, Crown, Send, ChevronDown, ChevronUp,
-  BarChart3, Search, Tag, Bold, Italic, Link2, List, ImageIcon,
+  BarChart3, Search, Tag,
   Upload, Target, Users, MoreVertical, ChevronLeft, ChevronRight, Sparkles,
 } from 'lucide-react';
 import { toast } from 'sonner';
@@ -112,29 +111,6 @@ const RESULT_TABS: { id: ResultTab; label: string }[] = [
   { id: 'scheduled', label: 'Scheduled' },
 ];
 
-function wrapTextareaSelection(
-  el: HTMLTextAreaElement | null,
-  value: string,
-  setValue: (next: string) => void,
-  before: string,
-  after = before,
-) {
-  if (!el) {
-    setValue(`${value}${before}${after}`);
-    return;
-  }
-  const start = el.selectionStart;
-  const end = el.selectionEnd;
-  const selected = value.slice(start, end) || 'text';
-  const next = `${value.slice(0, start)}${before}${selected}${after}${value.slice(end)}`;
-  setValue(next.slice(0, POST_MAX));
-  requestAnimationFrame(() => {
-    el.focus();
-    const cursor = start + before.length + selected.length + after.length;
-    el.setSelectionRange(cursor, cursor);
-  });
-}
-
 function splitMatch(event: string): { home: string; away: string } | null {
   const parts = event.split(/\s+vs\.?\s+/i);
   if (parts.length === 2 && parts[0].trim() && parts[1].trim()) {
@@ -174,7 +150,7 @@ function enrichPost(post: Post): EnrichedPick {
   };
 }
 
-function MatchCell({ event, sport }: { event: string; sport: string }) {
+function MatchCell({ event, sport, pick }: { event: string; sport: string; pick?: string }) {
   const visual = sportVisual(sport);
   const split = splitMatch(event);
   return (
@@ -193,6 +169,9 @@ function MatchCell({ event, sport }: { event: string; sport: string }) {
         <p className="truncate text-sm font-semibold text-foreground">
           {split ? `${split.home} vs ${split.away}` : event || '—'}
         </p>
+        {pick ? (
+          <p className="truncate text-xs font-medium text-foreground/80">{pick}</p>
+        ) : null}
         {sport ? (
           <p className="truncate text-xs font-medium text-muted-foreground">{sport}</p>
         ) : null}
@@ -275,13 +254,11 @@ const CreatorPosts = () => {
   const [sportFilter, setSportFilter] = useState<string>('all');
   const [dateRange, setDateRange] = useState<DateRangeKey>('30');
   const [searchPicks, setSearchPicks] = useState('');
-  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [tablePage, setTablePage] = useState(0);
 
   const [title, setTitle] = useState('');
   const [sport, setSport] = useState('');
   const [event, setEvent] = useState('');
-  const [pickType, setPickType] = useState('');
   const [pick, setPick] = useState('');
   const [usOdds, setUsOdds] = useState('');
   const [euOdds, setEuOdds] = useState('');
@@ -290,11 +267,10 @@ const CreatorPosts = () => {
   const [notes, setNotes] = useState('');
   const [isPremium, setIsPremium] = useState(true);
   const [oddsSource, setOddsSource] = useState<'us' | 'eu' | null>(null);
-  const postRef = useRef<HTMLTextAreaElement>(null);
   const importRef = useRef<HTMLInputElement>(null);
 
   const hasPickDetails = Boolean(
-    sport || event || pickType || pick || usOdds || euOdds || (units && units !== '1') || tags,
+    sport || event || pick || usOdds || euOdds || (units && units !== '1') || tags,
   );
 
   const sportsInData = useMemo(() => {
@@ -398,7 +374,6 @@ const CreatorPosts = () => {
     setTitle('');
     setSport('');
     setEvent('');
-    setPickType('');
     setPick('');
     setUsOdds('');
     setEuOdds('');
@@ -423,7 +398,6 @@ const CreatorPosts = () => {
     setTitle(post.title);
     setSport(parsed.sport);
     setEvent(parsed.event);
-    setPickType(parsed.pickType);
     setPick(parsed.pick);
     setUsOdds(parsed.usOdds);
     setEuOdds(parsed.euOdds);
@@ -435,7 +409,6 @@ const CreatorPosts = () => {
       Boolean(
         parsed.sport ||
           parsed.event ||
-          parsed.pickType ||
           parsed.pick ||
           parsed.usOdds ||
           parsed.euOdds ||
@@ -462,7 +435,6 @@ const CreatorPosts = () => {
     const parts: string[] = [];
     if (sport) parts.push(`Sport: ${sport}`);
     if (event) parts.push(`Event: ${event}`);
-    if (pickType) parts.push(`Type: ${pickType}`);
     if (pick) parts.push(`Pick: ${pick}`);
     if (usOdds || euOdds) {
       parts.push(
@@ -513,11 +485,6 @@ const CreatorPosts = () => {
       await removePost({ postId: deleteId as Id<'posts'> });
       toast.success('Pick deleted');
       setDeleteId(null);
-      setSelectedIds((prev) => {
-        const next = new Set(prev);
-        next.delete(deleteId);
-        return next;
-      });
     } catch (e) {
       toast.error(e instanceof Error ? e.message : 'Failed to delete pick');
     } finally {
@@ -580,43 +547,42 @@ const CreatorPosts = () => {
     }
   };
 
-  const toggleSelectAllPage = (checked: boolean) => {
-    setSelectedIds((prev) => {
-      const next = new Set(prev);
-      for (const row of pageRows) {
-        if (checked) next.add(row.id);
-        else next.delete(row.id);
-      }
-      return next;
-    });
-  };
-
-  const toggleSelectOne = (id: string, checked: boolean) => {
-    setSelectedIds((prev) => {
-      const next = new Set(prev);
-      if (checked) next.add(id);
-      else next.delete(id);
-      return next;
-    });
-  };
-
-  const allPageSelected =
-    pageRows.length > 0 && pageRows.every((r) => selectedIds.has(r.id));
-
   const deleteDialog = (
     <AlertDialog open={!!deleteId} onOpenChange={(open) => { if (!open) setDeleteId(null); }}>
-      <AlertDialogContent>
-        <AlertDialogHeader>
-          <AlertDialogTitle>Delete this pick?</AlertDialogTitle>
-          <AlertDialogDescription>
-            This permanently removes the pick. Settled history on this pick will be gone.
-          </AlertDialogDescription>
+      <AlertDialogContent
+        overlayClassName="bg-black/50"
+        className="gap-0 overflow-hidden rounded-2xl border-border bg-card p-0 shadow-[var(--shadow-card)] sm:rounded-2xl"
+      >
+        <AlertDialogHeader className="space-y-3 px-5 pb-2 pt-5 text-left sm:px-6 sm:pt-6">
+          <div className="flex items-start gap-3">
+            <span
+              className={cn(
+                'flex h-11 w-11 shrink-0 items-center justify-center rounded-xl',
+                kpiIconTone.rose,
+              )}
+            >
+              <Trash2 className="h-5 w-5" aria-hidden />
+            </span>
+            <div className="min-w-0">
+              <p className="text-caption font-semibold uppercase tracking-[0.14em] text-muted-foreground">
+                Picks
+              </p>
+              <AlertDialogTitle className="mt-1 text-heading font-bold tracking-tight">
+                Delete this pick?
+              </AlertDialogTitle>
+              <AlertDialogDescription className="mt-1.5 text-support text-muted-foreground">
+                This permanently removes the pick. Settled history on this pick will be gone.
+              </AlertDialogDescription>
+            </div>
+          </div>
         </AlertDialogHeader>
-        <AlertDialogFooter>
-          <AlertDialogCancel disabled={deleting}>Cancel</AlertDialogCancel>
+        <AlertDialogFooter className="gap-2 border-t border-border bg-muted/20 px-5 py-4 sm:flex-row sm:justify-end sm:space-x-0 sm:gap-2 sm:px-6">
+          <AlertDialogCancel disabled={deleting} className="mt-0 min-h-11 rounded-xl">
+            Cancel
+          </AlertDialogCancel>
           <AlertDialogAction
             disabled={deleting}
-            className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            className="min-h-11 rounded-xl bg-destructive text-destructive-foreground hover:bg-destructive/90"
             onClick={(e) => {
               e.preventDefault();
               void confirmDelete();
@@ -632,43 +598,54 @@ const CreatorPosts = () => {
 
   const successDialog = (
     <Dialog open={showSuccess} onOpenChange={setShowSuccess}>
-      <DialogContent className="sm:max-w-sm bg-card border-border text-center">
-        <div className="py-6 space-y-4">
-          <div className="flex justify-center">
-            <div className="h-14 w-14 rounded-full bg-emerald-500/10 flex items-center justify-center">
-              <CheckCircle2 className="h-7 w-7 text-emerald-400" />
+      <DialogContent
+        overlayClassName="bg-black/50"
+        className="gap-0 overflow-hidden rounded-2xl border-border bg-card p-0 shadow-[var(--shadow-card)] sm:max-w-sm sm:rounded-2xl"
+      >
+        <DialogHeader className="space-y-3 px-5 pb-2 pt-5 text-left sm:px-6 sm:pt-6">
+          <div className="flex items-start gap-3">
+            <span
+              className={cn(
+                'flex h-11 w-11 shrink-0 items-center justify-center rounded-xl',
+                kpiIconTone.emerald,
+              )}
+            >
+              <CheckCircle2 className="h-5 w-5" aria-hidden />
+            </span>
+            <div className="min-w-0">
+              <p className="text-caption font-semibold uppercase tracking-[0.14em] text-muted-foreground">
+                Picks
+              </p>
+              <DialogTitle className="mt-1 text-heading font-bold tracking-tight">
+                Pick posted successfully
+              </DialogTitle>
+              <DialogDescription className="mt-1.5 text-support text-muted-foreground">
+                Your pick is now live for subscribers.
+              </DialogDescription>
             </div>
           </div>
-          <DialogHeader>
-            <DialogTitle className="text-center text-title-lg">
-              Pick posted successfully
-            </DialogTitle>
-          </DialogHeader>
-          <p className="text-support text-muted-foreground">
-            Your pick is now live for subscribers.
-          </p>
-          <div className="flex flex-col gap-2 pt-2">
-            <Button
-              onClick={() => {
-                setShowSuccess(false);
-                resetForm();
-              }}
-              className="w-full min-h-11"
-            >
-              <Plus className="mr-1.5 h-4 w-4" /> Create Another
-            </Button>
-            <Button
-              variant="outline"
-              onClick={() => {
-                setShowSuccess(false);
-                setMode('list');
-              }}
-              className="w-full min-h-11"
-            >
-              Back to picks <ArrowRight className="ml-1.5 h-4 w-4" />
-            </Button>
-          </div>
-        </div>
+        </DialogHeader>
+        <DialogFooter className="gap-2 border-t border-border bg-muted/20 px-5 py-4 sm:flex-col sm:space-x-0 sm:gap-2 sm:px-6">
+          <Button
+            onClick={() => {
+              setShowSuccess(false);
+              resetForm();
+            }}
+            className="min-h-11 w-full rounded-xl"
+          >
+            <Plus className="mr-1.5 h-4 w-4" /> Create Another
+          </Button>
+          <Button
+            variant="outline"
+            onClick={() => {
+              setShowSuccess(false);
+              setMode('list');
+            }}
+            className="min-h-11 w-full rounded-xl"
+          >
+            Back to picks <ArrowRight className="ml-1.5 h-4 w-4" />
+          </Button>
+        </DialogFooter>
       </DialogContent>
     </Dialog>
   );
@@ -688,14 +665,17 @@ const CreatorPosts = () => {
           >
             ← Back to picks
           </button>
-          <h1 className="text-heading font-bold tracking-tight text-foreground md:text-heading-lg">
+          <p className="text-caption font-semibold uppercase tracking-[0.14em] text-muted-foreground">
+            Picks
+          </p>
+          <h1 className="mt-1 text-heading font-bold tracking-tight text-foreground md:text-heading-lg">
             {editId ? 'Edit Pick' : 'Create Pick'}
           </h1>
           <p className="mt-1.5 text-support text-muted-foreground">
-            Share your insights, analysis, or anything with your audience.
+            Share your analysis and optional odds so subscribers know exactly what to play.
           </p>
 
-          <div className="mt-6 space-y-5 rounded-2xl border border-border bg-card p-5 shadow-sm sm:p-7">
+          <div className="mt-6 space-y-5 rounded-2xl border border-border bg-card p-5 shadow-[var(--shadow-card)] sm:p-7">
             <div className="space-y-2">
               <Label htmlFor="pick-title" className="text-support font-medium text-foreground">
                 Title <span className="text-destructive">*</span>
@@ -718,40 +698,14 @@ const CreatorPosts = () => {
               <div className="overflow-hidden rounded-xl border border-border bg-background focus-within:ring-2 focus-within:ring-ring/40">
                 <Textarea
                   id="pick-post"
-                  ref={postRef}
                   placeholder="Write your post here..."
                   value={notes}
                   onChange={(e) => setNotes(e.target.value.slice(0, POST_MAX))}
                   rows={7}
                   className="min-h-[10rem] resize-none border-0 bg-transparent text-ui shadow-none focus-visible:ring-0"
                 />
-                <div className="flex items-center justify-between gap-2 border-t border-border px-2 py-1.5">
-                  <div className="flex items-center gap-0.5">
-                    {(
-                      [
-                        { icon: Bold, label: 'Bold', before: '**', after: '**' },
-                        { icon: Italic, label: 'Italic', before: '_', after: '_' },
-                        { icon: Link2, label: 'Link', before: '[', after: '](https://)' },
-                        { icon: List, label: 'List', before: '\n- ', after: '' },
-                        { icon: ImageIcon, label: 'Image', before: '![image](', after: ')' },
-                      ] as const
-                    ).map(({ icon: Icon, label, before, after }) => (
-                      <Button
-                        key={label}
-                        type="button"
-                        variant="ghost"
-                        size="icon"
-                        className="h-9 w-9 text-muted-foreground hover:text-foreground"
-                        aria-label={label}
-                        onClick={() =>
-                          wrapTextareaSelection(postRef.current, notes, setNotes, before, after)
-                        }
-                      >
-                        <Icon className="h-4 w-4" />
-                      </Button>
-                    ))}
-                  </div>
-                  <span className="pr-2 text-caption tabular-nums text-muted-foreground">
+                <div className="flex justify-end border-t border-border px-3 py-1.5">
+                  <span className="text-caption tabular-nums text-muted-foreground">
                     {notes.length}/{POST_MAX}
                   </span>
                 </div>
@@ -843,16 +797,13 @@ const CreatorPosts = () => {
                     <Label htmlFor="pick-event" className="text-support text-muted-foreground">
                       Event
                     </Label>
-                    <div className="relative">
-                      <Input
-                        id="pick-event"
-                        placeholder="e.g. Lakers vs Warriors"
-                        value={event}
-                        onChange={(e) => setEvent(e.target.value)}
-                        className="h-11 rounded-xl pe-10 text-ui"
-                      />
-                      <Search className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                    </div>
+                    <Input
+                      id="pick-event"
+                      placeholder="e.g. Lakers vs Warriors"
+                      value={event}
+                      onChange={(e) => setEvent(e.target.value)}
+                      className="h-11 rounded-xl text-ui"
+                    />
                   </div>
 
                   <div className="space-y-2">
@@ -1012,6 +963,7 @@ const CreatorPosts = () => {
       iconClassName: kpiIconTone.amber,
       trendLabel: formatSignedPct(metrics.subscribersDelta),
       trendPositive: (metrics.subscribersDelta ?? 0) > 0,
+      href: '/creator/subscribers',
     },
   ];
 
@@ -1058,8 +1010,11 @@ const CreatorPosts = () => {
             type="button"
             variant="outline"
             className="min-h-11 rounded-xl"
-            disabled={importing || !creatorId || useDemo}
-            onClick={() => importRef.current?.click()}
+            disabled={importing || (!useDemo && !creatorId)}
+            onClick={() => {
+              if (guardDemoAction()) return;
+              importRef.current?.click();
+            }}
           >
             {importing ? (
               <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />
@@ -1089,320 +1044,350 @@ const CreatorPosts = () => {
         <DashboardKpiStrip items={metricItems} />
       </div>
 
-      <div className="mb-4 flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
-        <div className={cn(segmentedTrackClassName, 'w-full overflow-x-auto xl:w-auto')}>
-          {RESULT_TABS.map((tab) => (
-            <button
-              key={tab.id}
-              type="button"
-              className={segmentedItemClassName(resultTab === tab.id)}
-              onClick={() => {
-                setResultTab(tab.id);
-                setTablePage(0);
-              }}
-            >
-              {tab.label}
-            </button>
-          ))}
-        </div>
-
-        <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
-          <Select
-            value={sportFilter}
-            onValueChange={(v) => {
-              setSportFilter(v);
-              setTablePage(0);
-            }}
-          >
-            <SelectTrigger className="h-11 w-full rounded-xl sm:w-[140px]">
-              <SelectValue placeholder="All Sports" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Sports</SelectItem>
-              {sportsInData.map((s) => (
-                <SelectItem key={s} value={s}>
-                  {s}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-
-          <Select
-            value={dateRange}
-            onValueChange={(v) => {
-              setDateRange(v as DateRangeKey);
-              setTablePage(0);
-            }}
-          >
-            <SelectTrigger className="h-11 w-full rounded-xl sm:w-[150px]">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="7">Last 7 days</SelectItem>
-              <SelectItem value="30">Last 30 days</SelectItem>
-              <SelectItem value="90">Last 90 days</SelectItem>
-              <SelectItem value="all">All time</SelectItem>
-            </SelectContent>
-          </Select>
-
-          <div className="relative w-full sm:w-[220px]">
-            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-            <Input
-              value={searchPicks}
-              onChange={(e) => {
-                setSearchPicks(e.target.value);
-                setTablePage(0);
-              }}
-              placeholder="Search picks..."
-              className="h-11 rounded-xl ps-9"
-            />
-          </div>
-        </div>
-      </div>
-
-      {filtered.length === 0 ? (
-        <div className="rounded-2xl border border-border bg-card p-8 text-center shadow-sm">
-          <FileText className="mx-auto mb-3 h-8 w-8 text-muted-foreground" />
-          <h3 className="mb-1 text-title font-semibold text-foreground">
-            {enriched.length === 0 ? 'No picks yet' : 'No picks match these filters'}
-          </h3>
-          <p className="mx-auto mb-5 max-w-sm text-support text-muted-foreground">
-            {enriched.length === 0
-              ? "Share your first insight with subscribers — add optional sport, odds, and units when it's a betting pick."
-              : 'Try another tab, sport, or date range.'}
-          </p>
-          {enriched.length === 0 ? (
-            <Button onClick={openCreate} className="min-h-11">
-              <Plus className="mr-1.5 h-4 w-4" /> Create Pick
-            </Button>
-          ) : null}
-        </div>
-      ) : (
-        <div className="overflow-hidden rounded-2xl border border-border bg-card shadow-sm">
-          <Table>
-            <TableHeader>
-              <TableRow className="hover:bg-transparent">
-                <TableHead className="w-12">
-                  <Checkbox
-                    checked={allPageSelected}
-                    onCheckedChange={(v) => toggleSelectAllPage(v === true)}
-                    aria-label="Select all on page"
-                  />
-                </TableHead>
-                <TableHead>Date</TableHead>
-                <TableHead>Match</TableHead>
-                <TableHead>Pick</TableHead>
-                <TableHead>Odds</TableHead>
-                <TableHead>Result</TableHead>
-                <TableHead>Profit (u)</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead className="w-12 text-right">Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {pageRows.map((row) => {
-                const oddsDisplay = row.euOdds || (row.usOdds ? americanToDecimal(row.usOdds) : null);
-                const isWin = row.result === 'won';
-                const isLoss = row.result === 'lost';
-                const isPending = row.result === 'pending' || row.result === 'push';
-                return (
-                  <TableRow key={row.id}>
-                    <TableCell>
-                      <Checkbox
-                        checked={selectedIds.has(row.id)}
-                        onCheckedChange={(v) => toggleSelectOne(row.id, v === true)}
-                        aria-label={`Select ${row.title}`}
-                      />
-                    </TableCell>
-                    <TableCell className="whitespace-nowrap text-support text-muted-foreground">
-                      {format(new Date(row.created_at), 'MMM d, yyyy')}
-                    </TableCell>
-                    <TableCell className="min-w-[180px]">
-                      <MatchCell event={row.event} sport={row.sport} />
-                    </TableCell>
-                    <TableCell className="max-w-[160px] truncate font-medium text-foreground">
-                      {row.pick}
-                    </TableCell>
-                    <TableCell className="tabular-nums text-support">
-                      {oddsDisplay ?? '—'}
-                    </TableCell>
-                    <TableCell>
-                      {isWin ? (
-                        <span
-                          className={cn(
-                            'inline-flex rounded-full border px-2 py-0.5 text-xs font-bold',
-                            resultPillTone.win,
-                          )}
-                        >
-                          Win
-                        </span>
-                      ) : isLoss ? (
-                        <span
-                          className={cn(
-                            'inline-flex rounded-full border px-2 py-0.5 text-xs font-bold',
-                            resultPillTone.loss,
-                          )}
-                        >
-                          Loss
-                        </span>
-                      ) : row.result === 'push' ? (
-                        <span
-                          className={cn(
-                            'inline-flex rounded-full border px-2 py-0.5 text-xs font-bold capitalize',
-                            resultPillTone.push,
-                          )}
-                        >
-                          Push
-                        </span>
-                      ) : (
-                        <span
-                          className={cn(
-                            'inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-xs font-bold',
-                            resultPillTone.pending,
-                          )}
-                        >
-                          <Clock className="h-3 w-3" /> Pending
-                        </span>
-                      )}
-                    </TableCell>
-                    <TableCell
-                      className={cn(
-                        'tabular-nums font-bold',
-                        isWin && 'text-emerald-600 dark:text-emerald-400',
-                        isLoss && 'text-rose-600 dark:text-rose-400',
-                        isPending && 'text-muted-foreground',
-                      )}
-                    >
-                      {row.result === 'pending'
-                        ? '—'
-                        : `${row.profit >= 0 ? '+' : ''}${row.profit.toFixed(2)}u`}
-                    </TableCell>
-                    <TableCell>
-                      <span
-                        className={cn(
-                          'inline-flex rounded-full border px-2 py-0.5 text-xs font-bold',
-                          resultPillTone.published,
-                        )}
-                      >
-                        Published
-                      </span>
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-9 w-9"
-                            aria-label="Pick actions"
-                          >
-                            <MoreVertical className="h-4 w-4" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuItem onClick={() => openEdit(row)}>
-                            <Pencil className="mr-2 h-4 w-4" /> Edit
-                          </DropdownMenuItem>
-                          {row.result === 'pending' ? (
-                            <>
-                              <DropdownMenuItem
-                                onClick={() => void handleResultChange(row.id, 'won')}
-                              >
-                                <Trophy className="mr-2 h-4 w-4 text-emerald-500" /> Mark won
-                              </DropdownMenuItem>
-                              <DropdownMenuItem
-                                onClick={() => void handleResultChange(row.id, 'lost')}
-                              >
-                                <XCircle className="mr-2 h-4 w-4 text-red-500" /> Mark lost
-                              </DropdownMenuItem>
-                              <DropdownMenuItem
-                                onClick={() => void handleResultChange(row.id, 'push')}
-                              >
-                                <Minus className="mr-2 h-4 w-4" /> Mark push
-                              </DropdownMenuItem>
-                              <DropdownMenuSeparator />
-                            </>
-                          ) : null}
-                          <DropdownMenuItem
-                            className="text-destructive focus:text-destructive"
-                            onClick={() => setDeleteId(row.id)}
-                          >
-                            <Trash2 className="mr-2 h-4 w-4" /> Delete
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    </TableCell>
-                  </TableRow>
-                );
-              })}
-            </TableBody>
-          </Table>
-
-          <div className="flex flex-col gap-3 border-t border-border px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
-            <p className="text-support text-muted-foreground">
-              Showing {showingFrom}–{showingTo} of {filtered.length} picks
-              {!useDemo && (postsStatus === 'CanLoadMore' || postsStatus === 'LoadingMore')
-                ? ' (load more for older picks)'
-                : ''}
+      <section className="mb-8 grid grid-cols-1 gap-4 sm:grid-cols-2">
+        <Link
+          to="/creator/performance-tracker"
+          className="group flex items-start gap-4 rounded-2xl border border-border bg-card p-5 shadow-[var(--shadow-card)] transition-colors hover:border-primary/40"
+        >
+          <span className={cn('flex h-11 w-11 shrink-0 items-center justify-center rounded-xl', kpiIconTone.sky)}>
+            <BarChart3 className="h-5 w-5" aria-hidden />
+          </span>
+          <div className="min-w-0 flex-1">
+            <div className="flex items-center justify-between gap-2">
+              <h3 className="text-base font-extrabold tracking-tight text-foreground">Performance</h3>
+              <ArrowRight className="h-4 w-4 shrink-0 text-muted-foreground transition-transform group-hover:translate-x-0.5 group-hover:text-primary" />
+            </div>
+            <p className="mt-1 text-sm text-muted-foreground">
+              Track win rate, units, and streak trends across your settled picks.
             </p>
-            <div className="flex flex-wrap items-center gap-1">
-              <Button
-                type="button"
-                variant="outline"
-                size="icon"
-                className="h-9 w-9"
-                disabled={safePage === 0}
-                onClick={() => setTablePage((p) => Math.max(0, p - 1))}
-                aria-label="Previous page"
+          </div>
+        </Link>
+        <Link
+          to="/creator/subscribers"
+          className="group flex items-start gap-4 rounded-2xl border border-border bg-card p-5 shadow-[var(--shadow-card)] transition-colors hover:border-primary/40"
+        >
+          <span className={cn('flex h-11 w-11 shrink-0 items-center justify-center rounded-xl', kpiIconTone.amber)}>
+            <Users className="h-5 w-5" aria-hidden />
+          </span>
+          <div className="min-w-0 flex-1">
+            <div className="flex items-center justify-between gap-2">
+              <h3 className="text-base font-extrabold tracking-tight text-foreground">Subscribers</h3>
+              <ArrowRight className="h-4 w-4 shrink-0 text-muted-foreground transition-transform group-hover:translate-x-0.5 group-hover:text-primary" />
+            </div>
+            <p className="mt-1 text-sm text-muted-foreground">
+              Manage who sees your premium picks and grow your paying audience.
+            </p>
+          </div>
+        </Link>
+      </section>
+
+      <section className="overflow-hidden rounded-2xl border border-border bg-card shadow-[var(--shadow-card)]">
+        <div className="flex flex-col gap-4 border-b border-border p-4 sm:p-5">
+          <div className="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
+            <h2 className="text-base font-extrabold tracking-tight text-foreground">All picks</h2>
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+              <Select
+                value={sportFilter}
+                onValueChange={(v) => {
+                  setSportFilter(v);
+                  setTablePage(0);
+                }}
               >
-                <ChevronLeft className="h-4 w-4" />
-              </Button>
-              {pageNumbers.map((item, idx) =>
-                item === 'ellipsis' ? (
-                  <span key={`e-${idx}`} className="px-1 text-muted-foreground">
-                    …
-                  </span>
-                ) : (
-                  <Button
-                    key={item}
-                    type="button"
-                    variant={item === safePage ? 'default' : 'outline'}
-                    className="h-9 min-w-9 px-2"
-                    onClick={() => setTablePage(item)}
-                  >
-                    {item + 1}
-                  </Button>
-                ),
-              )}
-              <Button
-                type="button"
-                variant="outline"
-                size="icon"
-                className="h-9 w-9"
-                disabled={safePage >= tablePageCount - 1}
-                onClick={() => setTablePage((p) => Math.min(tablePageCount - 1, p + 1))}
-                aria-label="Next page"
+                <SelectTrigger className="h-11 w-full rounded-xl sm:w-[140px]">
+                  <SelectValue placeholder="All Sports" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Sports</SelectItem>
+                  {sportsInData.map((s) => (
+                    <SelectItem key={s} value={s}>
+                      {s}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+
+              <Select
+                value={dateRange}
+                onValueChange={(v) => {
+                  setDateRange(v as DateRangeKey);
+                  setTablePage(0);
+                }}
               >
-                <ChevronRight className="h-4 w-4" />
-              </Button>
-              {(postsStatus === 'CanLoadMore' || postsStatus === 'LoadingMore') && !useDemo && (
-                <Button
-                  type="button"
-                  variant="ghost"
-                  className="ml-1 min-h-9"
-                  disabled={postsStatus === 'LoadingMore'}
-                  onClick={() => loadMore(PAGE_SIZE)}
-                >
-                  {postsStatus === 'LoadingMore' ? (
-                    <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
-                  ) : null}
-                  Load more
-                </Button>
-              )}
+                <SelectTrigger className="h-11 w-full rounded-xl sm:w-[150px]">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="7">Last 7 days</SelectItem>
+                  <SelectItem value="30">Last 30 days</SelectItem>
+                  <SelectItem value="90">Last 90 days</SelectItem>
+                  <SelectItem value="all">All time</SelectItem>
+                </SelectContent>
+              </Select>
+
+              <div className="relative w-full sm:w-[220px]">
+                <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                <Input
+                  value={searchPicks}
+                  onChange={(e) => {
+                    setSearchPicks(e.target.value);
+                    setTablePage(0);
+                  }}
+                  placeholder="Search picks..."
+                  className="h-11 rounded-xl ps-9"
+                />
+              </div>
             </div>
           </div>
+
+          <div className={cn(segmentedTrackClassName, 'w-full overflow-x-auto')}>
+            {RESULT_TABS.map((tab) => (
+              <button
+                key={tab.id}
+                type="button"
+                className={segmentedItemClassName(resultTab === tab.id)}
+                onClick={() => {
+                  setResultTab(tab.id);
+                  setTablePage(0);
+                }}
+              >
+                {tab.label}
+              </button>
+            ))}
+          </div>
         </div>
-      )}
+
+        {filtered.length === 0 ? (
+          <div className="p-8 text-center">
+            <FileText className="mx-auto mb-3 h-8 w-8 text-muted-foreground" />
+            <h3 className="mb-1 text-title font-semibold text-foreground">
+              {enriched.length === 0 ? 'No picks yet' : 'No picks match these filters'}
+            </h3>
+            <p className="mx-auto mb-5 max-w-sm text-support text-muted-foreground">
+              {enriched.length === 0
+                ? "Share your first insight with subscribers — add optional sport, odds, and units when it's a betting pick."
+                : 'Try another tab, sport, or date range.'}
+            </p>
+            {enriched.length === 0 ? (
+              <Button onClick={openCreate} className="min-h-11">
+                <Plus className="mr-1.5 h-4 w-4" /> Create Pick
+              </Button>
+            ) : null}
+          </div>
+        ) : (
+          <>
+            <Table>
+              <TableHeader>
+                <TableRow className="hover:bg-transparent">
+                  <TableHead>Date</TableHead>
+                  <TableHead>Match</TableHead>
+                  <TableHead className="hidden sm:table-cell">Odds</TableHead>
+                  <TableHead>Result</TableHead>
+                  <TableHead className="hidden md:table-cell">Profit (u)</TableHead>
+                  <TableHead>Access</TableHead>
+                  <TableHead className="w-12 text-right">Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {pageRows.map((row) => {
+                  const oddsDisplay = row.euOdds || (row.usOdds ? americanToDecimal(row.usOdds) : null);
+                  const isWin = row.result === 'won';
+                  const isLoss = row.result === 'lost';
+                  const isPending = row.result === 'pending' || row.result === 'push';
+                  return (
+                    <TableRow key={row.id}>
+                      <TableCell className="whitespace-nowrap text-support text-muted-foreground">
+                        {format(new Date(row.created_at), 'MMM d, yyyy')}
+                      </TableCell>
+                      <TableCell className="min-w-[180px]">
+                        <MatchCell event={row.event} sport={row.sport} pick={row.pick} />
+                      </TableCell>
+                      <TableCell className="hidden tabular-nums text-support sm:table-cell">
+                        {oddsDisplay ?? '—'}
+                      </TableCell>
+                      <TableCell>
+                        {isWin ? (
+                          <span
+                            className={cn(
+                              'inline-flex rounded-full border px-2 py-0.5 text-xs font-bold',
+                              resultPillTone.win,
+                            )}
+                          >
+                            Win
+                          </span>
+                        ) : isLoss ? (
+                          <span
+                            className={cn(
+                              'inline-flex rounded-full border px-2 py-0.5 text-xs font-bold',
+                              resultPillTone.loss,
+                            )}
+                          >
+                            Loss
+                          </span>
+                        ) : row.result === 'push' ? (
+                          <span
+                            className={cn(
+                              'inline-flex rounded-full border px-2 py-0.5 text-xs font-bold capitalize',
+                              resultPillTone.push,
+                            )}
+                          >
+                            Push
+                          </span>
+                        ) : (
+                          <span
+                            className={cn(
+                              'inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-xs font-bold',
+                              resultPillTone.pending,
+                            )}
+                          >
+                            <Clock className="h-3 w-3" /> Pending
+                          </span>
+                        )}
+                      </TableCell>
+                      <TableCell
+                        className={cn(
+                          'hidden tabular-nums font-bold md:table-cell',
+                          isWin && 'text-emerald-600 dark:text-emerald-400',
+                          isLoss && 'text-rose-600 dark:text-rose-400',
+                          isPending && 'text-muted-foreground',
+                        )}
+                      >
+                        {row.result === 'pending'
+                          ? '—'
+                          : `${row.profit >= 0 ? '+' : ''}${row.profit.toFixed(2)}u`}
+                      </TableCell>
+                      <TableCell>
+                        {row.is_premium ? (
+                          <span
+                            className={cn(
+                              'inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-xs font-bold',
+                              'border-amber-500/25 bg-amber-500/10 text-amber-700 dark:text-amber-400',
+                            )}
+                          >
+                            <Crown className="h-3 w-3" /> Premium
+                          </span>
+                        ) : (
+                          <span className="inline-flex rounded-full border border-border bg-muted/50 px-2 py-0.5 text-xs font-bold text-muted-foreground">
+                            Free
+                          </span>
+                        )}
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-9 w-9"
+                              aria-label="Pick actions"
+                            >
+                              <MoreVertical className="h-4 w-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuItem onClick={() => openEdit(row)}>
+                              <Pencil className="mr-2 h-4 w-4" /> Edit
+                            </DropdownMenuItem>
+                            {row.result === 'pending' ? (
+                              <>
+                                <DropdownMenuItem
+                                  onClick={() => void handleResultChange(row.id, 'won')}
+                                >
+                                  <Trophy className="mr-2 h-4 w-4 text-emerald-500" /> Mark won
+                                </DropdownMenuItem>
+                                <DropdownMenuItem
+                                  onClick={() => void handleResultChange(row.id, 'lost')}
+                                >
+                                  <XCircle className="mr-2 h-4 w-4 text-red-500" /> Mark lost
+                                </DropdownMenuItem>
+                                <DropdownMenuItem
+                                  onClick={() => void handleResultChange(row.id, 'push')}
+                                >
+                                  <Minus className="mr-2 h-4 w-4" /> Mark push
+                                </DropdownMenuItem>
+                                <DropdownMenuSeparator />
+                              </>
+                            ) : null}
+                            <DropdownMenuItem
+                              className="text-destructive focus:text-destructive"
+                              onClick={() => setDeleteId(row.id)}
+                            >
+                              <Trash2 className="mr-2 h-4 w-4" /> Delete
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
+              </TableBody>
+            </Table>
+
+            <div className="flex flex-col gap-3 border-t border-border px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+              <p className="text-support text-muted-foreground">
+                Showing {showingFrom}–{showingTo} of {filtered.length} picks
+                {!useDemo && (postsStatus === 'CanLoadMore' || postsStatus === 'LoadingMore')
+                  ? ' (load more for older picks)'
+                  : ''}
+              </p>
+              <div className="flex flex-wrap items-center gap-1">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="icon"
+                  className="h-9 w-9"
+                  disabled={safePage === 0}
+                  onClick={() => setTablePage((p) => Math.max(0, p - 1))}
+                  aria-label="Previous page"
+                >
+                  <ChevronLeft className="h-4 w-4" />
+                </Button>
+                {pageNumbers.map((item, idx) =>
+                  item === 'ellipsis' ? (
+                    <span key={`e-${idx}`} className="px-1 text-muted-foreground">
+                      …
+                    </span>
+                  ) : (
+                    <Button
+                      key={item}
+                      type="button"
+                      variant={item === safePage ? 'default' : 'outline'}
+                      className="h-9 min-w-9 px-2"
+                      onClick={() => setTablePage(item)}
+                    >
+                      {item + 1}
+                    </Button>
+                  ),
+                )}
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="icon"
+                  className="h-9 w-9"
+                  disabled={safePage >= tablePageCount - 1}
+                  onClick={() => setTablePage((p) => Math.min(tablePageCount - 1, p + 1))}
+                  aria-label="Next page"
+                >
+                  <ChevronRight className="h-4 w-4" />
+                </Button>
+                {(postsStatus === 'CanLoadMore' || postsStatus === 'LoadingMore') && !useDemo && (
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    className="ml-1 min-h-9"
+                    disabled={postsStatus === 'LoadingMore'}
+                    onClick={() => loadMore(PAGE_SIZE)}
+                  >
+                    {postsStatus === 'LoadingMore' ? (
+                      <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
+                    ) : null}
+                    Load more
+                  </Button>
+                )}
+              </div>
+            </div>
+          </>
+        )}
+      </section>
       {deleteDialog}
     </DashboardLayout>
   );
