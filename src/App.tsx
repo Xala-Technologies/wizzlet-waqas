@@ -54,6 +54,7 @@ import CreatorLinkRedirect from "./pages/CreatorLinkRedirect";
 import CreatorReferrals from "./pages/CreatorReferrals";
 import CreatorEarnings from "./pages/CreatorEarnings";
 import CreatorPayouts from "./pages/CreatorPayouts";
+import CreatorTransactions from "./pages/CreatorTransactions";
 import CreatorSettings from "./pages/CreatorSettings";
 import CreatorOnboarding from "./pages/CreatorOnboarding";
 import CreatorProfile from "./pages/CreatorProfile";
@@ -170,6 +171,7 @@ const App = () => (
             <Route path="/creator/referrals" element={<ProtectedRoute allowedRoles={['creator']}><CreatorReferrals /></ProtectedRoute>} />
             <Route path="/creator/earnings" element={<ProtectedRoute allowedRoles={['creator']}><CreatorEarnings /></ProtectedRoute>} />
             <Route path="/creator/payouts" element={<ProtectedRoute allowedRoles={['creator']}><CreatorPayouts /></ProtectedRoute>} />
+            <Route path="/creator/transactions" element={<ProtectedRoute allowedRoles={['creator']}><CreatorTransactions /></ProtectedRoute>} />
             <Route path="/creator/settings" element={<ProtectedRoute allowedRoles={['creator']}><CreatorSettings /></ProtectedRoute>} />
             <Route path="/creator/onboarding" element={<ProtectedRoute allowedRoles={['creator']}><CreatorOnboarding /></ProtectedRoute>} />
             <Route path="/admin" element={<ProtectedRoute allowedRoles={['admin']}><AdminDashboard /></ProtectedRoute>} />

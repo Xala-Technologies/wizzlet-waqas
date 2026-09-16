@@ -95,7 +95,8 @@ function isActivePath(pathname: string, href: string): boolean {
     return (
       pathname === href ||
       pathname.startsWith(`${href}/`) ||
-      pathname.startsWith('/creator/payouts')
+      pathname.startsWith('/creator/payouts') ||
+      pathname.startsWith('/creator/transactions')
     );
   }
   return pathname === href || pathname.startsWith(`${href}/`);

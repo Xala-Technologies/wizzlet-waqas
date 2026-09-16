@@ -353,7 +353,7 @@ const CreatorEarnings = () => {
                 Recent Earnings
               </h2>
               <Link
-                to="/creator/payouts"
+                to="/creator/transactions"
                 className="text-xs font-bold text-primary hover:underline"
               >
                 View all

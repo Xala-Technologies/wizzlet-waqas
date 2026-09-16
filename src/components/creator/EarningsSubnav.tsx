@@ -4,7 +4,7 @@ import { cn } from '@/lib/utils';
 const TABS = [
   { id: 'overview', label: 'Overview', href: '/creator/earnings' },
   { id: 'payouts', label: 'Payouts', href: '/creator/payouts' },
-  { id: 'transactions', label: 'Transactions', href: '/creator/earnings#recent-earnings' },
+  { id: 'transactions', label: 'Transactions', href: '/creator/transactions' },
   { id: 'tax', label: 'Tax Documents', href: '/creator/earnings#tax-docs' },
 ] as const;
 
@@ -16,10 +16,10 @@ export function EarningsSubnav({ active }: { active?: EarningsTabId }) {
     active ??
     (pathname.startsWith('/creator/payouts')
       ? 'payouts'
-      : hash === '#tax-docs'
-        ? 'tax'
-        : hash === '#recent-earnings'
-          ? 'transactions'
+      : pathname.startsWith('/creator/transactions')
+        ? 'transactions'
+        : hash === '#tax-docs'
+          ? 'tax'
           : 'overview');
 
   return (
