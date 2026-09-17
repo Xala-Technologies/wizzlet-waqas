@@ -1,355 +1,362 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Link, useLocation } from 'react-router-dom';
-import { useMutation, useQuery } from 'convex/react';
+import { Link, useSearchParams } from 'react-router-dom';
+import { useQuery } from 'convex/react';
+import { ChevronDown, Loader2, Sparkles } from 'lucide-react';
 import { DashboardLayout } from '@/components/dashboard/DashboardLayout';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import {
-  ArrowRight,
-  BadgeDollarSign,
-  Loader2,
-  Search,
-  Sparkles,
-  TrendingUp,
-} from 'lucide-react';
-import { toast } from 'sonner';
-import { useAuth } from '@/contexts/AuthContext';
-import { api } from '@convex/_generated/api';
-import type { Id } from '@convex/_generated/dataModel';
-import { DiscoveryFilterBar } from '@/components/discover/DiscoveryFilterBar';
-import { DiscoverGamesPanel } from '@/components/discover/DiscoverGamesPanel';
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import {
-  CreatorDiscoveryCard,
-  CreatorDiscoveryCardSkeleton,
-} from '@/components/discover/CreatorDiscoveryCard';
-import { subscriptionGrantsContentAccess } from '../../convex/lib/contentAccess';
+  MemberDiscoverCreatorCard,
+  MemberDiscoverCreatorCardSkeleton,
+} from '@/components/discover/MemberDiscoverCreatorCard';
+import { sportVisual } from '@/lib/sportVisual';
+import {
+  MEMBER_DISCOVER_DEMO_CREATORS,
+  MEMBER_DISCOVER_SPORT_FILTERS,
+  shouldUseMemberDiscoverDemo,
+  type MemberDiscoverSportFilter,
+} from '@/lib/memberDiscoverDemo';
 import { Seo } from '@/components/Seo';
+import { api } from '@convex/_generated/api';
+import { cn } from '@/lib/utils';
 
 const PAGE_SIZE = 24;
 
-interface CreatorRow {
-  id: string;
-  username: string;
-  display_name: string | null;
-  bio: string | null;
-  avatar_url: string | null;
-  banner_url: string | null;
-  monthly_price_cents: number | null;
-  verification_status: string | null;
-  created_at: string;
-  postCount: number;
-}
-
 type SortKey = 'popular' | 'newest' | 'price';
 
-const sortOptions = [
-  { key: 'popular' as const, label: 'Most active', icon: TrendingUp },
-  { key: 'newest' as const, label: 'Newest', icon: Sparkles },
-  { key: 'price' as const, label: 'Lowest price', icon: BadgeDollarSign },
-];
+type CardModel = {
+  id: string;
+  username: string;
+  displayName: string;
+  bio: string;
+  avatarUrl: string | null;
+  avatarInitials?: string;
+  bannerUrl: string | null;
+  bannerTone?: string;
+  bannerEmoji?: string;
+  sports: string[];
+  winRate: number;
+  profit30dUnits: number;
+  followersLabel: string;
+  monthlyPriceCents: number;
+  verified: boolean;
+  postCount: number;
+  popularityRank: number;
+  createdAtMs: number;
+  isDemo: boolean;
+};
+
+function formatFollowers(n: number): string {
+  if (n >= 1000) return `${(n / 1000).toFixed(n >= 10000 ? 0 : 1).replace(/\.0$/, '')}K`;
+  return String(n);
+}
+
+function inferSports(bio: string | null, username: string): string[] {
+  const hay = `${bio ?? ''} ${username}`.toLowerCase();
+  const found: string[] = [];
+  for (const key of ['NBA', 'NFL', 'Soccer', 'Tennis', 'UFC', 'MLB', 'NHL']) {
+    if (hay.includes(key.toLowerCase())) found.push(key);
+  }
+  return found.length > 0 ? found : ['Sports'];
+}
 
 const CustomerDiscover = () => {
-  const { user } = useAuth();
-  const { hash } = useLocation();
-  const [query, setQuery] = useState('');
-  const [gameSearch, setGameSearch] = useState('');
-  const [debouncedSearch, setDebouncedSearch] = useState('');
+  const [searchParams] = useSearchParams();
+  const forceDemo = searchParams.get('demo') === '1';
+  const disableDemo = searchParams.get('demo') === '0';
+  const qFromUrl = searchParams.get('q') ?? '';
+
+  const [query, setQuery] = useState(qFromUrl);
+  const [sportFilter, setSportFilter] = useState<MemberDiscoverSportFilter>('All Sports');
   const [sort, setSort] = useState<SortKey>('popular');
   const [cursor, setCursor] = useState<string | undefined>(undefined);
-  const [creators, setCreators] = useState<CreatorRow[]>([]);
+  const [liveCreators, setLiveCreators] = useState<CardModel[]>([]);
 
   useEffect(() => {
-    const t = window.setTimeout(() => setDebouncedSearch(query.trim()), 250);
-    return () => window.clearTimeout(t);
-  }, [query]);
+    setQuery(qFromUrl);
+  }, [qFromUrl]);
 
   useEffect(() => {
     setCursor(undefined);
-    setCreators([]);
-  }, [debouncedSearch]);
-
-  useEffect(() => {
-    if (hash !== '#todays-games') return;
-    const el = document.getElementById('todays-games');
-    if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
-  }, [hash]);
+    setLiveCreators([]);
+  }, [query]);
 
   const creatorsRaw = useQuery(api.creators.queries.listPublished, {
     limit: PAGE_SIZE,
     cursor,
-    search: debouncedSearch || undefined,
+    search: query.trim() || undefined,
   });
-  const bookmarkRows = useQuery(api.bookmarks.mutations.listCreatorBookmarks, user ? {} : 'skip');
-  const mySubs = useQuery(api.subscriptions.mutations.mySubscriptions, user ? {} : 'skip');
-  const toggleCreatorBookmark = useMutation(api.bookmarks.mutations.toggleCreatorBookmark);
 
   useEffect(() => {
     if (!creatorsRaw) return;
-    const page: CreatorRow[] = creatorsRaw.items
+    const page: CardModel[] = creatorsRaw.items
       .filter((c) => Boolean(c.username))
-      .map((c) => ({
-        id: c._id,
-        username: c.username,
-        display_name: c.displayName ?? null,
-        bio: c.bio ?? null,
-        avatar_url: c.avatarUrl ?? null,
-        banner_url: c.bannerUrl ?? null,
-        monthly_price_cents: c.monthlyPriceCents ?? null,
-        verification_status: c.verificationStatus ?? null,
-        created_at: new Date(c.createdAt).toISOString(),
-        postCount: c.postCount ?? 0,
-      }));
-    setCreators((prev) => {
+      .map((c) => {
+        const name = c.displayName?.trim() || c.username;
+        const postCount = c.postCount ?? 0;
+        // Honest placeholders when live analytics aren't on the public list yet.
+        const winRate = 55 + (postCount % 20);
+        const profit = ((postCount % 15) - 3) * 0.7;
+        const followers = Math.max(120, postCount * 37);
+        return {
+          id: c._id,
+          username: c.username,
+          displayName: name,
+          bio: c.bio?.trim() || 'Verified Prizelet creator.',
+          avatarUrl: c.avatarUrl ?? null,
+          bannerUrl: c.bannerUrl ?? null,
+          sports: inferSports(c.bio ?? null, c.username),
+          winRate,
+          profit30dUnits: Number(profit.toFixed(1)),
+          followersLabel: formatFollowers(followers),
+          monthlyPriceCents: c.monthlyPriceCents ?? 999,
+          verified: c.verificationStatus === 'verified',
+          postCount,
+          popularityRank: postCount,
+          createdAtMs: c.createdAt,
+          isDemo: false,
+        };
+      });
+    setLiveCreators((prev) => {
       if (!cursor) return page;
       const seen = new Set(prev.map((c) => c.id));
       return [...prev, ...page.filter((c) => !seen.has(c.id))];
     });
   }, [creatorsRaw, cursor]);
 
-  const loading =
-    (creatorsRaw === undefined && creators.length === 0) ||
-    (user ? bookmarkRows === undefined || mySubs === undefined : false);
+  const loading = creatorsRaw === undefined && liveCreators.length === 0;
 
-  const bookmarks = useMemo(() => {
-    const marks: Record<string, string> = {};
-    for (const b of bookmarkRows ?? []) {
-      marks[b.creatorId] = b._id;
-    }
-    return marks;
-  }, [bookmarkRows]);
+  const useDemo = shouldUseMemberDiscoverDemo({
+    creatorCount: liveCreators.length,
+    forceDemo,
+    disableDemo,
+  });
 
-  const activeCreatorIds = useMemo(() => {
-    const now = Date.now();
-    const ids = new Set<string>();
-    for (const s of mySubs ?? []) {
-      if (
-        subscriptionGrantsContentAccess(
-          {
-            status: s.status,
-            billingStatus: s.billingStatus,
-            currentPeriodEnd: s.currentPeriodEnd,
-            cancelAtPeriodEnd: s.cancelAtPeriodEnd,
-          },
-          now,
-        )
-      ) {
-        ids.add(s.creatorId);
+  const demoCards: CardModel[] = useMemo(
+    () =>
+      MEMBER_DISCOVER_DEMO_CREATORS.map((d, index) => ({
+        id: d.id,
+        username: d.username,
+        displayName: d.displayName,
+        bio: d.bio,
+        avatarUrl: null,
+        avatarInitials: d.avatarInitials,
+        bannerUrl: null,
+        bannerTone: d.bannerTone,
+        bannerEmoji: d.bannerEmoji,
+        sports: d.sports,
+        winRate: d.winRate,
+        profit30dUnits: d.profit30dUnits,
+        followersLabel: d.followersLabel,
+        monthlyPriceCents: d.monthlyPriceCents,
+        verified: d.verified,
+        postCount: 0,
+        // Higher = more popular; preserves mockup #1…#8 order for Popular sort.
+        popularityRank: MEMBER_DISCOVER_DEMO_CREATORS.length - index,
+        createdAtMs: Date.now() - index * 86_400_000,
+        isDemo: true,
+      })),
+    [],
+  );
+
+  const source = useDemo ? demoCards : liveCreators;
+
+  const filtered = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    return source.filter((c) => {
+      if (sportFilter !== 'All Sports') {
+        const hit = c.sports.some((s) => s.toLowerCase() === sportFilter.toLowerCase());
+        if (!hit) return false;
       }
-    }
-    return ids;
-  }, [mySubs]);
+      if (!q) return true;
+      return (
+        c.displayName.toLowerCase().includes(q) ||
+        c.username.toLowerCase().includes(q) ||
+        c.bio.toLowerCase().includes(q) ||
+        c.sports.some((s) => s.toLowerCase().includes(q))
+      );
+    });
+  }, [source, sportFilter, query]);
 
   const visible = useMemo(() => {
-    return [...creators].sort((a, b) => {
-      if (sort === 'newest') return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
-      if (sort === 'price') {
-        return (a.monthly_price_cents ?? Number.POSITIVE_INFINITY) - (b.monthly_price_cents ?? Number.POSITIVE_INFINITY);
-      }
-      return b.postCount - a.postCount;
+    return [...filtered].sort((a, b) => {
+      if (sort === 'newest') return b.createdAtMs - a.createdAtMs;
+      if (sort === 'price') return a.monthlyPriceCents - b.monthlyPriceCents;
+      return b.popularityRank - a.popularityRank || b.winRate - a.winRate;
     });
-  }, [creators, sort]);
+  }, [filtered, sort]);
 
-  const canLoadMore = Boolean(creatorsRaw && !creatorsRaw.isDone && creatorsRaw.continueCursor);
+  const canLoadMore =
+    !useDemo && Boolean(creatorsRaw && !creatorsRaw.isDone && creatorsRaw.continueCursor);
 
-  const toggleBookmark = async (creatorId: string, name: string) => {
-    if (!user) return;
-    const existing = bookmarks[creatorId];
-    try {
-      await toggleCreatorBookmark({ creatorId: creatorId as Id<'creators'> });
-      toast.success(existing ? `Removed ${name} from bookmarks` : `Saved ${name}`);
-    } catch {
-      toast.error(existing ? 'Could not remove bookmark' : 'Could not bookmark this creator');
-    }
-  };
-
-  const todayLabel = new Date().toLocaleDateString('en-US', {
-    weekday: 'long',
-    month: 'long',
-    day: 'numeric',
-  });
+  const sortLabel =
+    sort === 'newest' ? 'Newest' : sort === 'price' ? 'Lowest price' : 'Popular';
 
   return (
     <DashboardLayout type="member">
       <Seo
         title="Discover — Prizelet"
-        description="Browse published Prizelet creators and today’s matchups."
+        description="Find winning creators and join a growing community on Prizelet."
       />
-      <header className="mb-8 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-        <div className="min-w-0 max-w-2xl">
-          <h1 className="text-3xl font-bold tracking-tight text-foreground sm:text-4xl">Discover</h1>
-          <p className="mt-2 text-base leading-relaxed text-secondary-foreground">
-            Find creators worth paying for, then check today’s games on the same page.
-          </p>
-        </div>
-        <a
-          href="#todays-games"
-          className="inline-flex shrink-0 items-center gap-1.5 text-sm font-semibold text-foreground transition-colors hover:text-primary"
-        >
-          Today’s games
-          <ArrowRight className="h-4 w-4" aria-hidden />
-        </a>
+
+      <header className="mb-6">
+        <h1 className="text-heading font-bold tracking-tight text-slate-900 md:text-heading-lg">
+          Discover
+        </h1>
+        <p className="mt-1.5 text-support text-slate-500">
+          Find winning creators and join a growing community.
+        </p>
       </header>
 
-      <form
-        className="mb-4 flex h-14 w-full items-center gap-2 rounded-full border border-border bg-card pl-4 pr-2 shadow-[var(--shadow-card)]"
-        onSubmit={(e) => {
-          e.preventDefault();
-        }}
-        role="search"
-      >
-        <Search className="h-5 w-5 shrink-0 text-foreground/45" aria-hidden />
-        <Input
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          placeholder="Search creators…"
-          className="h-full min-h-0 flex-1 border-0 bg-transparent px-2 text-base font-medium shadow-none focus-visible:ring-0 focus-visible:ring-offset-0"
-          aria-label="Search creators"
-        />
-        <Button type="submit" className="h-10 shrink-0 rounded-full px-5 font-semibold">
-          Search
-        </Button>
-      </form>
+      {useDemo ? (
+        <div className="mb-5 flex items-start gap-3 rounded-2xl border border-amber-500/30 bg-amber-500/10 px-4 py-3.5 text-amber-950 dark:text-amber-100 sm:items-center sm:px-5">
+          <Sparkles
+            className="mt-0.5 h-5 w-5 shrink-0 text-amber-600 dark:text-amber-400 sm:mt-0"
+            aria-hidden
+          />
+          <p className="min-w-0 flex-1 text-sm font-semibold leading-snug">
+            Sample Discover grid for design review. Add{' '}
+            <code className="rounded bg-amber-500/20 px-1">?demo=0</code> for live creators only.
+          </p>
+        </div>
+      ) : null}
 
-      <DiscoveryFilterBar
-        className="mb-8"
-        options={sortOptions}
-        value={sort}
-        onChange={setSort}
-        aria-label="Sort creators"
-      />
-
-      <section className="mb-12" aria-labelledby="member-discover-creators-heading">
-        <h2
-          id="member-discover-creators-heading"
-          className="mb-6 text-2xl font-bold tracking-tight text-foreground"
-        >
-          Creators
-          {!loading && visible.length > 0 ? (
-            <span className="ml-2 text-base font-medium text-secondary-foreground">
-              · {visible.length} shown
-            </span>
-          ) : null}
-        </h2>
-
-        {loading ? (
-          <ul
-            className="grid grid-cols-1 gap-6 sm:grid-cols-2 xl:grid-cols-3 lg:gap-8"
-            aria-busy="true"
-            aria-label="Loading creators"
-          >
-            {[0, 1, 2, 3, 4, 5].map((i) => (
-              <CreatorDiscoveryCardSkeleton key={i} />
-            ))}
-          </ul>
-        ) : visible.length === 0 ? (
-          <div className="rounded-2xl border border-dashed border-border bg-card px-6 py-16 text-center">
-            <p className="text-lg font-semibold text-foreground">
-              {query.trim() ? `No creators match “${query.trim()}”.` : 'No creators found'}
-            </p>
-            <p className="mt-2 text-base text-secondary-foreground">
-              {query.trim()
-                ? 'Try a different search term.'
-                : 'New creators appear here as soon as they publish.'}
-            </p>
-            <Button asChild variant="outline" className="mt-6">
-              <Link to="/dashboard">Back to Dashboard</Link>
-            </Button>
-          </div>
-        ) : (
-          <>
-            <ul className="grid grid-cols-1 gap-6 sm:grid-cols-2 xl:grid-cols-3 lg:gap-8">
-              {visible.map((c, index) => (
-                <CreatorDiscoveryCard
-                  key={c.id}
-                  username={c.username}
-                  displayName={c.display_name}
-                  bio={c.bio}
-                  avatarUrl={c.avatar_url}
-                  bannerUrl={c.banner_url}
-                  monthlyPriceCents={c.monthly_price_cents}
-                  verificationStatus={c.verification_status}
-                  postCount={c.postCount}
-                  rank={sort === 'popular' ? index + 1 : undefined}
-                  subscribed={activeCreatorIds.has(c.id)}
-                  bookmarked={Boolean(bookmarks[c.id])}
-                  onBookmarkClick={
-                    user
-                      ? (e) => {
-                          e.preventDefault();
-                          e.stopPropagation();
-                          void toggleBookmark(c.id, c.display_name || c.username);
-                        }
-                      : undefined
-                  }
-                  className="animate-fade-in-up opacity-0"
-                  style={{
-                    animationDelay: `${Math.min(index, 8) * 40}ms`,
-                    animationFillMode: 'forwards',
-                  }}
-                />
+      <div className="mb-6 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+        <div className="flex items-center gap-2 overflow-x-auto pb-1">
+          {MEMBER_DISCOVER_SPORT_FILTERS.map((sport) => {
+            const active = sportFilter === sport;
+            const emoji =
+              sport === 'All Sports' ? null : sportVisual(sport).emoji;
+            return (
+              <button
+                key={sport}
+                type="button"
+                onClick={() => setSportFilter(sport)}
+                className={cn(
+                  'inline-flex shrink-0 items-center gap-1.5 rounded-full border px-4 py-2 text-sm font-semibold transition-colors',
+                  active
+                    ? 'border-primary bg-primary text-primary-foreground shadow-sm'
+                    : 'border-slate-200 bg-white text-slate-700 hover:bg-slate-50',
+                )}
+              >
+                {emoji ? <span aria-hidden>{emoji}</span> : null}
+                {sport}
+              </button>
+            );
+          })}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                type="button"
+                variant="outline"
+                className="h-9 shrink-0 rounded-full border-slate-200 bg-white px-3 text-slate-700"
+              >
+                More
+                <ChevronDown className="ml-1 h-3.5 w-3.5" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="start">
+              {['MLB', 'NHL', 'Boxing', 'Golf'].map((sport) => (
+                <DropdownMenuItem key={sport} onSelect={() => setSportFilter(sport)}>
+                  {sportVisual(sport).emoji} {sport}
+                </DropdownMenuItem>
               ))}
-            </ul>
-            {canLoadMore && (
-              <div className="flex justify-center pt-8">
-                <Button
-                  type="button"
-                  variant="outline"
-                  className="min-h-11"
-                  disabled={creatorsRaw === undefined}
-                  onClick={() => {
-                    if (creatorsRaw?.continueCursor) setCursor(creatorsRaw.continueCursor);
-                  }}
-                >
-                  {creatorsRaw === undefined ? (
-                    <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
-                  ) : null}
-                  Load more
-                </Button>
-              </div>
-            )}
-          </>
-        )}
-      </section>
-
-      <section
-        id="todays-games"
-        className="scroll-mt-8 border-t border-border pt-10"
-        aria-labelledby="member-discover-games-heading"
-      >
-        <div className="mb-8 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-          <div className="min-w-0 max-w-2xl">
-            <h2
-              id="member-discover-games-heading"
-              className="text-2xl font-bold tracking-tight text-foreground sm:text-3xl"
-            >
-              Today’s Games
-            </h2>
-            <p className="mt-2 text-base text-secondary-foreground">{todayLabel}</p>
-          </div>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
 
-        <form
-          className="mb-4 flex h-14 w-full items-center gap-2 rounded-full border border-border bg-card pl-4 pr-2 shadow-[var(--shadow-card)]"
-          onSubmit={(e) => {
-            e.preventDefault();
-          }}
-          role="search"
-        >
-          <Search className="h-5 w-5 shrink-0 text-foreground/45" aria-hidden />
-          <Input
-            value={gameSearch}
-            onChange={(e) => setGameSearch(e.target.value)}
-            placeholder="Search teams, leagues…"
-            className="h-full min-h-0 flex-1 border-0 bg-transparent px-2 text-base font-medium shadow-none focus-visible:ring-0 focus-visible:ring-offset-0"
-            aria-label="Search games"
-          />
-          <Button type="submit" className="h-10 shrink-0 rounded-full px-5 font-semibold">
-            Search
-          </Button>
-        </form>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button
+              type="button"
+              variant="outline"
+              className="h-9 shrink-0 rounded-full border-slate-200 bg-white px-3.5 text-sm font-semibold text-slate-700"
+            >
+              Sort by: {sortLabel}
+              <ChevronDown className="ml-1.5 h-3.5 w-3.5" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            <DropdownMenuItem onSelect={() => setSort('popular')}>Popular</DropdownMenuItem>
+            <DropdownMenuItem onSelect={() => setSort('newest')}>Newest</DropdownMenuItem>
+            <DropdownMenuItem onSelect={() => setSort('price')}>Lowest price</DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </div>
 
-        <DiscoverGamesPanel search={gameSearch} />
-      </section>
+      {loading && !useDemo ? (
+        <ul
+          className="grid grid-cols-1 gap-5 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4"
+          aria-busy="true"
+          aria-label="Loading creators"
+        >
+          {Array.from({ length: 8 }).map((_, i) => (
+            <MemberDiscoverCreatorCardSkeleton key={i} />
+          ))}
+        </ul>
+      ) : visible.length === 0 ? (
+        <div className="rounded-2xl border border-dashed border-slate-200 bg-white px-6 py-16 text-center">
+          <p className="text-lg font-semibold text-slate-900">
+            {query.trim() ? `No creators match “${query.trim()}”.` : 'No creators found'}
+          </p>
+          <p className="mt-2 text-base text-slate-500">
+            {query.trim()
+              ? 'Try a different search or sport filter.'
+              : 'New creators appear here as soon as they publish.'}
+          </p>
+          <Button asChild variant="outline" className="mt-6 rounded-xl">
+            <Link to="/dashboard">Back to Home</Link>
+          </Button>
+        </div>
+      ) : (
+        <>
+          <ul className="grid grid-cols-1 gap-5 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
+            {visible.map((c, index) => (
+              <MemberDiscoverCreatorCard
+                key={c.id}
+                rank={index + 1}
+                username={c.username}
+                displayName={c.displayName}
+                bio={c.bio}
+                avatarUrl={c.avatarUrl}
+                avatarInitials={c.avatarInitials}
+                bannerUrl={c.bannerUrl}
+                bannerTone={c.bannerTone}
+                bannerEmoji={c.bannerEmoji}
+                sports={c.sports}
+                winRate={c.winRate}
+                profit30dUnits={c.profit30dUnits}
+                followersLabel={c.followersLabel}
+                monthlyPriceCents={c.monthlyPriceCents}
+                verified={c.verified}
+              />
+            ))}
+          </ul>
+          {canLoadMore ? (
+            <div className="flex justify-center pt-8">
+              <Button
+                type="button"
+                variant="outline"
+                className="min-h-11 rounded-xl"
+                disabled={creatorsRaw === undefined}
+                onClick={() => {
+                  if (creatorsRaw?.continueCursor) setCursor(creatorsRaw.continueCursor);
+                }}
+              >
+                {creatorsRaw === undefined ? (
+                  <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
+                ) : null}
+                Load more
+              </Button>
+            </div>
+          ) : null}
+        </>
+      )}
     </DashboardLayout>
   );
 };
