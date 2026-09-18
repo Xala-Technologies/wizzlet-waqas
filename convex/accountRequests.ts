@@ -62,6 +62,44 @@ export const requestEmailChange = mutation({
   },
 });
 
+/** Member/creator: request account deletion (manual fulfillment). */
+export const requestAccountDeletion = mutation({
+  args: {
+    reason: v.optional(v.string()),
+  },
+  returns: v.id("accountRequests"),
+  handler: async (ctx, args) => {
+    const user = await requireAppUser(ctx);
+    const open = await ctx.db
+      .query("accountRequests")
+      .withIndex("by_userId_category", (q) =>
+        q.eq("userId", user._id).eq("category", "account_deletion"),
+      )
+      .collect();
+    const alreadyOpen = open.find((r) => r.status === "open");
+    if (alreadyOpen) {
+      throw new Error("REQUEST_ALREADY_OPEN");
+    }
+
+    const now = Date.now();
+    const id = await ctx.db.insert("accountRequests", {
+      userId: user._id,
+      category: "account_deletion",
+      reason: (args.reason ?? "Account deletion requested").trim().slice(0, 500),
+      status: "open",
+      createdAt: now,
+      updatedAt: now,
+    });
+    await logMutation(ctx, {
+      table: "accountRequests",
+      documentId: id,
+      action: "requestAccountDeletion",
+      actorExternalAuthId: user.externalAuthId,
+    });
+    return id;
+  },
+});
+
 export const listMine = query({
   args: {},
   returns: v.array(accountRequestDocValidator),

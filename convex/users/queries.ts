@@ -72,11 +72,14 @@ export const updateProfile = mutation({
   args: {
     fullName: v.optional(v.string()),
     username: v.optional(v.string()),
+    phone: v.optional(v.string()),
     notificationPrefs: v.optional(
       v.object({
         new_posts: v.boolean(),
         price_changes: v.boolean(),
         promotions: v.boolean(),
+        messages: v.optional(v.boolean()),
+        billing: v.optional(v.boolean()),
       }),
     ),
   },
@@ -86,6 +89,7 @@ export const updateProfile = mutation({
     await ctx.db.patch(user._id, {
       ...(args.fullName !== undefined ? { fullName: args.fullName, name: args.fullName } : {}),
       ...(args.username !== undefined ? { username: args.username } : {}),
+      ...(args.phone !== undefined ? { phone: args.phone.trim() || undefined } : {}),
       ...(args.notificationPrefs !== undefined
         ? { notificationPrefs: args.notificationPrefs }
         : {}),

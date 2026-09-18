@@ -5,211 +5,217 @@ import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { dashboardSidebarAsideClassName } from '@/lib/dashboardSidebar';
 import {
-  LayoutGrid,
-  CreditCard,
-  Compass,
+  Home,
+  Search,
+  UserPlus,
+  MessageSquare,
   Settings,
   LogOut,
-  Trophy,
-  Bookmark,
-  Bell,
-  Activity,
-  MessageSquare,
+  HelpCircle,
 } from 'lucide-react';
 import { api } from '@convex/_generated/api';
-import { ThemeToggle } from '@/components/ThemeToggle';
 import { RoleSwitcher } from './RoleSwitcher';
 import { useDemoMemberStoreOptional } from '@/components/demo/demoMemberStore';
-
+import { cn } from '@/lib/utils';
 
 interface NavItem {
   label: string;
   href: string;
-  icon: React.ElementType;
+  icon: typeof Home;
   badge?: string;
 }
 
-interface NavSection {
-  label: string;
-  items: NavItem[];
-}
-
-const memberSections: NavSection[] = [
-  {
-    label: 'Main',
-    items: [
-      { label: 'Dashboard', href: '/dashboard', icon: LayoutGrid },
-      { label: 'Discover', href: '/dashboard/discover', icon: Compass },
-      { label: 'Messages', href: '/dashboard/messages', icon: MessageSquare },
-    ],
-  },
-  {
-    label: 'Library',
-    items: [
-      { label: 'My Bet Tracker', href: '/dashboard/results', icon: Trophy },
-      { label: 'Saved', href: '/dashboard/saved', icon: Bookmark },
-      { label: 'Activity', href: '/dashboard/activity', icon: Activity },
-    ],
-  },
-  {
-    label: 'Account',
-    items: [
-      { label: 'Subscriptions & Billing', href: '/dashboard/subscriptions-billing', icon: CreditCard },
-      { label: 'Notifications', href: '/dashboard/notifications', icon: Bell },
-      { label: 'Settings', href: '/dashboard/settings', icon: Settings },
-    ],
-  },
+/** Mockup nav labels; chrome matches creator dark sidebar. */
+const memberItems: NavItem[] = [
+  { label: 'Home', href: '/dashboard', icon: Home },
+  { label: 'Discover', href: '/dashboard/discover', icon: Search },
+  { label: 'My Creators', href: '/dashboard/subscriptions-billing', icon: UserPlus },
+  { label: 'Messages', href: '/dashboard/messages', icon: MessageSquare },
+  { label: 'Settings', href: '/dashboard/settings', icon: Settings },
 ];
 
-/** Flat list kept for demo mode; no Messages — demo has no `/demo/member/messages` route. */
 export const demoMemberItems: NavItem[] = [
-  { label: 'Dashboard', href: '/demo/member', icon: LayoutGrid },
-  { label: 'Discover', href: '/demo/member/discover', icon: Compass },
-  { label: 'My Bet Tracker', href: '/demo/member/results', icon: Trophy },
-  { label: 'Saved', href: '/demo/member/saved', icon: Bookmark },
-  { label: 'Activity', href: '/demo/member/activity', icon: Activity },
-  { label: 'Subscriptions & Billing', href: '/demo/member/subscriptions-billing', icon: CreditCard },
-  { label: 'Notifications', href: '/demo/member/notifications', icon: Bell },
+  { label: 'Home', href: '/demo/member', icon: Home },
+  { label: 'Discover', href: '/demo/member/discover', icon: Search },
+  { label: 'My Creators', href: '/demo/member/subscriptions-billing', icon: UserPlus },
+  { label: 'Messages', href: '/demo/member/messages', icon: MessageSquare },
   { label: 'Settings', href: '/demo/member/settings', icon: Settings },
 ];
 
-const demoMemberSections: NavSection[] = [
-  {
-    label: 'Main',
-    items: [
-      { label: 'Dashboard', href: '/demo/member', icon: LayoutGrid },
-      { label: 'Discover', href: '/demo/member/discover', icon: Compass },
-    ],
-  },
-  {
-    label: 'Library',
-    items: [
-      { label: 'My Bet Tracker', href: '/demo/member/results', icon: Trophy },
-      { label: 'Saved', href: '/demo/member/saved', icon: Bookmark },
-      { label: 'Activity', href: '/demo/member/activity', icon: Activity },
-    ],
-  },
-  {
-    label: 'Account',
-    items: [
-      { label: 'Subscriptions & Billing', href: '/demo/member/subscriptions-billing', icon: CreditCard },
-      { label: 'Notifications', href: '/demo/member/notifications', icon: Bell },
-      { label: 'Settings', href: '/demo/member/settings', icon: Settings },
-    ],
-  },
-];
-
-
-function SectionLabel({ children }: { children: React.ReactNode }) {
-  return (
-    <span className="px-3 text-caption font-semibold uppercase tracking-widest text-muted-foreground/50 dark:text-muted-foreground/70 select-none">
-      {children}
-    </span>
-  );
+function formatBadge(n: number): string | undefined {
+  if (n <= 0) return undefined;
+  return n > 9 ? '9+' : String(n);
 }
 
-function NavItemLink({ item, active }: { item: NavItem; active: boolean }) {
+function isActivePath(pathname: string, href: string, baseRoute: string): boolean {
+  if (href === baseRoute) return pathname === baseRoute;
+  return pathname === href || pathname.startsWith(`${href}/`);
+}
+
+function NavItemLink({
+  item,
+  active,
+  dark,
+}: {
+  item: NavItem;
+  active: boolean;
+  dark: boolean;
+}) {
   return (
     <Link
       to={item.href}
-      className={`group flex items-center gap-3 rounded-lg px-3 py-2 text-ui transition-all duration-200 ${
-        active
-          ? 'bg-primary/10 text-primary font-medium shadow-[inset_2px_0_0_0_hsl(var(--primary))]'
-          : 'text-foreground hover:bg-muted/60'
-      }`}
+      className={cn(
+        'group flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-colors',
+        dark
+          ? active
+            ? 'bg-primary text-primary-foreground shadow-sm'
+            : 'text-slate-300 hover:bg-white/5 hover:text-white'
+          : active
+            ? 'bg-primary/10 text-primary font-medium shadow-[inset_2px_0_0_0_hsl(var(--primary))]'
+            : 'text-foreground hover:bg-muted/60',
+      )}
     >
       <item.icon
-        className={`h-4 w-4 shrink-0 transition-colors duration-200 ${
-          active ? 'text-primary' : 'text-muted-foreground group-hover:text-foreground'
-        }`}
+        className={cn(
+          'h-4 w-4 shrink-0',
+          dark
+            ? active
+              ? 'text-primary-foreground'
+              : 'text-slate-400 group-hover:text-white'
+            : active
+              ? 'text-primary'
+              : 'text-muted-foreground group-hover:text-foreground',
+        )}
       />
-      <span className="flex-1">{item.label}</span>
-      {item.badge && (
-        <span className="flex h-4 min-w-[16px] items-center justify-center rounded-full bg-primary px-1 text-caption font-bold text-primary-foreground">
+      <span className="flex-1 truncate">{item.label}</span>
+      {item.badge ? (
+        <span
+          className={cn(
+            'flex h-5 min-w-[20px] items-center justify-center rounded-full px-1.5 text-[10px] font-bold',
+            dark ? 'bg-rose-500 text-white' : 'bg-primary text-primary-foreground',
+          )}
+        >
           {item.badge}
         </span>
-      )}
+      ) : null}
     </Link>
   );
 }
 
-export function MemberSidebar({ demo = false, mobile = false }: { demo?: boolean; mobile?: boolean }) {
+export function MemberSidebar({ demo = false, mobile = false }: { demo?: boolean; mobile?: boolean } = {}) {
   const { signOut, user } = useAuth();
   const demoStore = useDemoMemberStoreOptional();
-  const liveNotifUnread = useQuery(
-    api.notifications.mutations.unreadCount,
-    !demo && user ? {} : 'skip',
-  );
   const liveDmUnread = useQuery(
     api.messaging.mutations.unreadCountSubscriber,
     !demo && user ? {} : 'skip',
   );
-  const notifUnread = demo && demoStore ? demoStore.metrics.unread : (liveNotifUnread ?? 0);
-  const dmUnread = demo ? 0 : (liveDmUnread ?? 0);
+  const dmUnread = demo ? 2 : (liveDmUnread ?? 0);
   const location = useLocation();
   const navigate = useNavigate();
   const pathname = location.pathname;
-  const sections = demo ? demoMemberSections : memberSections;
+  const dark = !mobile;
+  const items = demo ? demoMemberItems : memberItems;
   const baseRoute = demo ? '/demo/member' : '/dashboard';
 
   const handleSignOut = async () => {
-    if (demo) { navigate('/'); return; }
-    // Leave the protected shell first so role-clear during logout cannot flash /select-role.
+    if (demo) {
+      navigate('/');
+      return;
+    }
     navigate('/');
     await signOut();
   };
 
   const withBadge = (item: NavItem): NavItem => {
-    if (item.href.endsWith('/notifications') && notifUnread > 0) {
-      return { ...item, badge: notifUnread > 9 ? '9+' : String(notifUnread) };
+    if (item.href.endsWith('/messages') || (demo && item.label === 'Messages')) {
+      const badge = formatBadge(dmUnread);
+      return badge ? { ...item, badge } : item;
     }
-    if (item.href.endsWith('/messages') && dmUnread > 0) {
-      return { ...item, badge: dmUnread > 9 ? '9+' : String(dmUnread) };
+    if (demo && demoStore && demoStore.metrics.unread > 0 && item.href.endsWith('/notifications')) {
+      return { ...item, badge: formatBadge(demoStore.metrics.unread) };
     }
     return item;
   };
 
   return (
-    <aside className={dashboardSidebarAsideClassName(mobile)}>
+    <aside className={dashboardSidebarAsideClassName(mobile, undefined, dark ? 'dark' : 'light')}>
       {!mobile && (
-        <div className="px-5 py-5">
-          <PrizeletLogo size="md" linkTo={baseRoute} />
+        <div className="px-5 pb-4 pt-6">
+          <PrizeletLogo
+            size="md"
+            linkTo={baseRoute}
+            className="[&>span:last-child]:text-white"
+          />
+          <p className="mt-2 text-xs font-medium leading-snug text-slate-400">
+            CREATE. GROW. EARN.
+          </p>
         </div>
       )}
 
-      <nav className={`flex-1 overflow-y-auto px-3 pb-4 space-y-5 ${mobile ? 'pt-4' : ''}`}>
-        {sections.map((section) => (
-          <div key={section.label} className="space-y-0.5">
-            <SectionLabel>{section.label}</SectionLabel>
-            <div className="mt-1.5 space-y-0.5">
-              {section.items.map((item) => (
-                <NavItemLink
-                  key={item.href}
-                  item={withBadge(item)}
-                  active={item.href === baseRoute ? pathname === baseRoute : pathname.startsWith(item.href)}
-                />
-              ))}
-            </div>
-          </div>
+      <nav className={cn('flex-1 space-y-1 overflow-y-auto px-3 pb-4', mobile && 'pt-4')}>
+        {items.map((item) => (
+          <NavItemLink
+            key={item.href}
+            item={withBadge(item)}
+            active={isActivePath(pathname, item.href, baseRoute)}
+            dark={dark}
+          />
         ))}
       </nav>
 
-      <div className="shrink-0 px-3 py-4 border-t border-border space-y-2">
-        {!demo && <RoleSwitcher />}
-        <div className="flex items-center justify-between px-3">
-          <span className="text-caption text-muted-foreground">Theme</span>
-          <ThemeToggle />
-        </div>
+      <div
+        className={cn(
+          'shrink-0 space-y-3 px-3 py-4',
+          dark ? 'border-t border-white/10' : 'border-t border-border',
+        )}
+      >
+        {!mobile && (
+          <div
+            className={cn(
+              'rounded-xl p-3',
+              dark ? 'border border-white/10 bg-white/5' : 'border border-border bg-muted/40',
+            )}
+          >
+            <p className={cn('text-sm font-bold tracking-tight', dark ? 'text-white' : 'text-foreground')}>
+              Prizelet
+            </p>
+            <p className={cn('mt-1 text-xs font-medium', dark ? 'text-slate-400' : 'text-muted-foreground')}>
+              Picks. People. Profit.
+            </p>
+          </div>
+        )}
 
-        <Button
-          variant="ghost"
-          size="sm"
-          className="w-full justify-start text-muted-foreground hover:text-foreground text-ui"
-          onClick={handleSignOut}
-        >
-          <LogOut className="mr-2 h-3.5 w-3.5" />
-          Sign out
-        </Button>
+        {mobile ? (
+          <Button
+            variant="ghost"
+            size="sm"
+            className="w-full justify-start text-sm text-muted-foreground hover:text-foreground"
+            asChild
+          >
+            <Link to="/support">
+              <HelpCircle className="mr-2 h-3.5 w-3.5" />
+              Help & Support
+            </Link>
+          </Button>
+        ) : null}
+
+        {!demo && !mobile && (
+          <div className="[&_button]:border-white/15 [&_button]:bg-white/5 [&_button]:text-slate-100 [&_button]:hover:bg-white/10 [&_button_.text-muted-foreground]:text-slate-400">
+            <RoleSwitcher />
+          </div>
+        )}
+
+        {mobile ? (
+          <Button
+            variant="ghost"
+            size="sm"
+            className="w-full justify-start text-sm text-muted-foreground hover:text-foreground"
+            onClick={() => void handleSignOut()}
+          >
+            <LogOut className="mr-2 h-3.5 w-3.5" />
+            Log out
+          </Button>
+        ) : null}
       </div>
     </aside>
   );
