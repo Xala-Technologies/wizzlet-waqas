@@ -1,7 +1,23 @@
 /**
  * Pure environment rules — usable from Vite, Vitest, and Node scripts.
- * Booleans are enabled only when the value is exactly the string "true".
+ * Production origins and Stripe mode parsing live in convex/lib/envOrigin.ts
+ * so Convex guards and this validator cannot drift.
  */
+
+import {
+  isLocalhostOrigin,
+  isProductionOrigin,
+  parseEnvBool,
+  stripeKeyMode,
+} from "../../convex/lib/envOrigin";
+
+export {
+  PRODUCTION_ORIGINS,
+  isLocalhostOrigin,
+  isProductionOrigin,
+  parseEnvBool,
+  stripeKeyMode,
+} from "../../convex/lib/envOrigin";
 
 export const APP_ENVS = [
   "local",
@@ -13,48 +29,10 @@ export const APP_ENVS = [
 
 export type AppEnv = (typeof APP_ENVS)[number];
 
-export const PRODUCTION_ORIGINS = [
-  "https://www.prizelet.com",
-  "https://prizelet.com",
-  "https://www.wizzlet.com",
-  "https://wizzlet.com",
-] as const;
-
 export type EnvBag = Record<string, string | undefined>;
-
-export function parseEnvBool(value: string | undefined | null): boolean {
-  return value === "true";
-}
 
 export function isAppEnv(value: string | undefined | null): value is AppEnv {
   return APP_ENVS.includes(value as AppEnv);
-}
-
-export function stripeKeyMode(
-  key: string | undefined | null,
-): "test" | "live" | "unknown" | "absent" {
-  if (!key || !key.trim()) return "absent";
-  if (key.startsWith("pk_live_") || key.startsWith("sk_live_")) return "live";
-  if (key.startsWith("pk_test_") || key.startsWith("sk_test_")) return "test";
-  return "unknown";
-}
-
-export function isLocalhostOrigin(url: string | undefined | null): boolean {
-  if (!url) return false;
-  try {
-    const host = new URL(url).hostname;
-    return host === "localhost" || host === "127.0.0.1" || host === "::1";
-  } catch {
-    return /localhost|127\.0\.0\.1/i.test(url);
-  }
-}
-
-export function isProductionOrigin(url: string | undefined | null): boolean {
-  if (!url) return false;
-  const normalized = url.replace(/\/$/, "").toLowerCase();
-  return (PRODUCTION_ORIGINS as readonly string[]).some(
-    (origin) => normalized === origin || normalized.startsWith(`${origin}/`),
-  );
 }
 
 export function looksLikePlaceholderConvexUrl(url: string | undefined | null): boolean {
