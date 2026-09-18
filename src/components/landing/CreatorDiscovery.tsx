@@ -6,21 +6,22 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Search, TrendingUp, Star, Sparkles, ArrowRight } from 'lucide-react';
 import { LandingSection } from '@/components/landing/LandingSection';
-import { DiscoveryFilterBar } from '@/components/discover/DiscoveryFilterBar';
+import { DiscoveryFilterBar, type DiscoveryFilterOption } from '@/components/discover/DiscoveryFilterBar';
 import {
   CreatorDiscoveryCard,
   CreatorDiscoveryCardSkeleton,
 } from '@/components/discover/CreatorDiscoveryCard';
 
-const filters = [
-  { key: 'Most active' as const, label: 'Most active', icon: TrendingUp },
-  { key: 'Newest' as const, label: 'Newest', icon: Sparkles },
-  { key: 'Lowest price' as const, label: 'Lowest price', icon: Star },
+type FilterKey = 'Most active' | 'Newest' | 'Lowest price';
+
+const filters: DiscoveryFilterOption<FilterKey>[] = [
+  { key: 'Most active', label: 'Most active', icon: TrendingUp },
+  { key: 'Newest', label: 'Newest', icon: Sparkles },
+  { key: 'Lowest price', label: 'Lowest price', icon: Star },
 ];
 
 export function CreatorDiscovery() {
-  const [activeFilter, setActiveFilter] =
-    useState<(typeof filters)[number]['key']>('Most active');
+  const [activeFilter, setActiveFilter] = useState<FilterKey>('Most active');
   const [search, setSearch] = useState('');
   const creatorsPage = useQuery(api.creators.queries.listPublished, {
     search: search.trim() || undefined,
@@ -86,7 +87,7 @@ export function CreatorDiscovery() {
             </Button>
           </form>
 
-          <DiscoveryFilterBar
+          <DiscoveryFilterBar<FilterKey>
             className="mt-4"
             options={filters}
             value={activeFilter}

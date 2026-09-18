@@ -37,7 +37,7 @@ const AdminAlerts = () => {
 
   const alerts = useMemo((): AlertItem[] => {
     if (!overview) return [];
-    return [
+    const items: AlertItem[] = [
       {
         id: 'failed-payments',
         title: 'Failed Payments',
@@ -80,7 +80,8 @@ const AdminAlerts = () => {
         type: 'info' as const, icon: UserX, count: overview.inactiveCreators,
         link: '/admin/creators', linkLabel: 'View Creators',
       },
-    ].filter((a) => a.count > 0);
+    ];
+    return items.filter((a) => a.count > 0);
   }, [overview]);
 
   const criticalCount = alerts
