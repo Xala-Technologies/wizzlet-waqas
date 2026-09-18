@@ -12,7 +12,7 @@ export type DiscoveryFilterOption<T extends string> = {
 };
 
 type DiscoveryFilterBarProps<T extends string> = {
-  options: DiscoveryFilterOption<T>[];
+  options: readonly DiscoveryFilterOption<T>[];
   value: T;
   onChange: (key: T) => void;
   'aria-label'?: string;

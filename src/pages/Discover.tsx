@@ -8,7 +8,7 @@ import { Footer } from '@/components/landing/Footer';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ArrowRight, BadgeDollarSign, Search, Sparkles, TrendingUp } from 'lucide-react';
-import { DiscoveryFilterBar } from '@/components/discover/DiscoveryFilterBar';
+import { DiscoveryFilterBar, type DiscoveryFilterOption } from '@/components/discover/DiscoveryFilterBar';
 import { DiscoverGamesPanel } from '@/components/discover/DiscoverGamesPanel';
 import {
   CreatorDiscoveryCard,
@@ -18,10 +18,10 @@ import { useAuth } from '@/contexts/AuthContext';
 
 type SortKey = 'popular' | 'newest' | 'price';
 
-const sortOptions = [
-  { key: 'popular' as const, label: 'Most active', icon: TrendingUp },
-  { key: 'newest' as const, label: 'Newest', icon: Sparkles },
-  { key: 'price' as const, label: 'Lowest price', icon: BadgeDollarSign },
+const sortOptions: DiscoveryFilterOption<SortKey>[] = [
+  { key: 'popular', label: 'Most active', icon: TrendingUp },
+  { key: 'newest', label: 'Newest', icon: Sparkles },
+  { key: 'price', label: 'Lowest price', icon: BadgeDollarSign },
 ];
 
 /**
@@ -127,7 +127,7 @@ const Discover = () => {
             </Button>
           </form>
 
-          <DiscoveryFilterBar
+          <DiscoveryFilterBar<SortKey>
             className="mt-4"
             options={sortOptions}
             value={sort}

@@ -16,7 +16,7 @@ import { toast } from 'sonner';
 import { useAuth } from '@/contexts/AuthContext';
 import { api } from '@convex/_generated/api';
 import type { Id } from '@convex/_generated/dataModel';
-import { DiscoveryFilterBar } from '@/components/discover/DiscoveryFilterBar';
+import { DiscoveryFilterBar, type DiscoveryFilterOption } from '@/components/discover/DiscoveryFilterBar';
 import { DiscoverGamesPanel } from '@/components/discover/DiscoverGamesPanel';
 import {
   CreatorDiscoveryCard,
@@ -42,10 +42,10 @@ interface CreatorRow {
 
 type SortKey = 'popular' | 'newest' | 'price';
 
-const sortOptions = [
-  { key: 'popular' as const, label: 'Most active', icon: TrendingUp },
-  { key: 'newest' as const, label: 'Newest', icon: Sparkles },
-  { key: 'price' as const, label: 'Lowest price', icon: BadgeDollarSign },
+const sortOptions: DiscoveryFilterOption<SortKey>[] = [
+  { key: 'popular', label: 'Most active', icon: TrendingUp },
+  { key: 'newest', label: 'Newest', icon: Sparkles },
+  { key: 'price', label: 'Lowest price', icon: BadgeDollarSign },
 ];
 
 const CustomerDiscover = () => {
@@ -210,7 +210,7 @@ const CustomerDiscover = () => {
         </Button>
       </form>
 
-      <DiscoveryFilterBar
+      <DiscoveryFilterBar<SortKey>
         className="mb-8"
         options={sortOptions}
         value={sort}
