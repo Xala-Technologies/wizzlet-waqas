@@ -44,6 +44,22 @@ const ACCESS_OPTIONS = [
   { id: 'exclusive', label: 'Exclusive content' },
 ] as const;
 
+const ACCESS_HEADING = "What's included:";
+
+function parseStoredDescription(raw: string): { body: string; accessIds: string[] } {
+  const marker = `\n\n${ACCESS_HEADING}\n`;
+  const idx = raw.lastIndexOf(marker);
+  if (idx === -1) return { body: raw, accessIds: [] };
+  const body = raw.slice(0, idx).trimEnd();
+  const labels = raw
+    .slice(idx + marker.length)
+    .split('\n')
+    .filter((line) => line.startsWith('• '))
+    .map((line) => line.slice(2).trim());
+  const accessIds = ACCESS_OPTIONS.filter((opt) => labels.includes(opt.label)).map((opt) => opt.id);
+  return { body, accessIds };
+}
+
 const DEFAULT_FEATURES = [
   'Daily betting picks',
   'Detailed analysis & write-ups',
@@ -117,7 +133,8 @@ export function CreateProductForm({
   const [shortDescription, setShortDescription] = useState(
     initial?.shortDescription ?? '',
   );
-  const [description, setDescription] = useState(initial?.description ?? '');
+  const storedDescription = parseStoredDescription(initial?.description ?? '');
+  const [description, setDescription] = useState(storedDescription.body);
   const [price, setPrice] = useState(
     initial ? (initial.priceCents / 100).toFixed(2) : '29.99',
   );
@@ -129,19 +146,17 @@ export function CreateProductForm({
     isOneTimeInitial ? 'monthly' : initial?.billingPeriod || 'monthly',
   );
   const [isFeatured, setIsFeatured] = useState(initial?.isFeatured ?? false);
-  const [offerTrial, setOfferTrial] = useState(false);
-  const [trialDays, setTrialDays] = useState('7');
-  const [yearlyDiscount, setYearlyDiscount] = useState(false);
-  const [access, setAccess] = useState<Set<string>>(
-    () => new Set(initial?.accessIds ?? ['premium_posts', 'exclusive']),
-  );
+  const [access, setAccess] = useState<Set<string>>(() => {
+    if (initial?.accessIds && initial.accessIds.length > 0) return new Set(initial.accessIds);
+    if (storedDescription.accessIds.length > 0) return new Set(storedDescription.accessIds);
+    return new Set(['premium_posts', 'exclusive']);
+  });
   const [limitSubs, setLimitSubs] = useState(initial?.isLimited ?? false);
   const [maxSpots, setMaxSpots] = useState(
     initial?.maxSpots != null ? String(initial.maxSpots) : '100',
   );
-  const [setExpiration, setSetExpiration] = useState(false);
   const [visibility, setVisibility] = useState<'public' | 'hidden'>(
-    initial?.isClosed ? 'hidden' : 'public',
+    initial && !initial.isActive ? 'hidden' : 'public',
   );
   const [imageStorageId, setImageStorageId] = useState<Id<'_storage'> | null>(
     initial?.imageStorageId ?? null,
@@ -229,21 +244,6 @@ export function CreateProductForm({
         return;
       }
     }
-    if (offerTrial) {
-      toast.message('Free trial noted', {
-        description: 'Trial length is saved for your workflow; Stripe trial billing ships next.',
-      });
-    }
-    if (yearlyDiscount && payType === 'subscription') {
-      toast.message('Yearly pricing', {
-        description: 'Use Yearly billing below for now — dual monthly/yearly prices ship next.',
-      });
-    }
-    if (setExpiration) {
-      toast.message('Expiration', {
-        description: 'Auto-close by date is coming soon. Use Hidden or close sales from the list for now.',
-      });
-    }
 
     setSaving(true);
     try {
@@ -257,10 +257,10 @@ export function CreateProductForm({
         priceCents,
         billingPeriod: effectiveBilling,
         isFeatured,
-        isActive: !asDraft,
+        isActive: !asDraft && visibility === 'public',
         isLimited: limitSubs,
         maxSpots: limitSubs ? Number.parseInt(maxSpots, 10) : undefined,
-        isClosed: visibility === 'hidden',
+        isClosed: initial?.isClosed ?? false,
       });
       toast.success(
         asDraft
@@ -507,47 +507,24 @@ export function CreateProductForm({
             </div>
 
             <div className="mt-4 space-y-3">
-              <div className="flex items-center justify-between gap-3 rounded-xl border border-border px-3 py-3">
+              <div className="flex items-center justify-between gap-3 rounded-xl border border-border px-3 py-3 opacity-70">
                 <div>
                   <p className="text-sm font-semibold">Offer a free trial</p>
-                  <p className="text-xs text-muted-foreground">Let fans try before they pay</p>
+                  <p className="text-xs text-muted-foreground">Coming soon — not saved yet</p>
                 </div>
-                <Switch checked={offerTrial} onCheckedChange={setOfferTrial} />
+                <Switch checked={false} disabled aria-label="Free trial coming soon" />
               </div>
-              {offerTrial ? (
-                <div className="flex items-end gap-2 pl-1">
-                  <div className="space-y-2">
-                    <Label htmlFor="cp-trial">Trial length (days)</Label>
-                    <Input
-                      id="cp-trial"
-                      type="number"
-                      min="1"
-                      max="90"
-                      value={trialDays}
-                      onChange={(e) => setTrialDays(e.target.value)}
-                      className="h-11 w-28 rounded-xl"
-                    />
-                  </div>
-                </div>
-              ) : null}
 
-              <div className="flex items-center justify-between gap-3 rounded-xl border border-border px-3 py-3">
+              <div className="flex items-center justify-between gap-3 rounded-xl border border-border px-3 py-3 opacity-70">
                 <div className="min-w-0">
                   <div className="flex flex-wrap items-center gap-2">
                     <p className="text-sm font-semibold">Set up yearly pricing (with discount)</p>
-                    <span className="rounded-full bg-emerald-500/15 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-emerald-700 dark:text-emerald-400">
-                      Recommended
-                    </span>
                   </div>
                   <p className="text-xs text-muted-foreground">
-                    Or choose Yearly as the billing frequency above
+                    Coming soon. Choose Yearly billing above for a single yearly price.
                   </p>
                 </div>
-                <Switch
-                  checked={yearlyDiscount}
-                  onCheckedChange={setYearlyDiscount}
-                  disabled={payType === 'one-time'}
-                />
+                <Switch checked={false} disabled aria-label="Yearly discount coming soon" />
               </div>
 
               <div className="flex items-center justify-between gap-3 rounded-xl border border-border px-3 py-3">
@@ -602,12 +579,12 @@ export function CreateProductForm({
                   />
                 </div>
               ) : null}
-              <div className="flex items-center justify-between gap-3 rounded-xl border border-border px-3 py-3">
+              <div className="flex items-center justify-between gap-3 rounded-xl border border-border px-3 py-3 opacity-70">
                 <div>
                   <p className="text-sm font-semibold">Set an expiration date</p>
-                  <p className="text-xs text-muted-foreground">Stop sales automatically (coming soon)</p>
+                  <p className="text-xs text-muted-foreground">Coming soon — not saved yet</p>
                 </div>
-                <Switch checked={setExpiration} onCheckedChange={setSetExpiration} />
+                <Switch checked={false} disabled aria-label="Expiration date coming soon" />
               </div>
             </div>
           </Section>
@@ -643,6 +620,12 @@ export function CreateProductForm({
                 <p className="mt-1 text-xs text-muted-foreground">Not listed on public profile</p>
               </button>
             </div>
+            {initial?.isClosed ? (
+              <p className="mt-3 text-xs text-muted-foreground">
+                Sales are already closed for this product. Visibility does not reopen checkout — use
+                Access Control for that.
+              </p>
+            ) : null}
           </Section>
         </div>
 

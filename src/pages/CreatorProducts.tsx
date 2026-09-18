@@ -96,6 +96,7 @@ type LiveProduct = {
   maxSpots?: number | null;
   isLimited: boolean;
   isClosed: boolean;
+  isActive: boolean;
   imageStorageId?: Id<'_storage'> | null;
 };
 
@@ -186,6 +187,7 @@ const CreatorProducts = () => {
       maxSpots: p.maxSpots,
       isLimited: p.isLimited,
       isClosed: p.isClosed,
+      isActive: p.isActive,
       imageStorageId: p.imageStorageId,
     }));
   }, [products, subCountByProduct]);
@@ -271,7 +273,7 @@ const CreatorProducts = () => {
       priceCents: live.priceCents,
       billingPeriod: live.billingPeriod,
       isFeatured: live.isFeatured,
-      isActive: live.status === 'active',
+      isActive: live.isActive,
       isLimited: live.isLimited,
       isClosed: live.isClosed,
       maxSpots: live.maxSpots,
