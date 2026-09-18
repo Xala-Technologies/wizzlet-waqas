@@ -6,12 +6,11 @@ import { toast } from 'sonner';
 import { convex } from '@/integrations/convex/client';
 import { api } from '@convex/_generated/api';
 import type { Id } from '@convex/_generated/dataModel';
+import { publicEnv } from '@/config/publicEnv';
 
-export const PAYMENTS_MODE =
-  import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY ? ('stripe' as const) : ('sandbox' as const);
+export const PAYMENTS_MODE = publicEnv.stripeMode;
 
-export const SANDBOX_CHECKOUT_ALLOWED =
-  import.meta.env.DEV || import.meta.env.VITE_ALLOW_SANDBOX_CHECKOUT === 'true';
+export const SANDBOX_CHECKOUT_ALLOWED = publicEnv.sandboxCheckoutAllowed;
 
 function assertSandboxAllowed(): boolean {
   if (SANDBOX_CHECKOUT_ALLOWED) return true;

@@ -3,6 +3,9 @@
   "private": true,
   "version": "0.0.0",
   "type": "module",
+  "engines": {
+    "node": ">=20"
+  },
   "scripts": {
     "dev": "vite",
     "build": "vite build",
@@ -14,7 +17,10 @@
     "convex:dev": "convex dev",
     "convex:deploy": "convex deploy",
     "test:e2e": "playwright test -c playwright.qa.config.ts",
-    "test:e2e:ui": "playwright test -c playwright.qa.config.ts --ui"
+    "test:e2e:ui": "playwright test -c playwright.qa.config.ts --ui",
+    "env:validate": "tsx scripts/env-validate.ts",
+    "release:manifest": "tsx scripts/release-manifest.ts",
+    "release:verify-build": "tsx scripts/release-verify-build.ts"
   },
   "dependencies": {
     "@auth/core": "^0.41.1",
