@@ -40,9 +40,9 @@ type CardModel = {
   bannerTone?: string;
   bannerEmoji?: string;
   sports: string[];
-  winRate: number;
-  profit30dUnits: number;
-  followersLabel: string;
+  winRate: number | null;
+  profit30dUnits: number | null;
+  followersLabel: string | null;
   monthlyPriceCents: number;
   verified: boolean;
   postCount: number;
@@ -50,11 +50,6 @@ type CardModel = {
   createdAtMs: number;
   isDemo: boolean;
 };
-
-function formatFollowers(n: number): string {
-  if (n >= 1000) return `${(n / 1000).toFixed(n >= 10000 ? 0 : 1).replace(/\.0$/, '')}K`;
-  return String(n);
-}
 
 function inferSports(bio: string | null, username: string): string[] {
   const hay = `${bio ?? ''} ${username}`.toLowerCase();
@@ -99,10 +94,6 @@ const CustomerDiscover = () => {
       .map((c) => {
         const name = c.displayName?.trim() || c.username;
         const postCount = c.postCount ?? 0;
-        // Honest placeholders when live analytics aren't on the public list yet.
-        const winRate = 55 + (postCount % 20);
-        const profit = ((postCount % 15) - 3) * 0.7;
-        const followers = Math.max(120, postCount * 37);
         return {
           id: c._id,
           username: c.username,
@@ -111,9 +102,9 @@ const CustomerDiscover = () => {
           avatarUrl: c.avatarUrl ?? null,
           bannerUrl: c.bannerUrl ?? null,
           sports: inferSports(c.bio ?? null, c.username),
-          winRate,
-          profit30dUnits: Number(profit.toFixed(1)),
-          followersLabel: formatFollowers(followers),
+          winRate: null,
+          profit30dUnits: null,
+          followersLabel: null,
           monthlyPriceCents: c.monthlyPriceCents ?? 999,
           verified: c.verificationStatus === 'verified',
           postCount,
@@ -187,7 +178,7 @@ const CustomerDiscover = () => {
     return [...filtered].sort((a, b) => {
       if (sort === 'newest') return b.createdAtMs - a.createdAtMs;
       if (sort === 'price') return a.monthlyPriceCents - b.monthlyPriceCents;
-      return b.popularityRank - a.popularityRank || b.winRate - a.winRate;
+      return b.popularityRank - a.popularityRank || (b.winRate ?? 0) - (a.winRate ?? 0);
     });
   }, [filtered, sort]);
 

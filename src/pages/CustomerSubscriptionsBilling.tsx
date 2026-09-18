@@ -62,9 +62,9 @@ type CreatorCardModel = {
   avatarInitials?: string;
   avatarTone?: string;
   sports: string[];
-  winRate: number;
-  profit30dUnits: number;
-  followersLabel: string;
+  winRate: number | null;
+  profit30dUnits: number | null;
+  followersLabel: string | null;
   monthlyPriceCents: number;
   statusLabel: string;
   statusTone: 'ok' | 'warn' | 'danger' | 'muted';
@@ -86,11 +86,6 @@ function inferSports(bio: string | null, username: string): string[] {
     if (hay.includes(key.toLowerCase())) found.push(key);
   }
   return found.length > 0 ? found : ['Sports'];
-}
-
-function formatFollowers(n: number): string {
-  if (n >= 1000) return `${(n / 1000).toFixed(n >= 10000 ? 0 : 1).replace(/\.0$/, '')}K`;
-  return String(n);
 }
 
 function eventLabel(type: string): string {
@@ -129,7 +124,7 @@ const CustomerSubscriptionsBilling = () => {
   const now = Date.now();
 
   const liveCards: CreatorCardModel[] = useMemo(() => {
-    return (subsRaw ?? []).map((s, index) => {
+    return (subsRaw ?? []).map((s) => {
       const access = describeSubscriptionAccess(
         {
           status: s.status,
@@ -140,7 +135,6 @@ const CustomerSubscriptionsBilling = () => {
         now,
       );
       const name = s.creator.displayName?.trim() || s.creator.username;
-      const postProxy = (s.amountCents % 17) + index;
       return {
         id: s._id,
         creatorId: s.creator._id,
@@ -149,9 +143,9 @@ const CustomerSubscriptionsBilling = () => {
         bio: 'Subscribed creator on Prizelet.',
         avatarUrl: s.creator.avatarUrl ?? null,
         sports: inferSports(null, s.creator.username),
-        winRate: 55 + (postProxy % 18),
-        profit30dUnits: Number((((postProxy % 14) - 2) * 0.8).toFixed(1)),
-        followersLabel: formatFollowers(Math.max(180, postProxy * 41 + 200)),
+        winRate: null,
+        profit30dUnits: null,
+        followersLabel: null,
         monthlyPriceCents: s.amountCents || s.creator.monthlyPriceCents || 999,
         statusLabel: access.badge,
         statusTone: access.tone,

@@ -15,9 +15,9 @@ export type MemberDiscoverCreatorCardProps = {
   bannerTone?: string;
   bannerEmoji?: string;
   sports: string[];
-  winRate: number;
-  profit30dUnits: number;
-  followersLabel: string;
+  winRate: number | null;
+  profit30dUnits: number | null;
+  followersLabel: string | null;
   monthlyPriceCents: number;
   verified?: boolean;
   className?: string;
@@ -50,8 +50,11 @@ export function MemberDiscoverCreatorCard({
       .slice(0, 2)
       .toUpperCase();
   const price = `$${(monthlyPriceCents / 100).toFixed(monthlyPriceCents % 100 === 0 ? 0 : 2)}/month`;
-  const profitPositive = profit30dUnits >= 0;
-  const profitLabel = `${profitPositive ? '+' : ''}${profit30dUnits.toFixed(1)}u`;
+  const profitPositive = (profit30dUnits ?? 0) >= 0;
+  const profitLabel =
+    profit30dUnits == null
+      ? '—'
+      : `${profitPositive ? '+' : ''}${profit30dUnits.toFixed(1)}u`;
 
   return (
     <li className={cn('list-none h-full', className)}>
@@ -115,14 +118,20 @@ export function MemberDiscoverCreatorCard({
 
           <div className="mt-4 grid grid-cols-3 gap-2 border-t border-slate-100 pt-3">
             <div>
-              <p className="text-sm font-extrabold tabular-nums text-slate-900">{winRate}%</p>
+              <p className="text-sm font-extrabold tabular-nums text-slate-900">
+                {winRate == null ? '—' : `${winRate}%`}
+              </p>
               <p className="text-[11px] font-medium text-slate-400">Win Rate</p>
             </div>
             <div>
               <p
                 className={cn(
                   'text-sm font-extrabold tabular-nums',
-                  profitPositive ? 'text-emerald-600' : 'text-rose-600',
+                  profit30dUnits == null
+                    ? 'text-slate-900'
+                    : profitPositive
+                      ? 'text-emerald-600'
+                      : 'text-rose-600',
                 )}
               >
                 {profitLabel}
@@ -131,7 +140,7 @@ export function MemberDiscoverCreatorCard({
             </div>
             <div>
               <p className="text-sm font-extrabold tabular-nums text-slate-900">
-                {followersLabel}
+                {followersLabel ?? '—'}
               </p>
               <p className="text-[11px] font-medium text-slate-400">Followers</p>
             </div>

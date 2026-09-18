@@ -18,9 +18,9 @@ export type MemberMyCreatorRowProps = {
   avatarInitials?: string;
   avatarTone?: string;
   sports: string[];
-  winRate: number;
-  profit30dUnits: number;
-  followersLabel: string;
+  winRate: number | null;
+  profit30dUnits: number | null;
+  followersLabel: string | null;
   monthlyPriceCents: number;
   statusLabel: string;
   statusTone?: 'ok' | 'warn' | 'danger' | 'muted';
@@ -70,8 +70,11 @@ export function MemberMyCreatorRow({
       .join('')
       .slice(0, 2)
       .toUpperCase();
-  const profitPositive = profit30dUnits >= 0;
-  const profitLabel = `${profitPositive ? '+' : ''}${profit30dUnits.toFixed(1)}u`;
+  const profitPositive = (profit30dUnits ?? 0) >= 0;
+  const profitLabel =
+    profit30dUnits == null
+      ? '—'
+      : `${profitPositive ? '+' : ''}${profit30dUnits.toFixed(1)}u`;
   const statusClass =
     statusTone === 'ok'
       ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
@@ -133,14 +136,20 @@ export function MemberMyCreatorRow({
 
             <div className="mt-3 grid max-w-md grid-cols-3 gap-3 border-t border-slate-100 pt-3 sm:max-w-sm">
               <div>
-                <p className="text-sm font-extrabold tabular-nums text-slate-900">{winRate}%</p>
+                <p className="text-sm font-extrabold tabular-nums text-slate-900">
+                  {winRate == null ? '—' : `${winRate}%`}
+                </p>
                 <p className="text-[11px] font-medium text-slate-400">Win Rate</p>
               </div>
               <div>
                 <p
                   className={cn(
                     'text-sm font-extrabold tabular-nums',
-                    profitPositive ? 'text-emerald-600' : 'text-rose-600',
+                    profit30dUnits == null
+                      ? 'text-slate-900'
+                      : profitPositive
+                        ? 'text-emerald-600'
+                        : 'text-rose-600',
                   )}
                 >
                   {profitLabel}
@@ -149,7 +158,7 @@ export function MemberMyCreatorRow({
               </div>
               <div>
                 <p className="text-sm font-extrabold tabular-nums text-slate-900">
-                  {followersLabel}
+                  {followersLabel ?? '—'}
                 </p>
                 <p className="text-[11px] font-medium text-slate-400">Followers</p>
               </div>

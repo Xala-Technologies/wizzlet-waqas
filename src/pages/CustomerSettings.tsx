@@ -228,6 +228,11 @@ const CustomerSettings = () => {
   };
 
   const changePassword = async () => {
+    if (useDemo) {
+      toast.message('Sample preview — password changes need a live account.');
+      setPasswordDialogOpen(false);
+      return;
+    }
     if (savingPassword || !hasPasswordAccount) return;
     if (!currentPassword) {
       toast.error('Enter your current password');

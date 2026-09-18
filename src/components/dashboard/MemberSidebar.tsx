@@ -105,13 +105,11 @@ function NavItemLink({
 export function MemberSidebar({ demo = false, mobile = false }: { demo?: boolean; mobile?: boolean } = {}) {
   const { signOut, user } = useAuth();
   const demoStore = useDemoMemberStoreOptional();
-  const feedRaw = useQuery(api.posts.queries.memberFeed, !demo && user ? {} : 'skip');
   const liveDmUnread = useQuery(
     api.messaging.mutations.unreadCountSubscriber,
     !demo && user ? {} : 'skip',
   );
-  const autoDemoBadge = !demo && feedRaw !== undefined && feedRaw.length === 0;
-  const dmUnread = demo || autoDemoBadge ? Math.max(liveDmUnread ?? 0, 2) : (liveDmUnread ?? 0);
+  const dmUnread = demo ? 2 : (liveDmUnread ?? 0);
   const location = useLocation();
   const navigate = useNavigate();
   const pathname = location.pathname;
