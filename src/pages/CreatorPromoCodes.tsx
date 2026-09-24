@@ -1,11 +1,16 @@
-import { useMemo, useState, type ReactNode } from 'react';
+import { useMemo, useState } from 'react';
+import { cn } from '@/lib/utils';
 import { Link, useSearchParams } from 'react-router-dom';
 import { useMutation, useQuery } from 'convex/react';
 import { format } from 'date-fns';
 import {
+  Calendar,
   Check,
   ChevronLeft,
   ChevronRight,
+  Copy,
+  DollarSign,
+  Gift,
   Loader2,
   MoreVertical,
   Percent,
@@ -27,6 +32,7 @@ import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Switch } from '@/components/ui/switch';
 import {
   Select,
   SelectContent,
@@ -78,7 +84,6 @@ import {
   type DemoPromoStatus,
 } from '@/lib/creatorPromoCodesDemo';
 import { kpiIconTone, resultPillTone } from '@/lib/kpiIconTones';
-import { cn } from '@/lib/utils';
 
 const PAGE_SIZE = 10;
 
@@ -126,16 +131,20 @@ const CreatorPromoCodes = () => {
   const [productFilter, setProductFilter] = useState('all');
   const [tablePage, setTablePage] = useState(0);
   const [createOpen, setCreateOpen] = useState(false);
-  const [code, setCode] = useState('');
-  const [discount, setDiscount] = useState('15');
+  const [code, setCode] = useState('WELCOME10');
+  const [discountType, setDiscountType] = useState<'percentage' | 'fixed'>('percentage');
+  const [discount, setDiscount] = useState('10');
+  const [appliesTo, setAppliesTo] = useState('all');
   const [duration, setDuration] = useState<PromoDiscountDuration>('once');
-  const [maxUses, setMaxUses] = useState('');
+  const [maxUses, setMaxUses] = useState('100');
+  const [expiresDate, setExpiresDate] = useState('2025-03-31');
+  const [promoActive, setPromoActive] = useState(true);
   const [saving, setSaving] = useState(false);
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [deleting, setDeleting] = useState(false);
 
   const loading = creatorLoading || promos === undefined;
-  const promoRows = promos ?? [];
+  const promoRows = useMemo(() => promos ?? [], [promos]);
 
   const useDemo = shouldUseCreatorPromoCodesDemo({
     promoCount: promoRows.length,
@@ -221,17 +230,48 @@ const CreatorPromoCodes = () => {
   const deleteTarget = rows.find((r) => r.id === deleteId);
 
   const reviewCode = code.trim().toUpperCase() || 'CODE';
-  const reviewDiscount = Number(discount);
-  const reviewBits = [
-    Number.isInteger(reviewDiscount) && reviewDiscount >= 1 && reviewDiscount <= 100
-      ? `${reviewDiscount}%`
-      : null,
-    duration === 'forever' ? 'Forever' : 'Once',
-    maxUses.trim() ? `max ${maxUses.trim()}` : 'unlimited',
-  ].filter(Boolean);
+  const reviewDiscountNum = Number(discount);
+  const reviewDiscountLabel =
+    discountType === 'percentage'
+      ? Number.isFinite(reviewDiscountNum)
+        ? `${reviewDiscountNum}%`
+        : '—'
+      : Number.isFinite(reviewDiscountNum)
+        ? `$${reviewDiscountNum.toFixed(2)}`
+        : '—';
+  const appliesToLabel =
+    appliesTo === 'all'
+      ? 'All products'
+      : appliesTo === 'subscriptions'
+        ? 'Subscriptions'
+        : 'One-time products';
+  const expiresLabel = expiresDate.trim()
+    ? format(new Date(`${expiresDate}T12:00:00`), 'MMM d, yyyy')
+    : 'No expiration';
+  const usageLimitLabel = maxUses.trim()
+    ? `${maxUses.trim()} uses`
+    : 'Unlimited';
+
+  const openCreateModal = () => {
+    setCode('WELCOME10');
+    setDiscountType('percentage');
+    setDiscount('10');
+    setAppliesTo('all');
+    setDuration('once');
+    setMaxUses('100');
+    setExpiresDate('2025-03-31');
+    setPromoActive(true);
+    setCreateOpen(true);
+  };
 
   const handleCreate = async () => {
     if (!creator || saving) return;
+    if (discountType === 'fixed') {
+      toast.message('Fixed amount promos', {
+        description: 'Fixed-amount discounts are coming soon. Use percentage for now.',
+      });
+      return;
+    }
     if (useDemo) {
       toast.message('Sample preview — code not created', {
         description: 'Create real promo codes when you leave demo mode (?demo=0).',
@@ -254,6 +294,13 @@ const CreatorPromoCodes = () => {
       toast.error('Max uses must be a positive number');
       return;
     }
+    const expiresAt = expiresDate.trim()
+      ? Date.parse(`${expiresDate}T23:59:59.000Z`)
+      : undefined;
+    if (expiresDate.trim() && Number.isNaN(expiresAt)) {
+      toast.error('Enter a valid expiration date');
+      return;
+    }
     setSaving(true);
     try {
       await upsertPromo({
@@ -261,12 +308,10 @@ const CreatorPromoCodes = () => {
         discountPercent: d,
         discountDuration: duration,
         maxUses: max,
-        isActive: true,
+        expiresAt,
+        isActive: promoActive,
       });
       toast.success(`${clean} created`);
-      setCode('');
-      setMaxUses('');
-      setDuration('once');
       setCreateOpen(false);
     } catch (e) {
       const msg = e instanceof Error ? e.message : 'Failed to create code';
@@ -360,17 +405,17 @@ const CreatorPromoCodes = () => {
     <DashboardLayout type="creator">
       <header className="mb-4 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div className="min-w-0">
-          <h1 className="text-heading font-bold tracking-tight text-foreground md:text-heading-lg">
+          <h1 className="text-2xl font-extrabold tracking-tight text-foreground sm:text-3xl">
             Promo Codes
           </h1>
-          <p className="mt-1.5 text-support text-muted-foreground">
+          <p className="mt-1.5 text-sm font-medium text-muted-foreground sm:text-base">
             Create discount codes to boost conversions and run targeted campaigns.
           </p>
         </div>
         <Button
           type="button"
           className="min-h-11 shrink-0 rounded-xl"
-          onClick={() => setCreateOpen(true)}
+          onClick={openCreateModal}
         >
           <Plus className="mr-1.5 h-3.5 w-3.5" /> Create Promo Code
         </Button>
@@ -401,6 +446,8 @@ const CreatorPromoCodes = () => {
               iconClassName: kpiIconTone.violet,
               trendLabel:
                 metrics.activeCodesDelta != null ? `↑ ${metrics.activeCodesDelta}%` : undefined,
+              trendCaption:
+                metrics.activeCodesDelta != null ? 'vs. previous month' : undefined,
               trendPositive: true,
             },
             {
@@ -410,6 +457,8 @@ const CreatorPromoCodes = () => {
               iconClassName: kpiIconTone.sky,
               trendLabel:
                 metrics.totalUsesDelta != null ? `↑ ${metrics.totalUsesDelta}%` : undefined,
+              trendCaption:
+                metrics.totalUsesDelta != null ? 'vs. previous month' : undefined,
               trendPositive: true,
             },
             {
@@ -422,6 +471,8 @@ const CreatorPromoCodes = () => {
               iconClassName: kpiIconTone.emerald,
               trendLabel:
                 metrics.revenueDelta != null ? `↑ ${metrics.revenueDelta}%` : undefined,
+              trendCaption:
+                metrics.revenueDelta != null ? 'vs. previous month' : undefined,
               trendPositive: true,
             },
             {
@@ -434,6 +485,8 @@ const CreatorPromoCodes = () => {
               iconClassName: kpiIconTone.amber,
               trendLabel:
                 metrics.conversionDelta != null ? `↑ ${metrics.conversionDelta}%` : undefined,
+              trendCaption:
+                metrics.conversionDelta != null ? 'vs. previous month' : undefined,
               trendPositive: true,
             },
           ]}
@@ -510,7 +563,7 @@ const CreatorPromoCodes = () => {
                 <Button
                   type="button"
                   className="mt-4 min-h-11 rounded-xl"
-                  onClick={() => setCreateOpen(true)}
+                  onClick={openCreateModal}
                 >
                   <Plus className="mr-1.5 h-3.5 w-3.5" /> Create Promo Code
                 </Button>
@@ -585,6 +638,16 @@ const CreatorPromoCodes = () => {
                               </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end">
+                              <DropdownMenuItem
+                                onClick={() => {
+                                  void navigator.clipboard?.writeText(row.code).then(
+                                    () => toast.success(`Copied ${row.code}`),
+                                    () => toast.message(row.code),
+                                  );
+                                }}
+                              >
+                                <Copy className="mr-2 h-4 w-4" /> Copy code
+                              </DropdownMenuItem>
                               {row.status !== 'expired' ? (
                                 <DropdownMenuItem onClick={() => void handleToggle(row)}>
                                   {row.isActive || row.status === 'active' ? 'Pause' : 'Enable'}
@@ -649,7 +712,7 @@ const CreatorPromoCodes = () => {
             <Button
               type="button"
               className="mt-4 min-h-11 w-full rounded-xl"
-              onClick={() => setCreateOpen(true)}
+              onClick={openCreateModal}
             >
               <Plus className="mr-1.5 h-3.5 w-3.5" /> Create Promo Code
             </Button>
@@ -705,104 +768,308 @@ const CreatorPromoCodes = () => {
       </div>
 
       <Dialog open={createOpen} onOpenChange={setCreateOpen}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle>Create promo code</DialogTitle>
-            <DialogDescription>
-              Percent off for the first month only, or forever on every renewal.
+        <DialogContent className="flex max-h-[min(92vh,900px)] flex-col gap-0 overflow-hidden p-0 sm:max-w-4xl">
+          <DialogHeader className="shrink-0 space-y-1.5 border-b border-border px-6 pb-4 pt-6 pr-12 text-left">
+            <DialogTitle className="text-xl font-extrabold tracking-tight text-foreground sm:text-2xl">
+              Create a Promo Code
+            </DialogTitle>
+            <DialogDescription className="text-sm text-muted-foreground">
+              Set up a discount code to attract new subscribers and boost your sales.
             </DialogDescription>
           </DialogHeader>
-          <div className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="promo-codes-code">Code</Label>
-              <Input
-                id="promo-codes-code"
-                className="h-11 min-h-11 font-mono uppercase"
-                value={code}
-                onChange={(e) => setCode(e.target.value)}
-                placeholder="SUMMER_SALE"
-                maxLength={32}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="promo-codes-discount">Discount % (1–100)</Label>
-              <Input
-                id="promo-codes-discount"
-                className="h-11 min-h-11"
-                type="number"
-                min={1}
-                max={100}
-                step={1}
-                value={discount}
-                onChange={(e) => setDiscount(e.target.value)}
-              />
-            </div>
-            <fieldset className="space-y-2">
-              <Legend className="text-support font-medium text-muted-foreground">
-                Discount duration
-              </Legend>
-              <label className="flex min-h-11 cursor-pointer items-start gap-2.5 rounded-xl border border-border p-3 has-[:checked]:border-primary/50 has-[:checked]:bg-primary/5">
-                <input
-                  type="radio"
-                  name="promo-codes-duration"
-                  className="mt-1"
-                  checked={duration === 'once'}
-                  onChange={() => setDuration('once')}
+
+          <div className="min-h-0 flex-1 overflow-y-auto">
+            <div className="grid gap-6 px-6 py-5 lg:grid-cols-5">
+            <div className="space-y-5 lg:col-span-3">
+              <div className="space-y-2">
+                <Label htmlFor="promo-codes-code" className="text-sm font-semibold text-foreground">
+                  Promo Code
+                </Label>
+                <Input
+                  id="promo-codes-code"
+                  className="h-11 min-h-11 font-mono uppercase"
+                  value={code}
+                  onChange={(e) => setCode(e.target.value)}
+                  placeholder="WELCOME10"
+                  maxLength={32}
                 />
-                <span>
-                  <span className="block text-ui font-medium text-foreground">Once</span>
-                  <span className="text-support text-muted-foreground">First month only</span>
-                </span>
-              </label>
-              <label className="flex min-h-11 cursor-pointer items-start gap-2.5 rounded-xl border border-border p-3 has-[:checked]:border-primary/50 has-[:checked]:bg-primary/5">
-                <input
-                  type="radio"
-                  name="promo-codes-duration"
-                  className="mt-1"
-                  checked={duration === 'forever'}
-                  onChange={() => setDuration('forever')}
+                <p className="text-xs text-muted-foreground">
+                  Choose a unique code (e.g. WELCOME10).
+                </p>
+              </div>
+
+              <fieldset className="space-y-2">
+                <legend className="text-sm font-semibold text-foreground">Discount Type</legend>
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <button
+                    type="button"
+                    onClick={() => setDiscountType('percentage')}
+                    className={cn(
+                      'flex min-h-[4.5rem] items-start gap-3 rounded-xl border p-3.5 text-left transition-colors',
+                      discountType === 'percentage'
+                        ? 'border-primary bg-primary/5 ring-1 ring-primary/30'
+                        : 'border-border bg-card hover:bg-muted/40',
+                    )}
+                  >
+                    <span
+                      className={cn(
+                        'mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded-full border-2',
+                        discountType === 'percentage'
+                          ? 'border-primary bg-primary'
+                          : 'border-muted-foreground/40',
+                      )}
+                      aria-hidden
+                    >
+                      {discountType === 'percentage' ? (
+                        <span className="h-1.5 w-1.5 rounded-full bg-primary-foreground" />
+                      ) : null}
+                    </span>
+                    <span className="min-w-0">
+                      <span className="flex items-center gap-1.5 text-sm font-bold text-foreground">
+                        <Percent className="h-3.5 w-3.5 text-primary" aria-hidden />
+                        Percentage
+                      </span>
+                      <span className="mt-0.5 block text-xs text-muted-foreground">
+                        Give a percentage discount
+                      </span>
+                    </span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setDiscountType('fixed')}
+                    className={cn(
+                      'flex min-h-[4.5rem] items-start gap-3 rounded-xl border p-3.5 text-left transition-colors',
+                      discountType === 'fixed'
+                        ? 'border-primary bg-primary/5 ring-1 ring-primary/30'
+                        : 'border-border bg-card hover:bg-muted/40',
+                    )}
+                  >
+                    <span
+                      className={cn(
+                        'mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded-full border-2',
+                        discountType === 'fixed'
+                          ? 'border-primary bg-primary'
+                          : 'border-muted-foreground/40',
+                      )}
+                      aria-hidden
+                    >
+                      {discountType === 'fixed' ? (
+                        <span className="h-1.5 w-1.5 rounded-full bg-primary-foreground" />
+                      ) : null}
+                    </span>
+                    <span className="min-w-0">
+                      <span className="flex items-center gap-1.5 text-sm font-bold text-foreground">
+                        <DollarSign className="h-3.5 w-3.5 text-muted-foreground" aria-hidden />
+                        Fixed Amount
+                      </span>
+                      <span className="mt-0.5 block text-xs text-muted-foreground">
+                        Give a fixed amount discount
+                      </span>
+                    </span>
+                  </button>
+                </div>
+              </fieldset>
+
+              <div className="space-y-2">
+                <Label
+                  htmlFor="promo-codes-discount"
+                  className="text-sm font-semibold text-foreground"
+                >
+                  Discount Value
+                </Label>
+                <div className="relative">
+                  <Input
+                    id="promo-codes-discount"
+                    className="h-11 min-h-11 pr-12"
+                    type="number"
+                    min={1}
+                    max={discountType === 'percentage' ? 100 : undefined}
+                    step={1}
+                    value={discount}
+                    onChange={(e) => setDiscount(e.target.value)}
+                  />
+                  <span className="pointer-events-none absolute inset-y-0 right-0 flex w-11 items-center justify-center rounded-r-md border-l border-border bg-muted/50 text-sm font-semibold text-muted-foreground">
+                    {discountType === 'percentage' ? '%' : '$'}
+                  </span>
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  {discountType === 'percentage'
+                    ? `Subscribers will get ${Number.isFinite(reviewDiscountNum) ? reviewDiscountNum : '—'}% off.`
+                    : `Subscribers will get $${Number.isFinite(reviewDiscountNum) ? reviewDiscountNum.toFixed(2) : '—'} off.`}
+                </p>
+              </div>
+
+              <div className="space-y-2">
+                <Label className="text-sm font-semibold text-foreground">Applies To</Label>
+                <Select value={appliesTo} onValueChange={setAppliesTo}>
+                  <SelectTrigger className="h-11 min-h-11">
+                    <SelectValue placeholder="All products" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All products</SelectItem>
+                    <SelectItem value="subscriptions">Subscriptions</SelectItem>
+                    <SelectItem value="one-time">One-time products</SelectItem>
+                  </SelectContent>
+                </Select>
+                <p className="text-xs text-muted-foreground">
+                  Choose which products this discount applies to.
+                </p>
+              </div>
+
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div className="space-y-2">
+                  <Label
+                    htmlFor="promo-codes-max"
+                    className="text-sm font-semibold text-foreground"
+                  >
+                    Usage Limit <span className="font-normal text-muted-foreground">(optional)</span>
+                  </Label>
+                  <Input
+                    id="promo-codes-max"
+                    className="h-11 min-h-11"
+                    type="number"
+                    value={maxUses}
+                    onChange={(e) => setMaxUses(e.target.value)}
+                    placeholder="Unlimited"
+                    min={1}
+                  />
+                  <p className="text-xs text-muted-foreground">Leave empty for unlimited uses.</p>
+                </div>
+                <div className="space-y-2">
+                  <Label
+                    htmlFor="promo-codes-expires"
+                    className="text-sm font-semibold text-foreground"
+                  >
+                    Expiration Date{' '}
+                    <span className="font-normal text-muted-foreground">(optional)</span>
+                  </Label>
+                  <div className="relative">
+                    <Calendar
+                      className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground"
+                      aria-hidden
+                    />
+                    <Input
+                      id="promo-codes-expires"
+                      className="h-11 min-h-11 pl-9"
+                      type="date"
+                      value={expiresDate}
+                      onChange={(e) => setExpiresDate(e.target.value)}
+                    />
+                  </div>
+                  <p className="text-xs text-muted-foreground">Leave empty for no expiration.</p>
+                </div>
+              </div>
+
+              <div className="flex items-start gap-3 rounded-xl border border-border bg-card px-4 py-3.5">
+                <Switch
+                  id="promo-codes-active"
+                  checked={promoActive}
+                  onCheckedChange={setPromoActive}
+                  className="mt-0.5"
                 />
-                <span>
-                  <span className="block text-ui font-medium text-foreground">Forever</span>
-                  <span className="text-support text-muted-foreground">Every renewal</span>
-                </span>
-              </label>
-            </fieldset>
-            <div className="space-y-2">
-              <Label htmlFor="promo-codes-max">Max redemptions (optional)</Label>
-              <Input
-                id="promo-codes-max"
-                className="h-11 min-h-11"
-                type="number"
-                value={maxUses}
-                onChange={(e) => setMaxUses(e.target.value)}
-                placeholder="Unlimited"
-                min={1}
-              />
+                <div className="min-w-0">
+                  <Label
+                    htmlFor="promo-codes-active"
+                    className="cursor-pointer text-sm font-semibold text-foreground"
+                  >
+                    Active
+                  </Label>
+                  <p className="text-xs text-muted-foreground">
+                    Promo code will be active immediately.
+                  </p>
+                </div>
+              </div>
             </div>
-            <div className="rounded-xl border border-border bg-muted/30 px-3 py-2.5">
-              <p className="text-caption uppercase tracking-wider text-muted-foreground">Preview</p>
-              <p className="truncate font-mono text-ui text-foreground">{reviewCode}</p>
-              <p className="truncate text-support text-muted-foreground">{reviewBits.join(' · ')}</p>
+
+            <aside className="flex flex-col rounded-2xl border border-violet-500/20 bg-violet-500/5 p-5 lg:col-span-2">
+              <h3 className="text-base font-extrabold tracking-tight text-foreground">
+                Preview &amp; Summary
+              </h3>
+              <p className="mt-1 text-xs text-muted-foreground">
+                Here&apos;s how your promo code will look.
+              </p>
+
+              <div className="mt-4 flex items-center justify-between gap-2 rounded-xl border border-dashed border-violet-500/40 bg-background/80 px-4 py-3">
+                <span className="truncate font-mono text-lg font-extrabold tracking-wide text-primary">
+                  {reviewCode}
+                </span>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  className="h-9 w-9 shrink-0 text-primary hover:bg-violet-500/10 hover:text-primary"
+                  aria-label="Copy promo code"
+                  onClick={() => {
+                    void navigator.clipboard.writeText(reviewCode).then(
+                      () => toast.success('Copied'),
+                      () => toast.error('Could not copy'),
+                    );
+                  }}
+                >
+                  <Copy className="h-4 w-4" />
+                </Button>
+              </div>
+
+              <dl className="mt-5 space-y-3 text-sm">
+                <div className="flex items-center justify-between gap-3">
+                  <dt className="text-muted-foreground">Discount</dt>
+                  <dd className="font-bold text-foreground">{reviewDiscountLabel}</dd>
+                </div>
+                <div className="flex items-center justify-between gap-3">
+                  <dt className="text-muted-foreground">Applies to</dt>
+                  <dd className="text-right font-bold text-foreground">{appliesToLabel}</dd>
+                </div>
+                <div className="flex items-center justify-between gap-3">
+                  <dt className="text-muted-foreground">Usage limit</dt>
+                  <dd className="font-bold text-foreground">{usageLimitLabel}</dd>
+                </div>
+                <div className="flex items-center justify-between gap-3">
+                  <dt className="text-muted-foreground">Expires</dt>
+                  <dd className="font-bold text-foreground">{expiresLabel}</dd>
+                </div>
+                <div className="flex items-center justify-between gap-3">
+                  <dt className="text-muted-foreground">Status</dt>
+                  <dd className="flex items-center gap-1.5 font-bold text-foreground">
+                    <span
+                      className={cn(
+                        'h-2 w-2 rounded-full',
+                        promoActive ? 'bg-emerald-500' : 'bg-muted-foreground',
+                      )}
+                      aria-hidden
+                    />
+                    {promoActive ? 'Active' : 'Inactive'}
+                  </dd>
+                </div>
+              </dl>
+
+              <div className="mt-6 flex gap-2.5 rounded-xl border border-violet-500/25 bg-violet-500/10 px-3.5 py-3">
+                <Gift className="mt-0.5 h-4 w-4 shrink-0 text-violet-700 dark:text-violet-400" aria-hidden />
+                <p className="text-xs leading-relaxed text-violet-950 dark:text-violet-100">
+                  Tip: Share your promo code on social media, in your posts, or via email to bring
+                  in more subscribers!
+                </p>
+              </div>
+            </aside>
             </div>
           </div>
-          <DialogFooter>
+
+          <DialogFooter className="shrink-0 gap-2 border-t border-border px-6 py-4 sm:space-x-0">
             <Button
               type="button"
               variant="outline"
-              className="min-h-11"
+              className="min-h-11 rounded-xl"
               onClick={() => setCreateOpen(false)}
             >
               Cancel
             </Button>
             <Button
               type="button"
-              className="min-h-11"
+              className="min-h-11 rounded-xl"
               disabled={saving || !code.trim()}
               onClick={() => void handleCreate()}
             >
               {saving ? <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" /> : null}
-              Create code
+              Create Promo Code
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -841,9 +1108,5 @@ const CreatorPromoCodes = () => {
     </DashboardLayout>
   );
 };
-
-function Legend({ className, children }: { className?: string; children: ReactNode }) {
-  return <legend className={className}>{children}</legend>;
-}
 
 export default CreatorPromoCodes;

@@ -2,8 +2,9 @@
  * Sample Earnings overview data aligned to the Prizelet Earnings mockup.
  */
 
+const MOCK_NOW = Date.parse('2025-01-31T12:00:00.000Z');
 const day = 86_400_000;
-const daysAgo = (n: number) => Date.now() - n * day;
+const daysAgo = (n: number) => MOCK_NOW - n * day;
 
 export const CREATOR_EARNINGS_DEMO_METRICS = {
   totalRevenueCents: 1_248_000,
@@ -43,7 +44,7 @@ export const CREATOR_EARNINGS_DEMO_BY_TYPE = [
   { name: 'Subscriptions', value: 52, color: 'hsl(239 84% 55%)' },
   { name: 'One-time purchases', value: 28, color: 'hsl(217 91% 60%)' },
   { name: 'Tips', value: 12, color: 'hsl(160 84% 39%)' },
-  { name: 'Other', value: 8, color: 'hsl(215 16% 55%)' },
+  { name: 'Other', value: 8, color: 'hsl(270 50% 70%)' },
 ];
 
 export type DemoEarningTxn = {
@@ -60,72 +61,72 @@ export type DemoEarningTxn = {
 export const CREATOR_EARNINGS_DEMO_TRANSACTIONS: DemoEarningTxn[] = [
   {
     id: 'demo-txn-1',
-    dateMs: daysAgo(1),
+    dateMs: Date.parse('2025-01-30T18:00:00.000Z'),
     type: 'Subscription',
     source: 'Monthly Plan',
     amountCents: 2_999,
-    feeCents: 450,
-    netCents: 2_549,
+    feeCents: 240,
+    netCents: 2_759,
     status: 'completed',
   },
   {
     id: 'demo-txn-2',
-    dateMs: daysAgo(2),
+    dateMs: Date.parse('2025-01-29T16:00:00.000Z'),
     type: 'One-time purchase',
     source: 'NBA Betting Guide',
-    amountCents: 4_900,
-    feeCents: 735,
-    netCents: 4_165,
+    amountCents: 4_999,
+    feeCents: 400,
+    netCents: 4_599,
     status: 'completed',
   },
   {
     id: 'demo-txn-3',
-    dateMs: daysAgo(3),
+    dateMs: Date.parse('2025-01-28T14:00:00.000Z'),
     type: 'Subscription',
     source: 'VIP Access',
     amountCents: 9_999,
-    feeCents: 1_500,
-    netCents: 8_499,
+    feeCents: 800,
+    netCents: 9_199,
     status: 'completed',
   },
   {
     id: 'demo-txn-4',
-    dateMs: daysAgo(4),
+    dateMs: Date.parse('2025-01-27T12:00:00.000Z'),
     type: 'Tip',
-    source: '@jordanb',
+    source: 'From @jordanb',
     amountCents: 2_000,
-    feeCents: 200,
-    netCents: 1_800,
+    feeCents: 160,
+    netCents: 1_840,
     status: 'completed',
   },
   {
     id: 'demo-txn-5',
-    dateMs: daysAgo(5),
+    dateMs: Date.parse('2025-01-26T11:00:00.000Z'),
     type: 'Subscription',
     source: 'Premium Picks',
     amountCents: 2_999,
-    feeCents: 450,
-    netCents: 2_549,
+    feeCents: 240,
+    netCents: 2_759,
     status: 'completed',
   },
   {
     id: 'demo-txn-6',
-    dateMs: daysAgo(6),
+    dateMs: Date.parse('2025-01-25T10:00:00.000Z'),
     type: 'One-time purchase',
     source: 'Parlay Pack',
     amountCents: 1_999,
-    feeCents: 300,
-    netCents: 1_699,
+    feeCents: 160,
+    netCents: 1_839,
     status: 'completed',
   },
 ];
 
 export const CREATOR_EARNINGS_TIPS = [
-  'Post premium content regularly to keep renewals high.',
-  'Offer limited-time promotions to convert free fans.',
-  'Create bundled products for higher average order value.',
-  'Ask engaged subscribers for tips after big wins.',
-  'Share your profile link after every social post.',
+  'Post premium content regularly',
+  'Engage with your top subscribers',
+  'Offer limited-time promotions',
+  'Create bundled products',
+  'Share your profile link after every post',
 ] as const;
 
 /** Backward-compatible aliases used by older imports */

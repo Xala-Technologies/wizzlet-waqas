@@ -10,6 +10,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
+import { Checkbox } from '@/components/ui/checkbox';
 import {
   Select,
   SelectContent,
@@ -24,11 +25,10 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import {
-  AlertTriangle,
-  Banknote,
+  BarChart3,
   Bell,
-  Camera,
   Check,
+  ChevronDown,
   ChevronRight,
   CircleHelp,
   CreditCard,
@@ -36,24 +36,36 @@ import {
   Download,
   ExternalLink,
   Eye,
-  ImageIcon,
+  FileText,
+  Globe,
   Info,
-  KeyRound,
+  LayoutGrid,
+  LifeBuoy,
+  Lightbulb,
   Link as LinkIcon,
   Loader2,
   Lock,
+  Mail,
+  MessageSquare,
   Monitor,
   MoreVertical,
+  Music2,
   RefreshCw,
+  Send,
   Settings,
+  Share2,
   Shield,
   Smartphone,
   Sparkles,
+  Target,
   Trash2,
   Upload,
   User,
-  Users,
+  UserCog,
   Wallet,
+  Webhook,
+  Youtube,
+  Zap,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import {
@@ -63,7 +75,8 @@ import {
   CREATOR_BRANDING_DEMO,
   CREATOR_BRANDING_INFO,
   CREATOR_BRANDING_TIPS,
-  CREATOR_INTEGRATIONS_TIPS,
+  CREATOR_INTEGRATIONS_CATALOG,
+  CREATOR_INTEGRATIONS_GROWTH,
   CREATOR_NOTIFICATIONS_TIPS,
   CREATOR_SECURITY_TIPS,
   CREATOR_SETTINGS_DEMO,
@@ -75,6 +88,7 @@ import {
   type TeamRole,
 } from '@/lib/creatorSettingsDemo';
 import { cn } from '@/lib/utils';
+import type { LucideIcon } from 'lucide-react';
 
 const MAX_IMAGE_BYTES = 5 * 1024 * 1024;
 const BIO_MAX = 500;
@@ -132,10 +146,28 @@ function teamRoleLabel(role: TeamRole): string {
 
 function teamRoleIcon(role: TeamRole) {
   if (role === 'owner') return Crown;
-  if (role === 'admin') return Users;
+  if (role === 'admin') return UserCog;
   if (role === 'member') return User;
   return Eye;
 }
+
+const INTEGRATION_ICONS: Record<string, LucideIcon> = {
+  discord: MessageSquare,
+  telegram: Send,
+  stripe: CreditCard,
+  paypal: Wallet,
+  ga: BarChart3,
+  meta: Target,
+  zapier: Zap,
+  youtube: Youtube,
+  tiktok: Music2,
+  x: Share2,
+  email: Mail,
+  webhooks: Webhook,
+};
+
+const softPrimaryBtn =
+  'min-h-11 rounded-xl border-0 bg-violet-500/10 text-violet-800 hover:bg-violet-500/15 dark:text-violet-200';
 
 const CreatorSettings = () => {
   const [searchParams] = useSearchParams();
@@ -185,17 +217,28 @@ const CreatorSettings = () => {
   const [draftByDefault, setDraftByDefault] = useState(false);
   const [commentsEnabled, setCommentsEnabled] = useState(true);
 
+  const [notifEmailEnabled, setNotifEmailEnabled] = useState(true);
   const [notifNewSubs, setNotifNewSubs] = useState(true);
-  const [notifPayments, setNotifPayments] = useState(true);
-  const [notifPicks, setNotifPicks] = useState(true);
-  const [notifMarketing, setNotifMarketing] = useState(false);
-  const [notifEmailDigest, setNotifEmailDigest] = useState(true);
+  const [notifNewSales, setNotifNewSales] = useState(true);
+  const [notifPayouts, setNotifPayouts] = useState(true);
   const [notifMessages, setNotifMessages] = useState(true);
+  const [notifProductActivity, setNotifProductActivity] = useState(true);
+  const [notifMarketing, setNotifMarketing] = useState(true);
+  const [notifSecurity, setNotifSecurity] = useState(true);
+  const [notifInApp, setNotifInApp] = useState(true);
+  const [notifPush, setNotifPush] = useState(true);
+  const [notifFrequency, setNotifFrequency] = useState('realtime');
 
   const [teamMembers, setTeamMembers] = useState<DemoTeamMember[]>(CREATOR_TEAM_DEMO_MEMBERS);
   const [inviteEmail, setInviteEmail] = useState('');
   const [inviteRole, setInviteRole] = useState<TeamRole>('member');
   const [sendingInvite, setSendingInvite] = useState(false);
+  const [discordExpanded, setDiscordExpanded] = useState(false);
+  const [savingDiscord, setSavingDiscord] = useState(false);
+  const [twoFactorEnabled, setTwoFactorEnabled] = useState(true);
+  const [loginAlertsEnabled, setLoginAlertsEnabled] = useState(true);
+  const [sessionsOpen, setSessionsOpen] = useState(false);
+  const [publicProfileEnabled, setPublicProfileEnabled] = useState(true);
 
   const [billingName, setBillingName] = useState('');
   const [billingEmail, setBillingEmail] = useState('');
@@ -495,8 +538,7 @@ const CreatorSettings = () => {
   const busy =
     saving || uploadingAvatar || uploadingBanner || uploadingLogo || uploadingFavicon;
   const usernameLocked = Boolean(creator.username?.trim());
-  const showSave =
-    tab === 'general' || tab === 'branding' || tab === 'integrations' || tab === 'notifications';
+  const showSave = tab === 'general' || tab === 'branding';
   const stripeConnected = Boolean(creator.stripeAccountId?.trim());
   const liveEmail = me?.email || email;
 
@@ -888,7 +930,7 @@ const CreatorSettings = () => {
                       <input
                         ref={logoRef}
                         type="file"
-                        accept="image/jpeg,image/png,image/gif,image/webp"
+                        accept="image/jpeg,image/png,image/gif,image/webp,image/svg+xml"
                         className="hidden"
                         onChange={(e) => void handleLogoUpload(e)}
                         disabled={uploadingLogo || saving}
@@ -916,8 +958,8 @@ const CreatorSettings = () => {
                       >
                         Remove
                       </Button>
-                      <p className="text-[11px] text-muted-foreground">
-                        Square PNG or JPG. Recommended 512×512px.
+                      <p className="text-[11px] leading-snug text-muted-foreground">
+                        Recommended: 512 × 512 px PNG, JPG or SVG. Max size 2MB.
                       </p>
                     </div>
                   </div>
@@ -946,7 +988,7 @@ const CreatorSettings = () => {
                       <input
                         ref={faviconRef}
                         type="file"
-                        accept="image/jpeg,image/png,image/gif,image/webp,image/x-icon"
+                        accept="image/jpeg,image/png,image/gif,image/webp,image/x-icon,.ico"
                         className="hidden"
                         onChange={(e) => void handleFaviconUpload(e)}
                         disabled={uploadingFavicon || saving}
@@ -974,8 +1016,8 @@ const CreatorSettings = () => {
                       >
                         Remove
                       </Button>
-                      <p className="text-[11px] text-muted-foreground">
-                        Square icon. Recommended 32×32px.
+                      <p className="text-[11px] leading-snug text-muted-foreground">
+                        Recommended: 32 × 32 px PNG or ICO. Max size 1MB.
                       </p>
                     </div>
                   </div>
@@ -1024,13 +1066,21 @@ const CreatorSettings = () => {
                 ).map((swatch) => (
                   <div key={swatch.id} className="space-y-2">
                     <Label htmlFor={`color-${swatch.id}`}>{swatch.label}</Label>
-                    <div className="flex items-center gap-2 rounded-xl border border-border bg-background px-2 py-1.5">
+                    <label
+                      htmlFor={`color-${swatch.id}`}
+                      className="flex cursor-pointer items-center gap-2 rounded-xl border border-border bg-background px-2.5 py-2"
+                    >
+                      <span
+                        className="h-7 w-7 shrink-0 rounded-md border border-border"
+                        style={{ backgroundColor: swatch.value }}
+                        aria-hidden
+                      />
                       <input
                         id={`color-${swatch.id}`}
                         type="color"
                         value={swatch.value}
                         onChange={(e) => swatch.onChange(e.target.value.toUpperCase())}
-                        className="h-9 w-10 cursor-pointer rounded-md border-0 bg-transparent p-0"
+                        className="sr-only"
                         aria-label={swatch.label}
                       />
                       <Input
@@ -1039,16 +1089,17 @@ const CreatorSettings = () => {
                           const next = e.target.value.toUpperCase();
                           if (/^#[0-9A-F]{0,6}$/i.test(next)) swatch.onChange(next);
                         }}
-                        className="h-9 min-h-9 border-0 bg-transparent px-1 font-mono text-sm shadow-none focus-visible:ring-0"
+                        className="h-8 min-h-8 flex-1 border-0 bg-transparent px-1 font-mono text-sm shadow-none focus-visible:ring-0"
                         maxLength={7}
                       />
-                    </div>
+                      <ChevronDown className="h-4 w-4 text-muted-foreground" aria-hidden />
+                    </label>
                   </div>
                 ))}
               </div>
 
               <div className="space-y-2">
-                <Label>Font (optional)</Label>
+                <Label>Font</Label>
                 <Select value={brandFont} onValueChange={setBrandFont}>
                   <SelectTrigger className="min-h-11 rounded-xl">
                     <SelectValue />
@@ -1060,43 +1111,9 @@ const CreatorSettings = () => {
                     <SelectItem value="mono">JetBrains Mono</SelectItem>
                   </SelectContent>
                 </Select>
-              </div>
-
-              <div className="space-y-2 border-t border-border pt-5">
-                <Label>Page banner</Label>
-                <button
-                  type="button"
-                  onClick={() => bannerRef.current?.click()}
-                  disabled={uploadingBanner || saving}
-                  className="relative flex h-36 w-full items-center justify-center overflow-hidden rounded-xl border border-dashed border-border bg-muted/30 transition-colors hover:border-primary/40 disabled:opacity-60"
-                >
-                  {bannerUrl ? (
-                    <img src={bannerUrl} alt="" className="h-full w-full object-cover" />
-                  ) : (
-                    <div className="px-4 text-center">
-                      {uploadingBanner ? (
-                        <Loader2 className="mx-auto mb-2 h-6 w-6 animate-spin text-muted-foreground" />
-                      ) : (
-                        <ImageIcon className="mx-auto mb-2 h-6 w-6 text-muted-foreground" />
-                      )}
-                      <p className="text-sm text-muted-foreground">
-                        {uploadingBanner ? 'Uploading…' : 'Upload banner (1200×400 recommended)'}
-                      </p>
-                    </div>
-                  )}
-                  {bannerUrl && !uploadingBanner ? (
-                    <div className="absolute inset-0 flex items-center justify-center bg-background/60 opacity-0 transition-opacity hover:opacity-100">
-                      <Camera className="h-5 w-5 text-foreground" />
-                    </div>
-                  ) : null}
-                </button>
-                <input
-                  ref={bannerRef}
-                  type="file"
-                  accept="image/jpeg,image/png,image/webp,image/gif"
-                  className="hidden"
-                  onChange={(e) => void handleBannerUpload(e)}
-                />
+                <p className="text-[11px] text-muted-foreground">
+                  This font will be used across your page and emails.
+                </p>
               </div>
             </section>
 
@@ -1150,13 +1167,16 @@ const CreatorSettings = () => {
                       >
                         Subscribe
                       </Button>
-                      <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                      <div className="flex items-center justify-center gap-3 pt-1 text-muted-foreground">
+                        <Share2 className="h-4 w-4" aria-hidden />
                         <span
                           className="inline-block h-2.5 w-2.5 rounded-full"
                           style={{ backgroundColor: accentColor }}
                           aria-hidden
                         />
-                        Accent · {accentColor}
+                        <span className="text-[10px] font-semibold uppercase tracking-wide">
+                          Share
+                        </span>
                       </div>
                     </div>
                   </div>
@@ -1165,7 +1185,7 @@ const CreatorSettings = () => {
 
               <section className="rounded-2xl border border-violet-500/20 bg-violet-500/5 p-5 shadow-[var(--shadow-card)]">
                 <div className="mb-3 flex items-center gap-2">
-                  <Sparkles className="h-4 w-4 text-violet-600 dark:text-violet-400" aria-hidden />
+                  <Lightbulb className="h-4 w-4 text-violet-600 dark:text-violet-400" aria-hidden />
                   <h2 className="text-base font-extrabold tracking-tight text-foreground">
                     Branding Tips
                   </h2>
@@ -1193,6 +1213,9 @@ const CreatorSettings = () => {
               <h2 className="text-base font-extrabold tracking-tight text-foreground">
                 Team Members
               </h2>
+              <p className="mt-1 text-sm text-muted-foreground">
+                Invite team members and manage their access to your Prizelet account.
+              </p>
             </div>
             <div className="overflow-x-auto">
               <table className="w-full min-w-[40rem] text-left text-sm">
@@ -1202,7 +1225,7 @@ const CreatorSettings = () => {
                     <th className="px-3 py-3">Role</th>
                     <th className="px-3 py-3">Status</th>
                     <th className="px-3 py-3">Joined</th>
-                    <th className="w-12 px-5 py-3 text-right"> </th>
+                    <th className="w-20 px-5 py-3 text-right">Actions</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -1235,11 +1258,11 @@ const CreatorSettings = () => {
                               {teamInitials(member.name)}
                             </span>
                             <span className="min-w-0">
-                              <span className="block truncate font-bold text-foreground">
-                                {member.name}
+                              <span className="flex flex-wrap items-center gap-1.5 font-bold text-foreground">
+                                <span className="truncate">{member.name}</span>
                                 {member.isYou ? (
-                                  <span className="ml-1.5 text-xs font-semibold text-muted-foreground">
-                                    (You)
+                                  <span className="inline-flex rounded-full border border-violet-500/25 bg-violet-500/10 px-2 py-0.5 text-[10px] font-bold text-violet-700 dark:text-violet-400">
+                                    You
                                   </span>
                                 ) : null}
                               </span>
@@ -1350,9 +1373,14 @@ const CreatorSettings = () => {
 
           <aside className="flex flex-col gap-4 xl:col-span-4">
             <section className={cn(cardClass, 'space-y-4')}>
-              <h2 className="text-base font-extrabold tracking-tight text-foreground">
-                Invite Team Member
-              </h2>
+              <div>
+                <h2 className="text-base font-extrabold tracking-tight text-foreground">
+                  Invite Team Member
+                </h2>
+                <p className="mt-1 text-sm text-muted-foreground">
+                  Add a new team member to your account.
+                </p>
+              </div>
               <div className="space-y-2">
                 <Label htmlFor="invite-email">Email address</Label>
                 <Input
@@ -1432,9 +1460,14 @@ const CreatorSettings = () => {
             </section>
 
             <section className={cn(cardClass, 'space-y-3')}>
-              <h2 className="text-base font-extrabold tracking-tight text-foreground">
-                Role Permissions
-              </h2>
+              <div>
+                <h2 className="text-base font-extrabold tracking-tight text-foreground">
+                  Role Permissions
+                </h2>
+                <p className="mt-1 text-sm text-muted-foreground">
+                  Manage what team members can access.
+                </p>
+              </div>
               <ul className="space-y-3">
                 {CREATOR_TEAM_ROLE_PERMISSIONS.map((item) => {
                   const Icon = teamRoleIcon(item.role);
@@ -1465,12 +1498,12 @@ const CreatorSettings = () => {
                 </h2>
               </div>
               <p className="text-sm text-muted-foreground">
-                Learn how team roles work and what each permission covers.
+                Visit the Help Center for more information about team roles and permissions.
               </p>
               <Button
                 type="button"
-                variant="outline"
-                className="min-h-11 w-full rounded-xl gap-2"
+                variant="secondary"
+                className={cn(softPrimaryBtn, 'w-full gap-2')}
                 onClick={() =>
                   toast.message('Help Center', {
                     description: 'Team role docs will open here soon.',
@@ -1498,57 +1531,70 @@ const CreatorSettings = () => {
                 </p>
               </div>
               <div className="rounded-xl border border-border bg-muted/20 p-4 sm:p-5">
-                <div className="flex flex-wrap items-start justify-between gap-3">
-                  <div>
-                    <div className="flex flex-wrap items-center gap-2">
-                      <p className="text-lg font-extrabold tracking-tight text-foreground">
-                        {CREATOR_BILLING_DEMO.planName}
-                      </p>
-                      <span className="inline-flex rounded-full border border-emerald-500/25 bg-emerald-500/10 px-2.5 py-0.5 text-xs font-bold text-emerald-700 dark:text-emerald-400">
-                        Active
+                <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-start gap-3">
+                      <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-violet-500/15 text-violet-700 dark:text-violet-400">
+                        <Crown className="h-5 w-5" aria-hidden />
                       </span>
+                      <div className="min-w-0">
+                        <p className="text-lg font-extrabold tracking-tight text-foreground">
+                          {CREATOR_BILLING_DEMO.planName}
+                        </p>
+                        <p className="mt-0.5 text-sm text-muted-foreground">
+                          {CREATOR_BILLING_DEMO.planDescription}
+                        </p>
+                        <div className="mt-2 flex flex-wrap items-center gap-2">
+                          <span className="text-base font-extrabold tabular-nums text-foreground">
+                            {CREATOR_BILLING_DEMO.planPriceLabel}
+                          </span>
+                          <span className="inline-flex rounded-full border border-emerald-500/25 bg-emerald-500/10 px-2.5 py-0.5 text-xs font-bold text-emerald-700 dark:text-emerald-400">
+                            Active
+                          </span>
+                        </div>
+                      </div>
                     </div>
-                    <p className="mt-1 text-sm font-semibold text-muted-foreground">
-                      {CREATOR_BILLING_DEMO.planPriceLabel}
+                    <ul className="mt-4 space-y-2">
+                      {CREATOR_BILLING_DEMO.features.map((feature) => (
+                        <li
+                          key={feature}
+                          className="flex items-center gap-2 text-sm text-muted-foreground"
+                        >
+                          <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-emerald-500/15 text-emerald-700 dark:text-emerald-400">
+                            <Check className="h-3 w-3" aria-hidden />
+                          </span>
+                          {feature}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                  <div className="w-full shrink-0 rounded-xl border border-border bg-background/80 p-4 lg:w-56">
+                    <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                      Next billing date
+                    </p>
+                    <p className="mt-1 text-base font-extrabold text-foreground">
+                      {CREATOR_BILLING_DEMO.nextBillingDate}
+                    </p>
+                    <p className="mt-2 text-sm text-muted-foreground">
+                      Your card will be charged{' '}
+                      <span className="font-semibold text-foreground">
+                        {CREATOR_BILLING_DEMO.planAmount}
+                      </span>
                     </p>
                   </div>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    className="min-h-11 shrink-0 rounded-xl"
-                    onClick={() =>
-                      toast.message('Change plan', {
-                        description: 'Plan changes are not wired up in this preview.',
-                      })
-                    }
-                  >
-                    Change Plan
-                  </Button>
                 </div>
-                <ul className="mt-4 grid gap-2 sm:grid-cols-2">
-                  {CREATOR_BILLING_DEMO.features.map((feature) => (
-                    <li
-                      key={feature}
-                      className="flex items-center gap-2 text-sm text-muted-foreground"
-                    >
-                      <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-emerald-500/15 text-emerald-700 dark:text-emerald-400">
-                        <Check className="h-3 w-3" aria-hidden />
-                      </span>
-                      {feature}
-                    </li>
-                  ))}
-                </ul>
-                <p className="mt-4 rounded-lg border border-border bg-background/70 px-3 py-2.5 text-xs text-muted-foreground">
-                  Next billing date{' '}
-                  <span className="font-semibold text-foreground">
-                    {CREATOR_BILLING_DEMO.nextBillingDate}
-                  </span>
-                  . Your card will be charged{' '}
-                  <span className="font-semibold text-foreground">
-                    {CREATOR_BILLING_DEMO.planAmount}
-                  </span>
-                  .
-                </p>
+                <Button
+                  type="button"
+                  variant="secondary"
+                  className={cn(softPrimaryBtn, 'mt-4')}
+                  onClick={() =>
+                    toast.message('Change plan', {
+                      description: 'Plan changes are not wired up in this preview.',
+                    })
+                  }
+                >
+                  Change Plan
+                </Button>
               </div>
             </section>
 
@@ -1561,8 +1607,8 @@ const CreatorSettings = () => {
                   Update your billing details and address.
                 </p>
               </div>
-              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                <div className="space-y-2">
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-6">
+                <div className="space-y-2 sm:col-span-1 lg:col-span-3">
                   <Label htmlFor="billing-name">Name</Label>
                   <Input
                     id="billing-name"
@@ -1571,7 +1617,7 @@ const CreatorSettings = () => {
                     className="min-h-11 rounded-xl"
                   />
                 </div>
-                <div className="space-y-2">
+                <div className="space-y-2 sm:col-span-1 lg:col-span-3">
                   <Label htmlFor="billing-email">Email</Label>
                   <Input
                     id="billing-email"
@@ -1581,7 +1627,7 @@ const CreatorSettings = () => {
                     className="min-h-11 rounded-xl"
                   />
                 </div>
-                <div className="space-y-2 sm:col-span-2">
+                <div className="space-y-2 sm:col-span-2 lg:col-span-6">
                   <Label htmlFor="billing-address">Billing address</Label>
                   <Input
                     id="billing-address"
@@ -1591,8 +1637,8 @@ const CreatorSettings = () => {
                     placeholder="Street address"
                   />
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="billing-city">City</Label>
+                <div className="space-y-2 lg:col-span-2">
+                  <Label htmlFor="billing-city">City / Town</Label>
                   <Input
                     id="billing-city"
                     value={billingCity}
@@ -1600,7 +1646,7 @@ const CreatorSettings = () => {
                     className="min-h-11 rounded-xl"
                   />
                 </div>
-                <div className="space-y-2">
+                <div className="space-y-2 lg:col-span-2">
                   <Label>Country</Label>
                   <Select value={billingCountry} onValueChange={setBillingCountry}>
                     <SelectTrigger className="min-h-11 rounded-xl">
@@ -1615,8 +1661,8 @@ const CreatorSettings = () => {
                     </SelectContent>
                   </Select>
                 </div>
-                <div className="space-y-2 sm:col-span-2 sm:max-w-xs">
-                  <Label htmlFor="billing-zip">Zip / Postal code</Label>
+                <div className="space-y-2 lg:col-span-2">
+                  <Label htmlFor="billing-zip">Zip code</Label>
                   <Input
                     id="billing-zip"
                     value={billingZip}
@@ -1625,25 +1671,29 @@ const CreatorSettings = () => {
                   />
                 </div>
               </div>
-              <Button
-                type="button"
-                className="min-h-11 rounded-xl"
-                onClick={() =>
-                  toast.message(
-                    useDemo ? 'Sample preview — billing not saved' : 'Billing details saved locally',
-                    {
-                      description: useDemo
-                        ? 'Add ?demo=0 once live billing is connected.'
-                        : 'Server-side billing address sync is coming soon.',
-                    },
-                  )
-                }
-              >
-                Save Changes
-              </Button>
+              <div className="flex justify-end">
+                <Button
+                  type="button"
+                  className="min-h-11 rounded-xl"
+                  onClick={() =>
+                    toast.message(
+                      useDemo
+                        ? 'Sample preview — billing not saved'
+                        : 'Billing details saved locally',
+                      {
+                        description: useDemo
+                          ? 'Add ?demo=0 once live billing is connected.'
+                          : 'Server-side billing address sync is coming soon.',
+                      },
+                    )
+                  }
+                >
+                  Save Changes
+                </Button>
+              </div>
             </section>
 
-            <section className="space-y-3 rounded-2xl border border-destructive/30 bg-card p-5 shadow-[var(--shadow-card)] sm:p-6">
+            <section className="space-y-3 rounded-2xl border border-border bg-card p-5 shadow-[var(--shadow-card)] sm:p-6">
               <h2 className="text-base font-extrabold tracking-tight text-foreground">
                 Cancel Subscription
               </h2>
@@ -1667,26 +1717,62 @@ const CreatorSettings = () => {
 
           <aside className="flex flex-col gap-4 xl:col-span-4">
             <section className={cn(cardClass, 'space-y-4')}>
-              <h2 className="text-base font-extrabold tracking-tight text-foreground">
-                Payment Method
-              </h2>
+              <div>
+                <h2 className="text-base font-extrabold tracking-tight text-foreground">
+                  Payment Method
+                </h2>
+                <p className="mt-1 text-sm text-muted-foreground">Update your payment method.</p>
+              </div>
               <div className="flex items-center gap-3 rounded-xl border border-border bg-muted/20 px-4 py-3.5">
                 <span className="flex h-10 w-14 items-center justify-center rounded-md border border-border bg-background text-[10px] font-extrabold tracking-wide text-sky-700 dark:text-sky-400">
                   VISA
                 </span>
                 <div className="min-w-0 flex-1">
                   <p className="text-sm font-bold text-foreground">
-                    {CREATOR_BILLING_DEMO.paymentBrand} •••• {CREATOR_BILLING_DEMO.paymentLast4}
+                    •••• {CREATOR_BILLING_DEMO.paymentLast4}
                   </p>
                   <p className="text-xs text-muted-foreground">
                     Expires {CREATOR_BILLING_DEMO.paymentExpiry}
                   </p>
                 </div>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      className="h-8 w-8 shrink-0 rounded-lg"
+                      aria-label="Payment method actions"
+                    >
+                      <MoreVertical className="h-4 w-4" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    <DropdownMenuItem
+                      onClick={() =>
+                        toast.message('Update payment method', {
+                          description: 'Card updates are not wired up in this preview.',
+                        })
+                      }
+                    >
+                      Update card
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      onClick={() =>
+                        toast.message('Remove card', {
+                          description: 'Card removal is not enabled in this preview.',
+                        })
+                      }
+                    >
+                      Remove card
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
               </div>
               <Button
                 type="button"
-                variant="outline"
-                className="min-h-11 w-full rounded-xl"
+                variant="secondary"
+                className={cn(softPrimaryBtn, 'w-full')}
                 onClick={() =>
                   toast.message('Update payment method', {
                     description: 'Card updates are not wired up in this preview.',
@@ -1698,9 +1784,14 @@ const CreatorSettings = () => {
             </section>
 
             <section className={cn(cardClass, 'space-y-3')}>
-              <h2 className="text-base font-extrabold tracking-tight text-foreground">
-                Billing History
-              </h2>
+              <div>
+                <h2 className="text-base font-extrabold tracking-tight text-foreground">
+                  Billing History
+                </h2>
+                <p className="mt-1 text-sm text-muted-foreground">
+                  View and download your past invoices.
+                </p>
+              </div>
               <ul className="divide-y divide-border rounded-xl border border-border">
                 {CREATOR_BILLING_HISTORY.map((invoice) => (
                   <li
@@ -1719,7 +1810,7 @@ const CreatorSettings = () => {
                         type="button"
                         variant="ghost"
                         size="icon"
-                        className="h-8 w-8 rounded-lg"
+                        className="h-8 w-8 rounded-lg text-primary"
                         aria-label={`Download invoice ${invoice.dateLabel}`}
                         onClick={() =>
                           toast.message(
@@ -1736,8 +1827,8 @@ const CreatorSettings = () => {
               </ul>
               <Button
                 type="button"
-                variant="outline"
-                className="min-h-11 w-full rounded-xl"
+                variant="secondary"
+                className={cn(softPrimaryBtn, 'w-full')}
                 onClick={() =>
                   toast.message('View all invoices', {
                     description: 'Full invoice history is coming soon.',
@@ -1748,20 +1839,21 @@ const CreatorSettings = () => {
               </Button>
             </section>
 
-            <section className={cn(cardClass, 'space-y-3')}>
+            <section className="space-y-3 rounded-2xl border border-violet-500/20 bg-violet-500/5 p-5 shadow-[var(--shadow-card)]">
               <div className="flex items-center gap-2">
-                <CircleHelp className="h-4 w-4 text-primary" aria-hidden />
+                <CircleHelp className="h-4 w-4 text-violet-600 dark:text-violet-400" aria-hidden />
                 <h2 className="text-base font-extrabold tracking-tight text-foreground">
                   Need Help?
                 </h2>
               </div>
               <p className="text-sm text-muted-foreground">
-                Questions about billing, invoices, or your plan? Visit the Help Center.
+                Questions about billing, invoices, or your plan? Visit the Help Center or contact
+                support.
               </p>
               <Button
                 type="button"
-                variant="outline"
-                className="min-h-11 w-full rounded-xl gap-2"
+                variant="secondary"
+                className={cn(softPrimaryBtn, 'w-full gap-2')}
                 onClick={() =>
                   toast.message('Help Center', {
                     description: 'Billing help articles will open here soon.',
@@ -1782,106 +1874,166 @@ const CreatorSettings = () => {
             <section className={cn(cardClass, 'space-y-5')}>
               <div>
                 <h2 className="text-base font-extrabold tracking-tight text-foreground">
-                  Connected apps
+                  Integrations
                 </h2>
                 <p className="mt-1 text-sm text-muted-foreground">
-                  Link tools that power subscriber access, login, and payouts.
+                  Connect Prizelet with your favorite tools and services to streamline your
+                  workflow.
                 </p>
               </div>
 
-              <div className="space-y-3">
-                <div className="rounded-xl border border-border bg-muted/20 p-4 sm:p-5">
-                  <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
-                    <div className="flex items-start gap-3">
-                      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-indigo-500/10 text-indigo-600 dark:text-indigo-400">
-                        <LinkIcon className="h-4 w-4" />
-                      </div>
-                      <div>
-                        <p className="text-sm font-bold text-foreground">Discord</p>
-                        <p className="text-xs text-muted-foreground">
-                          Auto-assign a role when someone subscribes.
-                        </p>
-                      </div>
-                    </div>
-                    <span
-                      className={cn(
-                        'inline-flex rounded-full border px-2.5 py-0.5 text-xs font-bold',
-                        discordServerId.trim() && discordRoleId.trim()
-                          ? 'border-emerald-500/25 bg-emerald-500/10 text-emerald-700 dark:text-emerald-400'
-                          : 'border-border bg-muted text-muted-foreground',
-                      )}
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                {CREATOR_INTEGRATIONS_CATALOG.map((item) => {
+                  const Icon = INTEGRATION_ICONS[item.id] ?? LinkIcon;
+                  const discordConnected = Boolean(
+                    discordServerId.trim() && discordRoleId.trim(),
+                  );
+                  const connected =
+                    item.id === 'stripe'
+                      ? stripeConnected || useDemo
+                      : item.id === 'discord'
+                        ? discordConnected
+                        : false;
+                  const actionLabel =
+                    item.id === 'stripe'
+                      ? connected
+                        ? 'Manage'
+                        : 'Connect'
+                      : item.id === 'discord'
+                        ? connected || discordExpanded
+                          ? 'Manage'
+                          : 'Connect'
+                        : 'Connect';
+
+                  return (
+                    <div
+                      key={item.id}
+                      className="rounded-xl border border-border bg-card p-4 shadow-sm"
                     >
-                      {discordServerId.trim() && discordRoleId.trim()
-                        ? 'Configured'
-                        : 'Not connected'}
-                    </span>
-                  </div>
-                  <div className="grid gap-4 sm:grid-cols-2">
-                    <div className="space-y-2">
-                      <Label htmlFor="discord-guild">Server (guild) ID</Label>
-                      <Input
-                        id="discord-guild"
-                        className="min-h-11 rounded-xl font-mono"
-                        value={discordServerId}
-                        onChange={(e) => setDiscordServerId(e.target.value)}
-                        placeholder="123456789012345678"
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="discord-role">Role ID</Label>
-                      <Input
-                        id="discord-role"
-                        className="min-h-11 rounded-xl font-mono"
-                        value={discordRoleId}
-                        onChange={(e) => setDiscordRoleId(e.target.value)}
-                        placeholder="123456789012345678"
-                      />
-                    </div>
-                  </div>
-                  <p className="mt-3 text-xs text-muted-foreground">
-                    Requires platform env{' '}
-                    <span className="font-mono">DISCORD_BOT_TOKEN</span> and Manage Roles. Clear
-                    both fields and save to disconnect.
-                  </p>
-                </div>
+                      <div className="flex items-start gap-3">
+                        <span
+                          className={cn(
+                            'flex h-10 w-10 shrink-0 items-center justify-center rounded-xl',
+                            item.tone,
+                          )}
+                        >
+                          <Icon className="h-4 w-4" aria-hidden />
+                        </span>
+                        <div className="min-w-0 flex-1">
+                          <p className="text-sm font-bold text-foreground">{item.name}</p>
+                          <p className="mt-0.5 text-xs text-muted-foreground">{item.description}</p>
+                          <p
+                            className={cn(
+                              'mt-2 flex items-center gap-1.5 text-xs font-semibold',
+                              connected
+                                ? 'text-emerald-600 dark:text-emerald-400'
+                                : 'text-muted-foreground',
+                            )}
+                          >
+                            <span
+                              className={cn(
+                                'h-1.5 w-1.5 rounded-full',
+                                connected ? 'bg-emerald-500' : 'bg-muted-foreground/50',
+                              )}
+                              aria-hidden
+                            />
+                            {connected ? 'Connected' : 'Not connected'}
+                          </p>
+                        </div>
+                        <div className="flex shrink-0 items-center gap-1">
+                          {item.id === 'stripe' ? (
+                            <Button asChild variant="secondary" className={cn(softPrimaryBtn, 'h-9 px-3 text-xs font-bold')}>
+                              <Link to="/creator/payouts">{actionLabel}</Link>
+                            </Button>
+                          ) : (
+                            <Button
+                              type="button"
+                              variant="secondary"
+                              className={cn(softPrimaryBtn, 'h-9 px-3 text-xs font-bold')}
+                              onClick={() => {
+                                if (item.id === 'discord') {
+                                  setDiscordExpanded((open) => !open);
+                                  return;
+                                }
+                                toast.message(`${item.name}`, {
+                                  description: useDemo
+                                    ? 'Sample preview — connection is display-only.'
+                                    : 'This integration is coming soon.',
+                                });
+                              }}
+                            >
+                              {actionLabel}
+                            </Button>
+                          )}
+                          <ChevronRight className="h-4 w-4 text-muted-foreground" aria-hidden />
+                        </div>
+                      </div>
 
-                <div className="flex flex-col gap-3 rounded-xl border border-border bg-muted/20 p-4 sm:flex-row sm:items-center sm:justify-between sm:p-5">
-                  <div className="flex items-start gap-3">
-                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-sky-500/10 text-sky-600 dark:text-sky-400">
-                      <RefreshCw className="h-4 w-4" />
+                      {item.id === 'discord' && discordExpanded ? (
+                        <div className="mt-4 space-y-3 border-t border-border pt-4">
+                          <div className="grid gap-3 sm:grid-cols-2">
+                            <div className="space-y-2">
+                              <Label htmlFor="discord-guild">Server (guild) ID</Label>
+                              <Input
+                                id="discord-guild"
+                                className="min-h-10 rounded-xl font-mono text-sm"
+                                value={discordServerId}
+                                onChange={(e) => setDiscordServerId(e.target.value)}
+                                placeholder="123456789012345678"
+                              />
+                            </div>
+                            <div className="space-y-2">
+                              <Label htmlFor="discord-role">Role ID</Label>
+                              <Input
+                                id="discord-role"
+                                className="min-h-10 rounded-xl font-mono text-sm"
+                                value={discordRoleId}
+                                onChange={(e) => setDiscordRoleId(e.target.value)}
+                                placeholder="123456789012345678"
+                              />
+                            </div>
+                          </div>
+                          <p className="text-[11px] text-muted-foreground">
+                            Requires platform env{' '}
+                            <span className="font-mono">DISCORD_BOT_TOKEN</span> and Manage Roles.
+                            Clear both fields and save to disconnect.
+                          </p>
+                          <Button
+                            type="button"
+                            className="min-h-10 rounded-xl"
+                            disabled={savingDiscord || saving}
+                            onClick={async () => {
+                              if (useDemo) {
+                                toast.message('Sample preview — Discord settings not saved');
+                                return;
+                              }
+                              if (!creator) return;
+                              setSavingDiscord(true);
+                              try {
+                                await updateSettings({
+                                  discordServerId: discordServerId.trim() || null,
+                                  discordRoleId: discordRoleId.trim() || null,
+                                });
+                                toast.success('Discord settings saved');
+                              } catch (err) {
+                                toast.error(
+                                  err instanceof Error ? err.message : 'Could not save Discord',
+                                );
+                              } finally {
+                                setSavingDiscord(false);
+                              }
+                            }}
+                          >
+                            {savingDiscord ? (
+                              <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />
+                            ) : null}
+                            Save Discord
+                          </Button>
+                        </div>
+                      ) : null}
                     </div>
-                    <div>
-                      <p className="text-sm font-bold text-foreground">X / Twitter</p>
-                      <p className="text-xs text-muted-foreground">
-                        Sign-in with X is available at login. No separate connect control here.
-                      </p>
-                    </div>
-                  </div>
-                  <span className="inline-flex shrink-0 rounded-full border border-border bg-muted px-2.5 py-0.5 text-xs font-bold text-muted-foreground">
-                    Via login
-                  </span>
-                </div>
-
-                <div className="flex flex-col gap-3 rounded-xl border border-border bg-muted/20 p-4 sm:flex-row sm:items-center sm:justify-between sm:p-5">
-                  <div className="flex items-start gap-3">
-                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-violet-500/10 text-violet-600 dark:text-violet-400">
-                      <Banknote className="h-4 w-4" />
-                    </div>
-                    <div>
-                      <p className="text-sm font-bold text-foreground">Stripe Connect</p>
-                      <p className="text-xs text-muted-foreground">
-                        {stripeConnected
-                          ? `Connected · ${creator.stripeAccountId}`
-                          : 'Connect on Payouts to receive withdrawals.'}
-                      </p>
-                    </div>
-                  </div>
-                  <Button asChild variant="outline" className="min-h-11 shrink-0 rounded-xl">
-                    <Link to="/creator/payouts">
-                      {stripeConnected ? 'Manage' : 'Connect'}
-                    </Link>
-                  </Button>
-                </div>
+                  );
+                })}
               </div>
             </section>
           </div>
@@ -1889,13 +2041,17 @@ const CreatorSettings = () => {
           <aside className="flex flex-col gap-4 xl:col-span-4">
             <section className="rounded-2xl border border-violet-500/20 bg-violet-500/5 p-5 shadow-[var(--shadow-card)]">
               <div className="mb-3 flex items-center gap-2">
-                <Sparkles className="h-4 w-4 text-violet-600 dark:text-violet-400" aria-hidden />
+                <LayoutGrid className="h-4 w-4 text-violet-600 dark:text-violet-400" aria-hidden />
                 <h2 className="text-base font-extrabold tracking-tight text-foreground">
-                  Integration tips
+                  Get More from Prizelet
                 </h2>
               </div>
+              <p className="mb-3 text-sm text-muted-foreground">
+                Integrate with your favorite tools to automate tasks, grow your audience, and save
+                time.
+              </p>
               <ul className="space-y-2.5">
-                {CREATOR_INTEGRATIONS_TIPS.map((tip) => (
+                {CREATOR_INTEGRATIONS_GROWTH.map((tip) => (
                   <li key={tip} className="flex items-start gap-2.5 text-sm text-muted-foreground">
                     <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-emerald-500/15 text-emerald-700 dark:text-emerald-400">
                       <Check className="h-3 w-3" aria-hidden />
@@ -1913,12 +2069,12 @@ const CreatorSettings = () => {
                 </h2>
               </div>
               <p className="text-sm text-muted-foreground">
-                Setup guides for Discord roles and Stripe Connect.
+                Visit our Help Center for step-by-step guides on setting up integrations.
               </p>
               <Button
                 type="button"
-                variant="outline"
-                className="min-h-11 w-full rounded-xl gap-2"
+                variant="secondary"
+                className={cn(softPrimaryBtn, 'w-full gap-2')}
                 onClick={() =>
                   toast.message('Help Center', {
                     description: 'Integration docs will open here soon.',
@@ -1936,124 +2092,190 @@ const CreatorSettings = () => {
       {tab === 'notifications' ? (
         <div className="grid grid-cols-1 gap-4 xl:grid-cols-12">
           <div className="flex flex-col gap-4 xl:col-span-8">
-            <section className={cn(cardClass, 'space-y-4')}>
+            <section className={cn(cardClass, 'space-y-6')}>
               <div>
                 <h2 className="text-base font-extrabold tracking-tight text-foreground">
-                  Activity alerts
+                  Notifications
                 </h2>
                 <p className="mt-1 text-sm text-muted-foreground">
-                  Choose which creator events send you a notification.
+                  Choose what you want to be notified about and how you want to receive
+                  notifications.
                 </p>
               </div>
-              {(
-                [
-                  {
-                    label: 'New subscribers',
-                    description: 'When someone subscribes to your channel',
-                    checked: notifNewSubs,
-                    onChange: setNotifNewSubs,
-                  },
-                  {
-                    label: 'Payments & payouts',
-                    description: 'Successful charges and payout status updates',
-                    checked: notifPayments,
-                    onChange: setNotifPayments,
-                  },
-                  {
-                    label: 'Direct messages',
-                    description: 'New subscriber messages in your inbox',
-                    checked: notifMessages,
-                    onChange: setNotifMessages,
-                  },
-                  {
-                    label: 'Pick reminders',
-                    description: 'Nudge when scheduled picks go live',
-                    checked: notifPicks,
-                    onChange: setNotifPicks,
-                  },
-                ] as const
-              ).map((row) => (
-                <div
-                  key={row.label}
-                  className="flex items-center justify-between gap-4 rounded-xl border border-border bg-muted/20 px-4 py-3.5"
-                >
-                  <div className="min-w-0">
-                    <p className="text-sm font-bold text-foreground">{row.label}</p>
-                    <p className="text-xs text-muted-foreground">{row.description}</p>
-                  </div>
-                  <Switch
-                    checked={row.checked}
-                    onCheckedChange={row.onChange}
-                    aria-label={row.label}
-                  />
-                </div>
-              ))}
-            </section>
 
-            <section className={cn(cardClass, 'space-y-4')}>
-              <div>
-                <h2 className="text-base font-extrabold tracking-tight text-foreground">
-                  Email & marketing
-                </h2>
-                <p className="mt-1 text-sm text-muted-foreground">
-                  Optional digests and product news from Prizelet.
-                </p>
-              </div>
-              {(
-                [
-                  {
-                    label: 'Weekly email digest',
-                    description: 'A summary of earnings, subscribers, and top posts',
-                    checked: notifEmailDigest,
-                    onChange: setNotifEmailDigest,
-                  },
-                  {
-                    label: 'Product updates',
-                    description: 'Occasional tips and Prizelet product news',
-                    checked: notifMarketing,
-                    onChange: setNotifMarketing,
-                  },
-                ] as const
-              ).map((row) => (
-                <div
-                  key={row.label}
-                  className="flex items-center justify-between gap-4 rounded-xl border border-border bg-muted/20 px-4 py-3.5"
-                >
+              <div className="space-y-4">
+                <div className="flex items-center justify-between gap-4">
                   <div className="min-w-0">
-                    <p className="text-sm font-bold text-foreground">{row.label}</p>
-                    <p className="text-xs text-muted-foreground">{row.description}</p>
+                    <p className="text-sm font-bold text-foreground">Email Notifications</p>
+                    <p className="text-xs text-muted-foreground">
+                      Receive updates in your email inbox.
+                    </p>
                   </div>
                   <Switch
-                    checked={row.checked}
-                    onCheckedChange={row.onChange}
-                    aria-label={row.label}
+                    checked={notifEmailEnabled}
+                    onCheckedChange={setNotifEmailEnabled}
+                    aria-label="Email Notifications"
                   />
                 </div>
-              ))}
+                <div
+                  className={cn(
+                    'space-y-3 rounded-xl border border-border bg-muted/20 p-4',
+                    !notifEmailEnabled && 'pointer-events-none opacity-50',
+                  )}
+                >
+                  {(
+                    [
+                      {
+                        id: 'subs',
+                        label: 'New subscribers',
+                        description: 'Get notified when someone subscribes to your content.',
+                        checked: notifNewSubs,
+                        onChange: setNotifNewSubs,
+                        locked: false,
+                      },
+                      {
+                        id: 'sales',
+                        label: 'New sales',
+                        description: 'Get notified when you make a sale.',
+                        checked: notifNewSales,
+                        onChange: setNotifNewSales,
+                        locked: false,
+                      },
+                      {
+                        id: 'payouts',
+                        label: 'Payout updates',
+                        description: 'Get notified about payouts and payment status.',
+                        checked: notifPayouts,
+                        onChange: setNotifPayouts,
+                        locked: false,
+                      },
+                      {
+                        id: 'messages',
+                        label: 'Messages',
+                        description: 'Get notified when you receive a new message.',
+                        checked: notifMessages,
+                        onChange: setNotifMessages,
+                        locked: false,
+                      },
+                      {
+                        id: 'products',
+                        label: 'Product activity',
+                        description: 'Get notified about activity on your products.',
+                        checked: notifProductActivity,
+                        onChange: setNotifProductActivity,
+                        locked: false,
+                      },
+                      {
+                        id: 'marketing',
+                        label: 'Marketing updates',
+                        description:
+                          'Get tips, feature updates, and marketing opportunities from Prizelet.',
+                        checked: notifMarketing,
+                        onChange: setNotifMarketing,
+                        locked: false,
+                      },
+                      {
+                        id: 'security',
+                        label: 'Security alerts',
+                        description: 'Get notified about important security events.',
+                        checked: notifSecurity,
+                        onChange: setNotifSecurity,
+                        locked: true,
+                      },
+                    ] as const
+                  ).map((row) => (
+                    <label
+                      key={row.id}
+                      htmlFor={`notif-${row.id}`}
+                      className="flex cursor-pointer items-start gap-3"
+                    >
+                      <Checkbox
+                        id={`notif-${row.id}`}
+                        checked={row.checked}
+                        disabled={row.locked}
+                        onCheckedChange={(v) => {
+                          if (row.locked) return;
+                          row.onChange(v === true);
+                        }}
+                        className="mt-0.5"
+                      />
+                      <span className="min-w-0">
+                        <span className="block text-sm font-semibold text-foreground">
+                          {row.label}
+                        </span>
+                        <span className="block text-xs text-muted-foreground">
+                          {row.description}
+                        </span>
+                      </span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+
+              <div className="flex items-center justify-between gap-4 border-t border-border pt-5">
+                <div className="min-w-0">
+                  <p className="text-sm font-bold text-foreground">In-app Notifications</p>
+                  <p className="text-xs text-muted-foreground">
+                    Receive notifications inside your Prizelet dashboard.
+                  </p>
+                </div>
+                <Switch
+                  checked={notifInApp}
+                  onCheckedChange={setNotifInApp}
+                  aria-label="In-app Notifications"
+                />
+              </div>
+
+              <div className="flex items-center justify-between gap-4 border-t border-border pt-5">
+                <div className="min-w-0">
+                  <p className="text-sm font-bold text-foreground">Push Notifications</p>
+                  <p className="text-xs text-muted-foreground">
+                    Get push notifications on your device (browser or mobile).
+                  </p>
+                </div>
+                <Switch
+                  checked={notifPush}
+                  onCheckedChange={setNotifPush}
+                  aria-label="Push Notifications"
+                />
+              </div>
+
+              <div className="space-y-2 border-t border-border pt-5">
+                <Label>Notification Frequency</Label>
+                <Select value={notifFrequency} onValueChange={setNotifFrequency}>
+                  <SelectTrigger className="min-h-11 max-w-md rounded-xl">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="realtime">Real-time (recommended)</SelectItem>
+                    <SelectItem value="hourly">Hourly digest</SelectItem>
+                    <SelectItem value="daily">Daily digest</SelectItem>
+                    <SelectItem value="weekly">Weekly digest</SelectItem>
+                  </SelectContent>
+                </Select>
+                <p className="text-xs text-muted-foreground">
+                  Choose how often you want to receive non-critical notifications.
+                </p>
+              </div>
+
+              <Button
+                type="button"
+                className="min-h-11 rounded-xl"
+                onClick={() => void handleSave()}
+                disabled={busy}
+              >
+                {saving ? <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" /> : null}
+                Save Changes
+              </Button>
             </section>
           </div>
 
           <aside className="flex flex-col gap-4 xl:col-span-4">
-            <section className={cn(cardClass, 'space-y-3')}>
-              <div className="flex items-center gap-2">
-                <Bell className="h-4 w-4 text-amber-600 dark:text-amber-400" aria-hidden />
-                <h2 className="text-base font-extrabold tracking-tight text-foreground">
-                  Delivery
-                </h2>
-              </div>
-              <p className="text-sm text-muted-foreground">
-                Preferences stay on this device until creator notification flags ship to the
-                server.
-              </p>
-              <div className="rounded-xl border border-border bg-muted/20 px-3.5 py-3 text-xs text-muted-foreground">
-                In-app · Email (when digest is on)
-              </div>
-            </section>
-            <section className="rounded-2xl border border-violet-500/20 bg-violet-500/5 p-5 shadow-[var(--shadow-card)]">
+            <section className="rounded-2xl border border-sky-500/20 bg-sky-500/5 p-5 shadow-[var(--shadow-card)]">
               <div className="mb-3 flex items-center gap-2">
-                <Sparkles className="h-4 w-4 text-violet-600 dark:text-violet-400" aria-hidden />
+                <Lightbulb className="h-4 w-4 text-sky-600 dark:text-sky-400" aria-hidden />
                 <h2 className="text-base font-extrabold tracking-tight text-foreground">
-                  Notification tips
+                  Notification Tips
                 </h2>
               </div>
               <ul className="space-y-2.5">
@@ -2067,6 +2289,30 @@ const CreatorSettings = () => {
                 ))}
               </ul>
             </section>
+            <section className={cn(cardClass, 'space-y-3')}>
+              <div className="flex items-center gap-2">
+                <CircleHelp className="h-4 w-4 text-primary" aria-hidden />
+                <h2 className="text-base font-extrabold tracking-tight text-foreground">
+                  Need Help?
+                </h2>
+              </div>
+              <p className="text-sm text-muted-foreground">
+                Visit the Help Center for more about notification channels and delivery.
+              </p>
+              <Button
+                type="button"
+                variant="secondary"
+                className={cn(softPrimaryBtn, 'w-full gap-2')}
+                onClick={() =>
+                  toast.message('Help Center', {
+                    description: 'Notification help articles will open here soon.',
+                  })
+                }
+              >
+                View Help Center
+                <ExternalLink className="h-3.5 w-3.5" aria-hidden />
+              </Button>
+            </section>
           </aside>
         </div>
       ) : null}
@@ -2077,123 +2323,263 @@ const CreatorSettings = () => {
             <section className={cn(cardClass, 'space-y-4')}>
               <div>
                 <h2 className="text-base font-extrabold tracking-tight text-foreground">
-                  Sign-in & authentication
+                  Security
                 </h2>
                 <p className="mt-1 text-sm text-muted-foreground">
-                  Protect your creator account and recovery options.
+                  Keep your account safe and secure.
                 </p>
               </div>
-              <div className="flex flex-col gap-3 rounded-xl border border-border bg-muted/20 p-4 sm:flex-row sm:items-center sm:justify-between">
+
+              <div className="divide-y divide-border rounded-xl border border-border">
+                <div className="flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between sm:p-5">
+                  <div className="flex items-start gap-3">
+                    <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-violet-500/10 text-violet-700 dark:text-violet-400">
+                      <Lock className="h-4 w-4" aria-hidden />
+                    </span>
+                    <div>
+                      <p className="text-sm font-bold text-foreground">Password</p>
+                      <p className="text-xs text-muted-foreground">
+                        Update your password regularly to keep your account secure.
+                      </p>
+                    </div>
+                  </div>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="min-h-10 shrink-0 rounded-xl"
+                    onClick={() =>
+                      quickAction(
+                        'Change Password',
+                        'Use your sign-in provider or account recovery email.',
+                      )
+                    }
+                  >
+                    Change Password
+                  </Button>
+                </div>
+
+                <div className="flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between sm:p-5">
+                  <div className="flex items-start gap-3">
+                    <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-violet-500/10 text-violet-700 dark:text-violet-400">
+                      <Shield className="h-4 w-4" aria-hidden />
+                    </span>
+                    <div>
+                      <div className="flex flex-wrap items-center gap-2">
+                        <p className="text-sm font-bold text-foreground">
+                          Two-Factor Authentication (2FA)
+                        </p>
+                        <span className="inline-flex rounded-full border border-emerald-500/25 bg-emerald-500/10 px-2 py-0.5 text-[10px] font-bold text-emerald-700 dark:text-emerald-400">
+                          Recommended
+                        </span>
+                      </div>
+                      <p className="text-xs text-muted-foreground">
+                        Add an extra layer of security to your account.
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Switch
+                      checked={twoFactorEnabled}
+                      onCheckedChange={(v) => {
+                        setTwoFactorEnabled(v);
+                        toast.message(v ? '2FA enabled (preview)' : '2FA disabled (preview)', {
+                          description: 'Two-factor setup is not fully wired yet.',
+                        });
+                      }}
+                      aria-label="Two-factor authentication"
+                    />
+                    <Button
+                      type="button"
+                      variant="outline"
+                      className="min-h-10 shrink-0 rounded-xl"
+                      onClick={() =>
+                        quickAction('Manage 2FA', 'Two-factor authentication setup is coming soon.')
+                      }
+                    >
+                      Manage
+                    </Button>
+                  </div>
+                </div>
+
+                <div className="flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between sm:p-5">
+                  <div className="flex items-start gap-3">
+                    <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-violet-500/10 text-violet-700 dark:text-violet-400">
+                      <Monitor className="h-4 w-4" aria-hidden />
+                    </span>
+                    <div>
+                      <p className="text-sm font-bold text-foreground">Active Sessions</p>
+                      <p className="text-xs text-muted-foreground">
+                        Manage your active sessions across different devices.
+                      </p>
+                    </div>
+                  </div>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="min-h-10 shrink-0 rounded-xl"
+                    onClick={() => setSessionsOpen((open) => !open)}
+                  >
+                    {sessionsOpen ? 'Hide Sessions' : 'View Sessions'}
+                  </Button>
+                </div>
+
+                {sessionsOpen ? (
+                  <div className="border-t border-border bg-muted/10 px-4 py-3 sm:px-5">
+                    <ul className="divide-y divide-border rounded-xl border border-border bg-card">
+                      <li className="flex items-center justify-between gap-3 px-4 py-3.5">
+                        <div className="flex items-start gap-3">
+                          <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-emerald-500/10 text-emerald-700 dark:text-emerald-400">
+                            <Monitor className="h-4 w-4" />
+                          </span>
+                          <div>
+                            <p className="text-sm font-bold text-foreground">This browser</p>
+                            <p className="text-xs text-muted-foreground">
+                              Current session · just now
+                            </p>
+                          </div>
+                        </div>
+                        <span className="inline-flex rounded-full border border-emerald-500/25 bg-emerald-500/10 px-2.5 py-0.5 text-xs font-bold text-emerald-700 dark:text-emerald-400">
+                          Active
+                        </span>
+                      </li>
+                      <li className="flex items-center justify-between gap-3 px-4 py-3.5">
+                        <div className="flex items-start gap-3">
+                          <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-sky-500/10 text-sky-700 dark:text-sky-400">
+                            <Smartphone className="h-4 w-4" />
+                          </span>
+                          <div>
+                            <p className="text-sm font-bold text-foreground">Mobile Safari</p>
+                            <p className="text-xs text-muted-foreground">
+                              {useDemo
+                                ? 'Tallinn, EE · 2 days ago'
+                                : 'Session details unavailable'}
+                            </p>
+                          </div>
+                        </div>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          className="min-h-9 rounded-lg text-xs font-bold text-destructive hover:text-destructive"
+                          onClick={() =>
+                            toast.message('Sign out device', {
+                              description: 'Remote session revoke is coming soon.',
+                            })
+                          }
+                        >
+                          Sign out
+                        </Button>
+                      </li>
+                    </ul>
+                  </div>
+                ) : null}
+
+                <div className="flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between sm:p-5">
+                  <div className="flex items-start gap-3">
+                    <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-violet-500/10 text-violet-700 dark:text-violet-400">
+                      <Bell className="h-4 w-4" aria-hidden />
+                    </span>
+                    <div>
+                      <p className="text-sm font-bold text-foreground">Login Alerts</p>
+                      <p className="text-xs text-muted-foreground">
+                        Get notified about new login attempts.
+                      </p>
+                    </div>
+                  </div>
+                  <Switch
+                    checked={loginAlertsEnabled}
+                    onCheckedChange={setLoginAlertsEnabled}
+                    aria-label="Login Alerts"
+                  />
+                </div>
+
+                <div className="flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between sm:p-5">
+                  <div className="flex items-start gap-3">
+                    <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-violet-500/10 text-violet-700 dark:text-violet-400">
+                      <Smartphone className="h-4 w-4" aria-hidden />
+                    </span>
+                    <div>
+                      <p className="text-sm font-bold text-foreground">Trusted Devices</p>
+                      <p className="text-xs text-muted-foreground">
+                        Manage devices that you trust.
+                      </p>
+                    </div>
+                  </div>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="min-h-10 shrink-0 rounded-xl"
+                    onClick={() =>
+                      quickAction('Manage Devices', 'Trusted device management is coming soon.')
+                    }
+                  >
+                    Manage Devices
+                  </Button>
+                </div>
+
+                <div className="flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between sm:p-5">
+                  <div className="flex items-start gap-3">
+                    <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-violet-500/10 text-violet-700 dark:text-violet-400">
+                      <LifeBuoy className="h-4 w-4" aria-hidden />
+                    </span>
+                    <div>
+                      <p className="text-sm font-bold text-foreground">Account Recovery</p>
+                      <p className="text-xs text-muted-foreground">
+                        Set up recovery options to regain access to your account.
+                      </p>
+                    </div>
+                  </div>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="min-h-10 shrink-0 rounded-xl"
+                    onClick={() =>
+                      quickAction('Set Up Recovery', 'Account recovery setup is coming soon.')
+                    }
+                  >
+                    Set Up Recovery
+                  </Button>
+                </div>
+              </div>
+            </section>
+
+            <section className="space-y-3 rounded-2xl border border-destructive/30 bg-destructive/5 p-5 shadow-[var(--shadow-card)] sm:p-6">
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                 <div className="flex items-start gap-3">
-                  <KeyRound className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />
+                  <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-destructive/10 text-destructive">
+                    <Trash2 className="h-4 w-4" aria-hidden />
+                  </span>
                   <div>
-                    <p className="text-sm font-bold text-foreground">Password</p>
-                    <p className="text-xs text-muted-foreground">
-                      Change your password via your auth provider.
+                    <h2 className="text-base font-extrabold tracking-tight text-destructive">
+                      Danger Zone
+                    </h2>
+                    <p className="mt-0.5 text-sm text-muted-foreground">
+                      Permanently delete your account and all associated data. This action cannot
+                      be undone.
                     </p>
                   </div>
                 </div>
                 <Button
                   type="button"
                   variant="outline"
-                  className="min-h-11 shrink-0 rounded-xl"
+                  className="min-h-11 shrink-0 rounded-xl border-destructive/40 text-destructive hover:bg-destructive/10 hover:text-destructive"
                   onClick={() =>
-                    quickAction(
-                      'Change password',
-                      'Use your sign-in provider or account recovery email.',
-                    )
+                    toast.message('Delete Account', {
+                      description: 'Account deletion is not enabled in this preview.',
+                    })
                   }
                 >
-                  Change password
+                  Delete Account
                 </Button>
               </div>
-              <div className="flex flex-col gap-3 rounded-xl border border-border bg-muted/20 p-4 sm:flex-row sm:items-center sm:justify-between">
-                <div className="flex items-start gap-3">
-                  <Lock className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />
-                  <div>
-                    <p className="text-sm font-bold text-foreground">Two-factor authentication</p>
-                    <p className="text-xs text-muted-foreground">
-                      Add a second step when signing in.
-                    </p>
-                  </div>
-                </div>
-                <div className="flex items-center gap-2">
-                  <span className="inline-flex rounded-full border border-amber-500/25 bg-amber-500/10 px-2.5 py-0.5 text-xs font-bold text-amber-700 dark:text-amber-400">
-                    Off
-                  </span>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    className="min-h-11 shrink-0 rounded-xl"
-                    onClick={() =>
-                      quickAction('Enable 2FA', 'Two-factor authentication setup is coming soon.')
-                    }
-                  >
-                    Enable
-                  </Button>
-                </div>
-              </div>
-            </section>
-
-            <section className={cn(cardClass, 'space-y-4')}>
-              <div>
-                <h2 className="text-base font-extrabold tracking-tight text-foreground">
-                  Active sessions
-                </h2>
-                <p className="mt-1 text-sm text-muted-foreground">
-                  Devices currently signed into your account.
-                </p>
-              </div>
-              <ul className="divide-y divide-border rounded-xl border border-border">
-                <li className="flex items-center justify-between gap-3 px-4 py-3.5">
-                  <div className="flex items-start gap-3">
-                    <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-emerald-500/10 text-emerald-700 dark:text-emerald-400">
-                      <Monitor className="h-4 w-4" />
-                    </span>
-                    <div>
-                      <p className="text-sm font-bold text-foreground">This browser</p>
-                      <p className="text-xs text-muted-foreground">Current session · just now</p>
-                    </div>
-                  </div>
-                  <span className="inline-flex rounded-full border border-emerald-500/25 bg-emerald-500/10 px-2.5 py-0.5 text-xs font-bold text-emerald-700 dark:text-emerald-400">
-                    Active
-                  </span>
-                </li>
-                <li className="flex items-center justify-between gap-3 px-4 py-3.5">
-                  <div className="flex items-start gap-3">
-                    <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-sky-500/10 text-sky-700 dark:text-sky-400">
-                      <Smartphone className="h-4 w-4" />
-                    </span>
-                    <div>
-                      <p className="text-sm font-bold text-foreground">Mobile Safari</p>
-                      <p className="text-xs text-muted-foreground">
-                        {useDemo ? 'Tallinn, EE · 2 days ago' : 'Session details unavailable'}
-                      </p>
-                    </div>
-                  </div>
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    className="min-h-9 rounded-lg text-xs font-bold text-destructive hover:text-destructive"
-                    onClick={() =>
-                      toast.message('Sign out device', {
-                        description: 'Remote session revoke is coming soon.',
-                      })
-                    }
-                  >
-                    Sign out
-                  </Button>
-                </li>
-              </ul>
             </section>
           </div>
 
           <aside className="flex flex-col gap-4 xl:col-span-4">
             <section className="rounded-2xl border border-violet-500/20 bg-violet-500/5 p-5 shadow-[var(--shadow-card)]">
               <div className="mb-3 flex items-center gap-2">
-                <Shield className="h-4 w-4 text-violet-600 dark:text-violet-400" aria-hidden />
+                <Lightbulb className="h-4 w-4 text-violet-600 dark:text-violet-400" aria-hidden />
                 <h2 className="text-base font-extrabold tracking-tight text-foreground">
-                  Security tips
+                  Security Tips
                 </h2>
               </div>
               <ul className="space-y-2.5">
@@ -2215,12 +2601,12 @@ const CreatorSettings = () => {
                 </h2>
               </div>
               <p className="text-sm text-muted-foreground">
-                Account recovery and security best practices.
+                Visit the Help Center for security best practices and account recovery.
               </p>
               <Button
                 type="button"
-                variant="outline"
-                className="min-h-11 w-full rounded-xl gap-2"
+                variant="secondary"
+                className={cn(softPrimaryBtn, 'w-full gap-2')}
                 onClick={() =>
                   toast.message('Help Center', {
                     description: 'Security help will open here soon.',
@@ -2239,108 +2625,181 @@ const CreatorSettings = () => {
         <div className="grid grid-cols-1 gap-4 xl:grid-cols-12">
           <div className="flex flex-col gap-4 xl:col-span-8">
             <section className={cn(cardClass, 'space-y-4')}>
-              <div className="flex flex-wrap items-start justify-between gap-3">
-                <div>
-                  <h2 className="text-base font-extrabold tracking-tight text-foreground">
-                    Payout connection
-                  </h2>
-                  <p className="mt-1 text-sm text-muted-foreground">
-                    Stripe Connect powers withdrawals to your bank.
-                  </p>
-                </div>
-                <span
-                  className={
-                    stripeConnected
-                      ? 'inline-flex rounded-full bg-emerald-500/10 px-2.5 py-1 text-xs font-bold text-emerald-600 dark:text-emerald-400'
-                      : 'inline-flex rounded-full bg-muted px-2.5 py-1 text-xs font-bold text-muted-foreground'
-                  }
-                >
-                  {stripeConnected ? 'Connected' : 'Not connected'}
-                </span>
-              </div>
-              <p className="text-sm text-muted-foreground">
-                {stripeConnected
-                  ? `Account · ${creator.stripeAccountId}`
-                  : 'Finish setup on Payouts when you are ready to withdraw.'}
-              </p>
-              <Button asChild className="min-h-11 w-full rounded-xl sm:w-auto">
-                <Link to="/creator/payouts">Open Payouts</Link>
-              </Button>
-            </section>
-
-            <section className={cn(cardClass, 'space-y-4')}>
               <div>
                 <h2 className="text-base font-extrabold tracking-tight text-foreground">
-                  Data & exports
+                  Advanced
                 </h2>
                 <p className="mt-1 text-sm text-muted-foreground">
-                  Download a copy of your creator data for your records.
+                  Domain, visibility, legal pages, and account data controls.
                 </p>
               </div>
-              <div className="flex flex-col gap-3 rounded-xl border border-border bg-muted/20 p-4 sm:flex-row sm:items-center sm:justify-between">
-                <div className="flex items-start gap-3">
-                  <Download className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />
-                  <div>
-                    <p className="text-sm font-bold text-foreground">Export my data</p>
-                    <p className="text-xs text-muted-foreground">
-                      Profile, products, and earnings summary (CSV/JSON).
-                    </p>
-                  </div>
-                </div>
-                <Button
-                  type="button"
-                  variant="outline"
-                  className="min-h-11 shrink-0 rounded-xl"
-                  onClick={() =>
-                    toast.message(useDemo ? 'Sample preview — export' : 'Export requested', {
-                      description: 'Data export is not wired up in this preview.',
-                    })
-                  }
-                >
-                  Request export
-                </Button>
-              </div>
-            </section>
 
-            <section className="space-y-4 rounded-2xl border border-destructive/30 bg-card p-5 shadow-[var(--shadow-card)] sm:p-6">
-              <div className="flex items-start gap-3">
-                <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0 text-destructive" />
-                <div>
-                  <h2 className="text-base font-extrabold tracking-tight text-foreground">
-                    Danger zone
-                  </h2>
-                  <p className="mt-1 text-sm text-muted-foreground">
-                    These actions are not available yet — they only show a confirmation toast.
-                  </p>
+              <div className="divide-y divide-border rounded-xl border border-border">
+                <div className="flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between sm:p-5">
+                  <div className="flex items-start gap-3">
+                    <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-violet-500/10 text-violet-700 dark:text-violet-400">
+                      <Globe className="h-4 w-4" aria-hidden />
+                    </span>
+                    <div>
+                      <p className="text-sm font-bold text-foreground">Custom Domain</p>
+                      <p className="text-xs text-muted-foreground">
+                        Connect your own domain (e.g. yourbrand.com) to your Prizelet page.
+                      </p>
+                    </div>
+                  </div>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="min-h-10 shrink-0 rounded-xl"
+                    onClick={() =>
+                      quickAction('Connect Domain', 'Custom domains are coming soon.')
+                    }
+                  >
+                    Connect Domain
+                  </Button>
                 </div>
-              </div>
-              <div className="flex flex-col gap-3 sm:flex-row">
-                <Button
-                  type="button"
-                  variant="outline"
-                  className="min-h-11 rounded-xl text-destructive hover:text-destructive"
-                  onClick={() =>
-                    quickAction(
-                      'Deactivate account',
-                      'Account deactivation is not enabled in this preview.',
-                    )
-                  }
-                >
-                  Deactivate account
-                </Button>
-                <Button
-                  type="button"
-                  variant="outline"
-                  className="min-h-11 rounded-xl text-destructive hover:text-destructive"
-                  onClick={() =>
-                    quickAction(
-                      'Delete account',
-                      'Account deletion is not enabled in this preview.',
-                    )
-                  }
-                >
-                  Delete account
-                </Button>
+
+                <div className="flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between sm:p-5">
+                  <div className="flex items-start gap-3">
+                    <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-violet-500/10 text-violet-700 dark:text-violet-400">
+                      <Eye className="h-4 w-4" aria-hidden />
+                    </span>
+                    <div>
+                      <p className="text-sm font-bold text-foreground">Public Profile</p>
+                      <p className="text-xs text-muted-foreground">
+                        Make your profile public and discoverable in search engines.
+                      </p>
+                    </div>
+                  </div>
+                  <Switch
+                    checked={publicProfileEnabled}
+                    onCheckedChange={setPublicProfileEnabled}
+                    aria-label="Public Profile"
+                  />
+                </div>
+
+                <div className="flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between sm:p-5">
+                  <div className="flex items-start gap-3">
+                    <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-violet-500/10 text-violet-700 dark:text-violet-400">
+                      <FileText className="h-4 w-4" aria-hidden />
+                    </span>
+                    <div>
+                      <p className="text-sm font-bold text-foreground">Terms of Service</p>
+                      <p className="text-xs text-muted-foreground">
+                        Set your own terms of service for subscribers.
+                      </p>
+                    </div>
+                  </div>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="min-h-10 shrink-0 rounded-xl"
+                    onClick={() =>
+                      quickAction('Edit Terms', 'Custom terms editor is coming soon.')
+                    }
+                  >
+                    Edit Terms
+                  </Button>
+                </div>
+
+                <div className="flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between sm:p-5">
+                  <div className="flex items-start gap-3">
+                    <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-violet-500/10 text-violet-700 dark:text-violet-400">
+                      <Shield className="h-4 w-4" aria-hidden />
+                    </span>
+                    <div>
+                      <p className="text-sm font-bold text-foreground">Privacy Policy</p>
+                      <p className="text-xs text-muted-foreground">Set your own privacy policy.</p>
+                    </div>
+                  </div>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="min-h-10 shrink-0 rounded-xl"
+                    onClick={() =>
+                      quickAction('Edit Policy', 'Privacy policy editor is coming soon.')
+                    }
+                  >
+                    Edit Policy
+                  </Button>
+                </div>
+
+                <div className="flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between sm:p-5">
+                  <div className="flex items-start gap-3">
+                    <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-violet-500/10 text-violet-700 dark:text-violet-400">
+                      <Mail className="h-4 w-4" aria-hidden />
+                    </span>
+                    <div>
+                      <p className="text-sm font-bold text-foreground">Email Templates</p>
+                      <p className="text-xs text-muted-foreground">
+                        Customize transactional emails (welcome, receipts, etc).
+                      </p>
+                    </div>
+                  </div>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="min-h-10 shrink-0 rounded-xl"
+                    onClick={() =>
+                      quickAction('Customize', 'Email template customization is coming soon.')
+                    }
+                  >
+                    Customize
+                  </Button>
+                </div>
+
+                <div className="flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between sm:p-5">
+                  <div className="flex items-start gap-3">
+                    <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-violet-500/10 text-violet-700 dark:text-violet-400">
+                      <Download className="h-4 w-4" aria-hidden />
+                    </span>
+                    <div>
+                      <p className="text-sm font-bold text-foreground">Data Export</p>
+                      <p className="text-xs text-muted-foreground">
+                        Download a copy of your data (subscribers, earnings, etc).
+                      </p>
+                    </div>
+                  </div>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="min-h-10 shrink-0 rounded-xl"
+                    onClick={() =>
+                      toast.message(useDemo ? 'Sample preview — export' : 'Export requested', {
+                        description: 'Data export is not wired up in this preview.',
+                      })
+                    }
+                  >
+                    Export Data
+                  </Button>
+                </div>
+
+                <div className="flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between sm:p-5">
+                  <div className="flex items-start gap-3">
+                    <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-destructive/10 text-destructive">
+                      <Trash2 className="h-4 w-4" aria-hidden />
+                    </span>
+                    <div>
+                      <p className="text-sm font-bold text-destructive">Delete Account</p>
+                      <p className="text-xs text-muted-foreground">
+                        Permanently delete your account and all associated data.
+                      </p>
+                    </div>
+                  </div>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="min-h-10 shrink-0 rounded-xl border-destructive/40 text-destructive hover:bg-destructive/10 hover:text-destructive"
+                    onClick={() =>
+                      quickAction(
+                        'Delete Account',
+                        'Account deletion is not enabled in this preview.',
+                      )
+                    }
+                  >
+                    Delete Account
+                  </Button>
+                </div>
               </div>
             </section>
           </div>
@@ -2348,9 +2807,9 @@ const CreatorSettings = () => {
           <aside className="flex flex-col gap-4 xl:col-span-4">
             <section className="rounded-2xl border border-violet-500/20 bg-violet-500/5 p-5 shadow-[var(--shadow-card)]">
               <div className="mb-3 flex items-center gap-2">
-                <Sparkles className="h-4 w-4 text-violet-600 dark:text-violet-400" aria-hidden />
+                <Lightbulb className="h-4 w-4 text-violet-600 dark:text-violet-400" aria-hidden />
                 <h2 className="text-base font-extrabold tracking-tight text-foreground">
-                  Advanced tips
+                  Advanced Settings
                 </h2>
               </div>
               <ul className="space-y-2.5">
@@ -2372,12 +2831,12 @@ const CreatorSettings = () => {
                 </h2>
               </div>
               <p className="text-sm text-muted-foreground">
-                Contact support before deleting or transferring your account.
+                Visit the Help Center for guides on domains, policies, and account data.
               </p>
               <Button
                 type="button"
-                variant="outline"
-                className="min-h-11 w-full rounded-xl gap-2"
+                variant="secondary"
+                className={cn(softPrimaryBtn, 'w-full gap-2')}
                 onClick={() =>
                   toast.message('Help Center', {
                     description: 'Advanced account help will open here soon.',

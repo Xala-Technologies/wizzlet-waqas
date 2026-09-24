@@ -38,7 +38,7 @@ export function OverviewRecentSubscribers({ rows }: { rows: OverviewSubscriber[]
           to="/creator/subscribers"
           className="inline-flex items-center gap-1 text-xs font-bold text-primary hover:underline"
         >
-          All <ArrowRight className="h-3.5 w-3.5" aria-hidden />
+          View all <ArrowRight className="h-3.5 w-3.5" aria-hidden />
         </Link>
       </div>
 

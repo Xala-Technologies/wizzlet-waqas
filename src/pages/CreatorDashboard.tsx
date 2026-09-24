@@ -1,21 +1,19 @@
-import { useMemo, useState } from 'react';
+import { useMemo } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { usePaginatedQuery, useQuery } from 'convex/react';
 import { format, formatDistanceToNowStrict } from 'date-fns';
 import {
-  BarChart3,
   DollarSign,
+  Eye,
   FileText,
   Loader2,
   Megaphone,
   MessageSquare,
+  Package,
   PenLine,
   Plus,
-  Rocket,
   Sparkles,
-  TrendingUp,
   Users,
-  X,
 } from 'lucide-react';
 import { api } from '../../convex/_generated/api';
 import { computeWinRate } from '../../convex/lib/results';
@@ -23,21 +21,18 @@ import { DashboardLayout } from '@/components/dashboard/DashboardLayout';
 import { Button } from '@/components/ui/button';
 import { Seo } from '@/components/Seo';
 import { OverviewKpiStrip } from '@/components/creator/overview/OverviewKpiStrip';
-import { OverviewRecentPicks } from '@/components/creator/overview/OverviewRecentPicks';
 import { OverviewEarningsChart } from '@/components/creator/overview/OverviewEarningsChart';
-import { OverviewProgressRing } from '@/components/creator/overview/OverviewProgressRing';
 import { OverviewQuickActions } from '@/components/creator/overview/OverviewQuickActions';
 import { OverviewRecentSubscribers } from '@/components/creator/overview/OverviewRecentSubscribers';
-import { OverviewMessagesPanel } from '@/components/creator/overview/OverviewMessagesPanel';
-import { OverviewTopPicks } from '@/components/creator/overview/OverviewTopPicks';
-import { safeGetItem, safeSetItem } from '@/lib/safeStorage';
+import { OverviewRecentActivity } from '@/components/creator/overview/OverviewRecentActivity';
+import { OverviewTopProducts } from '@/components/creator/overview/OverviewTopProducts';
+import { OverviewReferralBanner } from '@/components/creator/overview/OverviewReferralBanner';
 import { kpiIconTone } from '@/lib/kpiIconTones';
 import {
   CREATOR_OVERVIEW_DEMO,
   shouldUseCreatorOverviewDemo,
 } from '@/lib/creatorOverviewDemo';
-
-const MOMENTUM_DISMISS_KEY = 'prizelet.creator.momentumBanner.dismissed';
+import { earningsMonthLabel } from '@/lib/sportVisual';
 
 function uiPickResult(result: string): 'win' | 'loss' | 'push' | 'pending' {
   if (result === 'won' || result === 'win') return 'win';
@@ -46,13 +41,14 @@ function uiPickResult(result: string): 'win' | 'loss' | 'push' | 'pending' {
   return 'pending';
 }
 
-function profitLabel(units: number | null, result: string): { label: string; positive?: boolean } {
-  if (result === 'pending' || units == null) return { label: '—' };
-  const sign = units > 0 ? '+' : '';
-  return {
-    label: `${sign}${units.toFixed(2)}u`,
-    positive: units > 0,
-  };
+function timeOfDayGreeting(name: string): string {
+  const hour = new Date().getHours();
+  const part = hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening';
+  return `${part}, ${name}! 👋`;
+}
+
+function formatCompact(n: number): string {
+  return n.toLocaleString();
 }
 
 const CreatorDashboard = () => {
@@ -62,16 +58,17 @@ const CreatorDashboard = () => {
   const postsRaw = useQuery(api.posts.queries.listMine);
   const picksRaw = useQuery(api.picks.mutations.listMine);
   const earnings = useQuery(api.creators.earnings.myEarnings);
-  const inboxThreads = useQuery(api.messaging.mutations.overviewInboxThreads);
+  const analytics = useQuery(api.analytics.mutations.listForMyCreator);
+  const products = useQuery(
+    api.products.mutations.listByCreator,
+    creator?._id ? { creatorId: creator._id, activeOnly: true } : 'skip',
+  );
   const { results: recentSubRows, status: subsPageStatus } = usePaginatedQuery(
     api.subscriptions.mutations.listSubscribersDetailedPage,
     {},
     { initialNumItems: 5 },
   );
 
-  const [momentumDismissed, setMomentumDismissed] = useState(
-    () => safeGetItem(MOMENTUM_DISMISS_KEY) === '1',
-  );
   const forceDemo = searchParams.get('demo') === '1';
   const disableDemo = searchParams.get('demo') === '0';
 
@@ -81,30 +78,23 @@ const CreatorDashboard = () => {
     postsRaw === undefined ||
     picksRaw === undefined ||
     earnings === undefined ||
-    inboxThreads === undefined ||
+    analytics === undefined ||
     subsPageStatus === 'LoadingFirstPage';
 
   const picks = useMemo(
     () =>
       (picksRaw ?? []).map((p) => ({
         id: p._id,
-        date: p.date,
-        pickEvent: p.pickEvent,
-        sport: p.sport,
-        unitsRisked: p.unitsRisked,
         result: uiPickResult(p.result),
-        unitsWonLost: p.unitsWonLost ?? null,
       })),
     [picksRaw],
   );
 
   const perf = useMemo(() => {
-    const { wins, winRatePct, decided } = computeWinRate(picks.map((p) => p.result));
-    const totalWonLost = picks.reduce((s, p) => s + (p.unitsWonLost || 0), 0);
-    return { wins, winRate: winRatePct, settled: decided, totalWonLost };
+    const { decided } = computeWinRate(picks.map((p) => p.result));
+    return { settled: decided };
   }, [picks]);
 
-  /** Honest month-over-month from earnings.monthly when ≥2 months exist. */
   const revenueTrend = useMemo(() => {
     const monthly = earnings?.monthly ?? [];
     if (monthly.length < 2) return undefined;
@@ -116,7 +106,7 @@ const CreatorDashboard = () => {
     const rounded = Math.round(delta);
     if (rounded === 0) return undefined;
     return {
-      label: `${rounded > 0 ? '↑' : '↓'} ${Math.abs(rounded)}%`,
+      label: `${rounded > 0 ? '↑' : '↓'} ${Math.abs(rounded)}% vs. last month`,
       positive: rounded > 0,
     };
   }, [earnings?.monthly]);
@@ -124,6 +114,7 @@ const CreatorDashboard = () => {
   const activeSubs = (subs ?? []).filter((s) => s.status === 'active');
   const realPostCount = postsRaw?.length ?? 0;
   const realMrrNet = (earnings?.netCents ?? 0) / 100;
+  const realPostViews = (analytics ?? []).filter((e) => e.eventType === 'post_view').length;
   const displayName =
     creator?.displayName?.trim() ||
     (creator?.username ? creator.username : 'creator');
@@ -142,48 +133,19 @@ const CreatorDashboard = () => {
   const demo = CREATOR_OVERVIEW_DEMO;
   const postCount = useDemo ? demo.postCount : realPostCount;
   const mrrNet = useDemo ? demo.mrrNet : realMrrNet;
-  const winRateValue = useDemo
-    ? `${demo.winRatePct}%`
-    : perf.settled > 0
-      ? `${perf.winRate}%`
-      : '—';
   const activeSubCount = useDemo ? demo.activeSubscribers : activeSubs.length;
+  const postViews = useDemo ? demo.postViews : realPostViews;
   const displayRevenueTrend = useDemo ? demo.revenueTrend : revenueTrend;
-
-  const recentPickRows = useMemo(() => {
-    if (useDemo) return [...demo.recentPicks];
-    return [...picks]
-      .sort((a, b) => b.date.localeCompare(a.date))
-      .slice(0, 5)
-      .map((p) => {
-        const profit = profitLabel(p.unitsWonLost, p.result);
-        return {
-          id: p.id,
-          dateLabel: p.date,
-          event: p.pickEvent || 'Pick',
-          sport: p.sport || 'Other',
-          result: p.result,
-          profitLabel: profit.label,
-          profitPositive: profit.positive,
-        };
-      });
-  }, [demo.recentPicks, picks, useDemo]);
 
   const earningsBars = useMemo(() => {
     if (useDemo) return [...demo.earningsBars];
     const monthly = earnings?.monthly ?? [];
     const last = monthly.slice(-6);
     return last.map((m) => ({
-      label: m.month.length >= 7 ? m.month.slice(5) : m.month,
+      label: earningsMonthLabel(m.month.length >= 7 ? m.month.slice(5) : m.month),
       valueCents: m.revenueCents,
     }));
   }, [demo.earningsBars, earnings?.monthly, useDemo]);
-
-  const verificationPct = useMemo(() => {
-    if (useDemo) return demo.verificationPercent;
-    const minPicks = 50;
-    return Math.min(100, Math.round((perf.settled / minPicks) * 100));
-  }, [demo.verificationPercent, perf.settled, useDemo]);
 
   const recentSubscribers = useMemo(() => {
     if (useDemo) return [...demo.recentSubscribers];
@@ -193,14 +155,18 @@ const CreatorDashboard = () => {
         s.status === 'active'
           ? s.amountCents >= 5000
             ? 'VIP'
-            : 'Monthly'
+            : s.amountCents >= 2500
+              ? 'Premium'
+              : 'Active'
           : s.status;
       const tierTone =
         s.status !== 'active'
           ? ('default' as const)
           : s.amountCents >= 5000
             ? ('vip' as const)
-            : ('monthly' as const);
+            : s.amountCents >= 2500
+              ? ('monthly' as const)
+              : ('free' as const);
       return {
         id: s._id,
         name,
@@ -212,61 +178,74 @@ const CreatorDashboard = () => {
     });
   }, [demo.recentSubscribers, recentSubRows, useDemo]);
 
-  const messageRows = useMemo(() => {
-    if (useDemo) return [...demo.messages];
-    return (inboxThreads ?? []).map((t) => ({
-      id: t.id,
-      name: t.name,
-      preview: t.preview,
-      whenLabel: formatDistanceToNowStrict(new Date(t.createdAt), { addSuffix: true }),
-      unread: t.unread,
-      avatarUrl: t.avatarUrl,
-    }));
-  }, [demo.messages, inboxThreads, useDemo]);
+  const activityRows = useMemo(() => {
+    if (useDemo) return [...demo.recentActivity];
+    const rows: Array<{
+      id: string;
+      title: string;
+      whenLabel: string;
+      amountLabel?: string;
+      unread?: boolean;
+      tone: 'subscriber' | 'payment' | 'message' | 'milestone';
+    }> = [];
 
-  const topPicks = useMemo(() => {
-    if (useDemo) return [...demo.topPicks];
-    const settled = picks.filter((p) => p.result === 'win' || p.result === 'loss');
-    const groups = new Map<
-      string,
-      { label: string; sport: string; wins: number; decided: number; units: number }
-    >();
-    for (const p of settled) {
-      const key = `${p.sport}|${p.pickEvent}`.toLowerCase();
-      const g = groups.get(key) ?? {
-        label: p.pickEvent || p.sport || 'Pick',
-        sport: p.sport || 'Other',
-        wins: 0,
-        decided: 0,
-        units: 0,
-      };
-      g.decided += 1;
-      if (p.result === 'win') g.wins += 1;
-      g.units += p.unitsWonLost ?? 0;
-      groups.set(key, g);
+    for (const s of (recentSubRows ?? []).slice(0, 3)) {
+      rows.push({
+        id: `sub-${s._id}`,
+        title: 'New subscriber joined',
+        whenLabel: formatDistanceToNowStrict(new Date(s.createdAt), { addSuffix: true }),
+        amountLabel: s.amountCents
+          ? `$${(s.amountCents / 100).toFixed(2)}/mo`
+          : undefined,
+        tone: 'subscriber',
+      });
     }
-    return [...groups.entries()]
-      .map(([id, g]) => ({
-        id,
-        label: g.label,
-        sport: g.sport,
-        winRateLabel: `${Math.round((g.wins / Math.max(g.decided, 1)) * 100)}% win · ${g.decided} settled`,
-        profitLabel: `${g.units > 0 ? '+' : ''}${g.units.toFixed(1)}u`,
-        units: g.units,
-      }))
-      .sort((a, b) => b.units - a.units)
-      .slice(0, 4)
-      .map(({ id, label, sport, winRateLabel, profitLabel }) => ({
-        id,
-        label,
-        sport,
-        winRateLabel,
-        profitLabel,
-      }));
-  }, [demo.topPicks, picks, useDemo]);
 
-  const showMomentum =
-    !momentumDismissed && displayRevenueTrend?.positive === true;
+    const payments = (earnings?.recentPayments ?? []).slice(0, 2);
+    for (const p of payments) {
+      rows.push({
+        id: `pay-${p.id ?? p.createdAt}`,
+        title: 'Payment received',
+        whenLabel: formatDistanceToNowStrict(new Date(p.createdAt), { addSuffix: true }),
+        amountLabel: `$${((p.amountCents ?? 0) / 100).toFixed(2)}`,
+        tone: 'payment',
+      });
+    }
+
+    if (realPostViews >= 1000) {
+      rows.push({
+        id: 'views-milestone',
+        title: 'Your post reached 1,000 views',
+        whenLabel: 'Recently',
+        tone: 'milestone',
+      });
+    }
+
+    return rows.slice(0, 5);
+  }, [
+    demo.recentActivity,
+    earnings?.recentPayments,
+    realPostViews,
+    recentSubRows,
+    useDemo,
+  ]);
+
+  const topProducts = useMemo(() => {
+    if (useDemo) return [...demo.topProducts];
+    const list = (products ?? [])
+      .filter((p) => p.isActive && !p.isClosed)
+      .slice(0, 4)
+      .map((p, i) => ({
+        id: p._id,
+        name: p.name,
+        subscribersLabel: '— subscribers',
+        revenueLabel: `$${(p.priceCents / 100).toFixed(0)}`,
+        growthLabel: '—',
+        growthPositive: true as const,
+        icon: (i === 0 ? 'crown' : i === 1 ? 'gem' : 'star') as 'crown' | 'gem' | 'star',
+      }));
+    return list;
+  }, [demo.topProducts, products, useDemo]);
 
   if (loading) {
     return (
@@ -300,26 +279,27 @@ const CreatorDashboard = () => {
     <DashboardLayout type="creator">
       <Seo
         title="Creator overview — Prizelet"
-        description="Your Prizelet creator overview: picks, earnings, subscribers, and performance."
+        description="Your Prizelet creator overview: posts, earnings, subscribers, and performance."
       />
 
       <header className="mb-6 sm:mb-8">
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-          <div className="min-w-0">
+        <div className="flex flex-col gap-4 sm:block">
+          <div>
             <p className="text-xs font-bold uppercase tracking-wide text-muted-foreground">
               {todayLabel}
             </p>
             <h1 className="mt-1 text-2xl font-extrabold tracking-tight text-foreground sm:text-3xl md:text-4xl">
-              Welcome back, {displayName}!
+              {timeOfDayGreeting(displayName)}
             </h1>
             <p className="mt-2 text-sm font-medium text-muted-foreground sm:text-base">
-              Here’s your overview. Keep the momentum going.
+              Here&apos;s what&apos;s happening with your business today.
             </p>
           </div>
-          <Button asChild className="h-11 w-full shrink-0 gap-1.5 rounded-xl px-5 font-semibold sm:w-auto">
+          {/* Desktop Create Post lives in CreatorTopBar; keep CTA on mobile. */}
+          <Button asChild className="h-11 w-full gap-1.5 rounded-xl px-5 font-semibold md:hidden">
             <Link to="/creator/posts">
               <Plus className="h-4 w-4" aria-hidden />
-              New Pick
+              Create Post
             </Link>
           </Button>
         </div>
@@ -327,11 +307,14 @@ const CreatorDashboard = () => {
 
       {useDemo ? (
         <div className="mb-6 flex items-start gap-3 rounded-2xl border border-amber-500/30 bg-amber-500/10 px-4 py-3.5 text-amber-950 dark:text-amber-100 sm:items-center sm:px-5">
-          <Sparkles className="mt-0.5 h-5 w-5 shrink-0 text-amber-600 dark:text-amber-400 sm:mt-0" aria-hidden />
+          <Sparkles
+            className="mt-0.5 h-5 w-5 shrink-0 text-amber-600 dark:text-amber-400 sm:mt-0"
+            aria-hidden
+          />
           <p className="min-w-0 flex-1 text-sm font-semibold leading-snug">
-            Sample preview data — numbers and lists below are mock content for design review, not live
-            account metrics. Add{' '}
-            <span className="font-mono text-xs">?demo=0</span> to see empty real states.
+            Sample preview data — numbers and lists below are mock content for design review, not
+            live account metrics. Add <span className="font-mono text-xs">?demo=0</span> to see empty
+            real states.
           </p>
         </div>
       ) : null}
@@ -340,30 +323,40 @@ const CreatorDashboard = () => {
         <OverviewKpiStrip
           items={[
             {
-              label: 'Posts published',
-              value: String(postCount),
-              icon: FileText,
-              iconClassName: kpiIconTone.violet,
-            },
-            {
-              label: 'Monthly revenue (net)',
-              value: `$${mrrNet.toFixed(0)}`,
+              label: 'Monthly revenue',
+              value: `$${formatCompact(Math.round(mrrNet))}`,
               icon: DollarSign,
               iconClassName: kpiIconTone.emerald,
               trendLabel: displayRevenueTrend?.label,
               trendPositive: displayRevenueTrend?.positive,
+              href: '/creator/earnings',
             },
             {
-              label: 'Win rate',
-              value: winRateValue,
-              icon: TrendingUp,
-              iconClassName: kpiIconTone.sky,
-            },
-            {
-              label: 'Active subscribers',
-              value: String(activeSubCount),
+              label: 'Subscribers',
+              value: formatCompact(activeSubCount),
               icon: Users,
+              iconClassName: kpiIconTone.violet,
+              trendLabel: useDemo ? demo.subscribersTrend.label : undefined,
+              trendPositive: useDemo ? demo.subscribersTrend.positive : undefined,
+              href: '/creator/subscribers',
+            },
+            {
+              label: 'Posts published',
+              value: formatCompact(postCount),
+              icon: FileText,
+              iconClassName: kpiIconTone.sky,
+              trendLabel: useDemo ? demo.postsTrend.label : undefined,
+              trendPositive: useDemo ? demo.postsTrend.positive : undefined,
+              href: '/creator/posts',
+            },
+            {
+              label: 'Post views',
+              value: formatCompact(postViews),
+              icon: Eye,
               iconClassName: kpiIconTone.amber,
+              trendLabel: useDemo ? demo.viewsTrend.label : undefined,
+              trendPositive: useDemo ? demo.viewsTrend.positive : undefined,
+              href: '/creator/performance-tracker',
             },
           ]}
         />
@@ -371,79 +364,34 @@ const CreatorDashboard = () => {
 
       <div className="mb-6 grid grid-cols-1 gap-4 xl:grid-cols-12 xl:gap-5">
         <div className="xl:col-span-5">
-          <OverviewRecentPicks rows={recentPickRows} />
-        </div>
-        <div className="xl:col-span-4">
           <OverviewEarningsChart
-            totalLabel={`$${mrrNet.toFixed(0)}`}
+            totalLabel={`$${formatCompact(Math.round(mrrNet))}`}
+            trendLabel={displayRevenueTrend?.label}
+            trendPositive={displayRevenueTrend?.positive}
             bars={earningsBars}
           />
         </div>
-        <div className="flex flex-col gap-4 xl:col-span-3">
-          <OverviewProgressRing
-            percent={
-              useDemo
-                ? demo.verificationPercent
-                : creator.verificationStatus === 'verified' && creator.isPublished
-                  ? 100
-                  : Math.max(verificationPct, creator.isPublished ? 60 : 25)
-            }
-            title={
-              useDemo
-                ? demo.verificationTitle
-                : creator.verificationStatus === 'verified'
-                  ? 'Verified creator'
-                  : creator.isPublished
-                    ? 'Published profile'
-                    : 'Profile setup'
-            }
-            detail={
-              useDemo
-                ? demo.verificationDetail
-                : creator.verificationStatus === 'verified'
-                  ? 'You’re verified on Prizelet.'
-                  : `${perf.settled}/50 settled picks toward verification readiness.`
-            }
-            href="/creator/settings"
-            ctaLabel="View plan"
-          />
+        <div className="xl:col-span-3">
           <OverviewQuickActions
             actions={[
-              { label: 'Create New Pick', href: '/creator/posts', icon: PenLine },
+              { label: 'Create Post', href: '/creator/posts', icon: PenLine },
+              { label: 'New Product', href: '/creator/products', icon: Package },
               { label: 'Share Promo Code', href: '/creator/promo', icon: Megaphone },
               { label: 'Message Subscribers', href: '/creator/messages', icon: MessageSquare },
-              { label: 'View Analytics', href: '/creator/performance-tracker', icon: BarChart3 },
             ]}
           />
         </div>
-      </div>
-
-      {showMomentum ? (
-        <div className="mb-6 flex items-start gap-3 rounded-2xl bg-primary px-4 py-3.5 text-primary-foreground sm:items-center sm:px-5">
-          <Rocket className="mt-0.5 h-5 w-5 shrink-0 sm:mt-0" aria-hidden />
-          <p className="min-w-0 flex-1 text-sm font-semibold leading-snug">
-            You’re on a roll! Net earnings are up{' '}
-            {displayRevenueTrend?.label.replace(/^[↑↓]\s*/, '')} vs the prior month.
-          </p>
-          <button
-            type="button"
-            aria-label="Dismiss"
-            className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg hover:bg-white/15"
-            onClick={() => {
-              safeSetItem(MOMENTUM_DISMISS_KEY, '1');
-              setMomentumDismissed(true);
-            }}
-          >
-            <X className="h-4 w-4" />
-          </button>
+        <div className="xl:col-span-4">
+          <OverviewRecentSubscribers rows={recentSubscribers} />
         </div>
-      ) : null}
-
-      <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3 xl:gap-5">
-        <OverviewRecentSubscribers rows={recentSubscribers} />
-        <OverviewMessagesPanel rows={messageRows} />
-        <OverviewTopPicks rows={topPicks} />
       </div>
+
+      <div className="mb-6 grid grid-cols-1 gap-4 md:grid-cols-2 xl:gap-5">
+        <OverviewRecentActivity rows={activityRows} />
+        <OverviewTopProducts rows={topProducts} />
+      </div>
+
+      <OverviewReferralBanner />
     </DashboardLayout>
   );
 };

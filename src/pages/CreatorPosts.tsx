@@ -1,5 +1,5 @@
-import { useMemo, useRef, useState } from 'react';
-import { Link, useSearchParams } from 'react-router-dom';
+import { useMemo, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { useMutation, usePaginatedQuery, useQuery } from 'convex/react';
 import { api } from '../../convex/_generated/api';
 import type { Id } from '../../convex/_generated/dataModel';
@@ -35,17 +35,15 @@ import {
 } from '@/components/ui/dropdown-menu';
 import {
   FileText, Plus, Loader2, Pencil, Trash2,
-  CheckCircle2, ArrowRight,
-  Clock, Trophy, XCircle, Minus, Crown, Send, ChevronDown, ChevronUp,
-  BarChart3, Search, Tag,
-  Upload, Target, Users, MoreVertical, ChevronLeft, ChevronRight, Sparkles,
+  CheckCircle2, Clock, Trophy, XCircle, Minus, Crown, Send, ChevronDown, ChevronUp,
+  Search, Tag, MoreVertical, ChevronLeft, ChevronRight, Sparkles,
+  Play, ArrowRight, BarChart3,
 } from 'lucide-react';
 import { toast } from 'sonner';
-import { format, subDays } from 'date-fns';
+import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { americanToDecimal, decimalToAmerican, profitUnits } from '@/lib/odds';
 import { parsePostContent } from '@/lib/postContent';
-import { computeWinRate } from '../../convex/lib/results';
 import { segmentedItemClassName, segmentedTrackClassName } from '@/lib/segmentedControl';
 import {
   CREATOR_PICKS_DEMO_METRICS,
@@ -54,15 +52,17 @@ import {
   shouldUseCreatorPicksDemo,
 } from '@/lib/creatorPicksDemo';
 import { DashboardKpiStrip } from '@/components/dashboard/DashboardKpiStrip';
-import { kpiIconTone, resultPillTone } from '@/lib/kpiIconTones';
-import { sportVisual } from '@/lib/sportVisual';
+import { kpiIconTone } from '@/lib/kpiIconTones';
+import { Checkbox } from '@/components/ui/checkbox';
 
 const PAGE_SIZE = 50;
 const TABLE_PAGE_SIZE = 10;
 const POST_MAX = 2000;
 
-type ResultTab = 'all' | 'pending' | 'won' | 'lost' | 'scheduled';
-type DateRangeKey = '7' | '30' | '90' | 'all';
+type StatusTab = 'all' | 'published' | 'scheduled' | 'draft' | 'archived';
+type PostUiStatus = 'published' | 'scheduled' | 'draft' | 'archived';
+type PostType = 'Text' | 'Video';
+type SortKey = 'newest' | 'oldest';
 
 interface Post {
   id: string;
@@ -84,6 +84,9 @@ interface EnrichedPick extends Post {
   units: number;
   profit: number;
   isScheduled: boolean;
+  uiStatus: PostUiStatus;
+  postType: PostType;
+  excerpt: string;
 }
 
 const SPORTS = [
@@ -103,20 +106,55 @@ const SPORTS = [
   'Other',
 ];
 
-const RESULT_TABS: { id: ResultTab; label: string }[] = [
-  { id: 'all', label: 'All Picks' },
-  { id: 'pending', label: 'Pending' },
-  { id: 'won', label: 'Won' },
-  { id: 'lost', label: 'Lost' },
+const STATUS_TABS: { id: StatusTab; label: string }[] = [
+  { id: 'all', label: 'All' },
+  { id: 'published', label: 'Published' },
   { id: 'scheduled', label: 'Scheduled' },
+  { id: 'draft', label: 'Drafts' },
+  { id: 'archived', label: 'Archived' },
 ];
 
-function splitMatch(event: string): { home: string; away: string } | null {
-  const parts = event.split(/\s+vs\.?\s+/i);
-  if (parts.length === 2 && parts[0].trim() && parts[1].trim()) {
-    return { home: parts[0].trim(), away: parts[1].trim() };
-  }
-  return null;
+const statusPillClass: Record<PostUiStatus, string> = {
+  published: 'border-emerald-500/25 bg-emerald-500/10 text-emerald-700 dark:text-emerald-400',
+  scheduled: 'border-violet-500/25 bg-violet-500/10 text-violet-700 dark:text-violet-300',
+  draft: 'border-border bg-muted text-muted-foreground',
+  archived: 'border-border bg-muted/70 text-foreground/70',
+};
+
+const statusLabel: Record<PostUiStatus, string> = {
+  published: 'Published',
+  scheduled: 'Scheduled',
+  draft: 'Draft',
+  archived: 'Archived',
+};
+
+function resolveUiStatus(trackingMode: string): PostUiStatus {
+  const mode = trackingMode.trim().toLowerCase();
+  if (mode === 'scheduled') return 'scheduled';
+  if (mode === 'draft' || mode === 'drafts') return 'draft';
+  if (mode === 'archived' || mode === 'archive') return 'archived';
+  return 'published';
+}
+
+function detectPostType(content: string | null, title: string): PostType {
+  const blob = `${title}\n${content ?? ''}`.toLowerCase();
+  if (/\btype:\s*video\b/.test(blob)) return 'Video';
+  return 'Text';
+}
+
+function excerptFromContent(content: string | null, fallback: string): string {
+  if (!content) return fallback;
+  const lines = content
+    .split('\n')
+    .map((l) => l.trim())
+    .filter(Boolean)
+    .filter(
+      (l) =>
+        !/^(sport|event|pick|odds|units|type):/i.test(l),
+    );
+  const body = lines.join(' ').trim();
+  if (!body) return fallback;
+  return body.length > 72 ? `${body.slice(0, 72)}…` : body;
 }
 
 function pctDelta(current: number, previous: number): number | null {
@@ -126,8 +164,8 @@ function pctDelta(current: number, previous: number): number | null {
 
 function formatSignedPct(value: number | null, suffix = '%'): string | undefined {
   if (value === null) return undefined;
-  const sign = value > 0 ? '↑' : value < 0 ? '↓' : '→';
-  return `${sign} ${Math.abs(value)}${suffix}`;
+  const sign = value > 0 ? '+' : value < 0 ? '' : '+';
+  return `${sign}${value}${suffix} vs. last month`;
 }
 
 function enrichPost(post: Post): EnrichedPick {
@@ -137,6 +175,7 @@ function enrichPost(post: Post): EnrichedPick {
     ? post.result
     : 'pending') as 'won' | 'lost' | 'push' | 'pending';
   const profit = profitUnits(result, units, parsed.usOdds || '-110');
+  const uiStatus = resolveUiStatus(post.tracking_mode);
   return {
     ...post,
     sport: parsed.sport,
@@ -146,47 +185,20 @@ function enrichPost(post: Post): EnrichedPick {
     euOdds: parsed.euOdds,
     units,
     profit,
-    isScheduled: post.tracking_mode === 'scheduled',
+    isScheduled: uiStatus === 'scheduled',
+    uiStatus,
+    postType: detectPostType(post.content, post.title),
+    excerpt: excerptFromContent(post.content, parsed.pick || 'No description'),
   };
-}
-
-function MatchCell({ event, sport, pick }: { event: string; sport: string; pick?: string }) {
-  const visual = sportVisual(sport);
-  const split = splitMatch(event);
-  return (
-    <div className="flex min-w-0 items-center gap-2.5">
-      <span
-        className={cn(
-          'flex h-9 w-9 shrink-0 items-center justify-center rounded-xl text-base',
-          visual.chipClass,
-        )}
-        aria-hidden
-        title={sport || 'Sport'}
-      >
-        {visual.emoji}
-      </span>
-      <div className="min-w-0">
-        <p className="truncate text-sm font-semibold text-foreground">
-          {split ? `${split.home} vs ${split.away}` : event || '—'}
-        </p>
-        {pick ? (
-          <p className="truncate text-xs font-medium text-foreground/80">{pick}</p>
-        ) : null}
-        {sport ? (
-          <p className="truncate text-xs font-medium text-muted-foreground">{sport}</p>
-        ) : null}
-      </div>
-    </div>
-  );
 }
 
 const CreatorPosts = () => {
   const [searchParams] = useSearchParams();
   const forceDemo = searchParams.get('demo') === '1';
   const disableDemo = searchParams.get('demo') === '0';
+  const queryFromUrl = searchParams.get('q') ?? '';
 
   const creator = useQuery(api.creators.queries.myCreator);
-  const subscriptions = useQuery(api.subscriptions.mutations.listForMyCreator);
   const { results: postsRaw, status: postsStatus, loadMore } = usePaginatedQuery(
     api.posts.queries.listMinePage,
     {},
@@ -236,11 +248,6 @@ const CreatorPosts = () => {
 
   const enriched = useMemo(() => posts.map(enrichPost), [posts]);
 
-  const activeSubscribers = useMemo(() => {
-    if (useDemo) return CREATOR_PICKS_DEMO_METRICS.subscribers;
-    return (subscriptions ?? []).filter((s) => s.status === 'active').length;
-  }, [subscriptions, useDemo]);
-
   const [mode, setMode] = useState<'list' | 'create'>('list');
   const [saving, setSaving] = useState(false);
   const [editId, setEditId] = useState<string | null>(null);
@@ -248,13 +255,14 @@ const CreatorPosts = () => {
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [deleting, setDeleting] = useState(false);
   const [detailsOpen, setDetailsOpen] = useState(false);
-  const [importing, setImporting] = useState(false);
 
-  const [resultTab, setResultTab] = useState<ResultTab>('all');
-  const [sportFilter, setSportFilter] = useState<string>('all');
-  const [dateRange, setDateRange] = useState<DateRangeKey>('30');
-  const [searchPicks, setSearchPicks] = useState('');
+  const [statusTab, setStatusTab] = useState<StatusTab>('all');
+  const [typeFilter, setTypeFilter] = useState<string>('all');
+  const [categoryFilter, setCategoryFilter] = useState<string>('all');
+  const [sortKey, setSortKey] = useState<SortKey>('newest');
+  const [searchPicks, setSearchPicks] = useState(queryFromUrl);
   const [tablePage, setTablePage] = useState(0);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
 
   const [title, setTitle] = useState('');
   const [sport, setSport] = useState('');
@@ -267,13 +275,12 @@ const CreatorPosts = () => {
   const [notes, setNotes] = useState('');
   const [isPremium, setIsPremium] = useState(true);
   const [oddsSource, setOddsSource] = useState<'us' | 'eu' | null>(null);
-  const importRef = useRef<HTMLInputElement>(null);
 
   const hasPickDetails = Boolean(
     sport || event || pick || usOdds || euOdds || (units && units !== '1') || tags,
   );
 
-  const sportsInData = useMemo(() => {
+  const categoriesInData = useMemo(() => {
     const set = new Set<string>();
     for (const p of enriched) {
       if (p.sport) set.add(p.sport);
@@ -281,29 +288,34 @@ const CreatorPosts = () => {
     return Array.from(set).sort();
   }, [enriched]);
 
-  const rangeCutoffMs = useMemo(() => {
-    if (dateRange === 'all') return 0;
-    const days = Number(dateRange);
-    return subDays(new Date(), days).getTime();
-  }, [dateRange]);
+  const statusCounts = useMemo(() => {
+    const counts = { all: enriched.length, published: 0, scheduled: 0, draft: 0, archived: 0 };
+    for (const p of enriched) {
+      counts[p.uiStatus] += 1;
+    }
+    return counts;
+  }, [enriched]);
 
   const filtered = useMemo(() => {
     const q = searchPicks.trim().toLowerCase();
-    return enriched.filter((p) => {
-      if (resultTab === 'scheduled') return p.isScheduled;
-      if (resultTab !== 'all' && p.result !== resultTab) return false;
-      if (p.isScheduled && resultTab !== 'all') return false;
-      if (sportFilter !== 'all' && p.sport !== sportFilter) return false;
-      if (rangeCutoffMs > 0 && p.createdAtMs < rangeCutoffMs) return false;
+    const rows = enriched.filter((p) => {
+      if (statusTab !== 'all' && p.uiStatus !== statusTab) return false;
+      if (typeFilter !== 'all' && p.postType !== typeFilter) return false;
+      if (categoryFilter !== 'all' && p.sport !== categoryFilter) return false;
       if (!q) return true;
       return (
         p.title.toLowerCase().includes(q) ||
+        p.excerpt.toLowerCase().includes(q) ||
         p.event.toLowerCase().includes(q) ||
         p.pick.toLowerCase().includes(q) ||
         p.sport.toLowerCase().includes(q)
       );
     });
-  }, [enriched, resultTab, sportFilter, rangeCutoffMs, searchPicks]);
+    rows.sort((a, b) =>
+      sortKey === 'newest' ? b.createdAtMs - a.createdAtMs : a.createdAtMs - b.createdAtMs,
+    );
+    return rows;
+  }, [enriched, statusTab, typeFilter, categoryFilter, searchPicks, sortKey]);
 
   const tablePageCount = Math.max(1, Math.ceil(filtered.length / TABLE_PAGE_SIZE));
   const safePage = Math.min(tablePage, tablePageCount - 1);
@@ -312,52 +324,63 @@ const CreatorPosts = () => {
     safePage * TABLE_PAGE_SIZE + TABLE_PAGE_SIZE,
   );
 
+  const pageAllSelected =
+    pageRows.length > 0 && pageRows.every((r) => selectedIds.has(r.id));
+
+  const toggleSelectAllPage = (checked: boolean) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      for (const row of pageRows) {
+        if (checked) next.add(row.id);
+        else next.delete(row.id);
+      }
+      return next;
+    });
+  };
+
+  const toggleSelectOne = (id: string, checked: boolean) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (checked) next.add(id);
+      else next.delete(id);
+      return next;
+    });
+  };
+
   const metrics = useMemo(() => {
     if (useDemo) {
       return {
-        totalPicks: CREATOR_PICKS_DEMO_METRICS.totalPicks,
-        totalPicksDelta: CREATOR_PICKS_DEMO_METRICS.totalPicksDelta,
-        winRate: CREATOR_PICKS_DEMO_METRICS.winRate,
-        winRateDelta: CREATOR_PICKS_DEMO_METRICS.winRateDelta,
-        profit: CREATOR_PICKS_DEMO_METRICS.profit,
-        profitDelta: CREATOR_PICKS_DEMO_METRICS.profitDelta,
-        subscribers: CREATOR_PICKS_DEMO_METRICS.subscribers,
-        subscribersDelta: CREATOR_PICKS_DEMO_METRICS.subscribersDelta,
+        published: CREATOR_PICKS_DEMO_METRICS.published,
+        publishedDelta: CREATOR_PICKS_DEMO_METRICS.publishedDelta,
+        scheduled: CREATOR_PICKS_DEMO_METRICS.scheduled,
+        scheduledDelta: CREATOR_PICKS_DEMO_METRICS.scheduledDelta,
+        drafts: CREATOR_PICKS_DEMO_METRICS.drafts,
+        draftsDelta: CREATOR_PICKS_DEMO_METRICS.draftsDelta,
       };
     }
 
     const now = Date.now();
-    const windowMs = dateRange === 'all' ? 30 * 86400000 : Number(dateRange) * 86400000;
+    const windowMs = 30 * 86400000;
     const currentStart = now - windowMs;
     const previousStart = currentStart - windowMs;
+
+    const countStatus = (rows: EnrichedPick[], status: PostUiStatus) =>
+      rows.filter((p) => p.uiStatus === status).length;
 
     const inCurrent = enriched.filter((p) => p.createdAtMs >= currentStart);
     const inPrevious = enriched.filter(
       (p) => p.createdAtMs >= previousStart && p.createdAtMs < currentStart,
     );
 
-    const currentSettled = inCurrent.filter((p) => p.result === 'won' || p.result === 'lost');
-    const previousSettled = inPrevious.filter((p) => p.result === 'won' || p.result === 'lost');
-    const { winRatePct: currentWr } = computeWinRate(currentSettled.map((p) => p.result));
-    const { winRatePct: previousWr } = computeWinRate(previousSettled.map((p) => p.result));
-
-    const currentProfit = inCurrent.reduce((sum, p) => sum + p.profit, 0);
-    const previousProfit = inPrevious.reduce((sum, p) => sum + p.profit, 0);
-
     return {
-      totalPicks: inCurrent.length,
-      totalPicksDelta: pctDelta(inCurrent.length, inPrevious.length),
-      winRate: currentWr,
-      winRateDelta:
-        previousSettled.length === 0 && currentSettled.length === 0
-          ? null
-          : Number((currentWr - previousWr).toFixed(1)),
-      profit: Number(currentProfit.toFixed(1)),
-      profitDelta: pctDelta(currentProfit, previousProfit),
-      subscribers: activeSubscribers,
-      subscribersDelta: null as number | null,
+      published: statusCounts.published,
+      publishedDelta: pctDelta(countStatus(inCurrent, 'published'), countStatus(inPrevious, 'published')),
+      scheduled: statusCounts.scheduled,
+      scheduledDelta: pctDelta(countStatus(inCurrent, 'scheduled'), countStatus(inPrevious, 'scheduled')),
+      drafts: statusCounts.draft,
+      draftsDelta: pctDelta(countStatus(inCurrent, 'draft'), countStatus(inPrevious, 'draft')),
     };
-  }, [enriched, dateRange, activeSubscribers, useDemo]);
+  }, [enriched, statusCounts, useDemo]);
 
   const guardDemoAction = (id?: string): boolean => {
     if (useDemo || (id && isCreatorPicksDemoId(id))) {
@@ -507,46 +530,6 @@ const CreatorPosts = () => {
     }
   };
 
-  const handleImportFile = async (file: File) => {
-    if (guardDemoAction()) return;
-    if (!creatorId) {
-      toast.error('Creator profile not ready');
-      return;
-    }
-    setImporting(true);
-    try {
-      const text = await file.text();
-      const lines = text.split(/\r?\n/).map((l) => l.trim()).filter(Boolean);
-      if (lines.length === 0) {
-        toast.error('File is empty');
-        return;
-      }
-      const header = lines[0].toLowerCase();
-      const hasHeader = header.includes('title');
-      const rows = hasHeader ? lines.slice(1) : lines;
-      let imported = 0;
-      for (const row of rows.slice(0, 50)) {
-        const cols = row.split(',').map((c) => c.trim().replace(/^"|"$/g, ''));
-        const rowTitle = cols[0];
-        if (!rowTitle) continue;
-        const rowContent = cols[1] || rowTitle;
-        await upsertPost({
-          creatorId,
-          title: rowTitle.slice(0, 200),
-          content: rowContent,
-          isPremium: true,
-        });
-        imported += 1;
-      }
-      toast.success(`Imported ${imported} pick${imported === 1 ? '' : 's'}`);
-    } catch (e) {
-      toast.error(e instanceof Error ? e.message : 'Import failed');
-    } finally {
-      setImporting(false);
-      if (importRef.current) importRef.current.value = '';
-    }
-  };
-
   const deleteDialog = (
     <AlertDialog open={!!deleteId} onOpenChange={(open) => { if (!open) setDeleteId(null); }}>
       <AlertDialogContent
@@ -565,13 +548,13 @@ const CreatorPosts = () => {
             </span>
             <div className="min-w-0">
               <p className="text-caption font-semibold uppercase tracking-[0.14em] text-muted-foreground">
-                Picks
+                Posts
               </p>
               <AlertDialogTitle className="mt-1 text-heading font-bold tracking-tight">
-                Delete this pick?
+                Delete this post?
               </AlertDialogTitle>
               <AlertDialogDescription className="mt-1.5 text-support text-muted-foreground">
-                This permanently removes the pick. Settled history on this pick will be gone.
+                This permanently removes the post. Settled history on this post will be gone.
               </AlertDialogDescription>
             </div>
           </div>
@@ -614,13 +597,13 @@ const CreatorPosts = () => {
             </span>
             <div className="min-w-0">
               <p className="text-caption font-semibold uppercase tracking-[0.14em] text-muted-foreground">
-                Picks
+                Posts
               </p>
               <DialogTitle className="mt-1 text-heading font-bold tracking-tight">
-                Pick posted successfully
+                Post published successfully
               </DialogTitle>
               <DialogDescription className="mt-1.5 text-support text-muted-foreground">
-                Your pick is now live for subscribers.
+                Your post is now live for subscribers.
               </DialogDescription>
             </div>
           </div>
@@ -643,16 +626,16 @@ const CreatorPosts = () => {
             }}
             className="min-h-11 w-full rounded-xl"
           >
-            Back to picks <ArrowRight className="ml-1.5 h-4 w-4" />
+            Back to posts <ArrowRight className="ml-1.5 h-4 w-4" />
           </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
   );
 
-  // CREATE MODE — matches Create Pick mockup
+  // CREATE MODE
   if (mode === 'create') {
-    const primaryCta = editId ? 'Save changes' : 'Publish Pick';
+    const primaryCta = editId ? 'Save changes' : 'Publish Post';
     const canPublish = Boolean(title.trim() && notes.trim());
 
     return (
@@ -663,13 +646,13 @@ const CreatorPosts = () => {
             onClick={() => setMode('list')}
             className="mb-4 text-support text-muted-foreground transition-colors hover:text-foreground"
           >
-            ← Back to picks
+            ← Back to posts
           </button>
           <p className="text-caption font-semibold uppercase tracking-[0.14em] text-muted-foreground">
-            Picks
+            Posts
           </p>
           <h1 className="mt-1 text-heading font-bold tracking-tight text-foreground md:text-heading-lg">
-            {editId ? 'Edit Pick' : 'Create Pick'}
+            {editId ? 'Edit Post' : 'Create Post'}
           </h1>
           <p className="mt-1.5 text-support text-muted-foreground">
             Share your analysis and optional odds so subscribers know exactly what to play.
@@ -933,37 +916,28 @@ const CreatorPosts = () => {
 
   const metricItems = [
     {
-      label: 'Total Picks',
-      value: String(metrics.totalPicks),
-      icon: Target,
-      iconClassName: kpiIconTone.violet,
-      trendLabel: formatSignedPct(metrics.totalPicksDelta),
-      trendPositive: (metrics.totalPicksDelta ?? 0) > 0,
-    },
-    {
-      label: 'Win Rate',
-      value: `${metrics.winRate}%`,
-      icon: Trophy,
-      iconClassName: kpiIconTone.sky,
-      trendLabel: formatSignedPct(metrics.winRateDelta, ' pts'),
-      trendPositive: (metrics.winRateDelta ?? 0) > 0,
-    },
-    {
-      label: 'Total Profit (Units)',
-      value: `${metrics.profit >= 0 ? '+' : ''}${metrics.profit}u`,
-      icon: BarChart3,
+      label: 'Published posts',
+      value: String(metrics.published),
+      icon: FileText,
       iconClassName: kpiIconTone.emerald,
-      trendLabel: formatSignedPct(metrics.profitDelta),
-      trendPositive: (metrics.profitDelta ?? 0) > 0,
+      trendLabel: formatSignedPct(metrics.publishedDelta),
+      trendPositive: (metrics.publishedDelta ?? 0) > 0,
     },
     {
-      label: 'Active Subscribers',
-      value: String(metrics.subscribers),
-      icon: Users,
-      iconClassName: kpiIconTone.amber,
-      trendLabel: formatSignedPct(metrics.subscribersDelta),
-      trendPositive: (metrics.subscribersDelta ?? 0) > 0,
-      href: '/creator/subscribers',
+      label: 'Scheduled posts',
+      value: String(metrics.scheduled),
+      icon: Clock,
+      iconClassName: kpiIconTone.violet,
+      trendLabel: formatSignedPct(metrics.scheduledDelta),
+      trendPositive: (metrics.scheduledDelta ?? 0) > 0,
+    },
+    {
+      label: 'Drafts',
+      value: String(metrics.drafts),
+      icon: FileText,
+      iconClassName: kpiIconTone.sky,
+      trendLabel: formatSignedPct(metrics.draftsDelta),
+      trendPositive: (metrics.draftsDelta ?? 0) > 0,
     },
   ];
 
@@ -971,62 +945,38 @@ const CreatorPosts = () => {
     const total = tablePageCount;
     if (total <= 7) return Array.from({ length: total }, (_, i) => i);
     const pages: Array<number | 'ellipsis'> = [0];
-    const start = Math.max(1, safePage - 1);
-    const end = Math.min(total - 2, safePage + 1);
-    if (start > 1) pages.push('ellipsis');
-    for (let i = start; i <= end; i++) pages.push(i);
-    if (end < total - 2) pages.push('ellipsis');
+    const startPage = Math.max(1, safePage - 1);
+    const endPage = Math.min(total - 2, safePage + 1);
+    if (startPage > 1) pages.push('ellipsis');
+    for (let i = startPage; i <= endPage; i++) pages.push(i);
+    if (endPage < total - 2) pages.push('ellipsis');
     pages.push(total - 1);
     return pages;
   })();
 
+  const tabCount = (id: StatusTab): number => {
+    if (useDemo && id === 'all') return CREATOR_PICKS_DEMO_METRICS.totalPosts;
+    if (useDemo && id === 'published') return CREATOR_PICKS_DEMO_METRICS.published;
+    if (useDemo && id === 'scheduled') return CREATOR_PICKS_DEMO_METRICS.scheduled;
+    if (useDemo && id === 'draft') return CREATOR_PICKS_DEMO_METRICS.drafts;
+    if (useDemo && id === 'archived') return CREATOR_PICKS_DEMO_METRICS.archived;
+    return statusCounts[id];
+  };
+
   return (
     <DashboardLayout type="creator">
-      <input
-        ref={importRef}
-        type="file"
-        accept=".csv,text/csv"
-        className="hidden"
-        onChange={(e) => {
-          const file = e.target.files?.[0];
-          if (file) void handleImportFile(file);
-        }}
-      />
-
       <header className="mb-6 flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
         <div className="min-w-0">
-          <p className="text-caption font-semibold uppercase tracking-[0.14em] text-muted-foreground">
-            Picks
-          </p>
-          <h1 className="mt-1 text-heading font-bold tracking-tight text-foreground md:text-heading-lg">
-            Your Picks
+          <h1 className="text-2xl font-extrabold tracking-tight text-foreground sm:text-3xl">
+            Posts
           </h1>
-          <p className="mt-1.5 max-w-xl text-support text-muted-foreground">
-            Create, manage and track your picks. Keep your subscribers informed.
+          <p className="mt-1.5 max-w-xl text-sm font-medium text-muted-foreground sm:text-base">
+            Manage your content and engage your audience.
           </p>
         </div>
-        <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:items-center">
-          <Button
-            type="button"
-            variant="outline"
-            className="min-h-11 rounded-xl"
-            disabled={importing || (!useDemo && !creatorId)}
-            onClick={() => {
-              if (guardDemoAction()) return;
-              importRef.current?.click();
-            }}
-          >
-            {importing ? (
-              <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />
-            ) : (
-              <Upload className="mr-1.5 h-4 w-4" />
-            )}
-            Import Picks
-          </Button>
-          <Button type="button" onClick={openCreate} className="min-h-11 rounded-xl">
-            <Plus className="mr-1.5 h-4 w-4" /> New Pick
-          </Button>
-        </div>
+        <Button type="button" onClick={openCreate} className="h-11 w-full rounded-xl sm:w-auto">
+          <Plus className="mr-1.5 h-4 w-4" /> Create Post
+        </Button>
       </header>
 
       {useDemo ? (
@@ -1034,142 +984,112 @@ const CreatorPosts = () => {
           <Sparkles className="mt-0.5 h-5 w-5 shrink-0 text-amber-600 dark:text-amber-400 sm:mt-0" aria-hidden />
           <p className="min-w-0 flex-1 text-sm font-semibold leading-snug">
             Sample preview data — metrics and table rows are mock content so you can review the layout.
-            Publish a real pick to replace them, or add{' '}
+            Publish a real post to replace them, or add{' '}
             <span className="font-mono text-xs">?demo=0</span> to see the empty state.
           </p>
         </div>
       ) : null}
 
+      <div className={cn(segmentedTrackClassName, 'mb-5 w-full overflow-x-auto')}>
+        {STATUS_TABS.map((tab) => (
+          <button
+            key={tab.id}
+            type="button"
+            className={segmentedItemClassName(statusTab === tab.id)}
+            onClick={() => {
+              setStatusTab(tab.id);
+              setTablePage(0);
+            }}
+          >
+            {tab.label} ({tabCount(tab.id)})
+          </button>
+        ))}
+      </div>
+
       <div className="mb-6 sm:mb-8">
         <DashboardKpiStrip items={metricItems} />
       </div>
 
-      <section className="mb-8 grid grid-cols-1 gap-4 sm:grid-cols-2">
-        <Link
-          to="/creator/performance-tracker"
-          className="group flex items-start gap-4 rounded-2xl border border-border bg-card p-5 shadow-[var(--shadow-card)] transition-colors hover:border-primary/40"
-        >
-          <span className={cn('flex h-11 w-11 shrink-0 items-center justify-center rounded-xl', kpiIconTone.sky)}>
-            <BarChart3 className="h-5 w-5" aria-hidden />
-          </span>
-          <div className="min-w-0 flex-1">
-            <div className="flex items-center justify-between gap-2">
-              <h3 className="text-base font-extrabold tracking-tight text-foreground">Performance</h3>
-              <ArrowRight className="h-4 w-4 shrink-0 text-muted-foreground transition-transform group-hover:translate-x-0.5 group-hover:text-primary" />
-            </div>
-            <p className="mt-1 text-sm text-muted-foreground">
-              Track win rate, units, and streak trends across your settled picks.
-            </p>
-          </div>
-        </Link>
-        <Link
-          to="/creator/subscribers"
-          className="group flex items-start gap-4 rounded-2xl border border-border bg-card p-5 shadow-[var(--shadow-card)] transition-colors hover:border-primary/40"
-        >
-          <span className={cn('flex h-11 w-11 shrink-0 items-center justify-center rounded-xl', kpiIconTone.amber)}>
-            <Users className="h-5 w-5" aria-hidden />
-          </span>
-          <div className="min-w-0 flex-1">
-            <div className="flex items-center justify-between gap-2">
-              <h3 className="text-base font-extrabold tracking-tight text-foreground">Subscribers</h3>
-              <ArrowRight className="h-4 w-4 shrink-0 text-muted-foreground transition-transform group-hover:translate-x-0.5 group-hover:text-primary" />
-            </div>
-            <p className="mt-1 text-sm text-muted-foreground">
-              Manage who sees your premium picks and grow your paying audience.
-            </p>
-          </div>
-        </Link>
-      </section>
-
       <section className="overflow-hidden rounded-2xl border border-border bg-card shadow-[var(--shadow-card)]">
-        <div className="flex flex-col gap-4 border-b border-border p-4 sm:p-5">
-          <div className="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
-            <h2 className="text-base font-extrabold tracking-tight text-foreground">All picks</h2>
-            <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
-              <Select
-                value={sportFilter}
-                onValueChange={(v) => {
-                  setSportFilter(v);
-                  setTablePage(0);
-                }}
-              >
-                <SelectTrigger className="h-11 w-full rounded-xl sm:w-[140px]">
-                  <SelectValue placeholder="All Sports" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Sports</SelectItem>
-                  {sportsInData.map((s) => (
-                    <SelectItem key={s} value={s}>
-                      {s}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-
-              <Select
-                value={dateRange}
-                onValueChange={(v) => {
-                  setDateRange(v as DateRangeKey);
-                  setTablePage(0);
-                }}
-              >
-                <SelectTrigger className="h-11 w-full rounded-xl sm:w-[150px]">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="7">Last 7 days</SelectItem>
-                  <SelectItem value="30">Last 30 days</SelectItem>
-                  <SelectItem value="90">Last 90 days</SelectItem>
-                  <SelectItem value="all">All time</SelectItem>
-                </SelectContent>
-              </Select>
-
-              <div className="relative w-full sm:w-[220px]">
-                <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                <Input
-                  value={searchPicks}
-                  onChange={(e) => {
-                    setSearchPicks(e.target.value);
-                    setTablePage(0);
-                  }}
-                  placeholder="Search picks..."
-                  className="h-11 rounded-xl ps-9"
-                />
-              </div>
-            </div>
+        <div className="flex flex-col gap-3 border-b border-border p-4 sm:flex-row sm:flex-wrap sm:items-center sm:p-5">
+          <div className="relative min-w-0 flex-1 sm:max-w-xs">
+            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+            <Input
+              value={searchPicks}
+              onChange={(e) => {
+                setSearchPicks(e.target.value);
+                setTablePage(0);
+              }}
+              placeholder="Search posts..."
+              className="h-11 rounded-xl ps-9"
+            />
           </div>
-
-          <div className={cn(segmentedTrackClassName, 'w-full overflow-x-auto')}>
-            {RESULT_TABS.map((tab) => (
-              <button
-                key={tab.id}
-                type="button"
-                className={segmentedItemClassName(resultTab === tab.id)}
-                onClick={() => {
-                  setResultTab(tab.id);
-                  setTablePage(0);
-                }}
-              >
-                {tab.label}
-              </button>
-            ))}
-          </div>
+          <Select
+            value={typeFilter}
+            onValueChange={(v) => {
+              setTypeFilter(v);
+              setTablePage(0);
+            }}
+          >
+            <SelectTrigger className="h-11 w-full rounded-xl sm:w-[140px]">
+              <SelectValue placeholder="All types" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All types</SelectItem>
+              <SelectItem value="Text">Text</SelectItem>
+              <SelectItem value="Video">Video</SelectItem>
+            </SelectContent>
+          </Select>
+          <Select
+            value={categoryFilter}
+            onValueChange={(v) => {
+              setCategoryFilter(v);
+              setTablePage(0);
+            }}
+          >
+            <SelectTrigger className="h-11 w-full rounded-xl sm:w-[160px]">
+              <SelectValue placeholder="All categories" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All categories</SelectItem>
+              {categoriesInData.map((s) => (
+                <SelectItem key={s} value={s}>
+                  {s}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <Select
+            value={sortKey}
+            onValueChange={(v) => {
+              setSortKey(v as SortKey);
+              setTablePage(0);
+            }}
+          >
+            <SelectTrigger className="h-11 w-full rounded-xl sm:w-[150px]">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="newest">Newest first</SelectItem>
+              <SelectItem value="oldest">Oldest first</SelectItem>
+            </SelectContent>
+          </Select>
         </div>
 
         {filtered.length === 0 ? (
           <div className="p-8 text-center">
             <FileText className="mx-auto mb-3 h-8 w-8 text-muted-foreground" />
             <h3 className="mb-1 text-title font-semibold text-foreground">
-              {enriched.length === 0 ? 'No picks yet' : 'No picks match these filters'}
+              {enriched.length === 0 ? 'No posts yet' : 'No posts match these filters'}
             </h3>
             <p className="mx-auto mb-5 max-w-sm text-support text-muted-foreground">
               {enriched.length === 0
-                ? "Share your first insight with subscribers — add optional sport, odds, and units when it's a betting pick."
-                : 'Try another tab, sport, or date range.'}
+                ? 'Create your first post to engage your audience.'
+                : 'Try another tab, type, or category.'}
             </p>
             {enriched.length === 0 ? (
               <Button onClick={openCreate} className="min-h-11">
-                <Plus className="mr-1.5 h-4 w-4" /> Create Pick
+                <Plus className="mr-1.5 h-4 w-4" /> Create Post
               </Button>
             ) : null}
           </div>
@@ -1178,155 +1098,114 @@ const CreatorPosts = () => {
             <Table>
               <TableHeader>
                 <TableRow className="hover:bg-transparent">
-                  <TableHead>Date</TableHead>
-                  <TableHead>Match</TableHead>
-                  <TableHead className="hidden sm:table-cell">Odds</TableHead>
-                  <TableHead>Result</TableHead>
-                  <TableHead className="hidden md:table-cell">Profit (u)</TableHead>
-                  <TableHead>Access</TableHead>
+                  <TableHead className="w-10">
+                    <Checkbox
+                      checked={pageAllSelected}
+                      onCheckedChange={(v) => toggleSelectAllPage(v === true)}
+                      aria-label="Select all on page"
+                    />
+                  </TableHead>
+                  <TableHead>Title</TableHead>
+                  <TableHead className="hidden sm:table-cell">Type</TableHead>
+                  <TableHead className="hidden md:table-cell">Date</TableHead>
+                  <TableHead>Status</TableHead>
                   <TableHead className="w-12 text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {pageRows.map((row) => {
-                  const oddsDisplay = row.euOdds || (row.usOdds ? americanToDecimal(row.usOdds) : null);
-                  const isWin = row.result === 'won';
-                  const isLoss = row.result === 'lost';
-                  const isPending = row.result === 'pending' || row.result === 'push';
-                  return (
-                    <TableRow key={row.id}>
-                      <TableCell className="whitespace-nowrap text-support text-muted-foreground">
-                        {format(new Date(row.created_at), 'MMM d, yyyy')}
-                      </TableCell>
-                      <TableCell className="min-w-[180px]">
-                        <MatchCell event={row.event} sport={row.sport} pick={row.pick} />
-                      </TableCell>
-                      <TableCell className="hidden tabular-nums text-support sm:table-cell">
-                        {oddsDisplay ?? '—'}
-                      </TableCell>
-                      <TableCell>
-                        {isWin ? (
-                          <span
-                            className={cn(
-                              'inline-flex rounded-full border px-2 py-0.5 text-xs font-bold',
-                              resultPillTone.win,
-                            )}
-                          >
-                            Win
-                          </span>
-                        ) : isLoss ? (
-                          <span
-                            className={cn(
-                              'inline-flex rounded-full border px-2 py-0.5 text-xs font-bold',
-                              resultPillTone.loss,
-                            )}
-                          >
-                            Loss
-                          </span>
-                        ) : row.result === 'push' ? (
-                          <span
-                            className={cn(
-                              'inline-flex rounded-full border px-2 py-0.5 text-xs font-bold capitalize',
-                              resultPillTone.push,
-                            )}
-                          >
-                            Push
-                          </span>
+                {pageRows.map((row) => (
+                  <TableRow key={row.id}>
+                    <TableCell>
+                      <Checkbox
+                        checked={selectedIds.has(row.id)}
+                        onCheckedChange={(v) => toggleSelectOne(row.id, v === true)}
+                        aria-label={`Select ${row.title}`}
+                      />
+                    </TableCell>
+                    <TableCell className="min-w-[200px]">
+                      <div className="min-w-0">
+                        <p className="truncate text-sm font-bold text-foreground">{row.title}</p>
+                        <p className="truncate text-xs text-muted-foreground">{row.excerpt}</p>
+                      </div>
+                    </TableCell>
+                    <TableCell className="hidden sm:table-cell">
+                      <span className="inline-flex items-center gap-1.5 text-sm font-semibold text-foreground">
+                        {row.postType === 'Video' ? (
+                          <Play className="h-3.5 w-3.5 text-muted-foreground" aria-hidden />
                         ) : (
-                          <span
-                            className={cn(
-                              'inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-xs font-bold',
-                              resultPillTone.pending,
-                            )}
-                          >
-                            <Clock className="h-3 w-3" /> Pending
-                          </span>
+                          <FileText className="h-3.5 w-3.5 text-muted-foreground" aria-hidden />
                         )}
-                      </TableCell>
-                      <TableCell
+                        {row.postType}
+                      </span>
+                    </TableCell>
+                    <TableCell className="hidden whitespace-nowrap text-sm text-muted-foreground md:table-cell">
+                      {format(new Date(row.created_at), 'MMM d, yyyy h:mm a')}
+                    </TableCell>
+                    <TableCell>
+                      <span
                         className={cn(
-                          'hidden tabular-nums font-bold md:table-cell',
-                          isWin && 'text-emerald-600 dark:text-emerald-400',
-                          isLoss && 'text-rose-600 dark:text-rose-400',
-                          isPending && 'text-muted-foreground',
+                          'inline-flex rounded-full border px-2.5 py-0.5 text-xs font-bold',
+                          statusPillClass[row.uiStatus],
                         )}
                       >
-                        {row.result === 'pending'
-                          ? '—'
-                          : `${row.profit >= 0 ? '+' : ''}${row.profit.toFixed(2)}u`}
-                      </TableCell>
-                      <TableCell>
-                        {row.is_premium ? (
-                          <span
-                            className={cn(
-                              'inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-xs font-bold',
-                              'border-amber-500/25 bg-amber-500/10 text-amber-700 dark:text-amber-400',
-                            )}
+                        {statusLabel[row.uiStatus]}
+                      </span>
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-9 w-9"
+                            aria-label="Post actions"
                           >
-                            <Crown className="h-3 w-3" /> Premium
-                          </span>
-                        ) : (
-                          <span className="inline-flex rounded-full border border-border bg-muted/50 px-2 py-0.5 text-xs font-bold text-muted-foreground">
-                            Free
-                          </span>
-                        )}
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="h-9 w-9"
-                              aria-label="Pick actions"
-                            >
-                              <MoreVertical className="h-4 w-4" />
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end">
-                            <DropdownMenuItem onClick={() => openEdit(row)}>
-                              <Pencil className="mr-2 h-4 w-4" /> Edit
-                            </DropdownMenuItem>
-                            {row.result === 'pending' ? (
-                              <>
-                                <DropdownMenuItem
-                                  onClick={() => void handleResultChange(row.id, 'won')}
-                                >
-                                  <Trophy className="mr-2 h-4 w-4 text-emerald-500" /> Mark won
-                                </DropdownMenuItem>
-                                <DropdownMenuItem
-                                  onClick={() => void handleResultChange(row.id, 'lost')}
-                                >
-                                  <XCircle className="mr-2 h-4 w-4 text-red-500" /> Mark lost
-                                </DropdownMenuItem>
-                                <DropdownMenuItem
-                                  onClick={() => void handleResultChange(row.id, 'push')}
-                                >
-                                  <Minus className="mr-2 h-4 w-4" /> Mark push
-                                </DropdownMenuItem>
-                                <DropdownMenuSeparator />
-                              </>
-                            ) : null}
-                            <DropdownMenuItem
-                              className="text-destructive focus:text-destructive"
-                              onClick={() => setDeleteId(row.id)}
-                            >
-                              <Trash2 className="mr-2 h-4 w-4" /> Delete
-                            </DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      </TableCell>
-                    </TableRow>
-                  );
-                })}
+                            <MoreVertical className="h-4 w-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem onClick={() => openEdit(row)}>
+                            <Pencil className="mr-2 h-4 w-4" /> Edit
+                          </DropdownMenuItem>
+                          {row.result === 'pending' ? (
+                            <>
+                              <DropdownMenuItem
+                                onClick={() => void handleResultChange(row.id, 'won')}
+                              >
+                                <Trophy className="mr-2 h-4 w-4 text-emerald-500" /> Mark won
+                              </DropdownMenuItem>
+                              <DropdownMenuItem
+                                onClick={() => void handleResultChange(row.id, 'lost')}
+                              >
+                                <XCircle className="mr-2 h-4 w-4 text-red-500" /> Mark lost
+                              </DropdownMenuItem>
+                              <DropdownMenuItem
+                                onClick={() => void handleResultChange(row.id, 'push')}
+                              >
+                                <Minus className="mr-2 h-4 w-4" /> Mark push
+                              </DropdownMenuItem>
+                              <DropdownMenuSeparator />
+                            </>
+                          ) : null}
+                          <DropdownMenuItem
+                            className="text-destructive focus:text-destructive"
+                            onClick={() => setDeleteId(row.id)}
+                          >
+                            <Trash2 className="mr-2 h-4 w-4" /> Delete
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </TableCell>
+                  </TableRow>
+                ))}
               </TableBody>
             </Table>
 
             <div className="flex flex-col gap-3 border-t border-border px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
-              <p className="text-support text-muted-foreground">
-                Showing {showingFrom}–{showingTo} of {filtered.length} picks
+              <p className="text-sm text-muted-foreground">
+                Showing {showingFrom}–{showingTo} of {filtered.length} posts
                 {!useDemo && (postsStatus === 'CanLoadMore' || postsStatus === 'LoadingMore')
-                  ? ' (load more for older picks)'
+                  ? ' (load more for older posts)'
                   : ''}
               </p>
               <div className="flex flex-wrap items-center gap-1">
@@ -1364,30 +1243,21 @@ const CreatorPosts = () => {
                   size="icon"
                   className="h-9 w-9"
                   disabled={safePage >= tablePageCount - 1}
-                  onClick={() => setTablePage((p) => Math.min(tablePageCount - 1, p + 1))}
+                  onClick={() => {
+                    if (safePage >= tablePageCount - 1) return;
+                    setTablePage((p) => Math.min(tablePageCount - 1, p + 1));
+                    if (!useDemo && postsStatus === 'CanLoadMore') loadMore(PAGE_SIZE);
+                  }}
                   aria-label="Next page"
                 >
                   <ChevronRight className="h-4 w-4" />
                 </Button>
-                {(postsStatus === 'CanLoadMore' || postsStatus === 'LoadingMore') && !useDemo && (
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    className="ml-1 min-h-9"
-                    disabled={postsStatus === 'LoadingMore'}
-                    onClick={() => loadMore(PAGE_SIZE)}
-                  >
-                    {postsStatus === 'LoadingMore' ? (
-                      <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
-                    ) : null}
-                    Load more
-                  </Button>
-                )}
               </div>
             </div>
           </>
         )}
       </section>
+
       {deleteDialog}
     </DashboardLayout>
   );

@@ -33,11 +33,11 @@ export const CREATOR_BRANDING_DEMO = {
 } as const;
 
 export const CREATOR_BRANDING_TIPS = [
-  'Use a high-quality logo (at least 512×512).',
-  'Keep your brand name short and memorable.',
-  'Choose a primary color that matches your content.',
-  'Test contrast so text stays readable on your page.',
-  'Stay consistent across emails and share links.',
+  'Use a high-quality logo',
+  'Keep your brand name short and memorable',
+  'Choose colors that match your content',
+  'Test contrast so text stays readable',
+  'Stay consistent across emails and share links',
 ] as const;
 
 export const CREATOR_BRANDING_INFO =
@@ -92,22 +92,23 @@ export const CREATOR_TEAM_ROLE_PERMISSIONS: Array<{
   {
     role: 'admin',
     title: 'Admin',
-    description: 'Manage content, products, and most settings.',
+    description: 'Can manage content, products, and most settings.',
   },
   {
     role: 'member',
     title: 'Member',
-    description: 'Create and manage content.',
+    description: 'Can create and manage content.',
   },
   {
     role: 'viewer',
     title: 'Viewer',
-    description: 'View analytics and basic information.',
+    description: 'Can view analytics and basic information.',
   },
 ];
 
 export const CREATOR_BILLING_DEMO = {
   planName: 'Pro Plan',
+  planDescription: 'Everything you need to grow your business.',
   planPriceLabel: '$49/month',
   planAmount: '$49.00',
   nextBillingDate: 'Feb 15, 2025',
@@ -142,6 +143,92 @@ export const CREATOR_BILLING_HISTORY: Array<{
   { id: 'inv-5', dateLabel: 'Sep 15, 2024', amount: '$49.00', status: 'paid' },
 ];
 
+export const CREATOR_INTEGRATIONS_CATALOG: Array<{
+  id: string;
+  name: string;
+  description: string;
+  tone: string;
+}> = [
+  {
+    id: 'discord',
+    name: 'Discord',
+    description: 'Automate access for your community.',
+    tone: 'bg-indigo-500/15 text-indigo-700 dark:text-indigo-400',
+  },
+  {
+    id: 'telegram',
+    name: 'Telegram',
+    description: 'Automate access for your channel.',
+    tone: 'bg-sky-500/15 text-sky-700 dark:text-sky-400',
+  },
+  {
+    id: 'stripe',
+    name: 'Stripe',
+    description: 'Payments, subscriptions and payouts.',
+    tone: 'bg-violet-500/15 text-violet-700 dark:text-violet-400',
+  },
+  {
+    id: 'paypal',
+    name: 'PayPal',
+    description: 'Receive payments globally.',
+    tone: 'bg-blue-500/15 text-blue-700 dark:text-blue-400',
+  },
+  {
+    id: 'ga',
+    name: 'Google Analytics',
+    description: 'Track your website traffic and performance.',
+    tone: 'bg-amber-500/15 text-amber-700 dark:text-amber-400',
+  },
+  {
+    id: 'meta',
+    name: 'Meta Pixel',
+    description: 'Track conversions from ads.',
+    tone: 'bg-blue-600/15 text-blue-800 dark:text-blue-300',
+  },
+  {
+    id: 'zapier',
+    name: 'Zapier',
+    description: 'Automate workflows between apps.',
+    tone: 'bg-orange-500/15 text-orange-700 dark:text-orange-400',
+  },
+  {
+    id: 'youtube',
+    name: 'YouTube',
+    description: 'Sync your content and grow faster.',
+    tone: 'bg-rose-500/15 text-rose-700 dark:text-rose-400',
+  },
+  {
+    id: 'tiktok',
+    name: 'TikTok',
+    description: 'Connect your TikTok account.',
+    tone: 'bg-foreground/10 text-foreground',
+  },
+  {
+    id: 'x',
+    name: 'X (Twitter)',
+    description: 'Connect your X account.',
+    tone: 'bg-foreground/10 text-foreground',
+  },
+  {
+    id: 'email',
+    name: 'Email Provider',
+    description: 'Connect with your email marketing tool.',
+    tone: 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-400',
+  },
+  {
+    id: 'webhooks',
+    name: 'Webhooks',
+    description: 'Send data to your own applications.',
+    tone: 'bg-cyan-500/15 text-cyan-700 dark:text-cyan-400',
+  },
+];
+
+export const CREATOR_INTEGRATIONS_GROWTH = [
+  'Easily connect your existing tools',
+  'Automate your workflow',
+  'Unlock more growth opportunities',
+] as const;
+
 export const CREATOR_INTEGRATIONS_TIPS = [
   'Connect Discord to auto-assign subscriber roles.',
   'Keep guild and role IDs private — only paste from Discord developer tools.',
@@ -150,24 +237,27 @@ export const CREATOR_INTEGRATIONS_TIPS = [
 ] as const;
 
 export const CREATOR_NOTIFICATIONS_TIPS = [
-  'Turn on payments alerts so you never miss a payout.',
-  'Use pick reminders if you schedule content ahead of time.',
-  'Product updates are optional marketing from Prizelet.',
-  'You can change these anytime — preferences are per device for now.',
+  'Stay updated on new subscribers and sales',
+  'Never miss a payout status update',
+  'Get message alerts so fans get a reply faster',
+  'Critical security alerts will always be sent',
+  'You can change these anytime',
 ] as const;
 
 export const CREATOR_SECURITY_TIPS = [
-  'Use a unique password for your Prizelet account.',
-  'Enable 2FA when it becomes available.',
-  'Sign out of unused devices regularly.',
-  'Never share recovery codes or session links.',
+  'Use a strong, unique password',
+  'Enable two-factor authentication',
+  'Review active sessions regularly',
+  'Turn on login alerts for new devices',
+  'Never share recovery codes',
 ] as const;
 
 export const CREATOR_ADVANCED_TIPS = [
-  'Export your data before making destructive changes.',
-  'Stripe Connect is managed from the Payouts page.',
-  'Deactivate keeps your handle reserved; delete is permanent.',
-  'Contact support if you need help transferring ownership.',
+  'Use a custom domain',
+  'Control your public visibility',
+  'Set legal policies',
+  'Customize email templates',
+  'Export your data anytime',
 ] as const;
 
 export function shouldUseCreatorSettingsDemo(opts: {

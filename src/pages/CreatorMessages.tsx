@@ -1,12 +1,13 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { useMutation, usePaginatedQuery, useQuery } from 'convex/react';
-import { format, formatDistanceToNow } from 'date-fns';
+import { format } from 'date-fns';
 import {
   Archive,
   ArrowLeft,
   Ban,
   CheckCheck,
+  Crown,
   Gift,
   Loader2,
   MapPin,
@@ -44,6 +45,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { useCreatorProfile } from '@/hooks/useCreatorProfile';
 import {
+  CREATOR_MESSAGES_DEMO_NOW_MS,
   CREATOR_MESSAGES_DEMO_THREADS,
   isCreatorMessagesDemoId,
   shouldUseCreatorMessagesDemo,
@@ -117,13 +119,14 @@ function statusPill(status: SubStatus | 'support'): string {
   return 'bg-amber-500/10 text-amber-700 border-amber-500/25 dark:text-amber-400';
 }
 
-function shortTime(iso: string): string {
+function shortTime(iso: string, nowMs: number = Date.now()): string {
   const d = new Date(iso);
-  const diffMs = Date.now() - d.getTime();
-  if (diffMs < 60_000) return 'now';
-  if (diffMs < 3_600_000) return `${Math.max(1, Math.floor(diffMs / 60_000))}m`;
-  if (diffMs < 86_400_000) return `${Math.max(1, Math.floor(diffMs / 3_600_000))}h`;
-  if (diffMs < 7 * 86_400_000) return `${Math.max(1, Math.floor(diffMs / 86_400_000))}d`;
+  const now = new Date(nowMs);
+  const sameDay =
+    d.getFullYear() === now.getFullYear() &&
+    d.getMonth() === now.getMonth() &&
+    d.getDate() === now.getDate();
+  if (sameDay) return format(d, 'h:mm a');
   return format(d, 'MMM d');
 }
 
@@ -702,12 +705,18 @@ const CreatorMessages = () => {
             : '';
 
   const tabs: { id: InboxTab; label: string; count?: number }[] = [
-    { id: 'inbox', label: 'Inbox', count: threads.filter((t) => !t.archived && t.kind !== 'support').length },
+    {
+      id: 'inbox',
+      label: 'Inbox',
+      count: threads.filter((t) => !t.archived && t.kind !== 'support').length,
+    },
     { id: 'unread', label: 'Unread', count: inboxUnread },
     { id: 'starred', label: 'Starred' },
     { id: 'archive', label: 'Archived' },
     { id: 'broadcasts', label: 'Broadcasts' },
   ];
+
+  const listNowMs = useDemo ? CREATOR_MESSAGES_DEMO_NOW_MS : Date.now();
 
   const composer = (
     <div className="border-t border-border bg-card px-3 py-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] sm:px-4">
@@ -777,42 +786,24 @@ const CreatorMessages = () => {
     <DashboardLayout type="creator">
       <header className="mb-5 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div className="min-w-0">
-          <h1 className="text-heading font-bold tracking-tight text-foreground md:text-heading-lg">
+          <h1 className="text-2xl font-extrabold tracking-tight text-foreground sm:text-3xl">
             Messages
           </h1>
-          <p className="mt-1.5 max-w-xl text-support text-muted-foreground">
-            Chat with subscribers, manage conversations, and keep notes in one place.
+          <p className="mt-1.5 max-w-xl text-sm font-medium text-muted-foreground sm:text-base">
+            Connect with your subscribers, answer questions, and build your community.
           </p>
         </div>
-        <div className="flex flex-wrap items-center gap-2">
-          <div className="flex items-center gap-2 rounded-xl border border-border bg-card px-3 py-2 text-sm shadow-[var(--shadow-card)]">
-            <Power
-              className={cn(
-                'h-3.5 w-3.5',
-                messagingEnabled ? 'text-emerald-500' : 'text-muted-foreground',
-              )}
-            />
-            <span className="text-xs font-semibold text-muted-foreground">Messaging</span>
-            <Switch
-              aria-label="Accept subscriber messages"
-              checked={messagingEnabled}
-              onCheckedChange={(v) => void toggleMessaging(v)}
-              disabled={savingToggle}
-              className="scale-90"
-            />
-          </div>
-          <Button
-            type="button"
-            className="min-h-11 rounded-xl"
-            onClick={() =>
-              toast.message('New message', {
-                description: 'Pick a subscriber from the list, or message them from Subscribers.',
-              })
-            }
-          >
-            <Pencil className="mr-1.5 h-4 w-4" /> New Message
-          </Button>
-        </div>
+        <Button
+          type="button"
+          className="min-h-11 shrink-0 rounded-xl"
+          onClick={() =>
+            toast.message('New message', {
+              description: 'Pick a subscriber from the list, or message them from Subscribers.',
+            })
+          }
+        >
+          <Pencil className="mr-1.5 h-4 w-4" /> New Message
+        </Button>
       </header>
 
       {useDemo ? (
@@ -903,7 +894,7 @@ const CreatorMessages = () => {
                     className={cn(
                       'relative mb-0.5 flex w-full items-start gap-3 rounded-xl px-3 py-3 text-left transition-colors',
                       selected
-                        ? 'bg-primary/8 before:absolute before:inset-y-2 before:left-0 before:w-1 before:rounded-full before:bg-primary'
+                        ? 'bg-primary/10'
                         : 'hover:bg-muted/50',
                     )}
                   >
@@ -930,7 +921,7 @@ const CreatorMessages = () => {
                       <div className="flex items-center justify-between gap-2">
                         <p className="truncate text-sm font-bold text-foreground">{thread.name}</p>
                         <span className="shrink-0 text-[11px] font-medium text-muted-foreground">
-                          {thread.lastAt ? shortTime(thread.lastAt) : ''}
+                          {thread.lastAt ? shortTime(thread.lastAt, listNowMs) : ''}
                         </span>
                       </div>
                       <div className="mt-0.5 flex items-center gap-2">
@@ -1006,7 +997,7 @@ const CreatorMessages = () => {
                       : [
                           active.plan !== '—' ? active.plan : null,
                           active.memberSinceMs
-                            ? `Member since ${format(new Date(active.memberSinceMs), 'MMM yyyy')}`
+                            ? `Member since ${format(new Date(active.memberSinceMs), 'MMM d, yyyy')}`
                             : null,
                         ]
                           .filter(Boolean)
@@ -1127,7 +1118,7 @@ const CreatorMessages = () => {
               <div className="grid grid-cols-3 gap-2 border-b border-border p-4">
                 <div className="rounded-xl border border-border bg-muted/20 px-2 py-2.5 text-center">
                   <p className="text-[10px] font-bold uppercase tracking-wide text-muted-foreground">
-                    Spent
+                    Total spent
                   </p>
                   <p className="mt-1 text-sm font-extrabold tabular-nums text-foreground">
                     {active.totalSpentCents != null
@@ -1145,11 +1136,11 @@ const CreatorMessages = () => {
                 </div>
                 <div className="rounded-xl border border-border bg-muted/20 px-2 py-2.5 text-center">
                   <p className="text-[10px] font-bold uppercase tracking-wide text-muted-foreground">
-                    Active
+                    Last active
                   </p>
                   <p className="mt-1 text-[11px] font-bold leading-tight text-foreground">
                     {active.lastActiveLabel ??
-                      (active.online ? 'Now' : active.lastAt ? shortTime(active.lastAt) : '—')}
+                      (active.online ? 'Now' : active.lastAt ? shortTime(active.lastAt, listNowMs) : '—')}
                   </p>
                 </div>
               </div>
@@ -1157,16 +1148,26 @@ const CreatorMessages = () => {
               <div className="border-b border-border p-4">
                 <div className="rounded-xl border border-border bg-muted/15 p-3">
                   <div className="flex items-start justify-between gap-2">
-                    <div className="min-w-0">
-                      <p className="text-[10px] font-bold uppercase tracking-wide text-muted-foreground">
-                        Subscription
-                      </p>
-                      <p className="mt-1 truncate text-sm font-bold text-foreground">{active.plan}</p>
-                      <p className="text-xs text-muted-foreground">
-                        {active.planPriceCents != null
-                          ? `$${(active.planPriceCents / 100).toFixed(2)} / month`
-                          : '—'}
-                      </p>
+                    <div className="flex min-w-0 items-start gap-2.5">
+                      <span
+                        className={cn(
+                          'mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl',
+                          kpiIconTone.amber,
+                        )}
+                      >
+                        <Crown className="h-4 w-4" aria-hidden />
+                      </span>
+                      <div className="min-w-0">
+                        <p className="text-[10px] font-bold uppercase tracking-wide text-muted-foreground">
+                          Subscription
+                        </p>
+                        <p className="mt-1 truncate text-sm font-bold text-foreground">{active.plan}</p>
+                        <p className="text-xs text-muted-foreground">
+                          {active.planPriceCents != null
+                            ? `$${(active.planPriceCents / 100).toFixed(2)} / month`
+                            : '—'}
+                        </p>
+                      </div>
                     </div>
                     <Button
                       type="button"
@@ -1228,7 +1229,7 @@ const CreatorMessages = () => {
                 <Button
                   type="button"
                   variant="ghost"
-                  className="h-10 w-full justify-start rounded-xl px-2 text-rose-600 hover:bg-rose-500/10 hover:text-rose-700 dark:text-rose-400"
+                  className="h-10 w-full justify-start rounded-xl bg-rose-500/10 px-2 text-rose-600 hover:bg-rose-500/15 hover:text-rose-700 dark:text-rose-400"
                   onClick={() =>
                     toast.message('Blocked', {
                       description: 'Blocking is preview-only and does not write to Convex.',

@@ -1,11 +1,14 @@
 /**
- * Sample Your Products data for design review when the creator has no products yet.
+ * Sample Products list data for design / PO review when the creator has no products.
+ * Aligned to the Prizelet Products mockup.
  */
 
 const day = 86_400_000;
 const daysAgo = (n: number) => Date.now() - n * day;
 
-export type ProductBillingType = 'subscription' | 'one-time';
+export type ProductBillingType = 'subscription' | 'one-time' | 'bundle';
+
+export type ProductUiStatus = 'active' | 'draft' | 'archived';
 
 export type DemoPlanCard = {
   id: string;
@@ -25,11 +28,27 @@ export type DemoProductRow = {
   billingPeriod: string;
   priceCents: number;
   subscribers: number;
-  status: 'active' | 'inactive';
+  /** Purchases label for one-time; otherwise subscriber count. */
+  subscribersLabel?: string;
+  revenueMrrCents: number;
+  status: ProductUiStatus;
   createdAtMs: number;
-  icon: 'crown' | 'star' | 'gem' | 'book' | 'video' | 'users';
+  icon: 'crown' | 'star' | 'gem' | 'book' | 'video' | 'users' | 'package';
 };
 
+/** KPI strip aligned to the Products mockup. */
+export const CREATOR_PRODUCTS_DEMO_METRICS = {
+  totalProducts: 6,
+  totalProductsDelta: 20,
+  totalSubscribers: 1248,
+  totalSubscribersDelta: 18,
+  mrrCents: 432_000,
+  mrrDelta: 27,
+  totalRevenueCents: 5_268_000,
+  totalRevenueDelta: 34,
+} as const;
+
+/** Kept for create-form / plan card callers that still import plans. */
 export const CREATOR_PRODUCTS_DEMO_PLANS: DemoPlanCard[] = [
   {
     id: 'demo-plan-monthly',
@@ -81,75 +100,96 @@ export const CREATOR_PRODUCTS_DEMO_PLANS: DemoPlanCard[] = [
 export const CREATOR_PRODUCTS_DEMO_ROWS: DemoProductRow[] = [
   {
     id: 'demo-prod-1',
-    name: 'Monthly Plan',
-    description: 'Core access to all daily picks',
-    type: 'subscription',
-    billingPeriod: 'monthly',
-    priceCents: 999,
-    subscribers: 342,
-    status: 'active',
-    createdAtMs: daysAgo(200),
-    icon: 'crown',
-  },
-  {
-    id: 'demo-prod-2',
-    name: 'Premium Plan',
-    description: 'Exclusive picks and early releases',
+    name: 'Premium Picks',
+    description: 'Daily premium picks with unit sizing and write-ups',
     type: 'subscription',
     billingPeriod: 'monthly',
     priceCents: 2999,
-    subscribers: 412,
+    subscribers: 842,
+    revenueMrrCents: 2_523_000,
     status: 'active',
-    createdAtMs: daysAgo(180),
+    createdAtMs: daysAgo(200),
     icon: 'star',
   },
   {
-    id: 'demo-prod-3',
-    name: 'VIP Plan',
-    description: '1-on-1 chat and VIP community',
+    id: 'demo-prod-2',
+    name: 'VIP Access',
+    description: 'VIP chat, early locks, and private community',
     type: 'subscription',
     billingPeriod: 'monthly',
     priceCents: 4999,
-    subscribers: 138,
+    subscribers: 286,
+    revenueMrrCents: 1_429_000,
     status: 'active',
-    createdAtMs: daysAgo(150),
+    createdAtMs: daysAgo(180),
     icon: 'gem',
   },
   {
+    id: 'demo-prod-3',
+    name: 'Daily Insights',
+    description: 'Short-form daily insight posts for casual fans',
+    type: 'subscription',
+    billingPeriod: 'monthly',
+    priceCents: 999,
+    subscribers: 120,
+    revenueMrrCents: 119_880,
+    status: 'active',
+    createdAtMs: daysAgo(150),
+    icon: 'crown',
+  },
+  {
     id: 'demo-prod-4',
-    name: 'Betting Guide (eBook)',
-    description: 'One-time digital guide',
-    type: 'one-time',
-    billingPeriod: 'one-time',
-    priceCents: 1999,
-    subscribers: 87,
-    status: 'active',
-    createdAtMs: daysAgo(90),
-    icon: 'book',
-  },
-  {
-    id: 'demo-prod-5',
-    name: 'Video Course',
-    description: 'Recorded handicapper course',
-    type: 'one-time',
-    billingPeriod: 'one-time',
-    priceCents: 4999,
-    subscribers: 56,
-    status: 'active',
-    createdAtMs: daysAgo(60),
-    icon: 'video',
-  },
-  {
-    id: 'demo-prod-6',
     name: 'Private Community',
     description: 'Ongoing community membership',
     type: 'subscription',
     billingPeriod: 'monthly',
     priceCents: 1499,
     subscribers: 221,
+    revenueMrrCents: 331_279,
     status: 'active',
-    createdAtMs: daysAgo(40),
+    createdAtMs: daysAgo(120),
     icon: 'users',
+  },
+  {
+    id: 'demo-prod-5',
+    name: 'Betting Guide (eBook)',
+    description: 'One-time digital guide for beginners',
+    type: 'one-time',
+    billingPeriod: 'one-time',
+    priceCents: 7900,
+    subscribers: 120,
+    subscribersLabel: '120 purchases',
+    revenueMrrCents: 0,
+    status: 'active',
+    createdAtMs: daysAgo(90),
+    icon: 'book',
+  },
+  {
+    id: 'demo-prod-6',
+    name: 'Video Course',
+    description: 'Recorded handicapper course (self-paced)',
+    type: 'one-time',
+    billingPeriod: 'one-time',
+    priceCents: 14900,
+    subscribers: 56,
+    subscribersLabel: '56 purchases',
+    revenueMrrCents: 0,
+    status: 'draft',
+    createdAtMs: daysAgo(60),
+    icon: 'video',
+  },
+  {
+    id: 'demo-prod-7',
+    name: 'Legacy Weekly Card',
+    description: 'Archived weekly card product',
+    type: 'subscription',
+    billingPeriod: 'weekly',
+    priceCents: 1999,
+    subscribers: 0,
+    revenueMrrCents: 0,
+    status: 'archived',
+    createdAtMs: daysAgo(300),
+    icon: 'package',
   },
 ];
 
@@ -170,8 +210,15 @@ export function isCreatorProductsDemoId(id: string): boolean {
 export function formatProductPrice(priceCents: number, billingPeriod: string): string {
   const dollars = (priceCents / 100).toFixed(2);
   if (billingPeriod === 'one-time') return `$${dollars}`;
-  if (billingPeriod === 'yearly') return `$${dollars}/yr`;
-  if (billingPeriod === 'weekly') return `$${dollars}/wk`;
-  if (billingPeriod === 'daily') return `$${dollars}/day`;
-  return `$${dollars}/month`;
+  if (billingPeriod === 'yearly') return `$${dollars} / year`;
+  if (billingPeriod === 'weekly') return `$${dollars} / week`;
+  if (billingPeriod === 'daily') return `$${dollars} / day`;
+  return `$${dollars} / month`;
+}
+
+export function formatMoneyCents(cents: number): string {
+  return `$${(cents / 100).toLocaleString(undefined, {
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0,
+  })}`;
 }
