@@ -15,11 +15,9 @@ import {
   ArrowUpRight,
   BarChart3,
   Calendar,
+  ChevronDown,
   DollarSign,
   Eye,
-  FileText,
-  Image as ImageIcon,
-  Lightbulb,
   Loader2,
   Package,
   Sparkles,
@@ -27,7 +25,6 @@ import {
   TrendingDown,
   TrendingUp,
   Users,
-  Video,
 } from 'lucide-react';
 import { api } from '../../convex/_generated/api';
 import { DashboardLayout } from '@/components/dashboard/DashboardLayout';
@@ -47,14 +44,11 @@ import {
   CREATOR_PERFORMANCE_DEMO_INSIGHTS,
   CREATOR_PERFORMANCE_DEMO_METRICS,
   CREATOR_PERFORMANCE_DEMO_REVENUE_SERIES,
-  CREATOR_PERFORMANCE_DEMO_TOP_POSTS,
   CREATOR_PERFORMANCE_DEMO_TOP_PRODUCTS,
-  formatCompactCount,
   shouldUseCreatorPerformanceDemo,
   type ChartRange,
   type DemoGrowthCard,
   type DemoInsight,
-  type DemoTopPost,
   type DemoTopProduct,
 } from '@/lib/creatorPerformanceDemo';
 
@@ -76,12 +70,6 @@ const insightToneClass = {
   rose: 'bg-rose-500/15 text-rose-700 dark:text-rose-400',
 } as const;
 
-function postTypeIcon(type: DemoTopPost['type']) {
-  if (type === 'Video') return Video;
-  if (type === 'Image') return ImageIcon;
-  return FileText;
-}
-
 function money(cents: number): string {
   return `$${(cents / 100).toLocaleString(undefined, {
     minimumFractionDigits: 0,
@@ -96,7 +84,7 @@ function GrowthMiniChart({ card }: { card: DemoGrowthCard }) {
   const TrendIcon = card.trendPct >= 0 ? ArrowUpRight : ArrowDownRight;
 
   return (
-    <section className="rounded-2xl border border-border bg-card p-5 shadow-[var(--shadow-card)]">
+    <section className="flex h-full flex-col rounded-2xl border border-border bg-card p-5 shadow-[var(--shadow-card)]">
       <div className="mb-1 flex items-start justify-between gap-2">
         <p className="text-sm font-semibold text-muted-foreground">{card.label}</p>
         <span
@@ -114,7 +102,7 @@ function GrowthMiniChart({ card }: { card: DemoGrowthCard }) {
       <p className="text-2xl font-extrabold tabular-nums tracking-tight text-foreground">
         {card.value}
       </p>
-      <div className="mt-3 h-16 w-full">
+      <div className="mt-auto pt-3 h-16 w-full">
         <ResponsiveContainer width="100%" height="100%">
           <AreaChart data={data} margin={{ top: 4, right: 0, left: 0, bottom: 0 }}>
             <defs>
@@ -270,22 +258,6 @@ const CreatorPerformanceTracker = () => {
         },
       ] satisfies DemoGrowthCard[]);
 
-  const topPosts: DemoTopPost[] = useDemo
-    ? CREATOR_PERFORMANCE_DEMO_TOP_POSTS
-    : (posts ?? []).slice(0, 5).map((p, i) => ({
-        id: p._id,
-        rank: i + 1,
-        title: p.title,
-        subtitle: p.isPremium ? 'Premium pick' : 'Free pick',
-        type: 'Text' as const,
-        views: 0,
-        likes: 0,
-        comments: 0,
-        conversions: 0,
-        revenueCents: 0,
-        thumbTone: 'bg-violet-500/15 text-violet-700',
-      }));
-
   const topProducts: DemoTopProduct[] = useDemo
     ? CREATOR_PERFORMANCE_DEMO_TOP_PRODUCTS
     : (products ?? []).slice(0, 5).map((p, i) => {
@@ -299,10 +271,10 @@ const CreatorPerformanceTracker = () => {
           conversionPct: 0,
           iconTone:
             i === 0
-              ? 'bg-sky-500/15 text-sky-700'
+              ? 'bg-sky-500/15 text-sky-700 dark:text-sky-400'
               : i === 1
-                ? 'bg-rose-500/15 text-rose-700'
-                : 'bg-violet-500/15 text-violet-700',
+                ? 'bg-rose-500/15 text-rose-700 dark:text-rose-400'
+                : 'bg-violet-500/15 text-violet-700 dark:text-violet-400',
         };
       });
 
@@ -320,16 +292,17 @@ const CreatorPerformanceTracker = () => {
     <DashboardLayout type="creator">
       <header className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div className="min-w-0">
-          <h1 className="text-heading font-bold tracking-tight text-foreground md:text-heading-lg">
+          <h1 className="text-2xl font-extrabold tracking-tight text-foreground sm:text-3xl">
             Performance
           </h1>
-          <p className="mt-1.5 max-w-xl text-support text-muted-foreground">
+          <p className="mt-1.5 max-w-xl text-sm font-medium text-muted-foreground sm:text-base">
             Track your growth, analyze your content, and make smarter decisions.
           </p>
         </div>
         <div className="flex h-11 shrink-0 items-center gap-2 rounded-xl border border-border bg-card px-3.5 text-sm font-semibold text-foreground shadow-[var(--shadow-card)]">
           <Calendar className="h-4 w-4 text-muted-foreground" aria-hidden />
           <span className="tabular-nums">{metrics.dateRangeLabel}</span>
+          <ChevronDown className="h-4 w-4 text-muted-foreground" aria-hidden />
         </div>
       </header>
 
@@ -350,7 +323,7 @@ const CreatorPerformanceTracker = () => {
         <DashboardKpiStrip
           items={[
             {
-              label: 'Total revenue',
+              label: 'Total Revenue',
               value: money(metrics.totalRevenueCents),
               icon: DollarSign,
               iconClassName: kpiIconTone.emerald,
@@ -358,10 +331,12 @@ const CreatorPerformanceTracker = () => {
                 metrics.totalRevenueDelta != null
                   ? `↑ ${metrics.totalRevenueDelta}%`
                   : undefined,
+              trendCaption:
+                metrics.totalRevenueDelta != null ? 'vs. previous month' : undefined,
               trendPositive: true,
             },
             {
-              label: 'Monthly recurring revenue',
+              label: 'Monthly Recurring Revenue',
               value: money(metrics.mrrCents),
               icon: BarChart3,
               iconClassName: kpiIconTone.violet,
@@ -369,29 +344,35 @@ const CreatorPerformanceTracker = () => {
                 metrics.mrrDelta != null
                   ? `↑ ${metrics.mrrDelta}%`
                   : undefined,
+              trendCaption:
+                metrics.mrrDelta != null ? 'vs. previous month' : undefined,
               trendPositive: true,
             },
             {
-              label: 'Total subscribers',
+              label: 'Total Subscribers',
               value: metrics.totalSubscribers.toLocaleString(),
               icon: Users,
-              iconClassName: kpiIconTone.violet,
+              iconClassName: kpiIconTone.sky,
               trendLabel:
                 metrics.subscribersDelta != null
                   ? `↑ ${metrics.subscribersDelta}%`
                   : undefined,
+              trendCaption:
+                metrics.subscribersDelta != null ? 'vs. previous month' : undefined,
               trendPositive: true,
               href: '/creator/subscribers',
             },
             {
-              label: 'Post views',
-              value: formatCompactCount(metrics.postViews),
+              label: 'Post Views',
+              value: metrics.postViews.toLocaleString(),
               icon: Eye,
-              iconClassName: kpiIconTone.violet,
+              iconClassName: kpiIconTone.cyan,
               trendLabel:
                 metrics.postViewsDelta != null
                   ? `↑ ${metrics.postViewsDelta}%`
                   : undefined,
+              trendCaption:
+                metrics.postViewsDelta != null ? 'vs. previous month' : undefined,
               trendPositive: true,
             },
           ]}
@@ -412,7 +393,7 @@ const CreatorPerformanceTracker = () => {
                 {metrics.totalRevenueDelta != null ? (
                   <span className="inline-flex items-center gap-0.5 text-sm font-bold text-emerald-600 dark:text-emerald-400">
                     <ArrowUpRight className="h-4 w-4" aria-hidden />
-                    {metrics.totalRevenueDelta}%
+                    {metrics.totalRevenueDelta}% vs. previous month
                   </span>
                 ) : null}
               </div>
@@ -472,11 +453,15 @@ const CreatorPerformanceTracker = () => {
                     tickLine={false}
                   />
                   <YAxis
+                    domain={[0, 8000]}
+                    ticks={[0, 2000, 4000, 6000, 8000]}
                     tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 12 }}
                     axisLine={false}
                     tickLine={false}
-                    width={48}
-                    tickFormatter={(v) => `$${Number(v).toLocaleString()}`}
+                    width={44}
+                    tickFormatter={(v) =>
+                      Number(v) === 0 ? '$0' : `$${Number(v) / 1000}K`
+                    }
                   />
                   <Tooltip
                     contentStyle={{
@@ -513,15 +498,12 @@ const CreatorPerformanceTracker = () => {
               </ResponsiveContainer>
             )}
           </div>
-          <p className="mt-2 text-center text-xs text-muted-foreground">
-            Showing {chartRange} · {metricKey === 'revenue' ? 'Revenue' : metricKey.toUpperCase()}
-          </p>
         </section>
 
         <section className="rounded-2xl border border-border bg-card p-5 shadow-[var(--shadow-card)] sm:p-6 xl:col-span-4">
           <div className="mb-4 flex items-center gap-2">
-            <span className={cn('flex h-9 w-9 items-center justify-center rounded-xl', kpiIconTone.amber)}>
-              <Lightbulb className="h-4 w-4" aria-hidden />
+            <span className={cn('flex h-9 w-9 items-center justify-center rounded-xl', kpiIconTone.violet)}>
+              <Sparkles className="h-4 w-4" aria-hidden />
             </span>
             <h2 className="text-base font-extrabold tracking-tight text-foreground">
               Key Insights
@@ -553,103 +535,12 @@ const CreatorPerformanceTracker = () => {
         </section>
       </div>
 
-      <div className="mb-6 grid grid-cols-1 gap-4 md:grid-cols-3">
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)_minmax(0,1.75fr)]">
         {growthCards.map((card) => (
           <GrowthMiniChart key={card.id} card={card} />
         ))}
-      </div>
 
-      <div className="grid grid-cols-1 gap-4 xl:grid-cols-12">
-        <section className="rounded-2xl border border-border bg-card p-5 shadow-[var(--shadow-card)] sm:p-6 xl:col-span-7">
-          <div className="mb-4 flex items-center justify-between gap-3">
-            <h2 className="text-base font-extrabold tracking-tight text-foreground">
-              Top Performing Posts
-            </h2>
-            <Link
-              to="/creator/posts"
-              className="text-xs font-bold text-primary hover:underline"
-            >
-              View all
-            </Link>
-          </div>
-          {topPosts.length === 0 ? (
-            <p className="py-10 text-center text-sm text-muted-foreground">
-              No posts yet.{' '}
-              <Link to="/creator/posts" className="font-semibold text-primary hover:underline">
-                Create a pick
-              </Link>
-            </p>
-          ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full min-w-[36rem] text-left text-sm">
-                <thead>
-                  <tr className="border-b border-border text-[11px] font-bold uppercase tracking-wide text-muted-foreground">
-                    <th className="py-2 pr-2">#</th>
-                    <th className="py-2 pr-2">Post</th>
-                    <th className="py-2 pr-2">Type</th>
-                    <th className="py-2 pr-2 text-right">Views</th>
-                    <th className="py-2 pr-2 text-right">Likes</th>
-                    <th className="py-2 pr-2 text-right">Comments</th>
-                    <th className="py-2 pr-2 text-right">Conv.</th>
-                    <th className="py-2 text-right">Revenue</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {topPosts.map((post) => {
-                    const TypeIcon = postTypeIcon(post.type);
-                    return (
-                      <tr key={post.id} className="border-b border-border/70 last:border-0">
-                        <td className="py-3 pr-2 tabular-nums text-muted-foreground">
-                          {post.rank}
-                        </td>
-                        <td className="py-3 pr-2">
-                          <div className="flex min-w-0 items-center gap-2.5">
-                            <span
-                              className={cn(
-                                'flex h-9 w-9 shrink-0 items-center justify-center rounded-xl',
-                                post.thumbTone,
-                              )}
-                            >
-                              <TypeIcon className="h-4 w-4" aria-hidden />
-                            </span>
-                            <div className="min-w-0">
-                              <p className="truncate font-semibold text-foreground">{post.title}</p>
-                              <p className="truncate text-xs text-muted-foreground">
-                                {post.subtitle}
-                              </p>
-                            </div>
-                          </div>
-                        </td>
-                        <td className="py-3 pr-2">
-                          <span className="inline-flex rounded-full border border-border bg-muted/40 px-2 py-0.5 text-xs font-semibold text-muted-foreground">
-                            {post.type}
-                          </span>
-                        </td>
-                        <td className="py-3 pr-2 text-right tabular-nums font-medium">
-                          {post.views ? formatCompactCount(post.views) : '—'}
-                        </td>
-                        <td className="py-3 pr-2 text-right tabular-nums text-muted-foreground">
-                          {post.likes || '—'}
-                        </td>
-                        <td className="py-3 pr-2 text-right tabular-nums text-muted-foreground">
-                          {post.comments || '—'}
-                        </td>
-                        <td className="py-3 pr-2 text-right tabular-nums font-medium">
-                          {post.conversions || '—'}
-                        </td>
-                        <td className="py-3 text-right font-bold tabular-nums text-emerald-600 dark:text-emerald-400">
-                          {post.revenueCents > 0 ? money(post.revenueCents) : '—'}
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </section>
-
-        <section className="rounded-2xl border border-border bg-card p-5 shadow-[var(--shadow-card)] sm:p-6 xl:col-span-5">
+        <section className="rounded-2xl border border-border bg-card p-5 shadow-[var(--shadow-card)] sm:p-6 md:col-span-2">
           <div className="mb-4 flex items-center justify-between gap-3">
             <h2 className="text-base font-extrabold tracking-tight text-foreground">
               Top Performing Products
@@ -658,7 +549,7 @@ const CreatorPerformanceTracker = () => {
               to="/creator/products"
               className="text-xs font-bold text-primary hover:underline"
             >
-              View all
+              View all →
             </Link>
           </div>
           {topProducts.length === 0 ? (
@@ -675,9 +566,9 @@ const CreatorPerformanceTracker = () => {
                   <tr className="border-b border-border text-[11px] font-bold uppercase tracking-wide text-muted-foreground">
                     <th className="py-2 pr-2">#</th>
                     <th className="py-2 pr-2">Product</th>
-                    <th className="py-2 pr-2 text-right">Subs</th>
+                    <th className="py-2 pr-2 text-right">Subscribers</th>
                     <th className="py-2 pr-2 text-right">Revenue</th>
-                    <th className="py-2 text-right">Conv.</th>
+                    <th className="py-2 text-right">Conversion</th>
                   </tr>
                 </thead>
                 <tbody>

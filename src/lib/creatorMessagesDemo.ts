@@ -1,12 +1,15 @@
 /**
- * Sample Messages inbox for design review when the creator has no real conversations.
- * Aligned to the Prizelet Messages mockup (Jordan Blake, Inbox/CRM panel).
+ * Sample Messages inbox aligned to the Prizelet Messages mockup
+ * (Jordan Blake thread + Inbox / CRM panel).
  */
+
+/** Fixed mock “now” so list timestamps stay stable for design review. */
+export const CREATOR_MESSAGES_DEMO_NOW_MS = Date.parse('2025-01-31T16:00:00.000Z');
 
 const hour = 3_600_000;
 const day = 86_400_000;
-const hoursAgo = (n: number) => Date.now() - n * hour;
-const daysAgo = (n: number) => Date.now() - n * day;
+const hoursAgo = (n: number) => CREATOR_MESSAGES_DEMO_NOW_MS - n * hour;
+const daysAgo = (n: number) => CREATOR_MESSAGES_DEMO_NOW_MS - n * day;
 
 export type DemoChatMessage = {
   id: string;
@@ -50,7 +53,7 @@ export const CREATOR_MESSAGES_DEMO_THREADS: DemoMessageThread[] = [
     status: 'active',
     plan: 'Premium Picks',
     planPriceCents: 2999,
-    memberSinceMs: daysAgo(92),
+    memberSinceMs: Date.parse('2025-01-30T12:00:00.000Z'),
     totalSpentCents: 8997,
     online: true,
     lastActiveLabel: '2 hours ago',
@@ -61,127 +64,93 @@ export const CREATOR_MESSAGES_DEMO_THREADS: DemoMessageThread[] = [
       {
         id: 'demo-msg-1-a',
         sender_role: 'subscriber',
-        body: 'Hey! Loved yesterday’s NBA card. Any lean on the Lakers tonight?',
+        body: 'Hey Alex! Loving the picks so far. Do you release NBA cards every night?',
         read: true,
-        createdAtMs: hoursAgo(6),
+        createdAtMs: Date.parse('2025-01-31T15:12:00.000Z'),
       },
       {
         id: 'demo-msg-1-b',
         sender_role: 'creator',
-        body: 'Thanks Jordan — leaning Under 224.5 if the pace stays slow. Posting in Premium before tip.',
+        body: 'Hey Jordan! Yes, I do — Premium gets the full card about 90 minutes before tip. Glad you’re enjoying them!',
         read: true,
-        createdAtMs: hoursAgo(5.5),
+        createdAtMs: Date.parse('2025-01-31T15:18:00.000Z'),
       },
       {
         id: 'demo-msg-1-c',
         sender_role: 'subscriber',
-        body: 'Perfect. Also curious if you’re still high on that Chiefs +1.5?',
+        body: 'Perfect. Also curious if you’re still high on that Chiefs +1.5 this weekend?',
         read: true,
-        createdAtMs: hoursAgo(4),
+        createdAtMs: Date.parse('2025-01-31T15:22:00.000Z'),
       },
       {
         id: 'demo-msg-1-d',
         sender_role: 'creator',
-        body: 'Yes — still like Chiefs +1.5. I’ll lock both in Premium about an hour before kickoff.',
+        body: 'Still like Chiefs +1.5. I’ll lock both in Premium about an hour before kickoff.',
         read: true,
-        createdAtMs: hoursAgo(3.2),
-      },
-      {
-        id: 'demo-msg-1-e',
-        sender_role: 'subscriber',
-        body: 'Just saw the injury report — still good?',
-        read: false,
-        createdAtMs: hoursAgo(0.4),
+        createdAtMs: Date.parse('2025-01-31T15:24:00.000Z'),
       },
     ],
     notes: [
       {
         id: 'n1',
-        body: 'Very engaged subscriber. Interested in NBA overs and NFL sides.',
-        createdAtMs: daysAgo(12),
+        body: 'Very engaged subscriber. Asks thoughtful questions and follows every card.',
+        createdAtMs: Date.parse('2025-01-30T18:00:00.000Z'),
       },
       {
         id: 'n2',
-        body: 'Asked about unit sizing — prefers 1u max on parlays.',
-        createdAtMs: daysAgo(5),
+        body: 'Potential for upsell to VIP — already spending on Premium Picks monthly.',
+        createdAtMs: Date.parse('2025-01-30T18:05:00.000Z'),
       },
     ],
   },
   {
     id: 'demo-msg-2',
-    name: 'Sarah Chen',
-    email: 'sarah.chen@example.com',
-    location: 'Canada',
+    name: 'Sam Rivera',
+    email: 'sam.rivera@email.com',
+    location: 'United States',
     status: 'active',
     plan: 'VIP',
     planPriceCents: 9999,
-    memberSinceMs: daysAgo(120),
-    totalSpentCents: 23700,
-    online: true,
-    lastActiveLabel: 'Online now',
+    memberSinceMs: daysAgo(64),
+    totalSpentCents: 29997,
+    online: false,
+    lastActiveLabel: 'Yesterday',
     starred: false,
     archived: false,
-    unread: 0,
+    unread: 1,
     messages: [
       {
         id: 'demo-msg-2-a',
         sender_role: 'subscriber',
-        body: 'VIP question — can you walk me through unit sizing for parlays?',
-        read: true,
-        createdAtMs: daysAgo(2),
-      },
-      {
-        id: 'demo-msg-2-b',
-        sender_role: 'creator',
-        body: 'Keep parlays to 0.25–0.5u max. Correlation kills bankrolls faster than bad picks.',
-        read: true,
-        createdAtMs: daysAgo(2) + hour,
-      },
-      {
-        id: 'demo-msg-2-c',
-        sender_role: 'subscriber',
-        body: 'Got it — thanks for the clear answer.',
-        read: true,
-        createdAtMs: hoursAgo(18),
+        body: 'Can you share your unit sizing rules for parlays in VIP?',
+        read: false,
+        createdAtMs: Date.parse('2025-01-31T10:24:00.000Z'),
       },
     ],
-    notes: [
-      {
-        id: 'n1',
-        body: 'VIP member — high LTV. Prefers detailed write-ups.',
-        createdAtMs: daysAgo(30),
-      },
-    ],
+    notes: [],
   },
   {
     id: 'demo-msg-3',
-    name: 'Maya Ortiz',
-    email: 'maya.o@example.com',
-    location: 'Mexico',
+    name: 'Taylor Kim',
+    email: 'taylor.kim@email.com',
+    location: 'Canada',
     status: 'active',
-    plan: 'Premium',
+    plan: 'Premium Picks',
     planPriceCents: 2999,
-    memberSinceMs: daysAgo(12),
-    totalSpentCents: 2999,
+    memberSinceMs: daysAgo(28),
+    totalSpentCents: 5998,
     online: false,
-    lastActiveLabel: '5 hours ago',
+    lastActiveLabel: '3 hours ago',
     starred: false,
     archived: false,
     unread: 1,
     messages: [
       {
         id: 'demo-msg-3-a',
-        sender_role: 'creator',
-        body: 'Welcome to Premium! Drop any questions here anytime.',
-        read: true,
-        createdAtMs: daysAgo(10),
-      },
-      {
-        id: 'demo-msg-3-b',
         sender_role: 'subscriber',
-        body: 'Hi! Where do I find your track record for MLB?',
+        body: 'Quick one — is the Discord invite still in the welcome email?',
         read: false,
-        createdAtMs: hoursAgo(5),
+        createdAtMs: Date.parse('2025-01-28T16:40:00.000Z'),
       },
     ],
     notes: [],

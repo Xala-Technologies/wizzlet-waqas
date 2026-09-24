@@ -1,16 +1,22 @@
-import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
+import { useEffect, useMemo, useRef, useState, type ReactNode, type RefObject } from 'react';
 import { useConvex, useMutation, useQuery } from 'convex/react';
 import {
+  Bold,
   Check,
   Eye,
   EyeOff,
   ImagePlus,
+  Italic,
+  Link2,
+  List,
+  ListOrdered,
   Loader2,
   Package,
   Repeat,
   Sparkles,
   Star,
   Trash2,
+  Underline,
   Upload,
 } from 'lucide-react';
 import { toast } from 'sonner';
@@ -38,11 +44,17 @@ const SHORT_MAX = 100;
 const FULL_MAX = 2000;
 
 const ACCESS_OPTIONS = [
-  { id: 'premium_posts', label: 'Access to premium picks' },
-  { id: 'community', label: 'Private community' },
+  { id: 'premium_posts', label: 'Access to premium posts' },
+  { id: 'community', label: 'Access to private community' },
   { id: 'messaging', label: 'Direct messaging' },
   { id: 'exclusive', label: 'Exclusive content' },
 ] as const;
+
+/** Legacy labels from older saves — still recognized when parsing. */
+const ACCESS_LABEL_ALIASES: Record<string, string> = {
+  'Access to premium picks': 'premium_posts',
+  'Private community': 'community',
+};
 
 const ACCESS_HEADING = "What's included:";
 
@@ -56,15 +68,24 @@ function parseStoredDescription(raw: string): { body: string; accessIds: string[
     .split('\n')
     .filter((line) => line.startsWith('• '))
     .map((line) => line.slice(2).trim());
-  const accessIds = ACCESS_OPTIONS.filter((opt) => labels.includes(opt.label)).map((opt) => opt.id);
+  const accessIds: string[] = [];
+  for (const label of labels) {
+    const direct = ACCESS_OPTIONS.find((opt) => opt.label === label);
+    if (direct) {
+      accessIds.push(direct.id);
+      continue;
+    }
+    const alias = ACCESS_LABEL_ALIASES[label];
+    if (alias) accessIds.push(alias);
+  }
   return { body, accessIds };
 }
 
 const DEFAULT_FEATURES = [
   'Daily betting picks',
   'Detailed analysis & write-ups',
+  'Betting models & angles',
   'Cancel anytime',
-  'Priority support',
 ];
 
 export type CreateProductInitial = {
@@ -113,6 +134,121 @@ function Section({
   );
 }
 
+function wrapSelection(
+  value: string,
+  start: number,
+  end: number,
+  before: string,
+  after: string,
+): { next: string; cursor: number } {
+  const selected = value.slice(start, end) || 'text';
+  const next = `${value.slice(0, start)}${before}${selected}${after}${value.slice(end)}`;
+  return { next, cursor: start + before.length + selected.length + after.length };
+}
+
+function DescriptionToolbar({
+  textareaRef,
+  value,
+  onChange,
+}: {
+  textareaRef: RefObject<HTMLTextAreaElement | null>;
+  value: string;
+  onChange: (next: string) => void;
+}) {
+  const apply = (before: string, after: string) => {
+    const el = textareaRef.current;
+    const start = el?.selectionStart ?? value.length;
+    const end = el?.selectionEnd ?? value.length;
+    const { next, cursor } = wrapSelection(value, start, end, before, after);
+    onChange(next.slice(0, FULL_MAX));
+    requestAnimationFrame(() => {
+      el?.focus();
+      el?.setSelectionRange(cursor, cursor);
+    });
+  };
+
+  const insertBlock = (prefix: string) => {
+    const el = textareaRef.current;
+    const start = el?.selectionStart ?? value.length;
+    const end = el?.selectionEnd ?? value.length;
+    const selected = value.slice(start, end) || 'item';
+    const lines = selected
+      .split('\n')
+      .map((line) => `${prefix}${line.replace(/^[-*]\s+|^(\d+)\.\s+/, '')}`)
+      .join('\n');
+    const next = `${value.slice(0, start)}${lines}${value.slice(end)}`;
+    onChange(next.slice(0, FULL_MAX));
+  };
+
+  return (
+    <div className="flex flex-wrap items-center gap-0.5 rounded-t-xl border border-b-0 border-border bg-muted/40 px-2 py-1.5">
+      <span className="mr-1 hidden px-2 text-xs font-semibold text-muted-foreground sm:inline">
+        Normal text
+      </span>
+      <Button
+        type="button"
+        variant="ghost"
+        size="icon"
+        className="h-8 w-8"
+        aria-label="Bold"
+        onClick={() => apply('**', '**')}
+      >
+        <Bold className="h-3.5 w-3.5" />
+      </Button>
+      <Button
+        type="button"
+        variant="ghost"
+        size="icon"
+        className="h-8 w-8"
+        aria-label="Italic"
+        onClick={() => apply('_', '_')}
+      >
+        <Italic className="h-3.5 w-3.5" />
+      </Button>
+      <Button
+        type="button"
+        variant="ghost"
+        size="icon"
+        className="h-8 w-8"
+        aria-label="Underline"
+        onClick={() => apply('<u>', '</u>')}
+      >
+        <Underline className="h-3.5 w-3.5" />
+      </Button>
+      <Button
+        type="button"
+        variant="ghost"
+        size="icon"
+        className="h-8 w-8"
+        aria-label="Bulleted list"
+        onClick={() => insertBlock('- ')}
+      >
+        <List className="h-3.5 w-3.5" />
+      </Button>
+      <Button
+        type="button"
+        variant="ghost"
+        size="icon"
+        className="h-8 w-8"
+        aria-label="Numbered list"
+        onClick={() => insertBlock('1. ')}
+      >
+        <ListOrdered className="h-3.5 w-3.5" />
+      </Button>
+      <Button
+        type="button"
+        variant="ghost"
+        size="icon"
+        className="h-8 w-8"
+        aria-label="Link"
+        onClick={() => apply('[', '](https://)')}
+      >
+        <Link2 className="h-3.5 w-3.5" />
+      </Button>
+    </div>
+  );
+}
+
 export function CreateProductForm({
   creatorId,
   creatorName,
@@ -124,17 +260,24 @@ export function CreateProductForm({
 }: Props) {
   const convex = useConvex();
   const upsertProduct = useMutation(api.products.mutations.upsert);
+  const posts = useQuery(api.posts.queries.listMine);
   const imageUrlQuery = useQuery(
     api.files.storage.getUrl,
     initial?.imageStorageId ? { storageId: initial.imageStorageId } : 'skip',
   );
 
-  const [name, setName] = useState(initial?.name ?? '');
+  const [name, setName] = useState(initial?.name ?? 'Premium Picks');
   const [shortDescription, setShortDescription] = useState(
-    initial?.shortDescription ?? '',
+    initial?.shortDescription ??
+      (initial ? '' : 'Daily betting picks, analysis and more.'),
   );
   const storedDescription = parseStoredDescription(initial?.description ?? '');
-  const [description, setDescription] = useState(storedDescription.body);
+  const [description, setDescription] = useState(
+    storedDescription.body ||
+      (initial
+        ? ''
+        : 'Get my best daily picks with clear unit sizing, write-ups, and early locks before the open.'),
+  );
   const [price, setPrice] = useState(
     initial ? (initial.priceCents / 100).toFixed(2) : '29.99',
   );
@@ -145,16 +288,21 @@ export function CreateProductForm({
   const [billingPeriod, setBillingPeriod] = useState(
     isOneTimeInitial ? 'monthly' : initial?.billingPeriod || 'monthly',
   );
-  const [isFeatured, setIsFeatured] = useState(initial?.isFeatured ?? false);
+  const [freeTrial, setFreeTrial] = useState(true);
+  const [trialDays, setTrialDays] = useState('7');
+  const [yearlyPricing, setYearlyPricing] = useState(false);
   const [access, setAccess] = useState<Set<string>>(() => {
     if (initial?.accessIds && initial.accessIds.length > 0) return new Set(initial.accessIds);
     if (storedDescription.accessIds.length > 0) return new Set(storedDescription.accessIds);
-    return new Set(['premium_posts', 'exclusive']);
+    return new Set(ACCESS_OPTIONS.map((o) => o.id));
   });
+  const [linkedPostId, setLinkedPostId] = useState<string>('none');
   const [limitSubs, setLimitSubs] = useState(initial?.isLimited ?? false);
   const [maxSpots, setMaxSpots] = useState(
     initial?.maxSpots != null ? String(initial.maxSpots) : '100',
   );
+  const [expiration, setExpiration] = useState(false);
+  const [expiresOn, setExpiresOn] = useState('');
   const [visibility, setVisibility] = useState<'public' | 'hidden'>(
     initial && !initial.isActive ? 'hidden' : 'public',
   );
@@ -167,6 +315,7 @@ export function CreateProductForm({
   const [uploading, setUploading] = useState(false);
   const [saving, setSaving] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
+  const descriptionRef = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => {
     if (imageUrlQuery && !imagePreviewUrl) {
@@ -194,6 +343,10 @@ export function CreateProductForm({
 
   const handleImagePick = async (file: File | undefined) => {
     if (!file) return;
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error('Image must be 5MB or smaller');
+      return;
+    }
     setUploading(true);
     try {
       const { storageId, url } = await uploadImageToConvex(convex, file, 'product-image');
@@ -215,17 +368,31 @@ export function CreateProductForm({
 
   const buildDescription = (): string => {
     const body = description.trim();
+    const extras: string[] = [];
+    if (freeTrial && payType === 'subscription') {
+      extras.push(`Free trial: ${trialDays.trim() || '7'} days`);
+    }
+    if (expiration && expiresOn) {
+      extras.push(`Expires on: ${expiresOn}`);
+    }
+    if (linkedPostId !== 'none') {
+      const post = (posts ?? []).find((p) => p._id === linkedPostId);
+      if (post) extras.push(`Linked content: ${post.title}`);
+    }
+    const meta =
+      extras.length > 0 ? `\n\n${extras.map((line) => `• ${line}`).join('\n')}` : '';
     const featureBlock =
       includedFeatures.length > 0
         ? `\n\nWhat's included:\n${includedFeatures.map((f) => `• ${f}`).join('\n')}`
         : '';
-    return `${body}${featureBlock}`.trim().slice(0, FULL_MAX + 400);
+    return `${body}${meta}${featureBlock}`.trim().slice(0, FULL_MAX + 500);
   };
 
   const save = async (asDraft: boolean) => {
     if (demoMode) {
       toast.message('Sample preview', {
-        description: 'Leave demo mode to save a real product (?demo=0 or publish your first live product).',
+        description:
+          'Leave demo mode to save a real product (?demo=0 or publish your first live product).',
       });
       return;
     }
@@ -256,7 +423,7 @@ export function CreateProductForm({
         imageStorageId: imageStorageId,
         priceCents,
         billingPeriod: effectiveBilling,
-        isFeatured,
+        isFeatured: false,
         isActive: !asDraft && visibility === 'public',
         isLimited: limitSubs,
         maxSpots: limitSubs ? Number.parseInt(maxSpots, 10) : undefined,
@@ -296,10 +463,10 @@ export function CreateProductForm({
           >
             ← Back to Products
           </button>
-          <h1 className="text-heading font-bold tracking-tight text-foreground md:text-heading-lg">
+          <h1 className="text-2xl font-extrabold tracking-tight text-foreground sm:text-3xl">
             {initial?.id ? 'Edit Product' : 'Create Product'}
           </h1>
-          <p className="mt-1.5 max-w-xl text-support text-muted-foreground">
+          <p className="mt-1.5 max-w-xl text-sm font-medium text-muted-foreground">
             Set up your product and start earning. You can always edit it later.
           </p>
         </div>
@@ -307,7 +474,7 @@ export function CreateProductForm({
           <Button
             type="button"
             variant="outline"
-            className="min-h-11 rounded-xl"
+            className="h-11 rounded-xl"
             disabled={saving || uploading}
             onClick={() => void save(true)}
           >
@@ -315,7 +482,7 @@ export function CreateProductForm({
           </Button>
           <Button
             type="button"
-            className="min-h-11 rounded-xl"
+            className="h-11 rounded-xl"
             disabled={saving || uploading}
             onClick={() => void save(false)}
           >
@@ -346,87 +513,99 @@ export function CreateProductForm({
                     {shortDescription.length}/{SHORT_MAX}
                   </span>
                 </div>
-                <Input
+                <Textarea
                   id="cp-short"
                   value={shortDescription}
                   onChange={(e) => setShortDescription(e.target.value.slice(0, SHORT_MAX))}
                   placeholder="One-line pitch for your storefront card"
-                  className="h-11 rounded-xl"
+                  rows={2}
+                  className="resize-none rounded-xl"
                 />
               </div>
-              <div className="space-y-2">
-                <div className="flex items-center justify-between gap-2">
+              <div className="space-y-0">
+                <div className="mb-2 flex items-center justify-between gap-2">
                   <Label htmlFor="cp-full">Full Description</Label>
                   <span className="text-caption tabular-nums text-muted-foreground">
                     {description.length}/{FULL_MAX}
                   </span>
                 </div>
+                <DescriptionToolbar
+                  textareaRef={descriptionRef}
+                  value={description}
+                  onChange={setDescription}
+                />
                 <Textarea
                   id="cp-full"
+                  ref={descriptionRef}
                   value={description}
                   onChange={(e) => setDescription(e.target.value.slice(0, FULL_MAX))}
                   placeholder="Explain what subscribers get, your edge, and how often you publish…"
-                  rows={6}
-                  className="rounded-xl"
+                  rows={7}
+                  className="rounded-t-none rounded-b-xl border-t-0"
                 />
               </div>
             </div>
           </Section>
 
           <Section n={2} title="Product Image">
-            <div className="grid gap-4 sm:grid-cols-2">
+            <div className="space-y-4">
               <div className="overflow-hidden rounded-xl border border-border bg-muted/30">
                 {imagePreviewUrl ? (
-                  <img
-                    src={imagePreviewUrl}
-                    alt=""
-                    className="aspect-video w-full object-cover"
-                  />
+                  <div className="relative">
+                    <img
+                      src={imagePreviewUrl}
+                      alt=""
+                      className="aspect-video w-full object-cover"
+                    />
+                    <div className="absolute bottom-3 right-3 flex gap-2">
+                      <Button
+                        type="button"
+                        size="sm"
+                        className="rounded-lg bg-background/95 text-foreground hover:bg-background"
+                        disabled={uploading}
+                        onClick={() => fileRef.current?.click()}
+                      >
+                        Edit Image
+                      </Button>
+                      <Button
+                        type="button"
+                        size="icon"
+                        variant="secondary"
+                        className="h-8 w-8 rounded-lg bg-background/95"
+                        onClick={clearImage}
+                        aria-label="Remove image"
+                      >
+                        <Trash2 className="h-3.5 w-3.5 text-destructive" />
+                      </Button>
+                    </div>
+                  </div>
                 ) : (
                   <div className="flex aspect-video flex-col items-center justify-center gap-2 text-muted-foreground">
                     <Package className="h-8 w-8" aria-hidden />
                     <p className="text-xs font-semibold">No image yet</p>
                   </div>
                 )}
-                {imagePreviewUrl ? (
-                  <div className="flex gap-2 border-t border-border p-2">
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      className="rounded-lg"
-                      disabled={uploading}
-                      onClick={() => fileRef.current?.click()}
-                    >
-                      Edit Image
-                    </Button>
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="sm"
-                      className="rounded-lg text-destructive"
-                      onClick={clearImage}
-                    >
-                      <Trash2 className="mr-1 h-3.5 w-3.5" /> Remove
-                    </Button>
-                  </div>
-                ) : null}
               </div>
               <button
                 type="button"
                 disabled={uploading}
                 onClick={() => fileRef.current?.click()}
-                className="flex flex-col items-center justify-center gap-2 rounded-xl border border-dashed border-border bg-background/60 px-4 py-8 text-center transition-colors hover:border-primary/40 hover:bg-muted/40"
+                className="flex w-full flex-col items-center justify-center gap-2 rounded-xl border border-dashed border-border bg-background/60 px-4 py-8 text-center transition-colors hover:border-primary/40 hover:bg-muted/40"
               >
                 {uploading ? (
                   <Loader2 className="h-6 w-6 animate-spin text-primary" />
                 ) : (
-                  <span className={cn('flex h-11 w-11 items-center justify-center rounded-xl', kpiIconTone.violet)}>
+                  <span
+                    className={cn(
+                      'flex h-11 w-11 items-center justify-center rounded-xl',
+                      kpiIconTone.violet,
+                    )}
+                  >
                     <ImagePlus className="h-5 w-5" aria-hidden />
                   </span>
                 )}
                 <p className="text-sm font-bold text-foreground">Upload new image</p>
-                <p className="max-w-[220px] text-xs text-muted-foreground">
+                <p className="max-w-sm text-xs text-muted-foreground">
                   Recommended 1280×720 (16:9). PNG, JPG or WebP. Max 5MB.
                 </p>
               </button>
@@ -451,7 +630,11 @@ export function CreateProductForm({
               </button>
               <button
                 type="button"
-                onClick={() => setPayType('one-time')}
+                onClick={() => {
+                  setPayType('one-time');
+                  setFreeTrial(false);
+                  setYearlyPricing(false);
+                }}
                 className={cn(
                   'rounded-xl border p-4 text-left transition-colors',
                   payType === 'one-time'
@@ -465,9 +648,9 @@ export function CreateProductForm({
               </button>
             </div>
 
-            <div className="mt-4 grid gap-3 sm:grid-cols-2">
-              <div className="space-y-2">
-                <Label htmlFor="cp-price">Price (USD)</Label>
+            <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-end">
+              <div className="min-w-0 flex-1 space-y-2">
+                <Label htmlFor="cp-price">Price</Label>
                 <div className="relative">
                   <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-sm font-semibold text-muted-foreground">
                     $
@@ -484,9 +667,15 @@ export function CreateProductForm({
                 </div>
               </div>
               {payType === 'subscription' ? (
-                <div className="space-y-2">
-                  <Label>Billing frequency</Label>
-                  <Select value={billingPeriod} onValueChange={setBillingPeriod}>
+                <div className="w-full space-y-2 sm:w-[160px]">
+                  <Label>Frequency</Label>
+                  <Select
+                    value={billingPeriod}
+                    onValueChange={(v) => {
+                      setBillingPeriod(v);
+                      setYearlyPricing(v === 'yearly');
+                    }}
+                  >
                     <SelectTrigger className="h-11 rounded-xl">
                       <SelectValue />
                     </SelectTrigger>
@@ -498,43 +687,68 @@ export function CreateProductForm({
                   </Select>
                 </div>
               ) : (
-                <div className="flex items-end">
-                  <p className="rounded-xl border border-border bg-muted/30 px-3 py-3 text-sm text-muted-foreground">
-                    Charged once at checkout
-                  </p>
-                </div>
+                <p className="rounded-xl border border-border bg-muted/30 px-3 py-3 text-sm text-muted-foreground sm:mb-0.5">
+                  Charged once at checkout
+                </p>
               )}
             </div>
 
-            <div className="mt-4 space-y-3">
-              <div className="flex items-center justify-between gap-3 rounded-xl border border-border px-3 py-3 opacity-70">
-                <div>
-                  <p className="text-sm font-semibold">Offer a free trial</p>
-                  <p className="text-xs text-muted-foreground">Coming soon — not saved yet</p>
-                </div>
-                <Switch checked={false} disabled aria-label="Free trial coming soon" />
-              </div>
-
-              <div className="flex items-center justify-between gap-3 rounded-xl border border-border px-3 py-3 opacity-70">
-                <div className="min-w-0">
-                  <div className="flex flex-wrap items-center gap-2">
-                    <p className="text-sm font-semibold">Set up yearly pricing (with discount)</p>
+            {payType === 'subscription' ? (
+              <div className="mt-4 space-y-3">
+                <div className="rounded-xl border border-border px-3 py-3">
+                  <div className="flex items-center justify-between gap-3">
+                    <div>
+                      <p className="text-sm font-semibold">Offer a free trial</p>
+                      <p className="text-xs text-muted-foreground">
+                        Let fans try before they buy
+                      </p>
+                    </div>
+                    <Switch checked={freeTrial} onCheckedChange={setFreeTrial} />
                   </div>
-                  <p className="text-xs text-muted-foreground">
-                    Coming soon. Choose Yearly billing above for a single yearly price.
-                  </p>
+                  {freeTrial ? (
+                    <div className="mt-3 space-y-2 border-t border-border pt-3">
+                      <Label htmlFor="cp-trial">Trial length</Label>
+                      <div className="flex items-center gap-2">
+                        <Input
+                          id="cp-trial"
+                          type="number"
+                          min="1"
+                          max="90"
+                          value={trialDays}
+                          onChange={(e) => setTrialDays(e.target.value)}
+                          className="h-10 w-24 rounded-xl"
+                        />
+                        <span className="text-sm font-medium text-muted-foreground">days</span>
+                      </div>
+                    </div>
+                  ) : null}
                 </div>
-                <Switch checked={false} disabled aria-label="Yearly discount coming soon" />
-              </div>
 
-              <div className="flex items-center justify-between gap-3 rounded-xl border border-border px-3 py-3">
-                <div>
-                  <p className="text-sm font-semibold">Featured / Most Popular</p>
-                  <p className="text-xs text-muted-foreground">Highlight on your storefront</p>
+                <div className="flex items-center justify-between gap-3 rounded-xl border border-border px-3 py-3">
+                  <div className="min-w-0">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <p className="text-sm font-semibold">
+                        Set up yearly pricing (with discount)
+                      </p>
+                      <span className="rounded-full bg-emerald-500/15 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-emerald-700 dark:text-emerald-400">
+                        Recommended
+                      </span>
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      Offer an annual plan alongside monthly
+                    </p>
+                  </div>
+                  <Switch
+                    checked={yearlyPricing}
+                    onCheckedChange={(on) => {
+                      setYearlyPricing(on);
+                      if (on) setBillingPeriod('yearly');
+                      else if (billingPeriod === 'yearly') setBillingPeriod('monthly');
+                    }}
+                  />
                 </div>
-                <Switch checked={isFeatured} onCheckedChange={setIsFeatured} />
               </div>
-            </div>
+            ) : null}
           </Section>
 
           <Section n={4} title="Access & Content">
@@ -552,39 +766,71 @@ export function CreateProductForm({
                 </li>
               ))}
             </ul>
-            <p className="mt-3 text-xs text-muted-foreground">
-              These show in the preview “What’s included” list and are saved into the product description.
-            </p>
+            <div className="mt-4 space-y-2">
+              <Label>Select existing content (optional)</Label>
+              <Select value={linkedPostId} onValueChange={setLinkedPostId}>
+                <SelectTrigger className="h-11 rounded-xl">
+                  <SelectValue placeholder="Select existing content (optional)" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">None</SelectItem>
+                  {(posts ?? []).slice(0, 20).map((p) => (
+                    <SelectItem key={p._id} value={p._id}>
+                      {p.title}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
           </Section>
 
           <Section n={5} title="Additional Settings">
             <div className="space-y-3">
-              <div className="flex items-center justify-between gap-3 rounded-xl border border-border px-3 py-3">
-                <div>
-                  <p className="text-sm font-semibold">Set a maximum number of subscribers</p>
-                  <p className="text-xs text-muted-foreground">Scarcity / limited spots</p>
+              <div className="rounded-xl border border-border px-3 py-3">
+                <div className="flex items-center justify-between gap-3">
+                  <div>
+                    <p className="text-sm font-semibold">Set a maximum number of subscribers</p>
+                    <p className="text-xs text-muted-foreground">Scarcity / limited spots</p>
+                  </div>
+                  <Switch checked={limitSubs} onCheckedChange={setLimitSubs} />
                 </div>
-                <Switch checked={limitSubs} onCheckedChange={setLimitSubs} />
+                {limitSubs ? (
+                  <div className="mt-3 space-y-2 border-t border-border pt-3">
+                    <Label htmlFor="cp-max">Max subscribers</Label>
+                    <Input
+                      id="cp-max"
+                      type="number"
+                      min="1"
+                      value={maxSpots}
+                      onChange={(e) => setMaxSpots(e.target.value)}
+                      className="h-11 w-36 rounded-xl"
+                    />
+                  </div>
+                ) : null}
               </div>
-              {limitSubs ? (
-                <div className="space-y-2 pl-1">
-                  <Label htmlFor="cp-max">Max subscribers</Label>
-                  <Input
-                    id="cp-max"
-                    type="number"
-                    min="1"
-                    value={maxSpots}
-                    onChange={(e) => setMaxSpots(e.target.value)}
-                    className="h-11 w-36 rounded-xl"
-                  />
+
+              <div className="rounded-xl border border-border px-3 py-3">
+                <div className="flex items-center justify-between gap-3">
+                  <div>
+                    <p className="text-sm font-semibold">Set an expiration date</p>
+                    <p className="text-xs text-muted-foreground">
+                      Auto-archive after this date
+                    </p>
+                  </div>
+                  <Switch checked={expiration} onCheckedChange={setExpiration} />
                 </div>
-              ) : null}
-              <div className="flex items-center justify-between gap-3 rounded-xl border border-border px-3 py-3 opacity-70">
-                <div>
-                  <p className="text-sm font-semibold">Set an expiration date</p>
-                  <p className="text-xs text-muted-foreground">Coming soon — not saved yet</p>
-                </div>
-                <Switch checked={false} disabled aria-label="Expiration date coming soon" />
+                {expiration ? (
+                  <div className="mt-3 space-y-2 border-t border-border pt-3">
+                    <Label htmlFor="cp-expires">Expires on</Label>
+                    <Input
+                      id="cp-expires"
+                      type="date"
+                      value={expiresOn}
+                      onChange={(e) => setExpiresOn(e.target.value)}
+                      className="h-11 w-full max-w-xs rounded-xl"
+                    />
+                  </div>
+                ) : null}
               </div>
             </div>
           </Section>
@@ -617,19 +863,18 @@ export function CreateProductForm({
               >
                 <EyeOff className="mb-2 h-5 w-5 text-primary" aria-hidden />
                 <p className="text-sm font-extrabold">Hidden</p>
-                <p className="mt-1 text-xs text-muted-foreground">Not listed on public profile</p>
+                <p className="mt-1 text-xs text-muted-foreground">Accessible via link only</p>
               </button>
             </div>
             {initial?.isClosed ? (
               <p className="mt-3 text-xs text-muted-foreground">
-                Sales are already closed for this product. Visibility does not reopen checkout — use
-                Access Control for that.
+                Sales are already closed for this product. Visibility does not reopen checkout —
+                use Access Control for that.
               </p>
             ) : null}
           </Section>
         </div>
 
-        {/* Live preview */}
         <aside className="xl:col-span-4">
           <div className="sticky top-4 overflow-hidden rounded-2xl border border-border bg-card shadow-[var(--shadow-card)]">
             <div className="border-b border-border px-4 py-3">
@@ -679,6 +924,11 @@ export function CreateProductForm({
               </div>
               <div>
                 <p className="text-2xl font-extrabold tabular-nums text-foreground">{priceLabel}</p>
+                {freeTrial && payType === 'subscription' ? (
+                  <p className="mt-1 text-xs font-semibold text-emerald-600 dark:text-emerald-400">
+                    {trialDays || '7'}-day free trial
+                  </p>
+                ) : null}
                 <Button type="button" className="mt-3 h-11 w-full rounded-xl" disabled>
                   Get Access
                 </Button>

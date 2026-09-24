@@ -11,6 +11,8 @@ export type DashboardKpi = {
   /** Honest period delta only — omit when unknown. */
   trendLabel?: string;
   trendPositive?: boolean;
+  /** Optional muted caption under the trend pill (e.g. "vs. previous month"). */
+  trendCaption?: string;
   /** Optional in-app route — makes the whole KPI card clickable. */
   href?: string;
 };
@@ -52,18 +54,25 @@ export function DashboardKpiStrip({
                 <item.icon className="h-5 w-5" aria-hidden />
               </div>
               {item.trendLabel ? (
-                <span
-                  className={cn(
-                    'rounded-full px-2 py-0.5 text-[11px] font-bold',
-                    item.trendPositive
-                      ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400'
-                      : item.trendPositive === false
-                        ? 'bg-rose-500/10 text-rose-600 dark:text-rose-400'
-                        : 'bg-muted text-muted-foreground',
-                  )}
-                >
-                  {item.trendLabel}
-                </span>
+                <div className="flex flex-col items-end gap-0.5">
+                  <span
+                    className={cn(
+                      'rounded-full px-2 py-0.5 text-[11px] font-bold',
+                      item.trendPositive
+                        ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400'
+                        : item.trendPositive === false
+                          ? 'bg-rose-500/10 text-rose-600 dark:text-rose-400'
+                          : 'bg-muted text-muted-foreground',
+                    )}
+                  >
+                    {item.trendLabel}
+                  </span>
+                  {item.trendCaption ? (
+                    <span className="text-[10px] font-medium text-muted-foreground">
+                      {item.trendCaption}
+                    </span>
+                  ) : null}
+                </div>
               ) : null}
             </div>
             <p className="text-2xl font-extrabold tabular-nums tracking-tight text-foreground sm:text-3xl">

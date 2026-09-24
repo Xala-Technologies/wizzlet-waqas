@@ -3,13 +3,16 @@ import { Link, useSearchParams } from 'react-router-dom';
 import { useMutation, useQuery } from 'convex/react';
 import { format } from 'date-fns';
 import {
+  Calendar,
   Check,
+  ChevronDown,
   ChevronLeft,
   ChevronRight,
   Copy,
   DollarSign,
   Download,
   Gift,
+  Lightbulb,
   Loader2,
   MoreVertical,
   Search,
@@ -78,6 +81,13 @@ function money(cents: number): string {
   })}`;
 }
 
+function moneyWhole(cents: number): string {
+  return `$${(cents / 100).toLocaleString(undefined, {
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0,
+  })}`;
+}
+
 function statusTone(status: DemoReferralStatus): string {
   if (status === 'paid') return resultPillTone.win;
   if (status === 'approved') return resultPillTone.premium;
@@ -133,7 +143,7 @@ const CreatorReferrals = () => {
   const loading =
     creatorLoading || liveReferrals === undefined || (!!creator && (savingCode || !code));
 
-  const liveRows = liveReferrals ?? [];
+  const liveRows = useMemo(() => liveReferrals ?? [], [liveReferrals]);
 
   const useDemo = shouldUseCreatorReferralsDemo({
     count: liveRows.length,
@@ -157,6 +167,7 @@ const CreatorReferrals = () => {
       referrerName,
       referrerHandle,
       referredName: r.referredEmail ?? 'Subscriber',
+      referredHandle: r.referredEmail ? `@${r.referredEmail.split('@')[0]}` : '@user',
       referredEmail: r.referredEmail ?? null,
       plan: '—',
       revenueCents: 0,
@@ -176,6 +187,7 @@ const CreatorReferrals = () => {
         r.referrerName.toLowerCase().includes(q) ||
         r.referrerHandle.toLowerCase().includes(q) ||
         r.referredName.toLowerCase().includes(q) ||
+        r.referredHandle.toLowerCase().includes(q) ||
         (r.referredEmail?.toLowerCase().includes(q) ?? false) ||
         r.plan.toLowerCase().includes(q)
       );
@@ -343,26 +355,18 @@ const CreatorReferrals = () => {
     <DashboardLayout type="creator">
       <header className="mb-4 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div className="min-w-0">
-          <h1 className="text-heading font-bold tracking-tight text-foreground md:text-heading-lg">
+          <h1 className="text-2xl font-extrabold tracking-tight text-foreground sm:text-3xl">
             Referrals
           </h1>
-          <p className="mt-1.5 text-support text-muted-foreground">
+          <p className="mt-1.5 max-w-2xl text-sm font-medium text-muted-foreground sm:text-base">
             Turn your community into a growth engine. Reward your users for bringing in new
             subscribers.
           </p>
         </div>
-        <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
-          <span className="inline-flex w-fit items-center rounded-full border border-border bg-muted/40 px-3 py-1.5 text-xs font-semibold text-muted-foreground">
-            {dateRangeLabel}
-          </span>
-          <Button
-            type="button"
-            className="min-h-11 shrink-0 rounded-xl"
-            disabled={!referralLink}
-            onClick={() => void copyReferral()}
-          >
-            <Copy className="mr-1.5 h-3.5 w-3.5" /> Copy referral link
-          </Button>
+        <div className="inline-flex h-11 shrink-0 items-center gap-2 rounded-xl border border-border bg-card px-3.5 text-sm font-semibold text-foreground shadow-[var(--shadow-card)]">
+          <Calendar className="h-4 w-4 text-muted-foreground" aria-hidden />
+          <span className="tabular-nums">{dateRangeLabel}</span>
+          <ChevronDown className="h-4 w-4 text-muted-foreground" aria-hidden />
         </div>
       </header>
 
@@ -376,8 +380,7 @@ const CreatorReferrals = () => {
           />
           <p className="min-w-0 flex-1 text-sm font-semibold leading-snug">
             Sample preview data — referral activity and KPIs are mock content for design review.
-            Add <span className="font-mono text-xs">?demo=0</span> to see empty real states. Your
-            referral link stays live.
+            Add <span className="font-mono text-xs">?demo=0</span> to see empty real states.
           </p>
         </div>
       ) : null}
@@ -394,6 +397,8 @@ const CreatorReferrals = () => {
                 metrics.totalReferralsDelta != null
                   ? `↑ ${metrics.totalReferralsDelta}%`
                   : undefined,
+              trendCaption:
+                metrics.totalReferralsDelta != null ? 'vs. last month' : undefined,
               trendPositive: true,
             },
             {
@@ -405,23 +410,28 @@ const CreatorReferrals = () => {
                 metrics.newSubscribersDelta != null
                   ? `↑ ${metrics.newSubscribersDelta}%`
                   : undefined,
+              trendCaption:
+                metrics.newSubscribersDelta != null ? 'vs. last month' : undefined,
               trendPositive: true,
             },
             {
               label: 'Revenue from referrals',
               value:
-                useDemo || metrics.revenueCents > 0 ? money(metrics.revenueCents) : '—',
+                useDemo || metrics.revenueCents > 0
+                  ? moneyWhole(metrics.revenueCents)
+                  : '—',
               icon: DollarSign,
               iconClassName: kpiIconTone.emerald,
               trendLabel:
                 metrics.revenueDelta != null ? `↑ ${metrics.revenueDelta}%` : undefined,
+              trendCaption: metrics.revenueDelta != null ? 'vs. last month' : undefined,
               trendPositive: true,
             },
             {
               label: 'Rewards paid',
               value:
                 useDemo || metrics.rewardsPaidCents > 0
-                  ? money(metrics.rewardsPaidCents)
+                  ? moneyWhole(metrics.rewardsPaidCents)
                   : '—',
               icon: Gift,
               iconClassName: kpiIconTone.amber,
@@ -429,6 +439,8 @@ const CreatorReferrals = () => {
                 metrics.rewardsPaidDelta != null
                   ? `↑ ${metrics.rewardsPaidDelta}%`
                   : undefined,
+              trendCaption:
+                metrics.rewardsPaidDelta != null ? 'vs. last month' : undefined,
               trendPositive: true,
             },
           ]}
@@ -436,7 +448,7 @@ const CreatorReferrals = () => {
       </div>
 
       <div className="mb-6 grid grid-cols-1 gap-4 xl:grid-cols-12">
-        <section className="rounded-2xl border border-border bg-card shadow-[var(--shadow-card)] xl:col-span-9">
+        <section className="rounded-2xl border border-border bg-card shadow-[var(--shadow-card)] xl:col-span-8">
           <div className="flex flex-col gap-3 border-b border-border p-4 sm:p-5">
             <div className="flex flex-wrap gap-2">
               {STATUS_FILTERS.map((f) => {
@@ -450,10 +462,10 @@ const CreatorReferrals = () => {
                       setTablePage(0);
                     }}
                     className={cn(
-                      'inline-flex min-h-9 items-center rounded-full border px-3 py-1.5 text-xs font-bold transition-colors',
+                      'inline-flex min-h-9 items-center rounded-full px-3.5 py-1.5 text-xs font-bold transition-colors',
                       active
-                        ? 'border-primary/40 bg-primary/10 text-foreground'
-                        : 'border-border bg-muted/30 text-muted-foreground hover:text-foreground',
+                        ? 'bg-primary text-primary-foreground shadow-sm'
+                        : 'border border-border bg-muted/30 text-muted-foreground hover:text-foreground',
                     )}
                   >
                     {f.label}
@@ -470,9 +482,9 @@ const CreatorReferrals = () => {
                     setSearch(e.target.value);
                     setTablePage(0);
                   }}
-                  placeholder="Search referrals…"
+                  placeholder="Search referrers or users..."
                   className="h-11 min-h-11 rounded-xl pl-9"
-                  aria-label="Search referrals"
+                  aria-label="Search referrers or users"
                 />
               </div>
               <Button
@@ -513,7 +525,7 @@ const CreatorReferrals = () => {
                     <TableRow className="hover:bg-transparent">
                       <TableHead className="pl-4">Referrer</TableHead>
                       <TableHead>Referred user</TableHead>
-                      <TableHead>Plan</TableHead>
+                      <TableHead>Plan purchased</TableHead>
                       <TableHead>Revenue</TableHead>
                       <TableHead>Commission</TableHead>
                       <TableHead>Status</TableHead>
@@ -540,22 +552,25 @@ const CreatorReferrals = () => {
                           </div>
                         </TableCell>
                         <TableCell>
-                          <div className="min-w-0">
-                            <p className="truncate text-sm font-medium text-foreground">
-                              {row.referredName}
-                            </p>
-                            {row.referredEmail ? (
-                              <p className="truncate text-xs text-muted-foreground">
-                                {row.referredEmail}
+                          <div className="flex items-center gap-3">
+                            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-sky-500/10 text-xs font-bold text-sky-700 dark:text-sky-400">
+                              {initialsFromName(row.referredName)}
+                            </span>
+                            <div className="min-w-0">
+                              <p className="truncate text-sm font-semibold text-foreground">
+                                {row.referredName}
                               </p>
-                            ) : null}
+                              <p className="truncate text-xs text-muted-foreground">
+                                {row.referredHandle}
+                              </p>
+                            </div>
                           </div>
                         </TableCell>
                         <TableCell className="text-muted-foreground">{row.plan}</TableCell>
-                        <TableCell className="tabular-nums text-muted-foreground">
+                        <TableCell className="tabular-nums font-medium text-foreground">
                           {row.revenueCents > 0 ? money(row.revenueCents) : '—'}
                         </TableCell>
-                        <TableCell className="tabular-nums text-muted-foreground">
+                        <TableCell className="tabular-nums font-medium text-foreground">
                           {row.commissionCents > 0 ? money(row.commissionCents) : '—'}
                         </TableCell>
                         <TableCell>
@@ -601,7 +616,11 @@ const CreatorReferrals = () => {
 
               <div className="flex flex-col gap-3 border-t border-border px-4 py-3 sm:flex-row sm:items-center sm:justify-between sm:px-5">
                 <p className="text-support text-muted-foreground">
-                  Showing {showingFrom}–{showingTo} of {filtered.length} referrals
+                  Showing {showingFrom}–{showingTo} of{' '}
+                  {useDemo && statusFilter === 'all' && !search.trim()
+                    ? metrics.totalReferrals.toLocaleString()
+                    : filtered.length}{' '}
+                  referrals
                 </p>
                 <div className="flex items-center gap-1">
                   <Button
@@ -615,13 +634,52 @@ const CreatorReferrals = () => {
                   >
                     <ChevronLeft className="h-4 w-4" />
                   </Button>
+                  {(useDemo && statusFilter === 'all' && !search.trim()
+                    ? [0, 1, 2, 3, 4]
+                    : Array.from({ length: Math.min(pageCount, 5) }, (_, i) => i)
+                  ).map((page) => (
+                    <Button
+                      key={page}
+                      type="button"
+                      variant={safePage === page ? 'default' : 'outline'}
+                      size="icon"
+                      className="h-9 w-9"
+                      disabled={
+                        !(useDemo && statusFilter === 'all' && !search.trim()) &&
+                        page >= pageCount
+                      }
+                      onClick={() => {
+                        if (useDemo && statusFilter === 'all' && !search.trim() && page > 0) {
+                          toast.message('Sample preview', {
+                            description: 'Additional pages are mock pagination for design review.',
+                          });
+                          return;
+                        }
+                        setTablePage(page);
+                      }}
+                    >
+                      {page + 1}
+                    </Button>
+                  ))}
                   <Button
                     type="button"
                     variant="outline"
                     size="icon"
                     className="h-9 w-9"
-                    disabled={safePage >= pageCount - 1}
-                    onClick={() => setTablePage((p) => Math.min(pageCount - 1, p + 1))}
+                    disabled={
+                      useDemo && statusFilter === 'all' && !search.trim()
+                        ? false
+                        : safePage >= pageCount - 1
+                    }
+                    onClick={() => {
+                      if (useDemo && statusFilter === 'all' && !search.trim()) {
+                        toast.message('Sample preview', {
+                          description: 'Additional pages are mock pagination for design review.',
+                        });
+                        return;
+                      }
+                      setTablePage((p) => Math.min(pageCount - 1, p + 1));
+                    }}
                     aria-label="Next page"
                   >
                     <ChevronRight className="h-4 w-4" />
@@ -632,29 +690,34 @@ const CreatorReferrals = () => {
           )}
         </section>
 
-        <aside className="flex flex-col gap-4 xl:col-span-3">
+        <aside className="flex flex-col gap-4 xl:col-span-4">
           <section className="rounded-2xl border border-border bg-card p-5 shadow-[var(--shadow-card)]">
-            <div className="mb-3 flex items-center gap-2">
-              <Settings2 className="h-4 w-4 text-muted-foreground" aria-hidden />
+            <div className="mb-2 flex items-center gap-2">
+              <span className={cn('flex h-9 w-9 items-center justify-center rounded-xl', kpiIconTone.violet)}>
+                <Settings2 className="h-4 w-4" aria-hidden />
+              </span>
               <h2 className="text-base font-extrabold tracking-tight text-foreground">
                 Referral Program Settings
               </h2>
             </div>
+            <p className="mb-4 text-sm text-muted-foreground">
+              Set your commission rate and customize your referral program.
+            </p>
             <dl className="space-y-3 text-sm">
               <div className="flex items-center justify-between gap-3">
-                <dt className="text-muted-foreground">Commission</dt>
+                <dt className="text-muted-foreground">Commission rate</dt>
                 <dd className="font-semibold tabular-nums text-foreground">
                   {metrics.commissionRatePct}%
                 </dd>
               </div>
               <div className="flex items-center justify-between gap-3">
-                <dt className="text-muted-foreground">Cookie window</dt>
+                <dt className="text-muted-foreground">Cookie duration</dt>
                 <dd className="font-semibold tabular-nums text-foreground">
                   {metrics.cookieDays} days
                 </dd>
               </div>
               <div className="flex items-center justify-between gap-3">
-                <dt className="text-muted-foreground">Min payout</dt>
+                <dt className="text-muted-foreground">Minimum payout</dt>
                 <dd className="font-semibold tabular-nums text-foreground">
                   {money(metrics.minPayoutCents)}
                 </dd>
@@ -662,7 +725,6 @@ const CreatorReferrals = () => {
             </dl>
             <Button
               type="button"
-              variant="outline"
               className="mt-4 min-h-11 w-full rounded-xl"
               onClick={() =>
                 toast.message('Settings editor coming soon', {
@@ -675,10 +737,22 @@ const CreatorReferrals = () => {
           </section>
 
           <section className="rounded-2xl border border-border bg-card p-5 shadow-[var(--shadow-card)]">
-            <h2 className="mb-1 text-base font-extrabold tracking-tight text-foreground">
-              Top Referrers
-            </h2>
-            <p className="mb-4 text-xs text-muted-foreground">{dateRangeLabel}</p>
+            <div className="mb-4 flex items-center justify-between gap-3">
+              <h2 className="text-base font-extrabold tracking-tight text-foreground">
+                Top Referrers
+              </h2>
+              <button
+                type="button"
+                className="text-xs font-bold text-primary hover:underline"
+                onClick={() =>
+                  toast.message('All referrers', {
+                    description: 'Full leaderboard coming soon.',
+                  })
+                }
+              >
+                View all →
+              </button>
+            </div>
             {topReferrers.length === 0 ? (
               <p className="py-6 text-center text-sm text-muted-foreground">
                 No referrals yet — share your link to start ranking.
@@ -687,14 +761,19 @@ const CreatorReferrals = () => {
               <ol className="space-y-3">
                 {topReferrers.map((item) => (
                   <li key={`${item.rank}-${item.handle}`} className="flex items-start gap-3">
-                    <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-violet-500/10 text-xs font-bold text-violet-700 dark:text-violet-400">
-                      {item.rank}
+                    <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-violet-500/10 text-xs font-bold text-violet-700 dark:text-violet-400">
+                      {initialsFromName(item.name)}
                     </span>
                     <div className="min-w-0 flex-1">
-                      <p className="truncate text-sm font-bold text-foreground">{item.name}</p>
+                      <div className="flex items-baseline justify-between gap-2">
+                        <p className="truncate text-sm font-bold text-foreground">{item.name}</p>
+                        <span className="shrink-0 text-[11px] font-bold text-muted-foreground">
+                          #{item.rank}
+                        </span>
+                      </div>
                       <p className="text-xs text-muted-foreground">
-                        {item.handle} · {item.referrals.toLocaleString()} referrals
-                        {item.revenueCents > 0 ? ` · ${money(item.revenueCents)}` : ''}
+                        {item.referrals.toLocaleString()} referrals
+                        {item.revenueCents > 0 ? ` · ${moneyWhole(item.revenueCents)}` : ''}
                       </p>
                     </div>
                   </li>
@@ -703,14 +782,19 @@ const CreatorReferrals = () => {
             )}
           </section>
 
-          <section className="rounded-2xl border border-violet-500/20 bg-violet-500/5 p-5 shadow-[var(--shadow-card)]">
-            <h2 className="mb-3 text-base font-extrabold tracking-tight text-foreground">
-              Tips for more referrals
-            </h2>
+          <section className="rounded-2xl border border-border bg-card p-5 shadow-[var(--shadow-card)]">
+            <div className="mb-3 flex items-center gap-2">
+              <span className={cn('flex h-9 w-9 items-center justify-center rounded-xl', kpiIconTone.amber)}>
+                <Lightbulb className="h-4 w-4" aria-hidden />
+              </span>
+              <h2 className="text-base font-extrabold tracking-tight text-foreground">
+                Tips to grow referrals
+              </h2>
+            </div>
             <ul className="space-y-2.5">
               {CREATOR_REFERRALS_TIPS.map((tip) => (
                 <li key={tip} className="flex items-start gap-2.5 text-sm text-muted-foreground">
-                  <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-violet-500/15 text-violet-700 dark:text-violet-400">
+                  <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-emerald-500/15 text-emerald-700 dark:text-emerald-400">
                     <Check className="h-3 w-3" aria-hidden />
                   </span>
                   <span>{tip}</span>

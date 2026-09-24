@@ -3,8 +3,9 @@
  * Aligned to the Prizelet Promo Codes mockup.
  */
 
+const MOCK_NOW = Date.parse('2025-01-31T12:00:00.000Z');
 const day = 86_400_000;
-const daysAgo = (n: number) => Date.now() - n * day;
+const daysAgo = (n: number) => MOCK_NOW - n * day;
 
 export type DemoPromoStatus = 'active' | 'paused' | 'expired';
 
@@ -66,7 +67,7 @@ export const CREATOR_PROMO_CODES_DEMO_ROWS: DemoPromoCodeRow[] = [
     maxUses: 50,
     revenueCents: 24_860,
     conversionPct: 14.8,
-    status: 'expired',
+    status: 'active',
     createdAtMs: daysAgo(45),
   },
   {
@@ -138,7 +139,7 @@ export const CREATOR_PROMO_CODES_DEMO_ROWS: DemoPromoCodeRow[] = [
     maxUses: 75,
     revenueCents: 9_880,
     conversionPct: 9.6,
-    status: 'paused',
+    status: 'active',
     createdAtMs: daysAgo(40),
   },
   {
@@ -162,7 +163,7 @@ export const CREATOR_PROMO_CODES_DEMO_ROWS: DemoPromoCodeRow[] = [
     maxUses: 200,
     revenueCents: 28_440,
     conversionPct: 17.9,
-    status: 'expired',
+    status: 'active',
     createdAtMs: daysAgo(75),
   },
   {
@@ -176,6 +177,30 @@ export const CREATOR_PROMO_CODES_DEMO_ROWS: DemoPromoCodeRow[] = [
     conversionPct: 20.1,
     status: 'active',
     createdAtMs: daysAgo(3),
+  },
+  {
+    id: 'demo-promo-13',
+    code: 'IGSTORY15',
+    discountPercent: 15,
+    appliesTo: 'All products',
+    uses: 38,
+    maxUses: null,
+    revenueCents: 16_800,
+    conversionPct: 13.5,
+    status: 'active',
+    createdAtMs: daysAgo(2),
+  },
+  {
+    id: 'demo-promo-14',
+    code: 'YOUTUBE30',
+    discountPercent: 30,
+    appliesTo: 'Premium Picks',
+    uses: 44,
+    maxUses: 150,
+    revenueCents: 27_600,
+    conversionPct: 18.2,
+    status: 'active',
+    createdAtMs: daysAgo(1),
   },
 ];
 

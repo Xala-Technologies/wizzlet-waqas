@@ -1,7 +1,7 @@
 import { FormEvent, useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useQuery } from 'convex/react';
-import { Bell, ChevronDown, HelpCircle, LogOut, Search } from 'lucide-react';
+import { Bell, ChevronDown, HelpCircle, LogOut, Plus, Search } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { api } from '@convex/_generated/api';
 import { Button } from '@/components/ui/button';
@@ -17,12 +17,13 @@ import {
 import { cn } from '@/lib/utils';
 
 /**
- * Creator desktop utility bar — search, notifications, account menu.
- * Hidden on mobile (MobileTopBar + drawer handle that). New Pick lives on Overview.
+ * Creator desktop utility bar — search, notifications, account menu, Create Post.
+ * Hidden on mobile (MobileTopBar + drawer handle that).
  */
 export function CreatorTopBar() {
   const { user, signOut } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
   const [q, setQ] = useState('');
   const creator = useQuery(api.creators.queries.myCreator, user ? {} : 'skip');
   const notifUnread = useQuery(api.notifications.mutations.unreadCount, user ? {} : 'skip');
@@ -33,6 +34,64 @@ export function CreatorTopBar() {
   const initial = display.replace(/^@/, '').charAt(0).toUpperCase() || 'C';
   const unread = notifUnread ?? 0;
   const handle = creator?.username ? `@${creator.username}` : user?.email ?? null;
+  const onPosts = location.pathname.startsWith('/creator/posts');
+  const onProducts = location.pathname.startsWith('/creator/products');
+  const onSubscribers = location.pathname.startsWith('/creator/subscribers');
+  const onMessages = location.pathname.startsWith('/creator/messages');
+  const onMarketing =
+    location.pathname.startsWith('/creator/promo') ||
+    location.pathname.startsWith('/creator/links') ||
+    location.pathname.startsWith('/creator/referrals');
+  const onReferrals = location.pathname.startsWith('/creator/referrals');
+  const onEarnings =
+    location.pathname.startsWith('/creator/earnings') ||
+    location.pathname.startsWith('/creator/payouts') ||
+    location.pathname.startsWith('/creator/transactions');
+  const onTaxDocs =
+    location.pathname.startsWith('/creator/earnings') && location.hash === '#tax-docs';
+  const onSettings = location.pathname.startsWith('/creator/settings');
+  const settingsTab = onSettings
+    ? new URLSearchParams(location.search).get('tab') || 'general'
+    : null;
+  const searchPlaceholder = onPosts
+    ? 'Search posts, tags, or content…'
+    : onProducts
+      ? 'Search products, subscribers, or anything…'
+      : onSubscribers
+        ? 'Search subscribers, email, or name…'
+        : onMessages
+          ? 'Search subscribers, messages, or anything…'
+          : onReferrals
+            ? 'Search referrals, users, or anything…'
+            : onTaxDocs
+              ? 'Search anything…'
+              : onEarnings
+                ? 'Search earnings, payouts, or transactions…'
+                : settingsTab === 'team'
+                  ? 'Search settings, members, or anything…'
+                  : settingsTab === 'billing'
+                    ? 'Search settings, billing, or anything…'
+                    : settingsTab === 'integrations'
+                      ? 'Search settings, integrations, or anything…'
+                      : settingsTab === 'notifications'
+                        ? 'Search settings, notifications, or anything…'
+                        : settingsTab === 'security'
+                          ? 'Search settings, security, or anything…'
+                          : settingsTab === 'advanced'
+                            ? 'Search settings, advanced options, or anything…'
+                            : onSettings
+                              ? 'Search settings, branding, or anything…'
+                              : onMarketing
+                                ? 'Search anything…'
+                                : 'Search anything…';
+  const hideCreatePost =
+    onPosts ||
+    onProducts ||
+    onSubscribers ||
+    onMessages ||
+    onMarketing ||
+    onEarnings ||
+    onSettings;
 
   const onSearch = (e: FormEvent) => {
     e.preventDefault();
@@ -61,7 +120,7 @@ export function CreatorTopBar() {
           <Input
             value={q}
             onChange={(e) => setQ(e.target.value)}
-            placeholder="Search anything…"
+            placeholder={searchPlaceholder}
             aria-label="Search creator tools"
             className="h-10 border-border bg-card pl-9 text-sm font-medium shadow-none"
           />
@@ -137,6 +196,15 @@ export function CreatorTopBar() {
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
+
+          {!hideCreatePost ? (
+            <Button asChild className="h-10 gap-1.5 rounded-xl px-4 font-semibold shadow-sm">
+              <Link to="/creator/posts">
+                <Plus className="h-4 w-4" aria-hidden />
+                Create Post
+              </Link>
+            </Button>
+          ) : null}
         </div>
       </div>
     </header>

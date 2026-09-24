@@ -1,10 +1,10 @@
 /**
- * Sample Referrals management data for design review when the creator has no attributed signups.
- * Aligned to the Prizelet Referrals mockup.
+ * Sample Referrals management data aligned to the Prizelet Referrals mockup.
  */
 
+const MOCK_NOW = Date.parse('2025-01-31T12:00:00.000Z');
 const day = 86_400_000;
-const daysAgo = (n: number) => Date.now() - n * day;
+const daysAgo = (n: number) => MOCK_NOW - n * day;
 
 export type DemoReferralStatus = 'paid' | 'approved' | 'pending' | 'fraud';
 
@@ -13,16 +13,13 @@ export type DemoReferralRow = {
   referrerName: string;
   referrerHandle: string;
   referredName: string;
+  referredHandle: string;
   referredEmail: string | null;
   plan: string;
   revenueCents: number;
   commissionCents: number;
   status: DemoReferralStatus;
   createdAtMs: number;
-  /** Legacy fields used by older mappings */
-  referred_email?: string | null;
-  converted?: boolean;
-  created_at?: string;
 };
 
 export const CREATOR_REFERRALS_DEMO_METRICS = {
@@ -44,163 +41,175 @@ export const CREATOR_REFERRALS_DEMO_ROWS: DemoReferralRow[] = [
   {
     id: 'demo-ref-1',
     referrerName: 'Jordan Blake',
-    referrerHandle: '@jordanb',
+    referrerHandle: '@jordanblake',
     referredName: 'Sam Lee',
+    referredHandle: '@samlee',
     referredEmail: 'sam.lee@example.com',
     plan: 'Premium Picks',
-    revenueCents: 29_990,
-    commissionCents: 5_998,
+    revenueCents: 2_999,
+    commissionCents: 500,
     status: 'paid',
-    createdAtMs: daysAgo(2),
+    createdAtMs: Date.parse('2025-01-30T15:00:00.000Z'),
   },
   {
     id: 'demo-ref-2',
     referrerName: 'Jordan Blake',
-    referrerHandle: '@jordanb',
+    referrerHandle: '@jordanblake',
     referredName: 'Maya Ortiz',
+    referredHandle: '@mayao',
     referredEmail: 'maya.o@example.com',
     plan: 'VIP Access',
-    revenueCents: 99_990,
-    commissionCents: 19_998,
+    revenueCents: 9_999,
+    commissionCents: 2_000,
     status: 'approved',
-    createdAtMs: daysAgo(4),
+    createdAtMs: Date.parse('2025-01-29T14:00:00.000Z'),
   },
   {
     id: 'demo-ref-3',
     referrerName: 'Sarah Chen',
-    referrerHandle: '@sarahc',
+    referrerHandle: '@sarahchen',
     referredName: 'Daniel Park',
+    referredHandle: '@danielp',
     referredEmail: 'daniel.park@example.com',
     plan: 'Monthly Pass',
-    revenueCents: 19_990,
-    commissionCents: 3_998,
+    revenueCents: 1_999,
+    commissionCents: 400,
     status: 'pending',
-    createdAtMs: daysAgo(5),
+    createdAtMs: Date.parse('2025-01-28T12:00:00.000Z'),
   },
   {
     id: 'demo-ref-4',
     referrerName: 'Alex Rivera',
-    referrerHandle: '@alexr',
+    referrerHandle: '@alexrivera',
     referredName: 'Chris Ng',
+    referredHandle: '@chrisng',
     referredEmail: 'chris.ng@example.com',
     plan: 'Premium Picks',
-    revenueCents: 29_990,
-    commissionCents: 5_998,
+    revenueCents: 2_999,
+    commissionCents: 500,
     status: 'paid',
-    createdAtMs: daysAgo(7),
+    createdAtMs: Date.parse('2025-01-27T11:00:00.000Z'),
   },
   {
     id: 'demo-ref-5',
     referrerName: 'Sarah Chen',
-    referrerHandle: '@sarahc',
+    referrerHandle: '@sarahchen',
     referredName: 'Priya Shah',
+    referredHandle: '@priyas',
     referredEmail: 'priya@example.com',
     plan: 'VIP Access',
-    revenueCents: 99_990,
-    commissionCents: 19_998,
+    revenueCents: 9_999,
+    commissionCents: 2_000,
     status: 'approved',
-    createdAtMs: daysAgo(9),
+    createdAtMs: Date.parse('2025-01-26T10:00:00.000Z'),
   },
   {
     id: 'demo-ref-6',
     referrerName: 'Mike Torres',
-    referrerHandle: '@miket',
+    referrerHandle: '@miketorres',
     referredName: 'Guest user',
+    referredHandle: '@guest',
     referredEmail: null,
     plan: '—',
     revenueCents: 0,
     commissionCents: 0,
     status: 'pending',
-    createdAtMs: daysAgo(11),
+    createdAtMs: Date.parse('2025-01-25T09:00:00.000Z'),
   },
   {
     id: 'demo-ref-7',
     referrerName: 'Jordan Blake',
-    referrerHandle: '@jordanb',
+    referrerHandle: '@jordanblake',
     referredName: 'Taylor Kim',
+    referredHandle: '@taylork',
     referredEmail: 'taylor.k@example.com',
     plan: 'Premium Picks',
-    revenueCents: 29_990,
-    commissionCents: 5_998,
+    revenueCents: 2_999,
+    commissionCents: 500,
     status: 'paid',
-    createdAtMs: daysAgo(12),
+    createdAtMs: Date.parse('2025-01-24T16:00:00.000Z'),
   },
   {
     id: 'demo-ref-8',
     referrerName: 'Lana Brooks',
-    referrerHandle: '@lanab',
+    referrerHandle: '@lanabrooks',
     referredName: 'Omar Hassan',
+    referredHandle: '@omarh',
     referredEmail: 'omar.h@example.com',
     plan: 'Monthly Pass',
-    revenueCents: 19_990,
-    commissionCents: 3_998,
+    revenueCents: 1_999,
+    commissionCents: 400,
     status: 'fraud',
-    createdAtMs: daysAgo(14),
+    createdAtMs: Date.parse('2025-01-23T13:00:00.000Z'),
   },
   {
     id: 'demo-ref-9',
     referrerName: 'Mike Torres',
-    referrerHandle: '@miket',
+    referrerHandle: '@miketorres',
     referredName: 'Elena Voss',
+    referredHandle: '@elenav',
     referredEmail: 'elena.v@example.com',
     plan: 'Premium Picks',
-    revenueCents: 29_990,
-    commissionCents: 5_998,
+    revenueCents: 2_999,
+    commissionCents: 500,
     status: 'approved',
-    createdAtMs: daysAgo(16),
+    createdAtMs: Date.parse('2025-01-22T12:00:00.000Z'),
   },
   {
     id: 'demo-ref-10',
     referrerName: 'Alex Rivera',
-    referrerHandle: '@alexr',
+    referrerHandle: '@alexrivera',
     referredName: 'Noah Patel',
+    referredHandle: '@noahp',
     referredEmail: 'noah.p@example.com',
     plan: 'VIP Access',
-    revenueCents: 99_990,
-    commissionCents: 19_998,
+    revenueCents: 9_999,
+    commissionCents: 2_000,
     status: 'paid',
-    createdAtMs: daysAgo(18),
+    createdAtMs: Date.parse('2025-01-21T11:00:00.000Z'),
   },
   {
     id: 'demo-ref-11',
     referrerName: 'Lana Brooks',
-    referrerHandle: '@lanab',
+    referrerHandle: '@lanabrooks',
     referredName: 'Riley Quinn',
+    referredHandle: '@rileyq',
     referredEmail: 'riley.q@example.com',
     plan: 'Monthly Pass',
-    revenueCents: 19_990,
-    commissionCents: 3_998,
+    revenueCents: 1_999,
+    commissionCents: 400,
     status: 'pending',
-    createdAtMs: daysAgo(21),
+    createdAtMs: Date.parse('2025-01-20T10:00:00.000Z'),
   },
   {
     id: 'demo-ref-12',
     referrerName: 'Jordan Blake',
-    referrerHandle: '@jordanb',
+    referrerHandle: '@jordanblake',
     referredName: 'Casey Wu',
+    referredHandle: '@caseyw',
     referredEmail: 'casey.w@example.com',
     plan: 'Premium Picks',
-    revenueCents: 29_990,
-    commissionCents: 5_998,
+    revenueCents: 2_999,
+    commissionCents: 500,
     status: 'paid',
     createdAtMs: daysAgo(24),
   },
 ];
 
 export const CREATOR_REFERRALS_DEMO_TOP = [
-  { rank: 1, name: 'Jordan Blake', handle: '@jordanb', referrals: 48, revenueCents: 240_000 },
-  { rank: 2, name: 'Sarah Chen', handle: '@sarahc', referrals: 36, revenueCents: 186_000 },
-  { rank: 3, name: 'Alex Rivera', handle: '@alexr', referrals: 28, revenueCents: 142_000 },
-  { rank: 4, name: 'Mike Torres', handle: '@miket', referrals: 22, revenueCents: 98_000 },
-  { rank: 5, name: 'Lana Brooks', handle: '@lanab', referrals: 18, revenueCents: 76_000 },
+  { rank: 1, name: 'Jordan Blake', handle: '@jordanblake', referrals: 48, revenueCents: 240_000 },
+  { rank: 2, name: 'Sarah Chen', handle: '@sarahchen', referrals: 36, revenueCents: 186_000 },
+  { rank: 3, name: 'Alex Rivera', handle: '@alexrivera', referrals: 28, revenueCents: 142_000 },
+  { rank: 4, name: 'Mike Torres', handle: '@miketorres', referrals: 22, revenueCents: 98_000 },
+  { rank: 5, name: 'Lana Brooks', handle: '@lanabrooks', referrals: 18, revenueCents: 76_000 },
 ] as const;
 
 export const CREATOR_REFERRALS_TIPS = [
   'Offer competitive rewards so fans want to share.',
-  'Promote your referral link in posts and emails.',
+  'Promote your referral link in posts, bios, and emails.',
   'Highlight top referrers in your community.',
-  'Keep cookie windows long enough for delayed signups.',
-  'Pay out on time — trust drives more referrals.',
+  'Make it easy to share with a short link and QR code.',
+  'Track and optimize which channels drive the best referrals.',
 ] as const;
 
 export function shouldUseCreatorReferralsDemo(opts: {

@@ -22,20 +22,6 @@ export type DemoGrowthCard = {
   fill: string;
 };
 
-export type DemoTopPost = {
-  id: string;
-  rank: number;
-  title: string;
-  subtitle: string;
-  type: 'Text' | 'Video' | 'Image';
-  views: number;
-  likes: number;
-  comments: number;
-  conversions: number;
-  revenueCents: number;
-  thumbTone: string;
-};
-
 export type DemoTopProduct = {
   id: string;
   rank: number;
@@ -82,17 +68,17 @@ export const CREATOR_PERFORMANCE_DEMO_INSIGHTS: DemoInsight[] = [
   {
     id: 'i1',
     tone: 'emerald',
-    text: 'Revenue increased 34% compared to last month.',
+    text: 'Your revenue increased by 34%. You made $13,420 more than last month.',
   },
   {
     id: 'i2',
     tone: 'violet',
-    text: 'Subscriber growth accelerated — +18% MoM.',
+    text: 'Subscriber growth is up 18%. You gained 189 new subscribers.',
   },
   {
     id: 'i3',
     tone: 'sky',
-    text: 'Post views are up 41% with stronger engagement.',
+    text: 'Your posts got 41% more views. Total views increased from 34,280 to 48,320.',
   },
   {
     id: 'i4',
@@ -102,7 +88,7 @@ export const CREATOR_PERFORMANCE_DEMO_INSIGHTS: DemoInsight[] = [
   {
     id: 'i5',
     tone: 'emerald',
-    text: 'Conversion rate improved to 6.2% (+29% vs prior period).',
+    text: 'Your conversion rate is 6.2%. Up from 4.3% last month.',
   },
 ];
 
@@ -121,7 +107,7 @@ export const CREATOR_PERFORMANCE_DEMO_GROWTH: DemoGrowthCard[] = [
     label: 'Conversion Rate',
     value: '6.2%',
     trendPct: 29,
-    series: [3.8, 4.1, 4.4, 4.8, 5.1, 5.4, 5.7, 5.9, 6.2],
+    series: [0.8, 1.4, 2.2, 3.1, 3.8, 4.4, 5.1, 5.7, 6.2],
     stroke: 'hsl(160 84% 39%)',
     fill: 'hsl(160 84% 39% / 0.18)',
   },
@@ -131,77 +117,9 @@ export const CREATOR_PERFORMANCE_DEMO_GROWTH: DemoGrowthCard[] = [
     value: '2.1%',
     trendPct: -12,
     invertTrend: true,
-    series: [3.4, 3.2, 3.0, 2.8, 2.6, 2.5, 2.3, 2.2, 2.1],
+    series: [6.0, 5.4, 4.8, 4.2, 3.6, 3.1, 2.7, 2.4, 2.1],
     stroke: 'hsl(0 84% 60%)',
     fill: 'hsl(0 84% 60% / 0.16)',
-  },
-];
-
-export const CREATOR_PERFORMANCE_DEMO_TOP_POSTS: DemoTopPost[] = [
-  {
-    id: 'demo-post-1',
-    rank: 1,
-    title: 'NBA Picks Tonight',
-    subtitle: 'Lakers vs Celtics slate',
-    type: 'Text',
-    views: 12_400,
-    likes: 842,
-    comments: 126,
-    conversions: 48,
-    revenueCents: 423_000,
-    thumbTone: 'bg-violet-500/15 text-violet-700',
-  },
-  {
-    id: 'demo-post-2',
-    rank: 2,
-    title: 'NFL Sunday Card',
-    subtitle: 'Week 12 lock list',
-    type: 'Video',
-    views: 9_820,
-    likes: 610,
-    comments: 94,
-    conversions: 36,
-    revenueCents: 318_000,
-    thumbTone: 'bg-sky-500/15 text-sky-700',
-  },
-  {
-    id: 'demo-post-3',
-    rank: 3,
-    title: 'Soccer Value Bets',
-    subtitle: 'EPL + La Liga',
-    type: 'Text',
-    views: 7_640,
-    likes: 402,
-    comments: 71,
-    conversions: 28,
-    revenueCents: 241_000,
-    thumbTone: 'bg-emerald-500/15 text-emerald-700',
-  },
-  {
-    id: 'demo-post-4',
-    rank: 4,
-    title: 'MLB Underdogs',
-    subtitle: 'Night slate specials',
-    type: 'Image',
-    views: 5_210,
-    likes: 288,
-    comments: 42,
-    conversions: 19,
-    revenueCents: 156_000,
-    thumbTone: 'bg-amber-500/15 text-amber-700',
-  },
-  {
-    id: 'demo-post-5',
-    rank: 5,
-    title: 'NHL Parlay Pack',
-    subtitle: '3-leg same-game',
-    type: 'Text',
-    views: 4_180,
-    likes: 214,
-    comments: 33,
-    conversions: 14,
-    revenueCents: 98_000,
-    thumbTone: 'bg-rose-500/15 text-rose-700',
   },
 ];
 
@@ -213,25 +131,43 @@ export const CREATOR_PERFORMANCE_DEMO_TOP_PRODUCTS: DemoTopProduct[] = [
     subscribers: 842,
     revenueCents: 2_523_000,
     conversionPct: 8.4,
-    iconTone: 'bg-sky-500/15 text-sky-700',
+    iconTone: 'bg-sky-500/15 text-sky-700 dark:text-sky-400',
   },
   {
     id: 'demo-prod-2',
     rank: 2,
-    name: 'VIP All Access',
-    subscribers: 218,
-    revenueCents: 1_642_000,
-    conversionPct: 5.1,
-    iconTone: 'bg-rose-500/15 text-rose-700',
+    name: 'VIP Access',
+    subscribers: 408,
+    revenueCents: 2_029_000,
+    conversionPct: 6.7,
+    iconTone: 'bg-rose-500/15 text-rose-700 dark:text-rose-400',
   },
   {
     id: 'demo-prod-3',
     rank: 3,
-    name: 'Monthly Card',
-    subscribers: 188,
-    revenueCents: 1_103_000,
+    name: 'Betting Strategy Guide',
+    subscribers: 120,
+    revenueCents: 948_000,
     conversionPct: 4.2,
-    iconTone: 'bg-violet-500/15 text-violet-700',
+    iconTone: 'bg-violet-500/15 text-violet-700 dark:text-violet-400',
+  },
+  {
+    id: 'demo-prod-4',
+    rank: 4,
+    name: 'Discord Access',
+    subscribers: 330,
+    revenueCents: 659_000,
+    conversionPct: 5.1,
+    iconTone: 'bg-amber-500/15 text-amber-700 dark:text-amber-400',
+  },
+  {
+    id: 'demo-prod-5',
+    rank: 5,
+    name: '1-on-1 Coaching',
+    subscribers: 44,
+    revenueCents: 875_600,
+    conversionPct: 3.8,
+    iconTone: 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-400',
   },
 ];
 
