@@ -105,11 +105,23 @@ const CustomerSettings = () => {
 
   const useDemo = forceDemo && !disableDemo;
 
+  // Demo sample values — independent of Convex `me` hydration timing
+  useEffect(() => {
+    if (!useDemo) return;
+    setFullName('James Carter');
+    setEmail('james.carter@email.com');
+    setPhone('+47 412 34 567');
+    setNewPicks(true);
+    setMessagesOn(true);
+    setBillingOn(true);
+  }, [useDemo]);
+
   useEffect(() => {
     hydratedUserId.current = null;
   }, [useDemo]);
 
   useEffect(() => {
+    if (useDemo) return;
     if (!user) {
       hydratedUserId.current = null;
       return;
@@ -119,16 +131,6 @@ const CustomerSettings = () => {
     const id = me?._id ?? `auth:${user.id}`;
     if (hydratedUserId.current === id) return;
     hydratedUserId.current = id;
-
-    if (useDemo) {
-      setFullName('James Carter');
-      setEmail('james.carter@email.com');
-      setPhone('+47 412 34 567');
-      setNewPicks(true);
-      setMessagesOn(true);
-      setBillingOn(true);
-      return;
-    }
 
     if (me) {
       setFullName(me.fullName ?? me.name ?? '');
@@ -329,10 +331,10 @@ const CustomerSettings = () => {
       />
 
       <header className="mb-6">
-        <h1 className="text-heading font-bold tracking-tight text-slate-900 md:text-heading-lg">
+        <h1 className="text-2xl font-extrabold tracking-tight text-foreground sm:text-3xl">
           Settings
         </h1>
-        <p className="mt-1.5 text-support text-slate-500">
+        <p className="mt-1.5 text-sm font-medium text-muted-foreground sm:text-base">
           Manage your account and preferences.
         </p>
       </header>
@@ -477,8 +479,7 @@ const CustomerSettings = () => {
                 />
                 <Button
                   type="button"
-                  variant="outline"
-                  className="h-11 shrink-0 rounded-xl border-slate-200"
+                  className="h-11 shrink-0 rounded-xl font-semibold"
                   onClick={() => {
                     if (!hasPasswordAccount && !useDemo) {
                       toast.message('This account signs in with a provider — no password to change.');
@@ -566,23 +567,37 @@ const CustomerSettings = () => {
         </section>
 
         {/* Payment */}
-        <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
-          <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-            <div className="flex items-start gap-3">
-              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-violet-500/10">
-                <CreditCard className="h-4 w-4 text-violet-600" />
+        <section className="rounded-2xl border border-border bg-card p-5 shadow-[var(--shadow-card)] sm:p-6">
+          <div className="mb-5 flex items-start gap-3">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-violet-500/10">
+              <CreditCard className="h-4 w-4 text-violet-600" />
+            </div>
+            <div>
+              <h2 className="text-base font-bold text-foreground">Payment Method</h2>
+              <p className="text-sm text-muted-foreground">
+                Manage your payment method for subscriptions.
+              </p>
+            </div>
+          </div>
+
+          <div className="flex flex-col gap-3 rounded-xl border border-border bg-muted/40 p-4 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex items-center gap-4">
+              <div className="flex h-12 w-[72px] items-center justify-center rounded-lg bg-[#1A1F71] text-xs font-extrabold italic tracking-wide text-white shadow-sm">
+                VISA
               </div>
               <div>
-                <h2 className="text-base font-bold text-slate-900">Payment Method</h2>
-                <p className="text-sm text-slate-500">
-                  Manage your payment method for subscriptions.
+                <p className="text-sm font-bold text-foreground">
+                  {useDemo ? 'Visa •••• 4242' : 'Card on file via Stripe'}
+                </p>
+                <p className="text-xs font-medium text-muted-foreground">
+                  {useDemo ? 'Expires 04/28' : 'Open the portal to view or update your method'}
                 </p>
               </div>
             </div>
             <Button
               type="button"
               variant="outline"
-              className="h-9 shrink-0 rounded-xl border-slate-200"
+              className="h-10 shrink-0 rounded-xl font-semibold"
               disabled={portalLoading}
               onClick={() => void managePayment()}
             >
@@ -590,23 +605,6 @@ const CustomerSettings = () => {
               Manage Payment Method
             </Button>
           </div>
-
-          <div className="flex items-center gap-4 rounded-xl border border-slate-100 bg-slate-50 p-4">
-            <div className="flex h-12 w-[72px] items-center justify-center rounded-lg bg-gradient-to-br from-sky-600 to-blue-800 text-xs font-bold tracking-wide text-white shadow-sm">
-              VISA
-            </div>
-            <div>
-              <p className="text-sm font-bold text-slate-900">
-                {useDemo ? 'Visa •••• 4242' : 'Card on file via Stripe'}
-              </p>
-              <p className="text-xs font-medium text-slate-500">
-                {useDemo ? 'Expires 04/28' : 'Open the portal to view or update your method'}
-              </p>
-            </div>
-          </div>
-          <p className="mt-3 text-xs text-slate-500">
-            Card details are stored securely with Stripe. Use Manage Payment Method to update them.
-          </p>
         </section>
 
         {/* Privacy */}

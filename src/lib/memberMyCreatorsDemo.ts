@@ -1,6 +1,5 @@
 /**
- * Sample My Creators subscriptions for design review when the member has none.
- * Aligned to the Prizelet My Creators mockup.
+ * Sample My Creators list aligned to the Prizelet My Creators mock.
  */
 
 export type MemberMyCreatorDemoSub = {
@@ -8,14 +7,12 @@ export type MemberMyCreatorDemoSub = {
   username: string;
   displayName: string;
   bio: string;
+  avatarUrl: string | null;
   avatarInitials: string;
   avatarTone: string;
-  sports: string[];
-  winRate: number;
-  profit30dUnits: number;
-  followersLabel: string;
-  monthlyPriceCents: number;
-  renewsLabel: string;
+  /** Plan tier shown under the name (e.g. Premium, VIP) */
+  planLabel: string;
+  tags: string[];
   lastActiveMs: number;
   verified: boolean;
 };
@@ -40,66 +37,55 @@ export type MemberMyCreatorDemoCharge = {
 export const MEMBER_MY_CREATORS_DEMO_SUBS: MemberMyCreatorDemoSub[] = [
   {
     id: 'demo-my-1',
-    username: 'sharkpicks',
-    displayName: 'Shark Picks',
-    bio: 'NBA & NFL sides with disciplined unit sizing.',
-    avatarInitials: 'SP',
-    avatarTone: 'bg-slate-900',
-    sports: ['NBA', 'NFL', 'UFC'],
-    winRate: 68,
-    profit30dUnits: 12.4,
-    followersLabel: '2.4K',
-    monthlyPriceCents: 999,
-    renewsLabel: 'Renews Feb 28, 2025',
+    username: 'alexpicks',
+    displayName: 'AlexPicks',
+    bio: 'Daily NBA, NFL & MLB picks with detailed analysis and exclusive Discord access for members.',
+    avatarUrl:
+      'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=96&h=96&fit=crop&crop=face',
+    avatarInitials: 'AP',
+    avatarTone: 'bg-slate-800',
+    planLabel: 'Premium',
+    tags: ['NBA', 'NFL', 'MLB', 'Exclusive Discord'],
     lastActiveMs: Date.now() - 2 * 3_600_000,
     verified: true,
   },
   {
     id: 'demo-my-2',
-    username: 'theprofitclub',
-    displayName: 'The Profit Club',
-    bio: 'Premium locks across major US sports.',
-    avatarInitials: 'PC',
-    avatarTone: 'bg-amber-700',
-    sports: ['NBA', 'NFL', 'NHL'],
-    winRate: 64,
-    profit30dUnits: 8.6,
-    followersLabel: '1.8K',
-    monthlyPriceCents: 1999,
-    renewsLabel: 'Renews Mar 4, 2025',
+    username: 'sharkpicks',
+    displayName: 'Shark Picks',
+    bio: 'Data-driven NBA & NCAAB models plus a private community for serious bettors.',
+    avatarUrl: null,
+    avatarInitials: 'SP',
+    avatarTone: 'bg-slate-900',
+    planLabel: 'Premium',
+    tags: ['NBA', 'NCAAB', 'Betting Models', 'Private Community'],
     lastActiveMs: Date.now() - 5 * 3_600_000,
     verified: true,
   },
   {
     id: 'demo-my-3',
-    username: 'elitepicks',
-    displayName: 'Elite Picks',
-    bio: 'High-conviction soccer and NBA props.',
-    avatarInitials: 'EP',
-    avatarTone: 'bg-fuchsia-700',
-    sports: ['Soccer', 'NBA', 'Tennis'],
-    winRate: 63,
-    profit30dUnits: 7.8,
-    followersLabel: '1.5K',
-    monthlyPriceCents: 999,
-    renewsLabel: 'Renews Mar 12, 2025',
-    lastActiveMs: Date.now() - 12 * 3_600_000,
+    username: 'theprofitclub',
+    displayName: 'The Profit Club',
+    bio: 'Combat sports specialists covering UFC, boxing and MMA with study-hub breakdowns.',
+    avatarUrl: null,
+    avatarInitials: '👑',
+    avatarTone: 'bg-amber-100 text-amber-900',
+    planLabel: 'VIP',
+    tags: ['UFC', 'Boxing', 'MMA', 'Study Hub'],
+    lastActiveMs: Date.now() - 8 * 3_600_000,
     verified: true,
   },
   {
     id: 'demo-my-4',
-    username: 'betking',
-    displayName: 'BetKing',
-    bio: 'Sharp money reads and early line moves.',
-    avatarInitials: 'BK',
-    avatarTone: 'bg-indigo-800',
-    sports: ['NBA', 'UFC', 'Tennis'],
-    winRate: 66,
-    profit30dUnits: 10.2,
-    followersLabel: '1.9K',
-    monthlyPriceCents: 1499,
-    renewsLabel: 'Renews Feb 20, 2025',
-    lastActiveMs: Date.now() - 26 * 3_600_000,
+    username: 'tennisedge',
+    displayName: 'Tennis Edge',
+    bio: 'ATP, WTA and Challenger angles with tools built for tennis bettors.',
+    avatarUrl: null,
+    avatarInitials: '🎾',
+    avatarTone: 'bg-lime-100 text-lime-900',
+    planLabel: 'Premium',
+    tags: ['ATP', 'WTA', 'Challengers', 'Betting Tools'],
+    lastActiveMs: Date.now() - 12 * 3_600_000,
     verified: true,
   },
 ];
@@ -108,14 +94,14 @@ export const MEMBER_MY_CREATORS_DEMO_PURCHASES: MemberMyCreatorDemoPurchase[] = 
   {
     id: 'demo-purchase-1',
     title: 'NBA Playoff Parlay Pack',
-    creatorName: 'Shark Picks',
+    creatorName: 'AlexPicks',
     amountCents: 2499,
     purchasedLabel: 'Purchased Jan 18, 2025',
   },
   {
     id: 'demo-purchase-2',
     title: 'UFC Fight Night Card',
-    creatorName: 'BetKing',
+    creatorName: 'The Profit Club',
     amountCents: 1499,
     purchasedLabel: 'Purchased Feb 2, 2025',
   },
@@ -124,7 +110,7 @@ export const MEMBER_MY_CREATORS_DEMO_PURCHASES: MemberMyCreatorDemoPurchase[] = 
 export const MEMBER_MY_CREATORS_DEMO_CHARGES: MemberMyCreatorDemoCharge[] = [
   {
     id: 'demo-charge-1',
-    creatorName: 'Shark Picks',
+    creatorName: 'AlexPicks',
     typeLabel: 'Subscription renewal',
     amountCents: 999,
     dateLabel: 'Feb 1, 2025',
@@ -132,25 +118,25 @@ export const MEMBER_MY_CREATORS_DEMO_CHARGES: MemberMyCreatorDemoCharge[] = [
   },
   {
     id: 'demo-charge-2',
-    creatorName: 'The Profit Club',
+    creatorName: 'Shark Picks',
     typeLabel: 'Subscription charge',
-    amountCents: 1999,
+    amountCents: 999,
     dateLabel: 'Feb 4, 2025',
     status: 'Settled',
   },
   {
     id: 'demo-charge-3',
-    creatorName: 'Elite Picks',
+    creatorName: 'The Profit Club',
     typeLabel: 'Subscription charge',
-    amountCents: 999,
+    amountCents: 1999,
     dateLabel: 'Feb 12, 2025',
     status: 'Settled',
   },
   {
     id: 'demo-charge-4',
-    creatorName: 'BetKing',
-    typeLabel: 'One-time purchase',
-    amountCents: 1499,
+    creatorName: 'Tennis Edge',
+    typeLabel: 'Subscription charge',
+    amountCents: 999,
     dateLabel: 'Feb 2, 2025',
     status: 'Settled',
   },
@@ -167,5 +153,180 @@ export function shouldUseMemberMyCreatorsDemo(opts: {
 }
 
 export function isMemberMyCreatorsDemoId(id: string): boolean {
-  return id.startsWith('demo-my-') || id.startsWith('demo-purchase-') || id.startsWith('demo-charge-');
+  return (
+    id.startsWith('demo-my-') ||
+    id.startsWith('demo-purchase-') ||
+    id.startsWith('demo-charge-')
+  );
 }
+
+export type MemberManageFeature = {
+  title: string;
+  description: string;
+};
+
+export type MemberManageBillingRow = {
+  id: string;
+  dateLabel: string;
+  amountCents: number;
+  status: 'Paid' | 'Pending' | 'Failed';
+};
+
+export type MemberManageSubscriptionDetail = {
+  username: string;
+  displayName: string;
+  bio: string;
+  avatarUrl: string | null;
+  avatarInitials: string;
+  avatarTone: string;
+  planLabel: string;
+  tags: string[];
+  verified: boolean;
+  statusLabel: 'Active' | 'Past due' | 'Canceled';
+  priceCents: number;
+  pricePeriod: string;
+  paymentBrand: string;
+  paymentLast4: string;
+  features: MemberManageFeature[];
+  billingHistory: MemberManageBillingRow[];
+};
+
+const DEFAULT_FEATURES_FOR = (name: string): MemberManageFeature[] => [
+  {
+    title: 'Daily picks',
+    description: `Get ${name.split(' ')[0]}'s top picks every day.`,
+  },
+  {
+    title: 'Detailed analysis',
+    description: 'In-depth breakdowns and reasoning.',
+  },
+  {
+    title: 'Live streams',
+    description: 'Access to member-only live streams.',
+  },
+  {
+    title: 'Private community',
+    description: `Join discussions with ${name.split(' ')[0]} and other members.`,
+  },
+  {
+    title: 'Betting guides & resources',
+    description: 'Access to exclusive tools and guides.',
+  },
+];
+
+function demoBillingRows(amountCents: number): MemberManageBillingRow[] {
+  return [
+    { id: 'bill-1', dateLabel: 'Mar 12, 2025', amountCents, status: 'Paid' },
+    { id: 'bill-2', dateLabel: 'Feb 12, 2025', amountCents, status: 'Paid' },
+    { id: 'bill-3', dateLabel: 'Jan 12, 2025', amountCents, status: 'Paid' },
+    { id: 'bill-4', dateLabel: 'Dec 12, 2024', amountCents, status: 'Paid' },
+  ];
+}
+
+/** Manage Subscription screen payload for demo creators (keyed by username). */
+export const MEMBER_MANAGE_SUBSCRIPTION_DEMO: Record<
+  string,
+  MemberManageSubscriptionDetail
+> = {
+  alexpicks: {
+    username: 'alexpicks',
+    displayName: 'AlexPicks',
+    bio: 'Daily picks, in-depth analysis and exclusive insights.',
+    avatarUrl:
+      'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=96&h=96&fit=crop&crop=face',
+    avatarInitials: 'AP',
+    avatarTone: 'bg-slate-800',
+    planLabel: 'Premium',
+    tags: ['NBA', 'NFL', 'MLB', 'Exclusive Discord'],
+    verified: true,
+    statusLabel: 'Active',
+    priceCents: 4999,
+    pricePeriod: 'month',
+    paymentBrand: 'Visa',
+    paymentLast4: '4242',
+    features: [
+      {
+        title: 'Daily picks',
+        description: "Get Alex's top picks every day.",
+      },
+      {
+        title: 'Detailed analysis',
+        description: 'In-depth breakdowns and reasoning.',
+      },
+      {
+        title: 'Live streams',
+        description: 'Access to member-only live streams.',
+      },
+      {
+        title: 'Private community',
+        description: 'Join discussions with Alex and other members.',
+      },
+      {
+        title: 'Betting guides & resources',
+        description: 'Access to exclusive tools and guides.',
+      },
+    ],
+    billingHistory: demoBillingRows(4999),
+  },
+  sharkpicks: {
+    username: 'sharkpicks',
+    displayName: 'Shark Picks',
+    bio: 'Data-driven models and a private community for serious bettors.',
+    avatarUrl: null,
+    avatarInitials: 'SP',
+    avatarTone: 'bg-slate-900',
+    planLabel: 'Premium',
+    tags: ['NBA', 'NCAAB', 'Betting Models', 'Private Community'],
+    verified: true,
+    statusLabel: 'Active',
+    priceCents: 3999,
+    pricePeriod: 'month',
+    paymentBrand: 'Visa',
+    paymentLast4: '4242',
+    features: DEFAULT_FEATURES_FOR('Shark'),
+    billingHistory: demoBillingRows(3999),
+  },
+  theprofitclub: {
+    username: 'theprofitclub',
+    displayName: 'The Profit Club',
+    bio: 'Combat sports coverage with study-hub breakdowns.',
+    avatarUrl: null,
+    avatarInitials: '👑',
+    avatarTone: 'bg-amber-100 text-amber-900',
+    planLabel: 'VIP',
+    tags: ['UFC', 'Boxing', 'MMA', 'Study Hub'],
+    verified: true,
+    statusLabel: 'Active',
+    priceCents: 7999,
+    pricePeriod: 'month',
+    paymentBrand: 'Visa',
+    paymentLast4: '4242',
+    features: DEFAULT_FEATURES_FOR('The Profit Club'),
+    billingHistory: demoBillingRows(7999),
+  },
+  tennisedge: {
+    username: 'tennisedge',
+    displayName: 'Tennis Edge',
+    bio: 'ATP, WTA and Challenger angles with tennis betting tools.',
+    avatarUrl: null,
+    avatarInitials: '🎾',
+    avatarTone: 'bg-lime-100 text-lime-900',
+    planLabel: 'Premium',
+    tags: ['ATP', 'WTA', 'Challengers', 'Betting Tools'],
+    verified: true,
+    statusLabel: 'Active',
+    priceCents: 2999,
+    pricePeriod: 'month',
+    paymentBrand: 'Visa',
+    paymentLast4: '4242',
+    features: DEFAULT_FEATURES_FOR('Tennis Edge'),
+    billingHistory: demoBillingRows(2999),
+  },
+};
+
+export function getMemberManageSubscriptionDemo(
+  username: string,
+): MemberManageSubscriptionDetail | null {
+  return MEMBER_MANAGE_SUBSCRIPTION_DEMO[username.toLowerCase()] ?? null;
+}
+

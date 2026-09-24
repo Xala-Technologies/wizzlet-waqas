@@ -1,0 +1,12 @@
+---
+description: PO design fidelity — match layout and features 100% screen-by-screen
+alwaysApply: true
+---
+
+# Design fidelity (PO mocks)
+
+When the user provides a Product Owner design or asks to implement/review a screen against design:
+
+1. Follow `.cursor/skills/design-fidelity-qa/SKILL.md`.
+2. One screen at a time. Design is source of truth — no redesigns.
+3. Inventory before coding. PASS only at 100% non-waived coverage.

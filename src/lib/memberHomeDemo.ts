@@ -1,10 +1,19 @@
 /**
- * Sample member Home feed aligned to the Prizelet member dashboard mockup.
+ * Sample member Home feed aligned to the Prizelet Home mock
+ * (social posts with picks tables / text / video).
  */
 
 const hour = 3_600_000;
 
-export type MemberHomeDemoPick = {
+export type MemberHomeDemoPickRow = {
+  sport: string;
+  event: string;
+  pick: string;
+  odds: string;
+  units: string;
+};
+
+export type MemberHomeDemoPost = {
   id: string;
   createdAtMs: number;
   creator: {
@@ -13,136 +22,103 @@ export type MemberHomeDemoPick = {
     displayName: string;
     avatarUrl: string | null;
     verified: boolean;
+    /** Optional initials override when avatar is missing */
+    initials?: string;
   };
-  sport: string;
-  event: string;
-  pick: string;
-  oddsDecimal: string;
-  analysis: string;
-  startsPrefix: string;
-  startsValue: string;
+  title: string;
+  body: string;
+  footerNote?: string;
+  picks?: MemberHomeDemoPickRow[];
+  video?: {
+    thumbnailUrl: string;
+    duration: string;
+  };
   likes: number;
   comments: number;
 };
 
-export const MEMBER_HOME_DEMO_PICKS: MemberHomeDemoPick[] = [
+/** @deprecated Prefer MemberHomeDemoPost — kept for call-site alias clarity */
+export type MemberHomeDemoPick = MemberHomeDemoPost;
+
+export const MEMBER_HOME_DEMO_PICKS: MemberHomeDemoPost[] = [
   {
     id: 'demo-member-pick-1',
     createdAtMs: Date.now() - 2 * hour,
+    creator: {
+      id: 'demo-creator-alex',
+      username: 'alexpicks',
+      displayName: 'AlexPicks',
+      avatarUrl:
+        'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=96&h=96&fit=crop&crop=face',
+      verified: true,
+    },
+    title: 'NBA Picks Tonight 🔥',
+    body: "Here are my top 3 picks for tonight's games. Let's make it a green night! 💚",
+    footerNote: "Good luck everyone! Let's cash! 🚀",
+    picks: [
+      {
+        sport: 'NBA',
+        event: 'Lakers vs Warriors',
+        pick: 'Lakers ML',
+        odds: '-120',
+        units: '1u',
+      },
+      {
+        sport: 'NBA',
+        event: 'Celtics vs Heat',
+        pick: 'Celtics -5.5',
+        odds: '-110',
+        units: '1u',
+      },
+      {
+        sport: 'NBA',
+        event: 'Nuggets vs Suns',
+        pick: 'Over 224.5',
+        odds: '-115',
+        units: '1u',
+      },
+    ],
+    likes: 124,
+    comments: 34,
+  },
+  {
+    id: 'demo-member-pick-2',
+    createdAtMs: Date.now() - 4 * hour,
     creator: {
       id: 'demo-creator-shark',
       username: 'sharkpicks',
       displayName: 'Shark Picks',
       avatarUrl: null,
+      initials: 'SP',
       verified: true,
     },
-    sport: 'NBA',
-    event: 'Lakers vs Nuggets',
-    pick: 'Lakers +4.5',
-    oddsDecimal: '1.93',
-    analysis:
-      'Denver sitting two rotation pieces. Lakers cover this home spot more often than the number implies.',
-    startsPrefix: 'Starts in',
-    startsValue: '2h 24m',
-    likes: 128,
-    comments: 24,
+    title: 'Market Update',
+    body: "Quick update on current trends. I'm seeing value on a few unders this weekend. Full breakdown coming later today.",
+    likes: 86,
+    comments: 12,
   },
   {
-    id: 'demo-member-pick-2',
-    createdAtMs: Date.now() - 3 * hour,
+    id: 'demo-member-pick-3',
+    createdAtMs: Date.now() - 6 * hour,
     creator: {
       id: 'demo-creator-profit',
       username: 'theprofitclub',
       displayName: 'The Profit Club',
       avatarUrl: null,
+      initials: '👑',
       verified: true,
     },
-    sport: 'NFL',
-    event: 'Chiefs vs Bills',
-    pick: 'Chiefs ML',
-    oddsDecimal: '2.10',
-    analysis:
-      'Kansas City getting plus money at home with a healthier O-line — sharp tickets on the chalk.',
-    startsPrefix: 'Starts',
-    startsValue: 'Tomorrow, 14:00',
-    likes: 96,
-    comments: 18,
-  },
-  {
-    id: 'demo-member-pick-3',
-    createdAtMs: Date.now() - 5 * hour,
-    creator: {
-      id: 'demo-creator-clay',
-      username: 'claycourt',
-      displayName: 'Clay Court Edge',
-      avatarUrl: null,
-      verified: true,
+    title: 'UFC 306 Breakdown',
+    body: "Full analysis and betting angles for this weekend's main card. Covering key matchups, value bets and my final predictions.",
+    video: {
+      thumbnailUrl:
+        'https://images.unsplash.com/photo-1555597673-b21d5c935865?w=1200&h=675&fit=crop',
+      duration: '12:34',
     },
-    sport: 'Tennis',
-    event: 'Alcaraz vs Sinner',
-    pick: 'Alcaraz -1.5 sets',
-    oddsDecimal: '1.85',
-    analysis:
-      'Clay form favors Alcaraz in longer exchanges; market still prices this closer than recent H2H.',
-    startsPrefix: 'Starts in',
-    startsValue: '5h 10m',
-    likes: 64,
-    comments: 11,
-  },
-  {
-    id: 'demo-member-pick-4',
-    createdAtMs: Date.now() - 8 * hour,
-    creator: {
-      id: 'demo-creator-liga',
-      username: 'ligalocks',
-      displayName: 'Liga Locks',
-      avatarUrl: null,
-      verified: true,
-    },
-    sport: 'Soccer',
-    event: 'Real Madrid vs Sevilla',
-    pick: 'Real Madrid ML',
-    oddsDecimal: '1.55',
-    analysis:
-      'Madrid at home as favorites with Sevilla missing key midfielders — low-variance play for the card.',
-    startsPrefix: 'Starts',
-    startsValue: 'Tonight, 21:00',
-    likes: 210,
-    comments: 41,
-  },
-  {
-    id: 'demo-member-pick-5',
-    createdAtMs: Date.now() - 12 * hour,
-    creator: {
-      id: 'demo-creator-octagon',
-      username: 'octagonedge',
-      displayName: 'Octagon Edge',
-      avatarUrl: null,
-      verified: true,
-    },
-    sport: 'UFC',
-    event: 'Jones vs Aspinall',
-    pick: 'Jones by Decision',
-    oddsDecimal: '2.40',
-    analysis:
-      'Expect a control-heavy game plan; live betting may open better if early volume turns chaotic.',
-    startsPrefix: 'Starts',
-    startsValue: 'Sat, 02:00',
-    likes: 77,
-    comments: 29,
+    likes: 102,
+    comments: 28,
   },
 ];
-
-export const MEMBER_HOME_SPORT_FILTERS = [
-  'All',
-  'Soccer',
-  'NBA',
-  'NFL',
-  'Tennis',
-  'UFC',
-] as const;
-
-export type MemberHomeSportFilter = (typeof MEMBER_HOME_SPORT_FILTERS)[number] | string;
 
 export function shouldUseMemberHomeDemo(opts: {
   feedCount: number;
