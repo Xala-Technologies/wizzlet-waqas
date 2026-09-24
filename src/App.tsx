@@ -31,6 +31,7 @@ import SelectRole from "./pages/SelectRole";
 import Dashboard from "./pages/Dashboard";
 import CustomerResults from "./pages/CustomerResults";
 import CustomerSubscriptionsBilling from "./pages/CustomerSubscriptionsBilling";
+import CustomerManageSubscription from "./pages/CustomerManageSubscription";
 import CustomerSaved from "./pages/CustomerSaved";
 import CustomerNotifications from "./pages/CustomerNotifications";
 import CustomerDiscover from "./pages/CustomerDiscover";
@@ -148,6 +149,7 @@ const App = () => (
             <Route path="/dashboard" element={<ProtectedRoute allowedRoles={['subscriber']}><Dashboard /></ProtectedRoute>} />
             <Route path="/dashboard/results" element={<ProtectedRoute allowedRoles={['subscriber']}><CustomerResults /></ProtectedRoute>} />
             <Route path="/dashboard/subscriptions-billing" element={<ProtectedRoute allowedRoles={['subscriber']}><CustomerSubscriptionsBilling /></ProtectedRoute>} />
+            <Route path="/dashboard/subscriptions-billing/manage/:username" element={<ProtectedRoute allowedRoles={['subscriber']}><CustomerManageSubscription /></ProtectedRoute>} />
             <Route path="/dashboard/saved" element={<ProtectedRoute allowedRoles={['subscriber']}><CustomerSaved /></ProtectedRoute>} />
             <Route path="/dashboard/notifications" element={<ProtectedRoute allowedRoles={['subscriber']}><CustomerNotifications /></ProtectedRoute>} />
             <Route path="/dashboard/discover" element={<ProtectedRoute allowedRoles={['subscriber']}><CustomerDiscover /></ProtectedRoute>} />

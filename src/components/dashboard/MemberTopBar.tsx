@@ -61,8 +61,8 @@ export function MemberTopBar() {
           <Input
             value={q}
             onChange={(e) => setQ(e.target.value)}
-            placeholder="Search creators, sports, or keywords..."
-            aria-label="Search creators, sports, or keywords"
+            placeholder="Search creators, sports, or picks..."
+            aria-label="Search creators, sports, or picks"
             className="h-10 rounded-full border-transparent bg-slate-100 pl-9 text-sm font-medium shadow-none placeholder:text-slate-400 focus-visible:bg-white"
           />
         </form>

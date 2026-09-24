@@ -1,4 +1,4 @@
-import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { Link, useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import { useQuery } from 'convex/react';
 import { PrizeletLogo } from '@/components/PrizeletLogo';
 import { useAuth } from '@/contexts/AuthContext';
@@ -105,11 +105,13 @@ function NavItemLink({
 export function MemberSidebar({ demo = false, mobile = false }: { demo?: boolean; mobile?: boolean } = {}) {
   const { signOut, user } = useAuth();
   const demoStore = useDemoMemberStoreOptional();
+  const [searchParams] = useSearchParams();
+  const forceDemoPreview = searchParams.get('demo') === '1';
   const liveDmUnread = useQuery(
     api.messaging.mutations.unreadCountSubscriber,
     !demo && user ? {} : 'skip',
   );
-  const dmUnread = demo ? 2 : (liveDmUnread ?? 0);
+  const dmUnread = demo || forceDemoPreview ? 2 : (liveDmUnread ?? 0);
   const location = useLocation();
   const navigate = useNavigate();
   const pathname = location.pathname;
@@ -172,17 +174,49 @@ export function MemberSidebar({ demo = false, mobile = false }: { demo?: boolean
         {!mobile && (
           <div
             className={cn(
-              'rounded-xl p-3',
-              dark ? 'border border-white/10 bg-white/5' : 'border border-border bg-muted/40',
+              'rounded-2xl p-4',
+              dark
+                ? 'border border-white/10 bg-gradient-to-br from-slate-900 to-slate-950'
+                : 'border border-border bg-muted/40',
             )}
           >
-            <p className={cn('text-sm font-bold tracking-tight', dark ? 'text-white' : 'text-foreground')}>
-              Prizelet
+            <p
+              className={cn(
+                'text-sm font-bold leading-snug tracking-tight',
+                dark ? 'text-white' : 'text-foreground',
+              )}
+            >
+              Better picks. A brighter you.
             </p>
-            <p className={cn('mt-1 text-xs font-medium', dark ? 'text-slate-400' : 'text-muted-foreground')}>
-              Picks. People. Profit.
+            <p
+              className={cn(
+                'mt-1.5 text-xs font-medium leading-relaxed',
+                dark ? 'text-slate-400' : 'text-muted-foreground',
+              )}
+            >
+              Follow top creators and be part of a winning community.
             </p>
+            <Button
+              asChild
+              size="sm"
+              className="mt-3 h-9 w-full rounded-xl text-xs font-semibold"
+            >
+              <Link to={demo ? '/demo/member/discover' : '/dashboard/discover'}>
+                Discover Creators →
+              </Link>
+            </Button>
           </div>
+        )}
+
+        {!mobile && (
+          <p
+            className={cn(
+              'px-1 text-[10px] font-medium uppercase tracking-[0.14em]',
+              dark ? 'text-slate-500' : 'text-muted-foreground',
+            )}
+          >
+            Prizelet. Picks. People. Profit.
+          </p>
         )}
 
         {mobile ? (

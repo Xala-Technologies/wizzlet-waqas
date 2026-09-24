@@ -1,11 +1,21 @@
 import { Link } from 'react-router-dom';
-import { BadgeCheck, MoreHorizontal } from 'lucide-react';
+import {
+  BadgeCheck,
+  CreditCard,
+  Flag,
+  HelpCircle,
+  MoreHorizontal,
+  Settings,
+  User,
+} from 'lucide-react';
+import { toast } from 'sonner';
 import { creatorProfilePath } from '@/lib/creatorProfilePath';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { cn } from '@/lib/utils';
@@ -17,27 +27,16 @@ export type MemberMyCreatorRowProps = {
   avatarUrl?: string | null;
   avatarInitials?: string;
   avatarTone?: string;
-  sports: string[];
-  winRate: number | null;
-  profit30dUnits: number | null;
-  followersLabel: string | null;
-  monthlyPriceCents: number;
-  statusLabel: string;
-  statusTone?: 'ok' | 'warn' | 'danger' | 'muted';
-  renewsLabel: string;
+  /** Tags / categories shown as pills */
+  tags: string[];
+  /** Plan tier under the name (Premium, VIP, …) */
+  planLabel: string;
   verified?: boolean;
-  onManage?: () => void;
-  onMessage?: () => void;
-  onCancel?: () => void;
+  /** Href for Manage Subscription screen (⋯ menu) */
+  manageHref?: string;
   onOpenBilling?: () => void;
-  cancelDisabled?: boolean;
   className?: string;
 };
-
-function formatPrice(cents: number): string {
-  const dollars = cents / 100;
-  return `$${dollars.toFixed(cents % 100 === 0 ? 0 : 2)}/month`;
-}
 
 export function MemberMyCreatorRow({
   username,
@@ -45,21 +44,12 @@ export function MemberMyCreatorRow({
   bio,
   avatarUrl,
   avatarInitials,
-  avatarTone = 'bg-slate-900',
-  sports,
-  winRate,
-  profit30dUnits,
-  followersLabel,
-  monthlyPriceCents,
-  statusLabel,
-  statusTone = 'ok',
-  renewsLabel,
+  avatarTone = 'bg-muted text-muted-foreground',
+  tags,
+  planLabel,
   verified = true,
-  onManage,
-  onMessage,
-  onCancel,
+  manageHref,
   onOpenBilling,
-  cancelDisabled,
   className,
 }: MemberMyCreatorRowProps) {
   const initials =
@@ -70,33 +60,18 @@ export function MemberMyCreatorRow({
       .join('')
       .slice(0, 2)
       .toUpperCase();
-  const profitPositive = (profit30dUnits ?? 0) >= 0;
-  const profitLabel =
-    profit30dUnits == null
-      ? '—'
-      : `${profitPositive ? '+' : ''}${profit30dUnits.toFixed(1)}u`;
-  const statusClass =
-    statusTone === 'ok'
-      ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
-      : statusTone === 'warn'
-        ? 'bg-amber-50 text-amber-700 border-amber-200'
-        : statusTone === 'danger'
-          ? 'bg-rose-50 text-rose-700 border-rose-200'
-          : 'bg-slate-100 text-slate-600 border-slate-200';
+  const profileHref = creatorProfilePath(username);
+  const isEmojiAvatar =
+    avatarInitials === '👑' || avatarInitials === '🎾' || (avatarInitials?.length ?? 0) === 1;
 
   return (
-    <li
-      className={cn(
-        'list-none rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:p-5',
-        className,
-      )}
-    >
-      <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:gap-6">
+    <li className={cn('list-none', className)}>
+      <div className="flex flex-col gap-4 py-5 sm:flex-row sm:items-center sm:gap-6">
         <div className="flex min-w-0 flex-1 items-start gap-4">
           <Link
-            to={creatorProfilePath(username)}
+            to={profileHref}
             className={cn(
-              'flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-full text-base font-bold text-white shadow-sm',
+              'flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-full text-base font-bold shadow-sm sm:h-16 sm:w-16',
               !avatarUrl && avatarTone,
             )}
             aria-label={`${displayName} profile`}
@@ -104,15 +79,15 @@ export function MemberMyCreatorRow({
             {avatarUrl ? (
               <img src={avatarUrl} alt="" className="h-full w-full object-cover" />
             ) : (
-              initials
+              <span className={isEmojiAvatar ? 'text-xl' : undefined}>{initials}</span>
             )}
           </Link>
 
           <div className="min-w-0 flex-1">
             <div className="flex flex-wrap items-center gap-1.5">
               <Link
-                to={creatorProfilePath(username)}
-                className="truncate text-[15px] font-bold text-slate-900 hover:underline"
+                to={profileHref}
+                className="truncate text-[15px] font-bold text-foreground hover:underline"
               >
                 {displayName}
               </Link>
@@ -120,113 +95,101 @@ export function MemberMyCreatorRow({
                 <BadgeCheck className="h-4 w-4 shrink-0 text-primary" aria-label="Verified" />
               ) : null}
             </div>
-            <p className="mt-1 line-clamp-1 text-sm text-slate-500">{bio}</p>
-            {sports.length > 0 ? (
-              <div className="mt-2.5 flex flex-wrap gap-1.5">
-                {sports.slice(0, 4).map((sport) => (
+            <p className="mt-0.5 text-sm font-medium text-muted-foreground">{planLabel}</p>
+            <p className="mt-2 line-clamp-2 text-sm leading-relaxed text-muted-foreground">
+              {bio}
+            </p>
+            {tags.length > 0 ? (
+              <div className="mt-3 flex flex-wrap gap-1.5">
+                {tags.map((tag) => (
                   <span
-                    key={sport}
-                    className="rounded-md bg-slate-100 px-2 py-0.5 text-[11px] font-semibold text-slate-600"
+                    key={tag}
+                    className="rounded-full bg-violet-500/10 px-2.5 py-0.5 text-[11px] font-semibold text-violet-700 dark:text-violet-300"
                   >
-                    {sport}
+                    {tag}
                   </span>
                 ))}
               </div>
             ) : null}
-
-            <div className="mt-3 grid max-w-md grid-cols-3 gap-3 border-t border-slate-100 pt-3 sm:max-w-sm">
-              <div>
-                <p className="text-sm font-extrabold tabular-nums text-slate-900">
-                  {winRate == null ? '—' : `${winRate}%`}
-                </p>
-                <p className="text-[11px] font-medium text-slate-400">Win Rate</p>
-              </div>
-              <div>
-                <p
-                  className={cn(
-                    'text-sm font-extrabold tabular-nums',
-                    profit30dUnits == null
-                      ? 'text-slate-900'
-                      : profitPositive
-                        ? 'text-emerald-600'
-                        : 'text-rose-600',
-                  )}
-                >
-                  {profitLabel}
-                </p>
-                <p className="text-[11px] font-medium text-slate-400">Profit (30d)</p>
-              </div>
-              <div>
-                <p className="text-sm font-extrabold tabular-nums text-slate-900">
-                  {followersLabel ?? '—'}
-                </p>
-                <p className="text-[11px] font-medium text-slate-400">Followers</p>
-              </div>
-            </div>
           </div>
         </div>
 
-        <div className="flex shrink-0 flex-col gap-3 border-t border-slate-100 pt-3 sm:flex-row sm:items-center sm:justify-between lg:w-[280px] lg:flex-col lg:items-end lg:border-t-0 lg:border-l lg:pl-6 lg:pt-0">
-          <div className="text-left lg:text-right">
-            <span
-              className={cn(
-                'inline-flex rounded-full border px-2.5 py-0.5 text-xs font-semibold',
-                statusClass,
-              )}
-            >
-              {statusLabel}
-            </span>
-            <p className="mt-2 text-sm font-bold text-slate-900">
-              {formatPrice(monthlyPriceCents)}
-            </p>
-            <p className="mt-0.5 text-xs font-medium text-slate-400">{renewsLabel}</p>
-          </div>
-
-          <div className="flex items-center gap-2">
-            <Button
-              type="button"
-              variant="secondary"
-              className="h-9 rounded-xl bg-primary/10 px-4 font-semibold text-primary hover:bg-primary/15"
-              onClick={onManage}
-            >
-              Manage
-            </Button>
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="icon"
-                  className="h-9 w-9 rounded-xl border-slate-200"
-                  aria-label="More options"
-                >
-                  <MoreHorizontal className="h-4 w-4" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                <DropdownMenuItem asChild>
-                  <Link to={creatorProfilePath(username)}>View profile</Link>
+        <div className="flex shrink-0 items-center gap-2 sm:pl-2">
+          <Button asChild className="min-h-10 rounded-xl px-5 font-semibold">
+            <Link to={profileHref}>View Content</Link>
+          </Button>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                className="h-10 w-10 shrink-0 text-muted-foreground"
+                aria-label="More options"
+              >
+                <MoreHorizontal className="h-5 w-5" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="min-w-[12rem]">
+              <DropdownMenuItem asChild className="gap-2">
+                <Link to={profileHref}>
+                  <User className="h-4 w-4 text-muted-foreground" aria-hidden />
+                  Creator details
+                </Link>
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                className="gap-2"
+                onSelect={() => {
+                  if (onOpenBilling) onOpenBilling();
+                  else
+                    toast.message('Billing information', {
+                      description: 'Open the billing portal from a live subscription.',
+                    });
+                }}
+              >
+                <CreditCard className="h-4 w-4 text-muted-foreground" aria-hidden />
+                Billing information
+              </DropdownMenuItem>
+              {manageHref ? (
+                <DropdownMenuItem asChild className="gap-2">
+                  <Link to={manageHref}>
+                    <Settings className="h-4 w-4 text-muted-foreground" aria-hidden />
+                    Manage subscription
+                  </Link>
                 </DropdownMenuItem>
-                {onMessage ? (
-                  <DropdownMenuItem onSelect={() => onMessage()}>Message</DropdownMenuItem>
-                ) : null}
-                {onOpenBilling ? (
-                  <DropdownMenuItem onSelect={() => onOpenBilling()}>
-                    Open billing portal
-                  </DropdownMenuItem>
-                ) : null}
-                {onCancel ? (
-                  <DropdownMenuItem
-                    className="text-destructive focus:text-destructive"
-                    disabled={cancelDisabled}
-                    onSelect={() => onCancel()}
-                  >
-                    Cancel subscription
-                  </DropdownMenuItem>
-                ) : null}
-              </DropdownMenuContent>
-            </DropdownMenu>
-          </div>
+              ) : (
+                <DropdownMenuItem
+                  className="gap-2"
+                  onSelect={() =>
+                    toast.message('Manage subscription', {
+                      description: 'Subscription controls are available on live plans.',
+                    })
+                  }
+                >
+                  <Settings className="h-4 w-4 text-muted-foreground" aria-hidden />
+                  Manage subscription
+                </DropdownMenuItem>
+              )}
+              <DropdownMenuSeparator />
+              <DropdownMenuItem asChild className="gap-2">
+                <Link to="/support">
+                  <HelpCircle className="h-4 w-4 text-muted-foreground" aria-hidden />
+                  Get help
+                </Link>
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                className="gap-2"
+                onSelect={() =>
+                  toast.message('Report submitted', {
+                    description: `Thanks — we'll review ${displayName}.`,
+                  })
+                }
+              >
+                <Flag className="h-4 w-4 text-muted-foreground" aria-hidden />
+                Report
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       </div>
     </li>
@@ -235,13 +198,17 @@ export function MemberMyCreatorRow({
 
 export function MemberMyCreatorRowSkeleton() {
   return (
-    <li className="list-none rounded-2xl border border-slate-200 bg-white p-5">
+    <li className="list-none border-b border-border py-5">
       <div className="flex gap-4">
-        <div className="h-16 w-16 shrink-0 animate-pulse rounded-full bg-slate-200" />
+        <div className="h-16 w-16 shrink-0 animate-pulse rounded-full bg-muted" />
         <div className="flex-1 space-y-3">
-          <div className="h-4 w-1/3 animate-pulse rounded bg-slate-200" />
-          <div className="h-3 w-2/3 animate-pulse rounded bg-slate-100" />
-          <div className="h-8 w-full max-w-sm animate-pulse rounded bg-slate-100" />
+          <div className="h-4 w-1/3 animate-pulse rounded bg-muted" />
+          <div className="h-3 w-16 animate-pulse rounded bg-muted" />
+          <div className="h-3 w-2/3 animate-pulse rounded bg-muted" />
+          <div className="flex gap-2">
+            <div className="h-5 w-12 animate-pulse rounded-full bg-muted" />
+            <div className="h-5 w-12 animate-pulse rounded-full bg-muted" />
+          </div>
         </div>
       </div>
     </li>
