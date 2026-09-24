@@ -5,7 +5,7 @@
  */
 
 export const kpiIconTone = {
-  violet: 'bg-violet-500/10 text-violet-600 dark:text-violet-400',
+  violet: 'bg-teal-500/10 text-teal-700 dark:text-teal-300',
   emerald: 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400',
   sky: 'bg-sky-500/10 text-sky-600 dark:text-sky-400',
   amber: 'bg-amber-500/10 text-amber-700 dark:text-amber-400',
@@ -14,6 +14,7 @@ export const kpiIconTone = {
   cyan: 'bg-cyan-500/10 text-cyan-700 dark:text-cyan-400',
   lime: 'bg-lime-500/10 text-lime-700 dark:text-lime-400',
   primary: 'bg-primary/10 text-primary',
+  teal: 'bg-[var(--sweeph-teal-100)] text-[var(--sweeph-teal-700)] dark:bg-[var(--sweeph-teal-800)]/40 dark:text-[var(--sweeph-teal-300)]',
 } as const;
 
 export type KpiIconTone = keyof typeof kpiIconTone;
@@ -33,5 +34,5 @@ export const resultPillTone = {
   trial: 'bg-amber-500/10 text-amber-700 border-amber-500/25 dark:text-amber-400',
   vip: 'bg-rose-500/10 text-rose-700 border-rose-500/25 dark:text-rose-400',
   premium: 'bg-sky-500/10 text-sky-700 border-sky-500/25 dark:text-sky-400',
-  monthly: 'bg-violet-500/10 text-violet-700 border-violet-500/25 dark:text-violet-400',
+  monthly: 'bg-teal-500/10 text-teal-700 border-teal-500/25 dark:text-teal-300',
 } as const;

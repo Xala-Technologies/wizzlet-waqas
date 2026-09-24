@@ -965,17 +965,22 @@ const CreatorPosts = () => {
 
   return (
     <DashboardLayout type="creator">
-      <header className="mb-6 flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+      <header className="mb-7 flex flex-col gap-5 sm:mb-9 lg:flex-row lg:items-start lg:justify-between lg:gap-8">
         <div className="min-w-0">
-          <h1 className="text-2xl font-extrabold tracking-tight text-foreground sm:text-3xl">
+          <h1 className="type-page-title text-foreground md:text-[2.75rem] md:leading-[1.1]">
             Posts
           </h1>
-          <p className="mt-1.5 max-w-xl text-sm font-medium text-muted-foreground sm:text-base">
+          <p className="mt-3 max-w-2xl text-body font-medium text-muted-foreground">
             Manage your content and engage your audience.
           </p>
         </div>
-        <Button type="button" onClick={openCreate} className="h-11 w-full rounded-xl sm:w-auto">
-          <Plus className="mr-1.5 h-4 w-4" /> Create Post
+        <Button
+          type="button"
+          onClick={openCreate}
+          className="h-12 w-full shrink-0 gap-2 rounded-[var(--radius-md)] px-6 sm:mt-1 sm:w-auto"
+        >
+          <Plus className="h-5 w-5" aria-hidden />
+          Create Post
         </Button>
       </header>
 
@@ -990,12 +995,12 @@ const CreatorPosts = () => {
         </div>
       ) : null}
 
-      <div className={cn(segmentedTrackClassName, 'mb-5 w-full overflow-x-auto')}>
+      <div className={cn(segmentedTrackClassName, 'mb-5 flex w-full flex-nowrap')}>
         {STATUS_TABS.map((tab) => (
           <button
             key={tab.id}
             type="button"
-            className={segmentedItemClassName(statusTab === tab.id)}
+            className={cn(segmentedItemClassName(statusTab === tab.id), 'flex-1')}
             onClick={() => {
               setStatusTab(tab.id);
               setTablePage(0);

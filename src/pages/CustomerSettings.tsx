@@ -479,7 +479,8 @@ const CustomerSettings = () => {
                 />
                 <Button
                   type="button"
-                  className="h-11 shrink-0 rounded-xl font-semibold"
+                  size="sm"
+                  className="shrink-0 font-semibold"
                   onClick={() => {
                     if (!hasPasswordAccount && !useDemo) {
                       toast.message('This account signs in with a provider — no password to change.');
@@ -597,7 +598,8 @@ const CustomerSettings = () => {
             <Button
               type="button"
               variant="outline"
-              className="h-10 shrink-0 rounded-xl font-semibold"
+              size="sm"
+              className="shrink-0 font-semibold"
               disabled={portalLoading}
               onClick={() => void managePayment()}
             >
@@ -630,15 +632,16 @@ const CustomerSettings = () => {
               <Button
                 type="button"
                 variant="outline"
-                className="h-9 rounded-xl border-primary/30 bg-primary/5 text-primary hover:bg-primary/10"
+                size="sm"
+                className="border-primary/30 bg-primary/5 text-primary hover:bg-primary/10"
                 asChild
               >
                 <Link to="/support">Privacy Policy</Link>
               </Button>
               <Button
                 type="button"
-                variant="outline"
-                className="h-9 rounded-xl border-rose-200 bg-rose-50 text-rose-600 hover:bg-rose-100 hover:text-rose-700"
+                variant="destructive-outline"
+                size="sm"
                 disabled={!!openDeletionRequest}
                 onClick={() => setDeleteOpen(true)}
               >

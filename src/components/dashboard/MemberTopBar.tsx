@@ -4,6 +4,7 @@ import { useQuery } from 'convex/react';
 import { Bell, ChevronDown, HelpCircle, LogOut, Search } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { api } from '@convex/_generated/api';
+import { ThemeToggle } from '@/components/ThemeToggle';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
@@ -17,7 +18,7 @@ import {
 import { cn } from '@/lib/utils';
 
 /**
- * Member desktop utility bar — search, notifications, account menu.
+ * Member desktop utility bar — search, theme, notifications, account menu.
  * Hidden on mobile (MobileTopBar + drawer handle that).
  */
 export function MemberTopBar() {
@@ -52,7 +53,7 @@ export function MemberTopBar() {
 
   return (
     <header className="sticky top-0 z-20 hidden border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80 md:block">
-      <div className="mx-auto flex h-16 w-full min-w-0 max-w-[1600px] items-center gap-3 px-4 sm:px-6 md:px-8">
+      <div className="mx-auto flex h-[var(--topbar-height)] w-full min-w-0 max-w-[var(--content-max)] items-center gap-3 px-4 sm:px-6 md:px-8 lg:px-10 xl:px-12">
         <form onSubmit={onSearch} className="relative min-w-0 flex-1" role="search">
           <Search
             className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground"
@@ -63,11 +64,13 @@ export function MemberTopBar() {
             onChange={(e) => setQ(e.target.value)}
             placeholder="Search creators, sports, or picks..."
             aria-label="Search creators, sports, or picks"
-            className="h-10 rounded-full border-transparent bg-slate-100 pl-9 text-sm font-medium shadow-none placeholder:text-slate-400 focus-visible:bg-white"
+            className="h-10 border-border bg-card pl-9 text-sm font-medium shadow-none"
           />
         </form>
 
         <div className="flex shrink-0 items-center gap-2 sm:gap-3">
+          <ThemeToggle className="h-10 w-10 rounded-full border border-border bg-card" />
+
           <Button
             asChild
             variant="ghost"

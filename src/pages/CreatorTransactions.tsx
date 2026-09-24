@@ -291,22 +291,22 @@ const CreatorTransactions = () => {
 
   return (
     <DashboardLayout type="creator">
-      <header className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+      <header className="mb-7 flex flex-col gap-5 sm:mb-9 sm:flex-row sm:items-start sm:justify-between sm:gap-8">
         <div className="min-w-0">
-          <h1 className="text-heading font-bold tracking-tight text-foreground md:text-heading-lg">
+          <h1 className="type-page-title text-foreground md:text-[2.75rem] md:leading-[1.1]">
             Transactions
           </h1>
-          <p className="mt-1.5 text-support text-muted-foreground">
+          <p className="mt-3 max-w-2xl text-body font-medium text-muted-foreground">
             View all payments, refunds, and other financial activity.
           </p>
         </div>
         <Button
           type="button"
           variant="outline"
-          className="min-h-11 shrink-0 rounded-xl gap-2"
+          className="h-12 w-full shrink-0 gap-2 rounded-[var(--radius-md)] px-6 sm:mt-1 sm:w-auto"
           onClick={exportCsv}
         >
-          <Download className="h-4 w-4" />
+          <Download className="h-5 w-5" aria-hidden />
           Export
         </Button>
       </header>
