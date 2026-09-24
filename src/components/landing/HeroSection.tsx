@@ -12,20 +12,20 @@ export function HeroSection() {
   return (
     <LandingSection variant="hero" className="bg-background">
       <div className="container relative z-10">
-        <div className="mx-auto max-w-[700px] text-center">
-          <div className="inline-flex items-center gap-3 rounded-full border border-border bg-muted px-5 py-2 text-caption uppercase tracking-[0.2em] text-muted-foreground mb-8 animate-fade-in">
+        <div className="mx-auto max-w-[820px] text-center">
+          <div className="mb-8 inline-flex items-center gap-3 rounded-full border border-border bg-muted px-5 py-2.5 text-caption font-semibold uppercase tracking-[0.18em] text-muted-foreground animate-fade-in">
             <span className="h-1.5 w-1.5 rounded-full bg-primary" />
             Private access&nbsp;&nbsp;•&nbsp;&nbsp;Limited onboarding
           </div>
 
-          <h1 className="text-display font-extrabold tracking-[-0.05em] mb-3 animate-fade-in-up">
+          <h1 className="mb-5 text-display font-extrabold tracking-[-0.045em] animate-fade-in-up">
             <span className="text-foreground">NOT BUILT</span>
             <br />
             <span className="text-foreground">FOR </span>
             <span className="text-gradient">EVERYONE</span>
           </h1>
 
-          <p className="text-body text-muted-foreground max-w-[480px] mx-auto mb-8 opacity-0 animate-fade-in-up" style={{ animationDelay: '0.1s' }}>
+          <p className="mx-auto mb-10 max-w-[540px] text-body text-muted-foreground opacity-0 animate-fade-in-up" style={{ animationDelay: '0.1s' }}>
             A platform designed for creators who actually want to scale, not just post.
           </p>
 

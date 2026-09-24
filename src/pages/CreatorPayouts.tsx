@@ -268,25 +268,25 @@ const CreatorPayouts = () => {
 
   return (
     <DashboardLayout type="creator">
-      <header className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+      <header className="mb-7 flex flex-col gap-5 sm:mb-9 sm:flex-row sm:items-start sm:justify-between sm:gap-8">
         <div className="min-w-0">
-          <h1 className="text-heading font-bold tracking-tight text-foreground md:text-heading-lg">
+          <h1 className="type-page-title text-foreground md:text-[2.75rem] md:leading-[1.1]">
             Payouts
           </h1>
-          <p className="mt-1.5 text-support text-muted-foreground">
+          <p className="mt-3 max-w-2xl text-body font-medium text-muted-foreground">
             Manage your payouts, payment method, and payout settings.
           </p>
         </div>
         <Button
           type="button"
-          className="min-h-11 shrink-0 rounded-xl gap-2"
+          className="h-12 w-full shrink-0 gap-2 rounded-[var(--radius-md)] px-6 sm:mt-1 sm:w-auto"
           onClick={() => void requestPayout()}
           disabled={requesting || (!useDemo && available < minPayout)}
         >
           {requesting ? (
-            <Loader2 className="h-4 w-4 animate-spin" />
+            <Loader2 className="h-5 w-5 animate-spin" aria-hidden />
           ) : (
-            <ArrowUpFromLine className="h-4 w-4" />
+            <ArrowUpFromLine className="h-5 w-5" aria-hidden />
           )}
           Withdraw Now
         </Button>
@@ -586,7 +586,7 @@ const CreatorPayouts = () => {
               Questions about payouts, timing, or payment methods? Our help center covers the
               details.
             </p>
-            <Button asChild variant="outline" className="min-h-11 w-full rounded-xl gap-2">
+            <Button asChild variant="outline" size="sm" className="w-full gap-2">
               <Link to="/creator/settings">
                 View Help Center
                 <ExternalLink className="h-3.5 w-3.5" aria-hidden />
@@ -627,7 +627,7 @@ const CreatorPayouts = () => {
             <div className="space-y-2">
               <Label>Method</Label>
               <Select value={method} onValueChange={setMethod}>
-                <SelectTrigger className="min-h-11 rounded-xl">
+                <SelectTrigger size="sm">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -644,13 +644,13 @@ const CreatorPayouts = () => {
                 value={accountLabel}
                 onChange={(e) => setAccountLabel(e.target.value)}
                 placeholder="**** 4582"
-                className="min-h-11 rounded-xl"
+                size="sm"
               />
             </div>
             <div className="space-y-2">
               <Label>Preferred schedule</Label>
               <Select value={schedule} onValueChange={setSchedule}>
-                <SelectTrigger className="min-h-11 rounded-xl">
+                <SelectTrigger size="sm">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -666,7 +666,7 @@ const CreatorPayouts = () => {
                 type="number"
                 value={minimumPayout}
                 onChange={(e) => setMinimumPayout(Number(e.target.value))}
-                className="min-h-11 rounded-xl"
+                size="sm"
               />
             </div>
           </div>
@@ -674,14 +674,14 @@ const CreatorPayouts = () => {
             <Button
               type="button"
               variant="outline"
-              className="min-h-11 rounded-xl"
+              size="sm"
               onClick={() => setSettingsOpen(false)}
             >
               Cancel
             </Button>
             <Button
               type="button"
-              className="min-h-11 rounded-xl"
+              size="sm"
               onClick={() => void saveSettings()}
               disabled={savingSettings}
             >

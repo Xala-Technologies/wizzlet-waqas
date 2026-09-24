@@ -98,7 +98,7 @@ const CustomerDiscover = () => {
           id: c._id,
           username: c.username,
           displayName: name,
-          bio: c.bio?.trim() || 'Verified Prizelet creator.',
+          bio: c.bio?.trim() || 'Verified Sweeph creator.',
           avatarUrl: c.avatarUrl ?? null,
           bannerUrl: c.bannerUrl ?? null,
           sports: inferSports(c.bio ?? null, c.username),
@@ -191,8 +191,8 @@ const CustomerDiscover = () => {
   return (
     <DashboardLayout type="member">
       <Seo
-        title="Discover — Prizelet"
-        description="Find winning creators and join a growing community on Prizelet."
+        title="Discover — Sweeph"
+        description="Find winning creators and join a growing community on Sweeph."
       />
 
       <header className="mb-6">

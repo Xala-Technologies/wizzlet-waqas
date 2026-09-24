@@ -403,21 +403,22 @@ const CreatorPromoCodes = () => {
 
   return (
     <DashboardLayout type="creator">
-      <header className="mb-4 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+      <header className="mb-7 flex flex-col gap-5 sm:mb-9 sm:flex-row sm:items-start sm:justify-between sm:gap-8">
         <div className="min-w-0">
-          <h1 className="text-2xl font-extrabold tracking-tight text-foreground sm:text-3xl">
+          <h1 className="type-page-title text-foreground md:text-[2.75rem] md:leading-[1.1]">
             Promo Codes
           </h1>
-          <p className="mt-1.5 text-sm font-medium text-muted-foreground sm:text-base">
+          <p className="mt-3 max-w-2xl text-body font-medium text-muted-foreground">
             Create discount codes to boost conversions and run targeted campaigns.
           </p>
         </div>
         <Button
           type="button"
-          className="min-h-11 shrink-0 rounded-xl"
+          className="h-12 w-full shrink-0 gap-2 rounded-[var(--radius-md)] px-6 sm:mt-1 sm:w-auto"
           onClick={openCreateModal}
         >
-          <Plus className="mr-1.5 h-3.5 w-3.5" /> Create Promo Code
+          <Plus className="h-5 w-5" aria-hidden />
+          Create Promo Code
         </Button>
       </header>
 

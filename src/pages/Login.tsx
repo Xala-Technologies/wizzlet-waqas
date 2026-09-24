@@ -163,8 +163,8 @@ const Login = () => {
     <AuthShell
       title="Welcome back"
       subtitle="Sign in to your account"
-      seoTitle="Sign in — Prizelet"
-      seoDescription="Sign in to your Prizelet account to manage picks, subscriptions and payouts."
+      seoTitle="Sign in — Sweeph"
+      seoDescription="Sign in to your Sweeph account to manage picks, subscriptions and payouts."
       banner={
         isDevBuild && !isAuthOriginAligned() ? (
           <p

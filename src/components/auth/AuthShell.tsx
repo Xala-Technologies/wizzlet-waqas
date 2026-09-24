@@ -1,5 +1,5 @@
 import { ReactNode } from 'react';
-import { PrizeletLogo } from '@/components/PrizeletLogo';
+import { SweephLogo } from '@/components/SweephLogo';
 import { Seo } from '@/components/Seo';
 import { cn } from '@/lib/utils';
 
@@ -19,7 +19,7 @@ interface AuthShellProps {
 }
 
 /**
- * Shared auth layout — solid Prizelet surfaces, one primary task.
+ * Shared auth layout — solid Sweeph surfaces, one primary task.
  * Page = background; panel = card + border. No gray canvas wash.
  */
 export function AuthShell({
@@ -42,7 +42,7 @@ export function AuthShell({
       <Seo title={seoTitle} description={seoDescription} noindex />
       <div className={cn('w-full', width === 'sm' ? 'max-w-[400px]' : 'max-w-lg')}>
         <header className="mb-8 text-center">
-          <PrizeletLogo
+          <SweephLogo
             size={logoSize === 'lg' ? 'lg' : 'md'}
             linkTo={logoLinkTo}
             className="mb-8 justify-center"

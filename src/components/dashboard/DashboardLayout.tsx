@@ -7,7 +7,7 @@ import { CreatorTopBar } from './CreatorTopBar';
 import { MemberTopBar } from './MemberTopBar';
 import { AdminQueryBoundary } from './AdminQueryBoundary';
 import { UnreadMessageWatcher } from './UnreadMessageWatcher';
-import { DASHBOARD_CONTENT_CLASS } from '@/lib/dashboardSidebar';
+import { DASHBOARD_CONTENT_CLASS, DASHBOARD_GUTTER_CLASS } from '@/lib/dashboardSidebar';
 import { cn } from '@/lib/utils';
 
 interface DashboardLayoutProps {
@@ -31,7 +31,7 @@ export function DashboardLayout({ children, type }: DashboardLayoutProps) {
       <main
         className={cn(
           'min-h-0 min-w-0 flex-1 overflow-x-hidden overflow-y-auto',
-          type === 'member' ? 'bg-white dark:bg-background' : 'bg-muted/30',
+          type === 'member' ? 'bg-[var(--bg-page)] dark:bg-background' : 'bg-muted/40',
         )}
       >
         <MobileTopBar homeHref={HOME_HREF[type]}>
@@ -41,9 +41,10 @@ export function DashboardLayout({ children, type }: DashboardLayoutProps) {
         {type === 'member' ? <MemberTopBar /> : null}
         <div
           className={cn(
-            'p-4 pb-[max(1rem,env(safe-area-inset-bottom))] sm:p-6 md:p-8',
+            'py-5 pb-[max(1.25rem,env(safe-area-inset-bottom))] sm:py-7 md:py-9',
+            DASHBOARD_GUTTER_CLASS,
             DASHBOARD_CONTENT_CLASS,
-            type === 'member' && 'bg-white dark:bg-background',
+            type === 'member' && 'bg-[var(--bg-page)] dark:bg-background',
           )}
         >
           {children}

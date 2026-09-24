@@ -2,7 +2,7 @@ import { ReactNode } from 'react';
 import DemoRoleSwitcher from '@/components/demo/DemoRoleSwitcher';
 import { MemberSidebar } from '@/components/dashboard/MemberSidebar';
 import { MobileTopBar } from '@/components/dashboard/MobileTopBar';
-import { DASHBOARD_CONTENT_CLASS } from '@/lib/dashboardSidebar';
+import { DASHBOARD_CONTENT_CLASS, DASHBOARD_GUTTER_CLASS } from '@/lib/dashboardSidebar';
 import { cn } from '@/lib/utils';
 
 interface Props {
@@ -20,12 +20,12 @@ export function DemoMemberShell({ title, subtitle, actions, children }: Props) {
         <MobileTopBar homeHref="/demo/member">
           <MemberSidebar demo mobile />
         </MobileTopBar>
-        <div className={cn('p-4 sm:p-6 md:p-8', DASHBOARD_CONTENT_CLASS)}>
+        <div className={cn('py-5 sm:py-7 md:py-9', DASHBOARD_GUTTER_CLASS, DASHBOARD_CONTENT_CLASS)}>
           <DemoRoleSwitcher />
-          <div className="flex flex-wrap items-start justify-between gap-3 mb-6">
+          <div className="mb-7 flex flex-wrap items-start justify-between gap-4">
             <div className="min-w-0">
-              <h1 className="text-xl sm:text-2xl font-bold">{title}</h1>
-              {subtitle && <p className="text-muted-foreground text-sm mt-0.5">{subtitle}</p>}
+              <h1 className="type-page-title text-foreground">{title}</h1>
+              {subtitle && <p className="mt-1.5 text-support text-muted-foreground">{subtitle}</p>}
             </div>
             {actions}
           </div>

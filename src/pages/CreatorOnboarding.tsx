@@ -7,7 +7,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { useConvex, useMutation, useQuery } from 'convex/react';
 import { api } from '../../convex/_generated/api';
 import { useAuth } from '@/contexts/AuthContext';
-import { PrizeletLogo } from '@/components/PrizeletLogo';
+import { SweephLogo } from '@/components/SweephLogo';
 import { clampOnboardingStep, ONBOARDING_STEPS, shouldPublishOnSave } from '@/lib/onboardingStep';
 import { uploadToConvexStorage } from '@/lib/upload';
 import { ArrowRight, ArrowLeft, Loader2, Camera, ImageIcon, User, Package } from 'lucide-react';
@@ -284,7 +284,7 @@ const CreatorOnboarding = () => {
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
           <div className="mb-6 flex justify-center">
-            <PrizeletLogo size="md" linkTo="" />
+            <SweephLogo size="md" linkTo="" />
           </div>
           <h1 className="text-heading font-bold text-foreground">
             {alreadyPublished ? 'Update your creator profile' : 'Set up your creator profile'}
@@ -336,7 +336,7 @@ const CreatorOnboarding = () => {
                   maxLength={30}
                 />
               </div>
-              <p className="text-caption text-muted-foreground">prizelet.com/@{username || 'you'}</p>
+              <p className="text-caption text-muted-foreground">sweeph.com/@{username || 'you'}</p>
             </div>
             <div className="space-y-2">
               <Label htmlFor="bio">Bio</Label>

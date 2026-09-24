@@ -18,7 +18,7 @@ const Index = () => {
 
   return (
     <div className="min-h-screen bg-noise">
-      <Seo title={'Prizelet — Private Creator Infrastructure'} description={'Prizelet is the invite-only system where creators sell subscriptions, gate premium content, and grow a private network of members.'} />
+      <Seo title={'Sweeph — Private Creator Infrastructure'} description={'Sweeph is the invite-only system where creators sell subscriptions, gate premium content, and grow a private network of members.'} />
       <Navbar />
       <main id="main-content">
       <HeroSection />

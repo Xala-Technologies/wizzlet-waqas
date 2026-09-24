@@ -464,17 +464,22 @@ const CreatorProducts = () => {
 
   return (
     <DashboardLayout type="creator">
-      <header className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+      <header className="mb-7 flex flex-col gap-5 sm:mb-9 sm:flex-row sm:items-start sm:justify-between sm:gap-8">
         <div className="min-w-0">
-          <h1 className="text-2xl font-extrabold tracking-tight text-foreground sm:text-3xl">
+          <h1 className="type-page-title text-foreground md:text-[2.75rem] md:leading-[1.1]">
             Products
           </h1>
-          <p className="mt-1.5 max-w-xl text-sm font-medium text-muted-foreground sm:text-base">
+          <p className="mt-3 max-w-2xl text-body font-medium text-muted-foreground">
             Create and manage your subscriptions, memberships, and digital products.
           </p>
         </div>
-        <Button type="button" className="h-11 shrink-0 rounded-xl" onClick={openCreate}>
-          <Plus className="mr-1.5 h-4 w-4" /> Create Product
+        <Button
+          type="button"
+          className="h-12 w-full shrink-0 gap-2 rounded-[var(--radius-md)] px-6 sm:mt-1 sm:w-auto"
+          onClick={openCreate}
+        >
+          <Plus className="h-5 w-5" aria-hidden />
+          Create Product
         </Button>
       </header>
 
@@ -535,12 +540,12 @@ const CreatorProducts = () => {
       </div>
 
       <div className="mb-4 flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
-        <div className={cn(segmentedTrackClassName, 'w-full overflow-x-auto xl:w-auto')}>
+        <div className={cn(segmentedTrackClassName, 'flex w-full flex-nowrap xl:w-auto')}>
           {STATUS_TABS.map((t) => (
             <button
               key={t.id}
               type="button"
-              className={segmentedItemClassName(tab === t.id)}
+              className={cn(segmentedItemClassName(tab === t.id), 'flex-1 xl:flex-none')}
               onClick={() => {
                 setTab(t.id);
                 setTablePage(0);
@@ -596,8 +601,13 @@ const CreatorProducts = () => {
                 : 'Try another tab, status, or search.'}
             </p>
             {tableRows.length === 0 ? (
-              <Button type="button" className="mt-5 min-h-11 rounded-xl" onClick={openCreate}>
-                <Plus className="mr-1.5 h-4 w-4" /> Create Product
+              <Button
+                type="button"
+                className="mt-5 h-12 gap-2 rounded-[var(--radius-md)] px-6"
+                onClick={openCreate}
+              >
+                <Plus className="h-5 w-5" aria-hidden />
+                Create Product
               </Button>
             ) : null}
           </div>
@@ -798,9 +808,10 @@ const CreatorProducts = () => {
           </div>
           <Button
             type="button"
-            className="h-11 w-full shrink-0 rounded-xl sm:w-auto"
+            className="h-12 w-full shrink-0 gap-2 rounded-[var(--radius-md)] px-6 sm:w-auto"
             onClick={openCreate}
           >
+            <Plus className="h-5 w-5" aria-hidden />
             Create Bundle
           </Button>
         </section>

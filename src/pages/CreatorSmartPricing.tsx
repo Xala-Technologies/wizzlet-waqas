@@ -154,7 +154,7 @@ const CreatorSmartPricing = () => {
           <p className="mx-auto mb-5 max-w-xs text-support text-muted-foreground">
             Finish onboarding to see pricing guidance and set your list price.
           </p>
-          <Button asChild className="min-h-11">
+          <Button asChild size="sm">
             <Link to="/creator/onboarding">Set up your profile</Link>
           </Button>
         </div>
@@ -203,7 +203,7 @@ const CreatorSmartPricing = () => {
             Illustrative pricing guidance from your live metrics — not a guarantee.
           </p>
         </div>
-        <Button asChild variant="outline" className="min-h-11 shrink-0 rounded-xl">
+        <Button asChild variant="outline" size="sm" className="shrink-0">
           <Link to="/creator/products">
             <ArrowLeft className="mr-1.5 h-4 w-4" /> Back to Products
           </Link>
@@ -286,7 +286,7 @@ const CreatorSmartPricing = () => {
           <Button
             type="button"
             variant="hero"
-            className="min-h-11"
+            size="sm"
             onClick={() => void savePrice()}
             disabled={saving || !priceInput.trim()}
           >
@@ -296,7 +296,7 @@ const CreatorSmartPricing = () => {
           <Button
             type="button"
             variant="outline"
-            className="min-h-11"
+            size="sm"
             onClick={() => setPriceInput(suggestion.suggested.toFixed(2))}
           >
             <Target className="mr-1.5 h-3.5 w-3.5" /> Use suggested
