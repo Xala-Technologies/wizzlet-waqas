@@ -36,7 +36,7 @@ import { useState } from 'react';
 import { RoleSwitcher } from './RoleSwitcher';
 import { api } from '@convex/_generated/api';
 import { cn } from '@/lib/utils';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { useDocumentDark } from '@/hooks/useDocumentDark';
 import {
   SIDEBAR_BADGE_CLASS,
   sidebarChildDotClass,
@@ -216,7 +216,7 @@ function NavItemLink({
             dark
               ? active
                 ? 'text-[#25E4D2]/80'
-                : 'text-[#607985] group-hover:text-[#AFC1CA]'
+                : 'text-[#AFC1CA] group-hover:text-[#F8FAFC]'
               : 'text-muted-foreground',
           )}
           aria-hidden
@@ -252,14 +252,13 @@ export function CreatorSidebar({ mobile = false }: { mobile?: boolean } = {}) {
   const pathname = location.pathname;
   const hash = location.hash;
   const search = location.search;
-  const dark = !mobile;
+  const dark = useDocumentDark();
 
   const handleSignOut = async () => {
     navigate('/');
     await signOut();
   };
 
-  const creator = useQuery(api.creators.queries.myCreator, user ? {} : 'skip');
   const dmUnread = useQuery(api.messaging.mutations.unreadCountCreator, user ? {} : 'skip');
   const growthUnread = useQuery(
     api.support.mutations.unreadCountCreatorGrowth,
@@ -288,16 +287,20 @@ export function CreatorSidebar({ mobile = false }: { mobile?: boolean } = {}) {
     return item;
   };
 
-  const displayName =
-    creator?.displayName?.trim() ||
-    (creator?.username ? creator.username : user?.email?.split('@')[0] || 'Creator');
-  const initial = displayName.replace(/^@/, '').charAt(0).toUpperCase() || 'C';
-
   return (
     <aside className={dashboardSidebarAsideClassName(mobile, undefined, dark ? 'dark' : 'light')}>
       {!mobile && (
-        <div className="border-b border-[#193A47] px-5 pb-5 pt-6">
-          <SweephLogo size="sidebar" linkTo="/creator" variant="dark" />
+        <div
+          className={cn(
+            'border-b px-5 pb-5 pt-6',
+            dark ? 'border-[#193A47]' : 'border-border',
+          )}
+        >
+          <SweephLogo
+            size="sidebar"
+            linkTo="/creator"
+            variant={dark ? 'dark' : 'light'}
+          />
         </div>
       )}
 
@@ -419,7 +422,7 @@ export function CreatorSidebar({ mobile = false }: { mobile?: boolean } = {}) {
               className={cn(
                 'h-3.5 w-3.5 shrink-0 transition-transform',
                 moreOpen ? 'rotate-0' : '-rotate-90',
-                dark ? 'text-[#8197A3]' : 'text-muted-foreground',
+                dark ? 'text-[#AFC1CA]' : 'text-muted-foreground',
               )}
             />
           </CollapsibleTrigger>
@@ -448,37 +451,6 @@ export function CreatorSidebar({ mobile = false }: { mobile?: boolean } = {}) {
         )}
       >
         {!mobile && <RoleSwitcher tone={dark ? 'dark' : 'light'} />}
-
-        {/* Identity → settings; Help / Log out only in mobile drawer (desktop uses top-bar menu) */}
-        <Link
-          to="/creator/settings"
-          className={cn(
-            'flex items-center gap-3 rounded-[var(--radius-md)] px-2.5 py-2.5 transition-colors duration-150',
-            dark
-              ? 'bg-white/[0.06] hover:bg-white/[0.08]'
-              : 'bg-muted/40 hover:bg-muted/70',
-          )}
-        >
-          <Avatar className={cn('h-10 w-10 border', dark ? 'border-[#193A47]' : 'border-border')}>
-            {creator?.avatarUrl ? <AvatarImage src={creator.avatarUrl} alt="" /> : null}
-            <AvatarFallback
-              className={cn(
-                'text-sm font-bold',
-                dark ? 'bg-[#075D60] text-[#25E4D2]' : 'bg-primary/15 text-primary',
-              )}
-            >
-              {initial}
-            </AvatarFallback>
-          </Avatar>
-          <div className="min-w-0 flex-1">
-            <p className={cn('truncate text-sm font-semibold', dark ? 'text-[#F8FAFC]' : 'text-foreground')}>
-              {displayName}
-            </p>
-            <p className={cn('text-caption font-medium', dark ? 'text-[#8197A3]' : 'text-muted-foreground')}>
-              Creator · Settings
-            </p>
-          </div>
-        </Link>
 
         {mobile ? (
           <>

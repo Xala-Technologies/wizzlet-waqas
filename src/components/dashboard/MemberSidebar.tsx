@@ -17,6 +17,7 @@ import { api } from '@convex/_generated/api';
 import { RoleSwitcher } from './RoleSwitcher';
 import { useDemoMemberStoreOptional } from '@/components/demo/demoMemberStore';
 import { cn } from '@/lib/utils';
+import { useDocumentDark } from '@/hooks/useDocumentDark';
 import {
   SIDEBAR_BADGE_CLASS,
   sidebarFooterGhostClass,
@@ -89,7 +90,7 @@ export function MemberSidebar({ demo = false, mobile = false }: { demo?: boolean
   const location = useLocation();
   const navigate = useNavigate();
   const pathname = location.pathname;
-  const dark = !mobile;
+  const dark = useDocumentDark();
   const items = demo ? demoMemberItems : memberItems;
   const baseRoute = demo ? '/demo/member' : '/dashboard';
 
@@ -116,8 +117,17 @@ export function MemberSidebar({ demo = false, mobile = false }: { demo?: boolean
   return (
     <aside className={dashboardSidebarAsideClassName(mobile, undefined, dark ? 'dark' : 'light')}>
       {!mobile && (
-        <div className="border-b border-[#193A47] px-5 pb-5 pt-6">
-          <SweephLogo size="sidebar" linkTo={baseRoute} variant="dark" />
+        <div
+          className={cn(
+            'border-b px-5 pb-5 pt-6',
+            dark ? 'border-[#193A47]' : 'border-border',
+          )}
+        >
+          <SweephLogo
+            size="sidebar"
+            linkTo={baseRoute}
+            variant={dark ? 'dark' : 'light'}
+          />
         </div>
       )}
 
@@ -156,7 +166,7 @@ export function MemberSidebar({ demo = false, mobile = false }: { demo?: boolean
             <p
               className={cn(
                 'mt-1.5 text-caption font-medium leading-relaxed',
-                dark ? 'text-[#8197A3]' : 'text-muted-foreground',
+                dark ? 'text-[#C5D5DC]' : 'text-muted-foreground',
               )}
             >
               Discover verified voices and unlock premium content in one place.

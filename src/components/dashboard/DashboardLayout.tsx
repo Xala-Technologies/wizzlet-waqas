@@ -31,7 +31,7 @@ export function DashboardLayout({ children, type }: DashboardLayoutProps) {
       <main
         className={cn(
           'min-h-0 min-w-0 flex-1 overflow-x-hidden overflow-y-auto',
-          type === 'member' ? 'bg-[var(--bg-page)] dark:bg-background' : 'bg-muted/40',
+          type === 'member' ? 'bg-[var(--bg-page)]' : 'bg-muted/40',
         )}
       >
         <MobileTopBar homeHref={HOME_HREF[type]}>
@@ -44,7 +44,7 @@ export function DashboardLayout({ children, type }: DashboardLayoutProps) {
             'py-5 pb-[max(1.25rem,env(safe-area-inset-bottom))] sm:py-7 md:py-9',
             DASHBOARD_GUTTER_CLASS,
             DASHBOARD_CONTENT_CLASS,
-            type === 'member' && 'bg-[var(--bg-page)] dark:bg-background',
+            type === 'member' && 'bg-[var(--bg-page)]',
           )}
         >
           {children}

@@ -7,7 +7,7 @@ export function sidebarNavItemClass(active: boolean, dark: boolean): string {
     dark
       ? active
         ? 'bg-[#075D60] font-semibold text-[#25E4D2]'
-        : 'text-[#AFC1CA] hover:bg-white/[0.06] hover:text-[#F8FAFC]'
+        : 'text-[#F1F5F7] hover:bg-white/[0.06] hover:text-[#F8FAFC]'
       : active
         ? 'bg-[var(--active-bg)] font-semibold text-[var(--active-text)]'
         : 'text-foreground hover:bg-muted/70',
@@ -20,7 +20,7 @@ export function sidebarNavIconClass(active: boolean, dark: boolean): string {
     dark
       ? active
         ? 'text-[#25E4D2]'
-        : 'text-[#9FB4BE] group-hover:text-[#D6E5EB]'
+        : 'text-[#D6E5EB] group-hover:text-[#F8FAFC]'
       : active
         ? 'text-[var(--active-text)]'
         : 'text-muted-foreground group-hover:text-foreground',
@@ -33,7 +33,7 @@ export function sidebarChildLinkClass(active: boolean, dark: boolean): string {
     dark
       ? active
         ? 'bg-white/[0.06] font-semibold text-[#25E4D2]'
-        : 'text-[#8197A3] hover:bg-white/[0.06] hover:text-[#F8FAFC]'
+        : 'text-[#C5D5DC] hover:bg-white/[0.06] hover:text-[#F8FAFC]'
       : active
         ? 'bg-[var(--active-bg)] font-semibold text-[var(--active-text)]'
         : 'text-muted-foreground hover:bg-muted/60 hover:text-foreground',
@@ -48,7 +48,7 @@ export function sidebarFooterGhostClass(dark: boolean): string {
   return cn(
     'h-11 w-full justify-start gap-2.5 rounded-[var(--radius-md)] px-4 text-[15px] font-medium',
     dark
-      ? 'text-[#AFC1CA] hover:bg-white/[0.06] hover:text-[#F8FAFC]'
+      ? 'text-[#F1F5F7] hover:bg-white/[0.06] hover:text-[#F8FAFC]'
       : 'text-muted-foreground hover:bg-muted hover:text-foreground',
   );
 }
