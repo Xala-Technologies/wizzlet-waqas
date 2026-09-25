@@ -1,9 +1,10 @@
 import { FormEvent, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useQuery } from 'convex/react';
-import { Bell, ChevronDown, HelpCircle, LogOut, Plus, Search } from 'lucide-react';
+import { Bell, ChevronDown, HelpCircle, LogOut, Plus, Search, Settings } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { api } from '@convex/_generated/api';
+import { ThemeToggle } from '@/components/ThemeToggle';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
@@ -15,7 +16,6 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { cn } from '@/lib/utils';
-
 /**
  * Creator desktop utility bar — search, notifications, account menu, Create Post.
  * Hidden on mobile (MobileTopBar + drawer handle that).
@@ -34,6 +34,7 @@ export function CreatorTopBar() {
   const initial = display.replace(/^@/, '').charAt(0).toUpperCase() || 'C';
   const unread = notifUnread ?? 0;
   const handle = creator?.username ? `@${creator.username}` : user?.email ?? null;
+  const onOverview = location.pathname === '/creator';
   const onPosts = location.pathname.startsWith('/creator/posts');
   const onProducts = location.pathname.startsWith('/creator/products');
   const onSubscribers = location.pathname.startsWith('/creator/subscribers');
@@ -84,7 +85,9 @@ export function CreatorTopBar() {
                               : onMarketing
                                 ? 'Search anything…'
                                 : 'Search anything…';
+  // Overview owns Create Post beside the greeting; hide the top-bar duplicate.
   const hideCreatePost =
+    onOverview ||
     onPosts ||
     onProducts ||
     onSubscribers ||
@@ -111,7 +114,7 @@ export function CreatorTopBar() {
 
   return (
     <header className="sticky top-0 z-20 hidden border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80 md:block">
-      <div className="mx-auto flex h-16 w-full min-w-0 max-w-[1600px] items-center gap-3 px-4 sm:px-6 md:px-8">
+      <div className="mx-auto flex h-[var(--topbar-height)] w-full min-w-0 max-w-[var(--content-max)] items-center gap-3 px-4 sm:px-6 md:px-8 lg:px-10 xl:px-12">
         <form onSubmit={onSearch} className="relative min-w-0 flex-1" role="search">
           <Search
             className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground"
@@ -127,6 +130,8 @@ export function CreatorTopBar() {
         </form>
 
         <div className="flex shrink-0 items-center gap-2 sm:gap-3">
+          <ThemeToggle className="h-10 w-10 rounded-full border border-border bg-card" />
+
           <Button
             asChild
             variant="ghost"
@@ -180,6 +185,12 @@ export function CreatorTopBar() {
                 ) : null}
               </DropdownMenuLabel>
               <DropdownMenuSeparator />
+              <DropdownMenuItem asChild className="cursor-pointer gap-2">
+                <Link to="/creator/settings">
+                  <Settings className="h-4 w-4" aria-hidden />
+                  Settings
+                </Link>
+              </DropdownMenuItem>
               <DropdownMenuItem asChild className="cursor-pointer gap-2">
                 <Link to="/support">
                   <HelpCircle className="h-4 w-4" aria-hidden />

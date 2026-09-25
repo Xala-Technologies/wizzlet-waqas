@@ -32,7 +32,7 @@ import {
   type CreatorProfileDemoProduct,
 } from '@/lib/creatorPublicProfileDemo';
 import { cn } from '@/lib/utils';
-import { PrizeletLogo } from '@/components/PrizeletLogo';
+import { SweephLogo } from '@/components/SweephLogo';
 
 function parsePick(content: string | null) {
   if (!content) return null;
@@ -595,7 +595,7 @@ const CreatorProfile = () => {
         <footer className="border-t border-border bg-card">
           <div className="mx-auto flex w-full max-w-6xl flex-col gap-6 px-4 py-8 sm:flex-row sm:items-center sm:justify-between sm:px-6 md:px-8">
             <div>
-              <PrizeletLogo size="sm" />
+              <SweephLogo size="sm" />
               <p className="mt-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">
                 CREATE. GROW. EARN.
               </p>

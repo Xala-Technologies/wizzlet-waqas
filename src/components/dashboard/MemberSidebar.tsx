@@ -1,6 +1,6 @@
 import { Link, useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import { useQuery } from 'convex/react';
-import { PrizeletLogo } from '@/components/PrizeletLogo';
+import { SweephLogo } from '@/components/SweephLogo';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { dashboardSidebarAsideClassName } from '@/lib/dashboardSidebar';
@@ -17,6 +17,13 @@ import { api } from '@convex/_generated/api';
 import { RoleSwitcher } from './RoleSwitcher';
 import { useDemoMemberStoreOptional } from '@/components/demo/demoMemberStore';
 import { cn } from '@/lib/utils';
+import { useDocumentDark } from '@/hooks/useDocumentDark';
+import {
+  SIDEBAR_BADGE_CLASS,
+  sidebarFooterGhostClass,
+  sidebarNavIconClass,
+  sidebarNavItemClass,
+} from '@/lib/sidebarNav';
 
 interface NavItem {
   label: string;
@@ -25,7 +32,7 @@ interface NavItem {
   badge?: string;
 }
 
-/** Mockup nav labels; chrome matches creator dark sidebar. */
+/** Member nav — same chrome language as creator. */
 const memberItems: NavItem[] = [
   { label: 'Home', href: '/dashboard', icon: Home },
   { label: 'Discover', href: '/dashboard/discover', icon: Search },
@@ -62,42 +69,10 @@ function NavItemLink({
   dark: boolean;
 }) {
   return (
-    <Link
-      to={item.href}
-      className={cn(
-        'group flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-colors',
-        dark
-          ? active
-            ? 'bg-primary text-primary-foreground shadow-sm'
-            : 'text-slate-300 hover:bg-white/5 hover:text-white'
-          : active
-            ? 'bg-primary/10 text-primary font-medium shadow-[inset_2px_0_0_0_hsl(var(--primary))]'
-            : 'text-foreground hover:bg-muted/60',
-      )}
-    >
-      <item.icon
-        className={cn(
-          'h-4 w-4 shrink-0',
-          dark
-            ? active
-              ? 'text-primary-foreground'
-              : 'text-slate-400 group-hover:text-white'
-            : active
-              ? 'text-primary'
-              : 'text-muted-foreground group-hover:text-foreground',
-        )}
-      />
+    <Link to={item.href} className={sidebarNavItemClass(active, dark)}>
+      <item.icon className={sidebarNavIconClass(active, dark)} />
       <span className="flex-1 truncate">{item.label}</span>
-      {item.badge ? (
-        <span
-          className={cn(
-            'flex h-5 min-w-[20px] items-center justify-center rounded-full px-1.5 text-[10px] font-bold',
-            dark ? 'bg-rose-500 text-white' : 'bg-primary text-primary-foreground',
-          )}
-        >
-          {item.badge}
-        </span>
-      ) : null}
+      {item.badge ? <span className={SIDEBAR_BADGE_CLASS}>{item.badge}</span> : null}
     </Link>
   );
 }
@@ -115,7 +90,7 @@ export function MemberSidebar({ demo = false, mobile = false }: { demo?: boolean
   const location = useLocation();
   const navigate = useNavigate();
   const pathname = location.pathname;
-  const dark = !mobile;
+  const dark = useDocumentDark();
   const items = demo ? demoMemberItems : memberItems;
   const baseRoute = demo ? '/demo/member' : '/dashboard';
 
@@ -142,15 +117,17 @@ export function MemberSidebar({ demo = false, mobile = false }: { demo?: boolean
   return (
     <aside className={dashboardSidebarAsideClassName(mobile, undefined, dark ? 'dark' : 'light')}>
       {!mobile && (
-        <div className="px-5 pb-4 pt-6">
-          <PrizeletLogo
-            size="md"
+        <div
+          className={cn(
+            'border-b px-5 pb-5 pt-6',
+            dark ? 'border-[#193A47]' : 'border-border',
+          )}
+        >
+          <SweephLogo
+            size="sidebar"
             linkTo={baseRoute}
-            className="[&>span:last-child]:text-white"
+            variant={dark ? 'dark' : 'light'}
           />
-          <p className="mt-2 text-xs font-medium leading-snug text-slate-400">
-            CREATE. GROW. EARN.
-          </p>
         </div>
       )}
 
@@ -167,88 +144,60 @@ export function MemberSidebar({ demo = false, mobile = false }: { demo?: boolean
 
       <div
         className={cn(
-          'shrink-0 space-y-3 px-3 py-4',
-          dark ? 'border-t border-white/10' : 'border-t border-border',
+          'shrink-0 space-y-2 px-3 py-4',
+          dark ? 'border-t border-[#193A47]' : 'border-t border-border',
         )}
       >
-        {!mobile && (
+        {!mobile && !demo && (
           <div
             className={cn(
-              'rounded-2xl p-4',
-              dark
-                ? 'border border-white/10 bg-gradient-to-br from-slate-900 to-slate-950'
-                : 'border border-border bg-muted/40',
+              'rounded-[var(--radius-lg)] border p-4',
+              dark ? 'border-[#214250] bg-[#102D3B]' : 'border-border bg-muted/40',
             )}
           >
             <p
               className={cn(
                 'text-sm font-bold leading-snug tracking-tight',
-                dark ? 'text-white' : 'text-foreground',
+                dark ? 'text-[#F8FAFC]' : 'text-foreground',
               )}
             >
-              Better picks. A brighter you.
+              Find creators worth following
             </p>
             <p
               className={cn(
-                'mt-1.5 text-xs font-medium leading-relaxed',
-                dark ? 'text-slate-400' : 'text-muted-foreground',
+                'mt-1.5 text-caption font-medium leading-relaxed',
+                dark ? 'text-[#C5D5DC]' : 'text-muted-foreground',
               )}
             >
-              Follow top creators and be part of a winning community.
+              Discover verified voices and unlock premium content in one place.
             </p>
-            <Button
-              asChild
-              size="sm"
-              className="mt-3 h-9 w-full rounded-xl text-xs font-semibold"
-            >
-              <Link to={demo ? '/demo/member/discover' : '/dashboard/discover'}>
-                Discover Creators →
-              </Link>
+            <Button asChild size="sm" className="mt-3 h-10 w-full font-semibold">
+              <Link to="/dashboard/discover">Discover creators</Link>
             </Button>
           </div>
         )}
 
-        {!mobile && (
-          <p
-            className={cn(
-              'px-1 text-[10px] font-medium uppercase tracking-[0.14em]',
-              dark ? 'text-slate-500' : 'text-muted-foreground',
-            )}
-          >
-            Prizelet. Picks. People. Profit.
-          </p>
-        )}
+        {!demo && !mobile && <RoleSwitcher tone={dark ? 'dark' : 'light'} />}
 
+        {/* Help / Log out live in the top-bar account menu (desktop) */}
         {mobile ? (
-          <Button
-            variant="ghost"
-            size="sm"
-            className="w-full justify-start text-sm text-muted-foreground hover:text-foreground"
-            asChild
-          >
-            <Link to="/support">
-              <HelpCircle className="mr-2 h-3.5 w-3.5" />
-              Help & Support
-            </Link>
-          </Button>
-        ) : null}
-
-        {!demo && !mobile && (
-          <div className="[&_button]:border-white/15 [&_button]:bg-white/5 [&_button]:text-slate-100 [&_button]:hover:bg-white/10 [&_button_.text-muted-foreground]:text-slate-400">
-            <RoleSwitcher />
-          </div>
-        )}
-
-        {mobile ? (
-          <Button
-            variant="ghost"
-            size="sm"
-            className="w-full justify-start text-sm text-muted-foreground hover:text-foreground"
-            onClick={() => void handleSignOut()}
-          >
-            <LogOut className="mr-2 h-3.5 w-3.5" />
-            Log out
-          </Button>
+          <>
+            <Button variant="ghost" size="sm" className={sidebarFooterGhostClass(dark)} asChild>
+              <Link to="/support">
+                <HelpCircle className="h-4 w-4" />
+                Help & Support
+              </Link>
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              className={sidebarFooterGhostClass(dark)}
+              onClick={() => void handleSignOut()}
+            >
+              <LogOut className="h-4 w-4" />
+              Log out
+            </Button>
+          </>
         ) : null}
       </div>
     </aside>

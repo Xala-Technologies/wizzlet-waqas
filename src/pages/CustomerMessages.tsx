@@ -439,10 +439,10 @@ const CustomerMessages = () => {
       />
 
       <header className="mb-5">
-        <h1 className="text-heading font-bold tracking-tight text-slate-900 md:text-heading-lg">
+        <h1 className="text-heading font-bold tracking-tight text-foreground md:text-heading-lg">
           Messages
         </h1>
-        <p className="mt-1.5 text-support text-slate-500">
+        <p className="mt-1.5 text-support text-muted-foreground">
           Chat with creators or get help from our support team.
         </p>
       </header>
@@ -465,25 +465,25 @@ const CustomerMessages = () => {
           <Loader2 className="h-5 w-5 animate-spin text-primary" />
         </div>
       ) : (
-        <div className="grid min-h-[min(70vh,640px)] grid-cols-1 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm lg:grid-cols-[minmax(280px,360px)_minmax(0,1fr)]">
+        <div className="grid min-h-[min(70vh,640px)] grid-cols-1 overflow-hidden rounded-2xl border border-border bg-card shadow-[var(--shadow-card)] lg:grid-cols-[minmax(280px,360px)_minmax(0,1fr)]">
           {/* Inbox column */}
           <div
             className={cn(
-              'flex min-h-0 flex-col border-slate-200 lg:border-r',
+              'flex min-h-0 flex-col border-border lg:border-r',
               activeId ? 'hidden lg:flex' : 'flex',
             )}
           >
-            <div className="space-y-3 border-b border-slate-100 p-4">
+            <div className="space-y-3 border-b border-border p-4">
               <div className="relative">
                 <Search
-                  className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400"
+                  className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground"
                   aria-hidden
                 />
                 <Input
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
                   placeholder="Search messages..."
-                  className="h-10 rounded-xl border-slate-200 bg-slate-50 pl-9 text-sm"
+                  className="h-10 rounded-xl border-border bg-muted/40 pl-9 text-sm"
                 />
               </div>
               <div className="flex flex-wrap gap-2">
@@ -496,7 +496,7 @@ const CustomerMessages = () => {
                       'inline-flex h-8 items-center rounded-full border px-3.5 text-xs font-semibold transition-colors',
                       filter === f.key
                         ? 'border-primary bg-primary text-primary-foreground'
-                        : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50',
+                        : 'border-border bg-card text-muted-foreground hover:bg-muted/50',
                     )}
                   >
                     {f.label}
@@ -508,8 +508,8 @@ const CustomerMessages = () => {
             <div className="min-h-0 flex-1 overflow-y-auto">
               {filteredThreads.length === 0 ? (
                 <div className="px-6 py-12 text-center">
-                  <p className="text-sm font-semibold text-slate-900">No conversations</p>
-                  <p className="mt-1 text-sm text-slate-500">
+                  <p className="text-sm font-semibold text-foreground">No conversations</p>
+                  <p className="mt-1 text-sm text-muted-foreground">
                     {search.trim()
                       ? 'Try a different search.'
                       : 'Subscribe to creators to start chatting.'}
@@ -530,14 +530,14 @@ const CustomerMessages = () => {
                           type="button"
                           onClick={() => setActiveId(thread.id)}
                           className={cn(
-                            'flex w-full items-start gap-3 border-b border-slate-100 px-4 py-3.5 text-left transition-colors',
-                            selected ? 'bg-primary/5' : 'hover:bg-slate-50',
+                            'flex w-full items-start gap-3 border-b border-border px-4 py-3.5 text-left transition-colors',
+                            selected ? 'bg-primary/5' : 'hover:bg-muted/50',
                           )}
                         >
                           <Avatar thread={thread} />
                           <div className="min-w-0 flex-1">
                             <div className="flex items-center gap-1.5">
-                              <p className="truncate text-sm font-bold text-slate-900">
+                              <p className="truncate text-sm font-bold text-foreground">
                                 {thread.displayName}
                               </p>
                               {thread.verified ? (
@@ -546,12 +546,12 @@ const CustomerMessages = () => {
                                   aria-label="Verified"
                                 />
                               ) : null}
-                              <span className="ml-auto shrink-0 text-[11px] font-medium text-slate-400">
+                              <span className="ml-auto shrink-0 text-[11px] font-medium text-muted-foreground">
                                 {thread.listTimeLabel}
                               </span>
                             </div>
                             <div className="mt-0.5 flex items-center gap-2">
-                              <p className="truncate text-sm text-slate-500">{thread.preview}</p>
+                              <p className="truncate text-sm text-muted-foreground">{thread.preview}</p>
                               {thread.unread > 0 ? (
                                 <span className="ml-auto flex h-5 min-w-[20px] shrink-0 items-center justify-center rounded-full bg-rose-500 px-1.5 text-[10px] font-bold text-white">
                                   {thread.unread > 9 ? '9+' : thread.unread}
@@ -595,10 +595,10 @@ const CustomerMessages = () => {
           >
             {active ? (
               <>
-                <div className="flex items-center gap-3 border-b border-slate-100 px-3 py-3 sm:px-5">
+                <div className="flex items-center gap-3 border-b border-border px-3 py-3 sm:px-5">
                   <button
                     type="button"
-                    className="inline-flex h-10 w-10 items-center justify-center rounded-xl text-slate-500 hover:bg-slate-100 lg:hidden"
+                    className="inline-flex h-10 w-10 items-center justify-center rounded-xl text-muted-foreground hover:bg-muted/50 lg:hidden"
                     aria-label="Back to conversations"
                     onClick={() => setActiveId(null)}
                   >
@@ -607,7 +607,7 @@ const CustomerMessages = () => {
                   <Avatar thread={active} size="lg" />
                   <div className="min-w-0 flex-1">
                     <div className="flex flex-wrap items-center gap-1.5">
-                      <p className="truncate text-sm font-bold text-slate-900">
+                      <p className="truncate text-sm font-bold text-foreground">
                         {active.displayName}
                       </p>
                       {active.verified ? (
@@ -620,14 +620,14 @@ const CustomerMessages = () => {
                         </span>
                       ) : null}
                     </div>
-                    <p className="truncate text-xs text-slate-500">{active.bio}</p>
+                    <p className="truncate text-xs text-muted-foreground">{active.bio}</p>
                   </div>
                   {active.username ? (
                     <Button
                       asChild
                       variant="outline"
                       size="sm"
-                      className="hidden h-9 rounded-xl border-slate-200 sm:inline-flex"
+                      className="hidden h-9 rounded-xl border-border sm:inline-flex"
                     >
                       <Link to={creatorProfilePath(active.username)}>View Profile</Link>
                     </Button>
@@ -661,9 +661,9 @@ const CustomerMessages = () => {
                   </DropdownMenu>
                 </div>
 
-                <div className="min-h-0 flex-1 space-y-3 overflow-y-auto bg-slate-50/60 px-3 py-4 sm:px-5">
+                <div className="min-h-0 flex-1 space-y-3 overflow-y-auto bg-muted/40 px-3 py-4 sm:px-5">
                   {active.messages.length === 0 ? (
-                    <div className="flex h-full min-h-[8rem] items-center justify-center text-sm text-slate-500">
+                    <div className="flex h-full min-h-[8rem] items-center justify-center text-sm text-muted-foreground">
                       Say hello — start the conversation
                     </div>
                   ) : (
@@ -677,7 +677,7 @@ const CustomerMessages = () => {
                         <div key={msg.id}>
                           {showDay ? (
                             <div className="my-3 flex justify-center">
-                              <span className="rounded-full bg-white px-3 py-1 text-[11px] font-semibold text-slate-500 shadow-sm ring-1 ring-slate-200">
+                              <span className="rounded-full bg-card px-3 py-1 text-[11px] font-semibold text-muted-foreground shadow-[var(--shadow-card)] ring-1 ring-border">
                                 {daySeparatorLabel(msg.createdAtMs)}
                               </span>
                             </div>
@@ -696,14 +696,14 @@ const CustomerMessages = () => {
                                   'rounded-2xl px-3.5 py-2.5 text-sm leading-relaxed',
                                   mine
                                     ? 'rounded-br-md bg-primary text-primary-foreground'
-                                    : 'rounded-bl-md bg-white text-slate-900 shadow-sm ring-1 ring-slate-200',
+                                    : 'rounded-bl-md bg-card text-foreground shadow-[var(--shadow-card)] ring-1 ring-border',
                                 )}
                               >
                                 <p className="whitespace-pre-line">{msg.body}</p>
                               </div>
                               <div
                                 className={cn(
-                                  'mt-1 flex items-center gap-1.5 px-1 text-[11px] font-medium text-slate-400',
+                                  'mt-1 flex items-center gap-1.5 px-1 text-[11px] font-medium text-muted-foreground',
                                   mine && 'justify-end',
                                 )}
                               >
@@ -719,13 +719,13 @@ const CustomerMessages = () => {
                   <div ref={chatEndRef} />
                 </div>
 
-                <div className="border-t border-slate-100 bg-white p-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] sm:p-4">
+                <div className="border-t border-border bg-card p-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] sm:p-4">
                   <div className="flex items-end gap-2">
                     <Button
                       type="button"
                       variant="ghost"
                       size="icon"
-                      className="h-10 w-10 shrink-0 rounded-xl text-slate-500"
+                      className="h-10 w-10 shrink-0 rounded-xl text-muted-foreground"
                       aria-label="Attach file"
                       onClick={() =>
                         toast.message(
@@ -743,7 +743,7 @@ const CustomerMessages = () => {
                         value={reply}
                         onChange={(e) => setReply(e.target.value)}
                         rows={1}
-                        className="min-h-11 resize-none rounded-xl border-slate-200 pr-10 text-sm"
+                        className="min-h-11 resize-none rounded-xl border-border pr-10 text-sm"
                         onKeyDown={(e) => {
                           if (e.key === 'Enter' && !e.shiftKey) {
                             e.preventDefault();
@@ -753,7 +753,7 @@ const CustomerMessages = () => {
                       />
                       <button
                         type="button"
-                        className="absolute right-2.5 top-2.5 text-slate-400 hover:text-slate-600"
+                        className="absolute right-2.5 top-2.5 text-muted-foreground hover:text-foreground"
                         aria-label="Emoji"
                         onClick={() =>
                           toast.message(
@@ -781,8 +781,8 @@ const CustomerMessages = () => {
               </>
             ) : (
               <div className="flex flex-1 flex-col items-center justify-center gap-2 px-6 text-center">
-                <p className="text-sm font-semibold text-slate-900">Select a conversation</p>
-                <p className="max-w-xs text-sm text-slate-500">
+                <p className="text-sm font-semibold text-foreground">Select a conversation</p>
+                <p className="max-w-xs text-sm text-muted-foreground">
                   Choose a creator from the list, or browse Discover to start chatting.
                 </p>
                 <Button asChild variant="outline" className="mt-2 rounded-xl">

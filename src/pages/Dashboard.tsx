@@ -2,7 +2,7 @@ import { parsePickOdds as parseOdds, americanToDecimal, decimalToAmerican } from
 import { useState, useMemo, useEffect, useRef } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { useQuery, useMutation } from 'convex/react';
-import { formatDistanceToNowStrict } from 'date-fns';
+import { format, formatDistanceToNowStrict } from 'date-fns';
 import {
   BadgeCheck,
   Bookmark,
@@ -13,7 +13,10 @@ import {
   MoreHorizontal,
   Play,
   PlusCircle,
+  Search,
   Sparkles,
+  Target,
+  UserPlus,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { DashboardLayout } from '@/components/dashboard/DashboardLayout';
@@ -48,6 +51,12 @@ import {
   type MemberHomeDemoPickRow,
 } from '@/lib/memberHomeDemo';
 import { cn } from '@/lib/utils';
+
+function timeOfDayGreeting(name: string): string {
+  const hour = new Date().getHours();
+  const part = hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening';
+  return `${part}, ${name}`;
+}
 
 interface FeedPost {
   id: string;
@@ -120,6 +129,7 @@ const Dashboard = () => {
   const forceDemo = searchParams.get('demo') === '1';
   const disableDemo = searchParams.get('demo') === '0';
 
+  const me = useQuery(api.users.queries.me, user ? {} : 'skip');
   const feedRaw = useQuery(api.posts.queries.memberFeed, user ? {} : 'skip');
   const savedRaw = useQuery(api.bookmarks.mutations.listSavedPosts, user ? {} : 'skip');
   const toggleSavedPost = useMutation(api.bookmarks.mutations.toggleSavedPost);
@@ -334,51 +344,81 @@ const Dashboard = () => {
   if (loading) {
     return (
       <DashboardLayout type="member">
-        <Seo title="Home — Prizelet" description="Your Prizelet member home feed." />
-        <header className="mb-8">
-          <Skeleton className="h-9 w-32" />
-          <Skeleton className="mt-3 h-4 w-56" />
+        <Seo title="Home — Sweeph" description="Your Sweeph member home feed." />
+        <header className="mb-7 sm:mb-9">
+          <Skeleton className="h-4 w-40" />
+          <Skeleton className="mt-3 h-10 w-72 max-w-full" />
+          <Skeleton className="mt-3 h-5 w-80 max-w-full" />
         </header>
-        <div className="space-y-4" aria-busy="true" aria-label="Loading feed">
-          {[0, 1, 2].map((i) => (
-            <div
-              key={i}
-              className="rounded-2xl border border-border bg-card p-5 shadow-[var(--shadow-card)] space-y-3"
-            >
-              <div className="flex items-center gap-3">
-                <Skeleton className="h-10 w-10 rounded-full" />
-                <div className="flex-1 space-y-2">
-                  <Skeleton className="h-4 w-32" />
-                  <Skeleton className="h-3 w-20" />
+        <div className="grid grid-cols-1 gap-5 xl:grid-cols-12 xl:gap-6" aria-busy="true" aria-label="Loading feed">
+          <div className="space-y-4 xl:col-span-8">
+            {[0, 1, 2].map((i) => (
+              <div
+                key={i}
+                className="rounded-2xl border border-border bg-card p-5 shadow-[var(--shadow-card)] space-y-3 sm:p-6"
+              >
+                <div className="flex items-center gap-3">
+                  <Skeleton className="h-11 w-11 rounded-full" />
+                  <div className="flex-1 space-y-2">
+                    <Skeleton className="h-4 w-32" />
+                    <Skeleton className="h-3 w-20" />
+                  </div>
                 </div>
+                <Skeleton className="h-6 w-3/4" />
+                <Skeleton className="h-20 w-full rounded-xl" />
               </div>
-              <Skeleton className="h-5 w-3/4" />
-              <Skeleton className="h-16 w-full rounded-lg" />
-            </div>
-          ))}
+            ))}
+          </div>
+          <div className="hidden space-y-4 xl:col-span-4 xl:block">
+            <Skeleton className="h-40 w-full rounded-2xl" />
+            <Skeleton className="h-48 w-full rounded-2xl" />
+          </div>
         </div>
       </DashboardLayout>
     );
   }
 
+  const firstName =
+    me?.fullName?.trim()?.split(/\s+/)[0] ||
+    me?.name?.trim()?.split(/\s+/)[0] ||
+    user?.email?.split('@')[0] ||
+    'there';
+  const todayLabel = format(new Date(), 'EEEE, MMM d, yyyy');
+
   return (
     <DashboardLayout type="member">
       <Seo
-        title="Home — Prizelet"
-        description="Latest from creators you follow on Prizelet."
+        title="Home — Sweeph"
+        description="Latest from creators you follow on Sweeph."
       />
 
-      <header className="mb-6">
-        <h1 className="text-2xl font-extrabold tracking-tight text-foreground sm:text-3xl">
-          Home
-        </h1>
-        <p className="mt-1.5 text-sm font-medium text-muted-foreground sm:text-base">
-          Latest from your creators
-        </p>
+      <header className="mb-7 sm:mb-9">
+        <div className="flex flex-col gap-5 sm:flex-row sm:items-start sm:justify-between sm:gap-8">
+          <div className="min-w-0">
+            <p className="text-caption font-bold uppercase tracking-[0.14em] text-muted-foreground">
+              {todayLabel}
+            </p>
+            <h1 className="type-page-title mt-2 text-foreground md:text-[2.75rem] md:leading-[1.1]">
+              {timeOfDayGreeting(firstName)}
+            </h1>
+            <p className="mt-3 max-w-2xl text-body font-medium text-muted-foreground">
+              Latest picks and posts from creators you follow.
+            </p>
+          </div>
+          <Button
+            asChild
+            className="h-12 w-full shrink-0 gap-2 rounded-[var(--radius-md)] px-6 sm:mt-1 sm:w-auto"
+          >
+            <Link to="/dashboard/discover">
+              <Search className="h-5 w-5" aria-hidden />
+              Discover creators
+            </Link>
+          </Button>
+        </div>
       </header>
 
       {useDemo ? (
-        <div className="mb-5 flex items-start gap-3 rounded-2xl border border-amber-500/30 bg-amber-500/10 px-4 py-3.5 text-amber-950 dark:text-amber-100 sm:items-center sm:px-5">
+        <div className="mb-6 flex items-start gap-3 rounded-2xl border border-amber-500/30 bg-amber-500/10 px-4 py-3.5 text-amber-950 dark:text-amber-100 sm:items-center sm:px-5">
           <Sparkles
             className="mt-0.5 h-5 w-5 shrink-0 text-amber-600 dark:text-amber-400 sm:mt-0"
             aria-hidden
@@ -391,270 +431,327 @@ const Dashboard = () => {
         </div>
       ) : null}
 
-      {visiblePosts.length > 0 ? (
-        <div className="mx-auto w-full max-w-2xl space-y-4">
-          {visiblePosts.map((post) => {
-            const creatorName = post.creator.display_name ?? post.creator.username;
-            const initials =
-              post.creator.initials ||
-              creatorName
-                .split(/\s+/)
-                .map((w) => w[0])
-                .join('')
-                .slice(0, 2)
-                .toUpperCase();
-            const saved = savedIds.has(post.id);
-            const liked = likedDemo.has(post.id);
-            const likeCount = (post.likes ?? 0) + (liked ? 1 : 0);
+      <div className="grid grid-cols-1 gap-5 xl:grid-cols-12 xl:gap-6">
+        <div className="min-w-0 xl:col-span-8">
+          {visiblePosts.length > 0 ? (
+            <div className="space-y-4">
+              {visiblePosts.map((post) => {
+                const creatorName = post.creator.display_name ?? post.creator.username;
+                const initials =
+                  post.creator.initials ||
+                  creatorName
+                    .split(/\s+/)
+                    .map((w) => w[0])
+                    .join('')
+                    .slice(0, 2)
+                    .toUpperCase();
+                const saved = savedIds.has(post.id);
+                const liked = likedDemo.has(post.id);
+                const likeCount = (post.likes ?? 0) + (liked ? 1 : 0);
 
-            return (
-              <article
-                key={post.id}
-                className="rounded-2xl border border-border bg-card p-4 shadow-[var(--shadow-card)] sm:p-5"
-              >
-                <div className="flex items-start gap-3">
-                  {post.creator.avatar_url ? (
-                    <img
-                      src={post.creator.avatar_url}
-                      alt=""
-                      className="h-11 w-11 shrink-0 rounded-full object-cover"
-                    />
-                  ) : (
-                    <div
-                      className={cn(
-                        'flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-sm font-bold',
-                        post.creator.initials === '👑'
-                          ? 'bg-amber-100 text-base'
-                          : 'bg-muted text-muted-foreground',
-                      )}
-                      aria-hidden
-                    >
-                      {initials}
-                    </div>
-                  )}
-
-                  <div className="min-w-0 flex-1">
-                    <div className="flex items-start justify-between gap-2">
-                      <div className="flex min-w-0 flex-wrap items-center gap-1.5">
-                        <Link
-                          to={post.isDemo ? '/dashboard/discover' : `/${post.creator.username}`}
-                          className="truncate text-[15px] font-bold text-foreground hover:underline"
-                        >
-                          {creatorName}
-                        </Link>
-                        {post.creator.verified !== false ? (
-                          <BadgeCheck
-                            className="h-4 w-4 shrink-0 text-primary"
-                            aria-label="Verified"
-                          />
-                        ) : null}
-                        <span className="text-xs text-muted-foreground">
-                          {formatDistanceToNowStrict(new Date(post.created_at), {
-                            addSuffix: true,
-                          })}
-                        </span>
-                      </div>
-
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="icon"
-                            className="h-8 w-8 shrink-0 text-muted-foreground"
-                            aria-label="Post options"
-                          >
-                            <MoreHorizontal className="h-4 w-4" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          {!post.isDemo ? (
-                            <DropdownMenuItem onSelect={() => openTracker(post)}>
-                              Tail this pick
-                            </DropdownMenuItem>
-                          ) : null}
-                          <DropdownMenuItem
-                            onSelect={() =>
-                              toast.message('Muted', {
-                                description: 'Mute controls are coming soon.',
-                              })
-                            }
-                          >
-                            Mute creator
-                          </DropdownMenuItem>
-                          <DropdownMenuItem
-                            onSelect={() =>
-                              toast.message('Reported', {
-                                description: 'Thanks — our team will review.',
-                              })
-                            }
-                          >
-                            Report post
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    </div>
-
-                    <h2 className="mt-3 text-base font-extrabold tracking-tight text-foreground sm:text-lg">
-                      {post.title}
-                    </h2>
-                    {post.body ? (
-                      <p className="mt-1.5 text-sm leading-relaxed text-muted-foreground">
-                        {post.body}
-                      </p>
-                    ) : null}
-
-                    {post.picks && post.picks.length > 0 ? (
-                      <div className="mt-3 overflow-hidden rounded-xl border border-border bg-muted/40">
-                        <ul className="divide-y divide-border">
-                          {post.picks.map((row) => {
-                            const visual = sportVisual(row.sport);
-                            return (
-                              <li
-                                key={`${row.event}-${row.pick}`}
-                                className="flex items-center gap-3 px-3 py-2.5 sm:px-4"
-                              >
-                                <span
-                                  className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-background text-base"
-                                  aria-hidden
-                                >
-                                  {visual.emoji}
-                                </span>
-                                <div className="min-w-0 flex-1">
-                                  <p className="truncate text-sm font-semibold text-foreground">
-                                    {row.event}
-                                  </p>
-                                  <p className="truncate text-xs text-muted-foreground sm:hidden">
-                                    {row.pick} · {row.odds} · {row.units}
-                                  </p>
-                                </div>
-                                <p className="hidden shrink-0 text-sm font-semibold text-foreground sm:block">
-                                  {row.pick}
-                                </p>
-                                <p className="hidden shrink-0 font-mono text-sm font-bold tabular-nums text-foreground sm:block">
-                                  {row.odds}
-                                </p>
-                                <p className="hidden shrink-0 text-xs font-semibold text-muted-foreground sm:block">
-                                  {row.units}
-                                </p>
-                              </li>
-                            );
-                          })}
-                        </ul>
-                      </div>
-                    ) : null}
-
-                    {post.footerNote ? (
-                      <p className="mt-3 text-sm leading-relaxed text-muted-foreground">
-                        {post.footerNote}
-                      </p>
-                    ) : null}
-
-                    {post.video ? (
-                      <button
-                        type="button"
-                        className="group relative mt-3 block w-full overflow-hidden rounded-xl border border-border bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                        onClick={() =>
-                          toast.message('Video', {
-                            description: post.isDemo
-                              ? 'Sample preview — video playback is not live.'
-                              : 'Video player opens when media posts ship.',
-                          })
-                        }
-                        aria-label={`Play video (${post.video.duration})`}
-                      >
+                return (
+                  <article
+                    key={post.id}
+                    className="rounded-2xl border border-border bg-card p-5 shadow-[var(--shadow-card)] sm:p-6"
+                  >
+                    <div className="flex items-start gap-3.5 sm:gap-4">
+                      {post.creator.avatar_url ? (
                         <img
-                          src={post.video.thumbnailUrl}
+                          src={post.creator.avatar_url}
                           alt=""
-                          className="aspect-video w-full object-cover"
+                          className="h-12 w-12 shrink-0 rounded-full object-cover"
                         />
-                        <span className="absolute inset-0 flex items-center justify-center bg-black/25 transition-colors group-hover:bg-black/35">
-                          <span className="flex h-14 w-14 items-center justify-center rounded-full bg-white/95 text-foreground shadow-lg">
-                            <Play className="h-6 w-6 fill-current pl-0.5" aria-hidden />
-                          </span>
-                        </span>
-                        <span className="absolute bottom-2.5 right-2.5 rounded-md bg-black/75 px-1.5 py-0.5 font-mono text-[11px] font-semibold tabular-nums text-white">
-                          {post.video.duration}
-                        </span>
-                      </button>
-                    ) : null}
-
-                    <div className="mt-4 flex items-center justify-between gap-3 border-t border-border pt-3">
-                      <div className="flex items-center gap-0.5">
-                        <button
-                          type="button"
+                      ) : (
+                        <div
                           className={cn(
-                            'inline-flex h-9 items-center gap-1.5 rounded-lg px-2.5 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground',
-                            liked && 'text-rose-500',
+                            'flex h-12 w-12 shrink-0 items-center justify-center rounded-full text-sm font-bold',
+                            post.creator.initials === '👑'
+                              ? 'bg-amber-100 text-base dark:bg-amber-500/20'
+                              : 'bg-muted text-muted-foreground',
                           )}
-                          onClick={() => toggleLike(post.id)}
-                          aria-label={liked ? 'Unlike' : 'Like'}
-                          aria-pressed={liked}
+                          aria-hidden
                         >
-                          <Heart className={cn('h-4 w-4', liked && 'fill-current')} />
-                          <span className="tabular-nums text-xs font-semibold">{likeCount}</span>
-                        </button>
-                        <button
-                          type="button"
-                          className="inline-flex h-9 items-center gap-1.5 rounded-lg px-2.5 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
-                          onClick={() =>
-                            toast.message('Comments', {
-                              description: 'Open Messages to chat with the creator.',
-                            })
-                          }
-                          aria-label="Comments"
-                        >
-                          <MessageCircle className="h-4 w-4" />
-                          <span className="tabular-nums text-xs font-semibold">
-                            {post.comments ?? 0}
-                          </span>
-                        </button>
+                          {initials}
+                        </div>
+                      )}
+
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-start justify-between gap-2">
+                          <div className="flex min-w-0 flex-wrap items-center gap-1.5">
+                            <Link
+                              to={post.isDemo ? '/dashboard/discover' : `/${post.creator.username}`}
+                              className="truncate text-[15px] font-bold text-foreground hover:underline"
+                            >
+                              {creatorName}
+                            </Link>
+                            {post.creator.verified !== false ? (
+                              <BadgeCheck
+                                className="h-4 w-4 shrink-0 text-primary"
+                                aria-label="Verified"
+                              />
+                            ) : null}
+                            <span className="text-xs font-medium text-muted-foreground">
+                              {formatDistanceToNowStrict(new Date(post.created_at), {
+                                addSuffix: true,
+                              })}
+                            </span>
+                          </div>
+
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="icon"
+                                className="h-9 w-9 shrink-0 text-muted-foreground"
+                                aria-label="Post options"
+                              >
+                                <MoreHorizontal className="h-4 w-4" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              {!post.isDemo ? (
+                                <DropdownMenuItem onSelect={() => openTracker(post)}>
+                                  Tail this pick
+                                </DropdownMenuItem>
+                              ) : null}
+                              <DropdownMenuItem
+                                onSelect={() =>
+                                  toast.message('Muted', {
+                                    description: 'Mute controls are coming soon.',
+                                  })
+                                }
+                              >
+                                Mute creator
+                              </DropdownMenuItem>
+                              <DropdownMenuItem
+                                onSelect={() =>
+                                  toast.message('Reported', {
+                                    description: 'Thanks — our team will review.',
+                                  })
+                                }
+                              >
+                                Report post
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </div>
+
+                        <h2 className="type-card-title mt-3 text-foreground">
+                          {post.title}
+                        </h2>
+                        {post.body ? (
+                          <p className="mt-2 text-sm leading-relaxed text-muted-foreground sm:text-[15px]">
+                            {post.body}
+                          </p>
+                        ) : null}
+
+                        {post.picks && post.picks.length > 0 ? (
+                          <div className="mt-4 overflow-hidden rounded-xl border border-border bg-muted/40">
+                            <ul className="divide-y divide-border">
+                              {post.picks.map((row) => {
+                                const visual = sportVisual(row.sport);
+                                return (
+                                  <li
+                                    key={`${row.event}-${row.pick}`}
+                                    className="flex items-center gap-3 px-3.5 py-3 sm:gap-4 sm:px-4"
+                                  >
+                                    <span
+                                      className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-background text-base"
+                                      aria-hidden
+                                    >
+                                      {visual.emoji}
+                                    </span>
+                                    <div className="min-w-0 flex-1">
+                                      <p className="truncate text-sm font-semibold text-foreground">
+                                        {row.event}
+                                      </p>
+                                      <p className="truncate text-xs text-muted-foreground lg:hidden">
+                                        {row.pick} · {row.odds} · {row.units}
+                                      </p>
+                                    </div>
+                                    <p className="hidden shrink-0 text-sm font-semibold text-foreground lg:block">
+                                      {row.pick}
+                                    </p>
+                                    <p className="hidden shrink-0 font-mono text-sm font-bold tabular-nums text-foreground lg:block">
+                                      {row.odds}
+                                    </p>
+                                    <p className="hidden shrink-0 text-xs font-semibold text-muted-foreground lg:block">
+                                      {row.units}
+                                    </p>
+                                  </li>
+                                );
+                              })}
+                            </ul>
+                          </div>
+                        ) : null}
+
+                        {post.footerNote ? (
+                          <p className="mt-3 text-sm leading-relaxed text-muted-foreground">
+                            {post.footerNote}
+                          </p>
+                        ) : null}
+
+                        {post.video ? (
+                          <button
+                            type="button"
+                            className="group relative mt-4 block w-full overflow-hidden rounded-xl border border-border bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                            onClick={() =>
+                              toast.message('Video', {
+                                description: post.isDemo
+                                  ? 'Sample preview — video playback is not live.'
+                                  : 'Video player opens when media posts ship.',
+                              })
+                            }
+                            aria-label={`Play video (${post.video.duration})`}
+                          >
+                            <img
+                              src={post.video.thumbnailUrl}
+                              alt=""
+                              className="aspect-video w-full object-cover"
+                            />
+                            <span className="absolute inset-0 flex items-center justify-center bg-black/25 transition-colors group-hover:bg-black/35">
+                              <span className="flex h-14 w-14 items-center justify-center rounded-full bg-white/95 text-foreground shadow-lg">
+                                <Play className="h-6 w-6 fill-current pl-0.5" aria-hidden />
+                              </span>
+                            </span>
+                            <span className="absolute bottom-2.5 right-2.5 rounded-md bg-black/75 px-1.5 py-0.5 font-mono text-[11px] font-semibold tabular-nums text-white">
+                              {post.video.duration}
+                            </span>
+                          </button>
+                        ) : null}
+
+                        <div className="mt-4 flex items-center justify-between gap-3 border-t border-border pt-3.5">
+                          <div className="flex items-center gap-0.5">
+                            <button
+                              type="button"
+                              className={cn(
+                                'inline-flex h-9 items-center gap-1.5 rounded-lg px-2.5 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground',
+                                liked && 'text-rose-500',
+                              )}
+                              onClick={() => toggleLike(post.id)}
+                              aria-label={liked ? 'Unlike' : 'Like'}
+                              aria-pressed={liked}
+                            >
+                              <Heart className={cn('h-4 w-4', liked && 'fill-current')} />
+                              <span className="tabular-nums text-xs font-semibold">{likeCount}</span>
+                            </button>
+                            <button
+                              type="button"
+                              className="inline-flex h-9 items-center gap-1.5 rounded-lg px-2.5 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+                              onClick={() =>
+                                toast.message('Comments', {
+                                  description: 'Open Messages to chat with the creator.',
+                                })
+                              }
+                              aria-label="Comments"
+                            >
+                              <MessageCircle className="h-4 w-4" />
+                              <span className="tabular-nums text-xs font-semibold">
+                                {post.comments ?? 0}
+                              </span>
+                            </button>
+                          </div>
+
+                          <button
+                            type="button"
+                            className={cn(
+                              'inline-flex h-9 items-center gap-1.5 rounded-lg px-2.5 text-sm font-semibold text-muted-foreground transition-colors hover:bg-muted hover:text-foreground',
+                              saved && 'text-primary',
+                            )}
+                            onClick={() => void toggleSave(post.id)}
+                            aria-label={saved ? 'Unsave' : 'Save'}
+                            aria-pressed={saved}
+                          >
+                            <Bookmark className={cn('h-4 w-4', saved && 'fill-current')} />
+                            Save
+                          </button>
+                        </div>
                       </div>
-
-                      <button
-                        type="button"
-                        className={cn(
-                          'inline-flex h-9 items-center gap-1.5 rounded-lg px-2.5 text-sm font-semibold text-muted-foreground transition-colors hover:bg-muted hover:text-foreground',
-                          saved && 'text-primary',
-                        )}
-                        onClick={() => void toggleSave(post.id)}
-                        aria-label={saved ? 'Unsave' : 'Save'}
-                        aria-pressed={saved}
-                      >
-                        <Bookmark className={cn('h-4 w-4', saved && 'fill-current')} />
-                        Save
-                      </button>
                     </div>
-                  </div>
-                </div>
-              </article>
-            );
-          })}
+                  </article>
+                );
+              })}
 
-          {posts.length > visibleCount ? (
-            <div className="pt-2 text-center">
-              <Button
-                type="button"
-                variant="outline"
-                className="min-h-11 rounded-xl"
-                onClick={() => setVisibleCount((v) => v + 10)}
-              >
-                Show more
+              {posts.length > visibleCount ? (
+                <div className="pt-2 text-center">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="min-h-11 rounded-xl px-6"
+                    onClick={() => setVisibleCount((v) => v + 10)}
+                  >
+                    Show more
+                  </Button>
+                </div>
+              ) : null}
+            </div>
+          ) : (
+            <div className="rounded-2xl border border-border bg-card px-8 py-14 text-center shadow-[var(--shadow-card)] sm:px-12">
+              <h3 className="type-section-title text-foreground">Nothing in your feed yet</h3>
+              <p className="mx-auto mt-2 max-w-md text-sm font-medium text-muted-foreground">
+                Subscribe to creators to see their latest picks and posts here.
+              </p>
+              <Button asChild className="mt-6 h-11 rounded-xl px-6">
+                <Link to="/dashboard/discover">Open Discover</Link>
               </Button>
             </div>
-          ) : null}
+          )}
         </div>
-      ) : (
-        <div className="mx-auto max-w-2xl rounded-2xl border border-border bg-card p-10 text-center shadow-[var(--shadow-card)]">
-          <h3 className="mb-2 text-base font-semibold text-foreground">Nothing in your feed yet</h3>
-          <p className="mx-auto mb-5 max-w-sm text-sm text-muted-foreground">
-            Subscribe to creators to see their latest picks and posts here.
-          </p>
-          <Button asChild className="min-h-11 rounded-xl">
-            <Link to="/dashboard/discover">Open Discover</Link>
-          </Button>
-        </div>
-      )}
+
+        <aside className="min-w-0 space-y-4 xl:col-span-4 xl:sticky xl:top-[calc(var(--topbar-height)+1.25rem)] xl:self-start">
+          <div className="rounded-2xl border border-border bg-card p-5 shadow-[var(--shadow-card)] sm:p-6">
+            <p className="type-card-title text-foreground">Find creators worth following</p>
+            <p className="mt-2 text-sm font-medium leading-relaxed text-muted-foreground">
+              Discover verified voices and unlock premium content in one place.
+            </p>
+            <Button asChild className="mt-4 h-11 w-full font-semibold">
+              <Link to="/dashboard/discover">Browse Discover</Link>
+            </Button>
+          </div>
+
+          <div className="rounded-2xl border border-border bg-card p-5 shadow-[var(--shadow-card)] sm:p-6">
+            <p className="text-caption font-bold uppercase tracking-[0.12em] text-muted-foreground">
+              Shortcuts
+            </p>
+            <ul className="mt-3 space-y-1">
+              <li>
+                <Link
+                  to="/dashboard/subscriptions-billing"
+                  className="flex items-center gap-3 rounded-[var(--radius-md)] px-3 py-2.5 text-sm font-semibold text-foreground transition-colors hover:bg-muted/70"
+                >
+                  <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary/10 text-primary">
+                    <UserPlus className="h-4 w-4" aria-hidden />
+                  </span>
+                  My Creators
+                </Link>
+              </li>
+              <li>
+                <Link
+                  to="/dashboard/results"
+                  className="flex items-center gap-3 rounded-[var(--radius-md)] px-3 py-2.5 text-sm font-semibold text-foreground transition-colors hover:bg-muted/70"
+                >
+                  <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
+                    <Target className="h-4 w-4" aria-hidden />
+                  </span>
+                  My Bet Tracker
+                </Link>
+              </li>
+              <li>
+                <Link
+                  to="/dashboard/saved"
+                  className="flex items-center gap-3 rounded-[var(--radius-md)] px-3 py-2.5 text-sm font-semibold text-foreground transition-colors hover:bg-muted/70"
+                >
+                  <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-sky-500/10 text-sky-600 dark:text-sky-400">
+                    <Bookmark className="h-4 w-4" aria-hidden />
+                  </span>
+                  Saved picks
+                </Link>
+              </li>
+            </ul>
+          </div>
+        </aside>
+      </div>
 
       <Dialog open={trackOpen} onOpenChange={setTrackOpen}>
         <DialogContent className="sm:max-w-md">

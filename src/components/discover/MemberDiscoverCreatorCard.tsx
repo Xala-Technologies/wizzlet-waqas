@@ -58,8 +58,8 @@ export function MemberDiscoverCreatorCard({
 
   return (
     <li className={cn('list-none h-full', className)}>
-      <article className="flex h-full flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm transition-shadow hover:shadow-md">
-        <div className="relative aspect-[16/9] shrink-0 overflow-hidden bg-slate-800">
+      <article className="flex h-full flex-col overflow-hidden rounded-2xl border border-border bg-card shadow-[var(--shadow-card)] transition-shadow hover:shadow-md">
+        <div className="relative aspect-[16/9] shrink-0 overflow-hidden bg-muted">
           {bannerUrl ? (
             <img src={bannerUrl} alt="" className="h-full w-full object-cover" />
           ) : (
@@ -73,34 +73,34 @@ export function MemberDiscoverCreatorCard({
               <span className="text-5xl drop-shadow-lg">{bannerEmoji}</span>
             </div>
           )}
-          <span className="absolute left-3 top-3 rounded-md border border-slate-200 bg-white px-2 py-1 text-xs font-bold text-slate-900 shadow-sm">
+          <span className="absolute left-3 top-3 rounded-md border border-border bg-card px-2 py-1 text-xs font-bold text-foreground shadow-sm">
             #{rank}
           </span>
         </div>
 
-        <div className="flex flex-1 flex-col px-4 pb-4 pt-0">
-          <div className="-mt-7 mb-3 flex items-end gap-3">
+        <div className="relative flex flex-1 flex-col px-4 pb-4 pt-0">
+          <div className="absolute left-4 top-0 z-10 -translate-y-1/2">
             {avatarUrl ? (
               <img
                 src={avatarUrl}
                 alt=""
-                className="h-14 w-14 rounded-full border-4 border-white object-cover shadow-sm"
+                className="h-14 w-14 rounded-full border-4 border-card object-cover shadow-sm"
               />
             ) : (
-              <div className="flex h-14 w-14 items-center justify-center rounded-full border-4 border-white bg-slate-900 text-sm font-bold text-white shadow-sm">
+              <div className="flex h-14 w-14 items-center justify-center rounded-full border-4 border-card bg-foreground text-sm font-bold text-background shadow-sm">
                 {initials}
               </div>
             )}
           </div>
 
-          <div className="min-w-0">
+          <div className="min-w-0 pt-8">
             <div className="flex items-center gap-1.5">
-              <h3 className="truncate text-[15px] font-bold text-slate-900">{displayName}</h3>
+              <h3 className="truncate text-[15px] font-bold text-foreground">{displayName}</h3>
               {verified ? (
                 <BadgeCheck className="h-4 w-4 shrink-0 text-primary" aria-label="Verified" />
               ) : null}
             </div>
-            <p className="mt-1 line-clamp-2 text-sm leading-snug text-slate-500">{bio}</p>
+            <p className="mt-1 line-clamp-2 text-sm leading-snug text-muted-foreground">{bio}</p>
           </div>
 
           {sports.length > 0 ? (
@@ -108,7 +108,7 @@ export function MemberDiscoverCreatorCard({
               {sports.slice(0, 3).map((sport) => (
                 <span
                   key={sport}
-                  className="rounded-md bg-slate-100 px-2 py-0.5 text-[11px] font-semibold text-slate-600"
+                  className="rounded-md bg-muted px-2 py-0.5 text-[11px] font-semibold text-muted-foreground"
                 >
                   {sport}
                 </span>
@@ -116,38 +116,38 @@ export function MemberDiscoverCreatorCard({
             </div>
           ) : null}
 
-          <div className="mt-4 grid grid-cols-3 gap-2 border-t border-slate-100 pt-3">
+          <div className="mt-4 grid grid-cols-3 gap-2 border-t border-border pt-3">
             <div>
-              <p className="text-sm font-extrabold tabular-nums text-slate-900">
+              <p className="text-sm font-extrabold tabular-nums text-foreground">
                 {winRate == null ? '—' : `${winRate}%`}
               </p>
-              <p className="text-[11px] font-medium text-slate-400">Win Rate</p>
+              <p className="text-[11px] font-medium text-muted-foreground">Win Rate</p>
             </div>
             <div>
               <p
                 className={cn(
                   'text-sm font-extrabold tabular-nums',
                   profit30dUnits == null
-                    ? 'text-slate-900'
+                    ? 'text-foreground'
                     : profitPositive
-                      ? 'text-emerald-600'
-                      : 'text-rose-600',
+                      ? 'text-emerald-600 dark:text-emerald-400'
+                      : 'text-rose-600 dark:text-rose-400',
                 )}
               >
                 {profitLabel}
               </p>
-              <p className="text-[11px] font-medium text-slate-400">Profit (30d)</p>
+              <p className="text-[11px] font-medium text-muted-foreground">Profit (30d)</p>
             </div>
             <div>
-              <p className="text-sm font-extrabold tabular-nums text-slate-900">
+              <p className="text-sm font-extrabold tabular-nums text-foreground">
                 {followersLabel ?? '—'}
               </p>
-              <p className="text-[11px] font-medium text-slate-400">Followers</p>
+              <p className="text-[11px] font-medium text-muted-foreground">Followers</p>
             </div>
           </div>
 
-          <div className="mt-4 flex items-center justify-between gap-3 border-t border-slate-100 pt-3">
-            <p className="text-sm font-bold text-slate-900">{price}</p>
+          <div className="mt-4 flex items-center justify-between gap-3 border-t border-border pt-3">
+            <p className="text-sm font-bold text-foreground">{price}</p>
             <Button asChild size="sm" className="h-9 rounded-xl px-3.5 font-semibold">
               <Link to={creatorProfilePath(username)}>View Profile</Link>
             </Button>
@@ -160,13 +160,13 @@ export function MemberDiscoverCreatorCard({
 
 export function MemberDiscoverCreatorCardSkeleton() {
   return (
-    <li className="list-none overflow-hidden rounded-2xl border border-slate-200 bg-white">
-      <div className="aspect-[16/9] animate-pulse bg-slate-200" />
+    <li className="list-none overflow-hidden rounded-2xl border border-border bg-card">
+      <div className="aspect-[16/9] animate-pulse bg-muted" />
       <div className="space-y-3 p-4">
-        <div className="h-4 w-2/3 animate-pulse rounded bg-slate-200" />
-        <div className="h-3 w-full animate-pulse rounded bg-slate-100" />
-        <div className="h-3 w-1/2 animate-pulse rounded bg-slate-100" />
-        <div className="h-10 w-full animate-pulse rounded bg-slate-100" />
+        <div className="h-4 w-2/3 animate-pulse rounded bg-muted" />
+        <div className="h-3 w-full animate-pulse rounded bg-muted/60" />
+        <div className="h-3 w-1/2 animate-pulse rounded bg-muted/60" />
+        <div className="h-10 w-full animate-pulse rounded bg-muted/60" />
       </div>
     </li>
   );

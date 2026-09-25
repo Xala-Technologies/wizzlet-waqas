@@ -82,8 +82,8 @@ const Discover = () => {
   return (
     <div className="flex min-h-screen flex-col bg-background">
       <Seo
-        title="Discover — Creators & Today's Games | Prizelet"
-        description="Browse published Prizelet creators and today’s matchups in one place."
+        title="Discover — Creators & Today's Games | Sweeph"
+        description="Browse published Sweeph creators and today’s matchups in one place."
       />
       <Navbar />
 

@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { PrizeletLogo } from '@/components/PrizeletLogo';
+import { SweephLogo } from '@/components/SweephLogo';
 import { useAuth } from '@/contexts/AuthContext';
 
 const explore = [
@@ -28,7 +28,7 @@ export function Footer() {
       <div className="container relative py-14 md:py-16">
         <div className="grid gap-12 md:grid-cols-[minmax(0,1.4fr)_repeat(2,minmax(0,0.8fr))] md:gap-10">
           <div className="max-w-sm">
-            <PrizeletLogo size="md" />
+            <SweephLogo size="md" />
             <p className="mt-4 text-ui leading-relaxed text-muted-foreground">
               Private creator infrastructure for people who treat their work like a business —
               subscriptions, gated content, and payouts in one place.
@@ -76,7 +76,7 @@ export function Footer() {
         </div>
 
         <div className="mt-12 flex flex-col gap-3 border-t border-border/80 pt-6 sm:flex-row sm:items-center sm:justify-between">
-          <p className="text-support text-muted-foreground">© {new Date().getFullYear()} Prizelet</p>
+          <p className="text-support text-muted-foreground">© {new Date().getFullYear()} Sweeph</p>
           <p className="text-support text-muted-foreground/70">
             Built for serious creators — not everyone.
           </p>

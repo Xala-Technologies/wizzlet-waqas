@@ -1,13 +1,13 @@
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useQuery } from 'convex/react';
-import { PrizeletLogo } from '@/components/PrizeletLogo';
+import { SweephLogo } from '@/components/SweephLogo';
 import { useAuth } from '@/contexts/AuthContext';
-import { Button } from '@/components/ui/button';
 import {
   Collapsible,
   CollapsibleContent,
   CollapsibleTrigger,
 } from '@/components/ui/collapsible';
+import { Button } from '@/components/ui/button';
 import { dashboardSidebarAsideClassName } from '@/lib/dashboardSidebar';
 import {
   Home,
@@ -24,19 +24,27 @@ import {
   CreditCard,
   FileWarning,
   Settings,
-  LogOut,
   ChevronDown,
   ChevronRight,
   Brain,
   HelpCircle,
   Ellipsis,
   Percent,
+  LogOut,
 } from 'lucide-react';
 import { useState } from 'react';
 import { RoleSwitcher } from './RoleSwitcher';
 import { api } from '@convex/_generated/api';
 import { cn } from '@/lib/utils';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { useDocumentDark } from '@/hooks/useDocumentDark';
+import {
+  SIDEBAR_BADGE_CLASS,
+  sidebarChildDotClass,
+  sidebarChildLinkClass,
+  sidebarFooterGhostClass,
+  sidebarNavIconClass,
+  sidebarNavItemClass,
+} from '@/lib/sidebarNav';
 
 interface NavItem {
   label: string;
@@ -197,52 +205,18 @@ function NavItemLink({
   dark: boolean;
 }) {
   return (
-    <Link
-      to={item.href}
-      className={cn(
-        'group flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-colors',
-        dark
-          ? active
-            ? 'bg-primary text-primary-foreground shadow-sm'
-            : 'text-slate-300 hover:bg-white/5 hover:text-white'
-          : active
-            ? 'bg-primary/10 text-primary font-medium shadow-[inset_2px_0_0_0_hsl(var(--primary))]'
-            : 'text-foreground hover:bg-muted/60',
-      )}
-    >
-      <item.icon
-        className={cn(
-          'h-4 w-4 shrink-0',
-          dark
-            ? active
-              ? 'text-primary-foreground'
-              : 'text-slate-400 group-hover:text-white'
-            : active
-              ? 'text-primary'
-              : 'text-muted-foreground group-hover:text-foreground',
-        )}
-      />
+    <Link to={item.href} className={sidebarNavItemClass(active, dark)}>
+      <item.icon className={sidebarNavIconClass(active, dark)} />
       <span className="flex-1 truncate">{item.label}</span>
-      {item.badge ? (
-        <span
-          className={cn(
-            'flex h-5 min-w-[20px] items-center justify-center rounded-full px-1.5 text-[10px] font-bold',
-            dark
-              ? 'bg-rose-500 text-white'
-              : 'bg-primary px-1 text-caption text-primary-foreground',
-          )}
-        >
-          {item.badge}
-        </span>
-      ) : null}
+      {item.badge ? <span className={SIDEBAR_BADGE_CLASS}>{item.badge}</span> : null}
       {item.chevron && !item.badge ? (
         <ChevronRight
           className={cn(
             'h-3.5 w-3.5 shrink-0',
             dark
               ? active
-                ? 'text-primary-foreground/80'
-                : 'text-slate-500 group-hover:text-slate-300'
+                ? 'text-[#25E4D2]/80'
+                : 'text-[#AFC1CA] group-hover:text-[#F8FAFC]'
               : 'text-muted-foreground',
           )}
           aria-hidden
@@ -252,16 +226,39 @@ function NavItemLink({
   );
 }
 
+function ChildNavLink({
+  href,
+  label,
+  active,
+  dark,
+}: {
+  href: string;
+  label: string;
+  active: boolean;
+  dark: boolean;
+}) {
+  return (
+    <Link to={href} className={sidebarChildLinkClass(active, dark)}>
+      <span className={sidebarChildDotClass(active)} aria-hidden />
+      <span className="truncate">{label}</span>
+    </Link>
+  );
+}
+
 export function CreatorSidebar({ mobile = false }: { mobile?: boolean } = {}) {
-  const { signOut, user } = useAuth();
+  const { user, signOut } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
   const pathname = location.pathname;
   const hash = location.hash;
   const search = location.search;
-  const dark = !mobile;
+  const dark = useDocumentDark();
 
-  const creator = useQuery(api.creators.queries.myCreator, user ? {} : 'skip');
+  const handleSignOut = async () => {
+    navigate('/');
+    await signOut();
+  };
+
   const dmUnread = useQuery(api.messaging.mutations.unreadCountCreator, user ? {} : 'skip');
   const growthUnread = useQuery(
     api.support.mutations.unreadCountCreatorGrowth,
@@ -273,11 +270,6 @@ export function CreatorSidebar({ mobile = false }: { mobile?: boolean } = {}) {
   );
   const moreHasActive = moreItems.some((i) => isActivePath(pathname, i.href));
   const [moreOpen, setMoreOpen] = useState(moreHasActive);
-
-  const handleSignOut = async () => {
-    navigate('/');
-    await signOut();
-  };
 
   const withBadges = (item: NavItem): NavItem => {
     if (item.href === '/creator/messages') {
@@ -295,23 +287,20 @@ export function CreatorSidebar({ mobile = false }: { mobile?: boolean } = {}) {
     return item;
   };
 
-  const displayName =
-    creator?.displayName?.trim() ||
-    (creator?.username ? creator.username : user?.email?.split('@')[0] || 'Creator');
-  const initial = displayName.replace(/^@/, '').charAt(0).toUpperCase() || 'C';
-
   return (
     <aside className={dashboardSidebarAsideClassName(mobile, undefined, dark ? 'dark' : 'light')}>
       {!mobile && (
-        <div className="px-5 pb-4 pt-6">
-          <PrizeletLogo
-            size="md"
+        <div
+          className={cn(
+            'border-b px-5 pb-5 pt-6',
+            dark ? 'border-[#193A47]' : 'border-border',
+          )}
+        >
+          <SweephLogo
+            size="sidebar"
             linkTo="/creator"
-            className="[&>span:last-child]:text-white"
+            variant={dark ? 'dark' : 'light'}
           />
-          <p className="mt-2 text-xs font-medium leading-snug text-slate-400">
-            Turn your content into income.
-          </p>
         </div>
       )}
 
@@ -330,41 +319,18 @@ export function CreatorSidebar({ mobile = false }: { mobile?: boolean } = {}) {
                   <div
                     className={cn(
                       'ml-4 space-y-0.5 border-l pl-2',
-                      dark ? 'border-white/10' : 'border-border',
+                      dark ? 'border-[#193A47]' : 'border-border',
                     )}
                   >
-                    {marketingChildItems.map((child) => {
-                      const childActive = isMarketingChildActive(pathname, child.href);
-                      return (
-                        <Link
-                          key={child.href}
-                          to={child.href}
-                          className={cn(
-                            'flex items-center gap-2 rounded-lg px-2.5 py-2 text-sm font-medium transition-colors',
-                            dark
-                              ? childActive
-                                ? 'text-white'
-                                : 'text-slate-400 hover:bg-white/5 hover:text-white'
-                              : childActive
-                                ? 'text-foreground'
-                                : 'text-muted-foreground hover:bg-muted/60 hover:text-foreground',
-                          )}
-                        >
-                          <span
-                            className={cn(
-                              'h-1.5 w-1.5 shrink-0 rounded-full',
-                              childActive
-                                ? 'bg-sky-400'
-                                : dark
-                                  ? 'bg-transparent'
-                                  : 'bg-transparent',
-                            )}
-                            aria-hidden
-                          />
-                          <span className="truncate">{child.label}</span>
-                        </Link>
-                      );
-                    })}
+                    {marketingChildItems.map((child) => (
+                      <ChildNavLink
+                        key={child.href}
+                        href={child.href}
+                        label={child.label}
+                        active={isMarketingChildActive(pathname, child.href)}
+                        dark={dark}
+                      />
+                    ))}
                   </div>
                 ) : null}
               </div>
@@ -384,37 +350,18 @@ export function CreatorSidebar({ mobile = false }: { mobile?: boolean } = {}) {
                   <div
                     className={cn(
                       'ml-4 space-y-0.5 border-l pl-2',
-                      dark ? 'border-white/10' : 'border-border',
+                      dark ? 'border-[#193A47]' : 'border-border',
                     )}
                   >
-                    {earningsChildItems.map((child) => {
-                      const childActive = isEarningsChildActive(pathname, child.href, hash);
-                      return (
-                        <Link
-                          key={child.href}
-                          to={child.href}
-                          className={cn(
-                            'flex items-center gap-2 rounded-lg px-2.5 py-2 text-sm font-medium transition-colors',
-                            dark
-                              ? childActive
-                                ? 'text-white'
-                                : 'text-slate-400 hover:bg-white/5 hover:text-white'
-                              : childActive
-                                ? 'text-foreground'
-                                : 'text-muted-foreground hover:bg-muted/60 hover:text-foreground',
-                          )}
-                        >
-                          <span
-                            className={cn(
-                              'h-1.5 w-1.5 shrink-0 rounded-full',
-                              childActive ? 'bg-sky-400' : 'bg-transparent',
-                            )}
-                            aria-hidden
-                          />
-                          <span className="truncate">{child.label}</span>
-                        </Link>
-                      );
-                    })}
+                    {earningsChildItems.map((child) => (
+                      <ChildNavLink
+                        key={child.href}
+                        href={child.href}
+                        label={child.label}
+                        active={isEarningsChildActive(pathname, child.href, hash)}
+                        dark={dark}
+                      />
+                    ))}
                   </div>
                 ) : null}
               </div>
@@ -434,37 +381,18 @@ export function CreatorSidebar({ mobile = false }: { mobile?: boolean } = {}) {
                   <div
                     className={cn(
                       'ml-4 space-y-0.5 border-l pl-2',
-                      dark ? 'border-white/10' : 'border-border',
+                      dark ? 'border-[#193A47]' : 'border-border',
                     )}
                   >
-                    {settingsChildItems.map((child) => {
-                      const childActive = isSettingsChildActive(pathname, search, child.href);
-                      return (
-                        <Link
-                          key={child.href}
-                          to={child.href}
-                          className={cn(
-                            'flex items-center gap-2 rounded-lg px-2.5 py-2 text-sm font-medium transition-colors',
-                            dark
-                              ? childActive
-                                ? 'text-white'
-                                : 'text-slate-400 hover:bg-white/5 hover:text-white'
-                              : childActive
-                                ? 'text-foreground'
-                                : 'text-muted-foreground hover:bg-muted/60 hover:text-foreground',
-                          )}
-                        >
-                          <span
-                            className={cn(
-                              'h-1.5 w-1.5 shrink-0 rounded-full',
-                              childActive ? 'bg-sky-400' : 'bg-transparent',
-                            )}
-                            aria-hidden
-                          />
-                          <span className="truncate">{child.label}</span>
-                        </Link>
-                      );
-                    })}
+                    {settingsChildItems.map((child) => (
+                      <ChildNavLink
+                        key={child.href}
+                        href={child.href}
+                        label={child.label}
+                        active={isSettingsChildActive(pathname, search, child.href)}
+                        dark={dark}
+                      />
+                    ))}
                   </div>
                 ) : null}
               </div>
@@ -484,41 +412,24 @@ export function CreatorSidebar({ mobile = false }: { mobile?: boolean } = {}) {
         <Collapsible open={moreOpen} onOpenChange={setMoreOpen}>
           <CollapsibleTrigger
             className={cn(
-              'group mt-2 flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-colors',
-              dark
-                ? moreHasActive
-                  ? 'bg-white/10 text-white'
-                  : 'text-slate-300 hover:bg-white/5 hover:text-white'
-                : moreHasActive
-                  ? 'bg-muted text-foreground'
-                  : 'text-foreground hover:bg-muted/60',
+              sidebarNavItemClass(moreHasActive, dark),
+              'mt-1 w-full',
             )}
           >
-            <Ellipsis
-              className={cn(
-                'h-4 w-4 shrink-0',
-                dark
-                  ? moreHasActive
-                    ? 'text-white'
-                    : 'text-slate-400 group-hover:text-white'
-                  : moreHasActive
-                    ? 'text-foreground'
-                    : 'text-muted-foreground group-hover:text-foreground',
-              )}
-            />
+            <Ellipsis className={sidebarNavIconClass(moreHasActive, dark)} />
             <span className="flex-1 truncate text-left">More</span>
             <ChevronDown
               className={cn(
                 'h-3.5 w-3.5 shrink-0 transition-transform',
                 moreOpen ? 'rotate-0' : '-rotate-90',
-                dark ? 'text-slate-400' : 'text-muted-foreground',
+                dark ? 'text-[#AFC1CA]' : 'text-muted-foreground',
               )}
             />
           </CollapsibleTrigger>
           <CollapsibleContent
             className={cn(
               'mt-1 ml-4 space-y-0.5 border-l pl-2',
-              dark ? 'border-white/10' : 'border-border',
+              dark ? 'border-[#193A47]' : 'border-border',
             )}
           >
             {moreItems.map((item) => (
@@ -536,83 +447,30 @@ export function CreatorSidebar({ mobile = false }: { mobile?: boolean } = {}) {
       <div
         className={cn(
           'shrink-0 space-y-2 px-3 py-4',
-          dark ? 'border-t border-white/10' : 'border-t border-border',
+          dark ? 'border-t border-[#193A47]' : 'border-t border-border',
         )}
       >
-        {!mobile && (
-          <div className="[&_button]:border-white/15 [&_button]:bg-white/5 [&_button]:text-slate-100 [&_button]:hover:bg-white/10 [&_button_.text-muted-foreground]:text-slate-400">
-            <RoleSwitcher />
-          </div>
-        )}
+        {!mobile && <RoleSwitcher tone={dark ? 'dark' : 'light'} />}
 
-        <Button
-          variant="ghost"
-          size="sm"
-          className={cn(
-            'w-full justify-start text-sm',
-            dark
-              ? 'text-slate-300 hover:bg-white/5 hover:text-white'
-              : 'text-muted-foreground hover:text-foreground',
-          )}
-          asChild
-        >
-          <Link to="/support">
-            <HelpCircle className="mr-2 h-3.5 w-3.5" />
-            Help & Support
-          </Link>
-        </Button>
-
-        <div
-          className={cn(
-            'flex items-center gap-3 rounded-xl px-2 py-2',
-            dark ? 'bg-white/5' : 'bg-muted/40',
-          )}
-        >
-          <Avatar className="h-9 w-9 border border-white/10">
-            {creator?.avatarUrl ? <AvatarImage src={creator.avatarUrl} alt="" /> : null}
-            <AvatarFallback
-              className={cn(
-                'text-xs font-bold',
-                dark ? 'bg-primary/30 text-white' : 'bg-primary/15 text-primary',
-              )}
+        {mobile ? (
+          <>
+            <Button variant="ghost" size="sm" className={sidebarFooterGhostClass(dark)} asChild>
+              <Link to="/support">
+                <HelpCircle className="h-4 w-4" />
+                Help & Support
+              </Link>
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              className={sidebarFooterGhostClass(dark)}
+              onClick={() => void handleSignOut()}
             >
-              {initial}
-            </AvatarFallback>
-          </Avatar>
-          <div className="min-w-0 flex-1">
-            <p className={cn('truncate text-sm font-semibold', dark ? 'text-white' : 'text-foreground')}>
-              {displayName}
-            </p>
-            <p className={cn('text-[11px] font-medium', dark ? 'text-slate-400' : 'text-muted-foreground')}>
-              Creator
-            </p>
-          </div>
-          <Link
-            to="/creator/settings"
-            aria-label="Account options"
-            className={cn(
-              'inline-flex h-8 w-8 items-center justify-center rounded-lg',
-              dark ? 'text-slate-400 hover:bg-white/10 hover:text-white' : 'text-muted-foreground hover:bg-muted',
-            )}
-          >
-            <Ellipsis className="h-4 w-4" aria-hidden />
-          </Link>
-        </div>
-
-        <Button
-          variant="ghost"
-          size="sm"
-          className={cn(
-            'w-full justify-start text-sm',
-            dark
-              ? 'text-slate-300 hover:bg-white/5 hover:text-white'
-              : 'text-muted-foreground hover:text-foreground',
-          )}
-          onClick={() => void handleSignOut()}
-        >
-          <LogOut className="mr-2 h-3.5 w-3.5" />
-          Log out
-        </Button>
+              <LogOut className="h-4 w-4" />
+              Log out
+            </Button>
+          </>
+        ) : null}
       </div>
     </aside>
   );

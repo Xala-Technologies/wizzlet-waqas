@@ -2,7 +2,7 @@ import { cn } from '@/lib/utils';
 
 /** Shared solid segmented-control track (matches TabsList). */
 export const segmentedTrackClassName =
-  'inline-flex h-11 min-h-11 flex-wrap items-center gap-1 rounded-lg border border-border bg-card p-1 text-muted-foreground';
+  'inline-flex min-h-11 flex-wrap items-center gap-1 rounded-lg border border-border bg-card p-1 text-muted-foreground';
 
 /** Shared solid segmented-control item (matches TabsTrigger). */
 export function segmentedItemClassName(active: boolean): string {

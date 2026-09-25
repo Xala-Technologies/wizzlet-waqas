@@ -115,7 +115,8 @@ export function MemberMyCreatorRow({
         </div>
 
         <div className="flex shrink-0 items-center gap-2 sm:pl-2">
-          <Button asChild className="min-h-10 rounded-xl px-5 font-semibold">
+          <Button asChild size="sm"
+          className="px-5 font-semibold">
             <Link to={profileHref}>View Content</Link>
           </Button>
           <DropdownMenu>

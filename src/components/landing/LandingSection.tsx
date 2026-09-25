@@ -14,7 +14,7 @@ interface LandingSectionProps {
 const variantClass: Record<LandingSectionVariant, string> = {
   default: 'landing-section',
   band: 'landing-section-band',
-  hero: 'relative min-h-[70vh] md:min-h-[min(92vh,52rem)] flex items-center pt-16 overflow-hidden',
+  hero: 'relative flex items-center overflow-hidden pt-20 pb-10 md:pt-24 md:pb-14 md:min-h-[min(72vh,40rem)]',
 };
 
 /**
