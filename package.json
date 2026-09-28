@@ -20,7 +20,16 @@
     "test:e2e:ui": "playwright test -c playwright.qa.config.ts --ui",
     "env:validate": "tsx scripts/env-validate.ts",
     "release:manifest": "tsx scripts/release-manifest.ts",
-    "release:verify-build": "tsx scripts/release-verify-build.ts"
+    "release:verify-build": "tsx scripts/release-verify-build.ts",
+    "gitnexus:analyze": "node .gitnexus/run.cjs analyze",
+    "gitnexus:status": "gitnexus status",
+    "gitnexus:doctor": "gitnexus doctor",
+    "design-md:sync": "bash scripts/design-md-sync.sh",
+    "impeccable:sync": "bash scripts/impeccable-sync.sh",
+    "impeccable:detect": "npx --yes impeccable@latest detect",
+    "impeccable:update": "bash scripts/impeccable-sync.sh",
+    "taste-skill:sync": "bash scripts/taste-skill-sync.sh",
+    "brag:sync": "bash scripts/brag-sync.sh"
   },
   "dependencies": {
     "@auth/core": "^0.41.1",
