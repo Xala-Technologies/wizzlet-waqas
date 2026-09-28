@@ -28,6 +28,12 @@ dist-ssr
 *.sln
 *.sw?
 
+# GitNexus local knowledge-graph index (regenerate with `npm run gitnexus:analyze`)
+.gitnexus/
+
+# Impeccable local checkout / per-dev config (skill lives in .cursor/skills/impeccable)
+.impeccable/
+
 # Convex / migration
 .migration-checkpoints.json
 supabase/.temp/
