@@ -46,3 +46,6 @@ supabase/.temp/
 /e2e/.auth/
 docs/qa/private/
 .vercel
+
+# /brag launch video output (local renders)
+brag-output/

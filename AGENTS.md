@@ -84,3 +84,15 @@ Anti-slop frontend skills from [tasteskill.dev](https://www.tasteskill.dev/) ([L
 
 Other installs: `minimalist-ui`, `high-end-visual-design`, `industrial-brutalist-ui`, `stitch-design-taste`, `image-to-code`, `gpt-taste`, `full-output-enforcement`, imagegen/brandkit skills.
 <!-- taste-skill:end -->
+
+<!-- brag:start -->
+# /brag (optional)
+
+Launch-video skill from [latent-spaces/brag](https://github.com/latent-spaces/brag). **Not for product UI work.**
+
+- Skills: `.agents/skills/brag`, `.agents/skills/brag-slim` (mirrored under `.cursor/skills/`)
+- Refresh: `npm run brag:sync`
+- Use when asked to make a shareable launch video: `let's /brag` or `/brag-slim`
+- Needs FFmpeg + Hyperframes for full `/brag`; `/brag-slim` is the lean path
+- Output goes to `brag-output/` (gitignored)
+<!-- brag:end -->

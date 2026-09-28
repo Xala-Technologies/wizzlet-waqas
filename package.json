@@ -28,7 +28,8 @@
     "impeccable:sync": "bash scripts/impeccable-sync.sh",
     "impeccable:detect": "npx --yes impeccable@latest detect",
     "impeccable:update": "bash scripts/impeccable-sync.sh",
-    "taste-skill:sync": "bash scripts/taste-skill-sync.sh"
+    "taste-skill:sync": "bash scripts/taste-skill-sync.sh",
+    "brag:sync": "bash scripts/brag-sync.sh"
   },
   "dependencies": {
     "@auth/core": "^0.41.1",
