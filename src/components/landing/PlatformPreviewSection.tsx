@@ -43,7 +43,7 @@ function MiniGraph() {
 
 export function PlatformPreviewSection() {
   return (
-    <LandingSection className="overflow-hidden bg-white dark:bg-background">
+    <LandingSection className="overflow-hidden bg-background">
       <div className="container relative z-10">
         <LandingSectionHeader
           align="center"

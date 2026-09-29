@@ -11,10 +11,10 @@ import {
 import { cn } from '@/lib/utils';
 
 const statusConfig: Record<EventStatus, { label: string; class: string; icon: typeof Zap }> = {
-  featured: { label: 'Featured', class: 'bg-[#E1F2FF] text-[#256DC1] border-[#429FF0]/20', icon: Star },
-  starting_soon: { label: 'Starting Soon', class: 'bg-amber-500/10 text-amber-700 border-amber-500/20', icon: Zap },
-  trending: { label: 'Trending', class: 'bg-rose-500/10 text-rose-700 border-rose-500/20', icon: Flame },
-  live: { label: 'Live', class: 'bg-emerald-500/10 text-emerald-700 border-emerald-500/20', icon: Zap },
+  featured: { label: 'Featured', class: 'bg-[#E1F2FF] text-[#256DC1] border-[#429FF0]/20 dark:bg-primary/15 dark:text-primary dark:border-primary/30', icon: Star },
+  starting_soon: { label: 'Starting Soon', class: 'bg-amber-500/10 text-amber-700 border-amber-500/20 dark:text-amber-400', icon: Zap },
+  trending: { label: 'Trending', class: 'bg-rose-500/10 text-rose-700 border-rose-500/20 dark:text-rose-400', icon: Flame },
+  live: { label: 'Live', class: 'bg-emerald-500/10 text-emerald-700 border-emerald-500/20 dark:text-emerald-400', icon: Zap },
   upcoming: { label: 'Upcoming', class: 'bg-muted text-muted-foreground border-border', icon: Zap },
 };
 
@@ -26,7 +26,7 @@ function EventCard({ event }: { event: SportEvent }) {
     <div className={cn(landingCardClass, 'group relative min-w-[280px] max-w-[320px] p-5')}>
       <div className="mb-4 flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <span className="flex h-8 w-8 items-center justify-center rounded-full bg-[#E1F2FF] text-sm">
+          <span className="flex h-8 w-8 items-center justify-center rounded-full bg-[#E1F2FF] text-sm dark:bg-primary/15">
             {sportIcon}
           </span>
           <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
@@ -50,7 +50,7 @@ function EventCard({ event }: { event: SportEvent }) {
         <div className="flex items-center justify-between gap-2">
           <span className="flex-1 truncate text-sm font-bold text-foreground">{event.homeTeam}</span>
           {event.homeOdds ? (
-            <span className="rounded-full bg-[#E1F2FF] px-2 py-0.5 font-mono text-xs font-semibold text-[#256DC1]">
+            <span className="rounded-full bg-[#E1F2FF] px-2 py-0.5 font-mono text-xs font-semibold text-[#256DC1] dark:bg-primary/15 dark:text-primary">
               {event.homeOdds.toFixed(2)}
             </span>
           ) : null}
@@ -66,7 +66,7 @@ function EventCard({ event }: { event: SportEvent }) {
         <div className="flex items-center justify-between gap-2">
           <span className="flex-1 truncate text-sm font-bold text-foreground">{event.awayTeam}</span>
           {event.awayOdds ? (
-            <span className="rounded-full bg-[#E1F2FF] px-2 py-0.5 font-mono text-xs font-semibold text-[#256DC1]">
+            <span className="rounded-full bg-[#E1F2FF] px-2 py-0.5 font-mono text-xs font-semibold text-[#256DC1] dark:bg-primary/15 dark:text-primary">
               {event.awayOdds.toFixed(2)}
             </span>
           ) : null}
@@ -90,7 +90,7 @@ export function TodaysEventsSection() {
   );
 
   return (
-    <LandingSection className="overflow-hidden bg-white dark:bg-background">
+    <LandingSection className="overflow-hidden bg-background">
       <div className="container relative">
         <LandingSectionHeader
           eyebrow="Live today"

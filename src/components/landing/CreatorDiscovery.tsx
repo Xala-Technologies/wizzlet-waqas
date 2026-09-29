@@ -101,7 +101,7 @@ export function CreatorDiscovery() {
   return (
     <LandingSection
       id="creators"
-      className="relative overflow-hidden border-t border-border/60 bg-white dark:bg-background"
+      className="relative overflow-hidden border-t border-border/60 bg-background"
     >
       <div className="container relative z-10">
         {/* Split header — marketplace, not centered social-proof */}
@@ -136,7 +136,7 @@ export function CreatorDiscovery() {
         {/* Slim filter rail — edge-to-edge feel, no glass “card” panel */}
         <div className="mb-8 flex flex-col gap-4 border-y border-border/70 py-4 sm:flex-row sm:items-center sm:gap-6">
           <form
-            className="flex h-11 w-full max-w-sm shrink-0 items-center gap-2 rounded-full border border-border bg-[#F7FAFD] pl-4 pr-3 dark:bg-muted/40"
+            className="flex h-11 w-full max-w-sm shrink-0 items-center gap-2 rounded-full border border-border bg-muted/50 pl-4 pr-3"
             onSubmit={(e) => e.preventDefault()}
             role="search"
           >

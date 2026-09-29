@@ -58,7 +58,14 @@ export function LandingSectionHeader({
 
 /** Soft white card shell used across home sections. */
 export const landingCardClass =
-  'rounded-3xl border border-border bg-white shadow-[0_8px_28px_rgba(8,24,47,0.06)] transition-[border-color,box-shadow,transform] duration-200 hover:-translate-y-0.5 hover:border-[#429FF0]/25 hover:shadow-[0_16px_40px_rgba(8,24,47,0.1)] dark:bg-card';
+  'rounded-3xl border border-border bg-card text-card-foreground shadow-[0_8px_28px_rgba(8,24,47,0.06)] dark:shadow-[0_8px_28px_rgba(0,0,0,0.35)] transition-[border-color,box-shadow,transform] duration-200 hover:-translate-y-0.5 hover:border-[#429FF0]/25 hover:shadow-[0_16px_40px_rgba(8,24,47,0.1)] dark:hover:shadow-[0_16px_40px_rgba(0,0,0,0.45)]';
 
 export const landingIconChipClass =
-  'flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-[#E1F2FF] text-[#429FF0]';
+  'flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-[#E1F2FF] text-[#429FF0] dark:bg-primary/15 dark:text-primary';
+
+/** Page / band surfaces for marketing sections */
+export const landingPageClass = 'bg-background';
+export const landingBandClass = 'bg-[#F4FAFF] dark:bg-secondary/50';
+export const landingInkClass = 'text-foreground';
+export const landingSoftClass = 'bg-muted/50';
+export const landingChipBorderClass = 'border-border';

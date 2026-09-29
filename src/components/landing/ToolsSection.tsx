@@ -160,22 +160,22 @@ function SystemLoopDiagram() {
   const uid = useId().replace(/:/g, '');
 
   return (
-    <div className="relative overflow-hidden rounded-[1.75rem] border border-white/80 bg-white p-6 shadow-[0_20px_50px_rgba(8,24,47,0.08)] sm:p-8">
+    <div className="relative overflow-hidden rounded-[1.75rem] border border-border bg-card p-6 shadow-[0_20px_50px_rgba(8,24,47,0.08)] dark:shadow-[0_20px_50px_rgba(0,0,0,0.4)] sm:p-8">
       <div
-        className="pointer-events-none absolute -right-16 -top-20 h-56 w-56 rounded-full bg-[#E1F2FF]/90 blur-3xl"
+        className="pointer-events-none absolute -right-16 -top-20 h-56 w-56 rounded-full bg-[#E1F2FF]/90 blur-3xl dark:bg-primary/15"
         aria-hidden
       />
       <div
-        className="pointer-events-none absolute -bottom-20 -left-10 h-48 w-48 rounded-full bg-[#62E2EC]/20 blur-3xl"
+        className="pointer-events-none absolute -bottom-20 -left-10 h-48 w-48 rounded-full bg-[#62E2EC]/20 blur-3xl dark:bg-primary/10"
         aria-hidden
       />
 
       <div className="relative mb-6 flex items-start justify-between gap-4">
         <div>
-          <p className="text-[11px] font-bold uppercase tracking-[0.28em] text-[#429FF0]">
+          <p className="text-[11px] font-bold uppercase tracking-[0.28em] text-[#429FF0] dark:text-primary">
             System loop
           </p>
-          <h3 className="mt-2 text-xl font-extrabold tracking-tight text-[#08182F] sm:text-2xl">
+          <h3 className="mt-2 text-xl font-extrabold tracking-tight text-foreground sm:text-2xl">
             How Sweeph compounds
           </h3>
           <p className="mt-2 max-w-sm text-sm leading-relaxed text-muted-foreground">
@@ -242,10 +242,10 @@ function SystemLoopDiagram() {
       <ol className="relative space-y-3 md:hidden">
         {FLOW.map((step, i) => (
           <li key={step.id} className="relative flex items-center gap-3">
-            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border-2 border-[#429FF0] bg-white text-sm font-bold text-[#429FF0]">
+            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border-2 border-[#429FF0] bg-card text-sm font-bold text-[#429FF0] dark:border-primary dark:text-primary">
               {i + 1}
             </span>
-            <div className="flex-1 rounded-2xl border border-border bg-[#F7FAFD] px-4 py-3 dark:bg-muted/30">
+            <div className="flex-1 rounded-2xl border border-border bg-muted/50 px-4 py-3">
               <p className="text-sm font-bold text-foreground">{step.label}</p>
               <p className="text-xs text-muted-foreground">{step.detail}</p>
             </div>
@@ -261,9 +261,9 @@ function SystemLoopDiagram() {
 
 export function ToolsSection() {
   return (
-    <LandingSection className="relative overflow-hidden bg-[#F4FAFF] dark:bg-background">
+    <LandingSection className="relative overflow-hidden bg-[#F4FAFF] dark:bg-secondary/50">
       <div
-        className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_20%_0%,rgba(66,159,240,0.14),transparent_50%),radial-gradient(ellipse_at_90%_80%,rgba(98,226,236,0.1),transparent_45%)]"
+        className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_20%_0%,rgba(66,159,240,0.14),transparent_50%),radial-gradient(ellipse_at_90%_80%,rgba(98,226,236,0.1),transparent_45%)] dark:bg-[radial-gradient(ellipse_at_20%_0%,rgba(101,184,247,0.12),transparent_50%),radial-gradient(ellipse_at_90%_80%,rgba(98,226,236,0.06),transparent_45%)]"
         aria-hidden
       />
 
@@ -293,16 +293,16 @@ export function ToolsSection() {
             <article
               key={f.title}
               className={cn(
-                'group flex flex-col rounded-3xl border border-white/80 bg-white/95 p-5 shadow-[0_10px_32px_rgba(8,24,47,0.06)]',
+                'group flex flex-col rounded-3xl border border-border bg-card p-5 shadow-[0_10px_32px_rgba(8,24,47,0.06)] dark:shadow-[0_10px_32px_rgba(0,0,0,0.35)]',
                 'transition-[transform,box-shadow,border-color] duration-200',
                 'hover:-translate-y-0.5 hover:border-[#429FF0]/30 hover:shadow-[0_16px_40px_rgba(8,24,47,0.1)]',
               )}
             >
-              <div className="mb-4 rounded-2xl bg-[#F4FAFF] px-3 py-3 dark:bg-muted/20">
+              <div className="mb-4 rounded-2xl bg-[#F4FAFF] px-3 py-3 dark:bg-muted/30">
                 <MiniDiagram kind={f.diagram} />
               </div>
               <div className="mb-3 flex items-center gap-3">
-                <span className="flex h-9 w-9 items-center justify-center rounded-full bg-[#E1F2FF] text-[#429FF0]">
+                <span className="flex h-9 w-9 items-center justify-center rounded-full bg-[#E1F2FF] text-[#429FF0] dark:bg-primary/15 dark:text-primary">
                   <f.icon className="h-4 w-4" aria-hidden />
                 </span>
                 <h3 className="text-base font-bold tracking-tight text-foreground">{f.title}</h3>
