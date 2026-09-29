@@ -7,7 +7,7 @@ import { LandingSectionHeader } from '@/components/landing/LandingSectionHeader'
 function FloatingCard({ children, className }: { children: React.ReactNode; className: string }) {
   return (
     <div
-      className={`absolute rounded-2xl border border-white/90 bg-white p-3 shadow-[0_12px_36px_rgba(8,24,47,0.1)] ${className}`}
+      className={`absolute rounded-2xl border border-border bg-card p-3 shadow-[0_12px_36px_rgba(8,24,47,0.1)] dark:shadow-[0_12px_36px_rgba(0,0,0,0.4)] ${className}`}
     >
       {children}
     </div>
@@ -18,7 +18,7 @@ export function CommandCenterSection() {
   return (
     <LandingSection
       variant="band"
-      className="overflow-hidden bg-[#F4FAFF] dark:bg-background"
+      className="overflow-hidden bg-[#F4FAFF] dark:bg-secondary/50"
     >
       <div className="container relative z-10">
         <div className="hidden lg:block">

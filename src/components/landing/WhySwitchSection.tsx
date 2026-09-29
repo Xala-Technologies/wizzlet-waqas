@@ -87,10 +87,10 @@ function ReasonVisual({ kind }: { kind: 'revenue' | 'focus' | 'shield' }) {
 
 export function WhySwitchSection() {
   return (
-    <LandingSection className="relative overflow-hidden bg-white dark:bg-background">
+    <LandingSection className="relative overflow-hidden bg-background">
       {/* Soft diagonal wash — different energy from Tools / Testimonials */}
       <div
-        className="pointer-events-none absolute inset-0 bg-[linear-gradient(135deg,#ffffff_0%,#F4FAFF_45%,#E1F2FF_100%)] opacity-80 dark:opacity-20"
+        className="pointer-events-none absolute inset-0 bg-[linear-gradient(135deg,hsl(var(--background))_0%,#F4FAFF_45%,#E1F2FF_100%)] opacity-80 dark:bg-[linear-gradient(135deg,hsl(var(--background))_0%,hsl(var(--secondary))_50%,hsl(var(--muted))_100%)] dark:opacity-100"
         aria-hidden
       />
       <div
@@ -100,7 +100,7 @@ export function WhySwitchSection() {
 
       <div className="container relative z-10">
         <div className="mb-12 max-w-2xl">
-          <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-[#429FF0]/25 bg-white px-3.5 py-1.5 shadow-sm">
+          <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-[#429FF0]/25 bg-card px-3.5 py-1.5 shadow-sm">
             <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-[#429FF0]" />
             <span className="text-[11px] font-bold uppercase tracking-[0.28em] text-[#429FF0]">
               Invite-only
@@ -116,9 +116,9 @@ export function WhySwitchSection() {
 
         <div className="mx-auto grid max-w-6xl gap-6 lg:grid-cols-[minmax(0,0.85fr)_minmax(0,1.15fr)] lg:gap-8">
           {/* Before — light, readable “leave behind” panel */}
-          <aside className="relative flex flex-col overflow-hidden rounded-[1.75rem] border border-border bg-white p-7 shadow-[0_12px_36px_rgba(8,24,47,0.06)] sm:p-8">
+          <aside className="relative flex flex-col overflow-hidden rounded-[1.75rem] border border-border bg-card p-7 shadow-[0_12px_36px_rgba(8,24,47,0.06)] dark:shadow-[0_12px_36px_rgba(0,0,0,0.35)] sm:p-8">
             <div className="mb-6 flex items-center gap-3">
-              <span className="flex h-10 w-10 items-center justify-center rounded-full bg-rose-50 text-rose-600">
+              <span className="flex h-10 w-10 items-center justify-center rounded-full bg-rose-50 text-rose-600 dark:bg-rose-500/15 dark:text-rose-400">
                 <X className="h-5 w-5" strokeWidth={2.5} aria-hidden />
               </span>
               <div>
@@ -135,9 +135,9 @@ export function WhySwitchSection() {
               {BEFORE.map((item) => (
                 <li
                   key={item}
-                  className="flex items-start gap-3 rounded-2xl border border-border/80 bg-[#F7FAFD] px-4 py-3.5 dark:bg-muted/30"
+                  className="flex items-start gap-3 rounded-2xl border border-border/80 bg-[#F7FAFD] px-4 py-3.5 dark:bg-muted/40"
                 >
-                  <span className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-rose-100 text-rose-600">
+                  <span className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-rose-100 text-rose-600 dark:bg-rose-500/20 dark:text-rose-400">
                     <X className="h-3.5 w-3.5" strokeWidth={2.5} aria-hidden />
                   </span>
                   <span className="text-sm font-semibold leading-relaxed text-foreground">
@@ -151,7 +151,7 @@ export function WhySwitchSection() {
               {['Volume', 'Noise', 'Friction'].map((tag) => (
                 <span
                   key={tag}
-                  className="rounded-full border border-border bg-white px-3 py-1 text-xs font-semibold text-muted-foreground"
+                  className="rounded-full border border-border bg-card px-3 py-1 text-xs font-semibold text-muted-foreground"
                 >
                   {tag}
                 </span>
@@ -175,7 +175,7 @@ export function WhySwitchSection() {
               <article
                 key={reason.n}
                 className={cn(
-                  'group flex flex-col gap-4 rounded-[1.5rem] border border-border/80 bg-white p-5 shadow-[0_10px_32px_rgba(8,24,47,0.05)] sm:flex-row sm:items-center sm:gap-6 sm:p-6',
+                  'group flex flex-col gap-4 rounded-[1.5rem] border border-border/80 bg-card p-5 shadow-[0_10px_32px_rgba(8,24,47,0.05)] dark:shadow-[0_10px_32px_rgba(0,0,0,0.3)] sm:flex-row sm:items-center sm:gap-6 sm:p-6',
                   'transition-[transform,box-shadow,border-color] duration-200',
                   'hover:-translate-y-0.5 hover:border-[#429FF0]/30 hover:shadow-[0_16px_40px_rgba(8,24,47,0.1)]',
                 )}
@@ -185,7 +185,7 @@ export function WhySwitchSection() {
                   <span className="text-3xl font-extrabold tracking-tighter text-[#429FF0]/35 transition-colors group-hover:text-[#429FF0]">
                     {reason.n}
                   </span>
-                  <div className="rounded-2xl bg-[#F4FAFD] px-2 py-1.5 dark:bg-muted/30">
+                  <div className="rounded-2xl bg-[#F4FAFD] px-2 py-1.5 dark:bg-muted/40">
                     <ReasonVisual kind={reason.visual} />
                   </div>
                 </div>

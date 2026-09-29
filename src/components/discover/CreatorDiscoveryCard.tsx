@@ -134,9 +134,9 @@ export function CreatorDiscoveryCard({
             <div className="mt-auto pt-5">
               <span
                 className={cn(
-                  'flex h-11 w-full items-center justify-between rounded-full bg-[#E1F2FF] px-5',
-                  'text-sm font-bold text-[#256DC1]',
-                  'transition-colors duration-200 group-hover:bg-[#429FF0] group-hover:text-white',
+                  'flex h-11 w-full items-center justify-between rounded-full bg-[#E1F2FF] px-5 dark:bg-primary/15',
+                  'text-sm font-bold text-[#256DC1] dark:text-primary',
+                  'transition-colors duration-200 group-hover:bg-[#429FF0] group-hover:text-white dark:group-hover:bg-primary dark:group-hover:text-primary-foreground',
                 )}
               >
                 Join

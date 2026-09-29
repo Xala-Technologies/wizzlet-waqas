@@ -59,9 +59,9 @@ export function HeroSection() {
             <h1 className="mb-5 text-[2.75rem] font-extrabold leading-[1.05] tracking-[-0.05em] text-foreground animate-fade-in-up sm:text-5xl lg:text-[3.65rem]">
               One place.
               <br />
-              <span className="text-[#429FF0]">Endless</span>
+              <span className="text-[#429FF0] dark:text-primary">Endless</span>
               <br />
-              <span className="text-[#429FF0]">possibilities.</span>
+              <span className="text-[#429FF0] dark:text-primary">possibilities.</span>
             </h1>
 
             <p
@@ -96,7 +96,7 @@ export function HeroSection() {
                     key={src}
                     src={src}
                     alt=""
-                    className="h-10 w-10 rounded-full border-2 border-white object-cover"
+                    className="h-10 w-10 rounded-full border-2 border-background object-cover"
                   />
                 ))}
               </div>
@@ -116,11 +116,11 @@ export function HeroSection() {
         <div className="relative z-10 mt-14 grid gap-8 border-t border-border/70 py-10 sm:grid-cols-2 lg:mt-16 lg:grid-cols-4 lg:gap-6 lg:py-12">
           {FEATURES.map(({ icon: Icon, title, body }) => (
             <div key={title} className="flex items-start gap-4">
-              <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-[#E1F2FF] text-[#429FF0]">
+              <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-[#E1F2FF] text-[#429FF0] dark:bg-primary/15 dark:text-primary">
                 <Icon className="h-5 w-5" aria-hidden />
               </span>
               <div>
-                <p className="text-sm font-bold text-[#08182F]">{title}</p>
+                <p className="text-sm font-bold text-foreground">{title}</p>
                 <p className="mt-1 text-sm leading-relaxed text-muted-foreground">{body}</p>
               </div>
             </div>

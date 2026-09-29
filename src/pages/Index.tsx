@@ -17,10 +17,10 @@ const Index = () => {
   useEffect(() => { trackPageView('home'); }, []);
 
   return (
-    <div className="min-h-screen bg-white dark:bg-background">
+    <div className="min-h-screen bg-background">
       <Seo title={'Sweeph — Private Creator Infrastructure'} description={'Sweeph is the invite-only system where creators sell subscriptions, gate premium content, and grow a private network of members.'} />
       <Navbar />
-      <main id="main-content" className="bg-white dark:bg-background">
+      <main id="main-content" className="bg-background">
       <HeroSection />
       <TodaysEventsSection />
       <WhySwitchSection />

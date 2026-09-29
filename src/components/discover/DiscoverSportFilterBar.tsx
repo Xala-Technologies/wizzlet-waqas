@@ -45,15 +45,15 @@ export function DiscoverSportFilterBar({
             className={cn(
               'inline-flex h-11 items-center gap-2 rounded-full border px-4 text-sm font-semibold transition-colors sm:px-5',
               active
-                ? 'border-[#429FF0] bg-[#429FF0] text-white shadow-[0_8px_20px_rgba(66,159,240,0.35)]'
-                : 'border-border bg-white text-foreground hover:border-[#429FF0]/40 hover:bg-[#E1F2FF]/60 dark:bg-card',
+                ? 'border-[#429FF0] bg-[#429FF0] text-white shadow-[0_8px_20px_rgba(66,159,240,0.35)] dark:border-primary dark:bg-primary dark:text-primary-foreground'
+                : 'border-border bg-card text-foreground hover:border-[#429FF0]/40 hover:bg-[#E1F2FF]/60 dark:hover:bg-primary/10',
             )}
           >
             {emoji ? (
               <span
                 className={cn(
                   'flex h-6 w-6 items-center justify-center rounded-full text-xs',
-                  active ? 'bg-white/20' : 'bg-[#E1F2FF]',
+                  active ? 'bg-white/20' : 'bg-[#E1F2FF] dark:bg-primary/15',
                 )}
                 aria-hidden
               >

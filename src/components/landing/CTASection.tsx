@@ -13,7 +13,7 @@ export function CTASection() {
   return (
     <LandingSection
       variant="band"
-      className="overflow-hidden bg-[#F4FAFF] dark:bg-background"
+      className="overflow-hidden bg-[#F4FAFF] dark:bg-secondary/50"
     >
       <div className="container relative z-10">
         <div className="mx-auto max-w-[540px]">

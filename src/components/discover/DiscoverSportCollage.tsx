@@ -49,14 +49,14 @@ export function DiscoverSportCollage({ className }: { className?: string }) {
         <div
           key={card.label}
           className={cn(
-            'absolute flex items-center gap-3 rounded-2xl border border-white/90 bg-white px-4 py-3 shadow-[0_16px_40px_rgba(8,24,47,0.12)]',
+            'absolute flex items-center gap-3 rounded-2xl border border-border bg-card px-4 py-3 shadow-[0_16px_40px_rgba(8,24,47,0.12)] dark:shadow-[0_16px_40px_rgba(0,0,0,0.4)]',
             card.className,
           )}
         >
-          <span className="flex h-11 w-11 items-center justify-center rounded-full bg-[#E1F2FF] text-xl">
+          <span className="flex h-11 w-11 items-center justify-center rounded-full bg-[#E1F2FF] text-xl dark:bg-primary/15">
             {card.emoji}
           </span>
-          <span className="text-sm font-bold tracking-tight text-[#08182F]">{card.label}</span>
+          <span className="text-sm font-bold tracking-tight text-foreground">{card.label}</span>
         </div>
       ))}
     </div>

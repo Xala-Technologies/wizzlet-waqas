@@ -59,7 +59,7 @@ function PersonRow({ t, size = 'md' }: { t: Testimonial; size?: 'md' | 'sm' }) {
       <img
         src={t.avatar}
         alt=""
-        className={cn('rounded-full border-2 border-white object-cover shadow-sm', avatarSize)}
+        className={cn('rounded-full border-2 border-card object-cover shadow-sm', avatarSize)}
       />
       <div className="min-w-0">
         <div className="flex items-center gap-1.5">
@@ -98,9 +98,9 @@ export function TestimonialsSection() {
   };
 
   return (
-    <LandingSection className="relative overflow-hidden bg-[#F4FAFF] dark:bg-background">
+    <LandingSection className="relative overflow-hidden bg-[#F4FAFF] dark:bg-secondary/50">
       <div
-        className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,rgba(66,159,240,0.12),transparent_55%),radial-gradient(ellipse_at_bottom_left,rgba(98,226,236,0.08),transparent_50%)]"
+        className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,rgba(66,159,240,0.12),transparent_55%),radial-gradient(ellipse_at_bottom_left,rgba(98,226,236,0.08),transparent_50%)] dark:bg-[radial-gradient(ellipse_at_top_right,rgba(101,184,247,0.1),transparent_55%),radial-gradient(ellipse_at_bottom_left,rgba(98,226,236,0.05),transparent_50%)]"
         aria-hidden
       />
 
@@ -129,24 +129,24 @@ export function TestimonialsSection() {
           <article
             key={`featured-${animKey}`}
             className={cn(
-              'relative flex flex-col justify-between overflow-hidden rounded-[1.75rem] border border-white/80 bg-white p-8 shadow-[0_20px_50px_rgba(8,24,47,0.08)] sm:p-10',
+              'relative flex flex-col justify-between overflow-hidden rounded-[1.75rem] border border-border bg-card p-8 shadow-[0_20px_50px_rgba(8,24,47,0.08)] dark:shadow-[0_20px_50px_rgba(0,0,0,0.4)] sm:p-10',
               'animate-fade-in-up lg:col-span-7 lg:min-h-[340px]',
             )}
             aria-live="polite"
             aria-atomic="true"
           >
             <div
-              className="pointer-events-none absolute -right-8 -top-10 h-40 w-40 rounded-full bg-[#E1F2FF]/80 blur-2xl"
+              className="pointer-events-none absolute -right-8 -top-10 h-40 w-40 rounded-full bg-[#E1F2FF]/80 blur-2xl dark:bg-primary/15"
               aria-hidden
             />
-            <Quote className="mb-6 h-10 w-10 text-[#429FF0]/35" strokeWidth={1.5} aria-hidden />
-            <blockquote className="relative max-w-xl text-xl font-semibold leading-snug tracking-tight text-[#08182F] sm:text-2xl sm:leading-[1.35]">
+            <Quote className="mb-6 h-10 w-10 text-[#429FF0]/35 dark:text-primary/40" strokeWidth={1.5} aria-hidden />
+            <blockquote className="relative max-w-xl text-xl font-semibold leading-snug tracking-tight text-foreground sm:text-2xl sm:leading-[1.35]">
               “{featured.quote}”
             </blockquote>
             <div className="relative mt-10 flex flex-wrap items-center justify-between gap-4 border-t border-border/60 pt-6">
               <PersonRow t={featured} />
               <div className="flex items-center gap-3">
-                <span className="rounded-full bg-[#E1F2FF] px-3 py-1 text-xs font-bold text-[#256DC1]">
+                <span className="rounded-full bg-[#E1F2FF] px-3 py-1 text-xs font-bold text-[#256DC1] dark:bg-primary/15 dark:text-primary">
                   Featured
                 </span>
                 {/* Progress dots */}
@@ -178,10 +178,10 @@ export function TestimonialsSection() {
                 type="button"
                 onClick={() => promote(i)}
                 className={cn(
-                  'group flex flex-1 flex-col justify-between rounded-3xl border border-white/80 bg-white/90 p-5 text-left shadow-[0_10px_32px_rgba(8,24,47,0.06)] backdrop-blur-sm',
+                  'group flex flex-1 flex-col justify-between rounded-3xl border border-border bg-card/95 p-5 text-left shadow-[0_10px_32px_rgba(8,24,47,0.06)] backdrop-blur-sm dark:shadow-[0_10px_32px_rgba(0,0,0,0.35)]',
                   'transition-[transform,box-shadow,border-color] duration-200',
                   'hover:-translate-y-0.5 hover:border-[#429FF0]/30 hover:shadow-[0_16px_40px_rgba(8,24,47,0.1)]',
-                  'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#429FF0]/40 focus-visible:ring-offset-2',
+                  'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#429FF0]/40 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-background',
                 )}
               >
                 <blockquote className="text-[15px] font-medium leading-relaxed text-foreground/90 line-clamp-3">
@@ -202,7 +202,7 @@ export function TestimonialsSection() {
           {STATS.map((s) => (
             <div
               key={s.label}
-              className="flex items-center gap-4 rounded-2xl border border-white/70 bg-white/70 px-5 py-4 shadow-[0_6px_20px_rgba(8,24,47,0.04)] backdrop-blur-sm"
+              className="flex items-center gap-4 rounded-2xl border border-border bg-card/80 px-5 py-4 shadow-[0_6px_20px_rgba(8,24,47,0.04)] backdrop-blur-sm dark:shadow-[0_6px_20px_rgba(0,0,0,0.3)]"
             >
               <span className="text-lg font-extrabold tracking-tight text-[#429FF0] sm:text-xl">
                 {s.value}

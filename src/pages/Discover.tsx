@@ -128,33 +128,33 @@ const Discover = () => {
   const loading = creatorsPage === undefined && !forceDemo;
 
   return (
-    <div className="flex min-h-screen flex-col bg-white dark:bg-background">
+    <div className="flex min-h-screen flex-col bg-background">
       <Seo
         title="Discover — Sports Creators & Communities | Sweeph"
         description="Discover sports creators and communities. Get picks, analysis, training programs and exclusive content from top creators."
       />
       <Navbar />
 
-      <main id="main-content" className="relative flex-1 bg-white dark:bg-background">
+      <main id="main-content" className="relative flex-1 bg-background">
         {/* Hero */}
         <div className="relative overflow-hidden pb-10 md:pb-16">
           <SweephRibbonBackground variant="discover" />
           <section className="container relative z-10 pb-10 pt-28 md:pb-14 md:pt-32">
             <div className="grid items-center gap-10 lg:grid-cols-[minmax(0,1.05fr)_minmax(0,0.95fr)] lg:gap-8">
               <div className="max-w-[560px]">
-                <p className="mb-4 text-[11px] font-bold uppercase tracking-[0.32em] text-[#429FF0]">
+                <p className="mb-4 text-[11px] font-bold uppercase tracking-[0.32em] text-[#429FF0] dark:text-primary">
                   Discover.
                 </p>
                 <h1 className="text-[2.5rem] font-extrabold leading-[1.08] tracking-[-0.045em] text-foreground sm:text-5xl lg:text-[3.25rem]">
                   Discover sports creators and{' '}
-                  <span className="text-[#429FF0]">communities.</span>
+                  <span className="text-[#429FF0] dark:text-primary">communities.</span>
                 </h1>
                 <p className="mt-5 max-w-[440px] text-lg leading-relaxed text-muted-foreground">
                   Get picks, analysis, training programs and exclusive content from top creators.
                 </p>
 
                 <form
-                  className="mt-8 flex h-14 w-full max-w-xl items-center gap-2 rounded-full border border-border bg-white pl-5 pr-2 shadow-[0_12px_36px_rgba(8,24,47,0.08)] dark:bg-card"
+                  className="mt-8 flex h-14 w-full max-w-xl items-center gap-2 rounded-full border border-border bg-card pl-5 pr-2 shadow-[0_12px_36px_rgba(8,24,47,0.08)] dark:shadow-[0_12px_36px_rgba(0,0,0,0.35)]"
                   onSubmit={(e) => e.preventDefault()}
                   role="search"
                 >
@@ -176,7 +176,7 @@ const Discover = () => {
 
         {/* Sport filters + grid — continues white canvas from mock */}
         <section
-          className="container relative bg-white pb-16 dark:bg-background md:pb-20"
+          className="container relative bg-background pb-16 md:pb-20"
           aria-labelledby="discover-creators-heading"
         >
           <DiscoverSportFilterBar
