@@ -5,7 +5,6 @@ import { format, formatDistanceToNowStrict } from 'date-fns';
 import {
   DollarSign,
   Eye,
-  FileText,
   Loader2,
   Megaphone,
   MessageSquare,
@@ -131,8 +130,8 @@ const CreatorDashboard = () => {
       }));
 
   const demo = CREATOR_OVERVIEW_DEMO;
-  const postCount = useDemo ? demo.postCount : realPostCount;
   const mrrNet = useDemo ? demo.mrrNet : realMrrNet;
+  const totalSubCount = useDemo ? demo.totalSubscribers : (subs ?? []).length;
   const activeSubCount = useDemo ? demo.activeSubscribers : activeSubs.length;
   const postViews = useDemo ? demo.postViews : realPostViews;
   const displayRevenueTrend = useDemo ? demo.revenueTrend : revenueTrend;
@@ -335,7 +334,7 @@ const CreatorDashboard = () => {
             },
             {
               label: 'Subscribers',
-              value: formatCompact(activeSubCount),
+              value: formatCompact(totalSubCount),
               icon: Users,
               iconClassName: kpiIconTone.violet,
               trendLabel: useDemo ? demo.subscribersTrend.label : undefined,
@@ -343,13 +342,13 @@ const CreatorDashboard = () => {
               href: '/creator/subscribers',
             },
             {
-              label: 'Posts published',
-              value: formatCompact(postCount),
-              icon: FileText,
+              label: 'Active subscribers',
+              value: formatCompact(activeSubCount),
+              icon: Users,
               iconClassName: kpiIconTone.sky,
-              trendLabel: useDemo ? demo.postsTrend.label : undefined,
-              trendPositive: useDemo ? demo.postsTrend.positive : undefined,
-              href: '/creator/posts',
+              trendLabel: useDemo ? demo.activeSubscribersTrend.label : undefined,
+              trendPositive: useDemo ? demo.activeSubscribersTrend.positive : undefined,
+              href: '/creator/subscribers',
             },
             {
               label: 'Post views',

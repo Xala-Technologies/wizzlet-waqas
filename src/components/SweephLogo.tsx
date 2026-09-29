@@ -26,7 +26,7 @@ const HEIGHT: Record<LogoSize, string> = {
 
 /**
  * Official Sweeph lockup — S-symbol + serif wordmark as raster/SVG assets.
- * Never recreate the wordmark with a web font (Manrope is product UI only).
+ * Never recreate the wordmark with a web font (Inter is product UI only).
  */
 export function SweephLogo({
   size = 'md',
@@ -49,8 +49,8 @@ export function SweephLogo({
           variant === 'dark' && 'hidden',
           variant === 'auto' && 'dark:hidden',
         )}
-        width={761}
-        height={263}
+        width={754}
+        height={257}
         decoding="async"
         draggable={false}
       />
@@ -65,8 +65,8 @@ export function SweephLogo({
           variant === 'auto' && 'hidden dark:block',
           variant === 'dark' && 'block',
         )}
-        width={766}
-        height={269}
+        width={752}
+        height={261}
         decoding="async"
         draggable={false}
       />

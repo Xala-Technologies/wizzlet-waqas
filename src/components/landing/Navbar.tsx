@@ -1,7 +1,8 @@
-import { Link, useLocation } from 'react-router-dom';
+import { FormEvent, useState } from 'react';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { useState } from 'react';
-import { Menu, X, Bell } from 'lucide-react';
+import { Input } from '@/components/ui/input';
+import { Menu, X, Bell, Search, ArrowRight } from 'lucide-react';
 import { useQuery } from 'convex/react';
 import { useAuth } from '@/contexts/AuthContext';
 import { cn } from '@/lib/utils';
@@ -12,13 +13,14 @@ import { api } from '@convex/_generated/api';
 const navLinks = [
   { label: 'Home', path: '/' },
   { label: 'Discover', path: '/discover' },
-  { label: 'Creators', path: '/creators' },
 ];
 
 export function Navbar() {
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [query, setQuery] = useState('');
   const { user, role } = useAuth();
   const { pathname } = useLocation();
+  const navigate = useNavigate();
   const notifUnread = useQuery(
     api.notifications.mutations.unreadCount,
     user ? {} : 'skip',
@@ -33,6 +35,12 @@ export function Navbar() {
         : '/dashboard/notifications';
 
   const showNotifDot = (notifUnread ?? 0) > 0;
+
+  const onSearch = (e: FormEvent) => {
+    e.preventDefault();
+    const q = query.trim();
+    navigate(q ? `/discover?q=${encodeURIComponent(q)}` : '/discover');
+  };
 
   return (
     <>
@@ -74,28 +82,49 @@ export function Navbar() {
           })}
         </div>
 
-        {/* RIGHT: Auth buttons + theme + notification bell */}
-        <div className="hidden lg:flex items-center gap-3 shrink-0">
+        {/* RIGHT: Search + auth */}
+        <div className="hidden lg:flex items-center gap-2.5 shrink-0">
+          <form onSubmit={onSearch} className="relative hidden xl:block" role="search">
+            <Search
+              className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground/70"
+              aria-hidden
+            />
+            <Input
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder="Search creators…"
+              aria-label="Search creators"
+              className="h-9 w-[240px] rounded-lg border-border/80 bg-[#F7FAFD] pl-9 pr-3 text-sm shadow-none placeholder:text-muted-foreground/60 focus-visible:border-[#429FF0]/50 focus-visible:ring-[#429FF0]/15 dark:bg-muted/40"
+            />
+          </form>
           <ThemeToggle />
-          {user && (
-            <Link to={notificationsPath} className="relative p-2 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors" aria-label="Notifications">
-              <Bell className="h-4.5 w-4.5" />
-              {showNotifDot && (
-                <span className="absolute top-1 right-1 h-2 w-2 rounded-full bg-primary" />
-              )}
-            </Link>
-          )}
+          <Link
+            to={user ? notificationsPath : '/login'}
+            className="relative inline-flex h-10 w-10 items-center justify-center rounded-full text-muted-foreground hover:bg-muted/50 hover:text-foreground transition-colors"
+            aria-label="Notifications"
+          >
+            <Bell className="h-4.5 w-4.5" />
+            {user && showNotifDot ? (
+              <span className="absolute top-2 right-2 h-2 w-2 rounded-full bg-primary" />
+            ) : null}
+          </Link>
           {user ? (
             <Link to={dashboardPath}>
-              <Button variant="default" size="sm">Dashboard</Button>
+              <Button variant="default" size="sm" className="h-10 rounded-full px-5">
+                Dashboard
+              </Button>
             </Link>
           ) : (
             <>
               <Link to="/login">
-                <Button variant="ghost" size="sm">Log in</Button>
+                <Button variant="outline" size="sm" className="h-10 rounded-full px-5">
+                  Log in
+                </Button>
               </Link>
               <Link to="/signup">
-                <Button variant="default" size="sm">Get Access</Button>
+                <Button variant="default" size="sm" className="h-10 rounded-full px-5">
+                  Get Started <ArrowRight className="ml-1 h-3.5 w-3.5" />
+                </Button>
               </Link>
             </>
           )}
@@ -168,7 +197,7 @@ export function Navbar() {
                   <Button variant="ghost" size="sm" className="w-full justify-center min-h-11">Log in</Button>
                 </Link>
                 <Link to="/signup" onClick={() => setMobileOpen(false)}>
-                  <Button variant="default" size="sm" className="w-full justify-center min-h-11">Get Access</Button>
+                  <Button variant="default" size="sm" className="w-full justify-center min-h-11">Get Started</Button>
                 </Link>
               </>
             )}

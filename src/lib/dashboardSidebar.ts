@@ -38,7 +38,7 @@ export function dashboardSidebarAsideClassName(
     'hidden md:flex h-full shrink-0 flex-col',
     DASHBOARD_SIDEBAR_WIDTH_CLASS,
     variant === 'dark'
-      ? 'border-r border-[var(--border-subtle)] bg-[#082735] text-[#F8FAFC]'
+      ? 'border-r border-[var(--border-subtle)] bg-[var(--bg-sidebar)] text-[var(--text-primary)]'
       : 'border-r border-border bg-[var(--bg-sidebar)] text-foreground',
     extra,
   );

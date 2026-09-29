@@ -2,12 +2,12 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="Sweeph">
   <defs>
     <linearGradient id="s" x1="8" y1="8" x2="56" y2="56" gradientUnits="userSpaceOnUse">
-      <stop offset="0%" stop-color="#72F0D1"/>
-      <stop offset="48%" stop-color="#12CDB0"/>
-      <stop offset="100%" stop-color="#087F82"/>
+      <stop offset="0%" stop-color="#A9DEFF"/>
+      <stop offset="45%" stop-color="#65B8F7"/>
+      <stop offset="100%" stop-color="#398FE8"/>
     </linearGradient>
   </defs>
-  <rect width="64" height="64" rx="14" fill="#08172D"/>
+  <rect width="64" height="64" rx="14" fill="#08182F"/>
   <!-- Abstract S mark: two parallel rounded capsules -->
   <g fill="url(#s)">
     <rect x="14" y="12" width="28" height="16" rx="8" transform="rotate(-28 28 20)"/>

@@ -8,7 +8,6 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { Switch } from '@/components/ui/switch';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
@@ -35,7 +34,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import {
   FileText, Plus, Loader2, Pencil, Trash2,
-  CheckCircle2, Clock, Trophy, XCircle, Minus, Crown, Send, ChevronDown, ChevronUp,
+  CheckCircle2, Clock, Trophy, XCircle, Minus, Send, ChevronDown, ChevronUp,
   Search, Tag, MoreVertical, ChevronLeft, ChevronRight,
   Play, ArrowRight, BarChart3, BadgeCheck, Info, Eye, X,
 } from 'lucide-react';
@@ -54,6 +53,13 @@ import {
 import { DashboardKpiStrip } from '@/components/dashboard/DashboardKpiStrip';
 import { kpiIconTone } from '@/lib/kpiIconTones';
 import { Checkbox } from '@/components/ui/checkbox';
+import {
+  PostVisibilityPicker,
+  type PostVisibilityMode,
+} from '@/components/creator/PostVisibilityPicker';
+import {
+  CREATOR_PRODUCTS_DEMO_ROWS,
+} from '@/lib/creatorProductsDemo';
 
 const PAGE_SIZE = 50;
 const TABLE_PAGE_SIZE = 10;
@@ -69,6 +75,7 @@ interface Post {
   title: string;
   content: string | null;
   is_premium: boolean;
+  visible_product_ids: string[];
   created_at: string;
   createdAtMs: number;
   result: string;
@@ -257,6 +264,11 @@ const CreatorPosts = () => {
     {},
     { initialNumItems: PAGE_SIZE },
   );
+  const productsRaw = useQuery(
+    api.products.mutations.listByCreator,
+    creator?._id ? { creatorId: creator._id, activeOnly: true } : 'skip',
+  );
+  const subsRaw = useQuery(api.subscriptions.mutations.listForMyCreator);
   const upsertPost = useMutation(api.posts.queries.upsert);
   const removePost = useMutation(api.posts.queries.remove);
   const setResultMut = useMutation(api.posts.queries.setResult);
@@ -271,6 +283,7 @@ const CreatorPosts = () => {
         title: p.title,
         content: p.content ?? null,
         is_premium: p.isPremium,
+        visible_product_ids: (p.visibleProductIds ?? []).map(String),
         created_at: new Date(p.createdAt).toISOString(),
         createdAtMs: p.createdAt,
         result: p.result ?? 'pending',
@@ -292,12 +305,49 @@ const CreatorPosts = () => {
       title: row.title,
       content: row.content,
       is_premium: row.is_premium,
+      visible_product_ids: [] as string[],
       created_at: new Date(row.createdAtMs).toISOString(),
       createdAtMs: row.createdAtMs,
       result: row.result,
       tracking_mode: row.tracking_mode,
     }));
   }, [realPosts, useDemo]);
+
+  const visibilityProducts = useMemo(() => {
+    const activeSubs = (subsRaw ?? []).filter((s) => s.status === 'active');
+    const countByProduct = new Map<string, number>();
+    for (const s of activeSubs) {
+      if (!s.productId) continue;
+      const key = String(s.productId);
+      countByProduct.set(key, (countByProduct.get(key) ?? 0) + 1);
+    }
+
+    const live = (productsRaw ?? [])
+      .filter((p) => p.isActive && p.billingPeriod !== 'one-time')
+      .map((p) => ({
+        id: p._id as string,
+        name: p.name,
+        subscriberCount: countByProduct.get(p._id) ?? 0,
+      }));
+
+    if (live.length > 0) return live;
+
+    // Empty catalog / sample preview — mock tiers for the visibility UI
+    return CREATOR_PRODUCTS_DEMO_ROWS.filter((r) => r.type === 'subscription' && r.status === 'active')
+      .slice(0, 4)
+      .map((r) => ({
+        id: r.id,
+        name: r.name,
+        subscriberCount: r.subscribers,
+      }));
+  }, [productsRaw, subsRaw]);
+
+  const premiumProductId = useMemo(() => {
+    const byName = visibilityProducts.find((p) => /premium/i.test(p.name));
+    if (byName) return byName.id;
+    const featured = (productsRaw ?? []).find((p) => p.isFeatured && p.isActive);
+    return featured?._id ?? visibilityProducts[0]?.id ?? null;
+  }, [productsRaw, visibilityProducts]);
 
   const enriched = useMemo(() => posts.map(enrichPost), [posts]);
 
@@ -327,7 +377,8 @@ const CreatorPosts = () => {
   const [units, setUnits] = useState('1');
   const [tags, setTags] = useState('');
   const [notes, setNotes] = useState('');
-  const [isPremium, setIsPremium] = useState(true);
+  const [visibilityMode, setVisibilityMode] = useState<PostVisibilityMode>('all');
+  const [selectedProductIds, setSelectedProductIds] = useState<string[]>([]);
   const [oddsSource, setOddsSource] = useState<'us' | 'eu' | null>(null);
 
   const hasPickDetails = Boolean(
@@ -457,7 +508,8 @@ const CreatorPosts = () => {
     setUnits('1');
     setTags('');
     setNotes('');
-    setIsPremium(true);
+    setVisibilityMode('all');
+    setSelectedProductIds([]);
     setOddsSource(null);
     setDetailsOpen(false);
   };
@@ -481,7 +533,20 @@ const CreatorPosts = () => {
     setUnits(parsed.units);
     setTags(parsed.tags);
     setNotes(parsed.notes);
-    setIsPremium(post.is_premium);
+    if (!post.is_premium) {
+      setVisibilityMode('all');
+      setSelectedProductIds([]);
+    } else if (post.visible_product_ids.length > 0) {
+      const onlyPremium =
+        premiumProductId &&
+        post.visible_product_ids.length === 1 &&
+        post.visible_product_ids[0] === premiumProductId;
+      setVisibilityMode(onlyPremium ? 'premium' : 'products');
+      setSelectedProductIds(post.visible_product_ids);
+    } else {
+      setVisibilityMode('all');
+      setSelectedProductIds([]);
+    }
     setDetailsOpen(
       Boolean(
         parsed.sport ||
@@ -537,8 +602,39 @@ const CreatorPosts = () => {
       toast.error('Creator profile not ready — try again in a moment');
       return;
     }
+    if (visibilityMode === 'products' && selectedProductIds.length === 0) {
+      toast.error('Select at least one product for this post');
+      return;
+    }
+    if (
+      visibilityMode === 'products' &&
+      selectedProductIds.some((id) => id.startsWith('demo-'))
+    ) {
+      toast.message('Sample products', {
+        description: 'Create a real product before targeting specific tiers. Add ?demo=0 after you have products.',
+      });
+      return;
+    }
+    if (
+      visibilityMode === 'premium' &&
+      premiumProductId?.startsWith('demo-')
+    ) {
+      toast.message('Sample products', {
+        description: 'Create a real Premium product before publishing with this audience.',
+      });
+      return;
+    }
     setSaving(true);
     const contentStr = buildContent();
+    const isPremium = true;
+    const visibleProductIds =
+      visibilityMode === 'all'
+        ? []
+        : visibilityMode === 'premium'
+          ? premiumProductId && !premiumProductId.startsWith('demo-')
+            ? [premiumProductId as Id<'products'>]
+            : []
+          : (selectedProductIds as Id<'products'>[]);
     try {
       await upsertPost({
         postId: editId ? (editId as Id<'posts'>) : undefined,
@@ -546,6 +642,7 @@ const CreatorPosts = () => {
         title: title.trim(),
         content: contentStr || undefined,
         isPremium,
+        visibleProductIds,
       });
       setShowSuccess(true);
     } catch (e) {
@@ -749,24 +846,14 @@ const CreatorPosts = () => {
               </div>
             </div>
 
-            <div className="flex items-center justify-between gap-3 rounded-xl border border-border bg-background/60 px-4 py-3.5">
-              <div className="flex min-w-0 items-start gap-3">
-                <span className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-amber-500/15 text-amber-500">
-                  <Crown className="h-4 w-4" />
-                </span>
-                <div className="min-w-0">
-                  <p className="text-ui font-medium text-foreground">Premium (subscribers only)</p>
-                  <p className="text-caption text-muted-foreground">
-                    Only paying subscribers can see this pick.
-                  </p>
-                </div>
-              </div>
-              <Switch
-                aria-label="Premium only"
-                checked={isPremium}
-                onCheckedChange={setIsPremium}
-              />
-            </div>
+            <PostVisibilityPicker
+              mode={visibilityMode}
+              onModeChange={setVisibilityMode}
+              products={visibilityProducts}
+              selectedProductIds={selectedProductIds}
+              onSelectedProductIdsChange={setSelectedProductIds}
+              premiumProductId={premiumProductId}
+            />
 
             <div className="space-y-2">
               <button

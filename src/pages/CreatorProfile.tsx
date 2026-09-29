@@ -33,6 +33,7 @@ import {
 } from '@/lib/creatorPublicProfileDemo';
 import { cn } from '@/lib/utils';
 import { SweephLogo } from '@/components/SweephLogo';
+import { kpiIconTone } from '@/lib/kpiIconTones';
 
 function parsePick(content: string | null) {
   if (!content) return null;
@@ -337,66 +338,66 @@ const CreatorProfile = () => {
             <div className="absolute inset-0 bg-gradient-to-r from-slate-950/95 via-slate-950/75 to-slate-950/40" />
           </div>
 
-          <div className="relative mx-auto flex w-full max-w-6xl flex-col gap-8 px-4 py-10 sm:px-6 sm:py-14 md:flex-row md:items-end md:justify-between md:px-8 lg:py-16">
-            <div className="flex min-w-0 flex-1 flex-col gap-5 sm:flex-row sm:items-end">
+          <div className="relative mx-auto flex w-full max-w-6xl flex-col gap-8 px-4 py-12 sm:px-6 sm:py-16 md:flex-row md:items-end md:justify-between md:px-8 lg:py-20">
+            <div className="flex min-w-0 flex-1 flex-col gap-6 sm:flex-row sm:items-end">
               <div className="relative shrink-0 self-start sm:self-end">
-                <div className="h-28 w-28 overflow-hidden rounded-full border-[3px] border-primary shadow-xl sm:h-32 sm:w-32">
+                <div className="h-32 w-32 overflow-hidden rounded-full border-[3px] border-primary shadow-xl sm:h-36 sm:w-36 md:h-40 md:w-40">
                   {avatarUrl ? (
                     <img src={avatarUrl} alt="" className="h-full w-full object-cover" />
                   ) : (
-                    <div className="flex h-full w-full items-center justify-center bg-primary/30 text-3xl font-bold">
+                    <div className="flex h-full w-full items-center justify-center bg-primary/30 text-heading font-bold">
                       {initials}
                     </div>
                   )}
                 </div>
                 {(useDemo ? demo.online : true) ? (
                   <span
-                    className="absolute bottom-1.5 right-1.5 h-4 w-4 rounded-full border-2 border-slate-950 bg-emerald-500"
+                    className="absolute bottom-2 right-2 h-5 w-5 rounded-full border-2 border-slate-950 bg-emerald-500"
                     aria-label="Online"
                   />
                 ) : null}
               </div>
 
               <div className="min-w-0 flex-1 pb-1">
-                <div className="flex flex-wrap items-center gap-2">
-                  <h1 className="text-3xl font-extrabold tracking-tight sm:text-4xl">
+                <div className="flex flex-wrap items-center gap-2.5">
+                  <h1 className="text-heading font-extrabold tracking-tight sm:text-heading-lg">
                     {displayName}
                   </h1>
-                  <BadgeCheck className="h-6 w-6 shrink-0 text-sky-400" aria-label="Verified" />
+                  <BadgeCheck className="h-7 w-7 shrink-0 text-sky-400" aria-label="Verified" />
                 </div>
-                <p className="mt-1 text-sm font-medium text-slate-300">@{handle}</p>
-                <p className="mt-3 max-w-xl text-sm leading-relaxed text-slate-200 sm:text-base">
+                <p className="mt-1.5 text-ui font-medium text-slate-300">@{handle}</p>
+                <p className="mt-4 max-w-xl text-body leading-relaxed text-slate-200">
                   {bio}
                 </p>
-                <div className="mt-4 flex flex-wrap gap-2">
+                <div className="mt-5 flex flex-wrap gap-2.5">
                   {tags.map((tag) => (
                     <span
                       key={tag}
-                      className="rounded-full border border-white/15 bg-white/10 px-3 py-1 text-xs font-semibold text-white backdrop-blur-sm"
+                      className="rounded-full border border-white/15 bg-white/10 px-3.5 py-1.5 text-caption font-semibold text-white backdrop-blur-sm"
                     >
                       {tag}
                     </span>
                   ))}
                 </div>
-                <div className="mt-4 flex flex-wrap items-center gap-4 text-sm text-slate-300">
-                  <span className="inline-flex items-center gap-1.5">
-                    <Users className="h-4 w-4 shrink-0" aria-hidden />
+                <div className="mt-5 flex flex-wrap items-center gap-5 text-ui text-slate-300">
+                  <span className="inline-flex items-center gap-2">
+                    <Users className="h-5 w-5 shrink-0" aria-hidden />
                     {followersLabel}
                   </span>
-                  <span className="inline-flex items-center gap-1.5">
-                    <Calendar className="h-4 w-4 shrink-0" aria-hidden />
+                  <span className="inline-flex items-center gap-2">
+                    <Calendar className="h-5 w-5 shrink-0" aria-hidden />
                     {memberSinceLabel}
                   </span>
                 </div>
               </div>
             </div>
 
-            <div className="flex shrink-0 items-center gap-2 self-stretch sm:self-end">
+            <div className="flex shrink-0 items-center gap-2.5 self-stretch sm:self-end">
               {isSubscribed && !useDemo ? (
                 <Button
                   asChild
                   size="lg"
-                  className="min-h-12 rounded-xl px-6 text-base font-semibold"
+                  className="h-12 min-h-12 rounded-2xl px-7 text-ui font-semibold"
                 >
                   <Link to="/dashboard/subscriptions-billing">
                     Manage subscription
@@ -407,7 +408,7 @@ const CreatorProfile = () => {
                 <Button
                   type="button"
                   size="lg"
-                  className="min-h-12 rounded-xl px-6 text-base font-semibold"
+                  className="h-12 min-h-12 rounded-2xl px-7 text-ui font-semibold"
                   onClick={() => checkout(featured?.id)}
                 >
                   Subscribe {money(heroPriceCents)} / month
@@ -419,7 +420,7 @@ const CreatorProfile = () => {
                 size="icon"
                 variant="outline"
                 className={cn(
-                  'h-12 w-12 shrink-0 rounded-xl border-white/25 bg-white/5 text-white hover:bg-white/10 hover:text-white',
+                  'h-12 w-12 shrink-0 rounded-2xl border-white/25 bg-white/5 text-white hover:bg-white/10 hover:text-white',
                   liked && 'border-rose-400/50 text-rose-400',
                 )}
                 aria-label={liked ? 'Unfavorite' : 'Favorite'}
@@ -455,42 +456,51 @@ const CreatorProfile = () => {
           ) : null}
 
           {/* KPI strip */}
-          <div className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-4 sm:gap-4">
+          <div className="mt-8 grid grid-cols-2 gap-3 sm:grid-cols-4 sm:gap-4">
             {[
               {
                 label: 'Win Rate',
                 value: `${winRate}%`,
                 icon: LineChart,
+                tone: kpiIconTone.sky,
               },
               {
                 label: 'Total Profit',
                 value: `${totalProfit >= 0 ? '+' : ''}${totalProfit}u`,
                 icon: Trophy,
+                tone: kpiIconTone.emerald,
               },
               {
                 label: 'ROI',
                 value: `${roiPct}%`,
                 icon: BarChart3,
+                tone: kpiIconTone.violet,
               },
               {
                 label: 'Subscribers',
                 value: subscribersLabel,
                 icon: Users,
+                tone: kpiIconTone.amber,
               },
             ].map((kpi) => (
               <div
                 key={kpi.label}
-                className="rounded-2xl border border-border bg-card p-4 shadow-[var(--shadow-card)] sm:p-5"
+                className="rounded-2xl border border-border bg-card p-5 shadow-[var(--shadow-card)] sm:p-6"
               >
                 <div className="flex items-start justify-between gap-2">
                   <div>
-                    <p className="text-xs font-medium text-muted-foreground">{kpi.label}</p>
-                    <p className="mt-1 text-2xl font-extrabold tracking-tight text-foreground">
+                    <p className="text-caption font-semibold text-muted-foreground">{kpi.label}</p>
+                    <p className="mt-1 text-2xl font-extrabold tracking-tight text-foreground sm:text-heading">
                       {kpi.value}
                     </p>
                   </div>
-                  <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary/10 text-primary">
-                    <kpi.icon className="h-4 w-4" aria-hidden />
+                  <span
+                    className={cn(
+                      'flex h-10 w-10 items-center justify-center rounded-xl',
+                      kpi.tone,
+                    )}
+                  >
+                    <kpi.icon className="h-5 w-5" aria-hidden />
                   </span>
                 </div>
               </div>
@@ -498,50 +508,50 @@ const CreatorProfile = () => {
           </div>
 
           {/* Creator Products */}
-          <section className="mt-10">
-            <h2 className="text-xl font-extrabold tracking-tight text-foreground sm:text-2xl">
+          <section className="mt-12 sm:mt-14">
+            <h2 className="text-heading font-extrabold tracking-tight text-foreground">
               Creator Products
             </h2>
             {products.length === 0 ? (
-              <div className="mt-4 rounded-2xl border border-dashed border-border bg-card p-10 text-center">
-                <p className="text-sm text-muted-foreground">No products yet.</p>
+              <div className="mt-5 rounded-2xl border border-dashed border-border bg-card p-10 text-center">
+                <p className="text-ui text-muted-foreground">No products yet.</p>
               </div>
             ) : (
-              <div className="mt-5 grid gap-4 md:grid-cols-3">
+              <div className="mt-6 grid gap-5 md:grid-cols-3">
                 {products.map((product) => {
                   const Icon = PRODUCT_ICONS[product.icon] ?? BarChart3;
                   return (
                     <article
                       key={product.id}
                       className={cn(
-                        'relative flex flex-col rounded-2xl border bg-card p-6 shadow-[var(--shadow-card)]',
+                        'relative flex flex-col rounded-2xl border bg-card p-6 shadow-[var(--shadow-card)] sm:p-7',
                         product.isFeatured
                           ? 'border-primary ring-1 ring-primary/30'
                           : 'border-border',
                       )}
                     >
                       {product.isFeatured ? (
-                        <span className="absolute -top-3 left-1/2 -translate-x-1/2 rounded-full bg-primary px-3 py-1 text-[11px] font-bold uppercase tracking-wide text-primary-foreground">
+                        <span className="absolute -top-3 left-1/2 -translate-x-1/2 rounded-full bg-primary px-3.5 py-1 text-caption font-bold uppercase tracking-wide text-primary-foreground">
                           Most Popular
                         </span>
                       ) : null}
-                      <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-primary/10 text-primary">
+                      <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-primary/10 text-primary">
                         <Icon className="h-5 w-5" aria-hidden />
                       </span>
-                      <h3 className="mt-4 text-lg font-extrabold text-foreground">
+                      <h3 className="mt-4 text-title-lg font-extrabold text-foreground">
                         {product.name}
                       </h3>
-                      <p className="mt-1.5 flex-1 text-sm leading-relaxed text-muted-foreground">
+                      <p className="mt-2 flex-1 text-ui leading-relaxed text-muted-foreground">
                         {product.description}
                       </p>
-                      <p className="mt-4 text-2xl font-extrabold text-foreground">
+                      <p className="mt-5 text-heading font-extrabold text-foreground">
                         {money(product.priceCents)}
-                        <span className="text-sm font-medium text-muted-foreground"> / month</span>
+                        <span className="text-ui font-medium text-muted-foreground"> / month</span>
                       </p>
                       <Button
                         type="button"
                         variant={product.isFeatured ? 'default' : 'secondary'}
-                        className="mt-4 min-h-11 w-full rounded-xl font-semibold"
+                        className="mt-5 h-12 min-h-12 w-full rounded-2xl text-ui font-semibold"
                         onClick={() => checkout(product.id)}
                       >
                         {product.ctaLabel}
@@ -550,7 +560,7 @@ const CreatorProfile = () => {
                         {product.features.map((f) => (
                           <li
                             key={f}
-                            className="flex items-start gap-2 text-sm text-muted-foreground"
+                            className="flex items-start gap-2.5 text-ui text-muted-foreground"
                           >
                             <Check
                               className="mt-0.5 h-4 w-4 shrink-0 text-primary"
@@ -568,11 +578,11 @@ const CreatorProfile = () => {
           </section>
 
           {/* About */}
-          <section className="mt-10 rounded-2xl border border-border bg-card p-6 shadow-[var(--shadow-card)] sm:p-8">
-            <h2 className="text-xl font-extrabold tracking-tight text-foreground">
+          <section className="mt-12 rounded-2xl border border-border bg-card p-7 shadow-[var(--shadow-card)] sm:mt-14 sm:p-10">
+            <h2 className="text-heading font-extrabold tracking-tight text-foreground">
               About {displayName}
             </h2>
-            <p className="mt-3 max-w-3xl text-sm leading-relaxed text-muted-foreground sm:text-base">
+            <p className="mt-4 max-w-3xl text-body leading-relaxed text-muted-foreground">
               {about}
             </p>
             <div className="mt-8 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
@@ -580,10 +590,10 @@ const CreatorProfile = () => {
                 const Icon = PILLAR_ICONS[pillar.icon];
                 return (
                   <div key={pillar.title} className="flex items-start gap-3">
-                    <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
-                      <Icon className="h-4 w-4" aria-hidden />
+                    <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-primary/10 text-primary">
+                      <Icon className="h-5 w-5" aria-hidden />
                     </span>
-                    <p className="pt-2 text-sm font-semibold text-foreground">{pillar.title}</p>
+                    <p className="pt-2.5 text-ui font-semibold text-foreground">{pillar.title}</p>
                   </div>
                 );
               })}

@@ -1,7 +1,7 @@
 import { FormEvent, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useQuery } from 'convex/react';
-import { Bell, ChevronDown, HelpCircle, LogOut, Plus, Search, Settings } from 'lucide-react';
+import { Bell, ChevronDown, ExternalLink, HelpCircle, LogOut, Pencil, Plus, Search, Settings } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { api } from '@convex/_generated/api';
 import { ThemeToggle } from '@/components/ThemeToggle';
@@ -16,6 +16,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { cn } from '@/lib/utils';
+import { creatorProfilePath } from '@/lib/creatorProfilePath';
 /**
  * Creator desktop utility bar — search, notifications, account menu, Create Post.
  * Hidden on mobile (MobileTopBar + drawer handle that).
@@ -34,6 +35,9 @@ export function CreatorTopBar() {
   const initial = display.replace(/^@/, '').charAt(0).toUpperCase() || 'C';
   const unread = notifUnread ?? 0;
   const handle = creator?.username ? `@${creator.username}` : user?.email ?? null;
+  const publicProfileHref = creator?.username?.trim()
+    ? creatorProfilePath(creator.username)
+    : '/creator/settings';
   const onOverview = location.pathname === '/creator';
   const onPosts = location.pathname.startsWith('/creator/posts');
   const onProducts = location.pathname.startsWith('/creator/products');
@@ -185,6 +189,18 @@ export function CreatorTopBar() {
                 ) : null}
               </DropdownMenuLabel>
               <DropdownMenuSeparator />
+              <DropdownMenuItem asChild className="cursor-pointer gap-2">
+                <Link to={publicProfileHref}>
+                  <ExternalLink className="h-4 w-4" aria-hidden />
+                  View public profile
+                </Link>
+              </DropdownMenuItem>
+              <DropdownMenuItem asChild className="cursor-pointer gap-2">
+                <Link to="/creator/settings">
+                  <Pencil className="h-4 w-4" aria-hidden />
+                  Edit profile
+                </Link>
+              </DropdownMenuItem>
               <DropdownMenuItem asChild className="cursor-pointer gap-2">
                 <Link to="/creator/settings">
                   <Settings className="h-4 w-4" aria-hidden />

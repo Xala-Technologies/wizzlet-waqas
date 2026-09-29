@@ -1,7 +1,7 @@
 import { mutation, query } from "../_generated/server";
 import { ConvexError, v } from "convex/values";
 import { requireCreatorOwner, requireAppUser, logMutation } from "../lib/auth";
-import { normalizeBillingPeriod } from "../lib/commerceIdentity";
+import { normalizeProductBillingPeriod } from "../lib/commerceIdentity";
 import { productDocValidator, productPublicValidator } from "../lib/validators";
 
 /** Public projection — active, non-closed products only. */
@@ -71,7 +71,7 @@ export const upsert = mutation({
   returns: v.id("products"),
   handler: async (ctx, args) => {
     const { user } = await requireCreatorOwner(ctx, args.creatorId);
-    const billingPeriod = normalizeBillingPeriod(args.billingPeriod);
+    const billingPeriod = normalizeProductBillingPeriod(args.billingPeriod);
     const now = Date.now();
 
     if (args.isFeatured) {

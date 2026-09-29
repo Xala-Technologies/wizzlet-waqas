@@ -40,6 +40,35 @@ export function yearMonthKey(epochMs: number): string {
 
 export const LAUNCH_BILLING_PERIOD = "monthly" as const;
 
+export type ProductBillingPeriod =
+  | "daily"
+  | "weekly"
+  | "monthly"
+  | "yearly"
+  | "one-time";
+
+const PRODUCT_BILLING_PERIODS = new Set<string>([
+  "daily",
+  "weekly",
+  "monthly",
+  "yearly",
+  "one-time",
+]);
+
+/** Catalog / product form periods (UI). Checkout may still be launch-gated. */
+export function normalizeProductBillingPeriod(period: string): ProductBillingPeriod {
+  const normalized = period.trim().toLowerCase();
+  if (normalized === "day") return "daily";
+  if (normalized === "week") return "weekly";
+  if (normalized === "month") return "monthly";
+  if (normalized === "year" || normalized === "annual") return "yearly";
+  if (normalized === "onetime" || normalized === "one_time") return "one-time";
+  if (PRODUCT_BILLING_PERIODS.has(normalized)) {
+    return normalized as ProductBillingPeriod;
+  }
+  throw new Error("UNSUPPORTED_BILLING_PERIOD");
+}
+
 export function assertLaunchBillingPeriod(period: string): void {
   const normalized = period.trim().toLowerCase();
   if (normalized !== "monthly" && normalized !== "month") {
@@ -47,6 +76,7 @@ export function assertLaunchBillingPeriod(period: string): void {
   }
 }
 
+/** Launch checkout only supports monthly subscriptions. */
 export function normalizeBillingPeriod(period: string): "monthly" {
   assertLaunchBillingPeriod(period);
   return "monthly";

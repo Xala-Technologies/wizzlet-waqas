@@ -22,10 +22,10 @@ const buttonVariants = cva(
         "hero-outline": "border border-input bg-card font-medium text-foreground hover:bg-muted",
       },
       size: {
-        default: "h-12 min-h-12 px-7",
+        default: "h-11 min-h-11 px-5 text-[length:var(--text-support)] font-semibold leading-[var(--leading-support)]",
         sm: "h-11 min-h-11 px-5 text-[length:var(--text-support)] font-semibold leading-[var(--leading-support)]",
-        lg: "h-14 min-h-14 px-10 text-[length:var(--text-ui)] leading-[var(--leading-ui)]",
-        icon: "h-12 w-12",
+        lg: "h-12 min-h-12 px-8 text-[length:var(--text-ui)] leading-[var(--leading-ui)]",
+        icon: "h-11 w-11",
       },
     },
     defaultVariants: {

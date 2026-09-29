@@ -12,9 +12,10 @@ export const CREATOR_OVERVIEW_DEMO = {
   mrrNet: 4320,
   postViews: 12_540,
   activeSubscribers: 1248,
+  totalSubscribers: 1380,
   revenueTrend: { label: '↑ 18% vs. last month', positive: true as const },
   subscribersTrend: { label: '↑ 12% vs. last month', positive: true as const },
-  postsTrend: { label: '↑ 33% vs. last month', positive: true as const },
+  activeSubscribersTrend: { label: '↑ 33% vs. last month', positive: true as const },
   viewsTrend: { label: '↑ 27% vs. last month', positive: true as const },
   earningsBars: [
     { label: 'Aug', valueCents: 210_000 },

@@ -120,7 +120,7 @@ export function MemberSidebar({ demo = false, mobile = false }: { demo?: boolean
         <div
           className={cn(
             'border-b px-5 pb-5 pt-6',
-            dark ? 'border-[#193A47]' : 'border-border',
+            dark ? 'border-[var(--border-subtle)]' : 'border-border',
           )}
         >
           <SweephLogo
@@ -145,20 +145,20 @@ export function MemberSidebar({ demo = false, mobile = false }: { demo?: boolean
       <div
         className={cn(
           'shrink-0 space-y-2 px-3 py-4',
-          dark ? 'border-t border-[#193A47]' : 'border-t border-border',
+          dark ? 'border-t border-[var(--border-subtle)]' : 'border-t border-border',
         )}
       >
         {!mobile && !demo && (
           <div
             className={cn(
               'rounded-[var(--radius-lg)] border p-4',
-              dark ? 'border-[#214250] bg-[#102D3B]' : 'border-border bg-muted/40',
+              dark ? 'border-[var(--border-default)] bg-[var(--surface-secondary)]' : 'border-border bg-muted/40',
             )}
           >
             <p
               className={cn(
                 'text-sm font-bold leading-snug tracking-tight',
-                dark ? 'text-[#F8FAFC]' : 'text-foreground',
+                dark ? 'text-[var(--text-primary)]' : 'text-foreground',
               )}
             >
               Find creators worth following
@@ -166,7 +166,7 @@ export function MemberSidebar({ demo = false, mobile = false }: { demo?: boolean
             <p
               className={cn(
                 'mt-1.5 text-caption font-medium leading-relaxed',
-                dark ? 'text-[#C5D5DC]' : 'text-muted-foreground',
+                dark ? 'text-[var(--text-secondary)]' : 'text-muted-foreground',
               )}
             >
               Discover verified voices and unlock premium content in one place.

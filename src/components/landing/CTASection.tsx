@@ -2,6 +2,7 @@ import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { ArrowRight } from 'lucide-react';
 import { LandingSection } from '@/components/landing/LandingSection';
+import { LandingSectionHeader } from '@/components/landing/LandingSectionHeader';
 import { useAuth } from '@/contexts/AuthContext';
 
 export function CTASection() {
@@ -10,36 +11,51 @@ export function CTASection() {
     role === 'creator' ? '/creator' : role === 'admin' ? '/admin' : '/dashboard';
 
   return (
-    <LandingSection variant="band" className="overflow-hidden">
+    <LandingSection
+      variant="band"
+      className="overflow-hidden bg-[#F4FAFF] dark:bg-background"
+    >
       <div className="container relative z-10">
-        <div className="mx-auto max-w-[540px] text-center">
-          <h2 className="text-3xl sm:text-4xl md:text-[3rem] font-extrabold tracking-[-0.04em] leading-[1.1] text-foreground mb-5">
-            IF YOU'RE READY TO
-            <br />
-            <span className="text-gradient">BUILD PROPERLY</span>
-          </h2>
+        <div className="mx-auto max-w-[540px]">
+          <LandingSectionHeader
+            align="center"
+            eyebrow="Get started"
+            title={
+              <>
+                If you’re ready to <span className="text-[#429FF0]">build properly.</span>
+              </>
+            }
+            description="This isn’t for everyone. And that’s the point."
+            className="mb-8"
+          />
 
-          <p className="text-ui text-muted-foreground mb-10 leading-relaxed">
-            This isn't for everyone. And that's the point.
-          </p>
+          <div className="text-center">
+            {user ? (
+              <Link to={dashboardPath}>
+                <Button
+                  variant="hero"
+                  size="lg"
+                  className="h-14 rounded-full px-10 text-base font-semibold"
+                >
+                  Open dashboard <ArrowRight className="ml-1 h-4 w-4" />
+                </Button>
+              </Link>
+            ) : (
+              <Link to="/signup">
+                <Button
+                  variant="hero"
+                  size="lg"
+                  className="h-14 rounded-full px-10 text-base font-semibold"
+                >
+                  Apply for Access <ArrowRight className="ml-1 h-4 w-4" />
+                </Button>
+              </Link>
+            )}
 
-          {user ? (
-            <Link to={dashboardPath}>
-              <Button variant="hero" size="lg" className="h-13 px-10 text-ui">
-                Open dashboard <ArrowRight className="ml-1 h-4 w-4" />
-              </Button>
-            </Link>
-          ) : (
-            <Link to="/signup">
-              <Button variant="hero" size="lg" className="h-13 px-10 text-ui">
-                Apply for Access <ArrowRight className="ml-1 h-4 w-4" />
-              </Button>
-            </Link>
-          )}
-
-          <p className="mt-6 text-support text-muted-foreground/50 uppercase tracking-[0.15em]">
-            {user ? 'Signed in' : 'Applications reviewed manually'}
-          </p>
+            <p className="mt-6 text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground/60">
+              {user ? 'Signed in' : 'Applications reviewed manually'}
+            </p>
+          </div>
         </div>
       </div>
     </LandingSection>

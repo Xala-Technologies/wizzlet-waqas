@@ -9,7 +9,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { ArrowLeftRight, Check, ChevronsUpDown } from 'lucide-react';
+import { ArrowLeftRight, ArrowRight, Check, ChevronsUpDown } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 function workspaceRoles(roles: AppRole[]): AppRole[] {
@@ -20,15 +20,15 @@ type Tone = 'light' | 'dark';
 
 function triggerClass(tone: Tone) {
   return cn(
-    'flex w-full items-center gap-2.5 rounded-[var(--radius-md)] border px-3.5 py-2.5 text-left text-sm transition-colors duration-150',
+    'flex w-full items-center justify-between gap-2.5 rounded-[var(--radius-md)] border px-3.5 py-2.5 text-left text-sm transition-colors duration-150',
     tone === 'dark'
-      ? 'border-[#214250] bg-white/[0.06] text-[#F8FAFC] hover:bg-white/[0.08]'
+      ? 'border-[var(--border-default)] bg-white/[0.06] text-[var(--text-primary)] hover:bg-white/[0.08]'
       : 'border-border bg-background text-foreground hover:bg-muted/60',
   );
 }
 
 function mutedClass(tone: Tone) {
-  return tone === 'dark' ? 'text-[#8197A3]' : 'text-muted-foreground';
+  return tone === 'dark' ? 'text-[var(--text-muted)]' : 'text-muted-foreground';
 }
 
 /**
@@ -60,11 +60,14 @@ export function RoleSwitcher({ tone = 'light' }: { tone?: Tone } = {}) {
     return (
       <div className="space-y-1.5">
         <button type="button" onClick={() => goTo(other)} className={triggerClass(tone)}>
-          <ArrowLeftRight className={cn('h-4 w-4 shrink-0', mutedClass(tone))} />
-          <span className="min-w-0 flex-1 truncate">
-            <span className={mutedClass(tone)}>Switch to </span>
-            <span className="font-semibold">{ROLE_LABEL[other]}</span>
+          <span className="flex min-w-0 items-center gap-2.5">
+            <ArrowLeftRight className={cn('h-4 w-4 shrink-0', mutedClass(tone))} />
+            <span className="truncate">
+              <span className={mutedClass(tone)}>Switch to </span>
+              <span className="font-semibold">{ROLE_LABEL[other]}</span>
+            </span>
           </span>
+          <ArrowRight className={cn('h-4 w-4 shrink-0', mutedClass(tone))} aria-hidden />
         </button>
         {alsoAdmin && (
           <DropdownMenu>

@@ -145,6 +145,7 @@ export const upsert = mutation({
     title: v.string(),
     content: v.optional(v.string()),
     isPremium: v.boolean(),
+    visibleProductIds: v.optional(v.array(v.id("products"))),
     result: v.optional(v.string()),
     trackingMode: v.optional(v.string()),
   },
@@ -153,6 +154,20 @@ export const upsert = mutation({
     const { user } = await requireCreatorOwner(ctx, args.creatorId);
     const now = Date.now();
     const result = args.result !== undefined ? normalizePickResult(args.result) : undefined;
+    const visibleProductIds =
+      args.isPremium && args.visibleProductIds && args.visibleProductIds.length > 0
+        ? args.visibleProductIds
+        : [];
+
+    if (visibleProductIds.length > 0) {
+      for (const productId of visibleProductIds) {
+        const product = await ctx.db.get(productId);
+        if (!product || product.creatorId !== args.creatorId) {
+          throw new Error("INVALID_PRODUCT");
+        }
+      }
+    }
+
     if (args.postId) {
       const existing = await ctx.db.get(args.postId);
       if (!existing || existing.creatorId !== args.creatorId) throw new Error("NOT_FOUND");
@@ -160,6 +175,7 @@ export const upsert = mutation({
         title: args.title,
         content: args.content,
         isPremium: args.isPremium,
+        visibleProductIds,
         result,
         trackingMode: args.trackingMode,
         updatedAt: now,
@@ -171,6 +187,7 @@ export const upsert = mutation({
       title: args.title,
       content: args.content,
       isPremium: args.isPremium,
+      visibleProductIds,
       result,
       trackingMode: args.trackingMode,
       createdAt: now,

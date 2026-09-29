@@ -22,6 +22,7 @@ import {
   type MemberDiscoverSportFilter,
 } from '@/lib/memberDiscoverDemo';
 import { Seo } from '@/components/Seo';
+import { SweephRibbonBackground } from '@/components/brand/SweephRibbonBackground';
 import { api } from '@convex/_generated/api';
 import { cn } from '@/lib/utils';
 
@@ -195,14 +196,17 @@ const CustomerDiscover = () => {
         description="Find winning creators and join a growing community on Sweeph."
       />
 
-      <header className="mb-6">
-        <h1 className="text-heading font-bold tracking-tight text-foreground md:text-heading-lg">
-          Discover
-        </h1>
-        <p className="mt-1.5 text-support text-muted-foreground">
-          Find winning creators and join a growing community.
-        </p>
-      </header>
+      <div className="relative -mx-4 mb-8 overflow-hidden rounded-2xl px-4 py-8 sm:-mx-6 sm:px-6 md:-mx-8 md:px-8 lg:-mx-10 lg:px-10 xl:-mx-12 xl:px-12 sm:py-10">
+        <SweephRibbonBackground variant="discover" className="rounded-2xl" />
+        <header className="relative z-10 max-w-xl">
+          <h1 className="text-heading font-bold tracking-tight text-foreground md:text-heading-lg">
+            Discover
+          </h1>
+          <p className="mt-1.5 text-support text-muted-foreground">
+            Find winning creators and join a growing community.
+          </p>
+        </header>
+      </div>
 
       {useDemo ? (
         <div className="mb-5 flex items-start gap-3 rounded-2xl border border-amber-500/30 bg-amber-500/10 px-4 py-3.5 text-amber-950 dark:text-amber-100 sm:items-center sm:px-5">

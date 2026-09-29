@@ -133,7 +133,7 @@ const statusLabel: Record<ProductUiStatus, string> = {
 const typePillClass: Record<ProductBillingType, string> = {
   subscription: 'border-sky-500/25 bg-sky-500/10 text-sky-700 dark:text-sky-300',
   'one-time': 'border-border bg-muted text-muted-foreground',
-  bundle: 'border-teal-500/25 bg-teal-500/10 text-teal-700 dark:text-teal-300',
+  bundle: 'border-[var(--brand-200)] bg-[var(--brand-100)] text-[var(--brand-700)] dark:border-transparent dark:bg-[var(--active-bg)] dark:text-[var(--brand-primary)]',
 };
 
 const typeLabel: Record<ProductBillingType, string> = {

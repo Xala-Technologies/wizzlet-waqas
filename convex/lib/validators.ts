@@ -224,6 +224,7 @@ export const postDocValidator = v.object({
   title: v.string(),
   content: v.optional(v.string()),
   isPremium: v.boolean(),
+  visibleProductIds: v.optional(v.array(v.id("products"))),
   result: v.optional(pickResultValidator),
   trackingMode: v.optional(v.string()),
   createdAt: v.number(),

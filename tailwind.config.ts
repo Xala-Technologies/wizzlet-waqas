@@ -25,7 +25,7 @@ export default {
     },
     extend: {
       fontFamily: {
-        sans: ['"Manrope"', "Inter", "system-ui", "-apple-system", "BlinkMacSystemFont", '"Segoe UI"', "sans-serif"],
+        sans: ['"Inter"', "system-ui", "-apple-system", "BlinkMacSystemFont", '"Segoe UI"', "sans-serif"],
         mono: ['"JetBrains Mono"', "monospace"],
       },
       fontSize: {
