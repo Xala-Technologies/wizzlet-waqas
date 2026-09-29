@@ -72,7 +72,7 @@ const SUBSCRIBERS: Array<{ name: string; handle: string; tone: string }> = [
   { name: 'Sam Ortiz', handle: '@samortiz', tone: 'bg-amber-500/15 text-amber-700 dark:text-amber-400' },
   { name: 'Priya Nair', handle: '@priyan', tone: 'bg-rose-500/15 text-rose-700 dark:text-rose-400' },
   { name: 'Chris Webb', handle: '@chrisw', tone: 'bg-indigo-500/15 text-indigo-700 dark:text-indigo-400' },
-  { name: 'Elena Rossi', handle: '@elenar', tone: 'bg-teal-500/15 text-teal-700 dark:text-teal-400' },
+  { name: 'Elena Rossi', handle: '@elenar', tone: 'bg-[var(--brand-100)] text-[var(--brand-700)] dark:bg-[var(--active-bg)] dark:text-[var(--brand-primary)]' },
   { name: 'Marcus Lee', handle: '@marcusl', tone: 'bg-fuchsia-500/15 text-fuchsia-700 dark:text-fuchsia-400' },
   { name: 'Ava Thompson', handle: '@avath', tone: 'bg-orange-500/15 text-orange-700 dark:text-orange-400' },
   { name: 'Noah Patel', handle: '@noahp', tone: 'bg-cyan-500/15 text-cyan-700 dark:text-cyan-400' },

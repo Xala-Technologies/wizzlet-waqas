@@ -371,26 +371,33 @@ const CreatorSubscribers = () => {
 
   return (
     <DashboardLayout type="creator">
-      <header className="mb-6 flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+      <header className="mb-7 flex flex-col gap-5 sm:mb-9 lg:flex-row lg:items-start lg:justify-between lg:gap-8">
         <div className="min-w-0">
-          <h1 className="text-2xl font-extrabold tracking-tight text-foreground sm:text-3xl">
+          <h1 className="type-page-title text-foreground md:text-[2.75rem] md:leading-[1.1]">
             Subscribers
           </h1>
-          <p className="mt-1.5 max-w-xl text-sm font-medium text-muted-foreground sm:text-base">
+          <p className="mt-3 max-w-2xl text-body font-medium text-muted-foreground">
             Manage your subscribers, view their activity, and grow your community.
           </p>
         </div>
-        <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row">
+        <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:items-center">
           <Button
             type="button"
             variant="outline"
-            className="h-11 rounded-xl"
+            className="h-12 w-full gap-2 rounded-[var(--radius-md)] px-6 sm:w-auto"
             onClick={messageAll}
           >
-            <MessageSquare className="mr-1.5 h-4 w-4" /> Message Subscribers
+            <MessageSquare className="h-5 w-5" aria-hidden />
+            Message Subscribers
           </Button>
-          <Button type="button" className="h-11 rounded-xl" onClick={exportCsv}>
-            <Download className="mr-1.5 h-4 w-4" /> Export
+          <Button
+            type="button"
+            variant="outline"
+            className="h-12 w-full gap-2 rounded-[var(--radius-md)] px-6 sm:w-auto"
+            onClick={exportCsv}
+          >
+            <Download className="h-5 w-5" aria-hidden />
+            Export
           </Button>
         </div>
       </header>
@@ -462,7 +469,7 @@ const CreatorSubscribers = () => {
           <p className="mx-auto mb-5 max-w-sm text-support text-muted-foreground">
             Share your profile link so fans can subscribe to your picks.
           </p>
-          <Button asChild className="min-h-11 rounded-xl">
+          <Button asChild size="sm">
             <Link to={emptyCtaHref}>
               {profileReady ? 'View your profile' : 'Set up your profile'}
             </Link>

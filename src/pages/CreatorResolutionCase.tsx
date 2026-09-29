@@ -223,7 +223,7 @@ const CreatorResolutionCase = () => {
         <div className="rounded-2xl border border-border bg-card p-10 text-center shadow-[var(--shadow-card)]">
           <FileWarning className="mx-auto mb-3 h-10 w-10 text-muted-foreground" />
           <p className="text-sm text-muted-foreground">No cases yet.</p>
-          <Button asChild variant="outline" className="mt-4 min-h-11 rounded-xl">
+          <Button asChild variant="outline" size="sm" className="mt-4">
             <Link to="/creator/personal-growth-manager">Growth Manager</Link>
           </Button>
         </div>

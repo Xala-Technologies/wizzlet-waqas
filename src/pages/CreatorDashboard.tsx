@@ -5,7 +5,6 @@ import { format, formatDistanceToNowStrict } from 'date-fns';
 import {
   DollarSign,
   Eye,
-  FileText,
   Loader2,
   Megaphone,
   MessageSquare,
@@ -131,8 +130,8 @@ const CreatorDashboard = () => {
       }));
 
   const demo = CREATOR_OVERVIEW_DEMO;
-  const postCount = useDemo ? demo.postCount : realPostCount;
   const mrrNet = useDemo ? demo.mrrNet : realMrrNet;
+  const totalSubCount = useDemo ? demo.totalSubscribers : (subs ?? []).length;
   const activeSubCount = useDemo ? demo.activeSubscribers : activeSubs.length;
   const postViews = useDemo ? demo.postViews : realPostViews;
   const displayRevenueTrend = useDemo ? demo.revenueTrend : revenueTrend;
@@ -278,27 +277,29 @@ const CreatorDashboard = () => {
   return (
     <DashboardLayout type="creator">
       <Seo
-        title="Creator overview — Prizelet"
-        description="Your Prizelet creator overview: posts, earnings, subscribers, and performance."
+        title="Creator overview — Sweeph"
+        description="Your Sweeph creator overview: posts, earnings, subscribers, and performance."
       />
 
-      <header className="mb-6 sm:mb-8">
-        <div className="flex flex-col gap-4 sm:block">
-          <div>
-            <p className="text-xs font-bold uppercase tracking-wide text-muted-foreground">
+      <header className="mb-7 sm:mb-9">
+        <div className="flex flex-col gap-5 sm:flex-row sm:items-start sm:justify-between sm:gap-8">
+          <div className="min-w-0">
+            <p className="text-caption font-bold uppercase tracking-[0.14em] text-muted-foreground">
               {todayLabel}
             </p>
-            <h1 className="mt-1 text-2xl font-extrabold tracking-tight text-foreground sm:text-3xl md:text-4xl">
+            <h1 className="type-page-title mt-2 text-foreground md:text-[2.75rem] md:leading-[1.1]">
               {timeOfDayGreeting(displayName)}
             </h1>
-            <p className="mt-2 text-sm font-medium text-muted-foreground sm:text-base">
+            <p className="mt-3 max-w-2xl text-body font-medium text-muted-foreground">
               Here&apos;s what&apos;s happening with your business today.
             </p>
           </div>
-          {/* Desktop Create Post lives in CreatorTopBar; keep CTA on mobile. */}
-          <Button asChild className="h-11 w-full gap-1.5 rounded-xl px-5 font-semibold md:hidden">
+          <Button
+            asChild
+            className="h-12 w-full shrink-0 gap-2 rounded-[var(--radius-md)] px-6 sm:mt-1 sm:w-auto"
+          >
             <Link to="/creator/posts">
-              <Plus className="h-4 w-4" aria-hidden />
+              <Plus className="h-5 w-5" aria-hidden />
               Create Post
             </Link>
           </Button>
@@ -333,7 +334,7 @@ const CreatorDashboard = () => {
             },
             {
               label: 'Subscribers',
-              value: formatCompact(activeSubCount),
+              value: formatCompact(totalSubCount),
               icon: Users,
               iconClassName: kpiIconTone.violet,
               trendLabel: useDemo ? demo.subscribersTrend.label : undefined,
@@ -341,13 +342,13 @@ const CreatorDashboard = () => {
               href: '/creator/subscribers',
             },
             {
-              label: 'Posts published',
-              value: formatCompact(postCount),
-              icon: FileText,
+              label: 'Active subscribers',
+              value: formatCompact(activeSubCount),
+              icon: Users,
               iconClassName: kpiIconTone.sky,
-              trendLabel: useDemo ? demo.postsTrend.label : undefined,
-              trendPositive: useDemo ? demo.postsTrend.positive : undefined,
-              href: '/creator/posts',
+              trendLabel: useDemo ? demo.activeSubscribersTrend.label : undefined,
+              trendPositive: useDemo ? demo.activeSubscribersTrend.positive : undefined,
+              href: '/creator/subscribers',
             },
             {
               label: 'Post views',

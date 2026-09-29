@@ -109,7 +109,7 @@ const CreatorAccessControl = () => {
           <p className="mx-auto mb-5 max-w-xs text-support text-muted-foreground">
             Finish onboarding to manage product access.
           </p>
-          <Button asChild className="min-h-11">
+          <Button asChild size="sm">
             <Link to="/creator/onboarding">Set up your profile</Link>
           </Button>
         </div>
@@ -131,7 +131,7 @@ const CreatorAccessControl = () => {
             Close sales or cap new subscribers. Existing members keep their access.
           </p>
         </div>
-        <Button asChild variant="outline" className="min-h-11 shrink-0 rounded-xl">
+        <Button asChild variant="outline" size="sm" className="shrink-0">
           <Link to="/creator/products">
             <ArrowLeft className="mr-1.5 h-4 w-4" /> Back to Products
           </Link>
@@ -145,7 +145,7 @@ const CreatorAccessControl = () => {
           <p className="mx-auto mb-5 max-w-sm text-support text-muted-foreground">
             Create a product first, then return here to set limits and exclusivity.
           </p>
-          <Button asChild className="min-h-11">
+          <Button asChild size="sm">
             <Link to="/creator/products">Go to Products</Link>
           </Button>
         </div>

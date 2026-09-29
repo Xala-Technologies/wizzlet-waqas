@@ -8,7 +8,6 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { Switch } from '@/components/ui/switch';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
@@ -35,12 +34,12 @@ import {
 } from '@/components/ui/dropdown-menu';
 import {
   FileText, Plus, Loader2, Pencil, Trash2,
-  CheckCircle2, Clock, Trophy, XCircle, Minus, Crown, Send, ChevronDown, ChevronUp,
-  Search, Tag, MoreVertical, ChevronLeft, ChevronRight, Sparkles,
-  Play, ArrowRight, BarChart3,
+  CheckCircle2, Clock, Trophy, XCircle, Minus, Send, ChevronDown, ChevronUp,
+  Search, Tag, MoreVertical, ChevronLeft, ChevronRight,
+  Play, ArrowRight, BarChart3, BadgeCheck, Info, Eye, X,
 } from 'lucide-react';
 import { toast } from 'sonner';
-import { format } from 'date-fns';
+import { format, formatDistanceToNowStrict } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { americanToDecimal, decimalToAmerican, profitUnits } from '@/lib/odds';
 import { parsePostContent } from '@/lib/postContent';
@@ -54,6 +53,13 @@ import {
 import { DashboardKpiStrip } from '@/components/dashboard/DashboardKpiStrip';
 import { kpiIconTone } from '@/lib/kpiIconTones';
 import { Checkbox } from '@/components/ui/checkbox';
+import {
+  PostVisibilityPicker,
+  type PostVisibilityMode,
+} from '@/components/creator/PostVisibilityPicker';
+import {
+  CREATOR_PRODUCTS_DEMO_ROWS,
+} from '@/lib/creatorProductsDemo';
 
 const PAGE_SIZE = 50;
 const TABLE_PAGE_SIZE = 10;
@@ -69,6 +75,7 @@ interface Post {
   title: string;
   content: string | null;
   is_premium: boolean;
+  visible_product_ids: string[];
   created_at: string;
   createdAtMs: number;
   result: string;
@@ -192,6 +199,59 @@ function enrichPost(post: Post): EnrichedPick {
   };
 }
 
+/** Split free-form notes into intro / numbered picks / outro for a clean subscriber preview. */
+function splitPreviewBody(notes: string): {
+  intro: string;
+  items: string[];
+  outro: string;
+} {
+  const lines = notes
+    .split('\n')
+    .map((l) => l.trim())
+    .filter((l) => l.length > 0);
+  const items: string[] = [];
+  const before: string[] = [];
+  const after: string[] = [];
+  let inList = false;
+  let pastList = false;
+  for (const line of lines) {
+    const numbered = /^\d+[.)]\s*(.+)$/.exec(line);
+    if (numbered) {
+      inList = true;
+      pastList = false;
+      items.push(numbered[1]!.trim());
+      continue;
+    }
+    if (inList) {
+      pastList = true;
+      inList = false;
+    }
+    if (pastList) after.push(line);
+    else before.push(line);
+  }
+  return {
+    intro: before.join(' '),
+    items,
+    outro: after.join(' '),
+  };
+}
+
+const PREVIEW_MEDIA_URL =
+  'https://images.unsplash.com/photo-1546519638-68e109498ffc?w=1200&h=675&fit=crop';
+
+function previewBannerCopy(status: PostUiStatus): string {
+  if (status === 'published') {
+    return 'This is a preview of your published post. Only subscribers with access to this content can see it.';
+  }
+  if (status === 'scheduled') {
+    return 'This is a preview of your scheduled post. It will appear for subscribers when it goes live.';
+  }
+  if (status === 'draft') {
+    return 'This is a preview of your draft. Subscribers cannot see it until you publish.';
+  }
+  return 'This is a preview of an archived post. It is no longer visible to new subscribers.';
+}
+
 const CreatorPosts = () => {
   const [searchParams] = useSearchParams();
   const forceDemo = searchParams.get('demo') === '1';
@@ -204,6 +264,11 @@ const CreatorPosts = () => {
     {},
     { initialNumItems: PAGE_SIZE },
   );
+  const productsRaw = useQuery(
+    api.products.mutations.listByCreator,
+    creator?._id ? { creatorId: creator._id, activeOnly: true } : 'skip',
+  );
+  const subsRaw = useQuery(api.subscriptions.mutations.listForMyCreator);
   const upsertPost = useMutation(api.posts.queries.upsert);
   const removePost = useMutation(api.posts.queries.remove);
   const setResultMut = useMutation(api.posts.queries.setResult);
@@ -218,6 +283,7 @@ const CreatorPosts = () => {
         title: p.title,
         content: p.content ?? null,
         is_premium: p.isPremium,
+        visible_product_ids: (p.visibleProductIds ?? []).map(String),
         created_at: new Date(p.createdAt).toISOString(),
         createdAtMs: p.createdAt,
         result: p.result ?? 'pending',
@@ -239,12 +305,49 @@ const CreatorPosts = () => {
       title: row.title,
       content: row.content,
       is_premium: row.is_premium,
+      visible_product_ids: [] as string[],
       created_at: new Date(row.createdAtMs).toISOString(),
       createdAtMs: row.createdAtMs,
       result: row.result,
       tracking_mode: row.tracking_mode,
     }));
   }, [realPosts, useDemo]);
+
+  const visibilityProducts = useMemo(() => {
+    const activeSubs = (subsRaw ?? []).filter((s) => s.status === 'active');
+    const countByProduct = new Map<string, number>();
+    for (const s of activeSubs) {
+      if (!s.productId) continue;
+      const key = String(s.productId);
+      countByProduct.set(key, (countByProduct.get(key) ?? 0) + 1);
+    }
+
+    const live = (productsRaw ?? [])
+      .filter((p) => p.isActive && p.billingPeriod !== 'one-time')
+      .map((p) => ({
+        id: p._id as string,
+        name: p.name,
+        subscriberCount: countByProduct.get(p._id) ?? 0,
+      }));
+
+    if (live.length > 0) return live;
+
+    // Empty catalog / sample preview — mock tiers for the visibility UI
+    return CREATOR_PRODUCTS_DEMO_ROWS.filter((r) => r.type === 'subscription' && r.status === 'active')
+      .slice(0, 4)
+      .map((r) => ({
+        id: r.id,
+        name: r.name,
+        subscriberCount: r.subscribers,
+      }));
+  }, [productsRaw, subsRaw]);
+
+  const premiumProductId = useMemo(() => {
+    const byName = visibilityProducts.find((p) => /premium/i.test(p.name));
+    if (byName) return byName.id;
+    const featured = (productsRaw ?? []).find((p) => p.isFeatured && p.isActive);
+    return featured?._id ?? visibilityProducts[0]?.id ?? null;
+  }, [productsRaw, visibilityProducts]);
 
   const enriched = useMemo(() => posts.map(enrichPost), [posts]);
 
@@ -263,6 +366,7 @@ const CreatorPosts = () => {
   const [searchPicks, setSearchPicks] = useState(queryFromUrl);
   const [tablePage, setTablePage] = useState(0);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [previewPost, setPreviewPost] = useState<EnrichedPick | null>(null);
 
   const [title, setTitle] = useState('');
   const [sport, setSport] = useState('');
@@ -273,7 +377,8 @@ const CreatorPosts = () => {
   const [units, setUnits] = useState('1');
   const [tags, setTags] = useState('');
   const [notes, setNotes] = useState('');
-  const [isPremium, setIsPremium] = useState(true);
+  const [visibilityMode, setVisibilityMode] = useState<PostVisibilityMode>('all');
+  const [selectedProductIds, setSelectedProductIds] = useState<string[]>([]);
   const [oddsSource, setOddsSource] = useState<'us' | 'eu' | null>(null);
 
   const hasPickDetails = Boolean(
@@ -403,7 +508,8 @@ const CreatorPosts = () => {
     setUnits('1');
     setTags('');
     setNotes('');
-    setIsPremium(true);
+    setVisibilityMode('all');
+    setSelectedProductIds([]);
     setOddsSource(null);
     setDetailsOpen(false);
   };
@@ -427,7 +533,20 @@ const CreatorPosts = () => {
     setUnits(parsed.units);
     setTags(parsed.tags);
     setNotes(parsed.notes);
-    setIsPremium(post.is_premium);
+    if (!post.is_premium) {
+      setVisibilityMode('all');
+      setSelectedProductIds([]);
+    } else if (post.visible_product_ids.length > 0) {
+      const onlyPremium =
+        premiumProductId &&
+        post.visible_product_ids.length === 1 &&
+        post.visible_product_ids[0] === premiumProductId;
+      setVisibilityMode(onlyPremium ? 'premium' : 'products');
+      setSelectedProductIds(post.visible_product_ids);
+    } else {
+      setVisibilityMode('all');
+      setSelectedProductIds([]);
+    }
     setDetailsOpen(
       Boolean(
         parsed.sport ||
@@ -483,8 +602,39 @@ const CreatorPosts = () => {
       toast.error('Creator profile not ready — try again in a moment');
       return;
     }
+    if (visibilityMode === 'products' && selectedProductIds.length === 0) {
+      toast.error('Select at least one product for this post');
+      return;
+    }
+    if (
+      visibilityMode === 'products' &&
+      selectedProductIds.some((id) => id.startsWith('demo-'))
+    ) {
+      toast.message('Sample products', {
+        description: 'Create a real product before targeting specific tiers. Add ?demo=0 after you have products.',
+      });
+      return;
+    }
+    if (
+      visibilityMode === 'premium' &&
+      premiumProductId?.startsWith('demo-')
+    ) {
+      toast.message('Sample products', {
+        description: 'Create a real Premium product before publishing with this audience.',
+      });
+      return;
+    }
     setSaving(true);
     const contentStr = buildContent();
+    const isPremium = true;
+    const visibleProductIds =
+      visibilityMode === 'all'
+        ? []
+        : visibilityMode === 'premium'
+          ? premiumProductId && !premiumProductId.startsWith('demo-')
+            ? [premiumProductId as Id<'products'>]
+            : []
+          : (selectedProductIds as Id<'products'>[]);
     try {
       await upsertPost({
         postId: editId ? (editId as Id<'posts'>) : undefined,
@@ -492,6 +642,7 @@ const CreatorPosts = () => {
         title: title.trim(),
         content: contentStr || undefined,
         isPremium,
+        visibleProductIds,
       });
       setShowSuccess(true);
     } catch (e) {
@@ -695,24 +846,14 @@ const CreatorPosts = () => {
               </div>
             </div>
 
-            <div className="flex items-center justify-between gap-3 rounded-xl border border-border bg-background/60 px-4 py-3.5">
-              <div className="flex min-w-0 items-start gap-3">
-                <span className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-amber-500/15 text-amber-500">
-                  <Crown className="h-4 w-4" />
-                </span>
-                <div className="min-w-0">
-                  <p className="text-ui font-medium text-foreground">Premium (subscribers only)</p>
-                  <p className="text-caption text-muted-foreground">
-                    Only paying subscribers can see this pick.
-                  </p>
-                </div>
-              </div>
-              <Switch
-                aria-label="Premium only"
-                checked={isPremium}
-                onCheckedChange={setIsPremium}
-              />
-            </div>
+            <PostVisibilityPicker
+              mode={visibilityMode}
+              onModeChange={setVisibilityMode}
+              products={visibilityProducts}
+              selectedProductIds={selectedProductIds}
+              onSelectedProductIdsChange={setSelectedProductIds}
+              premiumProductId={premiumProductId}
+            />
 
             <div className="space-y-2">
               <button
@@ -965,37 +1106,38 @@ const CreatorPosts = () => {
 
   return (
     <DashboardLayout type="creator">
-      <header className="mb-6 flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+      <div
+        className={cn(
+          'flex flex-col gap-6',
+          previewPost && 'xl:flex-row xl:items-start xl:gap-6',
+        )}
+      >
+        <div className="min-w-0 flex-1">
+      <header className="mb-7 flex flex-col gap-5 sm:mb-9 lg:flex-row lg:items-start lg:justify-between lg:gap-8">
         <div className="min-w-0">
-          <h1 className="text-2xl font-extrabold tracking-tight text-foreground sm:text-3xl">
+          <h1 className="type-page-title text-foreground md:text-[2.75rem] md:leading-[1.1]">
             Posts
           </h1>
-          <p className="mt-1.5 max-w-xl text-sm font-medium text-muted-foreground sm:text-base">
+          <p className="mt-3 max-w-2xl text-body font-medium text-muted-foreground">
             Manage your content and engage your audience.
           </p>
         </div>
-        <Button type="button" onClick={openCreate} className="h-11 w-full rounded-xl sm:w-auto">
-          <Plus className="mr-1.5 h-4 w-4" /> Create Post
+        <Button
+          type="button"
+          onClick={openCreate}
+          className="h-12 w-full shrink-0 gap-2 rounded-[var(--radius-md)] px-6 sm:mt-1 sm:w-auto"
+        >
+          <Plus className="h-5 w-5" aria-hidden />
+          Create Post
         </Button>
       </header>
 
-      {useDemo ? (
-        <div className="mb-6 flex items-start gap-3 rounded-2xl border border-amber-500/30 bg-amber-500/10 px-4 py-3.5 text-amber-950 dark:text-amber-100 sm:items-center sm:px-5">
-          <Sparkles className="mt-0.5 h-5 w-5 shrink-0 text-amber-600 dark:text-amber-400 sm:mt-0" aria-hidden />
-          <p className="min-w-0 flex-1 text-sm font-semibold leading-snug">
-            Sample preview data — metrics and table rows are mock content so you can review the layout.
-            Publish a real post to replace them, or add{' '}
-            <span className="font-mono text-xs">?demo=0</span> to see the empty state.
-          </p>
-        </div>
-      ) : null}
-
-      <div className={cn(segmentedTrackClassName, 'mb-5 w-full overflow-x-auto')}>
+      <div className={cn(segmentedTrackClassName, 'mb-5 flex w-full flex-nowrap')}>
         {STATUS_TABS.map((tab) => (
           <button
             key={tab.id}
             type="button"
-            className={segmentedItemClassName(statusTab === tab.id)}
+            className={cn(segmentedItemClassName(statusTab === tab.id), 'flex-1')}
             onClick={() => {
               setStatusTab(tab.id);
               setTablePage(0);
@@ -1109,13 +1251,24 @@ const CreatorPosts = () => {
                   <TableHead className="hidden sm:table-cell">Type</TableHead>
                   <TableHead className="hidden md:table-cell">Date</TableHead>
                   <TableHead>Status</TableHead>
-                  <TableHead className="w-12 text-right">Actions</TableHead>
+                  <TableHead className="w-[1%] whitespace-nowrap text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {pageRows.map((row) => (
-                  <TableRow key={row.id}>
-                    <TableCell>
+                  <TableRow
+                    key={row.id}
+                    className={cn(
+                      'cursor-pointer',
+                      previewPost?.id === row.id && 'bg-muted/60',
+                    )}
+                    onClick={() => setPreviewPost(row)}
+                    data-state={previewPost?.id === row.id ? 'selected' : undefined}
+                  >
+                    <TableCell
+                      onClick={(e) => e.stopPropagation()}
+                      onKeyDown={(e) => e.stopPropagation()}
+                    >
                       <Checkbox
                         checked={selectedIds.has(row.id)}
                         onCheckedChange={(v) => toggleSelectOne(row.id, v === true)}
@@ -1151,50 +1304,69 @@ const CreatorPosts = () => {
                         {statusLabel[row.uiStatus]}
                       </span>
                     </TableCell>
-                    <TableCell className="text-right">
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-9 w-9"
-                            aria-label="Post actions"
-                          >
-                            <MoreVertical className="h-4 w-4" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuItem onClick={() => openEdit(row)}>
-                            <Pencil className="mr-2 h-4 w-4" /> Edit
-                          </DropdownMenuItem>
-                          {row.result === 'pending' ? (
-                            <>
-                              <DropdownMenuItem
-                                onClick={() => void handleResultChange(row.id, 'won')}
-                              >
-                                <Trophy className="mr-2 h-4 w-4 text-emerald-500" /> Mark won
-                              </DropdownMenuItem>
-                              <DropdownMenuItem
-                                onClick={() => void handleResultChange(row.id, 'lost')}
-                              >
-                                <XCircle className="mr-2 h-4 w-4 text-red-500" /> Mark lost
-                              </DropdownMenuItem>
-                              <DropdownMenuItem
-                                onClick={() => void handleResultChange(row.id, 'push')}
-                              >
-                                <Minus className="mr-2 h-4 w-4" /> Mark push
-                              </DropdownMenuItem>
-                              <DropdownMenuSeparator />
-                            </>
-                          ) : null}
-                          <DropdownMenuItem
-                            className="text-destructive focus:text-destructive"
-                            onClick={() => setDeleteId(row.id)}
-                          >
-                            <Trash2 className="mr-2 h-4 w-4" /> Delete
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
+                    <TableCell
+                      className="text-right"
+                      onClick={(e) => e.stopPropagation()}
+                      onKeyDown={(e) => e.stopPropagation()}
+                    >
+                      <div className="flex items-center justify-end gap-1.5">
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          className="hidden h-9 gap-1.5 px-3 sm:inline-flex"
+                          onClick={() => setPreviewPost(row)}
+                        >
+                          <Eye className="h-3.5 w-3.5" aria-hidden />
+                          Preview
+                        </Button>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-9 w-9"
+                              aria-label="Post actions"
+                            >
+                              <MoreVertical className="h-4 w-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuItem onClick={() => setPreviewPost(row)}>
+                              <Eye className="mr-2 h-4 w-4" /> Preview
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => openEdit(row)}>
+                              <Pencil className="mr-2 h-4 w-4" /> Edit
+                            </DropdownMenuItem>
+                            {row.result === 'pending' ? (
+                              <>
+                                <DropdownMenuItem
+                                  onClick={() => void handleResultChange(row.id, 'won')}
+                                >
+                                  <Trophy className="mr-2 h-4 w-4 text-emerald-500" /> Mark won
+                                </DropdownMenuItem>
+                                <DropdownMenuItem
+                                  onClick={() => void handleResultChange(row.id, 'lost')}
+                                >
+                                  <XCircle className="mr-2 h-4 w-4 text-red-500" /> Mark lost
+                                </DropdownMenuItem>
+                                <DropdownMenuItem
+                                  onClick={() => void handleResultChange(row.id, 'push')}
+                                >
+                                  <Minus className="mr-2 h-4 w-4" /> Mark push
+                                </DropdownMenuItem>
+                                <DropdownMenuSeparator />
+                              </>
+                            ) : null}
+                            <DropdownMenuItem
+                              className="text-destructive focus:text-destructive"
+                              onClick={() => setDeleteId(row.id)}
+                            >
+                              <Trash2 className="mr-2 h-4 w-4" /> Delete
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </div>
                     </TableCell>
                   </TableRow>
                 ))}
@@ -1257,6 +1429,210 @@ const CreatorPosts = () => {
           </>
         )}
       </section>
+        </div>
+
+        {previewPost ? (
+          (() => {
+            const displayName =
+              creator?.displayName?.trim() ||
+              creator?.username ||
+              (useDemo ? 'AlexPicks' : 'You');
+            const initials = displayName
+              .split(/\s+/)
+              .map((w) => w[0])
+              .join('')
+              .slice(0, 2)
+              .toUpperCase();
+            const avatarUrl = creator?.avatarUrl ?? null;
+            const verified = useDemo || creator?.verificationStatus === 'verified';
+            const parsed = parsePostContent(previewPost.content);
+            const { intro, items, outro } = splitPreviewBody(parsed.notes);
+            const fallbackLine = [
+              previewPost.pick,
+              previewPost.usOdds && `(${previewPost.usOdds})`,
+              `${previewPost.units} unit`,
+            ]
+              .filter(Boolean)
+              .join(' — ');
+            const whenLabel = formatDistanceToNowStrict(new Date(previewPost.created_at), {
+              addSuffix: true,
+            });
+
+            return (
+              <aside
+                className="flex w-full shrink-0 flex-col overflow-hidden rounded-2xl border border-border bg-card shadow-[var(--shadow-card)] xl:sticky xl:top-6 xl:w-[min(100%,420px)] xl:max-h-[calc(100dvh-6rem)]"
+                aria-label="Post preview"
+              >
+                <div className="flex shrink-0 items-start justify-between gap-3 border-b border-border px-5 py-4 sm:px-6 sm:py-5">
+                  <div className="min-w-0 space-y-1">
+                    <h2 className="text-xl font-bold tracking-tight text-foreground">
+                      Post Preview
+                    </h2>
+                    <p className="text-sm text-muted-foreground">
+                      This is how your subscribers see your post.
+                    </p>
+                  </div>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    className="h-9 w-9 shrink-0 text-muted-foreground"
+                    aria-label="Close preview"
+                    onClick={() => setPreviewPost(null)}
+                  >
+                    <X className="h-4 w-4" />
+                  </Button>
+                </div>
+
+                <div className="flex min-h-0 flex-1 flex-col gap-5 overflow-y-auto px-5 py-5 sm:px-6">
+                  <article className="rounded-2xl border border-border bg-background p-5">
+                    <div className="flex items-center gap-3">
+                      {avatarUrl ? (
+                        <img
+                          src={avatarUrl}
+                          alt=""
+                          className="h-10 w-10 shrink-0 rounded-full object-cover"
+                        />
+                      ) : (
+                        <div
+                          className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary/15 text-sm font-bold text-primary"
+                          aria-hidden
+                        >
+                          {initials}
+                        </div>
+                      )}
+                      <div className="min-w-0 flex-1">
+                        <div className="flex min-w-0 flex-wrap items-center gap-1.5">
+                          <span className="truncate text-sm font-bold text-foreground">
+                            {displayName}
+                          </span>
+                          {verified ? (
+                            <BadgeCheck
+                              className="h-4 w-4 shrink-0 text-primary"
+                              aria-label="Verified"
+                            />
+                          ) : null}
+                          <span className="text-xs text-muted-foreground">{whenLabel}</span>
+                        </div>
+                      </div>
+                      <div className="flex shrink-0 items-center gap-1.5">
+                        {previewPost.is_premium ? (
+                          <span className="inline-flex items-center rounded-full bg-violet-500/15 px-2.5 py-0.5 text-xs font-semibold text-violet-700 dark:text-violet-300">
+                            Premium
+                          </span>
+                        ) : null}
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8 text-muted-foreground"
+                          aria-label="Post options"
+                          onClick={() =>
+                            toast.message('Post options', {
+                              description:
+                                'Subscriber menu actions are not available in preview.',
+                            })
+                          }
+                        >
+                          <MoreVertical className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </div>
+
+                    <h3 className="mt-4 text-lg font-extrabold leading-snug tracking-tight text-foreground">
+                      {previewPost.title}
+                    </h3>
+
+                    {intro || items.length > 0 || outro ? (
+                      <div className="mt-2.5 space-y-3 text-sm leading-relaxed text-foreground/90">
+                        {intro ? <p>{intro}</p> : null}
+                        {items.length > 0 ? (
+                          <ol className="list-decimal space-y-1.5 pl-5 marker:font-semibold marker:text-foreground">
+                            {items.map((item) => (
+                              <li key={item}>{item}</li>
+                            ))}
+                          </ol>
+                        ) : null}
+                        {outro ? <p>{outro}</p> : null}
+                      </div>
+                    ) : (
+                      <p className="mt-2.5 text-sm leading-relaxed text-muted-foreground">
+                        {fallbackLine}
+                      </p>
+                    )}
+
+                    <div
+                      className={cn(
+                        'relative mt-4 overflow-hidden rounded-xl border border-border bg-muted',
+                        previewPost.postType === 'Video' && 'cursor-pointer',
+                      )}
+                      role={previewPost.postType === 'Video' ? 'button' : undefined}
+                      tabIndex={previewPost.postType === 'Video' ? 0 : undefined}
+                      onClick={
+                        previewPost.postType === 'Video'
+                          ? () =>
+                              toast.message('Video', {
+                                description: useDemo
+                                  ? 'Sample preview — video playback is not live.'
+                                  : 'Video player opens when media posts ship.',
+                              })
+                          : undefined
+                      }
+                      onKeyDown={
+                        previewPost.postType === 'Video'
+                          ? (e) => {
+                              if (e.key === 'Enter' || e.key === ' ') {
+                                e.preventDefault();
+                                toast.message('Video', {
+                                  description: useDemo
+                                    ? 'Sample preview — video playback is not live.'
+                                    : 'Video player opens when media posts ship.',
+                                });
+                              }
+                            }
+                          : undefined
+                      }
+                      aria-label={
+                        previewPost.postType === 'Video' ? 'Play video preview' : undefined
+                      }
+                    >
+                      <img
+                        src={PREVIEW_MEDIA_URL}
+                        alt=""
+                        className="aspect-[16/10] w-full object-cover"
+                      />
+                      {previewPost.postType === 'Video' ? (
+                        <div className="absolute inset-0 flex items-center justify-center bg-black/25">
+                          <span className="flex h-12 w-12 items-center justify-center rounded-full bg-white/95 text-foreground shadow-md">
+                            <Play className="h-5 w-5 fill-current" aria-hidden />
+                          </span>
+                        </div>
+                      ) : null}
+                    </div>
+                  </article>
+
+                  <div className="flex items-start gap-2.5 rounded-xl border border-primary/20 bg-primary/10 px-3.5 py-3 text-sm leading-snug text-foreground">
+                    <Info className="mt-0.5 h-4 w-4 shrink-0 text-primary" aria-hidden />
+                    <p>{previewBannerCopy(previewPost.uiStatus)}</p>
+                  </div>
+                </div>
+
+                <div className="flex shrink-0 justify-end border-t border-border px-5 py-4 sm:px-6">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className="px-6"
+                    onClick={() => setPreviewPost(null)}
+                  >
+                    Close
+                  </Button>
+                </div>
+              </aside>
+            );
+          })()
+        ) : null}
+      </div>
 
       {deleteDialog}
     </DashboardLayout>

@@ -14,14 +14,15 @@ export function OverviewReferralBanner() {
             Refer a creator, earn rewards!
           </p>
           <p className="mt-0.5 text-sm font-medium text-primary-foreground/85">
-            Share Prizelet with fellow creators and earn when they get paid.
+            Share Sweeph with fellow creators and earn when they get paid.
           </p>
         </div>
       </div>
       <Button
         asChild
         variant="secondary"
-        className="h-11 w-full shrink-0 rounded-xl bg-white px-5 font-semibold text-primary hover:bg-white/90 sm:w-auto"
+        size="sm"
+        className="w-full shrink-0 bg-white px-5 font-semibold text-primary hover:bg-white/90 sm:w-auto"
       >
         <Link to="/creator/referrals">Get Your Referral Link</Link>
       </Button>

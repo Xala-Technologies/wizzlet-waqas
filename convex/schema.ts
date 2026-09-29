@@ -122,6 +122,11 @@ export default defineSchema({
     title: v.string(),
     content: v.optional(v.string()),
     isPremium: v.boolean(),
+    /**
+     * When set (non-empty), only active subscribers on these products may view.
+     * Empty / omitted + isPremium = any active subscriber on the creator.
+     */
+    visibleProductIds: v.optional(v.array(v.id("products"))),
     result: v.optional(pickResult),
     trackingMode: v.optional(v.string()),
     createdAt: v.number(),

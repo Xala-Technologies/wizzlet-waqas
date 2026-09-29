@@ -1,10 +1,15 @@
 import type { Doc, Id } from "../_generated/dataModel";
 import type { QueryCtx } from "../_generated/server";
 import { hasContentAccess, userHasRole } from "./auth";
+import { subscriptionGrantsContentAccess } from "./contentAccess";
 
 /**
  * Premium post entitlement.
  * viewerUserId must be Convex Auth users._id (from getAuthUserId), never raw JWT subject.
+ *
+ * - Public (!isPremium): anyone
+ * - Premium, no product filter: any active subscriber on the creator
+ * - Premium + visibleProductIds: active sub whose productId is in the list
  */
 export async function canViewPostContent(
   ctx: QueryCtx,
@@ -23,7 +28,26 @@ export async function canViewPostContent(
   if (!creator) return false;
   if (creator.userId === user._id) return true;
 
-  return hasContentAccess(ctx, user._id, post.creatorId as Id<"creators">);
+  const productIds = post.visibleProductIds ?? [];
+  if (productIds.length === 0) {
+    return hasContentAccess(ctx, user._id, post.creatorId as Id<"creators">);
+  }
+
+  const nowMs = Date.now();
+  const allowed = new Set(productIds.map(String));
+  const subs = await ctx.db
+    .query("subscriptions")
+    .withIndex("by_userId_creatorId", (q) =>
+      q.eq("userId", user._id).eq("creatorId", post.creatorId),
+    )
+    .collect();
+
+  return subs.some(
+    (s) =>
+      subscriptionGrantsContentAccess(s, nowMs) &&
+      s.productId != null &&
+      allowed.has(String(s.productId)),
+  );
 }
 
 export function redactPostContent<T extends { content?: string | null; isPremium: boolean }>(

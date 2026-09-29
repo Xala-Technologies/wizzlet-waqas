@@ -353,17 +353,17 @@ const CustomerSettings = () => {
         </div>
       ) : null}
 
-      <div className="mx-auto max-w-3xl space-y-5">
+      <div className="space-y-5">
         {/* Account */}
-        <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
+        <section className="rounded-2xl border border-border bg-card p-5 shadow-[var(--shadow-card)] sm:p-6">
           <div className="mb-5 flex items-start justify-between gap-3">
             <div className="flex items-start gap-3">
               <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary/10">
                 <User className="h-4 w-4 text-primary" />
               </div>
               <div>
-                <h2 className="text-base font-bold text-slate-900">Account</h2>
-                <p className="text-sm text-slate-500">Update your personal information.</p>
+                <h2 className="text-base font-bold text-foreground">Account</h2>
+                <p className="text-sm text-muted-foreground">Update your personal information.</p>
               </div>
             </div>
             {editing ? (
@@ -393,7 +393,7 @@ const CustomerSettings = () => {
                 type="button"
                 variant="outline"
                 size="sm"
-                className="h-9 rounded-xl border-slate-200"
+                className="h-9 rounded-xl border-border"
                 onClick={() => setEditing(true)}
               >
                 Edit
@@ -403,32 +403,32 @@ const CustomerSettings = () => {
 
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="space-y-1.5 sm:col-span-2">
-              <label htmlFor="fullName" className="text-xs font-semibold text-slate-500">
+              <label htmlFor="fullName" className="text-xs font-semibold text-muted-foreground">
                 Full Name
               </label>
               <Input
                 id="fullName"
-                className="h-11 rounded-xl border-slate-200 bg-slate-50 text-sm"
+                className="h-11 rounded-xl border-border bg-muted/40 text-sm"
                 value={fullName}
                 onChange={(e) => setFullName(e.target.value)}
                 disabled={!editing}
               />
             </div>
             <div className="space-y-1.5 sm:col-span-2">
-              <label htmlFor="email" className="text-xs font-semibold text-slate-500">
+              <label htmlFor="email" className="text-xs font-semibold text-muted-foreground">
                 Email Address
               </label>
               <Input
                 id="email"
                 type="email"
-                className="h-11 rounded-xl border-slate-200 bg-slate-50 text-sm"
+                className="h-11 rounded-xl border-border bg-muted/40 text-sm"
                 value={displayEmail}
                 disabled
               />
               {editing ? (
                 <div className="pt-1">
                   {openEmailRequest ? (
-                    <p className="text-xs text-slate-500">
+                    <p className="text-xs text-muted-foreground">
                       Open email-change request
                       {openEmailRequest.requestedEmail
                         ? `: ${openEmailRequest.requestedEmail}`
@@ -447,7 +447,7 @@ const CustomerSettings = () => {
               ) : null}
             </div>
             <div className="space-y-1.5 sm:col-span-2">
-              <label htmlFor="phone" className="text-xs font-semibold text-slate-500">
+              <label htmlFor="phone" className="text-xs font-semibold text-muted-foreground">
                 Phone Number
               </label>
               <div className="relative">
@@ -456,7 +456,7 @@ const CustomerSettings = () => {
                 </span>
                 <Input
                   id="phone"
-                  className="h-11 rounded-xl border-slate-200 bg-slate-50 pl-10 text-sm"
+                  className="h-11 rounded-xl border-border bg-muted/40 pl-10 text-sm"
                   value={displayPhone}
                   onChange={(e) => setPhone(e.target.value)}
                   placeholder="+47 412 34 567"
@@ -465,21 +465,22 @@ const CustomerSettings = () => {
               </div>
             </div>
             <div className="space-y-1.5 sm:col-span-2">
-              <label htmlFor="passwordMask" className="text-xs font-semibold text-slate-500">
+              <label htmlFor="passwordMask" className="text-xs font-semibold text-muted-foreground">
                 Password
               </label>
               <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
                 <Input
                   id="passwordMask"
                   type="password"
-                  className="h-11 flex-1 rounded-xl border-slate-200 bg-slate-50 text-sm"
+                  className="h-11 flex-1 rounded-xl border-border bg-muted/40 text-sm"
                   value="••••••••••••"
                   disabled
                   readOnly
                 />
                 <Button
                   type="button"
-                  className="h-11 shrink-0 rounded-xl font-semibold"
+                  size="sm"
+                  className="shrink-0 font-semibold"
                   onClick={() => {
                     if (!hasPasswordAccount && !useDemo) {
                       toast.message('This account signs in with a provider — no password to change.');
@@ -495,9 +496,9 @@ const CustomerSettings = () => {
           </div>
 
           {me?.discordId ? (
-            <p className="mt-4 text-xs text-slate-500">
+            <p className="mt-4 text-xs text-muted-foreground">
               Discord connected as{' '}
-              <span className="font-semibold text-slate-700">
+              <span className="font-semibold text-foreground">
                 {me.discordUsername ?? me.discordId}
               </span>
             </p>
@@ -505,18 +506,18 @@ const CustomerSettings = () => {
         </section>
 
         {/* Notifications */}
-        <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
+        <section className="rounded-2xl border border-border bg-card p-5 shadow-[var(--shadow-card)] sm:p-6">
           <div className="mb-5 flex items-start gap-3">
             <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-sky-500/10">
               <Bell className="h-4 w-4 text-sky-600" />
             </div>
             <div>
-              <h2 className="text-base font-bold text-slate-900">Notifications</h2>
-              <p className="text-sm text-slate-500">Choose what you want to be notified about.</p>
+              <h2 className="text-base font-bold text-foreground">Notifications</h2>
+              <p className="text-sm text-muted-foreground">Choose what you want to be notified about.</p>
             </div>
           </div>
 
-          <ul className={cn('divide-y divide-slate-100', savingNotif && 'opacity-70')}>
+          <ul className={cn('divide-y divide-border', savingNotif && 'opacity-70')}>
             {(
               [
                 {
@@ -543,12 +544,12 @@ const CustomerSettings = () => {
               ] as const
             ).map((row) => (
               <li key={row.key} className="flex items-center gap-3 py-4 first:pt-0 last:pb-0">
-                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-slate-100">
-                  <row.icon className="h-4 w-4 text-slate-500" />
+                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-muted">
+                  <row.icon className="h-4 w-4 text-muted-foreground" />
                 </div>
                 <div className="min-w-0 flex-1">
-                  <p className="text-sm font-semibold text-slate-900">{row.title}</p>
-                  <p className="text-xs text-slate-500">{row.desc}</p>
+                  <p className="text-sm font-semibold text-foreground">{row.title}</p>
+                  <p className="text-xs text-muted-foreground">{row.desc}</p>
                 </div>
                 <Switch
                   checked={row.checked}
@@ -582,7 +583,7 @@ const CustomerSettings = () => {
 
           <div className="flex flex-col gap-3 rounded-xl border border-border bg-muted/40 p-4 sm:flex-row sm:items-center sm:justify-between">
             <div className="flex items-center gap-4">
-              <div className="flex h-12 w-[72px] items-center justify-center rounded-lg bg-[#1A1F71] text-xs font-extrabold italic tracking-wide text-white shadow-sm">
+              <div className="flex h-12 w-[72px] items-center justify-center rounded-lg bg-[#1A1F71] text-xs font-extrabold italic tracking-wide text-white shadow-[var(--shadow-card)]">
                 VISA
               </div>
               <div>
@@ -597,7 +598,8 @@ const CustomerSettings = () => {
             <Button
               type="button"
               variant="outline"
-              className="h-10 shrink-0 rounded-xl font-semibold"
+              size="sm"
+              className="shrink-0 font-semibold"
               disabled={portalLoading}
               onClick={() => void managePayment()}
             >
@@ -608,15 +610,15 @@ const CustomerSettings = () => {
         </section>
 
         {/* Privacy */}
-        <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
+        <section className="rounded-2xl border border-border bg-card p-5 shadow-[var(--shadow-card)] sm:p-6">
           <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div className="flex items-start gap-3">
               <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-emerald-500/10">
                 <ShieldCheck className="h-4 w-4 text-emerald-600" />
               </div>
               <div>
-                <h2 className="text-base font-bold text-slate-900">Privacy & Account</h2>
-                <p className="text-sm text-slate-500">
+                <h2 className="text-base font-bold text-foreground">Privacy & Account</h2>
+                <p className="text-sm text-muted-foreground">
                   Manage your privacy or delete your account.
                 </p>
                 {openDeletionRequest ? (
@@ -630,15 +632,16 @@ const CustomerSettings = () => {
               <Button
                 type="button"
                 variant="outline"
-                className="h-9 rounded-xl border-primary/30 bg-primary/5 text-primary hover:bg-primary/10"
+                size="sm"
+                className="border-primary/30 bg-primary/5 text-primary hover:bg-primary/10"
                 asChild
               >
                 <Link to="/support">Privacy Policy</Link>
               </Button>
               <Button
                 type="button"
-                variant="outline"
-                className="h-9 rounded-xl border-rose-200 bg-rose-50 text-rose-600 hover:bg-rose-100 hover:text-rose-700"
+                variant="destructive-outline"
+                size="sm"
                 disabled={!!openDeletionRequest}
                 onClick={() => setDeleteOpen(true)}
               >
@@ -697,7 +700,7 @@ const CustomerSettings = () => {
             </DialogDescription>
           </DialogHeader>
           {!hasPasswordAccount && !useDemo ? (
-            <p className="text-sm text-slate-500">
+            <p className="text-sm text-muted-foreground">
               This account signs in with Discord or another provider, so there is no Prizelet
               password to change.
             </p>

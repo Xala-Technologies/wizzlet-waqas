@@ -242,7 +242,8 @@ const CustomerSubscriptionsBilling = () => {
             </p>
           </div>
         </div>
-        <Button asChild variant="secondary" className="min-h-10 shrink-0 rounded-xl font-semibold">
+        <Button asChild variant="secondary" size="sm"
+        className="shrink-0 font-semibold">
           <Link to="/dashboard/discover">Browse Creators →</Link>
         </Button>
       </div>

@@ -1,5 +1,5 @@
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { PrizeletLogo } from '@/components/PrizeletLogo';
+import { SweephLogo } from '@/components/SweephLogo';
 import { Button } from '@/components/ui/button';
 import { useDemoAdminStore } from '@/components/demo/demoAdminStore';
 import { dashboardSidebarAsideClassName } from '@/lib/dashboardSidebar';
@@ -67,18 +67,20 @@ export function DemoAdminSidebar({ mobile = false }: { mobile?: boolean } = {}) 
 
   return (
     <aside className={dashboardSidebarAsideClassName(mobile)}>
-      <div className="px-5 py-5">
-        <PrizeletLogo size="md" linkTo="/demo/admin" />
-      </div>
+      {!mobile && (
+        <div className="border-b border-border px-5 pb-5 pt-6">
+          <SweephLogo size="sidebar" linkTo="/demo/admin" variant="light" />
+        </div>
+      )}
 
-      <div className="px-5 mb-4">
+      <div className={`mb-4 px-5 ${mobile ? 'pt-4' : 'pt-4'}`}>
         <div className="flex items-center gap-2 rounded-lg bg-destructive/10 px-3 py-1.5">
           <Shield className="h-3.5 w-3.5 text-destructive" />
           <span className="text-caption font-medium text-destructive">Admin Panel</span>
         </div>
       </div>
 
-      <nav className="flex-1 overflow-y-auto px-3 pb-4 space-y-0.5">
+      <nav className="flex-1 space-y-0.5 overflow-y-auto px-3 pb-4">
         {demoAdminItems.map((item) => (
           <NavItemLink
             key={item.href}
@@ -89,11 +91,11 @@ export function DemoAdminSidebar({ mobile = false }: { mobile?: boolean } = {}) 
         ))}
       </nav>
 
-      <div className="px-3 py-4 border-t border-border">
+      <div className="border-t border-border px-3 py-4">
         <Button
           variant="ghost"
           size="sm"
-          className="w-full justify-start text-muted-foreground hover:text-foreground text-ui"
+          className="w-full justify-start text-ui text-muted-foreground hover:text-foreground"
           onClick={() => navigate('/')}
         >
           <LogOut className="mr-2 h-3.5 w-3.5" />

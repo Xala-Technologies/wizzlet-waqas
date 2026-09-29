@@ -29,7 +29,7 @@ const DEFAULTS: PlatformSettings = {
   standard_fee_percent: 10,
   intro_fee_percent: 5,
   intro_period_days: 30,
-  platform_name: 'Prizelet',
+  platform_name: 'Sweeph',
   support_email: 'support@prizelet.com',
   tagline: 'The premium creator platform',
   min_payout_amount: 50,

@@ -7,7 +7,8 @@ import {
   SheetTitle,
   SheetTrigger,
 } from '@/components/ui/sheet';
-import { PrizeletLogo } from '@/components/PrizeletLogo';
+import { SweephLogo } from '@/components/SweephLogo';
+import { ThemeToggle } from '@/components/ThemeToggle';
 
 interface MobileTopBarProps {
   /** Sidebar rendered inside the slide-over drawer. */
@@ -30,13 +31,14 @@ export function MobileTopBar({ children, homeHref, badge, title }: MobileTopBarP
 
   return (
     <div className="md:hidden sticky top-0 z-30 flex items-center gap-2 border-b border-border bg-card px-4 py-2.5 pt-[max(0.625rem,env(safe-area-inset-top))]">
-      <PrizeletLogo size="sm" linkTo={homeHref} />
+      <SweephLogo size="sm" linkTo={homeHref} />
       {title ? (
         <p className="min-w-0 flex-1 truncate text-sm font-medium text-foreground">{title}</p>
       ) : (
         <div className="flex-1" />
       )}
       {badge && <div className="shrink-0">{badge}</div>}
+      <ThemeToggle className="h-11 w-11 shrink-0 rounded-lg" />
       <Sheet open={open} onOpenChange={setOpen}>
         <SheetTrigger
           aria-label="Open navigation menu"

@@ -1,6 +1,6 @@
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useQuery } from 'convex/react';
-import { PrizeletLogo } from '@/components/PrizeletLogo';
+import { SweephLogo } from '@/components/SweephLogo';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { ThemeToggle } from '@/components/ThemeToggle';
@@ -156,8 +156,8 @@ export function AdminSidebar({ mobile = false }: { mobile?: boolean } = {}) {
   return (
     <aside className={dashboardSidebarAsideClassName(mobile)}>
       {!mobile && (
-        <div className="px-5 py-5">
-          <PrizeletLogo size="md" linkTo="/admin" />
+        <div className="border-b border-border px-5 pb-5 pt-6">
+          <SweephLogo size="sidebar" linkTo="/admin" variant="light" />
         </div>
       )}
 

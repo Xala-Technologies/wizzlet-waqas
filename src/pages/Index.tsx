@@ -17,10 +17,10 @@ const Index = () => {
   useEffect(() => { trackPageView('home'); }, []);
 
   return (
-    <div className="min-h-screen bg-noise">
-      <Seo title={'Prizelet — Private Creator Infrastructure'} description={'Prizelet is the invite-only system where creators sell subscriptions, gate premium content, and grow a private network of members.'} />
+    <div className="min-h-screen bg-white dark:bg-background">
+      <Seo title={'Sweeph — Private Creator Infrastructure'} description={'Sweeph is the invite-only system where creators sell subscriptions, gate premium content, and grow a private network of members.'} />
       <Navbar />
-      <main id="main-content">
+      <main id="main-content" className="bg-white dark:bg-background">
       <HeroSection />
       <TodaysEventsSection />
       <WhySwitchSection />

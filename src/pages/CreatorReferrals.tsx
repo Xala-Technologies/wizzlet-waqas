@@ -490,10 +490,10 @@ const CreatorReferrals = () => {
               <Button
                 type="button"
                 variant="outline"
-                className="min-h-11 shrink-0 rounded-xl"
+                className="h-12 shrink-0 gap-2 rounded-[var(--radius-md)] px-6"
                 onClick={exportCsv}
               >
-                <Download className="mr-1.5 h-3.5 w-3.5" /> Export
+                <Download className="h-5 w-5" aria-hidden /> Export
               </Button>
             </div>
           </div>

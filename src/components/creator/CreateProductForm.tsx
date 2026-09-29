@@ -492,7 +492,7 @@ export function CreateProductForm({
         </div>
       </div>
 
-      <div className="grid grid-cols-1 gap-5 xl:grid-cols-12 xl:items-start">
+      <div className="grid grid-cols-1 gap-5 xl:grid-cols-12 xl:items-stretch">
         <div className="flex flex-col gap-4 xl:col-span-8">
           <Section n={1} title="Basic Information">
             <div className="space-y-4">
@@ -680,6 +680,7 @@ export function CreateProductForm({
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
+                      <SelectItem value="daily">per day</SelectItem>
                       <SelectItem value="weekly">per week</SelectItem>
                       <SelectItem value="monthly">per month</SelectItem>
                       <SelectItem value="yearly">per year</SelectItem>
@@ -876,7 +877,7 @@ export function CreateProductForm({
         </div>
 
         <aside className="xl:col-span-4">
-          <div className="sticky top-4 overflow-hidden rounded-2xl border border-border bg-card shadow-[var(--shadow-card)]">
+          <div className="overflow-hidden rounded-2xl border border-border bg-card shadow-[var(--shadow-card)] xl:sticky xl:top-[calc(var(--topbar-height)+1rem)] xl:max-h-[calc(100dvh-var(--topbar-height)-2rem)] xl:overflow-y-auto xl:overflow-x-hidden">
             <div className="border-b border-border px-4 py-3">
               <p className="text-sm font-extrabold text-foreground">Preview</p>
               <p className="text-xs text-muted-foreground">How fans will see this offer</p>

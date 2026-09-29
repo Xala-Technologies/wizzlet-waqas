@@ -22,6 +22,7 @@ import {
   type MemberDiscoverSportFilter,
 } from '@/lib/memberDiscoverDemo';
 import { Seo } from '@/components/Seo';
+import { SweephRibbonBackground } from '@/components/brand/SweephRibbonBackground';
 import { api } from '@convex/_generated/api';
 import { cn } from '@/lib/utils';
 
@@ -98,7 +99,7 @@ const CustomerDiscover = () => {
           id: c._id,
           username: c.username,
           displayName: name,
-          bio: c.bio?.trim() || 'Verified Prizelet creator.',
+          bio: c.bio?.trim() || 'Verified Sweeph creator.',
           avatarUrl: c.avatarUrl ?? null,
           bannerUrl: c.bannerUrl ?? null,
           sports: inferSports(c.bio ?? null, c.username),
@@ -191,18 +192,21 @@ const CustomerDiscover = () => {
   return (
     <DashboardLayout type="member">
       <Seo
-        title="Discover — Prizelet"
-        description="Find winning creators and join a growing community on Prizelet."
+        title="Discover — Sweeph"
+        description="Find winning creators and join a growing community on Sweeph."
       />
 
-      <header className="mb-6">
-        <h1 className="text-heading font-bold tracking-tight text-slate-900 md:text-heading-lg">
-          Discover
-        </h1>
-        <p className="mt-1.5 text-support text-slate-500">
-          Find winning creators and join a growing community.
-        </p>
-      </header>
+      <div className="relative -mx-4 mb-8 overflow-hidden rounded-2xl px-4 py-8 sm:-mx-6 sm:px-6 md:-mx-8 md:px-8 lg:-mx-10 lg:px-10 xl:-mx-12 xl:px-12 sm:py-10">
+        <SweephRibbonBackground variant="discover" className="rounded-2xl" />
+        <header className="relative z-10 max-w-xl">
+          <h1 className="text-heading font-bold tracking-tight text-foreground md:text-heading-lg">
+            Discover
+          </h1>
+          <p className="mt-1.5 text-support text-muted-foreground">
+            Find winning creators and join a growing community.
+          </p>
+        </header>
+      </div>
 
       {useDemo ? (
         <div className="mb-5 flex items-start gap-3 rounded-2xl border border-amber-500/30 bg-amber-500/10 px-4 py-3.5 text-amber-950 dark:text-amber-100 sm:items-center sm:px-5">
@@ -231,8 +235,8 @@ const CustomerDiscover = () => {
                 className={cn(
                   'inline-flex shrink-0 items-center gap-1.5 rounded-full border px-4 py-2 text-sm font-semibold transition-colors',
                   active
-                    ? 'border-primary bg-primary text-primary-foreground shadow-sm'
-                    : 'border-slate-200 bg-white text-slate-700 hover:bg-slate-50',
+                    ? 'border-primary bg-primary text-primary-foreground shadow-[var(--shadow-card)]'
+                    : 'border-border bg-card text-foreground hover:bg-muted/50',
                 )}
               >
                 {emoji ? <span aria-hidden>{emoji}</span> : null}
@@ -245,7 +249,7 @@ const CustomerDiscover = () => {
               <Button
                 type="button"
                 variant="outline"
-                className="h-9 shrink-0 rounded-full border-slate-200 bg-white px-3 text-slate-700"
+                className="h-9 shrink-0 rounded-full border-border bg-card px-3 text-foreground"
               >
                 More
                 <ChevronDown className="ml-1 h-3.5 w-3.5" />
@@ -266,7 +270,7 @@ const CustomerDiscover = () => {
             <Button
               type="button"
               variant="outline"
-              className="h-9 shrink-0 rounded-full border-slate-200 bg-white px-3.5 text-sm font-semibold text-slate-700"
+              className="h-9 shrink-0 rounded-full border-border bg-card px-3.5 text-sm font-semibold text-foreground"
             >
               Sort by: {sortLabel}
               <ChevronDown className="ml-1.5 h-3.5 w-3.5" />
@@ -291,11 +295,11 @@ const CustomerDiscover = () => {
           ))}
         </ul>
       ) : visible.length === 0 ? (
-        <div className="rounded-2xl border border-dashed border-slate-200 bg-white px-6 py-16 text-center">
-          <p className="text-lg font-semibold text-slate-900">
+        <div className="rounded-2xl border border-dashed border-border bg-card px-6 py-16 text-center">
+          <p className="text-lg font-semibold text-foreground">
             {query.trim() ? `No creators match “${query.trim()}”.` : 'No creators found'}
           </p>
-          <p className="mt-2 text-base text-slate-500">
+          <p className="mt-2 text-base text-muted-foreground">
             {query.trim()
               ? 'Try a different search or sport filter.'
               : 'New creators appear here as soon as they publish.'}

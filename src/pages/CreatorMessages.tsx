@@ -596,7 +596,7 @@ const CreatorMessages = () => {
           <p className="mx-auto mb-5 max-w-xs text-support text-muted-foreground">
             Finish onboarding to start receiving subscriber messages.
           </p>
-          <Button asChild className="min-h-11">
+          <Button asChild size="sm">
             <Link to="/creator/onboarding">Set up your profile</Link>
           </Button>
         </div>
@@ -670,7 +670,7 @@ const CreatorMessages = () => {
           <p className="mx-auto mb-5 max-w-sm text-support text-muted-foreground">
             When Prizelet Support or a subscriber writes to you, the conversation appears here.
           </p>
-          <Button asChild variant="outline" className="min-h-11">
+          <Button asChild variant="outline" size="sm">
             <Link to="/creator/subscribers">View subscribers</Link>
           </Button>
         </div>
@@ -765,7 +765,8 @@ const CreatorMessages = () => {
           type="button"
           onClick={() => void send()}
           disabled={sending || !reply.trim()}
-          className="min-h-10 shrink-0 rounded-xl px-4"
+          size="sm"
+          className="shrink-0 px-4"
         >
           {sending ? <Loader2 className="mr-1.5 h-4 w-4 animate-spin" /> : <Send className="mr-1.5 h-4 w-4" />}
           Send
@@ -795,7 +796,8 @@ const CreatorMessages = () => {
         </div>
         <Button
           type="button"
-          className="min-h-11 shrink-0 rounded-xl"
+          size="sm"
+          className="shrink-0"
           onClick={() =>
             toast.message('New message', {
               description: 'Pick a subscriber from the list, or message them from Subscribers.',
@@ -944,7 +946,7 @@ const CreatorMessages = () => {
                   <Button
                     type="button"
                     variant="outline"
-                    className="min-h-10 rounded-xl"
+                    size="sm"
                     disabled={inboxStatus === 'LoadingMore'}
                     onClick={() => loadMore(PAGE_SIZE)}
                   >

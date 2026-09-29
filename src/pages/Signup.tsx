@@ -93,8 +93,8 @@ const Signup = () => {
     <AuthShell
       title="Create your account"
       subtitle="Start monetizing your expertise"
-      seoTitle="Create your Prizelet account"
-      seoDescription="Join the Prizelet private network — create an account to follow creators or apply as a creator."
+      seoTitle="Create your Sweeph account"
+      seoDescription="Join the Sweeph private network — create an account to follow creators or apply as a creator."
       banner={
         referralCode ? (
           <p className="text-support text-primary mt-2">Referred via code {referralCode}</p>

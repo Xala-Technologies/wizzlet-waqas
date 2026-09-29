@@ -6,6 +6,7 @@ import {
   isStripeAlreadyCanceledError,
   normalizeBillingPeriod,
   normalizeImportSubscriptionStatus,
+  normalizeProductBillingPeriod,
   parseImportTimestamp,
   yearMonthKey,
 } from "../../convex/lib/commerceIdentity";
@@ -44,10 +45,23 @@ describe("PAY-05 cancel truthfulness", () => {
 });
 
 describe("PAY-06 / catalogue helpers", () => {
-  it("forces monthly billing at launch", () => {
+  it("forces monthly billing at launch checkout", () => {
     expect(normalizeBillingPeriod("monthly")).toBe("monthly");
     expect(normalizeBillingPeriod("month")).toBe("monthly");
     expect(() => normalizeBillingPeriod("weekly")).toThrow("UNSUPPORTED_BILLING_PERIOD");
+    expect(() => normalizeBillingPeriod("daily")).toThrow("UNSUPPORTED_BILLING_PERIOD");
+  });
+
+  it("accepts product catalog billing periods including daily", () => {
+    expect(normalizeProductBillingPeriod("daily")).toBe("daily");
+    expect(normalizeProductBillingPeriod("day")).toBe("daily");
+    expect(normalizeProductBillingPeriod("weekly")).toBe("weekly");
+    expect(normalizeProductBillingPeriod("monthly")).toBe("monthly");
+    expect(normalizeProductBillingPeriod("yearly")).toBe("yearly");
+    expect(normalizeProductBillingPeriod("one-time")).toBe("one-time");
+    expect(() => normalizeProductBillingPeriod("biweekly")).toThrow(
+      "UNSUPPORTED_BILLING_PERIOD",
+    );
   });
 
   it("quarantines missing import status instead of inventing active", () => {

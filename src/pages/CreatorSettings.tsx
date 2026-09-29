@@ -527,7 +527,7 @@ const CreatorSettings = () => {
           <p className="mx-auto mb-5 max-w-xs text-support text-muted-foreground">
             Finish onboarding to manage your public profile and integrations.
           </p>
-          <Button asChild className="min-h-11">
+          <Button asChild size="sm">
             <Link to="/creator/onboarding">Set up your profile</Link>
           </Button>
         </div>
@@ -663,7 +663,8 @@ const CreatorSettings = () => {
                   <Button
                     type="button"
                     variant="outline"
-                    className="min-h-11 w-full rounded-xl gap-2"
+                    size="sm"
+                    className="w-full gap-2"
                     onClick={() => avatarRef.current?.click()}
                     disabled={uploadingAvatar || saving}
                   >
@@ -677,7 +678,8 @@ const CreatorSettings = () => {
                   <Button
                     type="button"
                     variant="ghost"
-                    className="min-h-10 w-full rounded-xl text-muted-foreground"
+                    size="sm"
+                    className="w-full text-muted-foreground"
                     onClick={removeAvatar}
                     disabled={!avatarUrl || saving}
                   >
@@ -882,7 +884,8 @@ const CreatorSettings = () => {
               <Button
                 type="button"
                 variant="outline"
-                className="min-h-11 w-full rounded-xl gap-2"
+                size="sm"
+                    className="w-full gap-2"
                 onClick={() =>
                   toast.message('Help Center', {
                     description: 'Help articles will open here soon.',
@@ -938,7 +941,8 @@ const CreatorSettings = () => {
                       <Button
                         type="button"
                         variant="outline"
-                        className="min-h-10 w-full rounded-xl gap-2"
+                        size="sm"
+                        className="w-full gap-2"
                         onClick={() => logoRef.current?.click()}
                         disabled={uploadingLogo || saving}
                       >
@@ -996,7 +1000,8 @@ const CreatorSettings = () => {
                       <Button
                         type="button"
                         variant="outline"
-                        className="min-h-10 w-full rounded-xl gap-2"
+                        size="sm"
+                        className="w-full gap-2"
                         onClick={() => faviconRef.current?.click()}
                         disabled={uploadingFavicon || saving}
                       >
@@ -1157,7 +1162,8 @@ const CreatorSettings = () => {
                       </p>
                       <Button
                         type="button"
-                        className="min-h-10 w-full rounded-xl font-bold text-white hover:opacity-90"
+                        size="sm"
+                        className="w-full font-bold text-white hover:opacity-90"
                         style={{ backgroundColor: primaryColor }}
                         onClick={() =>
                           toast.message('Preview only', {
@@ -1410,7 +1416,8 @@ const CreatorSettings = () => {
               </div>
               <Button
                 type="button"
-                className="min-h-11 w-full rounded-xl"
+                size="sm"
+                className="w-full"
                 disabled={sendingInvite}
                 onClick={() => {
                   const email = inviteEmail.trim();
@@ -1674,7 +1681,7 @@ const CreatorSettings = () => {
               <div className="flex justify-end">
                 <Button
                   type="button"
-                  className="min-h-11 rounded-xl"
+                  className="h-12 gap-2 rounded-[var(--radius-md)] px-6"
                   onClick={() =>
                     toast.message(
                       useDemo
@@ -1702,8 +1709,8 @@ const CreatorSettings = () => {
               </p>
               <Button
                 type="button"
-                variant="outline"
-                className="min-h-11 rounded-xl border-destructive/40 text-destructive hover:bg-destructive/10 hover:text-destructive"
+                variant="destructive-outline"
+                size="sm"
                 onClick={() =>
                   toast.message('Cancel subscription', {
                     description: 'Subscription cancellation is not enabled in this preview.',
@@ -2000,7 +2007,7 @@ const CreatorSettings = () => {
                           </p>
                           <Button
                             type="button"
-                            className="min-h-10 rounded-xl"
+                            size="sm"
                             disabled={savingDiscord || saving}
                             onClick={async () => {
                               if (useDemo) {
@@ -2260,11 +2267,11 @@ const CreatorSettings = () => {
 
               <Button
                 type="button"
-                className="min-h-11 rounded-xl"
+                className="h-12 gap-2 rounded-[var(--radius-md)] px-6"
                 onClick={() => void handleSave()}
                 disabled={busy}
               >
-                {saving ? <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" /> : null}
+                {saving ? <Loader2 className="h-5 w-5 animate-spin" aria-hidden /> : null}
                 Save Changes
               </Button>
             </section>
@@ -2346,7 +2353,8 @@ const CreatorSettings = () => {
                   <Button
                     type="button"
                     variant="outline"
-                    className="min-h-10 shrink-0 rounded-xl"
+                    size="sm"
+                    className="shrink-0"
                     onClick={() =>
                       quickAction(
                         'Change Password',
@@ -2391,7 +2399,8 @@ const CreatorSettings = () => {
                     <Button
                       type="button"
                       variant="outline"
-                      className="min-h-10 shrink-0 rounded-xl"
+                      size="sm"
+                      className="shrink-0"
                       onClick={() =>
                         quickAction('Manage 2FA', 'Two-factor authentication setup is coming soon.')
                       }
@@ -2416,7 +2425,8 @@ const CreatorSettings = () => {
                   <Button
                     type="button"
                     variant="outline"
-                    className="min-h-10 shrink-0 rounded-xl"
+                    size="sm"
+                    className="shrink-0"
                     onClick={() => setSessionsOpen((open) => !open)}
                   >
                     {sessionsOpen ? 'Hide Sessions' : 'View Sessions'}
@@ -2507,7 +2517,8 @@ const CreatorSettings = () => {
                   <Button
                     type="button"
                     variant="outline"
-                    className="min-h-10 shrink-0 rounded-xl"
+                    size="sm"
+                    className="shrink-0"
                     onClick={() =>
                       quickAction('Manage Devices', 'Trusted device management is coming soon.')
                     }
@@ -2531,7 +2542,8 @@ const CreatorSettings = () => {
                   <Button
                     type="button"
                     variant="outline"
-                    className="min-h-10 shrink-0 rounded-xl"
+                    size="sm"
+                    className="shrink-0"
                     onClick={() =>
                       quickAction('Set Up Recovery', 'Account recovery setup is coming soon.')
                     }
@@ -2560,8 +2572,9 @@ const CreatorSettings = () => {
                 </div>
                 <Button
                   type="button"
-                  variant="outline"
-                  className="min-h-11 shrink-0 rounded-xl border-destructive/40 text-destructive hover:bg-destructive/10 hover:text-destructive"
+                  variant="destructive-outline"
+                  size="sm"
+                  className="shrink-0"
                   onClick={() =>
                     toast.message('Delete Account', {
                       description: 'Account deletion is not enabled in this preview.',
@@ -2650,7 +2663,8 @@ const CreatorSettings = () => {
                   <Button
                     type="button"
                     variant="outline"
-                    className="min-h-10 shrink-0 rounded-xl"
+                    size="sm"
+                    className="shrink-0"
                     onClick={() =>
                       quickAction('Connect Domain', 'Custom domains are coming soon.')
                     }
@@ -2693,7 +2707,8 @@ const CreatorSettings = () => {
                   <Button
                     type="button"
                     variant="outline"
-                    className="min-h-10 shrink-0 rounded-xl"
+                    size="sm"
+                    className="shrink-0"
                     onClick={() =>
                       quickAction('Edit Terms', 'Custom terms editor is coming soon.')
                     }
@@ -2715,7 +2730,8 @@ const CreatorSettings = () => {
                   <Button
                     type="button"
                     variant="outline"
-                    className="min-h-10 shrink-0 rounded-xl"
+                    size="sm"
+                    className="shrink-0"
                     onClick={() =>
                       quickAction('Edit Policy', 'Privacy policy editor is coming soon.')
                     }
@@ -2739,7 +2755,8 @@ const CreatorSettings = () => {
                   <Button
                     type="button"
                     variant="outline"
-                    className="min-h-10 shrink-0 rounded-xl"
+                    size="sm"
+                    className="shrink-0"
                     onClick={() =>
                       quickAction('Customize', 'Email template customization is coming soon.')
                     }
@@ -2763,7 +2780,8 @@ const CreatorSettings = () => {
                   <Button
                     type="button"
                     variant="outline"
-                    className="min-h-10 shrink-0 rounded-xl"
+                    size="sm"
+                    className="shrink-0"
                     onClick={() =>
                       toast.message(useDemo ? 'Sample preview — export' : 'Export requested', {
                         description: 'Data export is not wired up in this preview.',
@@ -2788,8 +2806,9 @@ const CreatorSettings = () => {
                   </div>
                   <Button
                     type="button"
-                    variant="outline"
-                    className="min-h-10 shrink-0 rounded-xl border-destructive/40 text-destructive hover:bg-destructive/10 hover:text-destructive"
+                    variant="destructive-outline"
+                    size="sm"
+                    className="shrink-0"
                     onClick={() =>
                       quickAction(
                         'Delete Account',
@@ -2867,11 +2886,11 @@ const CreatorSettings = () => {
             ) : null}
             <Button
               type="button"
-              className="min-h-11 w-full shrink-0 rounded-xl sm:w-auto"
+              className="h-12 w-full shrink-0 gap-2 rounded-[var(--radius-md)] px-6 sm:w-auto"
               onClick={() => void handleSave()}
               disabled={busy}
             >
-              {saving ? <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" /> : null}
+              {saving ? <Loader2 className="h-5 w-5 animate-spin" aria-hidden /> : null}
               Save Changes
             </Button>
           </div>

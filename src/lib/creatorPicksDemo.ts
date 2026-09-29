@@ -67,7 +67,7 @@ export const CREATOR_PICKS_DEMO_METRICS = {
 export const CREATOR_PICKS_DEMO_ROWS: CreatorPicksDemoRow[] = [
   {
     id: 'demo-pick-1',
-    title: 'NBA Picks Tonight',
+    title: 'NBA Picks Tonight 🔥',
     content: content({
       sport: 'NBA',
       event: 'NBA slate',
@@ -75,11 +75,19 @@ export const CREATOR_PICKS_DEMO_ROWS: CreatorPicksDemoRow[] = [
       usOdds: '-110',
       euOdds: '1.91',
       units: 2,
-      notes: 'My top 3 picks for tonight’s NBA slate with unit sizing.',
+      notes: [
+        "Here are my top 3 picks for tonight's games. Let's make it a green night! 💚",
+        '',
+        '1. Lakers ML (-120) - 1 unit',
+        '2. Celtics -5.5 (-110) - 1 unit',
+        '3. Nuggets vs Suns Over 224.5 (-115) - 1 unit',
+        '',
+        "Good luck everyone! Let's cash! 🚀",
+      ].join('\n'),
       type: 'Text',
     }),
     is_premium: true,
-    createdAtMs: daysAgo(0) - 3 * 3600_000,
+    createdAtMs: Date.now() - 2 * 3600_000,
     result: 'pending',
     tracking_mode: 'published',
   },

@@ -22,7 +22,7 @@ const features = [
 export function FeaturesSection() {
   return (
     <LandingSection id="features">
-      <div className="container max-w-3xl">
+      <div className="container max-w-5xl">
         <div className="text-center mb-16">
           <p className="text-support font-medium uppercase tracking-widest text-primary mb-3">Features</p>
           <h2 className="text-2xl sm:text-3xl font-bold tracking-tight mb-3">

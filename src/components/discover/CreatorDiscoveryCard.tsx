@@ -9,15 +9,18 @@ export type CreatorDiscoveryCardProps = {
   displayName?: string | null;
   bio?: string | null;
   avatarUrl?: string | null;
+  /** Initials when no avatar (defaults to first letter of name). */
+  avatarInitials?: string | null;
   bannerUrl?: string | null;
+  /** Gradient fallback when no banner (Tailwind from-via-to classes). */
+  bannerTone?: string | null;
+  /** Primary sport label under the name. */
+  sportLabel?: string | null;
   monthlyPriceCents?: number | null;
   verificationStatus?: string | null;
   postCount: number;
-  /** 1-based rank when the list is ordered (optional). */
   rank?: number;
-  /** Copy for the activity line — Discover uses “posts”, Creators may use “picks”. */
   activityNoun?: 'post' | 'pick';
-  /** Member Discover: show active subscription chip. */
   subscribed?: boolean;
   bookmarked?: boolean;
   onBookmarkClick?: MouseEventHandler<HTMLButtonElement>;
@@ -25,34 +28,33 @@ export type CreatorDiscoveryCardProps = {
   style?: CSSProperties;
 };
 
-/** Distinct cover fills when no banner — solid enough that the text band pops. */
 function coverTone(seed: string): string {
   let hash = 0;
   for (let i = 0; i < seed.length; i++) hash = (hash * 31 + seed.charCodeAt(i)) >>> 0;
   const tones = [
-    'bg-primary/40',
-    'bg-foreground/25',
-    'bg-primary/30',
-    'bg-muted-foreground/35',
+    'from-emerald-800 via-emerald-600 to-lime-500',
+    'from-orange-800 via-orange-600 to-amber-400',
+    'from-sky-900 via-sky-600 to-cyan-400',
+    'from-indigo-950 via-violet-700 to-purple-400',
+    'from-red-900 via-red-600 to-rose-400',
+    'from-blue-900 via-blue-600 to-indigo-400',
   ];
-  return tones[hash % tones.length] ?? tones[0];
+  return tones[hash % tones.length] ?? tones[0]!;
 }
 
 /**
- * Discover / directory card — media band + text band with overlapping avatar.
- * Solid type, larger scale; Prizelet tokens only.
+ * Discover creator card — banner media, overlapping avatar, sport + Join CTA (PO mock).
  */
 export function CreatorDiscoveryCard({
   username,
   displayName,
   bio,
   avatarUrl,
+  avatarInitials,
   bannerUrl,
-  monthlyPriceCents,
+  bannerTone,
+  sportLabel,
   verificationStatus,
-  postCount,
-  rank,
-  activityNoun = 'post',
   subscribed = false,
   bookmarked = false,
   onBookmarkClick,
@@ -60,17 +62,10 @@ export function CreatorDiscoveryCard({
   style,
 }: CreatorDiscoveryCardProps) {
   const name = displayName?.trim() || username;
-  const initial = name[0]?.toUpperCase() ?? '?';
+  const initial = (avatarInitials?.trim() || name[0]?.toUpperCase() || '?').slice(0, 2);
   const verified = verificationStatus === 'verified';
-  const priceLabel =
-    monthlyPriceCents != null
-      ? `$${(monthlyPriceCents / 100).toFixed(0)}/mo`
-      : 'Tiers on profile';
-  const activity =
-    postCount === 1
-      ? `1 ${activityNoun} published`
-      : `${postCount} ${activityNoun}s published`;
   const trimmedBio = bio?.trim() ?? '';
+  const gradient = bannerTone?.trim() || coverTone(username);
 
   return (
     <li className={cn('list-none h-full', className)} style={style}>
@@ -78,83 +73,73 @@ export function CreatorDiscoveryCard({
         <Link
           to={creatorProfilePath(username)}
           className={cn(
-            'group relative flex h-full flex-col rounded-2xl border border-border bg-card',
-            'shadow-[var(--shadow-card)] transition-[border-color,box-shadow] duration-200 ease-out',
-            'hover:border-primary/30 hover:shadow-[var(--shadow-card-hover)]',
-            'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background',
+            'group relative flex h-full flex-col overflow-hidden rounded-3xl border border-border bg-card',
+            'shadow-[0_8px_28px_rgba(8,24,47,0.06)] transition-[border-color,box-shadow,transform] duration-200',
+            'hover:-translate-y-0.5 hover:border-primary/25 hover:shadow-[0_16px_40px_rgba(8,24,47,0.1)]',
+            'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2',
           )}
         >
-          {/* MEDIA */}
           <div className="relative shrink-0">
-            <div className="relative aspect-[3/2] overflow-hidden rounded-t-2xl bg-muted">
+            <div className="relative aspect-[16/10] overflow-hidden bg-muted">
               {bannerUrl ? (
                 <img src={bannerUrl} alt="" className="h-full w-full object-cover" />
               ) : (
-                <div className={cn('relative h-full w-full', coverTone(username))} aria-hidden>
-                  <div className="absolute inset-0 bg-gradient-to-br from-background/15 via-transparent to-foreground/10" />
-                </div>
+                <div
+                  className={cn('h-full w-full bg-gradient-to-br', gradient)}
+                  aria-hidden
+                />
               )}
+              <div className="absolute inset-0 bg-gradient-to-t from-black/25 via-transparent to-transparent" />
             </div>
 
-            {rank != null && rank <= 3 ? (
-              <span className="absolute left-3 top-3 z-10 rounded-md border border-border bg-card px-2 py-1 text-xs font-semibold text-foreground">
-                #{rank}
-              </span>
-            ) : null}
-
-            {verified ? (
-              <span className="absolute right-3 top-3 z-10 inline-flex items-center gap-1 rounded-md border border-border bg-card px-2 py-1 text-xs font-semibold text-foreground">
-                <BadgeCheck className="h-3.5 w-3.5 text-primary" aria-hidden />
-                Verified
-              </span>
-            ) : null}
-
             {subscribed ? (
-              <span className="absolute bottom-3 left-3 z-10 rounded-md border border-emerald-500/25 bg-emerald-500/10 px-2 py-1 text-xs font-semibold text-emerald-700 dark:text-emerald-400">
+              <span className="absolute left-3 top-3 z-10 rounded-full border border-emerald-500/25 bg-emerald-500/10 px-2.5 py-1 text-[11px] font-semibold text-emerald-700 dark:text-emerald-400">
                 Subscribed
               </span>
             ) : null}
-          </div>
 
-          {/* TEXT */}
-          <div className="relative flex flex-1 flex-col rounded-b-2xl border-t border-border bg-card px-5 pb-5 pt-0 sm:px-6 sm:pb-6">
-            <div className="-mt-8 mb-4 flex h-16 w-16 items-center justify-center overflow-hidden rounded-full border-[3px] border-card bg-primary/15 text-xl font-bold text-primary ring-1 ring-border">
+            <div className="absolute -bottom-7 left-5 z-10 flex h-14 w-14 items-center justify-center overflow-hidden rounded-full border-[3px] border-card bg-[#08182F] text-sm font-bold text-white shadow-md">
               {avatarUrl ? (
                 <img src={avatarUrl} alt="" className="h-full w-full object-cover" />
               ) : (
                 <span aria-hidden>{initial}</span>
               )}
             </div>
+          </div>
 
-            <p className="text-sm font-medium text-foreground/70">@{username}</p>
-            <h2 className="mt-1 text-xl font-semibold tracking-tight text-foreground">{name}</h2>
+          <div className="relative flex flex-1 flex-col px-5 pb-5 pt-10">
+            <div className="flex min-w-0 items-center gap-1.5">
+              <h2 className="truncate text-lg font-extrabold tracking-tight text-foreground">
+                {name}
+              </h2>
+              {verified ? (
+                <BadgeCheck className="h-5 w-5 shrink-0 text-[#429FF0]" aria-label="Verified" />
+              ) : null}
+            </div>
+            {sportLabel ? (
+              <p className="mt-0.5 text-sm font-medium text-muted-foreground">{sportLabel}</p>
+            ) : (
+              <p className="mt-0.5 text-sm font-medium text-muted-foreground">@{username}</p>
+            )}
 
             <p
               className={cn(
-                'mt-3 min-h-[3.75rem] text-base leading-relaxed',
-                trimmedBio ? 'line-clamp-3 text-foreground/80' : 'text-foreground/55',
+                'mt-3 min-h-[2.75rem] text-sm leading-relaxed',
+                trimmedBio ? 'line-clamp-2 text-foreground/75' : 'text-muted-foreground',
               )}
             >
-              {trimmedBio || 'No public bio yet — open the profile for products and posts.'}
+              {trimmedBio || 'Open the profile for products, posts, and pricing.'}
             </p>
 
-            <div className="mt-5 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm font-medium text-foreground">
-              <span>{activity}</span>
-              <span className="text-border" aria-hidden>
-                ·
-              </span>
-              <span className="font-mono tabular-nums">{priceLabel}</span>
-            </div>
-
-            <div className="mt-auto pt-6">
+            <div className="mt-auto pt-5">
               <span
                 className={cn(
-                  'flex w-full items-center justify-between rounded-xl bg-foreground px-4 py-3.5',
-                  'text-base font-semibold text-background',
-                  'transition-colors duration-200 group-hover:bg-primary group-hover:text-primary-foreground',
+                  'flex h-11 w-full items-center justify-between rounded-full bg-[#E1F2FF] px-5',
+                  'text-sm font-bold text-[#256DC1]',
+                  'transition-colors duration-200 group-hover:bg-[#429FF0] group-hover:text-white',
                 )}
               >
-                View profile
+                Join
                 <ArrowRight className="h-4 w-4" aria-hidden />
               </span>
             </div>
@@ -170,7 +155,6 @@ export function CreatorDiscoveryCard({
               'absolute right-3 top-3 z-20 inline-flex h-10 w-10 items-center justify-center rounded-full border border-border bg-card text-foreground shadow-sm',
               'transition-colors hover:border-primary/40 hover:text-primary',
               bookmarked && 'text-primary',
-              verified && 'top-14',
             )}
           >
             <Bookmark className={cn('h-4 w-4', bookmarked && 'fill-current')} aria-hidden />
@@ -184,17 +168,15 @@ export function CreatorDiscoveryCard({
 export function CreatorDiscoveryCardSkeleton({ className }: { className?: string }) {
   return (
     <li
-      className={cn('h-full overflow-hidden rounded-2xl border border-border bg-card', className)}
+      className={cn('h-full overflow-hidden rounded-3xl border border-border bg-card', className)}
       aria-hidden
     >
-      <div className="aspect-[3/2] animate-pulse bg-muted" />
-      <div className="space-y-3 px-5 pb-5 pt-0 sm:px-6 sm:pb-6">
-        <div className="-mt-8 h-16 w-16 animate-pulse rounded-full border-[3px] border-card bg-muted" />
-        <div className="h-4 w-28 animate-pulse rounded bg-muted" />
-        <div className="h-6 w-44 animate-pulse rounded bg-muted" />
-        <div className="h-14 w-full animate-pulse rounded bg-muted" />
-        <div className="h-4 w-40 animate-pulse rounded bg-muted" />
-        <div className="h-12 w-full animate-pulse rounded-xl bg-muted" />
+      <div className="aspect-[16/10] animate-pulse bg-muted" />
+      <div className="space-y-3 px-5 pb-5 pt-10">
+        <div className="h-5 w-36 animate-pulse rounded bg-muted" />
+        <div className="h-4 w-20 animate-pulse rounded bg-muted" />
+        <div className="h-10 w-full animate-pulse rounded bg-muted" />
+        <div className="h-11 w-full animate-pulse rounded-full bg-muted" />
       </div>
     </li>
   );
