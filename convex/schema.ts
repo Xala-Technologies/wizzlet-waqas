@@ -105,6 +105,8 @@ export default defineSchema({
     priceCents: v.number(),
     billingPeriod: v.string(),
     isFeatured: v.boolean(),
+    /** Shown in the public-profile product slots (max 4 per creator). */
+    showOnProfile: v.optional(v.boolean()),
     isActive: v.boolean(),
     maxSpots: v.optional(v.number()),
     isLimited: v.boolean(),
