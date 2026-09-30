@@ -1,7 +1,9 @@
+import { cn } from '@/lib/utils';
 import { useState } from 'react';
 import { useConvex } from 'convex/react';
 import { api } from '../../convex/_generated/api';
 import { DashboardLayout } from '@/components/dashboard/DashboardLayout';
+import { clayCard } from '@/lib/overviewClay';
 import { Button } from '@/components/ui/button';
 import { FileText, Download, Crown, Users, CreditCard, Percent, Wallet, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
@@ -192,9 +194,8 @@ const AdminReports = () => {
   const capNote = scanTruncationNote(true, ADMIN_SCAN_MAX_DOCS);
 
   return (
-    <DashboardLayout type="admin">
+    <DashboardLayout type="admin" mainClassName="bg-clay-page">
       <div className="mb-8">
-        <h1 className="text-2xl font-bold">Reports &amp; Exports</h1>
         <p className="text-muted-foreground text-sm mt-0.5">
           Generate CSV exports from Convex admin scans (newest-first).
         </p>

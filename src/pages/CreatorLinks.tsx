@@ -22,6 +22,7 @@ import { api } from '../../convex/_generated/api';
 import type { Id } from '../../convex/_generated/dataModel';
 import { DashboardLayout } from '@/components/dashboard/DashboardLayout';
 import { DashboardKpiStrip } from '@/components/dashboard/DashboardKpiStrip';
+import { clayCard } from '@/lib/overviewClay';
 import { MarketingSubnav } from '@/components/creator/MarketingSubnav';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -296,7 +297,7 @@ const CreatorLinks = () => {
 
   if (loading) {
     return (
-      <DashboardLayout type="creator">
+      <DashboardLayout type="creator" mainClassName="bg-clay-page">
         <div className="flex justify-center py-20">
           <Loader2 className="h-5 w-5 animate-spin text-primary" />
         </div>
@@ -306,14 +307,10 @@ const CreatorLinks = () => {
 
   if (!creator) {
     return (
-      <DashboardLayout type="creator">
-        <header className="mb-6">
-          <h1 className="text-heading font-bold tracking-tight text-foreground">Links</h1>
-          <p className="mt-1.5 text-support text-muted-foreground">
-            Create and manage trackable links to share your content anywhere.
-          </p>
+      <DashboardLayout type="creator" mainClassName="bg-clay-page">
+        <header className="mb-4">
         </header>
-        <div className="rounded-2xl border border-border bg-card p-10 text-center shadow-[var(--shadow-card)]">
+        <div className={cn(clayCard, 'p-10 text-center')}>
           <Link2 className="mx-auto mb-4 h-10 w-10 text-muted-foreground" />
           <h3 className="mb-2 text-ui font-semibold text-foreground">No creator profile yet</h3>
           <p className="mx-auto mb-5 max-w-xs text-support text-muted-foreground">
@@ -328,19 +325,11 @@ const CreatorLinks = () => {
   }
 
   return (
-    <DashboardLayout type="creator">
-      <header className="mb-7 flex flex-col gap-5 sm:mb-9 sm:flex-row sm:items-start sm:justify-between sm:gap-8">
-        <div className="min-w-0">
-          <h1 className="type-page-title text-foreground md:text-[2.75rem] md:leading-[1.1]">
-            Links
-          </h1>
-          <p className="mt-3 max-w-2xl text-body font-medium text-muted-foreground">
-            Create and manage trackable links to share your content anywhere.
-          </p>
-        </div>
+    <DashboardLayout type="creator" mainClassName="bg-clay-page">
+      <header className="mb-4 flex flex-col gap-3 sm:mb-5 sm:flex-row sm:items-center sm:justify-end sm:gap-8">
         <Button
           type="button"
-          className="h-12 w-full shrink-0 gap-2 rounded-[var(--radius-md)] px-6 sm:mt-1 sm:w-auto"
+          className="clay-btn h-12 w-full shrink-0 gap-2 rounded-[0.875rem] px-6 sm:w-auto"
           onClick={() => setCreateOpen(true)}
         >
           <Plus className="h-5 w-5" aria-hidden />
@@ -351,7 +340,7 @@ const CreatorLinks = () => {
       <MarketingSubnav active="links" />
 
       {useDemo ? (
-        <div className="mb-6 flex items-start gap-3 rounded-2xl border border-amber-500/30 bg-amber-500/10 px-4 py-3.5 text-amber-950 dark:text-amber-100 sm:items-center sm:px-5">
+        <div className="clay-card mb-6 flex items-start gap-3 bg-[#fbf8f3] px-4 py-3.5 text-amber-950 dark:bg-amber-500/10 dark:text-amber-100 sm:items-center sm:px-5">
           <Sparkles
             className="mt-0.5 h-5 w-5 shrink-0 text-amber-600 dark:text-amber-400 sm:mt-0"
             aria-hidden
@@ -365,6 +354,7 @@ const CreatorLinks = () => {
 
       <div className="mb-6 sm:mb-8">
         <DashboardKpiStrip
+          variant="clay"
           items={[
             {
               label: 'Total clicks',
@@ -410,7 +400,7 @@ const CreatorLinks = () => {
       </div>
 
       <div className="mb-6 grid grid-cols-1 gap-4 xl:grid-cols-12">
-        <section className="rounded-2xl border border-border bg-card shadow-[var(--shadow-card)] xl:col-span-8">
+        <section className={cn(clayCard, 'overflow-hidden xl:col-span-8')}>
           <div className="flex flex-col gap-3 border-b border-border p-4 sm:p-5">
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
               <h2 className="text-base font-extrabold tracking-tight text-foreground">All links</h2>
@@ -637,7 +627,7 @@ const CreatorLinks = () => {
         </section>
 
         <aside className="flex flex-col gap-4 xl:col-span-4">
-          <section className="rounded-2xl border border-border bg-card p-5 shadow-[var(--shadow-card)]">
+          <section className={cn(clayCard, 'p-5')}>
             <h2 className="text-base font-extrabold tracking-tight text-foreground">
               Create New Link
             </h2>
@@ -653,7 +643,7 @@ const CreatorLinks = () => {
             </Button>
           </section>
 
-          <section className="rounded-2xl border border-border bg-card p-5 shadow-[var(--shadow-card)]">
+          <section className={cn(clayCard, 'p-5')}>
             <h2 className="mb-1 text-base font-extrabold tracking-tight text-foreground">
               Top Performing Links
             </h2>
@@ -684,7 +674,7 @@ const CreatorLinks = () => {
             )}
           </section>
 
-          <section className="rounded-2xl border border-violet-500/20 bg-violet-500/5 p-5 shadow-[var(--shadow-card)]">
+          <section className={cn(clayCard, 'border-violet-500/20 bg-violet-500/5 p-5')}>
             <h2 className="mb-3 text-base font-extrabold tracking-tight text-foreground">
               Tips for better results
             </h2>

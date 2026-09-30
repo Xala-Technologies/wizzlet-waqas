@@ -1,7 +1,9 @@
+import { cn } from '@/lib/utils';
 import { useMemo, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useMutation, usePaginatedQuery, useQuery } from 'convex/react';
 import { DashboardLayout } from '@/components/dashboard/DashboardLayout';
+import { clayCard } from '@/lib/overviewClay';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
@@ -172,7 +174,7 @@ const CustomerNotifications = () => {
 
   if (loading) {
     return (
-      <DashboardLayout type={layoutType}>
+      <DashboardLayout type={layoutType} mainClassName="bg-clay-page">
         <div className="flex justify-center py-20">
           <Loader2 className="h-5 w-5 animate-spin text-primary" />
         </div>
@@ -181,20 +183,9 @@ const CustomerNotifications = () => {
   }
 
   return (
-    <DashboardLayout type={layoutType}>
+    <DashboardLayout type={layoutType} mainClassName="bg-clay-page">
       <header className="flex items-center justify-between mb-6 gap-3 flex-wrap">
         <div className="min-w-0">
-          <h1 className="text-heading font-bold text-foreground flex items-center gap-2 flex-wrap">
-            Notifications
-            {unreadCount > 0 && (
-              <Badge
-                variant="outline"
-                className="text-support bg-primary/10 text-primary border-primary/20"
-              >
-                {unreadCount} new
-              </Badge>
-            )}
-          </h1>
           <p className="text-support text-muted-foreground mt-0.5">
             {layoutType === 'admin'
               ? 'Platform alerts and admin account messages'
@@ -220,7 +211,7 @@ const CustomerNotifications = () => {
       </header>
 
       {items.length === 0 ? (
-        <div className="rounded-xl border border-border bg-card px-6 py-12 sm:px-10 sm:py-14 text-center">
+        <div className={cn(clayCard, 'px-6 py-12 text-center sm:px-10 sm:py-14')}>
           <div className="inbox-empty-enter mx-auto mb-6 flex h-14 w-14 items-center justify-center rounded-xl bg-muted">
             <CheckCircle2 className="h-7 w-7 text-muted-foreground" strokeWidth={1.75} />
           </div>
@@ -271,9 +262,11 @@ const CustomerNotifications = () => {
                 type="button"
                 disabled={!!openingId}
                 onClick={() => void markRead(n)}
-                className={`w-full min-h-11 text-left rounded-xl border bg-card p-4 flex items-start gap-3 transition-colors hover:border-primary/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-60 ${
-                  n.read ? 'border-border opacity-70' : 'border-border'
-                }`}
+                className={cn(
+                  clayCard,
+                  'flex w-full min-h-11 items-start gap-3 p-4 text-left transition-colors hover:border-primary/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-60',
+                  n.read ? 'opacity-70' : null,
+                )}
               >
                 <div
                   className={`flex h-10 w-10 items-center justify-center rounded-lg ${cfg.bg} shrink-0 mt-0.5`}

@@ -1,8 +1,10 @@
+import { cn } from '@/lib/utils';
 import { Link } from 'react-router-dom';
 import { useState } from 'react';
 import { useQuery } from 'convex/react';
 import { api } from '../../convex/_generated/api';
 import { DashboardLayout } from '@/components/dashboard/DashboardLayout';
+import { clayCard } from '@/lib/overviewClay';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { DollarSign, Percent, TrendingUp, Wallet, Loader2, Crown, ArrowUpRight } from 'lucide-react';
@@ -17,7 +19,7 @@ const AdminFinance = () => {
 
   if (overview === undefined) {
     return (
-      <DashboardLayout type="admin">
+      <DashboardLayout type="admin" mainClassName="bg-clay-page">
         <div className="flex justify-center py-20"><Loader2 className="h-5 w-5 animate-spin text-primary" /></div>
       </DashboardLayout>
     );
@@ -26,10 +28,9 @@ const AdminFinance = () => {
   const stats = overview;
 
   return (
-    <DashboardLayout type="admin">
+    <DashboardLayout type="admin" mainClassName="bg-clay-page">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-8">
         <div>
-          <h1 className="text-2xl font-bold">Finance</h1>
           <p className="text-muted-foreground text-sm mt-0.5">Live revenue, fees, creator earnings and payout liability</p>
           {scanTruncationNote(stats.truncated, stats.listLimit) && (
             <p className="text-amber-600 text-caption mt-2">{scanTruncationNote(stats.truncated, stats.listLimit)}</p>

@@ -35,6 +35,7 @@ import { toast } from 'sonner';
 import { api } from '../../convex/_generated/api';
 import { DashboardLayout } from '@/components/dashboard/DashboardLayout';
 import { DashboardKpiStrip } from '@/components/dashboard/DashboardKpiStrip';
+import { clayCard } from '@/lib/overviewClay';
 import { EarningsSubnav } from '@/components/creator/EarningsSubnav';
 import { EarningsTaxDocumentsPanel } from '@/components/creator/EarningsTaxDocuments';
 import { Button } from '@/components/ui/button';
@@ -105,7 +106,7 @@ const CreatorEarnings = () => {
   });
 
   const demoBanner = (useDemo || (showTaxDocs && useTaxDemo)) ? (
-    <div className="mb-6 flex items-start gap-3 rounded-2xl border border-amber-500/30 bg-amber-500/10 px-4 py-3.5 text-amber-950 dark:text-amber-100 sm:items-center sm:px-5">
+    <div className="clay-card mb-6 flex items-start gap-3 bg-[#fbf8f3] px-4 py-3.5 text-amber-950 dark:bg-amber-500/10 dark:text-amber-100 sm:items-center sm:px-5">
       <Sparkles
         className="mt-0.5 h-5 w-5 shrink-0 text-amber-600 dark:text-amber-400 sm:mt-0"
         aria-hidden
@@ -201,7 +202,7 @@ const CreatorEarnings = () => {
 
   if (loading) {
     return (
-      <DashboardLayout type="creator">
+      <DashboardLayout type="creator" mainClassName="bg-clay-page">
         <div className="flex justify-center py-20">
           <Loader2 className="h-5 w-5 animate-spin text-primary" />
         </div>
@@ -211,7 +212,7 @@ const CreatorEarnings = () => {
 
   if (showTaxDocs) {
     return (
-      <DashboardLayout type="creator">
+      <DashboardLayout type="creator" mainClassName="bg-clay-page">
         <EarningsTaxDocumentsPanel
           useDemo={useTaxDemo}
           beforeContent={
@@ -226,19 +227,11 @@ const CreatorEarnings = () => {
   }
 
   return (
-    <DashboardLayout type="creator">
+    <DashboardLayout type="creator" mainClassName="bg-clay-page">
       <header className="mb-4 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-        <div className="min-w-0">
-          <h1 className="text-heading font-bold tracking-tight text-foreground md:text-heading-lg">
-            Earnings
-          </h1>
-          <p className="mt-1.5 text-support text-muted-foreground">
-            Track your revenue, payouts, and financial performance.
-          </p>
-        </div>
         <button
           type="button"
-          className="inline-flex h-10 w-fit shrink-0 items-center gap-2 rounded-xl border border-border bg-card px-3 text-sm font-semibold text-foreground shadow-sm"
+          className={cn(clayCard, 'inline-flex h-10 w-fit shrink-0 items-center gap-2 px-3 text-sm font-semibold text-foreground')}
           onClick={() =>
             toast.message('Date range', {
               description: useDemo
@@ -259,7 +252,8 @@ const CreatorEarnings = () => {
 
       <div className="mb-6 sm:mb-8">
         <DashboardKpiStrip
-              items={[
+              variant="clay"
+          items={[
                 {
                   label: 'Total revenue',
                   value: money(metrics.totalRevenueCents),
@@ -317,7 +311,7 @@ const CreatorEarnings = () => {
           </div>
 
           <div className="mb-4 grid grid-cols-1 gap-4 xl:grid-cols-12">
-            <section className="rounded-2xl border border-border bg-card p-5 shadow-[var(--shadow-card)] xl:col-span-8">
+            <section className={cn(clayCard, 'p-5 xl:col-span-8')}>
               <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                 <h2 className="text-base font-extrabold tracking-tight text-foreground">
                   Revenue &amp; Payouts
@@ -394,7 +388,7 @@ const CreatorEarnings = () => {
               </div>
             </section>
 
-            <section className="rounded-2xl border border-border bg-card p-5 shadow-[var(--shadow-card)] xl:col-span-4">
+            <section className={cn(clayCard, 'p-5 xl:col-span-4')}>
               <h2 className="mb-1 text-base font-extrabold tracking-tight text-foreground">
                 Revenue by Product Type
               </h2>
@@ -450,7 +444,7 @@ const CreatorEarnings = () => {
           <div className="mb-6 grid grid-cols-1 gap-4 xl:grid-cols-12">
             <section
               id="recent-earnings"
-              className="scroll-mt-24 rounded-2xl border border-border bg-card p-5 shadow-[var(--shadow-card)] xl:col-span-8"
+              className={cn(clayCard, 'scroll-mt-24 p-5 xl:col-span-8')}
             >
               <div className="mb-4 flex items-center justify-between gap-3">
                 <h2 className="text-base font-extrabold tracking-tight text-foreground">
@@ -529,7 +523,7 @@ const CreatorEarnings = () => {
             </section>
 
             <aside className="flex flex-col gap-4 xl:col-span-4">
-              <section className="rounded-2xl border border-border bg-card p-5 shadow-[var(--shadow-card)]">
+              <section className={cn(clayCard, 'p-5')}>
                 <h2 className="mb-1 text-base font-extrabold tracking-tight text-foreground">
                   Upcoming Payout
                 </h2>
@@ -548,7 +542,7 @@ const CreatorEarnings = () => {
                 </Button>
               </section>
 
-              <section className="rounded-2xl border border-violet-500/20 bg-violet-500/5 p-5 shadow-[var(--shadow-card)]">
+              <section className={cn(clayCard, 'border-violet-500/20 bg-violet-500/5 p-5')}>
                 <h2 className="mb-3 flex items-center gap-2 text-base font-extrabold tracking-tight text-foreground">
                   <Lightbulb className="h-4 w-4 text-violet-600 dark:text-violet-400" aria-hidden />
                   Tips to increase your earnings

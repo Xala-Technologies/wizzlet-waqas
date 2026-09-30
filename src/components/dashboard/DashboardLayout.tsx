@@ -1,19 +1,24 @@
 import { ReactNode, useEffect } from 'react';
+import { useLocation } from 'react-router-dom';
 import { CreatorSidebar } from './CreatorSidebar';
 import { AdminSidebar } from './AdminSidebar';
 import { MemberSidebar } from './MemberSidebar';
 import { MobileTopBar } from './MobileTopBar';
 import { CreatorTopBar } from './CreatorTopBar';
 import { MemberTopBar } from './MemberTopBar';
+import { AdminTopBar } from './AdminTopBar';
 import { AdminQueryBoundary } from './AdminQueryBoundary';
 import { UnreadMessageWatcher } from './UnreadMessageWatcher';
 import { SupportChatWidget } from './SupportChatWidget';
 import { DASHBOARD_CONTENT_CLASS, DASHBOARD_GUTTER_CLASS } from '@/lib/dashboardSidebar';
+import { dashboardPageTitle } from '@/lib/dashboardPageTitle';
 import { cn } from '@/lib/utils';
 
 interface DashboardLayoutProps {
   children: ReactNode;
   type: 'creator' | 'member' | 'admin';
+  /** Optional main canvas class (e.g. Overview clay page bg). */
+  mainClassName?: string;
 }
 
 const HOME_HREF: Record<DashboardLayoutProps['type'], string> = {
@@ -41,8 +46,10 @@ function useLockDocumentScroll() {
   }, []);
 }
 
-export function DashboardLayout({ children, type }: DashboardLayoutProps) {
+export function DashboardLayout({ children, type, mainClassName }: DashboardLayoutProps) {
   useLockDocumentScroll();
+  const location = useLocation();
+  const pageTitle = dashboardPageTitle(type, location);
   const Sidebar = type === 'creator' ? CreatorSidebar : type === 'admin' ? AdminSidebar : MemberSidebar;
 
   const body = (
@@ -52,17 +59,18 @@ export function DashboardLayout({ children, type }: DashboardLayoutProps) {
       <main
         className={cn(
           'min-h-0 min-w-0 flex-1 overflow-x-hidden overflow-y-auto overscroll-y-contain',
-          type === 'member' ? 'bg-[var(--bg-page)]' : 'bg-muted/40',
+          mainClassName ?? (type === 'member' ? 'bg-[var(--bg-page)]' : 'bg-muted/40'),
         )}
       >
-        <MobileTopBar homeHref={HOME_HREF[type]}>
+        <MobileTopBar homeHref={HOME_HREF[type]} title={pageTitle}>
           <Sidebar mobile />
         </MobileTopBar>
         {type === 'creator' ? <CreatorTopBar /> : null}
         {type === 'member' ? <MemberTopBar /> : null}
+        {type === 'admin' ? <AdminTopBar /> : null}
         <div
           className={cn(
-            'py-5 pb-[max(1.25rem,env(safe-area-inset-bottom))] sm:py-7 md:py-9',
+            'pt-4 pb-[max(1.25rem,env(safe-area-inset-bottom))] sm:pt-5 md:pt-6 sm:pb-7 md:pb-9',
             DASHBOARD_GUTTER_CLASS,
             DASHBOARD_CONTENT_CLASS,
             type === 'member' && 'bg-[var(--bg-page)]',

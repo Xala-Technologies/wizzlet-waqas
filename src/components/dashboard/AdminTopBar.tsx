@@ -1,12 +1,10 @@
-import { FormEvent, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useQuery } from 'convex/react';
-import { Bell, ChevronDown, HelpCircle, LogOut, Search } from 'lucide-react';
+import { Bell, ChevronDown, LogOut, Settings } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { api } from '@convex/_generated/api';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -19,35 +17,24 @@ import { cn } from '@/lib/utils';
 import { dashboardPageTitle } from '@/lib/dashboardPageTitle';
 
 /**
- * Member desktop utility bar — page title, search, theme, notifications, account.
+ * Admin desktop utility bar — page title, theme, notifications, account.
  * Hidden on mobile (MobileTopBar + drawer handle that).
  */
-export function MemberTopBar() {
+export function AdminTopBar() {
   const { user, signOut } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
-  const [q, setQ] = useState('');
   const me = useQuery(api.users.queries.me, user ? {} : 'skip');
   const notifUnread = useQuery(api.notifications.mutations.unreadCount, user ? {} : 'skip');
 
-  const pageTitle = dashboardPageTitle('member', location);
+  const pageTitle = dashboardPageTitle('admin', location);
   const display =
     me?.fullName?.trim() ||
     me?.name?.trim() ||
     user?.email?.split('@')[0] ||
-    'Member';
-  const initial = display.charAt(0).toUpperCase() || 'M';
+    'Admin';
+  const initial = display.charAt(0).toUpperCase() || 'A';
   const unread = notifUnread ?? 0;
-
-  const onSearch = (e: FormEvent) => {
-    e.preventDefault();
-    const term = q.trim();
-    if (!term) {
-      navigate('/dashboard/discover');
-      return;
-    }
-    navigate(`/dashboard/discover?q=${encodeURIComponent(term)}`);
-  };
 
   const handleSignOut = async () => {
     navigate('/');
@@ -57,23 +44,9 @@ export function MemberTopBar() {
   return (
     <header className="sticky top-0 z-20 hidden border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80 md:block">
       <div className="mx-auto flex h-[var(--topbar-height)] w-full min-w-0 max-w-[var(--content-max)] items-center gap-3 px-4 sm:px-6 md:px-8 lg:px-10 xl:px-12">
-        <h1 className="min-w-0 shrink truncate text-xl font-bold tracking-tight text-foreground sm:text-2xl">
+        <h1 className="min-w-0 flex-1 truncate text-xl font-bold tracking-tight text-foreground sm:text-2xl">
           {pageTitle}
         </h1>
-
-        <form onSubmit={onSearch} className="relative ml-auto min-w-0 max-w-md flex-1" role="search">
-          <Search
-            className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground"
-            aria-hidden
-          />
-          <Input
-            value={q}
-            onChange={(e) => setQ(e.target.value)}
-            placeholder="Search creators, sports, or picks..."
-            aria-label="Search creators, sports, or picks"
-            className="h-10 border-border bg-card pl-9 text-sm font-medium shadow-none"
-          />
-        </form>
 
         <div className="flex shrink-0 items-center gap-2 sm:gap-3">
           <ThemeToggle className="h-10 w-10 rounded-full border border-border bg-card" />
@@ -84,7 +57,7 @@ export function MemberTopBar() {
             size="icon"
             className="relative h-10 w-10 rounded-full border border-border bg-card"
           >
-            <Link to="/dashboard/notifications" aria-label="Notifications">
+            <Link to="/admin/notifications" aria-label="Notifications">
               <Bell className="h-4 w-4" />
               {unread > 0 ? (
                 <span className="absolute right-1.5 top-1.5 h-2 w-2 rounded-full bg-rose-500" />
@@ -122,24 +95,9 @@ export function MemberTopBar() {
               </DropdownMenuLabel>
               <DropdownMenuSeparator />
               <DropdownMenuItem asChild className="cursor-pointer gap-2">
-                <Link to="/dashboard/settings">Settings</Link>
-              </DropdownMenuItem>
-              <DropdownMenuItem asChild className="cursor-pointer gap-2">
-                <Link to="/dashboard/subscriptions-billing">My Creators</Link>
-              </DropdownMenuItem>
-              <DropdownMenuItem asChild className="cursor-pointer gap-2">
-                <Link to="/dashboard/results">My Bet Tracker</Link>
-              </DropdownMenuItem>
-              <DropdownMenuItem asChild className="cursor-pointer gap-2">
-                <Link to="/dashboard/saved">Saved</Link>
-              </DropdownMenuItem>
-              <DropdownMenuItem asChild className="cursor-pointer gap-2">
-                <Link to="/dashboard/activity">Activity</Link>
-              </DropdownMenuItem>
-              <DropdownMenuItem asChild className="cursor-pointer gap-2">
-                <Link to="/support">
-                  <HelpCircle className="h-4 w-4" aria-hidden />
-                  Help & Support
+                <Link to="/admin/settings">
+                  <Settings className="h-4 w-4" aria-hidden />
+                  Settings
                 </Link>
               </DropdownMenuItem>
               <DropdownMenuSeparator />

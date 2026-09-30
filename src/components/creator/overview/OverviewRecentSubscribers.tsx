@@ -2,6 +2,7 @@ import { Link } from 'react-router-dom';
 import { ArrowRight, Users } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { cn } from '@/lib/utils';
+import { clayCard } from '@/lib/overviewClay';
 
 export type OverviewSubscriber = {
   id: string;
@@ -29,7 +30,7 @@ function initials(name: string): string {
 
 export function OverviewRecentSubscribers({ rows }: { rows: OverviewSubscriber[] }) {
   return (
-    <section className="rounded-2xl border border-border bg-card p-5 shadow-[var(--shadow-card)]">
+    <section className={cn(clayCard, 'p-5 sm:p-6')}>
       <div className="mb-4 flex items-center justify-between gap-2">
         <h2 className="text-base font-extrabold tracking-tight text-foreground">
           Recent Subscribers

@@ -1,6 +1,8 @@
+import { cn } from '@/lib/utils';
 import { useQuery } from 'convex/react';
 import { api } from '../../convex/_generated/api';
 import { DashboardLayout } from '@/components/dashboard/DashboardLayout';
+import { clayCard } from '@/lib/overviewClay';
 import { scanTruncationNote } from '@/lib/adminTruncation';
 import { Users, Crown, DollarSign, CreditCard, Loader2, TrendingUp, Activity, UserPlus, Percent, FileWarning, ArrowRight } from 'lucide-react';
 import { Link } from 'react-router-dom';
@@ -12,7 +14,7 @@ const AdminDashboardInner = () => {
 
   if (stats === undefined) {
     return (
-      <DashboardLayout type="admin">
+      <DashboardLayout type="admin" mainClassName="bg-clay-page">
         <div className="flex justify-center py-20"><Loader2 className="h-5 w-5 animate-spin text-primary" /></div>
       </DashboardLayout>
     );
@@ -34,9 +36,8 @@ const AdminDashboardInner = () => {
   const creatorGrowth = stats.monthly;
 
   return (
-    <DashboardLayout type="admin">
+    <DashboardLayout type="admin" mainClassName="bg-clay-page">
       <div className="mb-8">
-        <h1 className="text-2xl font-bold">Platform Overview</h1>
         <p className="text-muted-foreground text-sm mt-0.5">Executive dashboard — live Convex aggregates</p>
         {truncation && (
           <p className="text-amber-600 text-caption mt-2">{truncation}</p>

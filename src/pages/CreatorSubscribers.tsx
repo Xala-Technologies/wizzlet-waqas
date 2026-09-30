@@ -29,6 +29,7 @@ import { toast } from 'sonner';
 import { api } from '../../convex/_generated/api';
 import { DashboardLayout } from '@/components/dashboard/DashboardLayout';
 import { DashboardKpiStrip } from '@/components/dashboard/DashboardKpiStrip';
+import { clayCard } from '@/lib/overviewClay';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -357,7 +358,7 @@ const CreatorSubscribers = () => {
 
   if (loading) {
     return (
-      <DashboardLayout type="creator">
+      <DashboardLayout type="creator" mainClassName="bg-clay-page">
         <div className="flex justify-center py-20">
           <Loader2 className="h-5 w-5 animate-spin text-primary" />
         </div>
@@ -370,21 +371,13 @@ const CreatorSubscribers = () => {
   const totalForPager = useDemo ? CREATOR_SUBSCRIBERS_DEMO_METRICS.total : filtered.length;
 
   return (
-    <DashboardLayout type="creator">
-      <header className="mb-7 flex flex-col gap-5 sm:mb-9 lg:flex-row lg:items-start lg:justify-between lg:gap-8">
-        <div className="min-w-0">
-          <h1 className="type-page-title text-foreground md:text-[2.75rem] md:leading-[1.1]">
-            Subscribers
-          </h1>
-          <p className="mt-3 max-w-2xl text-body font-medium text-muted-foreground">
-            Manage your subscribers, view their activity, and grow your community.
-          </p>
-        </div>
+    <DashboardLayout type="creator" mainClassName="bg-clay-page">
+      <header className="mb-4 flex flex-col gap-3 sm:mb-5 lg:flex-row lg:items-center lg:justify-end lg:gap-8">
         <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:items-center">
           <Button
             type="button"
             variant="outline"
-            className="h-12 w-full gap-2 rounded-[var(--radius-md)] px-6 sm:w-auto"
+            className="h-12 w-full gap-2 rounded-[0.875rem] px-6 sm:w-auto"
             onClick={messageAll}
           >
             <MessageSquare className="h-5 w-5" aria-hidden />
@@ -393,7 +386,7 @@ const CreatorSubscribers = () => {
           <Button
             type="button"
             variant="outline"
-            className="h-12 w-full gap-2 rounded-[var(--radius-md)] px-6 sm:w-auto"
+            className="h-12 w-full gap-2 rounded-[0.875rem] px-6 sm:w-auto"
             onClick={exportCsv}
           >
             <Download className="h-5 w-5" aria-hidden />
@@ -403,7 +396,7 @@ const CreatorSubscribers = () => {
       </header>
 
       {useDemo ? (
-        <div className="mb-6 flex items-start gap-3 rounded-2xl border border-amber-500/30 bg-amber-500/10 px-4 py-3.5 text-amber-950 dark:text-amber-100 sm:items-center sm:px-5">
+        <div className="clay-card mb-6 flex items-start gap-3 bg-[#fbf8f3] px-4 py-3.5 text-amber-950 dark:bg-amber-500/10 dark:text-amber-100 sm:items-center sm:px-5">
           <Sparkles
             className="mt-0.5 h-5 w-5 shrink-0 text-amber-600 dark:text-amber-400 sm:mt-0"
             aria-hidden
@@ -418,6 +411,7 @@ const CreatorSubscribers = () => {
 
       <div className="mb-6 sm:mb-8">
         <DashboardKpiStrip
+          variant="clay"
           items={[
             {
               label: 'Total subscribers',
@@ -456,7 +450,7 @@ const CreatorSubscribers = () => {
       </div>
 
       {!useDemo && rows.length === 0 ? (
-        <div className="rounded-2xl border border-border bg-card p-10 text-center shadow-[var(--shadow-card)]">
+        <div className={cn(clayCard, 'p-10 text-center')}>
           <span
             className={cn(
               'mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-xl',
@@ -469,7 +463,7 @@ const CreatorSubscribers = () => {
           <p className="mx-auto mb-5 max-w-sm text-support text-muted-foreground">
             Share your profile link so fans can subscribe to your picks.
           </p>
-          <Button asChild size="sm">
+          <Button asChild size="sm" className="clay-btn rounded-[0.875rem]">
             <Link to={emptyCtaHref}>
               {profileReady ? 'View your profile' : 'Set up your profile'}
             </Link>
@@ -478,7 +472,7 @@ const CreatorSubscribers = () => {
       ) : (
         <div className="grid grid-cols-1 gap-5 xl:grid-cols-12 xl:items-start">
           <div className="xl:col-span-8">
-            <section className="overflow-hidden rounded-2xl border border-border bg-card shadow-[var(--shadow-card)]">
+            <section className={cn(clayCard, 'overflow-hidden')}>
               <div className="flex flex-col gap-3 border-b border-border p-4 sm:flex-row sm:flex-wrap sm:items-center sm:p-5">
                 <div className="relative min-w-[180px] flex-1">
                   <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
@@ -585,10 +579,11 @@ const CreatorSubscribers = () => {
                               setDetailTab('overview');
                             }}
                             className={cn(
-                              'w-full rounded-xl border bg-background/60 p-4 text-left shadow-[var(--shadow-card)]',
+                              clayCard,
+                              'w-full p-4 text-left',
                               selectedId === row.id
                                 ? 'border-primary/50 ring-1 ring-primary/25'
-                                : 'border-border',
+                                : null,
                             )}
                           >
                             <div className="flex items-start justify-between gap-2">
@@ -808,7 +803,7 @@ const CreatorSubscribers = () => {
 
           <aside className="xl:col-span-4">
             {selectedRow ? (
-              <div className="sticky top-4 overflow-hidden rounded-2xl border border-border bg-card shadow-[var(--shadow-card)]">
+              <div className={cn(clayCard, 'sticky top-4 overflow-hidden')}>
                 <div className="relative border-b border-border p-5">
                   <button
                     type="button"
@@ -1129,7 +1124,7 @@ const CreatorSubscribers = () => {
                 </div>
               </div>
             ) : (
-              <div className="rounded-2xl border border-dashed border-border bg-card/50 p-8 text-center text-sm text-muted-foreground">
+              <div className="rounded-[var(--radius-clay)] border-2 border-dashed border-border bg-muted/20 p-8 text-center text-sm text-muted-foreground">
                 Select a subscriber to view details.
               </div>
             )}

@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useMutation, useQuery } from 'convex/react';
 import {
@@ -29,6 +29,7 @@ import { api } from '../../convex/_generated/api';
 import type { Id } from '../../convex/_generated/dataModel';
 import { DashboardLayout } from '@/components/dashboard/DashboardLayout';
 import { DashboardKpiStrip } from '@/components/dashboard/DashboardKpiStrip';
+import { clayCard } from '@/lib/overviewClay';
 import { DisplayedProductsSection } from '@/components/creator/DisplayedProductsSection';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -68,7 +69,6 @@ import { safeGetItem, safeSetItem } from '@/lib/safeStorage';
 import {
   CREATOR_PRODUCTS_DEMO_METRICS,
   CREATOR_PRODUCTS_DEMO_ROWS,
-  PROFILE_DISPLAY_SLOT_LIMIT,
   defaultProductFeatures,
   formatMoneyCents,
   formatProductPrice,
@@ -298,6 +298,29 @@ const CreatorProducts = () => {
   );
   const [addPopoverId, setAddPopoverId] = useState<string | null>(null);
   const [profileBusyId, setProfileBusyId] = useState<string | null>(null);
+  /** Optimistic overrides for live products until Convex catches up. */
+  const [liveProfileOverrides, setLiveProfileOverrides] = useState<Map<string, boolean>>(
+    () => new Map(),
+  );
+
+  // Drop optimistic flags once Convex list reflects the same showOnProfile value.
+  useEffect(() => {
+    if (useDemo || liveProfileOverrides.size === 0) return;
+    setLiveProfileOverrides((prev) => {
+      if (prev.size === 0) return prev;
+      const next = new Map(prev);
+      let changed = false;
+      for (const [id, show] of prev) {
+        const live = liveRows.find((r) => r.id === id);
+        if (!live) continue;
+        if (live.showOnProfile === show) {
+          next.delete(id);
+          changed = true;
+        }
+      }
+      return changed ? next : prev;
+    });
+  }, [liveRows, liveProfileOverrides.size, useDemo]);
 
   const [formOpen, setFormOpen] = useState(false);
   const [formInitial, setFormInitial] = useState<CreateProductInitial | null>(null);
@@ -393,10 +416,19 @@ const CreatorProducts = () => {
     };
   }, [earnings?.grossCents, earnings?.netCents, liveRows, subs, useDemo]);
 
+  const isOnProfile = (row: TableRowModel): boolean => {
+    if (isCreatorProductsDemoId(row.id) || useDemo) {
+      return demoProfileIds.has(row.id);
+    }
+    if (liveProfileOverrides.has(row.id)) {
+      return liveProfileOverrides.get(row.id) === true;
+    }
+    return rowShowOnProfile(row, demoProfileIds);
+  };
+
   const displayedProducts = useMemo(() => {
     return tableRows
-      .filter((r) => r.status !== 'archived' && rowShowOnProfile(r, demoProfileIds))
-      .slice(0, PROFILE_DISPLAY_SLOT_LIMIT)
+      .filter((r) => r.status !== 'archived' && isOnProfile(r))
       .map((row) => {
         const Icon = productIcon(
           row.name,
@@ -415,23 +447,35 @@ const CreatorProducts = () => {
           iconClassName: iconTone(Icon),
         };
       });
-  }, [tableRows, demoProfileIds]);
+  }, [tableRows, demoProfileIds, liveProfileOverrides, useDemo]);
 
-  const profileSlotCount = displayedProducts.length;
+  const profileCandidates = useMemo(() => {
+    return tableRows
+      .filter((r) => r.status !== 'archived' && !isOnProfile(r))
+      .map((row) => {
+        const Icon = productIcon(
+          row.name,
+          row.type,
+          'isFeatured' in row ? row.isFeatured : false,
+        );
+        return {
+          id: row.id,
+          name: row.name,
+          priceCents: row.priceCents,
+          billingPeriod: row.billingPeriod,
+          type: row.type,
+          Icon,
+          iconClassName: iconTone(Icon),
+        };
+      });
+  }, [tableRows, demoProfileIds, liveProfileOverrides, useDemo]);
 
   const applyShowOnProfile = async (row: TableRowModel, show: boolean) => {
     if (useDemo || isCreatorProductsDemoId(row.id)) {
       setDemoProfileIds((prev) => {
         const next = new Set(prev);
-        if (show) {
-          if (next.size >= PROFILE_DISPLAY_SLOT_LIMIT) {
-            toast.error(`All ${PROFILE_DISPLAY_SLOT_LIMIT} profile slots are used`);
-            return prev;
-          }
-          next.add(row.id);
-        } else {
-          next.delete(row.id);
-        }
+        if (show) next.add(row.id);
+        else next.delete(row.id);
         return next;
       });
       setAddPopoverId(null);
@@ -439,6 +483,11 @@ const CreatorProducts = () => {
       return;
     }
 
+    setLiveProfileOverrides((prev) => {
+      const next = new Map(prev);
+      next.set(row.id, show);
+      return next;
+    });
     setProfileBusyId(row.id);
     try {
       await setShowOnProfile({
@@ -448,11 +497,12 @@ const CreatorProducts = () => {
       setAddPopoverId(null);
       toast.success(show ? 'Added to profile' : 'Removed from profile');
     } catch (e) {
-      const raw = e instanceof Error ? e.message : String(e);
-      const msg = raw.includes('PROFILE_SLOTS_FULL')
-        ? `All ${PROFILE_DISPLAY_SLOT_LIMIT} profile slots are used`
-        : raw || 'Could not update profile display';
-      toast.error(msg);
+      setLiveProfileOverrides((prev) => {
+        const next = new Map(prev);
+        next.delete(row.id);
+        return next;
+      });
+      toast.error(e instanceof Error ? e.message : 'Could not update profile display');
     } finally {
       setProfileBusyId(null);
     }
@@ -514,7 +564,7 @@ const CreatorProducts = () => {
 
   if (loading) {
     return (
-      <DashboardLayout type="creator">
+      <DashboardLayout type="creator" mainClassName="bg-clay-page">
         <div className="flex justify-center py-20">
           <Loader2 className="h-5 w-5 animate-spin text-primary" />
         </div>
@@ -524,7 +574,7 @@ const CreatorProducts = () => {
 
   if (!creator) {
     return (
-      <DashboardLayout type="creator">
+      <DashboardLayout type="creator" mainClassName="bg-clay-page">
         <p className="text-support text-muted-foreground">Creator profile not found.</p>
       </DashboardLayout>
     );
@@ -532,7 +582,7 @@ const CreatorProducts = () => {
 
   if (formOpen) {
     return (
-      <DashboardLayout type="creator">
+      <DashboardLayout type="creator" mainClassName="bg-clay-page">
         <CreateProductForm
           creatorId={creator._id}
           creatorName={creator.displayName || creator.username || 'Creator'}
@@ -553,19 +603,11 @@ const CreatorProducts = () => {
   }
 
   return (
-    <DashboardLayout type="creator">
-      <header className="mb-7 flex flex-col gap-5 sm:mb-9 sm:flex-row sm:items-start sm:justify-between sm:gap-8">
-        <div className="min-w-0">
-          <h1 className="type-page-title text-foreground md:text-[2.75rem] md:leading-[1.1]">
-            Products
-          </h1>
-          <p className="mt-3 max-w-2xl text-body font-medium text-muted-foreground">
-            Create and manage your subscriptions and products.
-          </p>
-        </div>
+    <DashboardLayout type="creator" mainClassName="bg-clay-page">
+      <header className="mb-4 flex flex-col gap-3 sm:mb-5 sm:flex-row sm:items-center sm:justify-end sm:gap-8">
         <Button
           type="button"
-          className="h-12 w-full shrink-0 gap-2 rounded-[var(--radius-md)] px-6 sm:mt-1 sm:w-auto"
+          className="clay-btn h-12 w-full shrink-0 gap-2 rounded-[0.875rem] px-6 sm:w-auto"
           onClick={openCreate}
         >
           <Plus className="h-5 w-5" aria-hidden />
@@ -574,7 +616,7 @@ const CreatorProducts = () => {
       </header>
 
       {useDemo ? (
-        <div className="mb-6 flex items-start gap-3 rounded-2xl border border-amber-500/30 bg-amber-500/10 px-4 py-3.5 text-amber-950 dark:text-amber-100 sm:items-center sm:px-5">
+        <div className="clay-card mb-6 flex items-start gap-3 bg-[#fbf8f3] px-4 py-3.5 text-amber-950 dark:bg-amber-500/10 dark:text-amber-100 sm:items-center sm:px-5">
           <Sparkles
             className="mt-0.5 h-5 w-5 shrink-0 text-amber-600 dark:text-amber-400 sm:mt-0"
             aria-hidden
@@ -589,6 +631,12 @@ const CreatorProducts = () => {
 
       <DisplayedProductsSection
         products={displayedProducts}
+        candidates={profileCandidates}
+        addBusy={profileBusyId !== null}
+        onAdd={(id) => {
+          const row = tableRows.find((r) => r.id === id);
+          if (row) void applyShowOnProfile(row, true);
+        }}
         onRemove={(id) => {
           const row = tableRows.find((r) => r.id === id);
           if (row) void applyShowOnProfile(row, false);
@@ -597,6 +645,7 @@ const CreatorProducts = () => {
 
       <div className="mb-6 sm:mb-8">
         <DashboardKpiStrip
+          variant="clay"
           items={[
             {
               label: 'Total products',
@@ -686,7 +735,7 @@ const CreatorProducts = () => {
         </div>
       </div>
 
-      <section className="mb-6 overflow-hidden rounded-2xl border border-border bg-card shadow-[var(--shadow-card)]">
+      <section className={cn(clayCard, 'mb-6 overflow-hidden')}>
         {filtered.length === 0 ? (
           <div className="p-10 text-center">
             <Package className="mx-auto mb-3 h-8 w-8 text-muted-foreground" aria-hidden />
@@ -749,7 +798,7 @@ const CreatorProducts = () => {
                     (row.type === 'one-time'
                       ? `${row.subscribers} purchases`
                       : String(row.subscribers));
-                  const onProfile = rowShowOnProfile(row, demoProfileIds);
+                  const onProfile = isOnProfile(row);
                   const features = rowFeatures(row);
                   const busy = profileBusyId === row.id;
 
@@ -838,7 +887,7 @@ const CreatorProducts = () => {
                             <PopoverTrigger asChild>
                               <button
                                 type="button"
-                                disabled={busy || profileSlotCount >= PROFILE_DISPLAY_SLOT_LIMIT}
+                                disabled={busy}
                                 aria-label={`Add ${row.name} to profile`}
                                 className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-border bg-muted/40 text-muted-foreground transition hover:border-primary/40 hover:bg-primary/10 hover:text-primary disabled:cursor-not-allowed disabled:opacity-40"
                               >
@@ -988,7 +1037,12 @@ const CreatorProducts = () => {
       </section>
 
       {!bundleDismissed ? (
-        <section className="relative flex flex-col gap-4 overflow-hidden rounded-2xl border border-primary/20 bg-primary/10 px-5 py-5 sm:flex-row sm:items-center sm:justify-between sm:px-6">
+        <section
+          className={cn(
+            clayCard,
+            'relative flex flex-col gap-4 overflow-hidden bg-primary/10 px-5 py-5 dark:bg-[var(--active-bg)] sm:flex-row sm:items-center sm:justify-between sm:px-6',
+          )}
+        >
           <button
             type="button"
             aria-label="Dismiss"
@@ -1001,7 +1055,7 @@ const CreatorProducts = () => {
             <X className="h-4 w-4" />
           </button>
           <div className="flex min-w-0 items-start gap-3 pr-8 sm:items-center">
-            <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-primary/15 text-primary">
+            <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-primary/15 text-primary shadow-[inset_0_-1px_3px_rgba(8,24,47,0.06),inset_0_1px_3px_rgba(255,255,255,0.5)] dark:shadow-[inset_0_-1px_3px_rgba(0,0,0,0.28),inset_0_1px_3px_rgba(255,255,255,0.04)]">
               <Gift className="h-5 w-5" aria-hidden />
             </span>
             <div className="min-w-0">
@@ -1015,7 +1069,7 @@ const CreatorProducts = () => {
           </div>
           <Button
             type="button"
-            className="h-12 w-full shrink-0 gap-2 rounded-[var(--radius-md)] px-6 sm:w-auto"
+            className="clay-btn h-12 w-full shrink-0 gap-2 rounded-[0.875rem] px-6 sm:w-auto"
             onClick={openCreate}
           >
             <Plus className="h-5 w-5" aria-hidden />

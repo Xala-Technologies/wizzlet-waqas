@@ -4,6 +4,7 @@ import { useConvex, useMutation, useQuery } from 'convex/react';
 import { api } from '../../convex/_generated/api';
 import { uploadToConvexStorage } from '@/lib/upload';
 import { DashboardLayout } from '@/components/dashboard/DashboardLayout';
+import { clayCard } from '@/lib/overviewClay';
 import { SettingsSubnav, useSettingsTab } from '@/components/creator/SettingsSubnav';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -94,8 +95,7 @@ const MAX_IMAGE_BYTES = 5 * 1024 * 1024;
 const BIO_MAX = 500;
 const BRAND_NAME_MAX = 50;
 
-const cardClass =
-  'rounded-2xl border border-border bg-card p-5 sm:p-6 shadow-[var(--shadow-card)]';
+const cardClass = cn(clayCard, 'p-5 sm:p-6');
 
 function brandingStorageKey(creatorId: string): string {
   return `prizelet.creator.branding.${creatorId}`;
@@ -504,7 +504,7 @@ const CreatorSettings = () => {
 
   if (creator === undefined || me === undefined) {
     return (
-      <DashboardLayout type="creator">
+      <DashboardLayout type="creator" mainClassName="bg-clay-page">
         <div className="flex justify-center py-20">
           <Loader2 className="h-5 w-5 animate-spin text-primary" />
         </div>
@@ -514,14 +514,10 @@ const CreatorSettings = () => {
 
   if (!creator) {
     return (
-      <DashboardLayout type="creator">
-        <header className="mb-6">
-          <h1 className="text-heading font-bold text-foreground">Settings</h1>
-          <p className="mt-1.5 text-support text-muted-foreground">
-            Manage your account settings, brand, team, and preferences.
-          </p>
+      <DashboardLayout type="creator" mainClassName="bg-clay-page">
+        <header className="mb-4">
         </header>
-        <div className="rounded-2xl border border-border bg-card p-10 text-center shadow-[var(--shadow-card)]">
+        <div className={cn(clayCard, 'p-10 text-center')}>
           <Settings className="mx-auto mb-4 h-10 w-10 text-muted-foreground" />
           <h3 className="mb-2 text-ui font-semibold text-foreground">No creator profile yet</h3>
           <p className="mx-auto mb-5 max-w-xs text-support text-muted-foreground">
@@ -547,20 +543,14 @@ const CreatorSettings = () => {
   };
 
   return (
-    <DashboardLayout type="creator">
-      <header className="mb-6">
-        <h1 className="text-heading font-bold tracking-tight text-foreground md:text-heading-lg">
-          Settings
-        </h1>
-        <p className="mt-1.5 text-support text-muted-foreground">
-          Manage your account settings, brand, team, and preferences.
-        </p>
+    <DashboardLayout type="creator" mainClassName="bg-clay-page">
+      <header className="mb-4">
       </header>
 
       <SettingsSubnav active={tab} />
 
       {useDemo ? (
-        <div className="mb-6 flex items-start gap-3 rounded-2xl border border-amber-500/30 bg-amber-500/10 px-4 py-3.5 text-amber-950 dark:text-amber-100 sm:items-center sm:px-5">
+        <div className="clay-card mb-6 flex items-start gap-3 bg-[#fbf8f3] px-4 py-3.5 text-amber-950 dark:bg-amber-500/10 dark:text-amber-100 sm:items-center sm:px-5">
           <Sparkles
             className="mt-0.5 h-5 w-5 shrink-0 text-amber-600 dark:text-amber-400 sm:mt-0"
             aria-hidden
@@ -1189,7 +1179,7 @@ const CreatorSettings = () => {
                 </div>
               </section>
 
-              <section className="rounded-2xl border border-violet-500/20 bg-violet-500/5 p-5 shadow-[var(--shadow-card)]">
+              <section className={cn(clayCard, 'border-violet-500/20 bg-violet-500/5 p-5')}>
                 <div className="mb-3 flex items-center gap-2">
                   <Lightbulb className="h-4 w-4 text-violet-600 dark:text-violet-400" aria-hidden />
                   <h2 className="text-base font-extrabold tracking-tight text-foreground">
@@ -1700,7 +1690,7 @@ const CreatorSettings = () => {
               </div>
             </section>
 
-            <section className="space-y-3 rounded-2xl border border-border bg-card p-5 shadow-[var(--shadow-card)] sm:p-6">
+            <section className={cn(clayCard, 'space-y-3 p-5 sm:p-6')}>
               <h2 className="text-base font-extrabold tracking-tight text-foreground">
                 Cancel Subscription
               </h2>
@@ -1846,7 +1836,7 @@ const CreatorSettings = () => {
               </Button>
             </section>
 
-            <section className="space-y-3 rounded-2xl border border-violet-500/20 bg-violet-500/5 p-5 shadow-[var(--shadow-card)]">
+            <section className={cn(clayCard, 'space-y-3 border-violet-500/20 bg-violet-500/5 p-5')}>
               <div className="flex items-center gap-2">
                 <CircleHelp className="h-4 w-4 text-violet-600 dark:text-violet-400" aria-hidden />
                 <h2 className="text-base font-extrabold tracking-tight text-foreground">
@@ -2046,7 +2036,7 @@ const CreatorSettings = () => {
           </div>
 
           <aside className="flex flex-col gap-4 xl:col-span-4">
-            <section className="rounded-2xl border border-violet-500/20 bg-violet-500/5 p-5 shadow-[var(--shadow-card)]">
+            <section className={cn(clayCard, 'border-violet-500/20 bg-violet-500/5 p-5')}>
               <div className="mb-3 flex items-center gap-2">
                 <LayoutGrid className="h-4 w-4 text-violet-600 dark:text-violet-400" aria-hidden />
                 <h2 className="text-base font-extrabold tracking-tight text-foreground">
@@ -2278,7 +2268,7 @@ const CreatorSettings = () => {
           </div>
 
           <aside className="flex flex-col gap-4 xl:col-span-4">
-            <section className="rounded-2xl border border-sky-500/20 bg-sky-500/5 p-5 shadow-[var(--shadow-card)]">
+            <section className={cn(clayCard, 'border-sky-500/20 bg-sky-500/5 p-5')}>
               <div className="mb-3 flex items-center gap-2">
                 <Lightbulb className="h-4 w-4 text-sky-600 dark:text-sky-400" aria-hidden />
                 <h2 className="text-base font-extrabold tracking-tight text-foreground">
@@ -2554,7 +2544,7 @@ const CreatorSettings = () => {
               </div>
             </section>
 
-            <section className="space-y-3 rounded-2xl border border-destructive/30 bg-destructive/5 p-5 shadow-[var(--shadow-card)] sm:p-6">
+            <section className={cn(clayCard, 'space-y-3 border-destructive/30 bg-destructive/5 p-5 sm:p-6')}>
               <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                 <div className="flex items-start gap-3">
                   <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-destructive/10 text-destructive">
@@ -2588,7 +2578,7 @@ const CreatorSettings = () => {
           </div>
 
           <aside className="flex flex-col gap-4 xl:col-span-4">
-            <section className="rounded-2xl border border-violet-500/20 bg-violet-500/5 p-5 shadow-[var(--shadow-card)]">
+            <section className={cn(clayCard, 'border-violet-500/20 bg-violet-500/5 p-5')}>
               <div className="mb-3 flex items-center gap-2">
                 <Lightbulb className="h-4 w-4 text-violet-600 dark:text-violet-400" aria-hidden />
                 <h2 className="text-base font-extrabold tracking-tight text-foreground">
@@ -2824,7 +2814,7 @@ const CreatorSettings = () => {
           </div>
 
           <aside className="flex flex-col gap-4 xl:col-span-4">
-            <section className="rounded-2xl border border-violet-500/20 bg-violet-500/5 p-5 shadow-[var(--shadow-card)]">
+            <section className={cn(clayCard, 'border-violet-500/20 bg-violet-500/5 p-5')}>
               <div className="mb-3 flex items-center gap-2">
                 <Lightbulb className="h-4 w-4 text-violet-600 dark:text-violet-400" aria-hidden />
                 <h2 className="text-base font-extrabold tracking-tight text-foreground">

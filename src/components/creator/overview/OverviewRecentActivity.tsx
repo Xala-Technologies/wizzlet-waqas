@@ -6,6 +6,7 @@ import {
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { kpiIconTone } from '@/lib/kpiIconTones';
+import { clayCard } from '@/lib/overviewClay';
 
 export type OverviewActivityTone = 'subscriber' | 'payment' | 'message' | 'milestone';
 
@@ -34,7 +35,7 @@ const toneClass: Record<OverviewActivityTone, string> = {
 
 export function OverviewRecentActivity({ rows }: { rows: OverviewActivityRow[] }) {
   return (
-    <section className="rounded-2xl border border-border bg-card p-5 shadow-[var(--shadow-card)]">
+    <section className={cn(clayCard, 'p-5 sm:p-6')}>
       <h2 className="mb-4 text-base font-extrabold tracking-tight text-foreground">
         Recent Activity
       </h2>
@@ -54,7 +55,7 @@ export function OverviewRecentActivity({ rows }: { rows: OverviewActivityRow[] }
               <li key={row.id} className="flex items-start gap-3">
                 <span
                   className={cn(
-                    'relative mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl',
+                    'relative mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-2xl shadow-[inset_0_-2px_5px_rgba(8,24,47,0.08),inset_0_2px_5px_rgba(255,255,255,0.65)] dark:shadow-[inset_0_-2px_5px_rgba(0,0,0,0.35),inset_0_2px_5px_rgba(255,255,255,0.05)]',
                     toneClass[row.tone],
                   )}
                 >

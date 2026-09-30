@@ -2,6 +2,7 @@ import { Link } from 'react-router-dom';
 import { ArrowRight, Crown, Gem, Package, Star } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { kpiIconTone } from '@/lib/kpiIconTones';
+import { clayCard } from '@/lib/overviewClay';
 
 export type OverviewTopProduct = {
   id: string;
@@ -29,7 +30,7 @@ const iconTones = [
 
 export function OverviewTopProducts({ rows }: { rows: OverviewTopProduct[] }) {
   return (
-    <section className="rounded-2xl border border-border bg-card p-5 shadow-[var(--shadow-card)]">
+    <section className={cn(clayCard, 'p-5 sm:p-6')}>
       <div className="mb-4 flex items-center justify-between gap-2">
         <h2 className="text-base font-extrabold tracking-tight text-foreground">Top Products</h2>
         <Link
@@ -55,11 +56,11 @@ export function OverviewTopProducts({ rows }: { rows: OverviewTopProduct[] }) {
             return (
               <li
                 key={row.id}
-                className="flex items-center gap-3 rounded-xl border border-border/80 px-3 py-2.5"
+                className="flex items-center gap-3 rounded-xl bg-muted/30 px-3 py-2.5"
               >
                 <span
                   className={cn(
-                    'flex h-10 w-10 shrink-0 items-center justify-center rounded-xl',
+                    'flex h-10 w-10 shrink-0 items-center justify-center rounded-xl shadow-[inset_0_-1px_3px_rgba(8,24,47,0.06),inset_0_1px_3px_rgba(255,255,255,0.5)] dark:shadow-[inset_0_-1px_3px_rgba(0,0,0,0.28),inset_0_1px_3px_rgba(255,255,255,0.04)]',
                     iconTones[i % iconTones.length],
                   )}
                 >

@@ -29,6 +29,7 @@ import {
 import { api } from '../../convex/_generated/api';
 import { DashboardLayout } from '@/components/dashboard/DashboardLayout';
 import { DashboardKpiStrip } from '@/components/dashboard/DashboardKpiStrip';
+import { clayCard } from '@/lib/overviewClay';
 import {
   Select,
   SelectContent,
@@ -84,15 +85,15 @@ function GrowthMiniChart({ card }: { card: DemoGrowthCard }) {
   const TrendIcon = card.trendPct >= 0 ? ArrowUpRight : ArrowDownRight;
 
   return (
-    <section className="flex h-full flex-col rounded-2xl border border-border bg-card p-5 shadow-[var(--shadow-card)]">
+    <section className={cn(clayCard, 'flex h-full flex-col p-5')}>
       <div className="mb-1 flex items-start justify-between gap-2">
         <p className="text-sm font-semibold text-muted-foreground">{card.label}</p>
         <span
           className={cn(
-            'inline-flex items-center gap-0.5 rounded-full px-2 py-0.5 text-[11px] font-bold',
+            'clay-chip inline-flex items-center gap-0.5 px-2 py-0.5 text-[11px] font-bold',
             positive
-              ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400'
-              : 'bg-rose-500/10 text-rose-600 dark:text-rose-400',
+              ? 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-400'
+              : 'bg-rose-500/15 text-rose-700 dark:text-rose-400',
           )}
         >
           <TrendIcon className="h-3 w-3" aria-hidden />
@@ -280,7 +281,7 @@ const CreatorPerformanceTracker = () => {
 
   if (loading) {
     return (
-      <DashboardLayout type="creator">
+      <DashboardLayout type="creator" mainClassName="bg-clay-page">
         <div className="flex justify-center py-20">
           <Loader2 className="h-5 w-5 animate-spin text-primary" />
         </div>
@@ -289,17 +290,14 @@ const CreatorPerformanceTracker = () => {
   }
 
   return (
-    <DashboardLayout type="creator">
-      <header className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+    <DashboardLayout type="creator" mainClassName="bg-clay-page">
+      <header className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="min-w-0">
-          <h1 className="text-2xl font-extrabold tracking-tight text-foreground sm:text-3xl">
-            Performance
-          </h1>
           <p className="mt-1.5 max-w-xl text-sm font-medium text-muted-foreground sm:text-base">
             Track your growth, analyze your content, and make smarter decisions.
           </p>
         </div>
-        <div className="flex h-11 shrink-0 items-center gap-2 rounded-xl border border-border bg-card px-3.5 text-sm font-semibold text-foreground shadow-[var(--shadow-card)]">
+        <div className={cn(clayCard, 'flex h-11 shrink-0 items-center gap-2 px-3.5 text-sm font-semibold text-foreground')}>
           <Calendar className="h-4 w-4 text-muted-foreground" aria-hidden />
           <span className="tabular-nums">{metrics.dateRangeLabel}</span>
           <ChevronDown className="h-4 w-4 text-muted-foreground" aria-hidden />
@@ -307,7 +305,7 @@ const CreatorPerformanceTracker = () => {
       </header>
 
       {useDemo ? (
-        <div className="mb-6 flex items-start gap-3 rounded-2xl border border-amber-500/30 bg-amber-500/10 px-4 py-3.5 text-amber-950 dark:text-amber-100 sm:items-center sm:px-5">
+        <div className="clay-card mb-6 flex items-start gap-3 bg-[#fbf8f3] px-4 py-3.5 text-amber-950 dark:bg-amber-500/10 dark:text-amber-100 sm:items-center sm:px-5">
           <Sparkles
             className="mt-0.5 h-5 w-5 shrink-0 text-amber-600 dark:text-amber-400 sm:mt-0"
             aria-hidden
@@ -321,6 +319,7 @@ const CreatorPerformanceTracker = () => {
 
       <div className="mb-6 sm:mb-8">
         <DashboardKpiStrip
+          variant="clay"
           items={[
             {
               label: 'Total Revenue',
@@ -380,7 +379,7 @@ const CreatorPerformanceTracker = () => {
       </div>
 
       <div className="mb-6 grid grid-cols-1 gap-4 xl:grid-cols-12">
-        <section className="rounded-2xl border border-border bg-card p-5 shadow-[var(--shadow-card)] sm:p-6 xl:col-span-8">
+        <section className={cn(clayCard, 'p-5 sm:p-6 xl:col-span-8')}>
           <div className="mb-5 flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
             <div className="min-w-0">
               <h2 className="text-base font-extrabold tracking-tight text-foreground">
@@ -500,9 +499,9 @@ const CreatorPerformanceTracker = () => {
           </div>
         </section>
 
-        <section className="rounded-2xl border border-border bg-card p-5 shadow-[var(--shadow-card)] sm:p-6 xl:col-span-4">
+        <section className={cn(clayCard, 'p-5 sm:p-6 xl:col-span-4')}>
           <div className="mb-4 flex items-center gap-2">
-            <span className={cn('flex h-9 w-9 items-center justify-center rounded-xl', kpiIconTone.violet)}>
+            <span className={cn('flex h-9 w-9 items-center justify-center rounded-xl shadow-[inset_0_-1px_3px_rgba(8,24,47,0.06),inset_0_1px_3px_rgba(255,255,255,0.5)] dark:shadow-[inset_0_-1px_3px_rgba(0,0,0,0.28),inset_0_1px_3px_rgba(255,255,255,0.04)]', kpiIconTone.violet)}>
               <Sparkles className="h-4 w-4" aria-hidden />
             </span>
             <h2 className="text-base font-extrabold tracking-tight text-foreground">
@@ -515,7 +514,7 @@ const CreatorPerformanceTracker = () => {
               return (
                 <li
                   key={insight.id}
-                  className="flex gap-3 rounded-xl border border-border/70 bg-muted/20 px-3 py-3"
+                  className="flex gap-3 rounded-xl bg-muted/30 px-3 py-3"
                 >
                   <span
                     className={cn(
@@ -540,7 +539,7 @@ const CreatorPerformanceTracker = () => {
           <GrowthMiniChart key={card.id} card={card} />
         ))}
 
-        <section className="rounded-2xl border border-border bg-card p-5 shadow-[var(--shadow-card)] sm:p-6 md:col-span-2">
+        <section className={cn(clayCard, 'p-5 sm:p-6 md:col-span-2')}>
           <div className="mb-4 flex items-center justify-between gap-3">
             <h2 className="text-base font-extrabold tracking-tight text-foreground">
               Top Performing Products

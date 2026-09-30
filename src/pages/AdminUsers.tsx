@@ -1,8 +1,10 @@
+import { cn } from '@/lib/utils';
 import { useMemo, useState } from 'react';
 import { useMutation, usePaginatedQuery } from 'convex/react';
 import { api } from '../../convex/_generated/api';
 import type { Id } from '../../convex/_generated/dataModel';
 import { DashboardLayout } from '@/components/dashboard/DashboardLayout';
+import { clayCard } from '@/lib/overviewClay';
 import { DesktopTableRegion, MobileRecordCards } from '@/components/dashboard/MobileRecordList';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -106,10 +108,9 @@ const AdminUsers = () => {
   };
 
   return (
-    <DashboardLayout type="admin">
+    <DashboardLayout type="admin" mainClassName="bg-clay-page">
       <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between mb-6">
         <div className="min-w-0">
-          <h1 className="text-2xl font-bold">All Accounts</h1>
           <p className="text-muted-foreground text-sm mt-0.5">
             All accounts including admins and creators · {users.length} loaded
             {status === 'CanLoadMore' || status === 'LoadingMore' ? ' (more available)' : ''}

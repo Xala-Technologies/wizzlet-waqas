@@ -17,6 +17,7 @@ import { toast } from 'sonner';
 import { api } from '../../convex/_generated/api';
 import type { Id } from '../../convex/_generated/dataModel';
 import { DashboardLayout } from '@/components/dashboard/DashboardLayout';
+import { clayCard } from '@/lib/overviewClay';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -432,19 +433,13 @@ const CustomerMessages = () => {
   };
 
   return (
-    <DashboardLayout type="member">
+    <DashboardLayout type="member" mainClassName="bg-clay-page">
       <Seo
         title="Messages — Prizelet"
         description="Chat with creators or get help from our support team."
       />
 
       <header className="mb-5">
-        <h1 className="text-heading font-bold tracking-tight text-foreground md:text-heading-lg">
-          Messages
-        </h1>
-        <p className="mt-1.5 text-support text-muted-foreground">
-          Chat with creators or get help from our support team.
-        </p>
       </header>
 
       {useDemo ? (
@@ -465,7 +460,7 @@ const CustomerMessages = () => {
           <Loader2 className="h-5 w-5 animate-spin text-primary" />
         </div>
       ) : (
-        <div className="grid min-h-[min(70vh,640px)] grid-cols-1 overflow-hidden rounded-2xl border border-border bg-card shadow-[var(--shadow-card)] lg:grid-cols-[minmax(280px,360px)_minmax(0,1fr)]">
+        <div className={cn(clayCard, 'grid min-h-[min(70vh,640px)] grid-cols-1 overflow-hidden lg:grid-cols-[minmax(280px,360px)_minmax(0,1fr)]')}>
           {/* Inbox column */}
           <div
             className={cn(

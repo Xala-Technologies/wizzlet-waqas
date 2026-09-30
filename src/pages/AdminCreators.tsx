@@ -1,8 +1,10 @@
+import { cn } from '@/lib/utils';
 import { useMemo, useState } from 'react';
 import { useMutation, usePaginatedQuery } from 'convex/react';
 import { api } from '../../convex/_generated/api';
 import type { Id } from '../../convex/_generated/dataModel';
 import { DashboardLayout } from '@/components/dashboard/DashboardLayout';
+import { clayCard } from '@/lib/overviewClay';
 import { DesktopTableRegion, MobileRecordCards } from '@/components/dashboard/MobileRecordList';
 import { Button } from '@/components/ui/button';
 import { Crown, Loader2, ExternalLink, Ban, Star, CheckCircle2, XCircle, Search, MessageSquare, ShieldCheck, TrendingDown, UserX } from 'lucide-react';
@@ -100,10 +102,9 @@ const AdminCreators = () => {
   const inactive = creators.filter((c) => c.daysSinceSignup > 30 && c.subCount === 0);
 
   return (
-    <DashboardLayout type="admin">
+    <DashboardLayout type="admin" mainClassName="bg-clay-page">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mb-6">
         <div className="min-w-0">
-          <h1 className="text-2xl font-bold">Creators Management</h1>
           <p className="text-muted-foreground text-sm mt-0.5">
             {creators.length} loaded{status === 'CanLoadMore' || status === 'LoadingMore' ? ' (more available)' : ''}
           </p>

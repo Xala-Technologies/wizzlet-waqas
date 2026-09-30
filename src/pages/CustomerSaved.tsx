@@ -1,7 +1,9 @@
+import { cn } from '@/lib/utils';
 import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useMutation, usePaginatedQuery, useQuery } from 'convex/react';
 import { DashboardLayout } from '@/components/dashboard/DashboardLayout';
+import { clayCard } from '@/lib/overviewClay';
 import { Button } from '@/components/ui/button';
 import { Bookmark, Trash2, Lock, Globe, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
@@ -115,7 +117,7 @@ const CustomerSaved = () => {
 
   if (loading) {
     return (
-      <DashboardLayout type="member">
+      <DashboardLayout type="member" mainClassName="bg-clay-page">
         <div className="flex justify-center py-20">
           <Loader2 className="h-5 w-5 animate-spin text-primary" />
         </div>
@@ -124,9 +126,8 @@ const CustomerSaved = () => {
   }
 
   return (
-    <DashboardLayout type="member">
-      <header className="mb-6">
-        <h1 className="text-heading font-bold text-foreground">Saved</h1>
+    <DashboardLayout type="member" mainClassName="bg-clay-page">
+      <header className="mb-4">
         <p className="text-support text-muted-foreground mt-0.5">
           Your bookmarked posts and creators
         </p>

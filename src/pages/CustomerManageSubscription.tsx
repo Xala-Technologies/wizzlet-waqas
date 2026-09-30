@@ -19,6 +19,7 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { DashboardLayout } from '@/components/dashboard/DashboardLayout';
+import { clayCard } from '@/lib/overviewClay';
 import { Button } from '@/components/ui/button';
 import {
   AlertDialog,
@@ -223,7 +224,7 @@ const CustomerManageSubscription = () => {
 
   if (loading) {
     return (
-      <DashboardLayout type="member">
+      <DashboardLayout type="member" mainClassName="bg-clay-page">
         <Seo title="Manage Subscription — Prizelet" />
         <div className="flex min-h-[40vh] items-center justify-center">
           <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
@@ -234,7 +235,7 @@ const CustomerManageSubscription = () => {
 
   if (!detail) {
     return (
-      <DashboardLayout type="member">
+      <DashboardLayout type="member" mainClassName="bg-clay-page">
         <Seo title="Manage Subscription — Prizelet" />
         <Link
           to={backHref}
@@ -262,7 +263,7 @@ const CustomerManageSubscription = () => {
     detail.avatarInitials.length === 1;
 
   return (
-    <DashboardLayout type="member">
+    <DashboardLayout type="member" mainClassName="bg-clay-page">
       <Seo
         title={`Manage ${detail.displayName} — Prizelet`}
         description={`View and manage your subscription to ${detail.displayName}.`}
@@ -276,10 +277,7 @@ const CustomerManageSubscription = () => {
         Back to My Creators
       </Link>
 
-      <header className="mb-6">
-        <h1 className="text-2xl font-extrabold tracking-tight text-foreground sm:text-3xl">
-          Manage Subscription
-        </h1>
+      <header className="mb-4">
         <p className="mt-1.5 text-sm font-medium text-muted-foreground sm:text-base">
           View and manage your subscription to {detail.displayName}.
         </p>
@@ -299,7 +297,7 @@ const CustomerManageSubscription = () => {
       ) : null}
 
       {/* Overview card */}
-      <section className="mb-6 rounded-2xl border border-border bg-card p-5 shadow-[var(--shadow-card)] sm:p-6">
+      <section className={cn(clayCard, 'mb-6 p-5 sm:p-6')}>
         <div className="flex flex-col gap-6 lg:flex-row lg:items-start lg:justify-between">
           <div className="flex min-w-0 flex-1 items-start gap-4">
             <div
@@ -384,7 +382,7 @@ const CustomerManageSubscription = () => {
 
       {/* Features + Manage actions */}
       <div className="mb-6 grid gap-4 lg:grid-cols-2">
-        <section className="rounded-2xl border border-border bg-card p-5 shadow-[var(--shadow-card)] sm:p-6">
+        <section className={cn(clayCard, 'p-5 sm:p-6')}>
           <h3 className="text-base font-extrabold tracking-tight text-foreground">Plan Features</h3>
           <ul className="mt-4 space-y-4">
             {detail.features.map((f, i) => {
@@ -404,7 +402,7 @@ const CustomerManageSubscription = () => {
           </ul>
         </section>
 
-        <section className="rounded-2xl border border-border bg-card p-5 shadow-[var(--shadow-card)] sm:p-6">
+        <section className={cn(clayCard, 'p-5 sm:p-6')}>
           <h3 className="text-base font-extrabold tracking-tight text-foreground">
             Manage Subscription
           </h3>
@@ -480,7 +478,7 @@ const CustomerManageSubscription = () => {
       </div>
 
       {/* Billing history */}
-      <section className="rounded-2xl border border-border bg-card p-5 shadow-[var(--shadow-card)] sm:p-6">
+      <section className={cn(clayCard, 'p-5 sm:p-6')}>
         <h3 className="text-base font-extrabold tracking-tight text-foreground">Billing History</h3>
         <div className="mt-4 overflow-x-auto">
           <table className="w-full min-w-[28rem] text-left text-sm">

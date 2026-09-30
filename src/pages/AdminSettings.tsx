@@ -1,7 +1,9 @@
+import { cn } from '@/lib/utils';
 import { useEffect, useState } from 'react';
 import { useAction, useMutation, useQuery } from 'convex/react';
 import { api } from '../../convex/_generated/api';
 import { DashboardLayout } from '@/components/dashboard/DashboardLayout';
+import { clayCard } from '@/lib/overviewClay';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -145,7 +147,7 @@ const AdminSettings = () => {
 
   if (platformRaw === undefined) {
     return (
-      <DashboardLayout type="admin">
+      <DashboardLayout type="admin" mainClassName="bg-clay-page">
         <div className="flex items-center justify-center py-24">
           <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
         </div>
@@ -154,9 +156,8 @@ const AdminSettings = () => {
   }
 
   return (
-    <DashboardLayout type="admin">
+    <DashboardLayout type="admin" mainClassName="bg-clay-page">
       <div className="mb-6">
-        <h1 className="text-2xl font-bold">Platform Settings</h1>
         <p className="text-muted-foreground text-sm mt-0.5">Configure platform-wide settings</p>
       </div>
 

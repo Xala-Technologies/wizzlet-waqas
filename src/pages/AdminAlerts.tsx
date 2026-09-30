@@ -1,7 +1,9 @@
+import { cn } from '@/lib/utils';
 import { useMemo, useState } from 'react';
 import { useQuery } from 'convex/react';
 import { api } from '../../convex/_generated/api';
 import { DashboardLayout } from '@/components/dashboard/DashboardLayout';
+import { clayCard } from '@/lib/overviewClay';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { CreditCard, UserX, Inbox, FileWarning, Wallet, ShieldCheck, ArrowRight, Loader2, CheckCircle2 } from 'lucide-react';
@@ -95,9 +97,8 @@ const AdminAlerts = () => {
     .reduce((sum, a) => sum + a.count, 0);
 
   return (
-    <DashboardLayout type="admin">
+    <DashboardLayout type="admin" mainClassName="bg-clay-page">
       <div className="mb-8">
-        <h1 className="text-2xl font-bold">Alerts & Attention Center</h1>
         <p className="text-muted-foreground text-sm mt-0.5">Items requiring your attention right now</p>
         {scanTruncationNote(!!overview?.truncated, overview?.listLimit) && (
           <p className="text-amber-600 text-caption mt-2">

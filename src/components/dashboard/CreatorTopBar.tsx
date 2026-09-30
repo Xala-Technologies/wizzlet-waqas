@@ -17,8 +17,10 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { cn } from '@/lib/utils';
 import { creatorProfilePath } from '@/lib/creatorProfilePath';
+import { dashboardPageTitle } from '@/lib/dashboardPageTitle';
+
 /**
- * Creator desktop utility bar — search, notifications, account menu, Create Post.
+ * Creator desktop utility bar — page title, search, notifications, account menu.
  * Hidden on mobile (MobileTopBar + drawer handle that).
  */
 export function CreatorTopBar() {
@@ -29,6 +31,7 @@ export function CreatorTopBar() {
   const creator = useQuery(api.creators.queries.myCreator, user ? {} : 'skip');
   const notifUnread = useQuery(api.notifications.mutations.unreadCount, user ? {} : 'skip');
 
+  const pageTitle = dashboardPageTitle('creator', location);
   const display =
     creator?.displayName?.trim() ||
     (creator?.username ? `@${creator.username}` : user?.email?.split('@')[0] || 'Creator');
@@ -89,7 +92,6 @@ export function CreatorTopBar() {
                               : onMarketing
                                 ? 'Search anything…'
                                 : 'Search anything…';
-  // Overview owns Create Post beside the greeting; hide the top-bar duplicate.
   const hideCreatePost =
     onOverview ||
     onPosts ||
@@ -107,7 +109,6 @@ export function CreatorTopBar() {
       navigate('/creator/posts');
       return;
     }
-    // Honest: no global search API — route to posts with a hint in the hash.
     navigate(`/creator/posts?q=${encodeURIComponent(term)}`);
   };
 
@@ -119,7 +120,11 @@ export function CreatorTopBar() {
   return (
     <header className="sticky top-0 z-20 hidden border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80 md:block">
       <div className="mx-auto flex h-[var(--topbar-height)] w-full min-w-0 max-w-[var(--content-max)] items-center gap-3 px-4 sm:px-6 md:px-8 lg:px-10 xl:px-12">
-        <form onSubmit={onSearch} className="relative min-w-0 flex-1" role="search">
+        <h1 className="min-w-0 shrink truncate text-xl font-bold tracking-tight text-foreground sm:text-2xl">
+          {pageTitle}
+        </h1>
+
+        <form onSubmit={onSearch} className="relative ml-auto min-w-0 max-w-md flex-1" role="search">
           <Search
             className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground"
             aria-hidden

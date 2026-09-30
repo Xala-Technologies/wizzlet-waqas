@@ -39,8 +39,6 @@ export const listPublicByCreator = query({
   },
 });
 
-export const PROFILE_DISPLAY_SLOT_LIMIT = 4;
-
 /** Owner projection — all products including inactive/archived. */
 export const listByCreator = query({
   args: { creatorId: v.id("creators"), activeOnly: v.optional(v.boolean()) },
@@ -185,11 +183,7 @@ export const remove = mutation({
   },
 });
 
-function isShownOnProfile(p: { showOnProfile?: boolean; isFeatured: boolean }): boolean {
-  return p.showOnProfile === true || (p.showOnProfile === undefined && p.isFeatured);
-}
-
-/** Toggle whether a product occupies a public-profile display slot (max 4). */
+/** Toggle whether a product shows on the public profile display strip. */
 export const setShowOnProfile = mutation({
   args: {
     productId: v.id("products"),
@@ -201,19 +195,6 @@ export const setShowOnProfile = mutation({
     if (!product) throw new ConvexError("NOT_FOUND");
     await requireCreatorOwner(ctx, product.creatorId);
     const now = Date.now();
-
-    if (args.showOnProfile) {
-      const siblings = await ctx.db
-        .query("products")
-        .withIndex("by_creatorId", (q) => q.eq("creatorId", product.creatorId))
-        .collect();
-      const alreadyShown = siblings.filter(
-        (s) => s._id !== product._id && isShownOnProfile(s),
-      ).length;
-      if (alreadyShown >= PROFILE_DISPLAY_SLOT_LIMIT) {
-        throw new ConvexError("PROFILE_SLOTS_FULL");
-      }
-    }
 
     await ctx.db.patch(args.productId, {
       showOnProfile: args.showOnProfile,
