@@ -1,7 +1,7 @@
 import { mutation, query } from "../_generated/server";
 import { v } from "convex/values";
 import { getCreatorForUser, requireAdmin, requireAppUser } from "../lib/auth";
-import { supportMessageDocValidator } from "../lib/validators";
+import { supportMessageDocValidator, memberSupportMessageDocValidator } from "../lib/validators";
 import { adminTakeNewest } from "../lib/adminLists";
 import {
   createNotification,
@@ -54,9 +54,6 @@ export const send = mutation({
       .withIndex("by_singletonKey", (q) => q.eq("singletonKey", "default"))
       .unique();
     const channel = args.channel ?? "support";
-    if (!isAdmin && channel === "support") {
-      throw new Error("Prizelet Support broadcasts are read-only");
-    }
     if (isAdmin) {
       if (channel === "growth" && settings?.featureFlags?.growthManagerEnabled === false) {
         throw new Error("Growth Manager chat is disabled in Settings");
@@ -204,6 +201,90 @@ export const markReadCreator = mutation({
         userId: user._id,
         linkIncludes: "/creator/messages",
       });
+    }
+    return updated;
+  },
+});
+
+/** Member floating support chat — list thread for signed-in user. */
+export const listForMember = query({
+  args: {},
+  returns: v.array(memberSupportMessageDocValidator),
+  handler: async (ctx) => {
+    const user = await requireAppUser(ctx);
+    return ctx.db
+      .query("memberSupportMessages")
+      .withIndex("by_userId", (q) => q.eq("userId", user._id))
+      .collect();
+  },
+});
+
+/** Member sends a support message (or admin replies). */
+export const sendMember = mutation({
+  args: {
+    body: v.string(),
+    senderRole: v.union(v.literal("member"), v.literal("admin")),
+    userId: v.optional(v.id("users")),
+  },
+  returns: v.id("memberSupportMessages"),
+  handler: async (ctx, args) => {
+    const user = await requireAppUser(ctx);
+    const isAdmin = args.senderRole === "admin";
+    if (isAdmin) await requireAdmin(ctx);
+
+    const targetUserId = isAdmin ? args.userId : user._id;
+    if (!targetUserId) throw new Error("MISSING_USER");
+    if (!isAdmin && targetUserId !== user._id) throw new Error("FORBIDDEN");
+
+    const body = args.body.trim();
+    if (!body) throw new Error("EMPTY_BODY");
+
+    const id = await ctx.db.insert("memberSupportMessages", {
+      userId: targetUserId,
+      senderRole: args.senderRole,
+      body,
+      read: false,
+      createdAt: Date.now(),
+    });
+
+    const preview = previewBody(body);
+    if (!isAdmin) {
+      await notifyAdmins(ctx, {
+        type: "support_message",
+        title: `Member support: ${user.fullName ?? user.username ?? user.email ?? "Member"}`,
+        description: preview,
+        link: "/admin/creator-messaging",
+        exceptUserId: user._id,
+      });
+    } else {
+      await createNotification(ctx, {
+        userId: targetUserId,
+        type: "support_message",
+        title: "Message from Sweeph Support",
+        description: preview,
+        link: "/dashboard",
+      });
+    }
+
+    return id;
+  },
+});
+
+/** Member marks admin replies as read. */
+export const markReadMember = mutation({
+  args: {
+    messageIds: v.array(v.id("memberSupportMessages")),
+  },
+  returns: v.number(),
+  handler: async (ctx, args) => {
+    const user = await requireAppUser(ctx);
+    let updated = 0;
+    for (const id of args.messageIds) {
+      const msg = await ctx.db.get(id);
+      if (!msg || msg.userId !== user._id || msg.read) continue;
+      if (msg.senderRole !== "admin") continue;
+      await ctx.db.patch(id, { read: true });
+      updated += 1;
     }
     return updated;
   },

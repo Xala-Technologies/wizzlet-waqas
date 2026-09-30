@@ -7,6 +7,7 @@ import { CreatorTopBar } from './CreatorTopBar';
 import { MemberTopBar } from './MemberTopBar';
 import { AdminQueryBoundary } from './AdminQueryBoundary';
 import { UnreadMessageWatcher } from './UnreadMessageWatcher';
+import { SupportChatWidget } from './SupportChatWidget';
 import { DASHBOARD_CONTENT_CLASS, DASHBOARD_GUTTER_CLASS } from '@/lib/dashboardSidebar';
 import { cn } from '@/lib/utils';
 
@@ -70,6 +71,9 @@ export function DashboardLayout({ children, type }: DashboardLayoutProps) {
           {children}
         </div>
       </main>
+      {type === 'creator' || type === 'member' ? (
+        <SupportChatWidget audience={type} />
+      ) : null}
     </div>
   );
 
