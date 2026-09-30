@@ -336,6 +336,16 @@ export const supportMessageDocValidator = v.object({
   createdAt: v.number(),
 });
 
+export const memberSupportMessageDocValidator = v.object({
+  _id: v.id("memberSupportMessages"),
+  _creationTime: v.number(),
+  userId: v.id("users"),
+  senderRole: v.string(),
+  body: v.string(),
+  read: v.boolean(),
+  createdAt: v.number(),
+});
+
 export const payoutDocValidator = v.object({
   _id: v.id("payouts"),
   _creationTime: v.number(),

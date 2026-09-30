@@ -416,6 +416,15 @@ export default defineSchema({
     .index("by_channel", ["channel"])
     .index("by_legacyId", ["legacyId"]),
 
+  /** Member ↔ platform support chat (floating widget). */
+  memberSupportMessages: defineTable({
+    userId: v.id("users"),
+    senderRole: v.string(),
+    body: v.string(),
+    read: v.boolean(),
+    createdAt: v.number(),
+  }).index("by_userId", ["userId"]),
+
   platformSettings: defineTable({
     legacyId: v.optional(v.string()),
     singletonKey: v.literal("default"),
