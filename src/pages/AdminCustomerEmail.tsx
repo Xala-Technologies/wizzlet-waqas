@@ -1,9 +1,11 @@
+import { cn } from '@/lib/utils';
 import { useEffect, useState } from 'react';
 import { useMutation, usePaginatedQuery, useQuery } from 'convex/react';
 import { useSearchParams } from 'react-router-dom';
 import { api } from '../../convex/_generated/api';
 import type { Id } from '../../convex/_generated/dataModel';
 import { DashboardLayout } from '@/components/dashboard/DashboardLayout';
+import { clayCard } from '@/lib/overviewClay';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -120,9 +122,8 @@ const AdminCustomerEmail = () => {
   };
 
   return (
-    <DashboardLayout type="admin">
+    <DashboardLayout type="admin" mainClassName="bg-clay-page">
       <div className="mb-6">
-        <h1 className="text-2xl font-bold">Announcements</h1>
         <p className="text-muted-foreground text-sm mt-0.5">
           Delivers notifications in the app. Email outbox is not enabled yet.
         </p>

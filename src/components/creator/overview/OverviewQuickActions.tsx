@@ -3,6 +3,7 @@ import type { LucideIcon } from 'lucide-react';
 import { ArrowRight } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { kpiIconTone } from '@/lib/kpiIconTones';
+import { clayCard } from '@/lib/overviewClay';
 
 export type QuickAction = {
   label: string;
@@ -19,18 +20,18 @@ const ACTION_TONES = [
 
 export function OverviewQuickActions({ actions }: { actions: QuickAction[] }) {
   return (
-    <section className="rounded-2xl border border-border bg-card p-5 shadow-[var(--shadow-card)]">
+    <section className={cn(clayCard, 'p-5 sm:p-6')}>
       <h2 className="mb-3 text-base font-extrabold tracking-tight text-foreground">Quick Actions</h2>
-      <ul className="space-y-1">
+      <ul className="space-y-2">
         {actions.map((a, i) => (
           <li key={a.href + a.label}>
             <Link
               to={a.href}
-              className="flex items-center gap-3 rounded-xl px-2 py-2.5 text-sm font-semibold text-foreground transition-colors hover:bg-muted/60"
+              className="flex items-center gap-3 rounded-2xl px-2.5 py-2.5 text-sm font-semibold text-foreground transition-colors hover:bg-muted/50"
             >
               <span
                 className={cn(
-                  'flex h-8 w-8 items-center justify-center rounded-lg',
+                  'flex h-9 w-9 items-center justify-center rounded-xl shadow-[inset_0_-1px_3px_rgba(8,24,47,0.06),inset_0_1px_3px_rgba(255,255,255,0.5)] dark:shadow-[inset_0_-1px_3px_rgba(0,0,0,0.28),inset_0_1px_3px_rgba(255,255,255,0.04)]',
                   ACTION_TONES[i % ACTION_TONES.length],
                 )}
               >

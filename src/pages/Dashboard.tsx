@@ -20,6 +20,7 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { DashboardLayout } from '@/components/dashboard/DashboardLayout';
+import { clayCard } from '@/lib/overviewClay';
 import { useAuth } from '@/contexts/AuthContext';
 import { api } from '@convex/_generated/api';
 import type { Id } from '@convex/_generated/dataModel';
@@ -343,9 +344,9 @@ const Dashboard = () => {
 
   if (loading) {
     return (
-      <DashboardLayout type="member">
+      <DashboardLayout type="member" mainClassName="bg-clay-page">
         <Seo title="Home — Sweeph" description="Your Sweeph member home feed." />
-        <header className="mb-7 sm:mb-9">
+        <header className="mb-4 sm:mb-5">
           <Skeleton className="h-4 w-40" />
           <Skeleton className="mt-3 h-10 w-72 max-w-full" />
           <Skeleton className="mt-3 h-5 w-80 max-w-full" />
@@ -355,7 +356,7 @@ const Dashboard = () => {
             {[0, 1, 2].map((i) => (
               <div
                 key={i}
-                className="rounded-2xl border border-border bg-card p-5 shadow-[var(--shadow-card)] space-y-3 sm:p-6"
+                className={cn(clayCard, 'space-y-3 p-5 sm:p-6')}
               >
                 <div className="flex items-center gap-3">
                   <Skeleton className="h-11 w-11 rounded-full" />
@@ -386,28 +387,25 @@ const Dashboard = () => {
   const todayLabel = format(new Date(), 'EEEE, MMM d, yyyy');
 
   return (
-    <DashboardLayout type="member">
+    <DashboardLayout type="member" mainClassName="bg-clay-page">
       <Seo
         title="Home — Sweeph"
         description="Latest from creators you follow on Sweeph."
       />
 
       <header className="mb-7 sm:mb-9">
-        <div className="flex flex-col gap-5 sm:flex-row sm:items-start sm:justify-between sm:gap-8">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between sm:gap-6">
           <div className="min-w-0">
             <p className="text-caption font-bold uppercase tracking-[0.14em] text-muted-foreground">
               {todayLabel}
             </p>
-            <h1 className="type-page-title mt-2 text-foreground md:text-[2.75rem] md:leading-[1.1]">
+            <p className="type-page-title mt-1 text-foreground md:text-[2.25rem] md:leading-[1.15]">
               {timeOfDayGreeting(firstName)}
-            </h1>
-            <p className="mt-3 max-w-2xl text-body font-medium text-muted-foreground">
-              Latest picks and posts from creators you follow.
             </p>
           </div>
           <Button
             asChild
-            className="h-12 w-full shrink-0 gap-2 rounded-[var(--radius-md)] px-6 sm:mt-1 sm:w-auto"
+            className="h-12 w-full shrink-0 gap-2 rounded-[var(--radius-md)] px-6 sm:w-auto"
           >
             <Link to="/dashboard/discover">
               <Search className="h-5 w-5" aria-hidden />
@@ -418,7 +416,7 @@ const Dashboard = () => {
       </header>
 
       {useDemo ? (
-        <div className="mb-6 flex items-start gap-3 rounded-2xl border border-amber-500/30 bg-amber-500/10 px-4 py-3.5 text-amber-950 dark:text-amber-100 sm:items-center sm:px-5">
+        <div className="clay-card mb-6 flex items-start gap-3 bg-[#fbf8f3] px-4 py-3.5 text-amber-950 dark:bg-amber-500/10 dark:text-amber-100 sm:items-center sm:px-5">
           <Sparkles
             className="mt-0.5 h-5 w-5 shrink-0 text-amber-600 dark:text-amber-400 sm:mt-0"
             aria-hidden
@@ -452,7 +450,7 @@ const Dashboard = () => {
                 return (
                   <article
                     key={post.id}
-                    className="rounded-2xl border border-border bg-card p-5 shadow-[var(--shadow-card)] sm:p-6"
+                    className={cn(clayCard, 'p-5 sm:p-6')}
                   >
                     <div className="flex items-start gap-3.5 sm:gap-4">
                       {post.creator.avatar_url ? (
@@ -687,7 +685,7 @@ const Dashboard = () => {
               ) : null}
             </div>
           ) : (
-            <div className="rounded-2xl border border-border bg-card px-8 py-14 text-center shadow-[var(--shadow-card)] sm:px-12">
+            <div className={cn(clayCard, 'px-8 py-14 text-center sm:px-12')}>
               <h3 className="type-section-title text-foreground">Nothing in your feed yet</h3>
               <p className="mx-auto mt-2 max-w-md text-sm font-medium text-muted-foreground">
                 Subscribe to creators to see their latest picks and posts here.
@@ -700,7 +698,7 @@ const Dashboard = () => {
         </div>
 
         <aside className="min-w-0 space-y-4 xl:col-span-4 xl:sticky xl:top-[calc(var(--topbar-height)+1.25rem)] xl:self-start">
-          <div className="rounded-2xl border border-border bg-card p-5 shadow-[var(--shadow-card)] sm:p-6">
+          <div className={cn(clayCard, 'p-5 sm:p-6')}>
             <p className="type-card-title text-foreground">Find creators worth following</p>
             <p className="mt-2 text-sm font-medium leading-relaxed text-muted-foreground">
               Discover verified voices and unlock premium content in one place.
@@ -710,7 +708,7 @@ const Dashboard = () => {
             </Button>
           </div>
 
-          <div className="rounded-2xl border border-border bg-card p-5 shadow-[var(--shadow-card)] sm:p-6">
+          <div className={cn(clayCard, 'p-5 sm:p-6')}>
             <p className="text-caption font-bold uppercase tracking-[0.12em] text-muted-foreground">
               Shortcuts
             </p>

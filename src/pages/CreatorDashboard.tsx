@@ -248,7 +248,7 @@ const CreatorDashboard = () => {
 
   if (loading) {
     return (
-      <DashboardLayout type="creator">
+      <DashboardLayout type="creator" mainClassName="bg-clay-page">
         <div className="flex justify-center py-24" aria-busy="true">
           <Loader2 className="h-6 w-6 animate-spin text-primary" />
         </div>
@@ -258,8 +258,8 @@ const CreatorDashboard = () => {
 
   if (creator === null) {
     return (
-      <DashboardLayout type="creator">
-        <div className="rounded-2xl border border-border bg-card p-8 text-center">
+      <DashboardLayout type="creator" mainClassName="bg-clay-page">
+        <div className="clay-card p-8 text-center">
           <p className="text-base font-bold text-foreground">Finish creator setup</p>
           <p className="mt-2 text-sm text-muted-foreground">
             Create your creator profile to unlock the dashboard.
@@ -275,28 +275,25 @@ const CreatorDashboard = () => {
   const todayLabel = format(new Date(), 'EEEE, MMM d, yyyy');
 
   return (
-    <DashboardLayout type="creator">
+    <DashboardLayout type="creator" mainClassName="bg-clay-page">
       <Seo
         title="Creator overview — Sweeph"
         description="Your Sweeph creator overview: posts, earnings, subscribers, and performance."
       />
 
-      <header className="mb-7 sm:mb-9">
-        <div className="flex flex-col gap-5 sm:flex-row sm:items-start sm:justify-between sm:gap-8">
+      <header className="mb-4 sm:mb-5">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between sm:gap-6">
           <div className="min-w-0">
             <p className="text-caption font-bold uppercase tracking-[0.14em] text-muted-foreground">
               {todayLabel}
             </p>
-            <h1 className="type-page-title mt-2 text-foreground md:text-[2.75rem] md:leading-[1.1]">
+            <p className="type-page-title mt-1 text-foreground md:text-[2.25rem] md:leading-[1.15]">
               {timeOfDayGreeting(displayName)}
-            </h1>
-            <p className="mt-3 max-w-2xl text-body font-medium text-muted-foreground">
-              Here&apos;s what&apos;s happening with your business today.
             </p>
           </div>
           <Button
             asChild
-            className="h-12 w-full shrink-0 gap-2 rounded-[var(--radius-md)] px-6 sm:mt-1 sm:w-auto"
+            className="clay-btn h-12 w-full shrink-0 gap-2 rounded-[0.875rem] px-6 sm:w-auto"
           >
             <Link to="/creator/posts">
               <Plus className="h-5 w-5" aria-hidden />
@@ -307,7 +304,7 @@ const CreatorDashboard = () => {
       </header>
 
       {useDemo ? (
-        <div className="mb-6 flex items-start gap-3 rounded-2xl border border-amber-500/30 bg-amber-500/10 px-4 py-3.5 text-amber-950 dark:text-amber-100 sm:items-center sm:px-5">
+        <div className="clay-card mb-6 flex items-start gap-3 bg-[#fbf8f3] px-4 py-3.5 text-amber-950 dark:bg-amber-500/10 dark:text-amber-100 sm:items-center sm:px-5">
           <Sparkles
             className="mt-0.5 h-5 w-5 shrink-0 text-amber-600 dark:text-amber-400 sm:mt-0"
             aria-hidden

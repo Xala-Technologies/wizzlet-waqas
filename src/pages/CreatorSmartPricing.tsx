@@ -137,15 +137,9 @@ const CreatorSmartPricing = () => {
   if (!creator) {
     return (
       <DashboardLayout type="creator">
-        <header className="mb-6">
+        <header className="mb-4">
           <p className="text-caption font-semibold uppercase tracking-[0.14em] text-muted-foreground">
             Products
-          </p>
-          <h1 className="mt-1 text-heading font-bold tracking-tight text-foreground">
-            Smart Pricing
-          </h1>
-          <p className="mt-1.5 text-support text-muted-foreground">
-            Illustrative pricing guidance from your live metrics — not a guarantee.
           </p>
         </header>
         <div className="rounded-2xl border border-border bg-card p-10 text-center shadow-[var(--shadow-card)]">
@@ -191,16 +185,10 @@ const CreatorSmartPricing = () => {
 
   return (
     <DashboardLayout type="creator">
-      <header className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+      <header className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="min-w-0">
           <p className="text-caption font-semibold uppercase tracking-[0.14em] text-muted-foreground">
             Products
-          </p>
-          <h1 className="mt-1 text-heading font-bold tracking-tight text-foreground md:text-heading-lg">
-            Smart Pricing
-          </h1>
-          <p className="mt-1.5 text-support text-muted-foreground">
-            Illustrative pricing guidance from your live metrics — not a guarantee.
           </p>
         </div>
         <Button asChild variant="outline" size="sm" className="shrink-0">

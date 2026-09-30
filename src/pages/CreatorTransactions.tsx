@@ -22,6 +22,7 @@ import { toast } from 'sonner';
 import { api } from '../../convex/_generated/api';
 import { DashboardLayout } from '@/components/dashboard/DashboardLayout';
 import { DashboardKpiStrip } from '@/components/dashboard/DashboardKpiStrip';
+import { clayCard, clayCardInteractive } from '@/lib/overviewClay';
 import { EarningsSubnav } from '@/components/creator/EarningsSubnav';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -281,7 +282,7 @@ const CreatorTransactions = () => {
 
   if (loading) {
     return (
-      <DashboardLayout type="creator">
+      <DashboardLayout type="creator" mainClassName="bg-clay-page">
         <div className="flex justify-center py-20">
           <Loader2 className="h-5 w-5 animate-spin text-primary" />
         </div>
@@ -290,20 +291,12 @@ const CreatorTransactions = () => {
   }
 
   return (
-    <DashboardLayout type="creator">
-      <header className="mb-7 flex flex-col gap-5 sm:mb-9 sm:flex-row sm:items-start sm:justify-between sm:gap-8">
-        <div className="min-w-0">
-          <h1 className="type-page-title text-foreground md:text-[2.75rem] md:leading-[1.1]">
-            Transactions
-          </h1>
-          <p className="mt-3 max-w-2xl text-body font-medium text-muted-foreground">
-            View all payments, refunds, and other financial activity.
-          </p>
-        </div>
+    <DashboardLayout type="creator" mainClassName="bg-clay-page">
+      <header className="mb-4 flex flex-col gap-3 sm:mb-5 sm:flex-row sm:items-center sm:justify-end sm:gap-8">
         <Button
           type="button"
           variant="outline"
-          className="h-12 w-full shrink-0 gap-2 rounded-[var(--radius-md)] px-6 sm:mt-1 sm:w-auto"
+          className="clay-btn h-12 w-full shrink-0 gap-2 rounded-[0.875rem] px-6 sm:w-auto"
           onClick={exportCsv}
         >
           <Download className="h-5 w-5" aria-hidden />
@@ -314,7 +307,7 @@ const CreatorTransactions = () => {
       <EarningsSubnav active="transactions" />
 
       {useDemo ? (
-        <div className="mb-6 flex items-start gap-3 rounded-2xl border border-amber-500/30 bg-amber-500/10 px-4 py-3.5 text-amber-950 dark:text-amber-100 sm:items-center sm:px-5">
+        <div className="clay-card mb-6 flex items-start gap-3 bg-[#fbf8f3] px-4 py-3.5 text-amber-950 dark:bg-amber-500/10 dark:text-amber-100 sm:items-center sm:px-5">
           <Sparkles
             className="mt-0.5 h-5 w-5 shrink-0 text-amber-600 dark:text-amber-400 sm:mt-0"
             aria-hidden
@@ -329,6 +322,7 @@ const CreatorTransactions = () => {
 
       <div className="mb-6 sm:mb-8">
         <DashboardKpiStrip
+          variant="clay"
           items={[
             {
               label: 'Total transactions',
@@ -379,7 +373,7 @@ const CreatorTransactions = () => {
       </div>
 
       <div className="grid grid-cols-1 gap-4 xl:grid-cols-12">
-        <section className="rounded-2xl border border-border bg-card shadow-[var(--shadow-card)] xl:col-span-8">
+        <section className={cn(clayCard, 'overflow-hidden xl:col-span-8')}>
           <div className="flex flex-col gap-3 border-b border-border p-4 sm:flex-row sm:flex-wrap sm:items-center sm:p-5">
             <div className="relative min-w-0 flex-1 sm:min-w-[12rem] sm:max-w-xs">
               <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
@@ -644,7 +638,7 @@ const CreatorTransactions = () => {
         <aside className="flex flex-col gap-4 xl:col-span-4">
           <button
             type="button"
-            className="flex min-h-11 items-center justify-between gap-3 rounded-2xl border border-border bg-card px-4 py-3 text-left shadow-[var(--shadow-card)] transition-colors hover:border-primary/40"
+            className={cn(clayCard, clayCardInteractive, 'flex min-h-11 items-center justify-between gap-3 px-4 py-3 text-left')}
             onClick={() =>
               toast.message('Date range', {
                 description: metrics.dateRangeLabel,
@@ -659,7 +653,7 @@ const CreatorTransactions = () => {
             </span>
           </button>
 
-          <section className="rounded-2xl border border-border bg-card p-5 shadow-[var(--shadow-card)]">
+          <section className={cn(clayCard, 'p-5')}>
             <h2 className="mb-4 text-base font-extrabold tracking-tight text-foreground">
               Transaction Filters
             </h2>
@@ -723,7 +717,7 @@ const CreatorTransactions = () => {
             </div>
           </section>
 
-          <section className="rounded-2xl border border-border bg-card p-5 shadow-[var(--shadow-card)]">
+          <section className={cn(clayCard, 'p-5')}>
             <h2 className="mb-1 text-base font-extrabold tracking-tight text-foreground">
               Transaction Summary
             </h2>
@@ -748,7 +742,7 @@ const CreatorTransactions = () => {
             </dl>
           </section>
 
-          <section className="rounded-2xl border border-violet-500/20 bg-violet-500/5 p-5 shadow-[var(--shadow-card)]">
+          <section className={cn(clayCard, 'border-violet-500/20 bg-violet-500/5 p-5')}>
             <div className="mb-3 flex items-center gap-2">
               <Lightbulb className="h-4 w-4 text-amber-600 dark:text-amber-400" aria-hidden />
               <h2 className="text-base font-extrabold tracking-tight text-foreground">

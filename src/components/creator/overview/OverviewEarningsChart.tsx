@@ -15,6 +15,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { cn } from '@/lib/utils';
+import { clayCard } from '@/lib/overviewClay';
 
 export type EarningsBar = {
   label: string;
@@ -41,7 +43,7 @@ export function OverviewEarningsChart({
   }));
 
   return (
-    <section className="flex h-full flex-col rounded-2xl border border-border bg-card p-5 shadow-[var(--shadow-card)]">
+    <section className={cn(clayCard, 'flex h-full flex-col p-5 sm:p-6')}>
       <div className="mb-1 flex items-start justify-between gap-2">
         <div>
           <h2 className="text-base font-extrabold tracking-tight text-foreground">Revenue</h2>

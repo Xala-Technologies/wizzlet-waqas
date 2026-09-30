@@ -3,6 +3,7 @@ import { Link, useSearchParams } from 'react-router-dom';
 import { useQuery } from 'convex/react';
 import { ChevronDown, Loader2, Sparkles } from 'lucide-react';
 import { DashboardLayout } from '@/components/dashboard/DashboardLayout';
+import { clayCard } from '@/lib/overviewClay';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -190,7 +191,7 @@ const CustomerDiscover = () => {
     sort === 'newest' ? 'Newest' : sort === 'price' ? 'Lowest price' : 'Popular';
 
   return (
-    <DashboardLayout type="member">
+    <DashboardLayout type="member" mainClassName="bg-clay-page">
       <Seo
         title="Discover — Sweeph"
         description="Find winning creators and join a growing community on Sweeph."
@@ -199,12 +200,6 @@ const CustomerDiscover = () => {
       <div className="relative -mx-4 mb-8 overflow-hidden rounded-2xl px-4 py-8 sm:-mx-6 sm:px-6 md:-mx-8 md:px-8 lg:-mx-10 lg:px-10 xl:-mx-12 xl:px-12 sm:py-10">
         <SweephRibbonBackground variant="discover" className="rounded-2xl" />
         <header className="relative z-10 max-w-xl">
-          <h1 className="text-heading font-bold tracking-tight text-foreground md:text-heading-lg">
-            Discover
-          </h1>
-          <p className="mt-1.5 text-support text-muted-foreground">
-            Find winning creators and join a growing community.
-          </p>
         </header>
       </div>
 

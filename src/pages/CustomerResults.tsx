@@ -1,5 +1,7 @@
+import { cn } from '@/lib/utils';
 import { useState, useMemo, useCallback, useRef } from 'react';
 import { DashboardLayout } from '@/components/dashboard/DashboardLayout';
+import { clayCard } from '@/lib/overviewClay';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
@@ -420,7 +422,7 @@ const CustomerResults = () => {
 
   if (isLoading) {
     return (
-      <DashboardLayout type="member">
+      <DashboardLayout type="member" mainClassName="bg-clay-page">
         <div className="flex justify-center py-20">
           <Loader2 className="h-5 w-5 animate-spin text-primary" />
         </div>
@@ -432,10 +434,9 @@ const CustomerResults = () => {
   const filtersActive = filterSport !== 'all' || filterResult !== 'all';
 
   return (
-    <DashboardLayout type="member">
+    <DashboardLayout type="member" mainClassName="bg-clay-page">
       <header className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div className="min-w-0">
-          <h1 className="text-heading font-bold text-foreground">My Bet Tracker</h1>
           <p className="text-support text-muted-foreground mt-0.5">
             Your personal pick log — separate from creator results on Feed
           </p>

@@ -1,7 +1,9 @@
+import { cn } from '@/lib/utils';
 import { useMemo, useState } from 'react';
 import { usePaginatedQuery, useQuery } from 'convex/react';
 import { api } from '../../convex/_generated/api';
 import { DashboardLayout } from '@/components/dashboard/DashboardLayout';
+import { clayCard } from '@/lib/overviewClay';
 import { DesktopTableRegion, MobileRecordCards } from '@/components/dashboard/MobileRecordList';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -79,10 +81,9 @@ const AdminCustomers = () => {
   };
 
   return (
-    <DashboardLayout type="admin">
+    <DashboardLayout type="admin" mainClassName="bg-clay-page">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
         <div>
-          <h1 className="text-2xl font-bold">Customers</h1>
           <p className="text-muted-foreground text-sm mt-0.5">
             People with subscriptions
             {overview ? ` · ${overview.customerCount} total` : ''}

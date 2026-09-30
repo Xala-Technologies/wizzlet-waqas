@@ -6,8 +6,6 @@
 const day = 86_400_000;
 const daysAgo = (n: number) => Date.now() - n * day;
 
-export const PROFILE_DISPLAY_SLOT_LIMIT = 4;
-
 export type ProductBillingType = 'subscription' | 'one-time' | 'free' | 'bundle';
 
 export type ProductUiStatus = 'active' | 'draft' | 'archived';

@@ -32,6 +32,7 @@ import { toast } from 'sonner';
 import { api } from '../../convex/_generated/api';
 import type { Id } from '../../convex/_generated/dataModel';
 import { DashboardLayout } from '@/components/dashboard/DashboardLayout';
+import { clayCard } from '@/lib/overviewClay';
 import { MessageSeenReceipt } from '@/components/messaging/MessageSeenReceipt';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -573,7 +574,7 @@ const CreatorMessages = () => {
 
   if (busy) {
     return (
-      <DashboardLayout type="creator">
+      <DashboardLayout type="creator" mainClassName="bg-clay-page">
         <div className="flex justify-center py-20">
           <Loader2 className="h-5 w-5 animate-spin text-primary" />
         </div>
@@ -583,14 +584,13 @@ const CreatorMessages = () => {
 
   if (!creator) {
     return (
-      <DashboardLayout type="creator">
-        <header className="mb-6">
-          <h1 className="text-heading font-bold text-foreground">Messages</h1>
+      <DashboardLayout type="creator" mainClassName="bg-clay-page">
+        <header className="mb-4">
           <p className="mt-0.5 text-support text-muted-foreground">
             Direct conversations with your subscribers
           </p>
         </header>
-        <div className="rounded-2xl border border-border bg-card p-10 text-center shadow-[var(--shadow-card)]">
+        <div className={cn(clayCard, 'p-10 text-center')}>
           <MessageSquare className="mx-auto mb-4 h-10 w-10 text-muted-foreground" />
           <h3 className="mb-2 text-ui font-semibold text-foreground">No creator profile yet</h3>
           <p className="mx-auto mb-5 max-w-xs text-support text-muted-foreground">
@@ -606,10 +606,9 @@ const CreatorMessages = () => {
 
   if (!messagingEnabled && !supportThread && !useDemo) {
     return (
-      <DashboardLayout type="creator">
+      <DashboardLayout type="creator" mainClassName="bg-clay-page">
         <header className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
           <div>
-            <h1 className="text-heading font-bold text-foreground">Messages</h1>
             <p className="mt-0.5 text-support text-muted-foreground">
               Direct conversations with your subscribers
             </p>
@@ -625,7 +624,7 @@ const CreatorMessages = () => {
             />
           </div>
         </header>
-        <div className="rounded-2xl border border-border bg-card p-10 text-center shadow-[var(--shadow-card)]">
+        <div className={cn(clayCard, 'p-10 text-center')}>
           <MessageSquare className="mx-auto mb-4 h-10 w-10 text-muted-foreground" />
           <h3 className="mb-2 text-ui font-semibold text-foreground">
             Messaging is currently turned off
@@ -641,10 +640,9 @@ const CreatorMessages = () => {
 
   if (!useDemo && threads.length === 0) {
     return (
-      <DashboardLayout type="creator">
+      <DashboardLayout type="creator" mainClassName="bg-clay-page">
         <header className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
           <div>
-            <h1 className="text-heading font-bold text-foreground">Messages</h1>
             <p className="mt-0.5 text-support text-muted-foreground">
               Direct conversations with your subscribers
             </p>
@@ -664,7 +662,7 @@ const CreatorMessages = () => {
             />
           </div>
         </header>
-        <div className="rounded-2xl border border-border bg-card p-10 text-center shadow-[var(--shadow-card)]">
+        <div className={cn(clayCard, 'p-10 text-center')}>
           <MessageSquare className="mx-auto mb-4 h-10 w-10 text-muted-foreground" />
           <h3 className="mb-2 text-ui font-semibold text-foreground">No messages yet</h3>
           <p className="mx-auto mb-5 max-w-sm text-support text-muted-foreground">
@@ -720,7 +718,7 @@ const CreatorMessages = () => {
 
   const composer = (
     <div className="border-t border-border bg-card px-3 py-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] sm:px-4">
-      <div className="flex items-end gap-2 rounded-2xl border border-border bg-muted/20 p-2">
+      <div className={cn(clayCard, 'flex items-end gap-2 bg-muted/20 p-2')}>
         <div className="flex shrink-0 items-center gap-0.5 pb-1">
           <button
             type="button"
@@ -784,12 +782,9 @@ const CreatorMessages = () => {
   );
 
   return (
-    <DashboardLayout type="creator">
+    <DashboardLayout type="creator" mainClassName="bg-clay-page">
       <header className="mb-5 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div className="min-w-0">
-          <h1 className="text-2xl font-extrabold tracking-tight text-foreground sm:text-3xl">
-            Messages
-          </h1>
           <p className="mt-1.5 max-w-xl text-sm font-medium text-muted-foreground sm:text-base">
             Connect with your subscribers, answer questions, and build your community.
           </p>
@@ -797,7 +792,7 @@ const CreatorMessages = () => {
         <Button
           type="button"
           size="sm"
-          className="shrink-0"
+          className="clay-btn shrink-0 rounded-[0.875rem]"
           onClick={() =>
             toast.message('New message', {
               description: 'Pick a subscriber from the list, or message them from Subscribers.',
@@ -809,7 +804,7 @@ const CreatorMessages = () => {
       </header>
 
       {useDemo ? (
-        <div className="mb-4 flex items-start gap-3 rounded-2xl border border-amber-500/30 bg-amber-500/10 px-4 py-3.5 text-amber-950 dark:text-amber-100 sm:items-center sm:px-5">
+        <div className="clay-card mb-4 flex items-start gap-3 bg-[#fbf8f3] px-4 py-3.5 text-amber-950 dark:bg-amber-500/10 dark:text-amber-100 sm:items-center sm:px-5">
           <Sparkles
             className="mt-0.5 h-5 w-5 shrink-0 text-amber-600 dark:text-amber-400 sm:mt-0"
             aria-hidden
@@ -822,7 +817,7 @@ const CreatorMessages = () => {
       ) : null}
 
       {!messagingEnabled && supportThread ? (
-        <p className="mb-4 rounded-xl border border-border bg-muted/40 px-3 py-2 text-support text-muted-foreground">
+        <p className={cn(clayCard, 'mb-4 px-3 py-2 text-support text-muted-foreground')}>
           Subscriber messaging is off. You can still read Prizelet Support in Broadcasts.
         </p>
       ) : null}
@@ -851,7 +846,7 @@ const CreatorMessages = () => {
         ))}
       </div>
 
-      <div className="grid min-h-[min(72vh,720px)] grid-cols-1 gap-0 overflow-hidden rounded-2xl border border-border bg-card shadow-[var(--shadow-card)] lg:grid-cols-[minmax(280px,320px)_minmax(0,1fr)_minmax(280px,320px)]">
+      <div className={cn(clayCard, 'grid min-h-[min(72vh,720px)] grid-cols-1 gap-0 overflow-hidden lg:grid-cols-[minmax(280px,320px)_minmax(0,1fr)_minmax(280px,320px)]')}>
         {/* Inbox list */}
         <section
           className={cn(

@@ -51,6 +51,7 @@ import {
   shouldUseCreatorPicksDemo,
 } from '@/lib/creatorPicksDemo';
 import { DashboardKpiStrip } from '@/components/dashboard/DashboardKpiStrip';
+import { clayCard } from '@/lib/overviewClay';
 import { kpiIconTone } from '@/lib/kpiIconTones';
 import { Checkbox } from '@/components/ui/checkbox';
 import {
@@ -790,7 +791,7 @@ const CreatorPosts = () => {
     const canPublish = Boolean(title.trim() && notes.trim());
 
     return (
-      <DashboardLayout type="creator">
+      <DashboardLayout type="creator" mainClassName="bg-clay-page">
         <div className="mx-auto w-full max-w-2xl pb-8">
           <button
             type="button"
@@ -802,14 +803,14 @@ const CreatorPosts = () => {
           <p className="text-caption font-semibold uppercase tracking-[0.14em] text-muted-foreground">
             Posts
           </p>
-          <h1 className="mt-1 text-heading font-bold tracking-tight text-foreground md:text-heading-lg">
+          <h2 className="mt-1 text-heading font-bold tracking-tight text-foreground md:text-heading-lg">
             {editId ? 'Edit Post' : 'Create Post'}
-          </h1>
+          </h2>
           <p className="mt-1.5 text-support text-muted-foreground">
             Share your analysis and optional odds so subscribers know exactly what to play.
           </p>
 
-          <div className="mt-6 space-y-5 rounded-2xl border border-border bg-card p-5 shadow-[var(--shadow-card)] sm:p-7">
+          <div className={cn(clayCard, 'mt-6 space-y-5 p-5 sm:p-7')}>
             <div className="space-y-2">
               <Label htmlFor="pick-title" className="text-support font-medium text-foreground">
                 Title <span className="text-destructive">*</span>
@@ -1044,7 +1045,7 @@ const CreatorPosts = () => {
 
   if (loading) {
     return (
-      <DashboardLayout type="creator">
+      <DashboardLayout type="creator" mainClassName="bg-clay-page">
         <div className="flex justify-center py-20">
           <Loader2 className="h-5 w-5 animate-spin text-primary" />
         </div>
@@ -1105,7 +1106,7 @@ const CreatorPosts = () => {
   };
 
   return (
-    <DashboardLayout type="creator">
+    <DashboardLayout type="creator" mainClassName="bg-clay-page">
       <div
         className={cn(
           'flex flex-col gap-6',
@@ -1113,19 +1114,11 @@ const CreatorPosts = () => {
         )}
       >
         <div className="min-w-0 flex-1">
-      <header className="mb-7 flex flex-col gap-5 sm:mb-9 lg:flex-row lg:items-start lg:justify-between lg:gap-8">
-        <div className="min-w-0">
-          <h1 className="type-page-title text-foreground md:text-[2.75rem] md:leading-[1.1]">
-            Posts
-          </h1>
-          <p className="mt-3 max-w-2xl text-body font-medium text-muted-foreground">
-            Manage your content and engage your audience.
-          </p>
-        </div>
+      <header className="mb-4 flex flex-col gap-3 sm:mb-5 lg:flex-row lg:items-center lg:justify-end lg:gap-8">
         <Button
           type="button"
           onClick={openCreate}
-          className="h-12 w-full shrink-0 gap-2 rounded-[var(--radius-md)] px-6 sm:mt-1 sm:w-auto"
+          className="clay-btn h-12 w-full shrink-0 gap-2 rounded-[0.875rem] px-6 sm:w-auto"
         >
           <Plus className="h-5 w-5" aria-hidden />
           Create Post
@@ -1149,10 +1142,10 @@ const CreatorPosts = () => {
       </div>
 
       <div className="mb-6 sm:mb-8">
-        <DashboardKpiStrip items={metricItems} />
+        <DashboardKpiStrip items={metricItems} variant="clay" />
       </div>
 
-      <section className="overflow-hidden rounded-2xl border border-border bg-card shadow-[var(--shadow-card)]">
+      <section className={cn(clayCard, 'overflow-hidden')}>
         <div className="flex flex-col gap-3 border-b border-border p-4 sm:flex-row sm:flex-wrap sm:items-center sm:p-5">
           <div className="relative min-w-0 flex-1 sm:max-w-xs">
             <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
@@ -1460,7 +1453,10 @@ const CreatorPosts = () => {
 
             return (
               <aside
-                className="flex w-full shrink-0 flex-col overflow-hidden rounded-2xl border border-border bg-card shadow-[var(--shadow-card)] xl:sticky xl:top-6 xl:w-[min(100%,420px)] xl:max-h-[calc(100dvh-6rem)]"
+                className={cn(
+                  clayCard,
+                  'flex w-full shrink-0 flex-col overflow-hidden xl:sticky xl:top-6 xl:w-[min(100%,420px)] xl:max-h-[calc(100dvh-6rem)]',
+                )}
                 aria-label="Post preview"
               >
                 <div className="flex shrink-0 items-start justify-between gap-3 border-b border-border px-5 py-4 sm:px-6 sm:py-5">
@@ -1485,7 +1481,7 @@ const CreatorPosts = () => {
                 </div>
 
                 <div className="flex min-h-0 flex-1 flex-col gap-5 overflow-y-auto px-5 py-5 sm:px-6">
-                  <article className="rounded-2xl border border-border bg-background p-5">
+                  <article className={cn(clayCard, 'bg-background p-5')}>
                     <div className="flex items-center gap-3">
                       {avatarUrl ? (
                         <img

@@ -1,3 +1,4 @@
+import { cn } from '@/lib/utils';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useMutation, useQuery } from 'convex/react';
@@ -5,6 +6,7 @@ import { api } from '../../convex/_generated/api';
 import type { Id } from '../../convex/_generated/dataModel';
 import { DashboardLayout } from '@/components/dashboard/DashboardLayout';
 import { DashboardKpiStrip } from '@/components/dashboard/DashboardKpiStrip';
+import { clayCard } from '@/lib/overviewClay';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Progress } from '@/components/ui/progress';
@@ -231,7 +233,7 @@ const CreatorPersonalGrowth = () => {
 
   if (busy) {
     return (
-      <DashboardLayout type="creator">
+      <DashboardLayout type="creator" mainClassName="bg-clay-page">
         <div className="flex justify-center py-20">
           <Loader2 className="h-5 w-5 animate-spin text-primary" />
         </div>
@@ -241,19 +243,13 @@ const CreatorPersonalGrowth = () => {
 
   if (!creator) {
     return (
-      <DashboardLayout type="creator">
-        <header className="mb-6">
+      <DashboardLayout type="creator" mainClassName="bg-clay-page">
+        <header className="mb-4">
           <p className="text-caption font-semibold uppercase tracking-[0.14em] text-muted-foreground">
             Support
           </p>
-          <h1 className="mt-1 text-heading font-bold tracking-tight text-foreground">
-            Growth Manager
-          </h1>
-          <p className="mt-1.5 text-support text-muted-foreground">
-            Human coaching thread — distinct from Performance analytics and subscriber Messages.
-          </p>
         </header>
-        <div className="rounded-2xl border border-border bg-card p-10 text-center shadow-[var(--shadow-card)]">
+        <div className={cn(clayCard, 'p-10 text-center')}>
           <Users className="mx-auto mb-4 h-10 w-10 text-muted-foreground" />
           <h3 className="mb-2 text-ui font-semibold text-foreground">No creator profile yet</h3>
           <p className="mx-auto mb-5 max-w-xs text-support text-muted-foreground">
@@ -309,22 +305,16 @@ const CreatorPersonalGrowth = () => {
   );
 
   return (
-    <DashboardLayout type="creator">
-      <header className="mb-6">
+    <DashboardLayout type="creator" mainClassName="bg-clay-page">
+      <header className="mb-4">
         <p className="text-caption font-semibold uppercase tracking-[0.14em] text-muted-foreground">
           Support
-        </p>
-        <h1 className="mt-1 text-heading font-bold tracking-tight text-foreground md:text-heading-lg">
-          Growth Manager
-        </h1>
-        <p className="mt-1.5 text-support text-muted-foreground">
-          Human coaching via message thread — not an automated AI. For charts use Performance; for
-          fans use Messages.
         </p>
       </header>
 
       <div className="mb-6">
         <DashboardKpiStrip
+          variant="clay"
           items={[
             {
               label: 'Performance score',
@@ -356,7 +346,7 @@ const CreatorPersonalGrowth = () => {
 
       <div className="grid grid-cols-1 gap-5 lg:grid-cols-3 lg:gap-6">
         <div className="flex min-w-0 flex-col lg:col-span-2">
-          <div className="mb-4 flex items-center gap-4 rounded-2xl border border-border bg-card p-4 shadow-[var(--shadow-card)]">
+          <div className={cn(clayCard, 'mb-4 flex items-center gap-4 p-4')}>
             <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-primary/10">
               <Users className="h-5 w-5 text-primary" />
             </div>
@@ -371,7 +361,7 @@ const CreatorPersonalGrowth = () => {
           </div>
 
           {!growthEnabled ? (
-            <div className="rounded-2xl border border-border bg-card p-10 text-center shadow-[var(--shadow-card)]">
+            <div className={cn(clayCard, 'p-10 text-center')}>
               <Users className="mx-auto mb-3 h-8 w-8 text-muted-foreground" />
               <h3 className="mb-2 text-ui font-semibold text-foreground">Chat unavailable</h3>
               <p className="mx-auto max-w-sm text-support text-muted-foreground">
@@ -381,7 +371,7 @@ const CreatorPersonalGrowth = () => {
             </div>
           ) : (
             <>
-          <div className="flex max-h-[min(70vh,720px)] min-h-[420px] flex-1 flex-col rounded-2xl border border-border bg-card shadow-[var(--shadow-card)] lg:max-h-none">
+          <div className={cn(clayCard, 'flex max-h-[min(70vh,720px)] min-h-[420px] flex-1 flex-col overflow-hidden lg:max-h-none')}>
             <div className="min-h-0 flex-1 space-y-3 overflow-y-auto p-4">
               {messages.length === 0 ? (
                 <div className="flex h-full min-h-[200px] flex-col items-center justify-center px-4 py-10 text-center">
@@ -447,7 +437,7 @@ const CreatorPersonalGrowth = () => {
         </div>
 
         <div className="order-last space-y-4">
-          <div className="rounded-2xl border border-border bg-card p-5 shadow-[var(--shadow-card)]">
+          <div className={cn(clayCard, 'p-5')}>
             <div className="mb-3 flex items-center justify-between gap-2">
               <h3 className="text-support font-medium text-muted-foreground">
                 Performance Score (estimate)
@@ -506,7 +496,7 @@ const CreatorPersonalGrowth = () => {
             </div>
           </div>
 
-          <div className="rounded-2xl border border-border bg-card p-5 shadow-[var(--shadow-card)]">
+          <div className={cn(clayCard, 'p-5')}>
             <h3 className="mb-3 text-support font-medium text-muted-foreground">Last 30 Days</h3>
             <div className="grid grid-cols-2 gap-3">
               {[
@@ -523,7 +513,7 @@ const CreatorPersonalGrowth = () => {
             </div>
           </div>
 
-          <div className="rounded-2xl border border-border bg-card p-5 shadow-[var(--shadow-card)]">
+          <div className={cn(clayCard, 'p-5')}>
             <h3 className="mb-3 flex items-center gap-2 text-support font-medium text-muted-foreground">
               <Zap className="h-3.5 w-3.5 text-primary" /> Growth Insights
             </h3>

@@ -1,9 +1,11 @@
+import { cn } from '@/lib/utils';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useMutation, usePaginatedQuery, useQuery } from 'convex/react';
 import { useSearchParams } from 'react-router-dom';
 import { api } from '../../convex/_generated/api';
 import type { Id } from '../../convex/_generated/dataModel';
 import { DashboardLayout } from '@/components/dashboard/DashboardLayout';
+import { clayCard } from '@/lib/overviewClay';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
@@ -159,10 +161,9 @@ const AdminResolutionCases = () => {
     alertsOverview?.openCases ??
     cases.filter((c) => c.status === 'open' || c.status === 'escalated').length;
   return (
-    <DashboardLayout type="admin">
+    <DashboardLayout type="admin" mainClassName="bg-clay-page">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
         <div>
-          <h1 className="text-2xl font-bold">Resolution Cases</h1>
           <p className="text-muted-foreground text-sm mt-0.5">
             {alertsOverview !== undefined
               ? `${openCount} open platform-wide`

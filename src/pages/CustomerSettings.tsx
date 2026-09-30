@@ -13,6 +13,7 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { DashboardLayout } from '@/components/dashboard/DashboardLayout';
+import { clayCard } from '@/lib/overviewClay';
 import { Seo } from '@/components/Seo';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -312,7 +313,7 @@ const CustomerSettings = () => {
 
   if (loading) {
     return (
-      <DashboardLayout type="member">
+      <DashboardLayout type="member" mainClassName="bg-clay-page">
         <div className="flex justify-center py-20">
           <Loader2 className="h-5 w-5 animate-spin text-primary" />
         </div>
@@ -324,16 +325,13 @@ const CustomerSettings = () => {
   const displayPhone = phone;
 
   return (
-    <DashboardLayout type="member">
+    <DashboardLayout type="member" mainClassName="bg-clay-page">
       <Seo
         title="Settings — Prizelet"
         description="Manage your account and preferences on Prizelet."
       />
 
-      <header className="mb-6">
-        <h1 className="text-2xl font-extrabold tracking-tight text-foreground sm:text-3xl">
-          Settings
-        </h1>
+      <header className="mb-4">
         <p className="mt-1.5 text-sm font-medium text-muted-foreground sm:text-base">
           Manage your account and preferences.
         </p>
@@ -355,7 +353,7 @@ const CustomerSettings = () => {
 
       <div className="space-y-5">
         {/* Account */}
-        <section className="rounded-2xl border border-border bg-card p-5 shadow-[var(--shadow-card)] sm:p-6">
+        <section className={cn(clayCard, 'p-5 sm:p-6')}>
           <div className="mb-5 flex items-start justify-between gap-3">
             <div className="flex items-start gap-3">
               <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary/10">
@@ -506,7 +504,7 @@ const CustomerSettings = () => {
         </section>
 
         {/* Notifications */}
-        <section className="rounded-2xl border border-border bg-card p-5 shadow-[var(--shadow-card)] sm:p-6">
+        <section className={cn(clayCard, 'p-5 sm:p-6')}>
           <div className="mb-5 flex items-start gap-3">
             <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-sky-500/10">
               <Bell className="h-4 w-4 text-sky-600" />
@@ -568,7 +566,7 @@ const CustomerSettings = () => {
         </section>
 
         {/* Payment */}
-        <section className="rounded-2xl border border-border bg-card p-5 shadow-[var(--shadow-card)] sm:p-6">
+        <section className={cn(clayCard, 'p-5 sm:p-6')}>
           <div className="mb-5 flex items-start gap-3">
             <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-violet-500/10">
               <CreditCard className="h-4 w-4 text-violet-600" />
@@ -610,7 +608,7 @@ const CustomerSettings = () => {
         </section>
 
         {/* Privacy */}
-        <section className="rounded-2xl border border-border bg-card p-5 shadow-[var(--shadow-card)] sm:p-6">
+        <section className={cn(clayCard, 'p-5 sm:p-6')}>
           <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div className="flex items-start gap-3">
               <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-emerald-500/10">

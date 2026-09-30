@@ -4,6 +4,7 @@ import { useQuery } from 'convex/react';
 import { Gem, Loader2, Sparkles, UserPlus } from 'lucide-react';
 import { toast } from 'sonner';
 import { DashboardLayout } from '@/components/dashboard/DashboardLayout';
+import { clayCard } from '@/lib/overviewClay';
 import { Button } from '@/components/ui/button';
 import {
   MemberMyCreatorRow,
@@ -139,7 +140,7 @@ const CustomerSubscriptionsBilling = () => {
   };
 
   return (
-    <DashboardLayout type="member">
+    <DashboardLayout type="member" mainClassName="bg-clay-page">
       <Seo
         title="My Creators — Prizelet"
         description="Your active subscriptions and exclusive content on Prizelet."
@@ -147,9 +148,6 @@ const CustomerSubscriptionsBilling = () => {
 
       <header className="mb-6 flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
         <div className="min-w-0">
-          <h1 className="text-2xl font-extrabold tracking-tight text-foreground sm:text-3xl">
-            My Creators
-          </h1>
           <p className="mt-1.5 text-sm font-medium text-muted-foreground sm:text-base">
             Your active subscriptions and exclusive content.
           </p>
@@ -189,13 +187,13 @@ const CustomerSubscriptionsBilling = () => {
       ) : null}
 
       {loading && !useDemo ? (
-        <ul className="divide-y divide-border rounded-2xl border border-border bg-card px-4 shadow-[var(--shadow-card)] sm:px-5">
+        <ul className={cn(clayCard, 'divide-y divide-border px-4 sm:px-5')}>
           {Array.from({ length: 3 }).map((_, i) => (
             <MemberMyCreatorRowSkeleton key={i} />
           ))}
         </ul>
       ) : activeList.length === 0 ? (
-        <div className="rounded-2xl border border-dashed border-border bg-card px-6 py-16 text-center shadow-[var(--shadow-card)]">
+        <div className={cn(clayCard, 'border-dashed px-6 py-16 text-center')}>
           <p className="text-lg font-semibold text-foreground">No active subscriptions</p>
           <p className="mt-2 text-base text-muted-foreground">
             Subscribe to creators on Discover to see them here.
@@ -205,7 +203,7 @@ const CustomerSubscriptionsBilling = () => {
           </Button>
         </div>
       ) : (
-        <ul className="divide-y divide-border rounded-2xl border border-border bg-card px-4 shadow-[var(--shadow-card)] sm:px-6">
+        <ul className={cn(clayCard, 'divide-y divide-border px-4 sm:px-6')}>
           {activeList.map((c) => (
             <MemberMyCreatorRow
               key={c.id}

@@ -4,6 +4,7 @@ import { useSearchParams } from 'react-router-dom';
 import { api } from '../../convex/_generated/api';
 import type { Id } from '../../convex/_generated/dataModel';
 import { DashboardLayout } from '@/components/dashboard/DashboardLayout';
+import { clayCard } from '@/lib/overviewClay';
 import { AdminSupportTabs } from '@/components/dashboard/AdminSupportTabs';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
@@ -141,10 +142,9 @@ const AdminCreatorMessaging = () => {
   };
 
   return (
-    <DashboardLayout type="admin">
+    <DashboardLayout type="admin" mainClassName="bg-clay-page">
       <div className="mb-5 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">Support</h1>
           <p className="text-muted-foreground text-sm mt-1">
             Creator coaching conversations and platform broadcasts
           </p>

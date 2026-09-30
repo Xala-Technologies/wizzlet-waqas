@@ -1,5 +1,7 @@
+import { cn } from '@/lib/utils';
 import { Component, type ErrorInfo, type ReactNode } from 'react';
 import { DashboardLayout } from '@/components/dashboard/DashboardLayout';
+import { clayCard } from '@/lib/overviewClay';
 import { Button } from '@/components/ui/button';
 import { Link } from 'react-router-dom';
 
@@ -65,7 +67,7 @@ export class AdminQueryBoundary extends Component<Props, State> {
     if (this.state.hasError) {
       const { authLikely, summary } = classifyAdminError(this.state.message ?? '');
       return (
-        <DashboardLayout type="admin">
+        <DashboardLayout type="admin" mainClassName="bg-clay-page">
           <div className="mx-auto max-w-md py-16 text-center space-y-4">
             <h1 className="text-xl font-semibold">Admin data unavailable</h1>
             <p className="text-sm text-muted-foreground">{summary}</p>

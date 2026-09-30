@@ -25,6 +25,7 @@ import { toast } from 'sonner';
 import { api } from '../../convex/_generated/api';
 import { DashboardLayout } from '@/components/dashboard/DashboardLayout';
 import { DashboardKpiStrip } from '@/components/dashboard/DashboardKpiStrip';
+import { clayCard } from '@/lib/overviewClay';
 import { MarketingSubnav } from '@/components/creator/MarketingSubnav';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -319,7 +320,7 @@ const CreatorReferrals = () => {
 
   if (loading) {
     return (
-      <DashboardLayout type="creator">
+      <DashboardLayout type="creator" mainClassName="bg-clay-page">
         <div className="flex justify-center py-20">
           <Loader2 className="h-5 w-5 animate-spin text-primary" />
         </div>
@@ -329,15 +330,10 @@ const CreatorReferrals = () => {
 
   if (!creator) {
     return (
-      <DashboardLayout type="creator">
-        <header className="mb-6">
-          <h1 className="text-heading font-bold tracking-tight text-foreground">Referrals</h1>
-          <p className="mt-1.5 text-support text-muted-foreground">
-            Turn your community into a growth engine. Reward your users for bringing in new
-            subscribers.
-          </p>
+      <DashboardLayout type="creator" mainClassName="bg-clay-page">
+        <header className="mb-4">
         </header>
-        <div className="rounded-2xl border border-border bg-card p-10 text-center shadow-[var(--shadow-card)]">
+        <div className={cn(clayCard, 'p-10 text-center')}>
           <Gift className="mx-auto mb-4 h-10 w-10 text-muted-foreground" />
           <h3 className="mb-2 text-ui font-semibold text-foreground">No creator profile yet</h3>
           <p className="mx-auto mb-5 max-w-xs text-support text-muted-foreground">
@@ -352,18 +348,15 @@ const CreatorReferrals = () => {
   }
 
   return (
-    <DashboardLayout type="creator">
+    <DashboardLayout type="creator" mainClassName="bg-clay-page">
       <header className="mb-4 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div className="min-w-0">
-          <h1 className="text-2xl font-extrabold tracking-tight text-foreground sm:text-3xl">
-            Referrals
-          </h1>
           <p className="mt-1.5 max-w-2xl text-sm font-medium text-muted-foreground sm:text-base">
             Turn your community into a growth engine. Reward your users for bringing in new
             subscribers.
           </p>
         </div>
-        <div className="inline-flex h-11 shrink-0 items-center gap-2 rounded-xl border border-border bg-card px-3.5 text-sm font-semibold text-foreground shadow-[var(--shadow-card)]">
+        <div className={cn(clayCard, 'inline-flex h-11 shrink-0 items-center gap-2 px-3.5 text-sm font-semibold text-foreground')}>
           <Calendar className="h-4 w-4 text-muted-foreground" aria-hidden />
           <span className="tabular-nums">{dateRangeLabel}</span>
           <ChevronDown className="h-4 w-4 text-muted-foreground" aria-hidden />
@@ -373,7 +366,7 @@ const CreatorReferrals = () => {
       <MarketingSubnav active="referrals" />
 
       {useDemo ? (
-        <div className="mb-6 flex items-start gap-3 rounded-2xl border border-amber-500/30 bg-amber-500/10 px-4 py-3.5 text-amber-950 dark:text-amber-100 sm:items-center sm:px-5">
+        <div className="clay-card mb-6 flex items-start gap-3 bg-[#fbf8f3] px-4 py-3.5 text-amber-950 dark:bg-amber-500/10 dark:text-amber-100 sm:items-center sm:px-5">
           <Sparkles
             className="mt-0.5 h-5 w-5 shrink-0 text-amber-600 dark:text-amber-400 sm:mt-0"
             aria-hidden
@@ -387,6 +380,7 @@ const CreatorReferrals = () => {
 
       <div className="mb-6 sm:mb-8">
         <DashboardKpiStrip
+          variant="clay"
           items={[
             {
               label: 'Total referrals',
@@ -448,7 +442,7 @@ const CreatorReferrals = () => {
       </div>
 
       <div className="mb-6 grid grid-cols-1 gap-4 xl:grid-cols-12">
-        <section className="rounded-2xl border border-border bg-card shadow-[var(--shadow-card)] xl:col-span-8">
+        <section className={cn(clayCard, 'overflow-hidden xl:col-span-8')}>
           <div className="flex flex-col gap-3 border-b border-border p-4 sm:p-5">
             <div className="flex flex-wrap gap-2">
               {STATUS_FILTERS.map((f) => {
@@ -490,7 +484,7 @@ const CreatorReferrals = () => {
               <Button
                 type="button"
                 variant="outline"
-                className="h-12 shrink-0 gap-2 rounded-[var(--radius-md)] px-6"
+                className="clay-btn h-12 shrink-0 gap-2 rounded-[0.875rem] px-6"
                 onClick={exportCsv}
               >
                 <Download className="h-5 w-5" aria-hidden /> Export
@@ -691,7 +685,7 @@ const CreatorReferrals = () => {
         </section>
 
         <aside className="flex flex-col gap-4 xl:col-span-4">
-          <section className="rounded-2xl border border-border bg-card p-5 shadow-[var(--shadow-card)]">
+          <section className={cn(clayCard, 'p-5')}>
             <div className="mb-2 flex items-center gap-2">
               <span className={cn('flex h-9 w-9 items-center justify-center rounded-xl', kpiIconTone.violet)}>
                 <Settings2 className="h-4 w-4" aria-hidden />
@@ -736,7 +730,7 @@ const CreatorReferrals = () => {
             </Button>
           </section>
 
-          <section className="rounded-2xl border border-border bg-card p-5 shadow-[var(--shadow-card)]">
+          <section className={cn(clayCard, 'p-5')}>
             <div className="mb-4 flex items-center justify-between gap-3">
               <h2 className="text-base font-extrabold tracking-tight text-foreground">
                 Top Referrers
@@ -782,7 +776,7 @@ const CreatorReferrals = () => {
             )}
           </section>
 
-          <section className="rounded-2xl border border-border bg-card p-5 shadow-[var(--shadow-card)]">
+          <section className={cn(clayCard, 'p-5')}>
             <div className="mb-3 flex items-center gap-2">
               <span className={cn('flex h-9 w-9 items-center justify-center rounded-xl', kpiIconTone.amber)}>
                 <Lightbulb className="h-4 w-4" aria-hidden />
