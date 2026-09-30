@@ -1,12 +1,14 @@
 /**
  * Sample Products list data for design / PO review when the creator has no products.
- * Aligned to the Prizelet Products mockup.
+ * Aligned to the Sweeph / Prizelet Products mockup (Displayed Products + table).
  */
 
 const day = 86_400_000;
 const daysAgo = (n: number) => Date.now() - n * day;
 
-export type ProductBillingType = 'subscription' | 'one-time' | 'bundle';
+export const PROFILE_DISPLAY_SLOT_LIMIT = 4;
+
+export type ProductBillingType = 'subscription' | 'one-time' | 'free' | 'bundle';
 
 export type ProductUiStatus = 'active' | 'draft' | 'archived';
 
@@ -33,7 +35,10 @@ export type DemoProductRow = {
   revenueMrrCents: number;
   status: ProductUiStatus;
   createdAtMs: number;
-  icon: 'crown' | 'star' | 'gem' | 'book' | 'video' | 'users' | 'package';
+  icon: 'crown' | 'star' | 'gem' | 'book' | 'video' | 'users' | 'package' | 'chart';
+  showOnProfile: boolean;
+  isFeatured: boolean;
+  features: string[];
 };
 
 /** KPI strip aligned to the Products mockup. */
@@ -101,7 +106,7 @@ export const CREATOR_PRODUCTS_DEMO_ROWS: DemoProductRow[] = [
   {
     id: 'demo-prod-1',
     name: 'Premium Picks',
-    description: 'Daily premium picks with unit sizing and write-ups',
+    description: 'Daily premium picks with detailed analysis',
     type: 'subscription',
     billingPeriod: 'monthly',
     priceCents: 2999,
@@ -109,12 +114,20 @@ export const CREATOR_PRODUCTS_DEMO_ROWS: DemoProductRow[] = [
     revenueMrrCents: 2_523_000,
     status: 'active',
     createdAtMs: daysAgo(200),
-    icon: 'star',
+    icon: 'chart',
+    showOnProfile: true,
+    isFeatured: true,
+    features: [
+      'Daily premium picks',
+      'Unit sizing guidance',
+      'Detailed write-ups',
+      'Early lock alerts',
+    ],
   },
   {
     id: 'demo-prod-2',
     name: 'VIP Access',
-    description: 'VIP chat, early locks, and private community',
+    description: 'Exclusive VIP community and personal support',
     type: 'subscription',
     billingPeriod: 'monthly',
     priceCents: 4999,
@@ -123,51 +136,61 @@ export const CREATOR_PRODUCTS_DEMO_ROWS: DemoProductRow[] = [
     status: 'active',
     createdAtMs: daysAgo(180),
     icon: 'gem',
+    showOnProfile: true,
+    isFeatured: false,
+    features: [
+      'Everything in Premium',
+      'VIP Discord access',
+      '1-on-1 chat support',
+      'Custom unit sizes',
+    ],
   },
   {
     id: 'demo-prod-3',
-    name: 'Daily Insights',
-    description: 'Short-form daily insight posts for casual fans',
-    type: 'subscription',
+    name: 'Free Community',
+    description: 'Free picks and community access',
+    type: 'free',
     billingPeriod: 'monthly',
-    priceCents: 999,
-    subscribers: 120,
-    revenueMrrCents: 119_880,
+    priceCents: 0,
+    subscribers: 1248,
+    revenueMrrCents: 0,
     status: 'active',
-    createdAtMs: daysAgo(150),
-    icon: 'crown',
+    createdAtMs: daysAgo(220),
+    icon: 'users',
+    showOnProfile: true,
+    isFeatured: false,
+    features: [
+      'Weekly free picks',
+      'Community chat access',
+      'Basic stats tracking',
+    ],
   },
   {
     id: 'demo-prod-4',
-    name: 'Private Community',
-    description: 'Ongoing community membership',
-    type: 'subscription',
-    billingPeriod: 'monthly',
-    priceCents: 1499,
-    subscribers: 221,
-    revenueMrrCents: 331_279,
-    status: 'active',
-    createdAtMs: daysAgo(120),
-    icon: 'users',
-  },
-  {
-    id: 'demo-prod-5',
-    name: 'Betting Guide (eBook)',
-    description: 'One-time digital guide for beginners',
+    name: 'Match Analysis',
+    description: 'In-depth single-match breakdowns',
     type: 'one-time',
     billingPeriod: 'one-time',
-    priceCents: 7900,
-    subscribers: 120,
-    subscribersLabel: '120 purchases',
+    priceCents: 1999,
+    subscribers: 84,
+    subscribersLabel: '84 purchases',
     revenueMrrCents: 0,
     status: 'active',
     createdAtMs: daysAgo(90),
-    icon: 'book',
+    icon: 'chart',
+    showOnProfile: false,
+    isFeatured: false,
+    features: [
+      'In-depth match analysis',
+      'Key player insights',
+      'Predicted scoreline',
+      'Value bet highlights',
+    ],
   },
   {
-    id: 'demo-prod-6',
-    name: 'Video Course',
-    description: 'Recorded handicapper course (self-paced)',
+    id: 'demo-prod-5',
+    name: 'Betting Course',
+    description: 'Self-paced course for beginners',
     type: 'one-time',
     billingPeriod: 'one-time',
     priceCents: 14900,
@@ -177,6 +200,33 @@ export const CREATOR_PRODUCTS_DEMO_ROWS: DemoProductRow[] = [
     status: 'draft',
     createdAtMs: daysAgo(60),
     icon: 'video',
+    showOnProfile: false,
+    isFeatured: false,
+    features: [
+      '12 video modules',
+      'Bankroll templates',
+      'Lifetime access',
+    ],
+  },
+  {
+    id: 'demo-prod-6',
+    name: 'Daily Insights',
+    description: 'Short-form daily insight posts',
+    type: 'subscription',
+    billingPeriod: 'monthly',
+    priceCents: 999,
+    subscribers: 120,
+    revenueMrrCents: 119_880,
+    status: 'active',
+    createdAtMs: daysAgo(150),
+    icon: 'star',
+    showOnProfile: false,
+    isFeatured: false,
+    features: [
+      'Daily short insights',
+      'Mobile notifications',
+      'Cancel anytime',
+    ],
   },
   {
     id: 'demo-prod-7',
@@ -190,6 +240,9 @@ export const CREATOR_PRODUCTS_DEMO_ROWS: DemoProductRow[] = [
     status: 'archived',
     createdAtMs: daysAgo(300),
     icon: 'package',
+    showOnProfile: false,
+    isFeatured: false,
+    features: ['Weekly card archive'],
   },
 ];
 
@@ -208,6 +261,7 @@ export function isCreatorProductsDemoId(id: string): boolean {
 }
 
 export function formatProductPrice(priceCents: number, billingPeriod: string): string {
+  if (priceCents === 0) return 'Free';
   const dollars = (priceCents / 100).toFixed(2);
   if (billingPeriod === 'one-time') return `$${dollars}`;
   if (billingPeriod === 'yearly') return `$${dollars} / year`;
@@ -221,4 +275,31 @@ export function formatMoneyCents(cents: number): string {
     minimumFractionDigits: 0,
     maximumFractionDigits: 0,
   })}`;
+}
+
+export function defaultProductFeatures(name: string, type: ProductBillingType): string[] {
+  const n = name.toLowerCase();
+  if (n.includes('vip')) {
+    return [
+      'Everything in Premium',
+      'VIP Discord access',
+      '1-on-1 chat support',
+      'Custom unit sizes',
+    ];
+  }
+  if (n.includes('premium') || n.includes('picks')) {
+    return [
+      'Daily premium picks',
+      'Unit sizing guidance',
+      'Detailed write-ups',
+      'Early lock alerts',
+    ];
+  }
+  if (type === 'free' || n.includes('community') || n.includes('free')) {
+    return ['Weekly free picks', 'Community chat access', 'Basic stats tracking'];
+  }
+  if (type === 'one-time') {
+    return ['One-time purchase', 'Lifetime access', 'Downloadable materials'];
+  }
+  return ['Full product access', 'Cancel anytime', 'Mobile notifications'];
 }

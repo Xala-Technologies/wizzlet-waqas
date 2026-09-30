@@ -1,10 +1,10 @@
 import { useMemo, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useMutation, useQuery } from 'convex/react';
-import { format } from 'date-fns';
 import {
   BarChart3,
   BookOpen,
+  Check,
   ChevronLeft,
   ChevronRight,
   Crown,
@@ -29,6 +29,7 @@ import { api } from '../../convex/_generated/api';
 import type { Id } from '../../convex/_generated/dataModel';
 import { DashboardLayout } from '@/components/dashboard/DashboardLayout';
 import { DashboardKpiStrip } from '@/components/dashboard/DashboardKpiStrip';
+import { DisplayedProductsSection } from '@/components/creator/DisplayedProductsSection';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -49,6 +50,11 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@/components/ui/popover';
+import {
   Table,
   TableBody,
   TableCell,
@@ -62,6 +68,8 @@ import { safeGetItem, safeSetItem } from '@/lib/safeStorage';
 import {
   CREATOR_PRODUCTS_DEMO_METRICS,
   CREATOR_PRODUCTS_DEMO_ROWS,
+  PROFILE_DISPLAY_SLOT_LIMIT,
+  defaultProductFeatures,
   formatMoneyCents,
   formatProductPrice,
   isCreatorProductsDemoId,
@@ -103,6 +111,8 @@ type LiveProduct = {
   status: ProductUiStatus;
   createdAtMs: number;
   isFeatured: boolean;
+  showOnProfile: boolean;
+  features: string[];
   maxSpots?: number | null;
   isLimited: boolean;
   isClosed: boolean;
@@ -110,18 +120,20 @@ type LiveProduct = {
   imageStorageId?: Id<'_storage'> | null;
 };
 
+type TableRowModel = LiveProduct | DemoProductRow;
+
 const STATUS_TABS: { id: TabFilter; label: string }[] = [
   { id: 'all', label: 'All Products' },
   { id: 'subscription', label: 'Subscriptions' },
   { id: 'one-time', label: 'One-time Products' },
-  { id: 'bundle', label: 'Bundles' },
+  { id: 'free', label: 'Free Products' },
   { id: 'archived', label: 'Archived' },
 ];
 
 const statusPillClass: Record<ProductUiStatus, string> = {
   active: 'border-emerald-500/25 bg-emerald-500/10 text-emerald-700 dark:text-emerald-400',
   draft: 'border-border bg-muted text-muted-foreground',
-  archived: 'border-amber-500/20 bg-amber-500/10 text-amber-800 dark:text-amber-300',
+  archived: 'border-rose-500/20 bg-rose-500/10 text-rose-700 dark:text-rose-300',
 };
 
 const statusLabel: Record<ProductUiStatus, string> = {
@@ -132,17 +144,25 @@ const statusLabel: Record<ProductUiStatus, string> = {
 
 const typePillClass: Record<ProductBillingType, string> = {
   subscription: 'border-sky-500/25 bg-sky-500/10 text-sky-700 dark:text-sky-300',
-  'one-time': 'border-border bg-muted text-muted-foreground',
-  bundle: 'border-[var(--brand-200)] bg-[var(--brand-100)] text-[var(--brand-700)] dark:border-transparent dark:bg-[var(--active-bg)] dark:text-[var(--brand-primary)]',
+  'one-time': 'border-violet-500/25 bg-violet-500/10 text-violet-700 dark:text-violet-300',
+  free: 'border-emerald-500/25 bg-emerald-500/10 text-emerald-700 dark:text-emerald-400',
+  bundle:
+    'border-[var(--brand-200)] bg-[var(--brand-100)] text-[var(--brand-700)] dark:border-transparent dark:bg-[var(--active-bg)] dark:text-[var(--brand-primary)]',
 };
 
 const typeLabel: Record<ProductBillingType, string> = {
   subscription: 'Subscription',
   'one-time': 'One-time',
+  free: 'Free',
   bundle: 'Bundle',
 };
 
-function resolveType(billingPeriod: string, name: string): ProductBillingType {
+function resolveType(
+  billingPeriod: string,
+  name: string,
+  priceCents: number,
+): ProductBillingType {
+  if (priceCents === 0) return 'free';
   if (billingPeriod === 'one-time') return 'one-time';
   if (name.toLowerCase().includes('bundle')) return 'bundle';
   return 'subscription';
@@ -158,10 +178,11 @@ function productIcon(name: string, type: ProductBillingType, featured: boolean) 
   const n = name.toLowerCase();
   if (type === 'bundle' || n.includes('bundle')) return Package;
   if (n.includes('vip') || n.includes('diamond')) return Gem;
+  if (n.includes('analysis') || n.includes('match') || n.includes('chart')) return BarChart3;
   if (n.includes('premium') || featured || n.includes('star')) return Star;
   if (n.includes('ebook') || n.includes('guide') || n.includes('book')) return BookOpen;
   if (n.includes('video') || n.includes('course')) return Video;
-  if (n.includes('community') || n.includes('insight')) return Users;
+  if (n.includes('community') || n.includes('insight') || type === 'free') return Users;
   return Crown;
 }
 
@@ -172,13 +193,24 @@ function iconTone(Icon: typeof Crown): string {
   if (Icon === Video) return kpiIconTone.violet;
   if (Icon === Users) return kpiIconTone.emerald;
   if (Icon === Package) return kpiIconTone.cyan;
+  if (Icon === BarChart3) return kpiIconTone.sky;
   return kpiIconTone.violet;
 }
 
 function formatSignedPct(value: number | null): string | undefined {
   if (value === null) return undefined;
   const sign = value > 0 ? '+' : value < 0 ? '' : '+';
-  return `${sign}${value}% vs. last month`;
+  return `${sign}${value}% vs last month`;
+}
+
+function rowShowOnProfile(row: TableRowModel, demoOverrides: Set<string>): boolean {
+  if (isCreatorProductsDemoId(row.id)) return demoOverrides.has(row.id);
+  return 'showOnProfile' in row ? row.showOnProfile : false;
+}
+
+function rowFeatures(row: TableRowModel): string[] {
+  if ('features' in row && row.features?.length) return row.features;
+  return defaultProductFeatures(row.name, row.type);
 }
 
 const CreatorProducts = () => {
@@ -195,6 +227,7 @@ const CreatorProducts = () => {
   const subs = useQuery(api.subscriptions.mutations.listForMyCreator);
   const earnings = useQuery(api.creators.earnings.myEarnings);
   const removeProduct = useMutation(api.products.mutations.remove);
+  const setShowOnProfile = useMutation(api.products.mutations.setShowOnProfile);
 
   const loading =
     creator === undefined ||
@@ -212,11 +245,12 @@ const CreatorProducts = () => {
 
   const liveRows: LiveProduct[] = useMemo(() => {
     return (products ?? []).map((p) => {
-      const type = resolveType(p.billingPeriod, p.name);
+      const type = resolveType(p.billingPeriod, p.name, p.priceCents);
       const status = resolveStatus(p);
       const subscribers = subCountByProduct.get(p._id) ?? 0;
       const revenueMrrCents =
         type === 'subscription' || type === 'bundle' ? subscribers * p.priceCents : 0;
+      const showOnProfile = p.showOnProfile === true || (p.showOnProfile === undefined && p.isFeatured);
       return {
         id: p._id,
         name: p.name,
@@ -232,6 +266,8 @@ const CreatorProducts = () => {
         status,
         createdAtMs: p.createdAt,
         isFeatured: p.isFeatured,
+        showOnProfile,
+        features: defaultProductFeatures(p.name, type),
         maxSpots: p.maxSpots,
         isLimited: p.isLimited,
         isClosed: p.isClosed,
@@ -247,9 +283,7 @@ const CreatorProducts = () => {
     disableDemo,
   });
 
-  const tableRows: Array<LiveProduct | DemoProductRow> = useDemo
-    ? CREATOR_PRODUCTS_DEMO_ROWS
-    : liveRows;
+  const tableRows: TableRowModel[] = useDemo ? CREATOR_PRODUCTS_DEMO_ROWS : liveRows;
 
   const [search, setSearch] = useState(queryFromUrl);
   const [tab, setTab] = useState<TabFilter>('all');
@@ -259,6 +293,11 @@ const CreatorProducts = () => {
   const [bundleDismissed, setBundleDismissed] = useState(
     () => safeGetItem(BUNDLE_BANNER_KEY) === '1',
   );
+  const [demoProfileIds, setDemoProfileIds] = useState(
+    () => new Set(CREATOR_PRODUCTS_DEMO_ROWS.filter((r) => r.showOnProfile).map((r) => r.id)),
+  );
+  const [addPopoverId, setAddPopoverId] = useState<string | null>(null);
+  const [profileBusyId, setProfileBusyId] = useState<string | null>(null);
 
   const [formOpen, setFormOpen] = useState(false);
   const [formInitial, setFormInitial] = useState<CreateProductInitial | null>(null);
@@ -266,26 +305,12 @@ const CreatorProducts = () => {
   const [deleting, setDeleting] = useState(false);
 
   const tabCounts = useMemo(() => {
-    if (useDemo) {
-      return {
-        all: CREATOR_PRODUCTS_DEMO_METRICS.totalProducts,
-        subscription: CREATOR_PRODUCTS_DEMO_ROWS.filter(
-          (r) => r.type === 'subscription' && r.status !== 'archived',
-        ).length,
-        'one-time': CREATOR_PRODUCTS_DEMO_ROWS.filter(
-          (r) => r.type === 'one-time' && r.status !== 'archived',
-        ).length,
-        bundle: CREATOR_PRODUCTS_DEMO_ROWS.filter(
-          (r) => r.type === 'bundle' && r.status !== 'archived',
-        ).length,
-        archived: CREATOR_PRODUCTS_DEMO_ROWS.filter((r) => r.status === 'archived').length,
-      };
-    }
     const nonArchived = tableRows.filter((r) => r.status !== 'archived');
     return {
-      all: nonArchived.length,
+      all: useDemo ? CREATOR_PRODUCTS_DEMO_METRICS.totalProducts : nonArchived.length,
       subscription: nonArchived.filter((r) => r.type === 'subscription').length,
       'one-time': nonArchived.filter((r) => r.type === 'one-time').length,
+      free: nonArchived.filter((r) => r.type === 'free').length,
       bundle: nonArchived.filter((r) => r.type === 'bundle').length,
       archived: tableRows.filter((r) => r.status === 'archived').length,
     };
@@ -354,7 +379,7 @@ const CreatorProducts = () => {
     }
     const activeSubs = (subs ?? []).filter((s) => s.status === 'active').length;
     const mrrCents = liveRows
-      .filter((r) => r.status === 'active' && r.type !== 'one-time')
+      .filter((r) => r.status === 'active' && r.type !== 'one-time' && r.type !== 'free')
       .reduce((sum, r) => sum + r.revenueMrrCents, 0);
     return {
       totalProducts: liveRows.filter((r) => r.status !== 'archived').length,
@@ -368,6 +393,71 @@ const CreatorProducts = () => {
     };
   }, [earnings?.grossCents, earnings?.netCents, liveRows, subs, useDemo]);
 
+  const displayedProducts = useMemo(() => {
+    return tableRows
+      .filter((r) => r.status !== 'archived' && rowShowOnProfile(r, demoProfileIds))
+      .slice(0, PROFILE_DISPLAY_SLOT_LIMIT)
+      .map((row) => {
+        const Icon = productIcon(
+          row.name,
+          row.type,
+          'isFeatured' in row ? row.isFeatured : false,
+        );
+        return {
+          id: row.id,
+          name: row.name,
+          priceCents: row.priceCents,
+          billingPeriod: row.billingPeriod,
+          type: row.type,
+          isFeatured: 'isFeatured' in row ? row.isFeatured : false,
+          features: rowFeatures(row),
+          Icon,
+          iconClassName: iconTone(Icon),
+        };
+      });
+  }, [tableRows, demoProfileIds]);
+
+  const profileSlotCount = displayedProducts.length;
+
+  const applyShowOnProfile = async (row: TableRowModel, show: boolean) => {
+    if (useDemo || isCreatorProductsDemoId(row.id)) {
+      setDemoProfileIds((prev) => {
+        const next = new Set(prev);
+        if (show) {
+          if (next.size >= PROFILE_DISPLAY_SLOT_LIMIT) {
+            toast.error(`All ${PROFILE_DISPLAY_SLOT_LIMIT} profile slots are used`);
+            return prev;
+          }
+          next.add(row.id);
+        } else {
+          next.delete(row.id);
+        }
+        return next;
+      });
+      setAddPopoverId(null);
+      toast.success(show ? 'Added to profile' : 'Removed from profile');
+      return;
+    }
+
+    setProfileBusyId(row.id);
+    try {
+      await setShowOnProfile({
+        productId: row.id as Id<'products'>,
+        showOnProfile: show,
+      });
+      setAddPopoverId(null);
+      toast.success(show ? 'Added to profile' : 'Removed from profile');
+    } catch (e) {
+      const raw = e instanceof Error ? e.message : String(e);
+      const msg = raw.includes('PROFILE_SLOTS_FULL')
+        ? `All ${PROFILE_DISPLAY_SLOT_LIMIT} profile slots are used`
+        : raw || 'Could not update profile display';
+      toast.error(msg);
+    } finally {
+      setProfileBusyId(null);
+    }
+  };
+
   const openCreate = () => {
     if (useDemo) {
       toast.message('Sample preview', {
@@ -379,7 +469,7 @@ const CreatorProducts = () => {
     setFormOpen(true);
   };
 
-  const openEdit = (row: LiveProduct | DemoProductRow) => {
+  const openEdit = (row: TableRowModel) => {
     if (useDemo || isCreatorProductsDemoId(row.id)) {
       toast.message('Sample preview data', {
         description: 'Edit is available for live products only.',
@@ -470,7 +560,7 @@ const CreatorProducts = () => {
             Products
           </h1>
           <p className="mt-3 max-w-2xl text-body font-medium text-muted-foreground">
-            Create and manage your subscriptions, memberships, and digital products.
+            Create and manage your subscriptions and products.
           </p>
         </div>
         <Button
@@ -496,6 +586,14 @@ const CreatorProducts = () => {
           </p>
         </div>
       ) : null}
+
+      <DisplayedProductsSection
+        products={displayedProducts}
+        onRemove={(id) => {
+          const row = tableRows.find((r) => r.id === id);
+          if (row) void applyShowOnProfile(row, false);
+        }}
+      />
 
       <div className="mb-6 sm:mb-8">
         <DashboardKpiStrip
@@ -540,12 +638,12 @@ const CreatorProducts = () => {
       </div>
 
       <div className="mb-4 flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
-        <div className={cn(segmentedTrackClassName, 'flex w-full flex-nowrap xl:w-auto')}>
+        <div className={cn(segmentedTrackClassName, 'flex w-full flex-nowrap overflow-x-auto xl:w-auto')}>
           {STATUS_TABS.map((t) => (
             <button
               key={t.id}
               type="button"
-              className={cn(segmentedItemClassName(tab === t.id), 'flex-1 xl:flex-none')}
+              className={cn(segmentedItemClassName(tab === t.id), 'flex-1 whitespace-nowrap xl:flex-none')}
               onClick={() => {
                 setTab(t.id);
                 setTablePage(0);
@@ -629,7 +727,7 @@ const CreatorProducts = () => {
                   <TableHead className="hidden md:table-cell">Subscribers</TableHead>
                   <TableHead className="hidden lg:table-cell">Revenue (MRR)</TableHead>
                   <TableHead>Status</TableHead>
-                  <TableHead className="hidden xl:table-cell">Created</TableHead>
+                  <TableHead className="w-14 text-center">Show on profile</TableHead>
                   <TableHead className="w-12 text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
@@ -638,12 +736,12 @@ const CreatorProducts = () => {
                   const Icon = productIcon(
                     row.name,
                     row.type,
-                    'isFeatured' in row ? row.isFeatured : row.name.includes('Premium'),
+                    'isFeatured' in row ? row.isFeatured : false,
                   );
                   const revenue =
                     'revenueMrrCents' in row
                       ? row.revenueMrrCents
-                      : row.type === 'one-time'
+                      : row.type === 'one-time' || row.type === 'free'
                         ? 0
                         : row.subscribers * row.priceCents;
                   const subsLabel =
@@ -651,6 +749,10 @@ const CreatorProducts = () => {
                     (row.type === 'one-time'
                       ? `${row.subscribers} purchases`
                       : String(row.subscribers));
+                  const onProfile = rowShowOnProfile(row, demoProfileIds);
+                  const features = rowFeatures(row);
+                  const busy = profileBusyId === row.id;
+
                   return (
                     <TableRow key={row.id}>
                       <TableCell>
@@ -695,7 +797,9 @@ const CreatorProducts = () => {
                         {subsLabel}
                       </TableCell>
                       <TableCell className="hidden font-semibold tabular-nums lg:table-cell">
-                        {row.type === 'one-time' ? '—' : formatMoneyCents(revenue)}
+                        {row.type === 'one-time' || row.type === 'free'
+                          ? '—'
+                          : formatMoneyCents(revenue)}
                       </TableCell>
                       <TableCell>
                         <span
@@ -707,8 +811,97 @@ const CreatorProducts = () => {
                           {statusLabel[row.status]}
                         </span>
                       </TableCell>
-                      <TableCell className="hidden whitespace-nowrap text-sm text-muted-foreground xl:table-cell">
-                        {format(row.createdAtMs, 'MMM d, yyyy, h:mm a')}
+                      <TableCell className="text-center">
+                        {row.status === 'archived' ? (
+                          <span className="inline-flex h-9 w-9 items-center justify-center text-muted-foreground/40">
+                            —
+                          </span>
+                        ) : onProfile ? (
+                          <button
+                            type="button"
+                            disabled={busy}
+                            aria-label={`Remove ${row.name} from profile`}
+                            className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-sm transition hover:bg-primary/90 disabled:opacity-60"
+                            onClick={() => void applyShowOnProfile(row, false)}
+                          >
+                            {busy ? (
+                              <Loader2 className="h-4 w-4 animate-spin" />
+                            ) : (
+                              <Check className="h-4 w-4" strokeWidth={2.5} />
+                            )}
+                          </button>
+                        ) : (
+                          <Popover
+                            open={addPopoverId === row.id}
+                            onOpenChange={(open) => setAddPopoverId(open ? row.id : null)}
+                          >
+                            <PopoverTrigger asChild>
+                              <button
+                                type="button"
+                                disabled={busy || profileSlotCount >= PROFILE_DISPLAY_SLOT_LIMIT}
+                                aria-label={`Add ${row.name} to profile`}
+                                className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-border bg-muted/40 text-muted-foreground transition hover:border-primary/40 hover:bg-primary/10 hover:text-primary disabled:cursor-not-allowed disabled:opacity-40"
+                              >
+                                {busy ? (
+                                  <Loader2 className="h-4 w-4 animate-spin" />
+                                ) : (
+                                  <Plus className="h-4 w-4" />
+                                )}
+                              </button>
+                            </PopoverTrigger>
+                            <PopoverContent
+                              align="end"
+                              className="w-[280px] rounded-2xl border-border p-4 shadow-[var(--shadow-card)]"
+                            >
+                              <p className="mb-3 text-sm font-bold text-foreground">Add to profile</p>
+                              <div className="rounded-xl border border-border bg-card p-3">
+                                <div className="flex items-start gap-3">
+                                  <span
+                                    className={cn(
+                                      'flex h-10 w-10 shrink-0 items-center justify-center rounded-xl',
+                                      iconTone(Icon),
+                                    )}
+                                  >
+                                    <Icon className="h-4 w-4" aria-hidden />
+                                  </span>
+                                  <div className="min-w-0">
+                                    <p className="font-bold text-foreground">{row.name}</p>
+                                    <p className="text-xs font-semibold text-muted-foreground">
+                                      {formatProductPrice(row.priceCents, row.billingPeriod)}
+                                      {row.type === 'one-time' ? ' · One-time' : null}
+                                    </p>
+                                  </div>
+                                </div>
+                                <ul className="mt-3 space-y-1.5">
+                                  {features.slice(0, 4).map((f) => (
+                                    <li
+                                      key={f}
+                                      className="flex items-start gap-2 text-xs text-foreground"
+                                    >
+                                      <Check
+                                        className="mt-0.5 h-3.5 w-3.5 shrink-0 text-primary"
+                                        strokeWidth={2.5}
+                                        aria-hidden
+                                      />
+                                      <span>{f}</span>
+                                    </li>
+                                  ))}
+                                </ul>
+                              </div>
+                              <Button
+                                type="button"
+                                className="mt-3 h-11 w-full rounded-xl"
+                                disabled={busy}
+                                onClick={() => void applyShowOnProfile(row, true)}
+                              >
+                                {busy ? (
+                                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                ) : null}
+                                Add to profile
+                              </Button>
+                            </PopoverContent>
+                          </Popover>
+                        )}
                       </TableCell>
                       <TableCell className="text-right">
                         <DropdownMenu>
@@ -721,6 +914,20 @@ const CreatorProducts = () => {
                             <DropdownMenuItem onClick={() => openEdit(row)}>
                               <Pencil className="mr-2 h-4 w-4" /> Edit
                             </DropdownMenuItem>
+                            {!onProfile && row.status !== 'archived' ? (
+                              <DropdownMenuItem
+                                onClick={() => void applyShowOnProfile(row, true)}
+                              >
+                                <Plus className="mr-2 h-4 w-4" /> Add to profile
+                              </DropdownMenuItem>
+                            ) : null}
+                            {onProfile ? (
+                              <DropdownMenuItem
+                                onClick={() => void applyShowOnProfile(row, false)}
+                              >
+                                <Trash2 className="mr-2 h-4 w-4" /> Remove from profile
+                              </DropdownMenuItem>
+                            ) : null}
                             <DropdownMenuItem
                               className="text-destructive focus:text-destructive"
                               onClick={() => setDeleteId(row.id)}
