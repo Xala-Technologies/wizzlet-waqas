@@ -2,7 +2,7 @@
 
 **Authority:** [`docs/ai/prizelet-world-ready-master-prompt.md`](./prizelet-world-ready-master-prompt.md)
 
-**Status:** Wave 1 static+unit audit recorded 2026-10-04. Inventory still pinned to `App.tsx` / schema / `api.d.ts` @ `bf85281`. Journeys and Playwright remain `NOT_RUN` until Wave 2. Product is **not** world-ready.
+**Status:** Wave 2 Playwright surface smoke recorded 2026-10-04. Route inventory load-tested; money/identity journeys J1–J8 still `NOT_RUN`. Product is **not** world-ready.
 
 Do not claim world-ready until Section 8 gates in the master prompt pass.
 
@@ -16,9 +16,9 @@ Do not claim world-ready until Section 8 gates in the master prompt pass.
 | Evidence | branch, date, one-line actual vs expected |
 | Waiver | owner + reason (required if WAIVED) |
 
-Last updated: 2026-10-04. Last wave: **1** (`chore/world-ready-wave-1-audit`). Source pin: `bf85281` (inventory). Audit HEAD: branch tip at merge.
+Last updated: 2026-10-04. Last wave: **2** (`test/world-ready-wave-2-e2e`). Source pin: `bf85281` (inventory).
 
-Wave 0 does **not** exercise wrong-role redirects (Wave 2). Each route has one intended-role row.
+Wave 2 smoke: Chromium walked every `App.tsx` public/demo path (no ErrorBoundary) and every protected path (anonymous → `/login`). WebKit/Firefox still run J9 public-nav + browser-matrix. Authenticated happy paths (J1–J8) are **not** claimed PASS.
 
 ---
 
@@ -26,88 +26,94 @@ Wave 0 does **not** exercise wrong-role redirects (Wave 2). Each route has one i
 
 | Route | Page | Roles | Persistence | Result | Evidence |
 |-------|------|-------|-------------|--------|----------|
-| `/` | Index | anonymous | public | NOT_RUN | frozen vs App.tsx @ bf85281; chore/world-ready-wave-0-inventory; 2026-10-04 |
-| `/network` | Network | anonymous | public | NOT_RUN | frozen vs App.tsx @ bf85281; chore/world-ready-wave-0-inventory; 2026-10-04 |
-| `/creators` | Creators | anonymous | public | NOT_RUN | frozen vs App.tsx @ bf85281; chore/world-ready-wave-0-inventory; 2026-10-04 |
-| `/todays-events` | TodaysEvents | anonymous | mixed | NOT_RUN | frozen vs App.tsx @ bf85281; chore/world-ready-wave-0-inventory; 2026-10-04 |
-| `/discover` | Discover | anonymous | public | NOT_RUN | frozen vs App.tsx @ bf85281; chore/world-ready-wave-0-inventory; 2026-10-04 |
-| `/top-creators` | TopCreators | anonymous | public | NOT_RUN | frozen vs App.tsx @ bf85281; chore/world-ready-wave-0-inventory; 2026-10-04 |
-| `/pricing` | Pricing | anonymous | public | NOT_RUN | frozen vs App.tsx @ bf85281; chore/world-ready-wave-0-inventory; 2026-10-04 |
-| `/support` | Support | anonymous | public | NOT_RUN | frozen vs App.tsx @ bf85281; chore/world-ready-wave-0-inventory; 2026-10-04 |
-| `/community` | Community | anonymous | public | NOT_RUN | frozen vs App.tsx @ bf85281; chore/world-ready-wave-0-inventory; 2026-10-04 |
-| `/login` | Login | anonymous | convex | NOT_RUN | frozen vs App.tsx @ bf85281; chore/world-ready-wave-0-inventory; 2026-10-04 |
-| `/signup` | Signup | anonymous | convex | NOT_RUN | frozen vs App.tsx @ bf85281; chore/world-ready-wave-0-inventory; 2026-10-04 |
-| `/auth/callback` | AuthCallback | anonymous | convex | NOT_RUN | frozen vs App.tsx @ bf85281; chore/world-ready-wave-0-inventory; 2026-10-04 |
-| `/select-role` | SelectRole | authenticated no role | convex | NOT_RUN | frozen vs App.tsx @ bf85281; chore/world-ready-wave-0-inventory; 2026-10-04 |
-| `/subscription/success` | SubscriptionSuccess | subscriber+ | convex | NOT_RUN | frozen vs App.tsx @ bf85281; chore/world-ready-wave-0-inventory; 2026-10-04 |
-| `/subscription/cancel` | SubscriptionCancel | subscriber+ | public | NOT_RUN | frozen vs App.tsx @ bf85281; chore/world-ready-wave-0-inventory; 2026-10-04 |
-| `/go/:linkId` | CreatorLinkRedirect | anonymous | convex | NOT_RUN | frozen vs App.tsx @ bf85281; chore/world-ready-wave-0-inventory; 2026-10-04 |
-| `/c/:username` | CreatorProfileRedirect | anonymous | public | NOT_RUN | frozen vs App.tsx @ bf85281; chore/world-ready-wave-0-inventory; 2026-10-04 |
-| `/:username` | CreatorProfile | anonymous+ | convex | NOT_RUN | frozen vs App.tsx @ bf85281; chore/world-ready-wave-0-inventory; 2026-10-04 |
-| `*` | NotFound | all | public | NOT_RUN | frozen vs App.tsx @ bf85281; chore/world-ready-wave-0-inventory; 2026-10-04 |
+| `/` | Index | anonymous | public | PASS | Wave 2 chromium surface smoke 2026-10-04; inventory pin bf85281 |
+| `/network` | Network | anonymous | public | PASS | Wave 2 chromium surface smoke 2026-10-04; inventory pin bf85281 |
+| `/creators` | Creators | anonymous | public | PASS | Wave 2 chromium surface smoke 2026-10-04; inventory pin bf85281 |
+| `/todays-events` | TodaysEvents | anonymous | mixed | PASS | Wave 2 chromium surface smoke 2026-10-04; inventory pin bf85281 |
+| `/discover` | Discover | anonymous | public | PASS | Wave 2 chromium surface smoke 2026-10-04; inventory pin bf85281 |
+| `/top-creators` | TopCreators | anonymous | public | PASS | Wave 2 chromium surface smoke 2026-10-04; inventory pin bf85281 |
+| `/pricing` | Pricing | anonymous | public | PASS | Wave 2 chromium surface smoke 2026-10-04; inventory pin bf85281 |
+| `/support` | Support | anonymous | public | PASS | Wave 2 chromium surface smoke 2026-10-04; inventory pin bf85281 |
+| `/community` | Community | anonymous | public | PASS | Wave 2 chromium surface smoke 2026-10-04; inventory pin bf85281 |
+| `/login` | Login | anonymous | convex | PASS | Wave 2 chromium surface smoke 2026-10-04; inventory pin bf85281 |
+| `/signup` | Signup | anonymous | convex | PASS | Wave 2 chromium surface smoke 2026-10-04; inventory pin bf85281 |
+| `/auth/callback` | AuthCallback | anonymous | convex | PASS | Wave 2 chromium surface smoke 2026-10-04; inventory pin bf85281 |
+| `/select-role` | SelectRole | authenticated no role | convex | PASS | Wave 2 chromium surface smoke 2026-10-04; inventory pin bf85281 |
+| `/subscription/success` | SubscriptionSuccess | subscriber+ | convex | PASS | Wave 2 chromium surface smoke 2026-10-04; inventory pin bf85281 |
+| `/subscription/cancel` | SubscriptionCancel | subscriber+ | public | PASS | Wave 2 chromium surface smoke 2026-10-04; inventory pin bf85281 |
+| `/go/:linkId` | CreatorLinkRedirect | anonymous | convex | PASS | Wave 2 chromium surface smoke 2026-10-04; inventory pin bf85281 |
+| `/c/:username` | CreatorProfileRedirect | anonymous | public | PASS | Wave 2 chromium surface smoke 2026-10-04; inventory pin bf85281 |
+| `/:username` | CreatorProfile | anonymous+ | convex | PASS | Wave 2 chromium surface smoke 2026-10-04; inventory pin bf85281 |
+| `*` | NotFound | all | public | PASS | Wave 2 chromium surface smoke 2026-10-04; inventory pin bf85281 |
 
 ## B. Member routes
 
+PASS below is **anonymous → `/login`**, not an authenticated subscriber session.
+
 | Route | Page | Roles | Persistence | Result | Evidence |
 |-------|------|-------|-------------|--------|----------|
-| `/dashboard` | Dashboard | subscriber | mixed | NOT_RUN | frozen vs App.tsx @ bf85281; chore/world-ready-wave-0-inventory; 2026-10-04 |
-| `/dashboard/results` | CustomerResults | subscriber | mixed | NOT_RUN | frozen vs App.tsx @ bf85281; chore/world-ready-wave-0-inventory; 2026-10-04 |
-| `/dashboard/subscriptions-billing` | CustomerSubscriptionsBilling | subscriber | convex | NOT_RUN | frozen vs App.tsx @ bf85281; chore/world-ready-wave-0-inventory; 2026-10-04 |
-| `/dashboard/subscriptions-billing/manage/:username` | CustomerManageSubscription | subscriber | convex | NOT_RUN | frozen vs App.tsx @ bf85281; chore/world-ready-wave-0-inventory; 2026-10-04 |
-| `/dashboard/saved` | CustomerSaved | subscriber | mixed | NOT_RUN | frozen vs App.tsx @ bf85281; chore/world-ready-wave-0-inventory; 2026-10-04 |
-| `/dashboard/notifications` | CustomerNotifications | subscriber | mixed | NOT_RUN | frozen vs App.tsx @ bf85281; chore/world-ready-wave-0-inventory; 2026-10-04 |
-| `/dashboard/discover` | CustomerDiscover | subscriber | mixed | NOT_RUN | frozen vs App.tsx @ bf85281; chore/world-ready-wave-0-inventory; 2026-10-04 |
-| `/dashboard/activity` | CustomerActivity | subscriber | mixed | NOT_RUN | frozen vs App.tsx @ bf85281; chore/world-ready-wave-0-inventory; 2026-10-04 |
-| `/dashboard/settings` | CustomerSettings | subscriber | convex | NOT_RUN | frozen vs App.tsx @ bf85281; chore/world-ready-wave-0-inventory; 2026-10-04 |
-| `/dashboard/messages` | CustomerMessages | subscriber | convex | NOT_RUN | frozen vs App.tsx @ bf85281; chore/world-ready-wave-0-inventory; 2026-10-04 |
+| `/dashboard` | Dashboard | subscriber | mixed | PASS | Wave 2 chromium surface smoke 2026-10-04; inventory pin bf85281 |
+| `/dashboard/results` | CustomerResults | subscriber | mixed | PASS | Wave 2 chromium surface smoke 2026-10-04; inventory pin bf85281 |
+| `/dashboard/subscriptions-billing` | CustomerSubscriptionsBilling | subscriber | convex | PASS | Wave 2 chromium surface smoke 2026-10-04; inventory pin bf85281 |
+| `/dashboard/subscriptions-billing/manage/:username` | CustomerManageSubscription | subscriber | convex | PASS | Wave 2 chromium surface smoke 2026-10-04; inventory pin bf85281 |
+| `/dashboard/saved` | CustomerSaved | subscriber | mixed | PASS | Wave 2 chromium surface smoke 2026-10-04; inventory pin bf85281 |
+| `/dashboard/notifications` | CustomerNotifications | subscriber | mixed | PASS | Wave 2 chromium surface smoke 2026-10-04; inventory pin bf85281 |
+| `/dashboard/discover` | CustomerDiscover | subscriber | mixed | PASS | Wave 2 chromium surface smoke 2026-10-04; inventory pin bf85281 |
+| `/dashboard/activity` | CustomerActivity | subscriber | mixed | PASS | Wave 2 chromium surface smoke 2026-10-04; inventory pin bf85281 |
+| `/dashboard/settings` | CustomerSettings | subscriber | convex | PASS | Wave 2 chromium surface smoke 2026-10-04; inventory pin bf85281 |
+| `/dashboard/messages` | CustomerMessages | subscriber | convex | PASS | Wave 2 chromium surface smoke 2026-10-04; inventory pin bf85281 |
 
 ## C. Creator routes
 
+PASS below is **anonymous → `/login`**, not an authenticated creator session.
+
 | Route | Page | Roles | Persistence | Result | Evidence |
 |-------|------|-------|-------------|--------|----------|
-| `/creator` | CreatorDashboard | creator | mixed | NOT_RUN | frozen vs App.tsx @ bf85281; chore/world-ready-wave-0-inventory; 2026-10-04 |
-| `/creator/posts` | CreatorPosts | creator | mixed | NOT_RUN | frozen vs App.tsx @ bf85281; chore/world-ready-wave-0-inventory; 2026-10-04 |
-| `/creator/products` | CreatorProducts | creator | mixed | NOT_RUN | frozen vs App.tsx @ bf85281; chore/world-ready-wave-0-inventory; 2026-10-04 |
-| `/creator/subscribers` | CreatorSubscribers | creator | mixed | NOT_RUN | frozen vs App.tsx @ bf85281; chore/world-ready-wave-0-inventory; 2026-10-04 |
-| `/creator/promo` | CreatorPromo | creator | mixed | NOT_RUN | frozen vs App.tsx @ bf85281; chore/world-ready-wave-0-inventory; 2026-10-04 |
-| `/creator/promo/codes` | CreatorPromoCodes | creator | mixed | NOT_RUN | frozen vs App.tsx @ bf85281; chore/world-ready-wave-0-inventory; 2026-10-04 |
-| `/creator/personal-growth-manager` | CreatorPersonalGrowth | creator | mixed | NOT_RUN | frozen vs App.tsx @ bf85281; chore/world-ready-wave-0-inventory; 2026-10-04 |
-| `/creator/resolution-case` | CreatorResolutionCase | creator | convex | NOT_RUN | frozen vs App.tsx @ bf85281; chore/world-ready-wave-0-inventory; 2026-10-04 |
-| `/creator/smart-pricing` | CreatorSmartPricing | creator | mixed | NOT_RUN | frozen vs App.tsx @ bf85281; chore/world-ready-wave-0-inventory; 2026-10-04 |
-| `/creator/access-control` | CreatorAccessControl | creator | mixed | NOT_RUN | frozen vs App.tsx @ bf85281; chore/world-ready-wave-0-inventory; 2026-10-04 |
-| `/creator/performance-tracker` | CreatorPerformanceTracker | creator | mixed | NOT_RUN | frozen vs App.tsx @ bf85281; chore/world-ready-wave-0-inventory; 2026-10-04 |
-| `/creator/messages` | CreatorMessages | creator | mixed | NOT_RUN | frozen vs App.tsx @ bf85281; chore/world-ready-wave-0-inventory; 2026-10-04 |
-| `/creator/notifications` | CustomerNotifications | creator | mixed | NOT_RUN | frozen vs App.tsx @ bf85281; chore/world-ready-wave-0-inventory; 2026-10-04 |
-| `/creator/links` | CreatorLinks | creator | mixed | NOT_RUN | frozen vs App.tsx @ bf85281; chore/world-ready-wave-0-inventory; 2026-10-04 |
-| `/creator/referrals` | CreatorReferrals | creator | mixed | NOT_RUN | frozen vs App.tsx @ bf85281; chore/world-ready-wave-0-inventory; 2026-10-04 |
-| `/creator/earnings` | CreatorEarnings | creator | mixed | NOT_RUN | frozen vs App.tsx @ bf85281; chore/world-ready-wave-0-inventory; 2026-10-04 |
-| `/creator/payouts` | CreatorPayouts | creator | mixed | NOT_RUN | frozen vs App.tsx @ bf85281; chore/world-ready-wave-0-inventory; 2026-10-04 |
-| `/creator/transactions` | CreatorTransactions | creator | mixed | NOT_RUN | frozen vs App.tsx @ bf85281; chore/world-ready-wave-0-inventory; 2026-10-04 |
-| `/creator/settings` | CreatorSettings | creator | mixed | NOT_RUN | frozen vs App.tsx @ bf85281; chore/world-ready-wave-0-inventory; 2026-10-04 |
-| `/creator/integrations` | CreatorIntegrations | creator | mixed | NOT_RUN | frozen vs App.tsx @ bf85281; chore/world-ready-wave-0-inventory; 2026-10-04 |
-| `/creator/support` | CreatorSupport | creator | mixed | NOT_RUN | frozen vs App.tsx @ bf85281; chore/world-ready-wave-0-inventory; 2026-10-04 |
-| `/creator/onboarding` | CreatorOnboarding | creator | convex | NOT_RUN | frozen vs App.tsx @ bf85281; chore/world-ready-wave-0-inventory; 2026-10-04 |
+| `/creator` | CreatorDashboard | creator | mixed | PASS | Wave 2 chromium surface smoke 2026-10-04; inventory pin bf85281 |
+| `/creator/posts` | CreatorPosts | creator | mixed | PASS | Wave 2 chromium surface smoke 2026-10-04; inventory pin bf85281 |
+| `/creator/products` | CreatorProducts | creator | mixed | PASS | Wave 2 chromium surface smoke 2026-10-04; inventory pin bf85281 |
+| `/creator/subscribers` | CreatorSubscribers | creator | mixed | PASS | Wave 2 chromium surface smoke 2026-10-04; inventory pin bf85281 |
+| `/creator/promo` | CreatorPromo | creator | mixed | PASS | Wave 2 chromium surface smoke 2026-10-04; inventory pin bf85281 |
+| `/creator/promo/codes` | CreatorPromoCodes | creator | mixed | PASS | Wave 2 chromium surface smoke 2026-10-04; inventory pin bf85281 |
+| `/creator/personal-growth-manager` | CreatorPersonalGrowth | creator | mixed | PASS | Wave 2 chromium surface smoke 2026-10-04; inventory pin bf85281 |
+| `/creator/resolution-case` | CreatorResolutionCase | creator | convex | PASS | Wave 2 chromium surface smoke 2026-10-04; inventory pin bf85281 |
+| `/creator/smart-pricing` | CreatorSmartPricing | creator | mixed | PASS | Wave 2 chromium surface smoke 2026-10-04; inventory pin bf85281 |
+| `/creator/access-control` | CreatorAccessControl | creator | mixed | PASS | Wave 2 chromium surface smoke 2026-10-04; inventory pin bf85281 |
+| `/creator/performance-tracker` | CreatorPerformanceTracker | creator | mixed | PASS | Wave 2 chromium surface smoke 2026-10-04; inventory pin bf85281 |
+| `/creator/messages` | CreatorMessages | creator | mixed | PASS | Wave 2 chromium surface smoke 2026-10-04; inventory pin bf85281 |
+| `/creator/notifications` | CustomerNotifications | creator | mixed | PASS | Wave 2 chromium surface smoke 2026-10-04; inventory pin bf85281 |
+| `/creator/links` | CreatorLinks | creator | mixed | PASS | Wave 2 chromium surface smoke 2026-10-04; inventory pin bf85281 |
+| `/creator/referrals` | CreatorReferrals | creator | mixed | PASS | Wave 2 chromium surface smoke 2026-10-04; inventory pin bf85281 |
+| `/creator/earnings` | CreatorEarnings | creator | mixed | PASS | Wave 2 chromium surface smoke 2026-10-04; inventory pin bf85281 |
+| `/creator/payouts` | CreatorPayouts | creator | mixed | PASS | Wave 2 chromium surface smoke 2026-10-04; inventory pin bf85281 |
+| `/creator/transactions` | CreatorTransactions | creator | mixed | PASS | Wave 2 chromium surface smoke 2026-10-04; inventory pin bf85281 |
+| `/creator/settings` | CreatorSettings | creator | mixed | PASS | Wave 2 chromium surface smoke 2026-10-04; inventory pin bf85281 |
+| `/creator/integrations` | CreatorIntegrations | creator | mixed | PASS | Wave 2 chromium surface smoke 2026-10-04; inventory pin bf85281 |
+| `/creator/support` | CreatorSupport | creator | mixed | PASS | Wave 2 chromium surface smoke 2026-10-04; inventory pin bf85281 |
+| `/creator/onboarding` | CreatorOnboarding | creator | convex | PASS | Wave 2 chromium surface smoke 2026-10-04; inventory pin bf85281 |
 
 ## D. Admin routes
 
+PASS below is **anonymous → `/login`**, not an authenticated admin session.
+
 | Route | Page | Roles | Persistence | Result | Evidence |
 |-------|------|-------|-------------|--------|----------|
-| `/admin` | AdminDashboard | admin | convex | NOT_RUN | frozen vs App.tsx @ bf85281; chore/world-ready-wave-0-inventory; 2026-10-04 |
-| `/admin/creators` | AdminCreators | admin | convex | NOT_RUN | frozen vs App.tsx @ bf85281; chore/world-ready-wave-0-inventory; 2026-10-04 |
-| `/admin/users` | AdminUsers | admin | convex | NOT_RUN | frozen vs App.tsx @ bf85281; chore/world-ready-wave-0-inventory; 2026-10-04 |
-| `/admin/customers` | AdminCustomers | admin | convex | NOT_RUN | frozen vs App.tsx @ bf85281; chore/world-ready-wave-0-inventory; 2026-10-04 |
-| `/admin/finance` | AdminFinance | admin | convex | NOT_RUN | frozen vs App.tsx @ bf85281; chore/world-ready-wave-0-inventory; 2026-10-04 |
-| `/admin/transactions` | AdminTransactions | admin | convex | NOT_RUN | frozen vs App.tsx @ bf85281; chore/world-ready-wave-0-inventory; 2026-10-04 |
-| `/admin/fees` | AdminFees | admin | convex | NOT_RUN | frozen vs App.tsx @ bf85281; chore/world-ready-wave-0-inventory; 2026-10-04 |
-| `/admin/creator-messaging` | AdminCreatorMessaging | admin | convex | NOT_RUN | frozen vs App.tsx @ bf85281; chore/world-ready-wave-0-inventory; 2026-10-04 |
-| `/admin/customer-email` | AdminCustomerEmail | admin | convex | NOT_RUN | frozen vs App.tsx @ bf85281; chore/world-ready-wave-0-inventory; 2026-10-04 |
-| `/admin/growth-manager-inbox` | AdminGrowthManagerInbox | admin | convex | NOT_RUN | frozen vs App.tsx @ bf85281; chore/world-ready-wave-0-inventory; 2026-10-04 |
-| `/admin/resolution-cases` | AdminResolutionCases | admin | convex | NOT_RUN | frozen vs App.tsx @ bf85281; chore/world-ready-wave-0-inventory; 2026-10-04 |
-| `/admin/payouts` | AdminPayouts | admin | convex | NOT_RUN | frozen vs App.tsx @ bf85281; chore/world-ready-wave-0-inventory; 2026-10-04 |
-| `/admin/alerts` | AdminAlerts | admin | convex | NOT_RUN | frozen vs App.tsx @ bf85281; chore/world-ready-wave-0-inventory; 2026-10-04 |
-| `/admin/notifications` | CustomerNotifications | admin | mixed | NOT_RUN | frozen vs App.tsx @ bf85281; chore/world-ready-wave-0-inventory; 2026-10-04 |
-| `/admin/reports` | AdminReports | admin | convex | NOT_RUN | frozen vs App.tsx @ bf85281; chore/world-ready-wave-0-inventory; 2026-10-04 |
-| `/admin/settings` | AdminSettings | admin | convex | NOT_RUN | frozen vs App.tsx @ bf85281; chore/world-ready-wave-0-inventory; 2026-10-04 |
+| `/admin` | AdminDashboard | admin | convex | PASS | Wave 2 chromium surface smoke 2026-10-04; inventory pin bf85281 |
+| `/admin/creators` | AdminCreators | admin | convex | PASS | Wave 2 chromium surface smoke 2026-10-04; inventory pin bf85281 |
+| `/admin/users` | AdminUsers | admin | convex | PASS | Wave 2 chromium surface smoke 2026-10-04; inventory pin bf85281 |
+| `/admin/customers` | AdminCustomers | admin | convex | PASS | Wave 2 chromium surface smoke 2026-10-04; inventory pin bf85281 |
+| `/admin/finance` | AdminFinance | admin | convex | PASS | Wave 2 chromium surface smoke 2026-10-04; inventory pin bf85281 |
+| `/admin/transactions` | AdminTransactions | admin | convex | PASS | Wave 2 chromium surface smoke 2026-10-04; inventory pin bf85281 |
+| `/admin/fees` | AdminFees | admin | convex | PASS | Wave 2 chromium surface smoke 2026-10-04; inventory pin bf85281 |
+| `/admin/creator-messaging` | AdminCreatorMessaging | admin | convex | PASS | Wave 2 chromium surface smoke 2026-10-04; inventory pin bf85281 |
+| `/admin/customer-email` | AdminCustomerEmail | admin | convex | PASS | Wave 2 chromium surface smoke 2026-10-04; inventory pin bf85281 |
+| `/admin/growth-manager-inbox` | AdminGrowthManagerInbox | admin | convex | PASS | Wave 2 chromium surface smoke 2026-10-04; inventory pin bf85281 |
+| `/admin/resolution-cases` | AdminResolutionCases | admin | convex | PASS | Wave 2 chromium surface smoke 2026-10-04; inventory pin bf85281 |
+| `/admin/payouts` | AdminPayouts | admin | convex | PASS | Wave 2 chromium surface smoke 2026-10-04; inventory pin bf85281 |
+| `/admin/alerts` | AdminAlerts | admin | convex | PASS | Wave 2 chromium surface smoke 2026-10-04; inventory pin bf85281 |
+| `/admin/notifications` | CustomerNotifications | admin | mixed | PASS | Wave 2 chromium surface smoke 2026-10-04; inventory pin bf85281 |
+| `/admin/reports` | AdminReports | admin | convex | PASS | Wave 2 chromium surface smoke 2026-10-04; inventory pin bf85281 |
+| `/admin/settings` | AdminSettings | admin | convex | PASS | Wave 2 chromium surface smoke 2026-10-04; inventory pin bf85281 |
 
 ## E. Demo routes (must not write Convex money tables)
 
@@ -115,21 +121,21 @@ Nested layouts in `App.tsx`: `/demo/admin` → `DemoAdminLayout`; `/demo/member`
 
 | Route | Page | Roles | Persistence | Result | Evidence |
 |-------|------|-------|-------------|--------|----------|
-| `/demo/creator` | DemoCreatorDashboard | demo | demo | NOT_RUN | frozen vs App.tsx @ bf85281; chore/world-ready-wave-0-inventory; 2026-10-04 |
-| `/demo/admin` | DemoAdminDashboard (nested DemoAdminLayout) | demo | demo | NOT_RUN | frozen vs App.tsx @ bf85281; chore/world-ready-wave-0-inventory; 2026-10-04 |
-| `/demo/admin/creators` | DemoAdminCreators | demo | demo | NOT_RUN | frozen vs App.tsx @ bf85281; chore/world-ready-wave-0-inventory; 2026-10-04 |
-| `/demo/admin/users` | DemoAdminUsers | demo | demo | NOT_RUN | frozen vs App.tsx @ bf85281; chore/world-ready-wave-0-inventory; 2026-10-04 |
-| `/demo/admin/transactions` | DemoAdminTransactions | demo | demo | NOT_RUN | frozen vs App.tsx @ bf85281; chore/world-ready-wave-0-inventory; 2026-10-04 |
-| `/demo/admin/fees` | DemoAdminFees | demo | demo | NOT_RUN | frozen vs App.tsx @ bf85281; chore/world-ready-wave-0-inventory; 2026-10-04 |
-| `/demo/admin/settings` | DemoAdminSettings | demo | demo | NOT_RUN | frozen vs App.tsx @ bf85281; chore/world-ready-wave-0-inventory; 2026-10-04 |
-| `/demo/member` | DemoMemberDashboard (nested DemoMemberLayout) | demo | demo | NOT_RUN | frozen vs App.tsx @ bf85281; chore/world-ready-wave-0-inventory; 2026-10-04 |
-| `/demo/member/results` | DemoMemberResults | demo | demo | NOT_RUN | frozen vs App.tsx @ bf85281; chore/world-ready-wave-0-inventory; 2026-10-04 |
-| `/demo/member/subscriptions-billing` | DemoMemberSubscriptions (imported as DemoMemberSubscriptionsBilling) | demo | demo | NOT_RUN | frozen vs App.tsx @ bf85281; chore/world-ready-wave-0-inventory; 2026-10-04 |
-| `/demo/member/saved` | DemoMemberSaved | demo | demo | NOT_RUN | frozen vs App.tsx @ bf85281; chore/world-ready-wave-0-inventory; 2026-10-04 |
-| `/demo/member/notifications` | DemoMemberNotifications | demo | demo | NOT_RUN | frozen vs App.tsx @ bf85281; chore/world-ready-wave-0-inventory; 2026-10-04 |
-| `/demo/member/discover` | DemoMemberDiscover | demo | demo | NOT_RUN | frozen vs App.tsx @ bf85281; chore/world-ready-wave-0-inventory; 2026-10-04 |
-| `/demo/member/activity` | DemoMemberActivity | demo | demo | NOT_RUN | frozen vs App.tsx @ bf85281; chore/world-ready-wave-0-inventory; 2026-10-04 |
-| `/demo/member/settings` | DemoMemberSettings | demo | demo | NOT_RUN | frozen vs App.tsx @ bf85281; chore/world-ready-wave-0-inventory; 2026-10-04 |
+| `/demo/creator` | DemoCreatorDashboard | demo | demo | PASS | Wave 2 chromium surface smoke 2026-10-04; inventory pin bf85281 |
+| `/demo/admin` | DemoAdminDashboard (nested DemoAdminLayout) | demo | demo | PASS | Wave 2 chromium surface smoke 2026-10-04; inventory pin bf85281 |
+| `/demo/admin/creators` | DemoAdminCreators | demo | demo | PASS | Wave 2 chromium surface smoke 2026-10-04; inventory pin bf85281 |
+| `/demo/admin/users` | DemoAdminUsers | demo | demo | PASS | Wave 2 chromium surface smoke 2026-10-04; inventory pin bf85281 |
+| `/demo/admin/transactions` | DemoAdminTransactions | demo | demo | PASS | Wave 2 chromium surface smoke 2026-10-04; inventory pin bf85281 |
+| `/demo/admin/fees` | DemoAdminFees | demo | demo | PASS | Wave 2 chromium surface smoke 2026-10-04; inventory pin bf85281 |
+| `/demo/admin/settings` | DemoAdminSettings | demo | demo | PASS | Wave 2 chromium surface smoke 2026-10-04; inventory pin bf85281 |
+| `/demo/member` | DemoMemberDashboard (nested DemoMemberLayout) | demo | demo | PASS | Wave 2 chromium surface smoke 2026-10-04; inventory pin bf85281 |
+| `/demo/member/results` | DemoMemberResults | demo | demo | PASS | Wave 2 chromium surface smoke 2026-10-04; inventory pin bf85281 |
+| `/demo/member/subscriptions-billing` | DemoMemberSubscriptions (imported as DemoMemberSubscriptionsBilling) | demo | demo | PASS | Wave 2 chromium surface smoke 2026-10-04; inventory pin bf85281 |
+| `/demo/member/saved` | DemoMemberSaved | demo | demo | PASS | Wave 2 chromium surface smoke 2026-10-04; inventory pin bf85281 |
+| `/demo/member/notifications` | DemoMemberNotifications | demo | demo | PASS | Wave 2 chromium surface smoke 2026-10-04; inventory pin bf85281 |
+| `/demo/member/discover` | DemoMemberDiscover | demo | demo | PASS | Wave 2 chromium surface smoke 2026-10-04; inventory pin bf85281 |
+| `/demo/member/activity` | DemoMemberActivity | demo | demo | PASS | Wave 2 chromium surface smoke 2026-10-04; inventory pin bf85281 |
+| `/demo/member/settings` | DemoMemberSettings | demo | demo | PASS | Wave 2 chromium surface smoke 2026-10-04; inventory pin bf85281 |
 
 ## F. HTTP + cron
 
@@ -152,7 +158,7 @@ Nested layouts in `App.tsx`: `/demo/admin` → `DemoAdminLayout`; `/demo/member`
 | J6 | Promo / tracking links / referrals | NOT_RUN | |
 | J7 | Identity (password, OAuth, roles, email request) | NOT_RUN | |
 | J8 | Migration ETL internal-only | NOT_RUN | |
-| J9 | Public nav + chrome | NOT_RUN | |
+| J9 | Public nav + chrome | PASS | Wave 2: public-nav + browser-matrix on chromium/webkit/firefox; platform-owner bootstrap visible in DEV |
 | J-ADMIN | Admin lists, fees, reports, campaigns | NOT_RUN | |
 | J-DISCORD | Bot install + grants + revoke | NOT_RUN | |
 | J-FILES | Storage ownership `getUrl` | NOT_RUN | |
@@ -166,7 +172,7 @@ Nested layouts in `App.tsx`: `/demo/admin` → `DemoAdminLayout`; `/demo/member`
 | `npm run lint` | PASS | Wave 1: 0 errors, 28 warnings (react-refresh / hooks / generated eslint-disable) |
 | `npm run build` | PASS | Wave 1: `vite build` succeeded (~12s). Chunk size warning only |
 | `npm run env:validate` | PASS | Wave 1: `env:validate PASS (local)`; sandbox false; devAdmin false |
-| `npm run test:e2e` | NOT_RUN | Deferred to Wave 2 after this PR merges |
+| `npm run test:e2e` | PASS | Wave 2: 18 passed, 6 skipped (full surface spec chromium-only). Timeout 120s, 4 workers |
 | `npx tsc -b` (F-015) | FAIL | Wave 1: errors in CreatorPayouts, CreatorProducts, CreatorSettings, CustomerManageSubscription, paymentFeeDetail |
 
 ## I. Residual-risk retest
@@ -419,7 +425,7 @@ Schema `appRole` also allows `moderator` and `user` (not product actors; no rout
 
 ## M. Remaining risk (update every fix PR)
 
-- P2: F-012 residual `.collect()` joins in `admin/paginatedLists.listUsersPage`; F-010 Stripe soak / Connect; Discord grant soak
+- P2: F-012 residual `.collect()` joins; F-010 Stripe soak / Connect; Discord grant soak; J1–J8 authenticated journeys not run
 - P3: `npx tsc -b` FAIL (F-015); eslint warnings; AuthContext DEV `hasRole` leftover
-- Not in this PR: production deploy, live Stripe keys, MFA, Playwright (Wave 2), tsc fix cluster (Wave 3+)
+- Not in this PR: production deploy, live Stripe keys, MFA, tsc/F-012 fix clusters (Wave 3+)
 - Waivers: see section L
