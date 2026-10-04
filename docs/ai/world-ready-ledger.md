@@ -2,7 +2,7 @@
 
 **Authority:** [`docs/ai/prizelet-world-ready-master-prompt.md`](./prizelet-world-ready-master-prompt.md)
 
-**Status:** Wave 19 J-EVENTS 2026-10-05. Today’s slate from `sportEvents` PASS. J-DISCORD still BLOCKED. Connect residual. Product is **not** world-ready.
+**Status:** Wave 20 J-NOTIFICATIONS 2026-10-05. Inbox create/mark-read PASS. J-DISCORD still BLOCKED. Connect residual. Product is **not** world-ready.
 
 Do not claim world-ready until Section 8 gates in the master prompt pass.
 
@@ -16,9 +16,9 @@ Do not claim world-ready until Section 8 gates in the master prompt pass.
 | Evidence | branch, date, one-line actual vs expected |
 | Waiver | owner + reason (required if WAIVED) |
 
-Last updated: 2026-10-05. Last wave: **19** (`test/world-ready-wave-19-j-events`). Source pin: `bf85281` (inventory).
+Last updated: 2026-10-05. Last wave: **20** (`test/world-ready-wave-20-j-notifications`). Source pin: `bf85281` (inventory).
 
-Wave 19: restored `/todays-events` (was redirect-only); empty copy then `seedTodayDev` → Broncos/Celtics/Dodgers cards; `events.test.ts` 2/2.
+Wave 20: `adminInsert` WAVE20_NOTIFY_TITLE → member inbox; `markRead` unread 2→1; Mark all read → 0; pay + message rows present; admin `/admin/notifications` shared page.
 
 ---
 
@@ -164,6 +164,7 @@ Nested layouts in `App.tsx`: `/demo/admin` → `DemoAdminLayout`; `/demo/member`
 | J-FILES | Storage ownership `getUrl` | PASS | Wave 14 2026-10-05: unowned→FORBIDDEN; owner URL OK; foreign j4member→FORBIDDEN; `files.security.test.ts` 4/4 |
 | J-DEMO | Demo writes zero money rows | PASS | Wave 15 2026-10-05: demo Withdraw toast-only; listMine unchanged (2); Demo.ts no money API imports; `demo.security.test.ts` 2/2 |
 | J-EVENTS | Today’s sportEvents slate | PASS | Wave 19 2026-10-05: restored page; empty “No events published for today yet”; seed → 3 cards (NFL/NBA/MLB); bounds unit 2/2 |
+| J-NOTIFICATIONS | Inbox create + mark read | PASS | Wave 20 2026-10-05: adminInsert + member markRead/markAllRead; pay/message rows; admin shared page |
 
 ## H. Tooling gates
 
@@ -294,12 +295,12 @@ App public functions (`Auth` = TBD until Wave 1):
 | `messaging.mutations.setMessagingEnabled` | TBD | yes | NOT_RUN | frozen vs convex/*.ts @ bf85281 |
 | `messaging.mutations.unreadCountCreator` | TBD | yes | NOT_RUN | frozen vs convex/*.ts @ bf85281 |
 | `messaging.mutations.unreadCountSubscriber` | TBD | yes | NOT_RUN | frozen vs convex/*.ts @ bf85281 |
-| `notifications.mutations.adminInsert` | TBD | yes | NOT_RUN | frozen vs convex/*.ts @ bf85281 |
-| `notifications.mutations.listMine` | TBD | yes | NOT_RUN | frozen vs convex/*.ts @ bf85281 |
-| `notifications.mutations.listMinePage` | TBD | yes | NOT_RUN | frozen vs convex/*.ts @ bf85281 |
-| `notifications.mutations.markAllRead` | TBD | yes | NOT_RUN | frozen vs convex/*.ts @ bf85281 |
-| `notifications.mutations.markRead` | TBD | yes | NOT_RUN | frozen vs convex/*.ts @ bf85281 |
-| `notifications.mutations.unreadCount` | TBD | yes | NOT_RUN | frozen vs convex/*.ts @ bf85281 |
+| `notifications.mutations.adminInsert` | admin | yes | PASS | Wave 20: WAVE20_NOTIFY_TITLE → j4member |
+| `notifications.mutations.listMine` | auth | yes | PASS | Wave 20: member list includes WAVE20 + pay/message |
+| `notifications.mutations.listMinePage` | auth | yes | PASS | Wave 20: `/dashboard/notifications` UI |
+| `notifications.mutations.markAllRead` | auth | yes | PASS | Wave 20: unread → 0 |
+| `notifications.mutations.markRead` | auth | yes | PASS | Wave 20: unread 2→1 |
+| `notifications.mutations.unreadCount` | auth | yes | PASS | Wave 20: before/after mark |
 | `payments.sandbox.sandboxCancel` | TBD | yes | NOT_RUN | frozen vs convex/*.ts @ bf85281 |
 | `payments.sandbox.sandboxSubscribe` | TBD | yes | NOT_RUN | frozen vs convex/*.ts @ bf85281 |
 | `payments.stripeNode.cancelCreatorSubscription` | auth | yes | PASS | Wave 5: cancelled sub `mn7bg36…` / Stripe `sub_1UMxh9…`; billingStatus canceled |
@@ -402,7 +403,7 @@ Confirm each table still exists; note writers. Result `NOT_RUN` = existence free
 | paymentEvents | payments/* | PASS | Wave 5: subscription_charge $10000 test + subscription_cancel for cs_test_a171… |
 | webhookReceipts | stripeNode.fulfillWebhook | PARTIAL | Wave 6: HTTP reject + helper tests. No new signed receipt this wave |
 | sportEvents | events / platform | PASS | Wave 19: published today slate via seedTodayDev + public list |
-| notifications | notifications / notify | NOT_RUN | present in convex/schema.ts @ bf85281; existence freeze only |
+| notifications | notifications / notify | PASS | Wave 20: adminInsert + markRead/markAllRead on j4member |
 | savedPosts / creatorBookmarks | bookmarks.mutations | NOT_RUN | present in convex/schema.ts @ bf85281; existence freeze only |
 | payouts / creatorPayoutSettings | payouts.mutations | NOT_RUN | present in convex/schema.ts @ bf85281; existence freeze only |
 | creatorLinks / promoCodes / referrals | creators.growth | NOT_RUN | present in convex/schema.ts @ bf85281; existence freeze only |

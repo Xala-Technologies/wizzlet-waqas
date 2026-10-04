@@ -1,3 +1,19 @@
+# Findings — Wave 20 J-NOTIFICATIONS 2026-10-05
+
+Branch `test/world-ready-wave-20-j-notifications`. Fixtures platform owner + `j4member` on `combative-mongoose-559`.
+
+| Step | Result | Evidence |
+|------|--------|----------|
+| Admin insert | PASS | `adminInsert` → `k97f919…` title **WAVE20_NOTIFY_TITLE** |
+| Member inbox | PASS | `/dashboard/notifications` shows WAVE20 + message + “Payment of $29.99” |
+| markRead | PASS | unreadCount **2 → 1** |
+| Mark all read | PASS | unreadCount **0**; button disabled |
+| Admin shared page | PASS | `/admin/notifications` Mark all read + payout alerts |
+
+**J-NOTIFICATIONS:** PASS. Next: settings/smart-pricing honesty or Connect residual; J-DISCORD still needs human Discord OAuth.
+
+---
+
 # Findings — Wave 19 J-EVENTS today’s slate 2026-10-05
 
 Branch `test/world-ready-wave-19-j-events`. Deployment `combative-mongoose-559`.
