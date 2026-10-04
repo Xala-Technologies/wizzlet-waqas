@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Navigate, useNavigate, useSearchParams } from 'react-router-dom';
+import { Link, Navigate, useNavigate, useSearchParams } from 'react-router-dom';
 import { useMutation } from 'convex/react';
 import { useAuth } from '@/contexts/AuthContext';
 import { AuthShell } from '@/components/auth/AuthShell';
@@ -12,7 +12,7 @@ import {
   readStoredReturnTo,
   sanitizeReturnPath,
 } from '@/lib/safeReturnPath';
-import { Crown, Users, Loader2 } from 'lucide-react';
+import { User, Users, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 
 const SelectRole = () => {
@@ -102,27 +102,28 @@ const SelectRole = () => {
   const roleOptions = [
     {
       id: 'creator' as const,
-      icon: Crown,
-      title: 'Become a Creator',
-      description: 'Publish premium content, build an audience, and earn from subscriptions.',
+      icon: User,
+      title: "I'm a Creator",
+      description: 'Create your page, share content and earn from your audience.',
     },
     {
       id: 'subscriber' as const,
       icon: Users,
-      title: 'Continue as Subscriber',
-      description: 'Follow top creators and access their premium content.',
+      title: "I'm a Subscriber",
+      description: 'Discover creators and get access to exclusive content.',
     },
   ];
 
   return (
     <AuthShell
-      title="How do you want to use Prizelet?"
-      subtitle="You can always add another role later from your account"
-      seoTitle="Choose your role — Prizelet"
-      seoDescription="Choose whether to join Prizelet as a creator or subscriber."
+      title="How do you want to use Sweeph?"
+      subtitle="Choose the option that fits you best. You can always change this later."
+      seoTitle="Choose your role — Sweeph"
+      seoDescription="Choose whether to join Sweeph as a creator or subscriber."
       width="lg"
       logoSize="lg"
       logoLinkTo=""
+      progressStep={2}
     >
       <div className="grid gap-3" role="radiogroup" aria-label="Account role">
         {roleOptions.map((option) => {
@@ -167,6 +168,11 @@ const SelectRole = () => {
         {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
         Continue
       </Button>
+      <p className="mt-4 text-center">
+        <Link to="/" className="text-support font-medium text-muted-foreground hover:text-foreground">
+          Go Back
+        </Link>
+      </p>
     </AuthShell>
   );
 };
