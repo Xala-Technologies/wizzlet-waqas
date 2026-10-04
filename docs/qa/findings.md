@@ -1,3 +1,19 @@
+# Findings — Wave 15 J-DEMO zero money writes 2026-10-05
+
+Branch `test/world-ready-wave-15-j-demo`. Fixture `j4creator` on `combative-mongoose-559`.
+
+| Step | Result | Evidence |
+|------|--------|----------|
+| Demo banner | PASS | `/creator/payouts?demo=1` amber sample-preview copy |
+| Demo Withdraw | PASS | Toast “Sample preview — payout not requested” |
+| No money write | PASS | `payouts.listMine` count **2** before and after click |
+| Demo modules | PASS | 23 `*Demo.ts` — no Convex money imports |
+| Unit | PASS | `demo.security.test.ts` 2/2 |
+
+**J-DEMO:** PASS. Next: J-ADMIN / J-DISCORD / F-010.
+
+---
+
 # Findings — Wave 14 J-FILES storage ACL 2026-10-05
 
 Branch `test/world-ready-wave-14-j-files`. Fixtures `j4creator` / `j4member` on `combative-mongoose-559`.

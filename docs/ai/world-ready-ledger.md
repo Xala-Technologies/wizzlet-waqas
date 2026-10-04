@@ -2,7 +2,7 @@
 
 **Authority:** [`docs/ai/prizelet-world-ready-master-prompt.md`](./prizelet-world-ready-master-prompt.md)
 
-**Status:** Wave 14 J-FILES storage ACL 2026-10-05. J1–J8 + J-FILES PASS. F-010 still PARTIAL. Product is **not** world-ready.
+**Status:** Wave 15 J-DEMO 2026-10-05. J1–J8 + J-FILES + J-DEMO PASS. F-010 still PARTIAL. Product is **not** world-ready.
 
 Do not claim world-ready until Section 8 gates in the master prompt pass.
 
@@ -16,9 +16,9 @@ Do not claim world-ready until Section 8 gates in the master prompt pass.
 | Evidence | branch, date, one-line actual vs expected |
 | Waiver | owner + reason (required if WAIVED) |
 
-Last updated: 2026-10-05. Last wave: **14** (`test/world-ready-wave-14-j-files`). Source pin: `bf85281` (inventory).
+Last updated: 2026-10-05. Last wave: **15** (`test/world-ready-wave-15-j-demo`). Source pin: `bf85281` (inventory).
 
-Wave 14: upload `kg2bkv…` without `fileAssets` → `FORBIDDEN`; after `registerOwnedFile` owner URL succeeds; `j4member` foreign getUrl → `FORBIDDEN` (storage.ts:59). Unit `files.security.test.ts` 4/4.
+Wave 15: `?demo=1` payouts amber banner; Withdraw → toast “Sample preview — payout not requested”; `listMine` still **2** rows (no new payout). `*Demo.ts` have no Convex money imports; money pages gate on `useDemo`. Unit `demo.security.test.ts` 2/2.
 
 ---
 
@@ -162,7 +162,7 @@ Nested layouts in `App.tsx`: `/demo/admin` → `DemoAdminLayout`; `/demo/member`
 | J-ADMIN | Admin lists, fees, reports, campaigns | NOT_RUN | |
 | J-DISCORD | Bot install + grants + revoke | NOT_RUN | |
 | J-FILES | Storage ownership `getUrl` | PASS | Wave 14 2026-10-05: unowned→FORBIDDEN; owner URL OK; foreign j4member→FORBIDDEN; `files.security.test.ts` 4/4 |
-| J-DEMO | Demo writes zero money rows | NOT_RUN | |
+| J-DEMO | Demo writes zero money rows | PASS | Wave 15 2026-10-05: demo Withdraw toast-only; listMine unchanged (2); Demo.ts no money API imports; `demo.security.test.ts` 2/2 |
 
 ## H. Tooling gates
 
