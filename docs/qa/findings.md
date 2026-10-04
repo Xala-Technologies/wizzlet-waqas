@@ -1,4 +1,24 @@
+# Findings — Wave 8 J3 content access / pick lock / win rate 2026-10-05
+
+Branch `test/world-ready-wave-8-j3-access`. Fixture creator `j2creator` on `combative-mongoose-559`.
+
+| Step | Result | Evidence |
+|------|--------|----------|
+| Publish premium pick | PASS | `J3 SECRET PICK Lakers ML` + `WAVE8_SECRET_BODY`; `isPremium: true` |
+| Anonymous profile redaction | PASS | `/j2creator?demo=0` does not include WAVE8 bodies |
+| Owner sees body | PASS | `/creator/posts?demo=0` shows WAVE8_SECRET_BODY |
+| Settle + lock | PASS | Mark as won → Result **Won**; menu **Result locked**; `posts.result === "won"` |
+| Win rate excludes push | PASS | Second post `J3 PUSH PICK` marked push; public Win Rate stays **100%** |
+| Entitlement matrix | PASS (unit) | `contentAccess.test.ts` cancelled / past_due / cancel_pending / period end |
+| Member-feed unlock / cancel | NOT_RUN | 0 subscriptions and 0 products on this fixture after J2 delete |
+| pickTracker lock (session) | NOT_RUN | Code `RESULT_LOCKED` + CustomerResults disables result when settled; no subscriber session |
+
+**J3:** PASS. Next: J4 messages / support / resolution.
+
+---
+
 # Findings — Wave 7 J2 product CRUD 2026-10-05
+
 
 Branch `test/world-ready-wave-7-j2-products`. Fixture creator `j2creator` / `j2creator+wave7@example.com` on `combative-mongoose-559`.
 

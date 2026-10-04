@@ -4,12 +4,12 @@ import { v } from "convex/values";
 import { getAuthUserId } from "@convex-dev/auth/server";
 import {
   getCreatorForUser,
-  hasActiveSubscription,
   requireAppUser,
   requireCreatorOwner,
   logMutation,
 } from "../lib/auth";
 import { canViewPostContent, redactPostContent } from "../lib/entitlements";
+import { subscriptionGrantsContentAccess } from "../lib/contentAccess";
 import { normalizePickResult, isSettledPickResult } from "../lib/results";
 import type { Id } from "../_generated/dataModel";
 import {
@@ -91,7 +91,10 @@ export const memberFeed = query({
       .query("subscriptions")
       .withIndex("by_userId", (q) => q.eq("userId", user._id))
       .collect();
-    const activeCreatorIds = subs.filter((s) => s.status === "active").map((s) => s.creatorId);
+    const nowMs = Date.now();
+    const activeCreatorIds = subs
+      .filter((s) => subscriptionGrantsContentAccess(s, nowMs))
+      .map((s) => s.creatorId);
     const out: Array<{
       _id: Id<"posts">;
       title: string;
@@ -171,12 +174,26 @@ export const upsert = mutation({
     if (args.postId) {
       const existing = await ctx.db.get(args.postId);
       if (!existing || existing.creatorId !== args.creatorId) throw new Error("NOT_FOUND");
+      const existingResult = existing.result;
+      const settled = isSettledPickResult(existingResult);
+      if (
+        settled &&
+        result !== undefined &&
+        existingResult !== undefined &&
+        result !== normalizePickResult(existingResult)
+      ) {
+        throw new Error("RESULT_LOCKED");
+      }
       await ctx.db.patch(args.postId, {
         title: args.title,
         content: args.content,
         isPremium: args.isPremium,
         visibleProductIds,
-        result,
+        result: settled && existingResult !== undefined
+          ? normalizePickResult(existingResult)
+          : result !== undefined
+            ? result
+            : existingResult,
         trackingMode: args.trackingMode,
         updatedAt: now,
       });
@@ -253,10 +270,7 @@ export const listSavedDetailed = query({
       if (!post) continue;
       const creator = await ctx.db.get(post.creatorId);
       if (!creator) continue;
-      const allowed =
-        !post.isPremium ||
-        creator.userId === user._id ||
-        (await hasActiveSubscription(ctx, user._id, creator._id));
+      const allowed = await canViewPostContent(ctx, post, user._id);
       out.push({
         savedId: s._id,
         savedAt: s.createdAt,
@@ -298,10 +312,7 @@ export const listSavedDetailedPage = query({
       if (!post) continue;
       const creator = await ctx.db.get(post.creatorId);
       if (!creator) continue;
-      const allowed =
-        !post.isPremium ||
-        creator.userId === user._id ||
-        (await hasActiveSubscription(ctx, user._id, creator._id));
+      const allowed = await canViewPostContent(ctx, post, user._id);
       page.push({
         savedId: s._id,
         savedAt: s.createdAt,

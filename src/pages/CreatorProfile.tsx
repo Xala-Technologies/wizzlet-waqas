@@ -25,6 +25,7 @@ import {
 import { format } from 'date-fns';
 import { toast } from 'sonner';
 import { subscriptionGrantsContentAccess } from '../../convex/lib/contentAccess';
+import { computeWinRate } from '../../convex/lib/results';
 import {
   CREATOR_PUBLIC_PROFILE_DEMO,
   isCreatorProfileDemoProductId,
@@ -145,9 +146,8 @@ const CreatorProfile = () => {
   );
 
   const liveStats = useMemo(() => {
+    const winRate = computeWinRate(livePosts.map((p) => p.result)).winRatePct;
     const settled = livePosts.filter((p) => p.result && p.result !== 'pending');
-    const wins = settled.filter((p) => p.result === 'won').length;
-    const winRate = settled.length > 0 ? Math.round((wins / settled.length) * 100) : 0;
     let totalUnits = 0;
     let unitsWon = 0;
     livePosts.forEach((p) => {
