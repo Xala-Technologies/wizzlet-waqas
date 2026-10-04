@@ -116,8 +116,8 @@ const SelectRole = () => {
 
   return (
     <AuthShell
-      title="How do you want to use Sweeph?"
-      subtitle="Choose the option that fits you best. You can always change this later."
+      title="How will you use Sweeph?"
+      subtitle="You can switch later. This only sets up the right home screen."
       seoTitle="Choose your role — Sweeph"
       seoDescription="Choose whether to join Sweeph as a creator or subscriber."
       width="lg"

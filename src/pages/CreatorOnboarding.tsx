@@ -8,6 +8,7 @@ import { useConvex, useMutation, useQuery } from 'convex/react';
 import { api } from '../../convex/_generated/api';
 import { useAuth } from '@/contexts/AuthContext';
 import { AuthShell } from '@/components/auth/AuthShell';
+import { authInputClass, authTextareaClass } from '@/components/auth/authFieldClass';
 import { clampOnboardingStep, ONBOARDING_STEPS, shouldPublishOnSave } from '@/lib/onboardingStep';
 import { uploadToConvexStorage } from '@/lib/upload';
 import { Loader2, Camera, Check } from 'lucide-react';
@@ -232,7 +233,7 @@ const CreatorOnboarding = () => {
               placeholder="SharkPicks"
               value={displayName}
               onChange={(e) => setDisplayName(e.target.value.slice(0, 50))}
-              className="h-12 bg-background pr-11 text-ui"
+              className={`${authInputClass} pr-11`}
               maxLength={50}
             />
             {nameOk ? (
@@ -284,7 +285,7 @@ const CreatorOnboarding = () => {
             placeholder="Only the Sharpest Picks"
             value={bio}
             onChange={(e) => setBio(e.target.value.slice(0, BIO_MAX))}
-            className="min-h-[140px] resize-none bg-background text-ui"
+            className={authTextareaClass}
             maxLength={BIO_MAX}
           />
           <p className="text-right text-caption text-muted-foreground">

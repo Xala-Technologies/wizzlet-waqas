@@ -1,7 +1,7 @@
 import { useId } from 'react';
 import { cn } from '@/lib/utils';
 
-type SweephRibbonVariant = 'home' | 'discover';
+type SweephRibbonVariant = 'home' | 'discover' | 'auth';
 
 type SweephRibbonBackgroundProps = {
   variant?: SweephRibbonVariant;
@@ -17,6 +17,7 @@ export function SweephRibbonBackground({
   className,
 }: SweephRibbonBackgroundProps) {
   const discover = variant === 'discover';
+  const auth = variant === 'auth';
   const uid = useId().replace(/:/g, '');
 
   return (
@@ -25,9 +26,22 @@ export function SweephRibbonBackground({
       aria-hidden
     >
       {/* Base plane */}
-      <div className="absolute inset-0 bg-background" />
+      <div
+        className={cn(
+          'absolute inset-0',
+          auth ? 'bg-[#CDE9FA] dark:bg-background' : 'bg-background',
+        )}
+      />
 
-      {/* Dark-mode ambient glow (no pastel wash) */}
+      {auth ? (
+        <div
+          className="absolute inset-0 dark:hidden"
+          style={{
+            background:
+              'linear-gradient(180deg, #D4EEFF 0%, #B5E1FF 40%, #9ED6FF 70%, #B5E1FF 100%)',
+          }}
+        />
+      ) : null}
       <div
         className="absolute inset-0 hidden dark:block bg-[radial-gradient(ellipse_at_75%_20%,rgba(101,184,247,0.18),transparent_55%),radial-gradient(ellipse_at_90%_70%,rgba(98,226,236,0.08),transparent_50%)]"
       />
@@ -36,12 +50,16 @@ export function SweephRibbonBackground({
       <svg
         className={cn(
           'absolute h-full w-[140%] max-w-none dark:hidden',
-          discover ? '-right-[10%] top-[-20%] opacity-90' : '-right-[8%] top-[-18%] opacity-95',
+          auth
+            ? '-right-[6%] top-0 h-full opacity-100'
+            : discover
+              ? '-right-[10%] top-[-20%] opacity-90'
+              : '-right-[8%] top-[-18%] opacity-95',
         )}
         viewBox="0 0 1200 700"
         fill="none"
         xmlns="http://www.w3.org/2000/svg"
-        preserveAspectRatio="xMaxYMid slice"
+        preserveAspectRatio={auth ? 'none' : 'xMaxYMid slice'}
       >
         <defs>
           <linearGradient id={`ribbonA-${uid}`} x1="200" y1="100" x2="1100" y2="600" gradientUnits="userSpaceOnUse">
@@ -101,12 +119,16 @@ export function SweephRibbonBackground({
       <svg
         className={cn(
           'absolute hidden h-full w-[140%] max-w-none dark:block',
-          discover ? '-right-[10%] top-[-20%] opacity-70' : '-right-[8%] top-[-18%] opacity-75',
+          auth
+            ? '-right-[6%] top-0 h-full opacity-80'
+            : discover
+              ? '-right-[10%] top-[-20%] opacity-70'
+              : '-right-[8%] top-[-18%] opacity-75',
         )}
         viewBox="0 0 1200 700"
         fill="none"
         xmlns="http://www.w3.org/2000/svg"
-        preserveAspectRatio="xMaxYMid slice"
+        preserveAspectRatio={auth ? 'none' : 'xMaxYMid slice'}
       >
         <defs>
           <linearGradient id={`ribbonDA-${uid}`} x1="200" y1="100" x2="1100" y2="600" gradientUnits="userSpaceOnUse">
@@ -145,17 +167,23 @@ export function SweephRibbonBackground({
         />
       </svg>
 
-      {/* Keep left readable for copy */}
-      <div
-        className={cn(
-          'absolute inset-y-0 left-0 bg-gradient-to-r from-background via-background/90 to-transparent',
-          discover ? 'w-[42%] sm:w-[38%]' : 'w-[48%] sm:w-[44%]',
-        )}
-      />
+      {/* Keep left readable for copy — skip the white wash on full-height auth */}
+      {auth ? null : (
+        <div
+          className={cn(
+            'absolute inset-y-0 left-0 bg-gradient-to-r from-background via-background/90 to-transparent',
+            discover ? 'w-[42%] sm:w-[38%]' : 'w-[48%] sm:w-[44%]',
+          )}
+        />
+      )}
 
-      {/* Soft fade into the page below */}
-      <div className="absolute inset-x-0 bottom-0 h-[58%] bg-gradient-to-b from-transparent via-background/70 to-background" />
-      <div className="absolute inset-x-0 bottom-0 h-[28%] bg-gradient-to-b from-transparent to-background" />
+      {/* Soft fade into the page below — skip on full-height auth panels */}
+      {auth ? null : (
+        <>
+          <div className="absolute inset-x-0 bottom-0 h-[58%] bg-gradient-to-b from-transparent via-background/70 to-background" />
+          <div className="absolute inset-x-0 bottom-0 h-[28%] bg-gradient-to-b from-transparent to-background" />
+        </>
+      )}
     </div>
   );
 }
