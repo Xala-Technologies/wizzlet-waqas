@@ -2,7 +2,7 @@
 
 **Authority:** [`docs/ai/prizelet-world-ready-master-prompt.md`](./prizelet-world-ready-master-prompt.md)
 
-**Status:** Wave 15 J-DEMO 2026-10-05. J1–J8 + J-FILES + J-DEMO PASS. F-010 still PARTIAL. Product is **not** world-ready.
+**Status:** Wave 16 J-ADMIN 2026-10-05. Core journeys + J-FILES/J-DEMO/J-ADMIN PASS. F-010 still PARTIAL; J-DISCORD NOT_RUN. Product is **not** world-ready.
 
 Do not claim world-ready until Section 8 gates in the master prompt pass.
 
@@ -16,9 +16,9 @@ Do not claim world-ready until Section 8 gates in the master prompt pass.
 | Evidence | branch, date, one-line actual vs expected |
 | Waiver | owner + reason (required if WAIVED) |
 
-Last updated: 2026-10-05. Last wave: **15** (`test/world-ready-wave-15-j-demo`). Source pin: `bf85281` (inventory).
+Last updated: 2026-10-05. Last wave: **16** (`test/world-ready-wave-16-j-admin`). Source pin: `bf85281` (inventory).
 
-Wave 15: `?demo=1` payouts amber banner; Withdraw → toast “Sample preview — payout not requested”; `listMine` still **2** rows (no new payout). `*Demo.ts` have no Convex money imports; money pages gate on `useDemo`. Unit `demo.security.test.ts` 2/2.
+Wave 16: platform owner admin — Users **22 loaded**; Creators **9 loaded**; Fees live ($9.99 volume / intro 5%); Reports CSV `creators_2026-10-04.csv` 1KB; Announcements honest “Email outbox is not enabled yet”; Alerts critical/warning counts.
 
 ---
 
@@ -159,7 +159,7 @@ Nested layouts in `App.tsx`: `/demo/admin` → `DemoAdminLayout`; `/demo/member`
 | J7 | Identity (password, OAuth, roles, email request) | PASS | Wave 12 2026-10-05: password login; evil `returnTo` blocked → `/dashboard`; logout → `/` no select-role; email request open (email unchanged); roles unit + `switchRole` held-only. Residual: OAuth callback + multi-role switcher UI not browser-soaked |
 | J8 | Migration ETL internal-only | PASS | Wave 13 2026-10-05: all migration exports `internalMutation`; client has zero import refs; `MIGRATION_SECRET` unset on combative-mongoose-559; `migrations.security.test.ts` 3/3. Residual: historical data parity not claimed |
 | J9 | Public nav + chrome | PASS | Wave 2: public-nav + browser-matrix on chromium/webkit/firefox; platform-owner bootstrap visible in DEV |
-| J-ADMIN | Admin lists, fees, reports, campaigns | NOT_RUN | |
+| J-ADMIN | Admin lists, fees, reports, campaigns | PASS | Wave 16 2026-10-05: users/creators paginated; fees analytics; CSV export; campaigns in-app-only honesty; alerts strip |
 | J-DISCORD | Bot install + grants + revoke | NOT_RUN | |
 | J-FILES | Storage ownership `getUrl` | PASS | Wave 14 2026-10-05: unowned→FORBIDDEN; owner URL OK; foreign j4member→FORBIDDEN; `files.security.test.ts` 4/4 |
 | J-DEMO | Demo writes zero money rows | PASS | Wave 15 2026-10-05: demo Withdraw toast-only; listMine unchanged (2); Demo.ts no money API imports; `demo.security.test.ts` 2/2 |
@@ -213,16 +213,16 @@ App public functions (`Auth` = TBD until Wave 1):
 | `accountRequests.listOpenAdmin` | TBD | yes | NOT_RUN | frozen vs convex/*.ts @ bf85281 |
 | `accountRequests.requestAccountDeletion` | TBD | yes | NOT_RUN | frozen vs convex/*.ts @ bf85281 |
 | `accountRequests.requestEmailChange` | auth | yes | PASS | Wave 12: request `j4member+wave12@example.com`; sign-in email unchanged |
-| `admin.exportReports.exportReportBundle` | TBD | yes | NOT_RUN | frozen vs convex/*.ts @ bf85281 |
+| `admin.exportReports.exportReportBundle` | admin | yes | PASS | Wave 16: creators CSV `creators_2026-10-04.csv` |
 | `admin.paginatedLists.listCampaignsPage` | TBD | yes | NOT_RUN | frozen vs convex/*.ts @ bf85281 |
 | `admin.paginatedLists.listCasesPage` | TBD | yes | NOT_RUN | frozen vs convex/*.ts @ bf85281 |
-| `admin.paginatedLists.listCreatorsPage` | TBD | yes | NOT_RUN | frozen vs convex/*.ts @ bf85281 |
+| `admin.paginatedLists.listCreatorsPage` | admin | yes | PASS | Wave 16: Creators **9 loaded** |
 | `admin.paginatedLists.listCustomersPage` | TBD | yes | NOT_RUN | frozen vs convex/*.ts @ bf85281 |
 | `admin.paginatedLists.listPayoutsPage` | TBD | yes | NOT_RUN | frozen vs convex/*.ts @ bf85281 |
 | `admin.paginatedLists.listSubscriptionsPage` | TBD | yes | NOT_RUN | frozen vs convex/*.ts @ bf85281 |
 | `admin.paginatedLists.listSupportMessagesPage` | TBD | yes | NOT_RUN | frozen vs convex/*.ts @ bf85281 |
 | `admin.paginatedLists.listTransactionsPage` | TBD | yes | NOT_RUN | frozen vs convex/*.ts @ bf85281 |
-| `admin.paginatedLists.listUsersPage` | TBD | yes | NOT_RUN | frozen vs convex/*.ts @ bf85281 |
+| `admin.paginatedLists.listUsersPage` | admin | yes | PASS | Wave 16: All Accounts **22 loaded** |
 | `admin.queries.createEmailCampaign` | TBD | yes | NOT_RUN | frozen vs convex/*.ts @ bf85281 |
 | `admin.queries.dashboardStats` | TBD | yes | NOT_RUN | frozen vs convex/*.ts @ bf85281 |
 | `admin.queries.listCampaigns` | TBD | yes | NOT_RUN | frozen vs convex/*.ts @ bf85281 |
@@ -407,9 +407,9 @@ Confirm each table still exists; note writers. Result `NOT_RUN` = existence free
 | creatorLinks / promoCodes / referrals | creators.growth | NOT_RUN | present in convex/schema.ts @ bf85281; existence freeze only |
 | resolutionCases / resolutionCaseMessages | resolution.mutations | NOT_RUN | present in convex/schema.ts @ bf85281; existence freeze only |
 | supportMessages / memberSupportMessages | support.mutations | NOT_RUN | present in convex/schema.ts @ bf85281; existence freeze only |
-| platformSettings | platform.mutations | NOT_RUN | present in convex/schema.ts @ bf85281; existence freeze only |
+| platformSettings | platform.mutations | PASS | Wave 16: Platform Fees shows intro/standard rates from settings |
 | directMessages | messaging.mutations | NOT_RUN | present in convex/schema.ts @ bf85281; existence freeze only |
-| emailCampaigns | admin | NOT_RUN | present in convex/schema.ts @ bf85281; existence freeze only |
+| emailCampaigns | admin | PASS | Wave 16: Announcements UI honest — in-app only, email outbox not enabled |
 | fileAssets | files/storage | PASS | Wave 14: registerOwnedFile + owner getUrl; foreign denied |
 | migrationCheckpoints / mutationLog | migrations/* internal | NOT_RUN | present in convex/schema.ts @ bf85281; existence freeze only |
 | accountRequests | accountRequests | PASS | Wave 12: email_change open for j4member; sign-in email not mutated in-app |

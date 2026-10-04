@@ -1,3 +1,21 @@
+# Findings — Wave 16 J-ADMIN ops 2026-10-05
+
+Branch `test/world-ready-wave-16-j-admin`. Platform owner `admin@prizelet.dev` on `combative-mongoose-559`.
+
+| Step | Result | Evidence |
+|------|--------|----------|
+| Overview | PASS | Executive dashboard — live Convex aggregates |
+| Users list | PASS | `/admin/users` **22 loaded**; j4member / j4creator rows |
+| Creators list | PASS | `/admin/creators` **9 loaded**; Top/Growing/At Risk strips |
+| Platform fees | PASS | Volume $9.99; intro 5% / standard 10% breakdown |
+| Reports export | PASS | Creators CSV → `creators_2026-10-04.csv` 1 KB in Recent Exports |
+| Announcements | PASS | Copy: “Email outbox is not enabled yet”; in-app delivery |
+| Alerts | PASS | Critical 1 / Warning 6; open cases + unread creator msgs |
+
+**J-ADMIN:** PASS. Next: J-DISCORD / F-010.
+
+---
+
 # Findings — Wave 15 J-DEMO zero money writes 2026-10-05
 
 Branch `test/world-ready-wave-15-j-demo`. Fixture `j4creator` on `combative-mongoose-559`.
