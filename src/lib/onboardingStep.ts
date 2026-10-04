@@ -1,5 +1,5 @@
-/** Wizard steps (same-context panels, not route tabs). */
-export const ONBOARDING_STEPS = ['Profile', 'Images', 'Product'] as const;
+/** Wizard steps after role pick: name → photo → bio. */
+export const ONBOARDING_STEPS = ['Name', 'Photo', 'Bio'] as const;
 
 /** Clamp persisted wizard step into a valid index for resume. */
 export function clampOnboardingStep(step: unknown, stepCount: number): number {
