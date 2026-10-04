@@ -2,7 +2,7 @@
 
 **Authority:** [`docs/ai/prizelet-world-ready-master-prompt.md`](./prizelet-world-ready-master-prompt.md)
 
-**Status:** Wave 25 admin Lifetime from paymentEvents 2026-10-05. Cancelled-sub earnings now count in `/admin/payouts` Lifetime. J-DISCORD still BLOCKED. Product is **not** world-ready.
+**Status:** Wave 26 J2 featured exclusivity UI 2026-10-05. Featured list-price toggle + sibling clear PASS. J-DISCORD still BLOCKED. Product is **not** world-ready.
 
 Do not claim world-ready until Section 8 gates in the master prompt pass.
 
@@ -16,9 +16,9 @@ Do not claim world-ready until Section 8 gates in the master prompt pass.
 | Evidence | branch, date, one-line actual vs expected |
 | Waiver | owner + reason (required if WAIVED) |
 
-Last updated: 2026-10-05. Last wave: **25** (`test/world-ready-wave-25-admin-lifetime`). Source pin: `bf85281` (inventory).
+Last updated: 2026-10-05. Last wave: **26** (`test/world-ready-wave-26-j2-featured`). Source pin: `bf85281` (inventory).
 
-Wave 25: `payoutsOverview` Lifetime from settled `paymentEvents` (not active subs); `j4creator` Lifetime **$28.49** after cancelled j4member sub; `payoutBalance.test.ts` 6/6.
+Wave 26: create/edit was hardcoding `isFeatured: false`; Featured switch wired; exclusivity helper + soak (`WAVE26` then re-feature `WAVE24` → only WAVE24 Featured; public CTA **$14.99**).
 
 ---
 
@@ -151,7 +151,7 @@ Nested layouts in `App.tsx`: `/demo/admin` → `DemoAdminLayout`; `/demo/member`
 | ID | Name | Result | Evidence |
 |----|------|--------|----------|
 | J1 | Commercial lifecycle (publish → Stripe → webhook → cancel → access) | PASS | Wave 5 2026-10-05: publish `@prize2626` + product Monthly pro $100; member signup `j1member`; Checkout `cs_test_a171BP4bJzrvM8pRX5c7xvgaScFUnfjkraXVlSBBbIFzb8Zxz6spGJWgXJ`; sub `mn7bg36b7xe76gkxyaeq0caaph8fnhyh` ACTIVE then cancelled; `paymentEvents` `checkout:cs_test_…` + `cancel_local:…`; My Creators `?demo=0` empty after cancel. Residual: no new `webhookReceipts` for this session (confirmCheckoutSession fulfilled); Connect not in scope |
-| J2 | Product CRUD + profile slots | PASS | Wave 7 CRUD + slots; Wave 23 2026-10-05: soft-archive **J4 Monthly Access** (linked cancelled sub) → Archived (1), public “No products yet”; hard-delete path still Wave 7; `productRemove.test.ts` 2/2. Residual: featured exclusivity not UI-toggled |
+| J2 | Product CRUD + profile slots | PASS | Wave 7 CRUD + slots; Wave 23 soft-archive; Wave 26 2026-10-05: Featured list-price switch; upsert exclusivity clears siblings; soak j2creator WAVE26 featured then WAVE24 featured → only WAVE24 badge; `/j2creator` Subscribe **$14.99**. `productFeatured.test.ts` 3/3 |
 | J3 | Content access / pick lock / win rate | PASS | Wave 8 owner lock/win-rate; Wave 24 2026-10-05: `j3member` Checkout `cs_test_a13a8w…` ACTIVE → dashboard shows WAVE8_SECRET_BODY; cancel `sub_1UMytH…` → status cancelled, feed empty (no secret); pickTracker settled Win → Result combobox **disabled**. Residual: cancel UI previously lied about period-end (fixed this wave) |
 | J4 | Messages / support / resolution | PASS | Wave 9 2026-10-05: `j4creator`/`j4member` Stripe sub; DM + creator unread/reply; support/resolution/growth admin replies; messaging off deny; cancel → `FORBIDDEN` on send. Unit `messaging.security.test.ts` 6/6. Fix: messaging toggle on populated CreatorMessages inbox. Residual: UI composer still shown when gated (server enforces) |
 | J5 | Payout request / approve / balance | PASS | Wave 10 request/approve; Wave 25 2026-10-05: admin Lifetime from settled `paymentEvents` (cancelled j4member sub still counts) — `j4creator` Lifetime **$28.49** / Paid $28.49. `payoutBalance.test.ts` 6/6. Residual: Connect live transfers still out of scope |
@@ -430,7 +430,7 @@ Schema `appRole` also allows `moderator` and `user` (not product actors; no rout
 
 ## M. Remaining risk (update every fix PR)
 
-- P2: Stripe Connect live transfers still unimplemented (Wave 22 honesty PASS — ledger/manual only); J-DISCORD BLOCKED pending interactive guild OAuth + grant/revoke; J7 OAuth callback + multi-role switcher UI residual; historical migration data parity BLOCKED (greenfield); referral commission cash TBD; J2 featured exclusivity UI not toggled
+- P2: Stripe Connect live transfers still unimplemented (Wave 22 honesty PASS — ledger/manual only); J-DISCORD BLOCKED pending interactive guild OAuth + grant/revoke; J7 OAuth callback + multi-role switcher UI residual; historical migration data parity BLOCKED (greenfield); referral commission cash TBD
 - P3: admin user/creator spend metrics cap at 200 indexed rows; customer pages scan ≤5k subscriptions; eslint warnings; AuthContext DEV `hasRole` leftover
 - Not in this PR: production deploy, live Stripe keys, MFA
 - Waivers: see section L

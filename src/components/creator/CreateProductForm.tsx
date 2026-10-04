@@ -306,6 +306,7 @@ export function CreateProductForm({
   const [visibility, setVisibility] = useState<'public' | 'hidden'>(
     initial && !initial.isActive ? 'hidden' : 'public',
   );
+  const [isFeatured, setIsFeatured] = useState(initial?.isFeatured ?? false);
   const [imageStorageId, setImageStorageId] = useState<Id<'_storage'> | null>(
     initial?.imageStorageId ?? null,
   );
@@ -423,7 +424,7 @@ export function CreateProductForm({
         imageStorageId: imageStorageId,
         priceCents,
         billingPeriod: effectiveBilling,
-        isFeatured: false,
+        isFeatured,
         isActive: !asDraft && visibility === 'public',
         isLimited: limitSubs,
         maxSpots: limitSubs ? Number.parseInt(maxSpots, 10) : undefined,
@@ -867,6 +868,20 @@ export function CreateProductForm({
                 <p className="mt-1 text-xs text-muted-foreground">Accessible via link only</p>
               </button>
             </div>
+            <div className="mt-3 flex items-center justify-between gap-3 rounded-xl border border-border px-3 py-3">
+              <div className="min-w-0">
+                <p className="text-sm font-semibold">Featured list price</p>
+                <p className="text-xs text-muted-foreground">
+                  Profile CTA and smart pricing use this product. Only one can be featured —
+                  others clear automatically.
+                </p>
+              </div>
+              <Switch
+                checked={isFeatured}
+                onCheckedChange={setIsFeatured}
+                aria-label="Featured list price"
+              />
+            </div>
             {initial?.isClosed ? (
               <p className="mt-3 text-xs text-muted-foreground">
                 Sales are already closed for this product. Visibility does not reopen checkout —
@@ -893,9 +908,17 @@ export function CreateProductForm({
             </div>
             <div className="space-y-4 p-5">
               <div>
-                <p className="text-lg font-extrabold tracking-tight text-foreground">
-                  {name.trim() || 'Product name'}
-                </p>
+                <div className="flex flex-wrap items-center gap-2">
+                  <p className="text-lg font-extrabold tracking-tight text-foreground">
+                    {name.trim() || 'Product name'}
+                  </p>
+                  {isFeatured ? (
+                    <span className="inline-flex items-center gap-1 rounded-full bg-amber-500/15 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-amber-700 dark:text-amber-400">
+                      <Star className="h-3 w-3 fill-current" aria-hidden />
+                      Featured
+                    </span>
+                  ) : null}
+                </div>
                 <p className="mt-1 text-sm text-muted-foreground">
                   {shortDescription.trim() ||
                     description.trim().slice(0, 100) ||
