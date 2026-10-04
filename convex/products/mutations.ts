@@ -33,6 +33,7 @@ export const listPublicByCreator = query({
         isLimited: p.isLimited,
         maxSpots: p.maxSpots,
         isClosed: p.isClosed,
+        includesDiscordAccess: Boolean(p.discordRoleId?.trim()),
       });
     }
     return out;

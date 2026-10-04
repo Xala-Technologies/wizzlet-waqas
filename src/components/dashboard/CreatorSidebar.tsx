@@ -57,8 +57,8 @@ const primaryItems: NavItem[] = [
   { label: 'Messages', href: '/creator/messages', icon: MessageSquare },
   { label: 'Marketing', href: '/creator/promo', icon: Megaphone, chevron: true },
   { label: 'Finance', href: '/creator/earnings', icon: DollarSign, chevron: true },
-  { label: 'Settings', href: '/creator/settings', icon: Settings, chevron: true },
   { label: 'Growth Manager', href: '/creator/personal-growth-manager', icon: Brain },
+  { label: 'Support', href: '/creator/support', icon: HelpCircle },
 ];
 
 const marketingChildItems: NavItem[] = [
@@ -74,17 +74,6 @@ const earningsChildItems: NavItem[] = [
   { label: 'Transactions', href: '/creator/transactions', icon: CreditCard },
   { label: 'Tax Documents', href: '/creator/earnings#tax-docs', icon: FileWarning },
   { label: 'Resolution Case', href: '/creator/resolution-case', icon: FileWarning },
-];
-
-const settingsChildItems: NavItem[] = [
-  { label: 'General', href: '/creator/settings', icon: Settings },
-  { label: 'Branding', href: '/creator/settings?tab=branding', icon: Settings },
-  { label: 'Team', href: '/creator/settings?tab=team', icon: Users },
-  { label: 'Billing', href: '/creator/settings?tab=billing', icon: Wallet },
-  { label: 'Integrations', href: '/creator/settings?tab=integrations', icon: Link2 },
-  { label: 'Notifications', href: '/creator/settings?tab=notifications', icon: HelpCircle },
-  { label: 'Security', href: '/creator/settings?tab=security', icon: Settings },
-  { label: 'Advanced', href: '/creator/settings?tab=advanced', icon: Settings },
 ];
 
 /** Access Control + Smart Pricing live under Products; Notifications via top-bar bell. */
@@ -123,29 +112,6 @@ function isEarningsChildActive(pathname: string, href: string, hash: string): bo
     return pathname === '/creator/earnings' && hash !== '#tax-docs';
   }
   return pathname === href || pathname.startsWith(`${href}/`);
-}
-
-function isSettingsPath(pathname: string): boolean {
-  return pathname === '/creator/settings' || pathname.startsWith('/creator/settings/');
-}
-
-function settingsTabFromHref(href: string): string | null {
-  try {
-    const q = href.includes('?') ? href.slice(href.indexOf('?') + 1) : '';
-    return new URLSearchParams(q).get('tab');
-  } catch {
-    return null;
-  }
-}
-
-function isSettingsChildActive(pathname: string, search: string, href: string): boolean {
-  if (!isSettingsPath(pathname)) return false;
-  const currentTab = new URLSearchParams(search).get('tab');
-  const targetTab = settingsTabFromHref(href);
-  if (!targetTab) {
-    return !currentTab || currentTab === 'general';
-  }
-  return currentTab === targetTab;
 }
 
 function formatBadge(n: number): string | undefined {
@@ -291,7 +257,6 @@ export function CreatorSidebar({ mobile = false }: { mobile?: boolean } = {}) {
   const navigate = useNavigate();
   const pathname = location.pathname;
   const hash = location.hash;
-  const search = location.search;
   const dark = useDocumentDark();
 
   const handleSignOut = async () => {
@@ -311,10 +276,8 @@ export function CreatorSidebar({ mobile = false }: { mobile?: boolean } = {}) {
 
   const marketingActive = isMarketingPath(pathname);
   const earningsActive = isEarningsPath(pathname);
-  const settingsActive = isSettingsPath(pathname);
   const [marketingOpen, setMarketingOpen] = useSectionOpen(marketingActive);
   const [earningsOpen, setEarningsOpen] = useSectionOpen(earningsActive);
-  const [settingsOpen, setSettingsOpen] = useSectionOpen(settingsActive);
 
   const withBadges = (item: NavItem): NavItem => {
     if (item.href === '/creator/messages') {
@@ -339,7 +302,7 @@ export function CreatorSidebar({ mobile = false }: { mobile?: boolean } = {}) {
         >
           <SweephLogo
             size="sidebar"
-            linkTo="/creator"
+            linkTo="/"
             variant={dark ? 'dark' : 'light'}
           />
         </div>
@@ -398,29 +361,6 @@ export function CreatorSidebar({ mobile = false }: { mobile?: boolean } = {}) {
             );
           }
 
-          if (item.href === '/creator/settings') {
-            return (
-              <ExpandableNavSection
-                key={item.href}
-                item={withBadges(item)}
-                active={settingsActive}
-                dark={dark}
-                open={settingsOpen}
-                onOpenChange={setSettingsOpen}
-              >
-                {settingsChildItems.map((child) => (
-                  <ChildNavLink
-                    key={child.href}
-                    href={child.href}
-                    label={child.label}
-                    active={isSettingsChildActive(pathname, search, child.href)}
-                    dark={dark}
-                  />
-                ))}
-              </ExpandableNavSection>
-            );
-          }
-
           return (
             <NavItemLink
               key={item.href}
@@ -443,7 +383,13 @@ export function CreatorSidebar({ mobile = false }: { mobile?: boolean } = {}) {
         {mobile ? (
           <>
             <Button variant="ghost" size="sm" className={sidebarFooterGhostClass(dark)} asChild>
-              <Link to="/support">
+              <Link to="/creator/settings">
+                <Settings className="h-4 w-4" />
+                Settings
+              </Link>
+            </Button>
+            <Button variant="ghost" size="sm" className={sidebarFooterGhostClass(dark)} asChild>
+              <Link to="/creator/support">
                 <HelpCircle className="h-4 w-4" />
                 Help & Support
               </Link>

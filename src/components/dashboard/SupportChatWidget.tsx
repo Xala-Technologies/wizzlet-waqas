@@ -6,6 +6,7 @@ import { api } from '@convex/_generated/api';
 import type { Id } from '@convex/_generated/dataModel';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { useSupportChat } from '@/contexts/SupportChatContext';
 import { cn } from '@/lib/utils';
 
 type Audience = 'creator' | 'member';
@@ -18,14 +19,17 @@ type ChatBubble = {
   read: boolean;
 };
 
-const WELCOME =
-  "Hi! Welcome to Sweeph Support. How can we help you today? Ask about billing, products, payouts, or your account — we're online.";
+function welcomeLine(displayName?: string | null): string {
+  const first = displayName?.trim().split(/\s+/)[0];
+  if (first) return `Hi ${first}! How can we help you today?`;
+  return 'Hi! How can we help you today?';
+}
 
 /**
  * Floating support chat FAB + panel for creator and member dashboards (PO mock).
  */
 export function SupportChatWidget({ audience }: { audience: Audience }) {
-  const [open, setOpen] = useState(false);
+  const { open, setOpen } = useSupportChat();
   const [draft, setDraft] = useState('');
   const [sending, setSending] = useState(false);
   const endRef = useRef<HTMLDivElement>(null);
@@ -147,10 +151,10 @@ export function SupportChatWidget({ audience }: { audience: Audience }) {
             'h-[min(70vh,520px)]',
           )}
           role="dialog"
-          aria-label="Sweeph Support chat"
+          aria-label="Prizelet Support chat"
         >
           <header className="flex items-center gap-3 border-b border-border px-4 py-3">
-            <span className="relative flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-full bg-[#429FF0]">
+            <span className="relative flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-full bg-primary">
               <img
                 src="/brand/sweeph-symbol-light.png"
                 alt=""
@@ -158,7 +162,7 @@ export function SupportChatWidget({ audience }: { audience: Audience }) {
               />
             </span>
             <div className="min-w-0 flex-1">
-              <p className="truncate text-sm font-bold text-foreground">Sweeph Support</p>
+              <p className="truncate text-sm font-bold text-foreground">Prizelet Support</p>
               <p className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
                 <span className="h-2 w-2 rounded-full bg-emerald-500" aria-hidden />
                 Online
@@ -178,11 +182,11 @@ export function SupportChatWidget({ audience }: { audience: Audience }) {
             {/* Welcome bubble when empty */}
             {bubbles.length === 0 ? (
               <div className="flex items-end gap-2">
-                <span className="mb-1 flex h-7 w-7 shrink-0 items-center justify-center overflow-hidden rounded-full bg-[#429FF0]">
+                <span className="mb-1 flex h-7 w-7 shrink-0 items-center justify-center overflow-hidden rounded-full bg-primary">
                   <img src="/brand/sweeph-symbol-light.png" alt="" className="h-4 w-4 object-contain" />
                 </span>
                 <div className="max-w-[85%] rounded-2xl rounded-bl-md bg-muted px-3.5 py-2.5 text-sm leading-relaxed text-foreground">
-                  {WELCOME}
+                  {welcomeLine(myCreator?.displayName)}
                 </div>
               </div>
             ) : null}
@@ -193,7 +197,7 @@ export function SupportChatWidget({ audience }: { audience: Audience }) {
                 className={cn('flex items-end gap-2', b.fromSupport ? 'justify-start' : 'justify-end')}
               >
                 {b.fromSupport ? (
-                  <span className="mb-1 flex h-7 w-7 shrink-0 items-center justify-center overflow-hidden rounded-full bg-[#429FF0]">
+                  <span className="mb-1 flex h-7 w-7 shrink-0 items-center justify-center overflow-hidden rounded-full bg-primary">
                     <img
                       src="/brand/sweeph-symbol-light.png"
                       alt=""
@@ -207,7 +211,7 @@ export function SupportChatWidget({ audience }: { audience: Audience }) {
                       'rounded-2xl px-3.5 py-2.5 text-sm leading-relaxed',
                       b.fromSupport
                         ? 'rounded-bl-md bg-muted text-foreground'
-                        : 'rounded-br-md bg-[#429FF0] text-white dark:bg-primary dark:text-primary-foreground',
+                        : 'rounded-br-md bg-primary text-primary-foreground',
                     )}
                   >
                     {b.body}
@@ -251,7 +255,7 @@ export function SupportChatWidget({ audience }: { audience: Audience }) {
               type="submit"
               size="icon"
               disabled={sending || !draft.trim()}
-              className="h-11 w-11 shrink-0 rounded-full bg-[#429FF0] text-white hover:bg-[#256DC1] dark:bg-primary dark:text-primary-foreground"
+              className="h-11 w-11 shrink-0 rounded-full"
               aria-label="Send message"
             >
               <Send className="h-4 w-4" />
@@ -262,13 +266,13 @@ export function SupportChatWidget({ audience }: { audience: Audience }) {
 
       <button
         type="button"
-        onClick={() => setOpen((v) => !v)}
+        onClick={() => setOpen(!open)}
         className={cn(
           'pointer-events-auto relative inline-flex h-14 w-14 items-center justify-center rounded-full',
-          'bg-[#429FF0] text-white shadow-[0_12px_32px_rgba(66,159,240,0.45)]',
-          'transition-transform hover:scale-105 hover:bg-[#256DC1]',
-          'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#429FF0]/40 focus-visible:ring-offset-2',
-          'dark:bg-primary dark:text-primary-foreground dark:shadow-[0_12px_32px_rgba(0,0,0,0.4)]',
+          'bg-primary text-primary-foreground shadow-[0_12px_32px_rgba(88,70,245,0.35)]',
+          'transition-transform hover:scale-105 hover:bg-primary/90',
+          'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2',
+          'dark:shadow-[0_12px_32px_rgba(0,0,0,0.4)]',
         )}
         aria-label={open ? 'Close support chat' : 'Open support chat'}
         aria-expanded={open}

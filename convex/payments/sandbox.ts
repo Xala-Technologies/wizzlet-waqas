@@ -9,6 +9,7 @@ import { logMutation, requireAppUser } from "../lib/auth";
 import { calculatePlatformFee } from "../lib/money";
 import { applySubscribeGrowthAttribution } from "../lib/growthAttribution";
 import { assertSandboxEnabled } from "../lib/sandbox";
+import { internal } from "../_generated/api";
 
 export const sandboxSubscribe = mutation({
   args: {
@@ -145,6 +146,19 @@ export const sandboxSubscribe = mutation({
       actorExternalAuthId: user.externalAuthId,
     });
 
+    await ctx.scheduler.runAfter(0, internal.discord.roles.syncSubscriberRole, {
+      userId: user._id,
+      creatorId: creator._id,
+      productId: args.productId,
+      assign: true,
+    });
+    await ctx.scheduler.runAfter(120_000, internal.discord.roles.syncSubscriberRole, {
+      userId: user._id,
+      creatorId: creator._id,
+      productId: args.productId,
+      assign: true,
+    });
+
     return { ok: true as const, subscriptionId, amountCents, sandbox: true as const };
   },
 });
@@ -170,6 +184,12 @@ export const sandboxCancel = mutation({
     const sub = subs[0];
     if (!sub) throw new ConvexError("NOT_FOUND");
     await ctx.db.patch(sub._id, { status: "cancelled", updatedAt: Date.now() });
+    await ctx.scheduler.runAfter(0, internal.discord.roles.syncSubscriberRole, {
+      userId: user._id,
+      creatorId: args.creatorId,
+      productId: sub.productId,
+      assign: false,
+    });
     return { ok: true as const, status: "cancelled" as const, sandbox: true as const };
   },
 });

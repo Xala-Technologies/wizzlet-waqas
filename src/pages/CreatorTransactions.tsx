@@ -24,10 +24,21 @@ import { DashboardLayout } from '@/components/dashboard/DashboardLayout';
 import { DashboardKpiStrip } from '@/components/dashboard/DashboardKpiStrip';
 import { clayCard, clayCardInteractive } from '@/lib/overviewClay';
 import { EarningsSubnav } from '@/components/creator/EarningsSubnav';
+import { PaymentFeeDetailSheet } from '@/components/creator/PaymentFeeDetailSheet';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -53,6 +64,7 @@ import {
   type TxnType,
 } from '@/lib/creatorTransactionsDemo';
 import { kpiIconTone } from '@/lib/kpiIconTones';
+import { paymentTypeLabel, isRefundablePayment, type PaymentFeeDetail } from '@/lib/paymentFeeDetail';
 import { cn } from '@/lib/utils';
 
 const PAGE_SIZE = 10;
@@ -100,6 +112,23 @@ function initials(name: string): string {
   return `${a}${b}`.toUpperCase();
 }
 
+function toFeeDetail(row: DemoTransaction): PaymentFeeDetail {
+  return {
+    id: row.id,
+    customerName: row.subscriberName,
+    customerEmail: row.customerEmail ?? null,
+    status: row.status,
+    dateMs: row.dateMs,
+    paymentRef: row.paymentRef ?? row.id,
+    productName: row.product,
+    typeLabel: paymentTypeLabel(row.type),
+    amountCents: row.amountCents,
+    platformFeeCents: row.platformFeeCents,
+    creatorEarningsCents: row.creatorEarningsCents,
+    feePercentage: row.feePercentage,
+  };
+}
+
 const CreatorTransactions = () => {
   const [searchParams] = useSearchParams();
   const forceDemo = searchParams.get('demo') === '1';
@@ -116,6 +145,8 @@ const CreatorTransactions = () => {
   const [sideStatus, setSideStatus] = useState('all');
   const [tablePage, setTablePage] = useState(0);
   const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [detail, setDetail] = useState<PaymentFeeDetail | null>(null);
+  const [refundTarget, setRefundTarget] = useState<DemoTransaction | null>(null);
 
   const loading = earnings === undefined;
 
@@ -137,11 +168,22 @@ const CreatorTransactions = () => {
         subscriberName: name,
         subscriberHandle: '',
         avatarTone: 'bg-violet-500/15 text-violet-700 dark:text-violet-400',
-        product: typeHint.includes('subscription') ? 'Subscription' : 'Product',
+        product: p.productName ?? (typeHint.includes('subscription') ? 'Subscription' : 'Product'),
         amountCents: p.amountCents,
-        status: (p.amountCents < 0 ? 'refunded' : 'succeeded') as TxnStatus,
+        platformFeeCents: p.platformFeeCents,
+        creatorEarningsCents: p.creatorEarningsCents,
+        feePercentage: p.feePercentage,
+        status: (p.status === 'refunded' || p.amountCents < 0
+          ? 'refunded'
+          : p.status === 'failed'
+            ? 'failed'
+            : p.status === 'chargeback'
+              ? 'chargeback'
+              : 'succeeded') as TxnStatus,
         paymentMethod: 'visa' as const,
         paymentLast4: '••••',
+        customerEmail: p.customerEmail ?? undefined,
+        paymentRef: p.paymentRef ?? p.id,
       };
     });
   }, [earnings]);
@@ -278,6 +320,25 @@ const CreatorTransactions = () => {
     toast.message('Export started', {
       description: `${filtered.length} transactions queued.`,
     });
+  };
+
+  const openRefund = (row: DemoTransaction) => {
+    setDetail(null);
+    setRefundTarget(row);
+  };
+
+  const confirmRefund = () => {
+    if (!refundTarget) return;
+    if (useDemo) {
+      toast.message('Sample preview — refund not issued', {
+        description: 'This menu is for design review. Real refunds need a live customer payment.',
+      });
+    } else {
+      toast.message('Refund not issued from Prizelet yet', {
+        description: 'Refund this charge in Stripe. It will show here after Stripe confirms.',
+      });
+    }
+    setRefundTarget(null);
   };
 
   if (loading) {
@@ -558,13 +619,7 @@ const CreatorTransactions = () => {
                               </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end">
-                              <DropdownMenuItem
-                                onClick={() =>
-                                  toast.message(useDemo ? 'Sample preview' : 'Transaction', {
-                                    description: row.id,
-                                  })
-                                }
-                              >
+                              <DropdownMenuItem onClick={() => setDetail(toFeeDetail(row))}>
                                 View details
                               </DropdownMenuItem>
                               <DropdownMenuItem
@@ -578,6 +633,14 @@ const CreatorTransactions = () => {
                               >
                                 Send receipt
                               </DropdownMenuItem>
+                              {isRefundablePayment(row.status, row.amountCents, row.type) ? (
+                                <DropdownMenuItem
+                                  className="text-rose-600 focus:text-rose-600 dark:text-rose-400 dark:focus:text-rose-400"
+                                  onClick={() => openRefund(row)}
+                                >
+                                  Refund
+                                </DropdownMenuItem>
+                              ) : null}
                             </DropdownMenuContent>
                           </DropdownMenu>
                         </td>
@@ -762,6 +825,49 @@ const CreatorTransactions = () => {
           </section>
         </aside>
       </div>
+      <PaymentFeeDetailSheet
+        open={Boolean(detail)}
+        onOpenChange={(open) => {
+          if (!open) setDetail(null);
+        }}
+        payment={detail}
+        onRefund={(payment) => {
+          const row = rows.find((r) => r.id === payment.id);
+          if (row) openRefund(row);
+        }}
+      />
+      <AlertDialog
+        open={Boolean(refundTarget)}
+        onOpenChange={(open) => {
+          if (!open) setRefundTarget(null);
+        }}
+      >
+        <AlertDialogContent
+          overlayClassName="bg-black/50"
+          className="gap-0 overflow-hidden rounded-2xl border-border bg-card p-0 shadow-[var(--shadow-card)] sm:rounded-2xl"
+        >
+          <AlertDialogHeader className="space-y-3 px-5 pb-2 pt-5 text-left sm:px-6 sm:pt-6">
+            <AlertDialogTitle className="text-heading font-bold tracking-tight">
+              {refundTarget
+                ? `Refund ${moneyExact(refundTarget.amountCents)} to ${refundTarget.subscriberName}?`
+                : 'Refund this payment?'}
+            </AlertDialogTitle>
+            <AlertDialogDescription className="text-support text-muted-foreground">
+              The full amount is returned to the customer. The Prizelet fee and your earnings on
+              this payment are clawed back.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="gap-2 border-t border-border bg-muted/20 px-5 py-4 sm:flex-row sm:justify-end sm:space-x-0 sm:gap-2 sm:px-6">
+            <AlertDialogCancel className="mt-0 min-h-11 rounded-xl">Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              className="min-h-11 rounded-xl bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={() => confirmRefund()}
+            >
+              Refund
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </DashboardLayout>
   );
 };

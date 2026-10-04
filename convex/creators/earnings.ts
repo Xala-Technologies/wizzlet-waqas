@@ -1,8 +1,28 @@
 import { query } from "../_generated/server";
 import { getCreatorForUser, requireAppUser } from "../lib/auth";
 import { yearMonthKey } from "../lib/commerceIdentity";
+import { resolveCreatorFeePolicy } from "../lib/money";
 import { creatorEarningsValidator } from "../lib/validators";
 import type { Id } from "../_generated/dataModel";
+
+const DEFAULT_FEE = {
+  introFeePercent: 5,
+  standardFeePercent: 10,
+  introFeeDays: 90,
+};
+
+function emptyFeePolicy() {
+  return {
+    ...DEFAULT_FEE,
+    currentFeePercent: DEFAULT_FEE.standardFeePercent,
+    introDaysLeft: 0,
+  };
+}
+
+function feePercentFromCents(amountCents: number, platformFeeCents: number): number {
+  if (!Number.isFinite(amountCents) || amountCents <= 0) return 0;
+  return Math.round((platformFeeCents / amountCents) * 1000) / 10;
+}
 
 /** Creator earnings dashboard — real subscriptions + paymentEvents (no fake names). */
 export const myEarnings = query({
@@ -11,6 +31,16 @@ export const myEarnings = query({
   handler: async (ctx) => {
     const user = await requireAppUser(ctx);
     const creator = await getCreatorForUser(ctx, user._id);
+    const settingsRow = await ctx.db
+      .query("platformSettings")
+      .withIndex("by_singletonKey", (q) => q.eq("singletonKey", "default"))
+      .unique();
+    const settings = {
+      introFeePercent: settingsRow?.introFeePercent ?? DEFAULT_FEE.introFeePercent,
+      standardFeePercent: settingsRow?.standardFeePercent ?? DEFAULT_FEE.standardFeePercent,
+      introFeeDays: settingsRow?.introFeeDays ?? DEFAULT_FEE.introFeeDays,
+    };
+
     if (!creator) {
       return {
         grossCents: 0,
@@ -19,14 +49,12 @@ export const myEarnings = query({
         perSubCents: 0,
         activeCount: 0,
         monthly: [] as { month: string; revenueCents: number }[],
-        recentPayments: [] as {
-          id: Id<"paymentEvents">;
-          label: string;
-          amountCents: number;
-          createdAt: number;
-        }[],
+        recentPayments: [],
+        feePolicy: emptyFeePolicy(),
       };
     }
+
+    const feePolicy = resolveCreatorFeePolicy(settings, creator.createdAt);
 
     const subs = await ctx.db
       .query("subscriptions")
@@ -61,19 +89,41 @@ export const myEarnings = query({
       id: Id<"paymentEvents">;
       label: string;
       amountCents: number;
+      platformFeeCents: number;
+      creatorEarningsCents: number;
+      feePercentage: number;
+      status: string;
+      type: string;
+      productName: string | null;
+      customerEmail: string | null;
+      paymentRef: string | null;
       createdAt: number;
     }> = [];
-    for (const e of sorted.slice(0, 20)) {
-      let label = e.type;
+    for (const e of sorted.slice(0, 40)) {
+      let customerName = "Subscriber";
+      let customerEmail: string | null = null;
       if (e.userId) {
         const u = await ctx.db.get(e.userId);
-        const name = u?.fullName || u?.email || "Subscriber";
-        label = `Subscription — ${name}`;
+        customerName = u?.fullName || u?.email || "Subscriber";
+        customerEmail = u?.email ?? null;
+      }
+      let productName: string | null = null;
+      if (e.productId) {
+        const product = await ctx.db.get(e.productId);
+        productName = product?.name ?? null;
       }
       recentPayments.push({
         id: e._id,
-        label,
-        amountCents: e.creatorEarningsCents,
+        label: `Subscription — ${customerName}`,
+        amountCents: e.amountCents,
+        platformFeeCents: e.platformFeeCents,
+        creatorEarningsCents: e.creatorEarningsCents,
+        feePercentage: feePercentFromCents(e.amountCents, e.platformFeeCents),
+        status: e.status,
+        type: e.type,
+        productName,
+        customerEmail,
+        paymentRef: e.commercialRef ?? e.externalRef ?? e.checkoutSessionId ?? null,
         createdAt: e.createdAt,
       });
     }
@@ -86,6 +136,7 @@ export const myEarnings = query({
       activeCount: active.length,
       monthly,
       recentPayments,
+      feePolicy,
     };
   },
 });

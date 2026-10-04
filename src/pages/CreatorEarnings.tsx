@@ -183,17 +183,15 @@ const CreatorEarnings = () => {
   const transactions: DemoEarningTxn[] = useDemo
     ? CREATOR_EARNINGS_DEMO_TRANSACTIONS
     : (earnings?.recentPayments ?? []).slice(0, 8).map((p) => {
-        const amountCents = p.amountCents;
-        const feeCents = Math.round(amountCents * 0.08);
         const isSub = p.label.toLowerCase().includes('subscription');
         return {
           id: p.id,
           dateMs: p.createdAt,
           type: (isSub ? 'Subscription' : 'One-time purchase') as DemoEarningTxn['type'],
           source: p.label.replace(/^Subscription\s*—\s*/i, '') || p.label,
-          amountCents,
-          feeCents,
-          netCents: amountCents - feeCents,
+          amountCents: p.amountCents,
+          feeCents: p.platformFeeCents,
+          netCents: p.creatorEarningsCents,
           status: 'completed' as const,
         };
       });

@@ -107,40 +107,68 @@ export const CREATOR_TEAM_ROLE_PERMISSIONS: Array<{
 ];
 
 export const CREATOR_BILLING_DEMO = {
-  planName: 'Pro Plan',
-  planDescription: 'Everything you need to grow your business.',
-  planPriceLabel: '$49/month',
-  planAmount: '$49.00',
-  nextBillingDate: 'Feb 15, 2025',
-  features: [
-    'Unlimited products',
-    'Unlimited subscribers',
-    'Advanced analytics',
-    'Custom domain',
-    'Priority support',
-  ],
-  paymentBrand: 'Visa',
-  paymentLast4: '4242',
-  paymentExpiry: '04/2027',
-  billingName: 'AlexPicks',
-  billingEmail: 'alex@prizelet.com',
-  billingAddress: '123 Creator St',
-  billingCity: 'Tallinn',
-  billingCountry: 'Estonia',
-  billingZip: '10115',
+  introFeePercent: 5,
+  standardFeePercent: 10,
+  introFeeDays: 90,
+  exampleGrossCents: 5299,
 } as const;
 
-export const CREATOR_BILLING_HISTORY: Array<{
+export const CREATOR_BILLING_PAYMENTS: Array<{
   id: string;
-  dateLabel: string;
-  amount: string;
-  status: 'paid';
+  customerName: string;
+  customerEmail: string;
+  productName: string;
+  typeLabel: string;
+  dateMs: number;
+  amountCents: number;
+  platformFeeCents: number;
+  creatorEarningsCents: number;
+  feePercentage: number;
+  status: 'succeeded';
+  paymentRef: string;
 }> = [
-  { id: 'inv-1', dateLabel: 'Jan 15, 2025', amount: '$49.00', status: 'paid' },
-  { id: 'inv-2', dateLabel: 'Dec 15, 2024', amount: '$49.00', status: 'paid' },
-  { id: 'inv-3', dateLabel: 'Nov 15, 2024', amount: '$49.00', status: 'paid' },
-  { id: 'inv-4', dateLabel: 'Oct 15, 2024', amount: '$49.00', status: 'paid' },
-  { id: 'inv-5', dateLabel: 'Sep 15, 2024', amount: '$49.00', status: 'paid' },
+  {
+    id: 'pay-demo-1',
+    customerName: 'Elvis Alvarenga',
+    customerEmail: 'elvis@example.com',
+    productName: 'Monthly Pro',
+    typeLabel: 'Renewal',
+    dateMs: Date.parse('2026-09-13T22:08:00Z'),
+    amountCents: 5299,
+    platformFeeCents: 530,
+    creatorEarningsCents: 4769,
+    feePercentage: 10,
+    status: 'succeeded',
+    paymentRef: 'pay_XAW6fcapNWWuhR',
+  },
+  {
+    id: 'pay-demo-2',
+    customerName: 'Maya Chen',
+    customerEmail: 'maya@example.com',
+    productName: 'Premium Picks',
+    typeLabel: 'Subscription',
+    dateMs: Date.parse('2026-09-10T14:22:00Z'),
+    amountCents: 2999,
+    platformFeeCents: 300,
+    creatorEarningsCents: 2699,
+    feePercentage: 10,
+    status: 'succeeded',
+    paymentRef: 'pay_demo_premium_2',
+  },
+  {
+    id: 'pay-demo-3',
+    customerName: 'Jordan Blake',
+    customerEmail: 'jordan@example.com',
+    productName: 'VIP Access',
+    typeLabel: 'Subscription',
+    dateMs: Date.parse('2026-09-04T09:11:00Z'),
+    amountCents: 9999,
+    platformFeeCents: 500,
+    creatorEarningsCents: 9499,
+    feePercentage: 5,
+    status: 'succeeded',
+    paymentRef: 'pay_demo_vip_3',
+  },
 ];
 
 export const CREATOR_INTEGRATIONS_CATALOG: Array<{

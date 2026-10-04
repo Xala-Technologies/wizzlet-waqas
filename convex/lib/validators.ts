@@ -175,6 +175,10 @@ export const creatorDocValidator = v.object({
   isPublished: v.boolean(),
   discordServerId: v.optional(v.string()),
   discordRoleId: v.optional(v.string()),
+  discordGuildName: v.optional(v.string()),
+  discordGuildIcon: v.optional(v.string()),
+  discordApproxMemberCount: v.optional(v.number()),
+  discordConnectedAt: v.optional(v.number()),
   referralCode: v.optional(v.string()),
   messagingEnabled: v.boolean(),
   verificationStatus: v.optional(verificationStatusValidator),
@@ -291,6 +295,8 @@ export const productDocValidator = v.object({
   maxSpots: v.optional(v.number()),
   isLimited: v.boolean(),
   isClosed: v.boolean(),
+  discordRoleId: v.optional(v.string()),
+  discordRoleName: v.optional(v.string()),
   createdAt: v.number(),
   updatedAt: v.number(),
 });
@@ -309,6 +315,7 @@ export const productPublicValidator = v.object({
   isLimited: v.boolean(),
   maxSpots: v.optional(v.number()),
   isClosed: v.boolean(),
+  includesDiscordAccess: v.optional(v.boolean()),
 });
 
 export const notificationDocValidator = v.object({
@@ -521,9 +528,24 @@ export const creatorEarningsValidator = v.object({
       id: v.id("paymentEvents"),
       label: v.string(),
       amountCents: v.number(),
+      platformFeeCents: v.number(),
+      creatorEarningsCents: v.number(),
+      feePercentage: v.number(),
+      status: v.string(),
+      type: v.string(),
+      productName: v.union(v.string(), v.null()),
+      customerEmail: v.union(v.string(), v.null()),
+      paymentRef: v.union(v.string(), v.null()),
       createdAt: v.number(),
     }),
   ),
+  feePolicy: v.object({
+    introFeePercent: v.number(),
+    standardFeePercent: v.number(),
+    introFeeDays: v.number(),
+    currentFeePercent: v.number(),
+    introDaysLeft: v.number(),
+  }),
 });
 
 export const creatorLinkDocValidator = v.object({

@@ -6,6 +6,10 @@ import { uploadToConvexStorage } from '@/lib/upload';
 import { DashboardLayout } from '@/components/dashboard/DashboardLayout';
 import { clayCard } from '@/lib/overviewClay';
 import { SettingsSubnav, useSettingsTab } from '@/components/creator/SettingsSubnav';
+import {
+  PaymentFeeDetailSheet,
+  PaymentFeeStack,
+} from '@/components/creator/PaymentFeeDetailSheet';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -72,7 +76,7 @@ import { toast } from 'sonner';
 import {
   CREATOR_ADVANCED_TIPS,
   CREATOR_BILLING_DEMO,
-  CREATOR_BILLING_HISTORY,
+  CREATOR_BILLING_PAYMENTS,
   CREATOR_BRANDING_DEMO,
   CREATOR_BRANDING_INFO,
   CREATOR_BRANDING_TIPS,
@@ -89,6 +93,12 @@ import {
   type TeamRole,
 } from '@/lib/creatorSettingsDemo';
 import { cn } from '@/lib/utils';
+import {
+  moneyExact,
+  paymentTypeLabel,
+  splitAtPercent,
+  type PaymentFeeDetail,
+} from '@/lib/paymentFeeDetail';
 import type { LucideIcon } from 'lucide-react';
 
 const MAX_IMAGE_BYTES = 5 * 1024 * 1024;
@@ -177,6 +187,7 @@ const CreatorSettings = () => {
 
   const creator = useQuery(api.creators.queries.myCreator);
   const me = useQuery(api.users.queries.me);
+  const earnings = useQuery(api.creators.earnings.myEarnings);
   const updateSettings = useMutation(api.creators.queries.updateSettings);
   const convex = useConvex();
   const bannerRef = useRef<HTMLInputElement>(null);
@@ -239,14 +250,7 @@ const CreatorSettings = () => {
   const [loginAlertsEnabled, setLoginAlertsEnabled] = useState(true);
   const [sessionsOpen, setSessionsOpen] = useState(false);
   const [publicProfileEnabled, setPublicProfileEnabled] = useState(true);
-
-  const [billingName, setBillingName] = useState('');
-  const [billingEmail, setBillingEmail] = useState('');
-  const [billingAddress, setBillingAddress] = useState('');
-  const [billingCity, setBillingCity] = useState('');
-  const [billingCountry, setBillingCountry] = useState('Estonia');
-  const [billingZip, setBillingZip] = useState('');
-  const [billingHydrated, setBillingHydrated] = useState(false);
+  const [billingPayment, setBillingPayment] = useState<PaymentFeeDetail | null>(null);
 
   useEffect(() => {
     if (!creator) {
@@ -290,25 +294,50 @@ const CreatorSettings = () => {
     disableDemo,
   });
 
+  const feePolicy = earnings?.feePolicy ?? {
+    introFeePercent: CREATOR_BILLING_DEMO.introFeePercent,
+    standardFeePercent: CREATOR_BILLING_DEMO.standardFeePercent,
+    introFeeDays: CREATOR_BILLING_DEMO.introFeeDays,
+    currentFeePercent: CREATOR_BILLING_DEMO.standardFeePercent,
+    introDaysLeft: 0,
+  };
+  const exampleSplit = splitAtPercent(
+    CREATOR_BILLING_DEMO.exampleGrossCents,
+    feePolicy.currentFeePercent,
+  );
+  const billingPayments: PaymentFeeDetail[] = useDemo
+    ? CREATOR_BILLING_PAYMENTS.map((p) => ({
+        id: p.id,
+        customerName: p.customerName,
+        customerEmail: p.customerEmail,
+        status: p.status,
+        dateMs: p.dateMs,
+        paymentRef: p.paymentRef,
+        productName: p.productName,
+        typeLabel: p.typeLabel,
+        amountCents: p.amountCents,
+        platformFeeCents: p.platformFeeCents,
+        creatorEarningsCents: p.creatorEarningsCents,
+        feePercentage: p.feePercentage,
+      }))
+    : (earnings?.recentPayments ?? []).map((p) => ({
+        id: p.id,
+        customerName: p.label.replace(/^Subscription\s*—\s*/i, '') || 'Subscriber',
+        customerEmail: p.customerEmail,
+        status: p.status,
+        dateMs: p.createdAt,
+        paymentRef: p.paymentRef,
+        productName: p.productName ?? 'Product',
+        typeLabel: paymentTypeLabel(p.type),
+        amountCents: p.amountCents,
+        platformFeeCents: p.platformFeeCents,
+        creatorEarningsCents: p.creatorEarningsCents,
+        feePercentage: p.feePercentage,
+      }));
+
   useEffect(() => {
     if (me?.email) setEmail(me.email);
   }, [me?.email]);
-
-  useEffect(() => {
-    if (!creator || billingHydrated) return;
-    setBillingHydrated(true);
-    if (useDemo) {
-      setBillingName(CREATOR_BILLING_DEMO.billingName);
-      setBillingEmail(CREATOR_BILLING_DEMO.billingEmail);
-      setBillingAddress(CREATOR_BILLING_DEMO.billingAddress);
-      setBillingCity(CREATOR_BILLING_DEMO.billingCity);
-      setBillingCountry(CREATOR_BILLING_DEMO.billingCountry);
-      setBillingZip(CREATOR_BILLING_DEMO.billingZip);
-      return;
-    }
-    setBillingName(displayName || me?.fullName || me?.name || '');
-    setBillingEmail(me?.email || '');
-  }, [creator, billingHydrated, useDemo, displayName, me?.fullName, me?.name, me?.email]);
 
   useEffect(() => {
     if (!useDemo || !creator || demoHydrated.current) return;
@@ -1521,321 +1550,144 @@ const CreatorSettings = () => {
             <section className={cn(cardClass, 'space-y-5')}>
               <div>
                 <h2 className="text-base font-extrabold tracking-tight text-foreground">
-                  Billing Plan
+                  How you pay us
                 </h2>
                 <p className="mt-1 text-sm text-muted-foreground">
-                  Manage your current plan and billing details.
+                  Prizelet is free for creators. There is no monthly plan. We only take a percent of
+                  what customers pay, then you keep the rest.
                 </p>
               </div>
               <div className="rounded-xl border border-border bg-muted/20 p-4 sm:p-5">
                 <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
                   <div className="min-w-0 flex-1">
                     <div className="flex items-start gap-3">
-                      <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-violet-500/15 text-violet-700 dark:text-violet-400">
-                        <Crown className="h-5 w-5" aria-hidden />
+                      <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-emerald-500/15 text-emerald-700 dark:text-emerald-400">
+                        <Check className="h-5 w-5" aria-hidden />
                       </span>
                       <div className="min-w-0">
                         <p className="text-lg font-extrabold tracking-tight text-foreground">
-                          {CREATOR_BILLING_DEMO.planName}
+                          Free for creators
                         </p>
                         <p className="mt-0.5 text-sm text-muted-foreground">
-                          {CREATOR_BILLING_DEMO.planDescription}
+                          You never subscribe to Prizelet. Fees come out of each customer payment.
                         </p>
                         <div className="mt-2 flex flex-wrap items-center gap-2">
                           <span className="text-base font-extrabold tabular-nums text-foreground">
-                            {CREATOR_BILLING_DEMO.planPriceLabel}
+                            {feePolicy.currentFeePercent}% now
                           </span>
                           <span className="inline-flex rounded-full border border-emerald-500/25 bg-emerald-500/10 px-2.5 py-0.5 text-xs font-bold text-emerald-700 dark:text-emerald-400">
-                            Active
+                            {feePolicy.introDaysLeft > 0 ? 'Intro rate' : 'Standard rate'}
                           </span>
                         </div>
                       </div>
                     </div>
                     <ul className="mt-4 space-y-2">
-                      {CREATOR_BILLING_DEMO.features.map((feature) => (
-                        <li
-                          key={feature}
-                          className="flex items-center gap-2 text-sm text-muted-foreground"
-                        >
-                          <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-emerald-500/15 text-emerald-700 dark:text-emerald-400">
-                            <Check className="h-3 w-3" aria-hidden />
-                          </span>
-                          {feature}
-                        </li>
-                      ))}
+                      <li className="flex items-center gap-2 text-sm text-muted-foreground">
+                        <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-emerald-500/15 text-emerald-700 dark:text-emerald-400">
+                          <Check className="h-3 w-3" />
+                        </span>
+                        {feePolicy.introFeePercent}% for your first {feePolicy.introFeeDays} days
+                        {feePolicy.introDaysLeft > 0
+                          ? ` (${feePolicy.introDaysLeft} days left)`
+                          : ''}
+                      </li>
+                      <li className="flex items-center gap-2 text-sm text-muted-foreground">
+                        <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-emerald-500/15 text-emerald-700 dark:text-emerald-400">
+                          <Check className="h-3 w-3" />
+                        </span>
+                        Then {feePolicy.standardFeePercent}% on every customer payment
+                      </li>
+                      <li className="flex items-center gap-2 text-sm text-muted-foreground">
+                        <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-emerald-500/15 text-emerald-700 dark:text-emerald-400">
+                          <Check className="h-3 w-3" />
+                        </span>
+                        Payouts go to your connected Stripe account
+                      </li>
                     </ul>
                   </div>
-                  <div className="w-full shrink-0 rounded-xl border border-border bg-background/80 p-4 lg:w-56">
+                  <div className="w-full shrink-0 rounded-xl border border-border bg-background/80 p-4 lg:w-64">
                     <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                      Next billing date
+                      Example at {feePolicy.currentFeePercent}%
                     </p>
-                    <p className="mt-1 text-base font-extrabold text-foreground">
-                      {CREATOR_BILLING_DEMO.nextBillingDate}
-                    </p>
-                    <p className="mt-2 text-sm text-muted-foreground">
-                      Your card will be charged{' '}
-                      <span className="font-semibold text-foreground">
-                        {CREATOR_BILLING_DEMO.planAmount}
-                      </span>
-                    </p>
+                    <div className="mt-3">
+                      <PaymentFeeStack
+                        compact
+                        amountCents={CREATOR_BILLING_DEMO.exampleGrossCents}
+                        platformFeeCents={exampleSplit.platformFeeCents}
+                        creatorEarningsCents={exampleSplit.creatorEarningsCents}
+                        feePercentage={feePolicy.currentFeePercent}
+                      />
+                    </div>
                   </div>
                 </div>
-                <Button
-                  type="button"
-                  variant="secondary"
-                  className={cn(softPrimaryBtn, 'mt-4')}
-                  onClick={() =>
-                    toast.message('Change plan', {
-                      description: 'Plan changes are not wired up in this preview.',
-                    })
-                  }
-                >
-                  Change Plan
-                </Button>
+                <div className="mt-4 flex flex-wrap gap-2">
+                  <Button asChild variant="secondary" className={cn(softPrimaryBtn)}>
+                    <Link to="/creator/payouts">Open Payouts</Link>
+                  </Button>
+                  <Button asChild variant="outline" className="h-11 rounded-xl">
+                    <Link to="/creator/transactions">See payments</Link>
+                  </Button>
+                </div>
               </div>
             </section>
 
             <section className={cn(cardClass, 'space-y-4')}>
               <div>
                 <h2 className="text-base font-extrabold tracking-tight text-foreground">
-                  Billing Information
+                  Recent customer payments
                 </h2>
                 <p className="mt-1 text-sm text-muted-foreground">
-                  Update your billing details and address.
+                  When a customer pays, the Prizelet percent is taken and the rest is yours.
                 </p>
               </div>
-              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-6">
-                <div className="space-y-2 sm:col-span-1 lg:col-span-3">
-                  <Label htmlFor="billing-name">Name</Label>
-                  <Input
-                    id="billing-name"
-                    value={billingName}
-                    onChange={(e) => setBillingName(e.target.value)}
-                    className="min-h-11 rounded-xl"
-                  />
-                </div>
-                <div className="space-y-2 sm:col-span-1 lg:col-span-3">
-                  <Label htmlFor="billing-email">Email</Label>
-                  <Input
-                    id="billing-email"
-                    type="email"
-                    value={billingEmail}
-                    onChange={(e) => setBillingEmail(e.target.value)}
-                    className="min-h-11 rounded-xl"
-                  />
-                </div>
-                <div className="space-y-2 sm:col-span-2 lg:col-span-6">
-                  <Label htmlFor="billing-address">Billing address</Label>
-                  <Input
-                    id="billing-address"
-                    value={billingAddress}
-                    onChange={(e) => setBillingAddress(e.target.value)}
-                    className="min-h-11 rounded-xl"
-                    placeholder="Street address"
-                  />
-                </div>
-                <div className="space-y-2 lg:col-span-2">
-                  <Label htmlFor="billing-city">City / Town</Label>
-                  <Input
-                    id="billing-city"
-                    value={billingCity}
-                    onChange={(e) => setBillingCity(e.target.value)}
-                    className="min-h-11 rounded-xl"
-                  />
-                </div>
-                <div className="space-y-2 lg:col-span-2">
-                  <Label>Country</Label>
-                  <Select value={billingCountry} onValueChange={setBillingCountry}>
-                    <SelectTrigger className="min-h-11 rounded-xl">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="Estonia">Estonia</SelectItem>
-                      <SelectItem value="United States">United States</SelectItem>
-                      <SelectItem value="United Kingdom">United Kingdom</SelectItem>
-                      <SelectItem value="Germany">Germany</SelectItem>
-                      <SelectItem value="Canada">Canada</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-2 lg:col-span-2">
-                  <Label htmlFor="billing-zip">Zip code</Label>
-                  <Input
-                    id="billing-zip"
-                    value={billingZip}
-                    onChange={(e) => setBillingZip(e.target.value)}
-                    className="min-h-11 rounded-xl"
-                  />
-                </div>
-              </div>
-              <div className="flex justify-end">
-                <Button
-                  type="button"
-                  className="h-12 gap-2 rounded-[var(--radius-md)] px-6"
-                  onClick={() =>
-                    toast.message(
-                      useDemo
-                        ? 'Sample preview — billing not saved'
-                        : 'Billing details saved locally',
-                      {
-                        description: useDemo
-                          ? 'Add ?demo=0 once live billing is connected.'
-                          : 'Server-side billing address sync is coming soon.',
-                      },
-                    )
-                  }
-                >
-                  Save Changes
-                </Button>
-              </div>
-            </section>
-
-            <section className={cn(clayCard, 'space-y-3 p-5 sm:p-6')}>
-              <h2 className="text-base font-extrabold tracking-tight text-foreground">
-                Cancel Subscription
-              </h2>
-              <p className="text-sm text-muted-foreground">
-                Your plan stays active until the end of the current billing period if you cancel.
-              </p>
-              <Button
-                type="button"
-                variant="destructive-outline"
-                size="sm"
-                onClick={() =>
-                  toast.message('Cancel subscription', {
-                    description: 'Subscription cancellation is not enabled in this preview.',
-                  })
-                }
-              >
-                Cancel Subscription
-              </Button>
+              {billingPayments.length === 0 ? (
+                <p className="rounded-xl border border-dashed border-border px-4 py-8 text-center text-sm text-muted-foreground">
+                  No customer payments yet. Fees only appear after a fan pays.
+                </p>
+              ) : (
+                <ul className="divide-y divide-border rounded-xl border border-border">
+                  {billingPayments.slice(0, 8).map((payment) => (
+                    <li key={payment.id}>
+                      <button
+                        type="button"
+                        className="flex w-full items-center justify-between gap-3 px-3.5 py-3 text-left hover:bg-muted/30"
+                        onClick={() => setBillingPayment(payment)}
+                      >
+                        <div className="min-w-0">
+                          <p className="truncate text-sm font-semibold text-foreground">
+                            {payment.customerName}
+                          </p>
+                          <p className="text-xs text-muted-foreground">
+                            {payment.productName} · {moneyExact(payment.amountCents)}
+                          </p>
+                        </div>
+                        <div className="text-right">
+                          <p className="text-sm font-extrabold tabular-nums text-foreground">
+                            {moneyExact(payment.creatorEarningsCents)}
+                          </p>
+                          <p className="text-[11px] text-muted-foreground">
+                            Fee {moneyExact(payment.platformFeeCents)}
+                          </p>
+                        </div>
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              )}
             </section>
           </div>
 
           <aside className="flex flex-col gap-4 xl:col-span-4">
-            <section className={cn(cardClass, 'space-y-4')}>
-              <div>
-                <h2 className="text-base font-extrabold tracking-tight text-foreground">
-                  Payment Method
-                </h2>
-                <p className="mt-1 text-sm text-muted-foreground">Update your payment method.</p>
-              </div>
-              <div className="flex items-center gap-3 rounded-xl border border-border bg-muted/20 px-4 py-3.5">
-                <span className="flex h-10 w-14 items-center justify-center rounded-md border border-border bg-background text-[10px] font-extrabold tracking-wide text-sky-700 dark:text-sky-400">
-                  VISA
-                </span>
-                <div className="min-w-0 flex-1">
-                  <p className="text-sm font-bold text-foreground">
-                    •••• {CREATOR_BILLING_DEMO.paymentLast4}
-                  </p>
-                  <p className="text-xs text-muted-foreground">
-                    Expires {CREATOR_BILLING_DEMO.paymentExpiry}
-                  </p>
-                </div>
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="icon"
-                      className="h-8 w-8 shrink-0 rounded-lg"
-                      aria-label="Payment method actions"
-                    >
-                      <MoreVertical className="h-4 w-4" />
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end">
-                    <DropdownMenuItem
-                      onClick={() =>
-                        toast.message('Update payment method', {
-                          description: 'Card updates are not wired up in this preview.',
-                        })
-                      }
-                    >
-                      Update card
-                    </DropdownMenuItem>
-                    <DropdownMenuItem
-                      onClick={() =>
-                        toast.message('Remove card', {
-                          description: 'Card removal is not enabled in this preview.',
-                        })
-                      }
-                    >
-                      Remove card
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              </div>
-              <Button
-                type="button"
-                variant="secondary"
-                className={cn(softPrimaryBtn, 'w-full')}
-                onClick={() =>
-                  toast.message('Update payment method', {
-                    description: 'Card updates are not wired up in this preview.',
-                  })
-                }
-              >
-                Update Payment Method
-              </Button>
-            </section>
-
             <section className={cn(cardClass, 'space-y-3')}>
-              <div>
-                <h2 className="text-base font-extrabold tracking-tight text-foreground">
-                  Billing History
-                </h2>
-                <p className="mt-1 text-sm text-muted-foreground">
-                  View and download your past invoices.
-                </p>
-              </div>
-              <ul className="divide-y divide-border rounded-xl border border-border">
-                {CREATOR_BILLING_HISTORY.map((invoice) => (
-                  <li
-                    key={invoice.id}
-                    className="flex items-center justify-between gap-3 px-3.5 py-3"
-                  >
-                    <div className="min-w-0">
-                      <p className="text-sm font-semibold text-foreground">{invoice.dateLabel}</p>
-                      <p className="text-xs text-muted-foreground">{invoice.amount}</p>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <span className="inline-flex rounded-full border border-emerald-500/25 bg-emerald-500/10 px-2 py-0.5 text-[11px] font-bold text-emerald-700 dark:text-emerald-400">
-                        Paid
-                      </span>
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="icon"
-                        className="h-8 w-8 rounded-lg text-primary"
-                        aria-label={`Download invoice ${invoice.dateLabel}`}
-                        onClick={() =>
-                          toast.message(
-                            useDemo ? 'Sample preview — invoice' : 'Download invoice',
-                            { description: invoice.dateLabel },
-                          )
-                        }
-                      >
-                        <Download className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  </li>
-                ))}
-              </ul>
-              <Button
-                type="button"
-                variant="secondary"
-                className={cn(softPrimaryBtn, 'w-full')}
-                onClick={() =>
-                  toast.message('View all invoices', {
-                    description: 'Full invoice history is coming soon.',
-                  })
-                }
-              >
-                View All Invoices
+              <h2 className="text-base font-extrabold tracking-tight text-foreground">Payouts</h2>
+              <p className="text-sm text-muted-foreground">
+                Net earnings after the Prizelet percent are paid out from Payouts. Prizelet does not
+                charge your card.
+              </p>
+              <Button asChild variant="secondary" className={cn(softPrimaryBtn, 'w-full')}>
+                <Link to="/creator/payouts">Manage payouts</Link>
               </Button>
             </section>
-
             <section className={cn(clayCard, 'space-y-3 border-violet-500/20 bg-violet-500/5 p-5')}>
               <div className="flex items-center gap-2">
                 <CircleHelp className="h-4 w-4 text-violet-600 dark:text-violet-400" aria-hidden />
@@ -1844,8 +1696,7 @@ const CreatorSettings = () => {
                 </h2>
               </div>
               <p className="text-sm text-muted-foreground">
-                Questions about billing, invoices, or your plan? Visit the Help Center or contact
-                support.
+                Questions about fees or payouts? Visit the Help Center or contact support.
               </p>
               <Button
                 type="button"
@@ -1862,6 +1713,13 @@ const CreatorSettings = () => {
               </Button>
             </section>
           </aside>
+          <PaymentFeeDetailSheet
+            open={Boolean(billingPayment)}
+            onOpenChange={(open) => {
+              if (!open) setBillingPayment(null);
+            }}
+            payment={billingPayment}
+          />
         </div>
       ) : null}
 

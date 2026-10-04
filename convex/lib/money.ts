@@ -33,6 +33,29 @@ export function calculatePlatformFee(
   return { feePercentage, platformFeeCents, creatorEarningsCents };
 }
 
+export function resolveCreatorFeePolicy(
+  settings: FeeSettings,
+  creatorCreatedAtMs: number,
+  nowMs = Date.now(),
+): {
+  introFeePercent: number;
+  standardFeePercent: number;
+  introFeeDays: number;
+  currentFeePercent: number;
+  introDaysLeft: number;
+} {
+  const { feePercentage } = calculatePlatformFee(10_000, creatorCreatedAtMs, settings, nowMs);
+  const introEndsAt = creatorCreatedAtMs + settings.introFeeDays * 24 * 60 * 60 * 1000;
+  const introDaysLeft = Math.max(0, Math.ceil((introEndsAt - nowMs) / (24 * 60 * 60 * 1000)));
+  return {
+    introFeePercent: settings.introFeePercent,
+    standardFeePercent: settings.standardFeePercent,
+    introFeeDays: settings.introFeeDays,
+    currentFeePercent: feePercentage,
+    introDaysLeft,
+  };
+}
+
 /** Convert Postgres numeric dollars to integer cents. */
 export function dollarsToCents(value: number | string | null | undefined): number {
   if (value === null || value === undefined || value === "") return 0;

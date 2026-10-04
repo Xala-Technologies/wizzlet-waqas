@@ -25,9 +25,14 @@ export type DemoTransaction = {
   avatarTone: string;
   product: string;
   amountCents: number;
+  platformFeeCents: number;
+  creatorEarningsCents: number;
+  feePercentage: number;
   status: TxnStatus;
   paymentMethod: PaymentMethodKind;
   paymentLast4: string;
+  customerEmail?: string;
+  paymentRef?: string;
 };
 
 export const CREATOR_TXN_DEMO_METRICS = {
@@ -90,11 +95,11 @@ const SEED: Array<{
 }> = [
   {
     type: 'Subscription',
-    product: 'Premium Picks',
-    amountCents: 2_999,
+    product: 'Monthly Pro',
+    amountCents: 5299,
     status: 'succeeded',
     paymentMethod: 'visa',
-    paymentLast4: '4582',
+    paymentLast4: '6808',
     dayOffset: 1,
     subscriberIndex: 0,
   },
@@ -392,6 +397,9 @@ const SEED: Array<{
 
 export const CREATOR_TXN_DEMO_ROWS: DemoTransaction[] = SEED.map((row, i) => {
   const sub = SUBSCRIBERS[row.subscriberIndex]!;
+  const feePercentage = row.status === 'succeeded' ? (row.amountCents === 9999 ? 5 : 10) : 0;
+  const platformFeeCents =
+    row.status === 'succeeded' ? Math.round((row.amountCents * feePercentage) / 100) : 0;
   return {
     id: `demo-txn-${i + 1}`,
     dateMs: daysAgo(row.dayOffset),
@@ -401,9 +409,14 @@ export const CREATOR_TXN_DEMO_ROWS: DemoTransaction[] = SEED.map((row, i) => {
     avatarTone: sub.tone,
     product: row.product,
     amountCents: row.amountCents,
+    platformFeeCents,
+    creatorEarningsCents: row.amountCents - platformFeeCents,
+    feePercentage,
     status: row.status,
     paymentMethod: row.paymentMethod,
     paymentLast4: row.paymentLast4,
+    customerEmail: `${sub.handle.replace('@', '')}@example.com`,
+    paymentRef: `pay_demo_${i + 1}`,
   };
 });
 
