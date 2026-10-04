@@ -12,8 +12,16 @@ import { SocialAuthSection } from '@/components/auth/SocialAuthButtons';
 import { ACTIVE_ROLE_STORAGE_KEY } from '@/lib/roles';
 import { useConvexAuthReady, waitForAuthenticated, withAuthRetry } from '@/lib/authSession';
 import { sanitizeReturnPath, storeReturnTo } from '@/lib/safeReturnPath';
-import { Eye, EyeOff, Loader2 } from 'lucide-react';
+import { Eye, EyeOff, Loader2, Check } from 'lucide-react';
 import { toast } from 'sonner';
+
+function usernameLooksValid(value: string): boolean {
+  return /^[a-zA-Z0-9_]{3,32}$/.test(value.trim());
+}
+
+function emailLooksValid(value: string): boolean {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value.trim());
+}
 
 const Signup = () => {
   const navigate = useNavigate();
@@ -92,9 +100,10 @@ const Signup = () => {
   return (
     <AuthShell
       title="Create your account"
-      subtitle="Start monetizing your expertise"
+      subtitle="Join Sweeph and get started"
       seoTitle="Create your Sweeph account"
       seoDescription="Join the Sweeph private network — create an account to follow creators or apply as a creator."
+      progressStep={1}
       banner={
         referralCode ? (
           <p className="text-support text-primary mt-2">Referred via code {referralCode}</p>
@@ -104,44 +113,56 @@ const Signup = () => {
         <p className="text-center text-support text-muted-foreground">
           Already have an account?{' '}
           <Link to={loginHref} className="font-medium text-primary hover:underline">
-            Sign in
+            Log in
           </Link>
         </p>
       }
     >
       <form onSubmit={(e) => void handleSignup(e)} className="space-y-5">
         <div className="space-y-2">
-          <Label htmlFor="username">
-            Username
-          </Label>
-          <Input
-            id="username"
-            name="username"
-            autoComplete="username"
-            placeholder="Choose a username"
-            value={username}
-            onChange={(e) => setUsername(e.target.value)}
-            required
-            disabled={loading}
-            className="h-12 bg-background text-ui"
-          />
+          <Label htmlFor="username">Username</Label>
+          <div className="relative">
+            <Input
+              id="username"
+              name="username"
+              autoComplete="username"
+              placeholder="Choose a username"
+              value={username}
+              onChange={(e) => setUsername(e.target.value)}
+              required
+              disabled={loading}
+              className="h-12 bg-background pr-11 text-ui"
+            />
+            {usernameLooksValid(username) ? (
+              <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-emerald-600 dark:text-emerald-400">
+                <Check className="h-5 w-5" aria-hidden />
+                <span className="sr-only">Username looks valid</span>
+              </span>
+            ) : null}
+          </div>
         </div>
         <div className="space-y-2">
-          <Label htmlFor="email">
-            Email
-          </Label>
-          <Input
-            id="email"
-            name="email"
-            type="email"
-            autoComplete="email"
-            placeholder="you@example.com"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            required
-            disabled={loading}
-            className="h-12 bg-background text-ui"
-          />
+          <Label htmlFor="email">Email</Label>
+          <div className="relative">
+            <Input
+              id="email"
+              name="email"
+              type="email"
+              autoComplete="email"
+              placeholder="you@example.com"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required
+              disabled={loading}
+              className="h-12 bg-background pr-11 text-ui"
+            />
+            {emailLooksValid(email) ? (
+              <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-emerald-600 dark:text-emerald-400">
+                <Check className="h-5 w-5" aria-hidden />
+                <span className="sr-only">Email looks valid</span>
+              </span>
+            ) : null}
+          </div>
         </div>
         <div className="space-y-2">
           <Label htmlFor="password">
@@ -174,7 +195,7 @@ const Signup = () => {
         </div>
         <Button type="submit" variant="default" className="h-12 w-full text-ui font-semibold" disabled={loading}>
           {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-          Create account
+          Create Account
         </Button>
       </form>
 
