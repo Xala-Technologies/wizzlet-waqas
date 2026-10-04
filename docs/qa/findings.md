@@ -1,3 +1,21 @@
+# Findings — Wave 7 J2 product CRUD 2026-10-05
+
+Branch `test/world-ready-wave-7-j2-products`. Fixture creator `j2creator` / `j2creator+wave7@example.com` on `combative-mongoose-559`.
+
+| Step | Result | Evidence |
+|------|--------|----------|
+| Create product | PASS | **J2 Monthly Alpha** monthly $19.99, limited spots 100, public |
+| Pin to profile | PASS | `showOnProfile: true`; Displayed Products strip |
+| Edit | PASS | Price → $24.99 (`priceCents: 2499`) |
+| Public profile | PASS | `/j2creator?demo=0` Subscribe $24.99 / month + Creator Products card |
+| Delete (no subs) | PASS | Hard delete; catalog count 0 |
+| Max 4 profile slots | PASS (unit + code) | `MAX_PROFILE_PRODUCTS` / `wouldExceedProfileSlots`; `setShowOnProfile` throws `PROFILE_SLOTS_FULL`; UI toast |
+| Soft-archive with subscribers | NOT_RUN | Code path in `remove` when subscription linked; no paid sub on this fixture |
+
+**J2:** PASS. Next: J3 content access / pick lock / win rate.
+
+---
+
 # Findings — Wave 6 F-010 webhook HTTP 2026-10-05
 
 Branch `test/world-ready-wave-6-f010-webhook`. Target `https://combative-mongoose-559.convex.site/stripe/webhook`.

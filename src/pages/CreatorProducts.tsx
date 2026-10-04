@@ -29,6 +29,7 @@ import type { Id } from '../../convex/_generated/dataModel';
 import { DashboardLayout } from '@/components/dashboard/DashboardLayout';
 import { DashboardKpiStrip } from '@/components/dashboard/DashboardKpiStrip';
 import { clayCard } from '@/lib/overviewClay';
+import { MAX_PROFILE_PRODUCTS } from '../../convex/lib/productProfileSlots';
 import { DisplayedProductsSection } from '@/components/creator/DisplayedProductsSection';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -456,6 +457,11 @@ const CreatorProducts = () => {
   }, [tableRows, demoProfileIds, liveProfileOverrides, useDemo]);
 
   const applyShowOnProfile = async (row: TableRowModel, show: boolean) => {
+    if (show && displayedProducts.length >= MAX_PROFILE_PRODUCTS && !isOnProfile(row)) {
+      toast.error(`Profile can show at most ${MAX_PROFILE_PRODUCTS} products`);
+      return;
+    }
+
     if (useDemo || isCreatorProductsDemoId(row.id)) {
       setDemoProfileIds((prev) => {
         const next = new Set(prev);
@@ -487,7 +493,12 @@ const CreatorProducts = () => {
         next.delete(row.id);
         return next;
       });
-      toast.error(e instanceof Error ? e.message : 'Could not update profile display');
+      const msg = e instanceof Error ? e.message : String(e);
+      toast.error(
+        msg.includes('PROFILE_SLOTS_FULL')
+          ? `Profile can show at most ${MAX_PROFILE_PRODUCTS} products`
+          : msg || 'Could not update profile display',
+      );
     } finally {
       setProfileBusyId(null);
     }
