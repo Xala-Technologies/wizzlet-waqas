@@ -1,3 +1,22 @@
+# Findings — Wave 24 J3 paid unlock / cancel / pickTracker 2026-10-05
+
+Branch `test/world-ready-wave-24-j3-paid-unlock`. Fixtures `j2creator` + `j3member+wave24@example.com` on `combative-mongoose-559`.
+
+| Step | Result | Evidence |
+|------|--------|----------|
+| Product recreate | PASS | **WAVE24 Monthly Access** $14.99 monthly on `j2creator` |
+| Member signup | PASS | `j3member` / `j3member+wave24@example.com` → subscriber |
+| Checkout | PASS | `cs_test_a13a8w85pXNh5Rc0WSUT8kBcms5hcO1f0RESywUzhKWO7RQaKnOnvD8moI`; card 4242; sub `sub_1UMytH…` ACTIVE |
+| Paid unlock | PASS | `/dashboard?demo=0` shows **WAVE8_SECRET_BODY** + Lakers pick |
+| Cancel | PASS | `cancelCreatorSubscription` → status **cancelled** / billingStatus canceled |
+| Access lock | PASS | Feed empty: “Nothing in your feed yet”; no WAVE8 secret |
+| pickTracker lock | PASS | Settled Win → Edit dialog Result combobox **disabled** |
+| Cancel copy honesty | PASS (fix) | Manage UI said period-end; now says access ends **immediately** |
+
+**J3 paid unlock residual:** PASS. Next: admin Lifetime metric; J-DISCORD human OAuth.
+
+---
+
 # Findings — Wave 23 J2 soft-archive with subscription 2026-10-05
 
 Branch `test/world-ready-wave-23-j2-soft-archive`. Fixture `j4creator` on `combative-mongoose-559`.

@@ -469,8 +469,7 @@ const CustomerManageSubscription = () => {
                 <span className="min-w-0 flex-1">
                   <span className="block text-sm font-bold text-foreground">Cancel subscription</span>
                   <span className="mt-0.5 block text-xs text-muted-foreground">
-                    You will lose access to all premium content at the end of your current billing
-                    period.
+                    Cancelling ends access to premium content immediately. You can resubscribe anytime.
                   </span>
                 </span>
                 <ChevronRight
@@ -545,8 +544,8 @@ const CustomerManageSubscription = () => {
           <AlertDialogHeader>
             <AlertDialogTitle>Cancel subscription?</AlertDialogTitle>
             <AlertDialogDescription>
-              You will lose access to {detail.displayName}&apos;s premium content at the end of your
-              current billing period. You can resubscribe anytime.
+              Cancelling ends access to {detail.displayName}&apos;s premium content immediately. You
+              can resubscribe anytime.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
