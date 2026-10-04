@@ -2,7 +2,7 @@
 
 **Authority:** [`docs/ai/prizelet-world-ready-master-prompt.md`](./prizelet-world-ready-master-prompt.md)
 
-**Status:** Wave 24 J3 paid unlock/cancel 2026-10-05. Member unlock → cancel → lock + pickTracker RESULT_LOCKED PASS. J-DISCORD still BLOCKED. Product is **not** world-ready.
+**Status:** Wave 25 admin Lifetime from paymentEvents 2026-10-05. Cancelled-sub earnings now count in `/admin/payouts` Lifetime. J-DISCORD still BLOCKED. Product is **not** world-ready.
 
 Do not claim world-ready until Section 8 gates in the master prompt pass.
 
@@ -16,9 +16,9 @@ Do not claim world-ready until Section 8 gates in the master prompt pass.
 | Evidence | branch, date, one-line actual vs expected |
 | Waiver | owner + reason (required if WAIVED) |
 
-Last updated: 2026-10-05. Last wave: **24** (`test/world-ready-wave-24-j3-paid-unlock`). Source pin: `bf85281` (inventory).
+Last updated: 2026-10-05. Last wave: **25** (`test/world-ready-wave-25-admin-lifetime`). Source pin: `bf85281` (inventory).
 
-Wave 24: `j3member` Stripe sub to **WAVE24 Monthly Access** → feed shows WAVE8_SECRET_BODY; cancel → feed empty; pickTracker Win result combobox disabled; cancel copy fixed to immediate access end.
+Wave 25: `payoutsOverview` Lifetime from settled `paymentEvents` (not active subs); `j4creator` Lifetime **$28.49** after cancelled j4member sub; `payoutBalance.test.ts` 6/6.
 
 ---
 
@@ -109,7 +109,7 @@ PASS below is **anonymous → `/login`**, not an authenticated admin session.
 | `/admin/customer-email` | AdminCustomerEmail | admin | convex | PASS | Wave 2 chromium surface smoke 2026-10-04; inventory pin bf85281 |
 | `/admin/growth-manager-inbox` | AdminGrowthManagerInbox | admin | convex | PASS | Wave 2 chromium surface smoke 2026-10-04; inventory pin bf85281 |
 | `/admin/resolution-cases` | AdminResolutionCases | admin | convex | PASS | Wave 2 chromium surface smoke 2026-10-04; inventory pin bf85281 |
-| `/admin/payouts` | AdminPayouts | admin | convex | PASS | Wave 22: ledger-only until Connect copy; Wave 10 approve/fail soak; Wave 2 smoke |
+| `/admin/payouts` | AdminPayouts | admin | convex | PASS | Wave 25: Lifetime from settled paymentEvents (`j4creator` $28.49); Wave 22 Connect honesty; Wave 10 approve/fail |
 | `/admin/alerts` | AdminAlerts | admin | convex | PASS | Wave 2 chromium surface smoke 2026-10-04; inventory pin bf85281 |
 | `/admin/notifications` | CustomerNotifications | admin | mixed | PASS | Wave 2 chromium surface smoke 2026-10-04; inventory pin bf85281 |
 | `/admin/reports` | AdminReports | admin | convex | PASS | Wave 2 chromium surface smoke 2026-10-04; inventory pin bf85281 |
@@ -154,7 +154,7 @@ Nested layouts in `App.tsx`: `/demo/admin` → `DemoAdminLayout`; `/demo/member`
 | J2 | Product CRUD + profile slots | PASS | Wave 7 CRUD + slots; Wave 23 2026-10-05: soft-archive **J4 Monthly Access** (linked cancelled sub) → Archived (1), public “No products yet”; hard-delete path still Wave 7; `productRemove.test.ts` 2/2. Residual: featured exclusivity not UI-toggled |
 | J3 | Content access / pick lock / win rate | PASS | Wave 8 owner lock/win-rate; Wave 24 2026-10-05: `j3member` Checkout `cs_test_a13a8w…` ACTIVE → dashboard shows WAVE8_SECRET_BODY; cancel `sub_1UMytH…` → status cancelled, feed empty (no secret); pickTracker settled Win → Result combobox **disabled**. Residual: cancel UI previously lied about period-end (fixed this wave) |
 | J4 | Messages / support / resolution | PASS | Wave 9 2026-10-05: `j4creator`/`j4member` Stripe sub; DM + creator unread/reply; support/resolution/growth admin replies; messaging off deny; cancel → `FORBIDDEN` on send. Unit `messaging.security.test.ts` 6/6. Fix: messaging toggle on populated CreatorMessages inbox. Residual: UI composer still shown when gated (server enforces) |
-| J5 | Payout request / approve / balance | PASS | Wave 10 2026-10-05: `j4creator` $28.49 available → request → reserved $0 avail; admin failed frees balance; re-request → completed; Paid ≠ reserved; Connect stub copy honest. `payoutBalance.test.ts` 5/5. Residual: admin Lifetime from active subs only |
+| J5 | Payout request / approve / balance | PASS | Wave 10 request/approve; Wave 25 2026-10-05: admin Lifetime from settled `paymentEvents` (cancelled j4member sub still counts) — `j4creator` Lifetime **$28.49** / Paid $28.49. `payoutBalance.test.ts` 6/6. Residual: Connect live transfers still out of scope |
 | J6 | Promo / tracking links / referrals | PASS | Wave 11 2026-10-05: promo CRUD WAVE11OFF10; `/go/{id}` click+redirect; signup `?ref=` banner; commission UI honest (—). Fixes shortPath + duration control + referral demo rates. Residual: paid conversion attribution not browser-soaked |
 | J7 | Identity (password, OAuth, roles, email request) | PASS | Wave 12 2026-10-05: password login; evil `returnTo` blocked → `/dashboard`; logout → `/` no select-role; email request open (email unchanged); roles unit + `switchRole` held-only. Residual: OAuth callback + multi-role switcher UI not browser-soaked |
 | J8 | Migration ETL internal-only | PASS | Wave 13 2026-10-05: all migration exports `internalMutation`; client has zero import refs; `MIGRATION_SECRET` unset on combative-mongoose-559; `migrations.security.test.ts` 3/3. Residual: historical data parity not claimed |
@@ -238,7 +238,7 @@ App public functions (`Auth` = TBD until Wave 1):
 | `admin.snapshots.customersOverview` | TBD | yes | NOT_RUN | frozen vs convex/*.ts @ bf85281 |
 | `admin.snapshots.feesOverview` | TBD | yes | NOT_RUN | frozen vs convex/*.ts @ bf85281 |
 | `admin.snapshots.financeOverview` | TBD | yes | NOT_RUN | frozen vs convex/*.ts @ bf85281 |
-| `admin.snapshots.payoutsOverview` | TBD | yes | NOT_RUN | frozen vs convex/*.ts @ bf85281 |
+| `admin.snapshots.payoutsOverview` | admin | yes | PASS | Wave 25: Lifetime via `sumSettledEarningsByCreatorCents`; soak `j4creator` $28.49 |
 | `admin.snapshots.reportSourceData` | TBD | yes | NOT_RUN | frozen vs convex/*.ts @ bf85281 |
 | `analytics.mutations.listAllAdmin` | TBD | yes | NOT_RUN | frozen vs convex/*.ts @ bf85281 |
 | `analytics.mutations.listForMyCreator` | TBD | yes | NOT_RUN | frozen vs convex/*.ts @ bf85281 |
@@ -430,7 +430,7 @@ Schema `appRole` also allows `moderator` and `user` (not product actors; no rout
 
 ## M. Remaining risk (update every fix PR)
 
-- P2: Stripe Connect live transfers still unimplemented (Wave 22 honesty PASS — ledger/manual only); J-DISCORD BLOCKED pending interactive guild OAuth + grant/revoke; J7 OAuth callback + multi-role switcher UI residual; historical migration data parity BLOCKED (greenfield); admin payout Lifetime ignores cancelled-sub paymentEvents; referral commission cash TBD; J2 featured exclusivity UI not toggled
+- P2: Stripe Connect live transfers still unimplemented (Wave 22 honesty PASS — ledger/manual only); J-DISCORD BLOCKED pending interactive guild OAuth + grant/revoke; J7 OAuth callback + multi-role switcher UI residual; historical migration data parity BLOCKED (greenfield); referral commission cash TBD; J2 featured exclusivity UI not toggled
 - P3: admin user/creator spend metrics cap at 200 indexed rows; customer pages scan ≤5k subscriptions; eslint warnings; AuthContext DEV `hasRole` leftover
 - Not in this PR: production deploy, live Stripe keys, MFA
 - Waivers: see section L

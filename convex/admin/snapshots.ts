@@ -3,7 +3,10 @@ import { v } from "convex/values";
 import type { Id } from "../_generated/dataModel";
 import { requireAdmin } from "../lib/auth";
 import { ADMIN_SCAN_MAX_DOCS, adminScanAll } from "../lib/adminLists";
-import { isPaidOutPayoutStatus } from "../lib/payoutBalance";
+import {
+  isPaidOutPayoutStatus,
+  sumSettledEarningsByCreatorCents,
+} from "../lib/payoutBalance";
 
 const monthPointValidator = v.object({
   month: v.string(),
@@ -438,6 +441,8 @@ const payoutBalanceRowValidator = v.object({
 
 /**
  * Exact-ish payout balances for Admin Payouts (D1).
+ * Lifetime earned comes from settled paymentEvents (not active-sub rows),
+ * so cancelled subscriptions still count toward Lifetime.
  * Does not use paginated history pages for paid/in-flight totals.
  */
 export const payoutsOverview = query({
@@ -456,19 +461,16 @@ export const payoutsOverview = query({
   }),
   handler: async (ctx) => {
     await requireAdmin(ctx);
-    const subsScan = await adminScanAll(ctx, "subscriptions");
+    const eventsScan = await adminScanAll(ctx, "paymentEvents");
     const payoutsScan = await adminScanAll(ctx, "payouts");
     const creatorsScan = await adminScanAll(ctx, "creators");
     const truncated =
-      subsScan.truncated || payoutsScan.truncated || creatorsScan.truncated;
+      eventsScan.truncated || payoutsScan.truncated || creatorsScan.truncated;
 
+    const earnedCentsBy = sumSettledEarningsByCreatorCents(eventsScan.docs);
     const earnedBy = new Map<string, number>();
-    for (const s of subsScan.docs) {
-      if (s.status !== "active") continue;
-      earnedBy.set(
-        s.creatorId,
-        (earnedBy.get(s.creatorId) ?? 0) + s.creatorEarningsCents / 100,
-      );
+    for (const [creatorId, cents] of earnedCentsBy) {
+      earnedBy.set(creatorId, cents / 100);
     }
 
     const paidBy = new Map<string, number>();

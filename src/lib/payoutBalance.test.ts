@@ -4,6 +4,7 @@ import {
   isPaidOutPayoutStatus,
   isReservedPayoutStatus,
   isSettledEarningEvent,
+  sumSettledEarningsByCreatorCents,
 } from "../../convex/lib/payoutBalance";
 
 describe("payout available balance (J5)", () => {
@@ -44,5 +45,30 @@ describe("payout available balance (J5)", () => {
     const available = computeAvailableBalanceCents(1_898, 0);
     expect(available).toBe(1_898);
     expect(2_000 > available).toBe(true);
+  });
+
+  it("sums Lifetime from settled paymentEvents even when the sub is cancelled", () => {
+    const byCreator = sumSettledEarningsByCreatorCents([
+      {
+        creatorId: "c1",
+        creatorEarningsCents: 2849,
+        status: "settled",
+        paymentMode: "test",
+      },
+      {
+        creatorId: "c1",
+        creatorEarningsCents: 1000,
+        status: "settled",
+        paymentMode: "sandbox",
+      },
+      {
+        creatorId: "c2",
+        creatorEarningsCents: 500,
+        status: "failed",
+        paymentMode: "test",
+      },
+    ]);
+    expect(byCreator.get("c1")).toBe(2849);
+    expect(byCreator.has("c2")).toBe(false);
   });
 });
