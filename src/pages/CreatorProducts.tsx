@@ -8,7 +8,6 @@ import {
   ChevronLeft,
   ChevronRight,
   Crown,
-  DollarSign,
   Gem,
   Gift,
   Loader2,
@@ -225,14 +224,11 @@ const CreatorProducts = () => {
     creator?._id ? { creatorId: creator._id } : 'skip',
   );
   const subs = useQuery(api.subscriptions.mutations.listForMyCreator);
-  const earnings = useQuery(api.creators.earnings.myEarnings);
   const removeProduct = useMutation(api.products.mutations.remove);
   const setShowOnProfile = useMutation(api.products.mutations.setShowOnProfile);
 
   const loading =
-    creator === undefined ||
-    (creator && products === undefined) ||
-    (creator && earnings === undefined);
+    creator === undefined || (creator && products === undefined);
 
   const subCountByProduct = useMemo(() => {
     const map = new Map<string, number>();
@@ -394,27 +390,16 @@ const CreatorProducts = () => {
         totalProductsDelta: CREATOR_PRODUCTS_DEMO_METRICS.totalProductsDelta,
         totalSubscribers: CREATOR_PRODUCTS_DEMO_METRICS.totalSubscribers,
         totalSubscribersDelta: CREATOR_PRODUCTS_DEMO_METRICS.totalSubscribersDelta,
-        mrrCents: CREATOR_PRODUCTS_DEMO_METRICS.mrrCents,
-        mrrDelta: CREATOR_PRODUCTS_DEMO_METRICS.mrrDelta,
-        totalRevenueCents: CREATOR_PRODUCTS_DEMO_METRICS.totalRevenueCents,
-        totalRevenueDelta: CREATOR_PRODUCTS_DEMO_METRICS.totalRevenueDelta,
       };
     }
     const activeSubs = (subs ?? []).filter((s) => s.status === 'active').length;
-    const mrrCents = liveRows
-      .filter((r) => r.status === 'active' && r.type !== 'one-time' && r.type !== 'free')
-      .reduce((sum, r) => sum + r.revenueMrrCents, 0);
     return {
       totalProducts: liveRows.filter((r) => r.status !== 'archived').length,
       totalProductsDelta: null as number | null,
       totalSubscribers: activeSubs,
       totalSubscribersDelta: null as number | null,
-      mrrCents: earnings?.netCents ?? mrrCents,
-      mrrDelta: null as number | null,
-      totalRevenueCents: earnings?.grossCents ?? mrrCents,
-      totalRevenueDelta: null as number | null,
     };
-  }, [earnings?.grossCents, earnings?.netCents, liveRows, subs, useDemo]);
+  }, [liveRows, subs, useDemo]);
 
   const isOnProfile = (row: TableRowModel): boolean => {
     if (isCreatorProductsDemoId(row.id) || useDemo) {
@@ -663,24 +648,6 @@ const CreatorProducts = () => {
               trendLabel: formatSignedPct(metrics.totalSubscribersDelta),
               trendPositive: (metrics.totalSubscribersDelta ?? 0) > 0,
               href: '/creator/subscribers',
-            },
-            {
-              label: 'Monthly revenue (MRR)',
-              value: formatMoneyCents(metrics.mrrCents),
-              icon: DollarSign,
-              iconClassName: kpiIconTone.emerald,
-              trendLabel: formatSignedPct(metrics.mrrDelta),
-              trendPositive: (metrics.mrrDelta ?? 0) > 0,
-              href: '/creator/earnings',
-            },
-            {
-              label: 'Total revenue',
-              value: formatMoneyCents(metrics.totalRevenueCents),
-              icon: BarChart3,
-              iconClassName: kpiIconTone.amber,
-              trendLabel: formatSignedPct(metrics.totalRevenueDelta),
-              trendPositive: (metrics.totalRevenueDelta ?? 0) > 0,
-              href: '/creator/earnings',
             },
           ]}
         />
