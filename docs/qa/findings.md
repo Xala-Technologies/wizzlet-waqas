@@ -1,3 +1,19 @@
+# Findings — Wave 21 J-SETTINGS / J-SMART-PRICING 2026-10-05
+
+Branch `test/world-ready-wave-21-j-settings-smart-pricing`. Fixture `j4creator` on `combative-mongoose-559`.
+
+| Step | Result | Evidence |
+|------|--------|----------|
+| Smart pricing honesty | PASS | Copy: heuristic…**impact is directional only**; sellable prices → Products |
+| Apply list price | PASS | `updateSettings` **$9.99 → $11.99**; Current list price shows $11.99 after reload |
+| Settings 2FA stub | PASS | Enable 2FA → “Two-factor authentication setup is coming soon.” |
+| Team invite stub | PASS | Send Invite → “Invite sent (preview)” / “Team invites are not wired to the backend yet.” |
+| Access control | PASS | Limit subscriber count → **Max spots 100** on J4 Monthly Access |
+
+**J-SETTINGS / J-SMART-PRICING:** PASS. Next: Connect residual honesty; J-DISCORD still needs human Discord OAuth.
+
+---
+
 # Findings — Wave 20 J-NOTIFICATIONS 2026-10-05
 
 Branch `test/world-ready-wave-20-j-notifications`. Fixtures platform owner + `j4member` on `combative-mongoose-559`.

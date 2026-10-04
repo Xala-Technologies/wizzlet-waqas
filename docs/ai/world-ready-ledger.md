@@ -2,7 +2,7 @@
 
 **Authority:** [`docs/ai/prizelet-world-ready-master-prompt.md`](./prizelet-world-ready-master-prompt.md)
 
-**Status:** Wave 20 J-NOTIFICATIONS 2026-10-05. Inbox create/mark-read PASS. J-DISCORD still BLOCKED. Connect residual. Product is **not** world-ready.
+**Status:** Wave 21 J-SETTINGS / J-SMART-PRICING 2026-10-05. Settings stubs + list-price/heuristic honesty PASS. J-DISCORD still BLOCKED. Connect residual. Product is **not** world-ready.
 
 Do not claim world-ready until Section 8 gates in the master prompt pass.
 
@@ -16,9 +16,9 @@ Do not claim world-ready until Section 8 gates in the master prompt pass.
 | Evidence | branch, date, one-line actual vs expected |
 | Waiver | owner + reason (required if WAIVED) |
 
-Last updated: 2026-10-05. Last wave: **20** (`test/world-ready-wave-20-j-notifications`). Source pin: `bf85281` (inventory).
+Last updated: 2026-10-05. Last wave: **21** (`test/world-ready-wave-21-j-settings-smart-pricing`). Source pin: `bf85281` (inventory).
 
-Wave 20: `adminInsert` WAVE20_NOTIFY_TITLE → member inbox; `markRead` unread 2→1; Mark all read → 0; pay + message rows present; admin `/admin/notifications` shared page.
+Wave 21: settings 2FA/team stubs honest; smart pricing heuristic “directional only” + `updateSettings` list price $9.99→$11.99; access-control limit spots via product upsert.
 
 ---
 
@@ -77,8 +77,8 @@ PASS below is **anonymous → `/login`**, not an authenticated creator session.
 | `/creator/promo/codes` | CreatorPromoCodes | creator | mixed | PASS | Wave 2 chromium surface smoke 2026-10-04; inventory pin bf85281 |
 | `/creator/personal-growth-manager` | CreatorPersonalGrowth | creator | mixed | PASS | Wave 2 chromium surface smoke 2026-10-04; inventory pin bf85281 |
 | `/creator/resolution-case` | CreatorResolutionCase | creator | convex | PASS | Wave 2 chromium surface smoke 2026-10-04; inventory pin bf85281 |
-| `/creator/smart-pricing` | CreatorSmartPricing | creator | mixed | PASS | Wave 2 chromium surface smoke 2026-10-04; inventory pin bf85281 |
-| `/creator/access-control` | CreatorAccessControl | creator | mixed | PASS | Wave 2 chromium surface smoke 2026-10-04; inventory pin bf85281 |
+| `/creator/smart-pricing` | CreatorSmartPricing | creator | mixed | PASS | Wave 21: heuristic directional-only + Apply list price → updateSettings $11.99; sellable prices deferred to Products |
+| `/creator/access-control` | CreatorAccessControl | creator | mixed | PASS | Wave 21: Limit subscriber count → max spots 100 via products.upsert; Wave 2 smoke |
 | `/creator/performance-tracker` | CreatorPerformanceTracker | creator | mixed | PASS | Wave 2 chromium surface smoke 2026-10-04; inventory pin bf85281 |
 | `/creator/messages` | CreatorMessages | creator | mixed | PASS | Wave 2 chromium surface smoke 2026-10-04; inventory pin bf85281 |
 | `/creator/notifications` | CustomerNotifications | creator | mixed | PASS | Wave 2 chromium surface smoke 2026-10-04; inventory pin bf85281 |
@@ -87,7 +87,7 @@ PASS below is **anonymous → `/login`**, not an authenticated creator session.
 | `/creator/earnings` | CreatorEarnings | creator | mixed | PASS | Wave 2 chromium surface smoke 2026-10-04; inventory pin bf85281 |
 | `/creator/payouts` | CreatorPayouts | creator | mixed | PASS | Wave 2 chromium surface smoke 2026-10-04; inventory pin bf85281 |
 | `/creator/transactions` | CreatorTransactions | creator | mixed | PASS | Wave 2 chromium surface smoke 2026-10-04; inventory pin bf85281 |
-| `/creator/settings` | CreatorSettings | creator | mixed | PASS | Wave 2 chromium surface smoke 2026-10-04; inventory pin bf85281 |
+| `/creator/settings` | CreatorSettings | creator | mixed | PASS | Wave 21: 2FA toast “coming soon”; team invite “not wired”; profile fields live; Wave 2 smoke |
 | `/creator/integrations` | CreatorIntegrations | creator | mixed | PASS | Wave 2 chromium surface smoke 2026-10-04; inventory pin bf85281 |
 | `/creator/support` | CreatorSupport | creator | mixed | PASS | Wave 2 chromium surface smoke 2026-10-04; inventory pin bf85281 |
 | `/creator/onboarding` | CreatorOnboarding | creator | convex | PASS | Wave 2 chromium surface smoke 2026-10-04; inventory pin bf85281 |
@@ -165,6 +165,8 @@ Nested layouts in `App.tsx`: `/demo/admin` → `DemoAdminLayout`; `/demo/member`
 | J-DEMO | Demo writes zero money rows | PASS | Wave 15 2026-10-05: demo Withdraw toast-only; listMine unchanged (2); Demo.ts no money API imports; `demo.security.test.ts` 2/2 |
 | J-EVENTS | Today’s sportEvents slate | PASS | Wave 19 2026-10-05: restored page; empty “No events published for today yet”; seed → 3 cards (NFL/NBA/MLB); bounds unit 2/2 |
 | J-NOTIFICATIONS | Inbox create + mark read | PASS | Wave 20 2026-10-05: adminInsert + member markRead/markAllRead; pay/message rows; admin shared page |
+| J-SETTINGS | Settings live vs toast-stub honesty | PASS | Wave 21 2026-10-05: 2FA “coming soon”; team invite preview “not wired to the backend yet”; account profile editable |
+| J-SMART-PRICING | Smart pricing + access control honesty | PASS | Wave 21 2026-10-05: heuristic “directional only”; list price via updateSettings (not fake Stripe product prices); access-control limit spots persists |
 
 ## H. Tooling gates
 
@@ -265,7 +267,7 @@ App public functions (`Auth` = TBD until Wave 1):
 | `creators.queries.myCreator` | TBD | yes | NOT_RUN | frozen vs convex/*.ts @ bf85281 |
 | `creators.queries.setPublished` | TBD | yes | NOT_RUN | frozen vs convex/*.ts @ bf85281 |
 | `creators.queries.setVerificationStatus` | TBD | yes | NOT_RUN | frozen vs convex/*.ts @ bf85281 |
-| `creators.queries.updateSettings` | TBD | yes | NOT_RUN | frozen vs convex/*.ts @ bf85281 |
+| `creators.queries.updateSettings` | owner | yes | PASS | Wave 21: monthlyPriceCents $9.99→$11.99 from Smart Pricing |
 | `creators.queries.upsertOnboarding` | TBD | yes | NOT_RUN | frozen vs convex/*.ts @ bf85281 |
 | `discord.mutations.disconnect` | TBD | yes | NOT_RUN | frozen vs convex/*.ts @ bf85281 |
 | `discord.mutations.retryMyAccess` | TBD | yes | NOT_RUN | frozen vs convex/*.ts @ bf85281 |
