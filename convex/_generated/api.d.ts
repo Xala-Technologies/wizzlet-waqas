@@ -42,6 +42,7 @@ import type * as lib_messagingAccess from "../lib/messagingAccess.js";
 import type * as lib_money from "../lib/money.js";
 import type * as lib_notify from "../lib/notify.js";
 import type * as lib_payoutBalance from "../lib/payoutBalance.js";
+import type * as lib_productProfileSlots from "../lib/productProfileSlots.js";
 import type * as lib_promoCodes from "../lib/promoCodes.js";
 import type * as lib_results from "../lib/results.js";
 import type * as lib_sandbox from "../lib/sandbox.js";
@@ -107,6 +108,7 @@ declare const fullApi: ApiFromModules<{
   "lib/money": typeof lib_money;
   "lib/notify": typeof lib_notify;
   "lib/payoutBalance": typeof lib_payoutBalance;
+  "lib/productProfileSlots": typeof lib_productProfileSlots;
   "lib/promoCodes": typeof lib_promoCodes;
   "lib/results": typeof lib_results;
   "lib/sandbox": typeof lib_sandbox;
