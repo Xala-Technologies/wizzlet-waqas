@@ -1,3 +1,13 @@
+# Findings — Wave 4 F-012 admin joins 2026-10-05
+
+Branch `fix/world-ready-wave-4-f012`. Closed unbounded `.collect()` on `listUsersPage` / `listCreatorsPage`. Indexed enrichments use `.take(ADMIN_JOIN_LIMIT)` (200, clamped to 500).
+
+Residual P3: spend/sub counts undercount if a user/creator has >200 related rows. `listCustomersPage` still uses `adminScanAll` (5k).
+
+`adminLists.test.ts` covers join cap math. Next: F-010 / J1 Stripe soak or authenticated journeys.
+
+---
+
 # Findings — Wave 3 F-015 tsc 2026-10-05
 
 Branch `fix/world-ready-wave-3-tsc`. Closed F-015: `npx tsc -b` now exits 0.

@@ -3,7 +3,7 @@ import { query } from "../_generated/server";
 import { v } from "convex/values";
 import type { Id } from "../_generated/dataModel";
 import { listRolesForUser, requireAdmin } from "../lib/auth";
-import { ADMIN_SCAN_MAX_DOCS, adminScanAll } from "../lib/adminLists";
+import { ADMIN_SCAN_MAX_DOCS, adminJoinCap, adminScanAll } from "../lib/adminLists";
 import { isPaidOutPayoutStatus } from "../lib/payoutBalance";
 
 const adminUserRowValidator = v.object({
@@ -46,7 +46,7 @@ const adminPayoutRowValidator = v.object({
 
 /**
  * Cursor-paginated users with per-row enrichment via indexes (F-012).
- * Does not full-scan subscriptions/creators/payouts tables.
+ * Indexed joins are `.take(ADMIN_JOIN_LIMIT)`, never `.collect()`.
  */
 export const listUsersPage = query({
   args: { paginationOpts: paginationOptsValidator },
@@ -58,17 +58,18 @@ export const listUsersPage = query({
     const page = [];
     for (const u of result.page) {
       const roles = await listRolesForUser(ctx, u._id);
+      const joinCap = adminJoinCap();
       const subs = await ctx.db
         .query("subscriptions")
         .withIndex("by_userId", (q) => q.eq("userId", u._id))
-        .collect();
+        .take(joinCap);
       const activeSubs = subs.filter((s) => s.status === "active");
       const totalSpend = subs.reduce((a, s) => a + s.amountCents / 100, 0);
 
       const ownedCreators = await ctx.db
         .query("creators")
         .withIndex("by_userId", (q) => q.eq("userId", u._id))
-        .collect();
+        .take(joinCap);
 
       let creatorEarnings = 0;
       let paidOut = 0;
@@ -76,7 +77,7 @@ export const listUsersPage = query({
         const creatorSubs = await ctx.db
           .query("subscriptions")
           .withIndex("by_creatorId", (q) => q.eq("creatorId", c._id))
-          .collect();
+          .take(joinCap);
         creatorEarnings += creatorSubs
           .filter((s) => s.status === "active")
           .reduce((a, s) => a + s.creatorEarningsCents / 100, 0);
@@ -84,7 +85,7 @@ export const listUsersPage = query({
         const payouts = await ctx.db
           .query("payouts")
           .withIndex("by_creatorId", (q) => q.eq("creatorId", c._id))
-          .collect();
+          .take(joinCap);
         paidOut += payouts
           .filter((p) => isPaidOutPayoutStatus(p.status))
           .reduce((a, p) => a + p.amountCents / 100, 0);
@@ -126,7 +127,7 @@ export const listCreatorsPage = query({
       const subs = await ctx.db
         .query("subscriptions")
         .withIndex("by_creatorId", (q) => q.eq("creatorId", c._id))
-        .collect();
+        .take(adminJoinCap());
       const activeCount = subs.filter((s) => s.status === "active").length;
       const monthly = (c.monthlyPriceCents ?? 999) / 100;
       page.push({
