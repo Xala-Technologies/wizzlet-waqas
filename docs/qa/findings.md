@@ -1,3 +1,24 @@
+# Findings — Wave 5 J1 / F-010 Stripe soak 2026-10-05
+
+Branch `test/world-ready-wave-5-j1-stripe`. Dev Convex `combative-mongoose-559`, Stripe test Checkout (Prizlett sandbox).
+
+| Step | Result | Evidence |
+|------|--------|----------|
+| Creator publish | PASS | `@prize2626` published; product **Monthly pro** $100 |
+| Member signup | PASS | `j1member` / `j1member+wave5@example.com` → subscriber role |
+| Checkout | PASS | `createCheckoutSession` → `cs_test_a171BP4bJzrvM8pRX5c7xvgaScFUnfjkraXVlSBBbIFzb8Zxz6spGJWgXJ`; card 4242 |
+| Fulfill / ACTIVE | PASS | Success page; sub `mn7bg36b7xe76gkxyaeq0caaph8fnhyh` ACTIVE; My Creators `?demo=0` shows Prize |
+| Ledger charge | PASS | `paymentEvents` `subscription_charge` $10000 `paymentMode:test` `commercialRef:checkout:cs_test_a171…` |
+| Cancel + access lock | PASS | `cancelCreatorSubscription` → status `cancelled` / billingStatus `canceled`; My Creators empty; `subscription_cancel` event |
+| Async webhook receipt | FAIL (this soak) | No new `webhookReceipts` row for this session; fulfillment via `confirmCheckoutSession` |
+| Connect payouts | NOT_RUN | Out of this wave |
+
+**J1:** PASS (client confirm path). **F-010:** PARTIAL (webhook async + Connect residual). Section 8 world-ready gate still blocked until webhook delivery proven and remaining journeys pass. No prod deploy.
+
+Next: finish F-010 webhook delivery / Connect, or J2–J8 authenticated journeys.
+
+---
+
 # Findings — Wave 4 F-012 admin joins 2026-10-05
 
 Branch `fix/world-ready-wave-4-f012`. Closed unbounded `.collect()` on `listUsersPage` / `listCreatorsPage`. Indexed enrichments use `.take(ADMIN_JOIN_LIMIT)` (200, clamped to 500).
