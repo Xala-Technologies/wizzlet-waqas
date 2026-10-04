@@ -1,3 +1,20 @@
+# Findings — Wave 17 J-DISCORD 2026-10-05
+
+Branch `test/world-ready-wave-17-j-discord`. Fixture `j4creator` on `combative-mongoose-559`.
+
+| Step | Result | Evidence |
+|------|--------|----------|
+| Bot configured | PASS | `discord.queries.botStatus.configured === true` |
+| Integrations UI | PASS | `/creator/integrations?demo=0` Connect Discord + unmapped J4 Monthly Access |
+| startBotInstall | PASS | OAuth URL `client_id=1546839405245759508` → convex.site callback |
+| HTTP callback | PARTIAL | No code → 302 `?discord=error`; guild token exchange not soaked |
+| Cron | PASS | `retryPendingGrants` every 5m; unit 3/3 |
+| Guild install + grant/revoke | BLOCKED | Requires interactive Discord OAuth in a real guild; not available in agent browser |
+
+**J-DISCORD:** BLOCKED (honest). Next: F-010 webhook/Connect residual.
+
+---
+
 # Findings — Wave 16 J-ADMIN ops 2026-10-05
 
 Branch `test/world-ready-wave-16-j-admin`. Platform owner `admin@prizelet.dev` on `combative-mongoose-559`.
