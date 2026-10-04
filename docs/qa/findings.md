@@ -1,3 +1,23 @@
+# Findings — Wave 11 J6 promo / links / referrals 2026-10-05
+
+Branch `test/world-ready-wave-11-j6-promo`. Fixture `j4creator` on `combative-mongoose-559`.
+
+| Step | Result | Evidence |
+|------|--------|----------|
+| Promo create | PASS | `WAVE11OFF10` 10% / max 100 / expires 2027-12-31; Active codes **1** |
+| Discount duration UI | PASS (fix) | Added once\|forever select; default expiry no longer stale 2025-03-31 |
+| Tracking link create | PASS | `WAVE11 IG Bio` → `/go/jd75mwt8rh94cjfm1vbg0t0cas8fn21j` |
+| `/go/` click + redirect | PASS | Redirect to `/j4creator`; row clicks **1** |
+| Live `/go/` shortSlug bug | PASS (fix) | UI showed `/go/wave11-ig-bi` (invalid id); `shortPath` now uses document id for live |
+| Signup `?ref=` | PASS | `Referred with code j4creator-jn79vx` |
+| Commission honesty | PASS (fix) | Live referrals no longer show demo 20% / $10 as live settings |
+| Unit | PASS | `promoCodes.test.ts` 4/4 |
+| Subscribe conversion attribution | NOT_RUN | Click path verified; paid conversion not re-soaked |
+
+**J6:** PASS. Next: J7 identity continuity.
+
+---
+
 # Findings — Wave 10 J5 payouts 2026-10-05
 
 Branch `test/world-ready-wave-10-j5-payouts`. Fixture `j4creator+wave9@example.com` on `combative-mongoose-559`.

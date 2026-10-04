@@ -218,9 +218,10 @@ const CreatorReferrals = () => {
         rewardsPaidCents: 0,
         rewardsPaidDelta: null as number | null,
         dateRangeLabel: 'Last 30 days',
-        commissionRatePct: CREATOR_REFERRALS_DEMO_METRICS.commissionRatePct,
-        cookieDays: CREATOR_REFERRALS_DEMO_METRICS.cookieDays,
-        minPayoutCents: CREATOR_REFERRALS_DEMO_METRICS.minPayoutCents,
+        // Commission cash rules are not persisted yet — never show demo rates as live.
+        commissionRatePct: null as number | null,
+        cookieDays: null as number | null,
+        minPayoutCents: null as number | null,
       };
 
   const topReferrers = useMemo(() => {
@@ -695,25 +696,27 @@ const CreatorReferrals = () => {
               </h2>
             </div>
             <p className="mb-4 text-sm text-muted-foreground">
-              Set your commission rate and customize your referral program.
+              {useDemo
+                ? 'Sample program rules for design review.'
+                : 'Attribution links work now. Commission cash payouts are not configured yet.'}
             </p>
             <dl className="space-y-3 text-sm">
               <div className="flex items-center justify-between gap-3">
                 <dt className="text-muted-foreground">Commission rate</dt>
                 <dd className="font-semibold tabular-nums text-foreground">
-                  {metrics.commissionRatePct}%
+                  {metrics.commissionRatePct != null ? `${metrics.commissionRatePct}%` : '—'}
                 </dd>
               </div>
               <div className="flex items-center justify-between gap-3">
                 <dt className="text-muted-foreground">Cookie duration</dt>
                 <dd className="font-semibold tabular-nums text-foreground">
-                  {metrics.cookieDays} days
+                  {metrics.cookieDays != null ? `${metrics.cookieDays} days` : '—'}
                 </dd>
               </div>
               <div className="flex items-center justify-between gap-3">
                 <dt className="text-muted-foreground">Minimum payout</dt>
                 <dd className="font-semibold tabular-nums text-foreground">
-                  {money(metrics.minPayoutCents)}
+                  {metrics.minPayoutCents != null ? money(metrics.minPayoutCents) : '—'}
                 </dd>
               </div>
             </dl>
