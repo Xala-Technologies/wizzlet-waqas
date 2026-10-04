@@ -5,6 +5,7 @@ import { api } from '../../convex/_generated/api';
 import { Navbar } from '@/components/landing/Navbar';
 import { Seo } from '@/components/Seo';
 import { Footer } from '@/components/landing/Footer';
+import { LandingFooterCta } from '@/components/landing/LandingFooterCta';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ArrowRight, Search } from 'lucide-react';
@@ -14,7 +15,6 @@ import {
 } from '@/components/discover/CreatorDiscoveryCard';
 import { DiscoverSportCollage } from '@/components/discover/DiscoverSportCollage';
 import { DiscoverSportFilterBar } from '@/components/discover/DiscoverSportFilterBar';
-import { useAuth } from '@/contexts/AuthContext';
 import { SweephRibbonBackground } from '@/components/brand/SweephRibbonBackground';
 import {
   DISCOVER_DEMO_CREATORS,
@@ -51,9 +51,6 @@ const Discover = () => {
   const creatorsPage = useQuery(api.creators.queries.listPublished, {});
   const [search, setSearch] = useState(qFromUrl);
   const [sportFilter, setSportFilter] = useState<DiscoverSportFilter>('All');
-  const { user, role } = useAuth();
-  const dashboardPath =
-    role === 'creator' ? '/creator' : role === 'admin' ? '/admin' : '/dashboard';
 
   useEffect(() => {
     setSearch(qFromUrl);
@@ -135,7 +132,7 @@ const Discover = () => {
       />
       <Navbar />
 
-      <main id="main-content" className="relative flex-1 bg-background">
+      <main id="main-content" className="relative flex flex-1 flex-col bg-background">
         {/* Hero */}
         <div className="relative overflow-hidden pb-10 md:pb-16">
           <SweephRibbonBackground variant="discover" />
@@ -176,7 +173,7 @@ const Discover = () => {
 
         {/* Sport filters + grid — continues white canvas from mock */}
         <section
-          className="container relative bg-background pb-16 md:pb-20"
+          className="container relative flex-1 bg-background pb-12 md:pb-16"
           aria-labelledby="discover-creators-heading"
         >
           <DiscoverSportFilterBar
@@ -256,40 +253,9 @@ const Discover = () => {
           )}
         </section>
 
-        <section className="border-t border-border bg-card">
-          <div className="container flex flex-col items-start justify-between gap-6 py-12 md:flex-row md:items-center md:py-14">
-            <div className="max-w-md">
-              <h2 className="text-xl font-bold tracking-tight text-foreground sm:text-2xl">
-                {user ? 'Ready to manage your account?' : 'Already browsing as a member?'}
-              </h2>
-              <p className="mt-2 text-base text-muted-foreground">
-                {user
-                  ? 'Open your dashboard for subscriptions, messages, and creator tools.'
-                  : 'Sign in to join creators and manage subscriptions from your dashboard.'}
-              </p>
-            </div>
-            <div className="flex flex-wrap gap-3">
-              {user ? (
-                <Link to={dashboardPath}>
-                  <Button variant="outline" size="lg">
-                    Dashboard
-                  </Button>
-                </Link>
-              ) : (
-                <Link to="/login">
-                  <Button variant="outline" size="lg">
-                    Sign in
-                  </Button>
-                </Link>
-              )}
-              <Link to="/signup">
-                <Button variant="hero" size="lg" className="gap-2">
-                  Get Started <ArrowRight className="h-4 w-4" />
-                </Button>
-              </Link>
-            </div>
-          </div>
-        </section>
+        <div className="mt-auto">
+          <LandingFooterCta />
+        </div>
       </main>
 
       <Footer />
