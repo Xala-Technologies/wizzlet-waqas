@@ -7,9 +7,7 @@ import {
   BadgeCheck,
   Bookmark,
   Check,
-  Heart,
   Loader2,
-  MessageCircle,
   MoreHorizontal,
   Play,
   PlusCircle,
@@ -140,7 +138,6 @@ const Dashboard = () => {
   const [trackOpen, setTrackOpen] = useState(false);
   const [trackSaving, setTrackSaving] = useState(false);
   const [optimisticSaved, setOptimisticSaved] = useState<Set<string> | null>(null);
-  const [likedDemo, setLikedDemo] = useState<Set<string>>(new Set());
   const [trackForm, setTrackForm] = useState<TrackForm>({
     pick_event: '',
     sport: '',
@@ -262,21 +259,6 @@ const Dashboard = () => {
       setOptimisticSaved(null);
       toast.error('Could not update your saved picks');
     }
-  };
-
-  const toggleLike = (postId: string) => {
-    if (isMemberHomeDemoId(postId)) {
-      setLikedDemo((prev) => {
-        const next = new Set(prev);
-        if (next.has(postId)) next.delete(postId);
-        else next.add(postId);
-        return next;
-      });
-      return;
-    }
-    toast.message('Likes', {
-      description: 'Like counts sync when creator engagement ships.',
-    });
   };
 
   const openTracker = (post: FeedPost) => {
@@ -444,8 +426,6 @@ const Dashboard = () => {
                     .slice(0, 2)
                     .toUpperCase();
                 const saved = savedIds.has(post.id);
-                const liked = likedDemo.has(post.id);
-                const likeCount = (post.likes ?? 0) + (liked ? 1 : 0);
 
                 return (
                   <article
@@ -619,38 +599,7 @@ const Dashboard = () => {
                           </button>
                         ) : null}
 
-                        <div className="mt-4 flex items-center justify-between gap-3 border-t border-border pt-3.5">
-                          <div className="flex items-center gap-0.5">
-                            <button
-                              type="button"
-                              className={cn(
-                                'inline-flex h-9 items-center gap-1.5 rounded-lg px-2.5 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground',
-                                liked && 'text-rose-500',
-                              )}
-                              onClick={() => toggleLike(post.id)}
-                              aria-label={liked ? 'Unlike' : 'Like'}
-                              aria-pressed={liked}
-                            >
-                              <Heart className={cn('h-4 w-4', liked && 'fill-current')} />
-                              <span className="tabular-nums text-xs font-semibold">{likeCount}</span>
-                            </button>
-                            <button
-                              type="button"
-                              className="inline-flex h-9 items-center gap-1.5 rounded-lg px-2.5 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
-                              onClick={() =>
-                                toast.message('Comments', {
-                                  description: 'Open Messages to chat with the creator.',
-                                })
-                              }
-                              aria-label="Comments"
-                            >
-                              <MessageCircle className="h-4 w-4" />
-                              <span className="tabular-nums text-xs font-semibold">
-                                {post.comments ?? 0}
-                              </span>
-                            </button>
-                          </div>
-
+                        <div className="mt-4 flex items-center justify-end border-t border-border pt-3.5">
                           <button
                             type="button"
                             className={cn(

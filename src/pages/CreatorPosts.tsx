@@ -29,12 +29,11 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import {
   FileText, Plus, Loader2, Pencil, Trash2,
-  CheckCircle2, Clock, Trophy, XCircle, Minus, Send, ChevronDown, ChevronUp,
+  CheckCircle2, Send, ChevronDown, ChevronUp,
   Search, Tag, MoreVertical, ChevronLeft, ChevronRight,
   Play, ArrowRight, BarChart3, BadgeCheck, Info, Eye, X,
 } from 'lucide-react';
@@ -50,7 +49,6 @@ import {
   isCreatorPicksDemoId,
   shouldUseCreatorPicksDemo,
 } from '@/lib/creatorPicksDemo';
-import { DashboardKpiStrip } from '@/components/dashboard/DashboardKpiStrip';
 import { clayCard } from '@/lib/overviewClay';
 import { kpiIconTone } from '@/lib/kpiIconTones';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -165,17 +163,6 @@ function excerptFromContent(content: string | null, fallback: string): string {
   return body.length > 72 ? `${body.slice(0, 72)}…` : body;
 }
 
-function pctDelta(current: number, previous: number): number | null {
-  if (previous === 0) return current === 0 ? 0 : 100;
-  return Number((((current - previous) / Math.abs(previous)) * 100).toFixed(1));
-}
-
-function formatSignedPct(value: number | null, suffix = '%'): string | undefined {
-  if (value === null) return undefined;
-  const sign = value > 0 ? '+' : value < 0 ? '' : '+';
-  return `${sign}${value}${suffix} vs. last month`;
-}
-
 function enrichPost(post: Post): EnrichedPick {
   const parsed = parsePostContent(post.content);
   const units = Number.parseFloat(parsed.units) || 1;
@@ -272,7 +259,6 @@ const CreatorPosts = () => {
   const subsRaw = useQuery(api.subscriptions.mutations.listForMyCreator);
   const upsertPost = useMutation(api.posts.queries.upsert);
   const removePost = useMutation(api.posts.queries.remove);
-  const setResultMut = useMutation(api.posts.queries.setResult);
 
   const loading = creator === undefined || postsStatus === 'LoadingFirstPage';
   const creatorId = creator?._id ?? null;
@@ -453,41 +439,6 @@ const CreatorPosts = () => {
     });
   };
 
-  const metrics = useMemo(() => {
-    if (useDemo) {
-      return {
-        published: CREATOR_PICKS_DEMO_METRICS.published,
-        publishedDelta: CREATOR_PICKS_DEMO_METRICS.publishedDelta,
-        scheduled: CREATOR_PICKS_DEMO_METRICS.scheduled,
-        scheduledDelta: CREATOR_PICKS_DEMO_METRICS.scheduledDelta,
-        drafts: CREATOR_PICKS_DEMO_METRICS.drafts,
-        draftsDelta: CREATOR_PICKS_DEMO_METRICS.draftsDelta,
-      };
-    }
-
-    const now = Date.now();
-    const windowMs = 30 * 86400000;
-    const currentStart = now - windowMs;
-    const previousStart = currentStart - windowMs;
-
-    const countStatus = (rows: EnrichedPick[], status: PostUiStatus) =>
-      rows.filter((p) => p.uiStatus === status).length;
-
-    const inCurrent = enriched.filter((p) => p.createdAtMs >= currentStart);
-    const inPrevious = enriched.filter(
-      (p) => p.createdAtMs >= previousStart && p.createdAtMs < currentStart,
-    );
-
-    return {
-      published: statusCounts.published,
-      publishedDelta: pctDelta(countStatus(inCurrent, 'published'), countStatus(inPrevious, 'published')),
-      scheduled: statusCounts.scheduled,
-      scheduledDelta: pctDelta(countStatus(inCurrent, 'scheduled'), countStatus(inPrevious, 'scheduled')),
-      drafts: statusCounts.draft,
-      draftsDelta: pctDelta(countStatus(inCurrent, 'draft'), countStatus(inPrevious, 'draft')),
-    };
-  }, [enriched, statusCounts, useDemo]);
-
   const guardDemoAction = (id?: string): boolean => {
     if (useDemo || (id && isCreatorPicksDemoId(id))) {
       toast.message('Sample preview data', {
@@ -664,21 +615,6 @@ const CreatorPosts = () => {
       toast.error(e instanceof Error ? e.message : 'Failed to delete pick');
     } finally {
       setDeleting(false);
-    }
-  };
-
-  const handleResultChange = async (postId: string, newResult: string) => {
-    if (guardDemoAction(postId)) return;
-    try {
-      await setResultMut({ postId: postId as Id<'posts'>, result: newResult });
-      toast.success(`Marked as ${newResult}`);
-    } catch (e) {
-      const msg = e instanceof Error ? e.message : '';
-      if (msg.includes('RESULT_LOCKED')) {
-        toast.error('Settled results are locked and cannot be changed');
-      } else {
-        toast.error('Failed to update result');
-      }
     }
   };
 
@@ -1056,33 +992,6 @@ const CreatorPosts = () => {
   const showingFrom = filtered.length === 0 ? 0 : safePage * TABLE_PAGE_SIZE + 1;
   const showingTo = Math.min(filtered.length, (safePage + 1) * TABLE_PAGE_SIZE);
 
-  const metricItems = [
-    {
-      label: 'Published posts',
-      value: String(metrics.published),
-      icon: FileText,
-      iconClassName: kpiIconTone.emerald,
-      trendLabel: formatSignedPct(metrics.publishedDelta),
-      trendPositive: (metrics.publishedDelta ?? 0) > 0,
-    },
-    {
-      label: 'Scheduled posts',
-      value: String(metrics.scheduled),
-      icon: Clock,
-      iconClassName: kpiIconTone.violet,
-      trendLabel: formatSignedPct(metrics.scheduledDelta),
-      trendPositive: (metrics.scheduledDelta ?? 0) > 0,
-    },
-    {
-      label: 'Drafts',
-      value: String(metrics.drafts),
-      icon: FileText,
-      iconClassName: kpiIconTone.sky,
-      trendLabel: formatSignedPct(metrics.draftsDelta),
-      trendPositive: (metrics.draftsDelta ?? 0) > 0,
-    },
-  ];
-
   const pageNumbers = (() => {
     const total = tablePageCount;
     if (total <= 7) return Array.from({ length: total }, (_, i) => i);
@@ -1139,10 +1048,6 @@ const CreatorPosts = () => {
             {tab.label} ({tabCount(tab.id)})
           </button>
         ))}
-      </div>
-
-      <div className="mb-6 sm:mb-8">
-        <DashboardKpiStrip items={metricItems} variant="clay" />
       </div>
 
       <section className={cn(clayCard, 'overflow-hidden')}>
@@ -1331,26 +1236,6 @@ const CreatorPosts = () => {
                             <DropdownMenuItem onClick={() => openEdit(row)}>
                               <Pencil className="mr-2 h-4 w-4" /> Edit
                             </DropdownMenuItem>
-                            {row.result === 'pending' ? (
-                              <>
-                                <DropdownMenuItem
-                                  onClick={() => void handleResultChange(row.id, 'won')}
-                                >
-                                  <Trophy className="mr-2 h-4 w-4 text-emerald-500" /> Mark won
-                                </DropdownMenuItem>
-                                <DropdownMenuItem
-                                  onClick={() => void handleResultChange(row.id, 'lost')}
-                                >
-                                  <XCircle className="mr-2 h-4 w-4 text-red-500" /> Mark lost
-                                </DropdownMenuItem>
-                                <DropdownMenuItem
-                                  onClick={() => void handleResultChange(row.id, 'push')}
-                                >
-                                  <Minus className="mr-2 h-4 w-4" /> Mark push
-                                </DropdownMenuItem>
-                                <DropdownMenuSeparator />
-                              </>
-                            ) : null}
                             <DropdownMenuItem
                               className="text-destructive focus:text-destructive"
                               onClick={() => setDeleteId(row.id)}
