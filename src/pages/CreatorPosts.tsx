@@ -50,7 +50,8 @@ import {
   shouldUseCreatorPicksDemo,
 } from '@/lib/creatorPicksDemo';
 import { clayCard } from '@/lib/overviewClay';
-import { kpiIconTone } from '@/lib/kpiIconTones';
+import { kpiIconTone, resultPillTone } from '@/lib/kpiIconTones';
+import { isSettledPickResult } from '../../convex/lib/results';
 import { Checkbox } from '@/components/ui/checkbox';
 import {
   PostVisibilityPicker,
@@ -259,6 +260,7 @@ const CreatorPosts = () => {
   const subsRaw = useQuery(api.subscriptions.mutations.listForMyCreator);
   const upsertPost = useMutation(api.posts.queries.upsert);
   const removePost = useMutation(api.posts.queries.remove);
+  const setPostResult = useMutation(api.posts.queries.setResult);
 
   const loading = creator === undefined || postsStatus === 'LoadingFirstPage';
   const creatorId = creator?._id ?? null;
@@ -601,6 +603,25 @@ const CreatorPosts = () => {
       toast.error(e instanceof Error ? e.message : 'Failed to save post');
     } finally {
       setSaving(false);
+    }
+  };
+
+  const settlePost = async (post: Post, result: 'won' | 'lost' | 'push') => {
+    if (guardDemoAction(post.id)) return;
+    if (isSettledPickResult(post.result)) {
+      toast.error('Settled results are locked and cannot be changed');
+      return;
+    }
+    try {
+      await setPostResult({ postId: post.id as Id<'posts'>, result });
+      toast.success(`Marked as ${result}`);
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : '';
+      if (msg.includes('RESULT_LOCKED')) {
+        toast.error('Settled results are locked and cannot be changed');
+      } else {
+        toast.error(msg || 'Failed to settle pick');
+      }
     }
   };
 
@@ -1149,6 +1170,7 @@ const CreatorPosts = () => {
                   <TableHead className="hidden sm:table-cell">Type</TableHead>
                   <TableHead className="hidden md:table-cell">Date</TableHead>
                   <TableHead>Status</TableHead>
+                  <TableHead className="hidden lg:table-cell">Result</TableHead>
                   <TableHead className="w-[1%] whitespace-nowrap text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
@@ -1202,6 +1224,23 @@ const CreatorPosts = () => {
                         {statusLabel[row.uiStatus]}
                       </span>
                     </TableCell>
+                    <TableCell className="hidden lg:table-cell">
+                      <span
+                        className={cn(
+                          'inline-flex rounded-full border px-2.5 py-0.5 text-xs font-bold capitalize',
+                          resultPillTone[
+                            (row.result === 'won' ||
+                            row.result === 'lost' ||
+                            row.result === 'push' ||
+                            row.result === 'pending'
+                              ? row.result
+                              : 'pending') as keyof typeof resultPillTone
+                          ],
+                        )}
+                      >
+                        {row.result || 'pending'}
+                      </span>
+                    </TableCell>
                     <TableCell
                       className="text-right"
                       onClick={(e) => e.stopPropagation()}
@@ -1236,6 +1275,28 @@ const CreatorPosts = () => {
                             <DropdownMenuItem onClick={() => openEdit(row)}>
                               <Pencil className="mr-2 h-4 w-4" /> Edit
                             </DropdownMenuItem>
+                            {!isSettledPickResult(row.result) ? (
+                              <>
+                                <DropdownMenuItem onClick={() => void settlePost(row, 'won')}>
+                                  Mark as won
+                                </DropdownMenuItem>
+                                <DropdownMenuItem onClick={() => void settlePost(row, 'lost')}>
+                                  Mark as lost
+                                </DropdownMenuItem>
+                                <DropdownMenuItem onClick={() => void settlePost(row, 'push')}>
+                                  Mark as push
+                                </DropdownMenuItem>
+                              </>
+                            ) : (
+                              <DropdownMenuItem
+                                disabled
+                                onClick={() =>
+                                  toast.error('Settled results are locked and cannot be changed')
+                                }
+                              >
+                                Result locked
+                              </DropdownMenuItem>
+                            )}
                             <DropdownMenuItem
                               className="text-destructive focus:text-destructive"
                               onClick={() => setDeleteId(row.id)}

@@ -34,6 +34,7 @@ import { useQuery, useMutation } from 'convex/react';
 import { api } from '@convex/_generated/api';
 import type { Id } from '@convex/_generated/dataModel';
 import { toast } from 'sonner';
+import { isSettledPickResult } from '../../convex/lib/results';
 import { ResponsiveContainer, AreaChart, Area, XAxis, YAxis, Tooltip, PieChart, Pie, Cell, BarChart, Bar } from 'recharts';
 import { downloadCsv, readFileAsText } from '@/lib/csv';
 import { PICK_CSV_HEADERS, parsePickCsv } from '@/lib/pickCsv';
@@ -889,7 +890,11 @@ const CustomerResults = () => {
               </div>
               <div className="space-y-2">
                 <label className="text-support text-muted-foreground block">Result</label>
-                <Select value={form.result} onValueChange={v => setForm(f => ({ ...f, result: v }))}>
+                <Select
+                  value={form.result}
+                  disabled={Boolean(editId) && isSettledPickResult(form.result)}
+                  onValueChange={v => setForm(f => ({ ...f, result: v }))}
+                >
                   <SelectTrigger className="h-11 min-h-11 text-ui"><SelectValue /></SelectTrigger>
                   <SelectContent>{RESULTS.map(r => <SelectItem key={r} value={r}>{r.charAt(0).toUpperCase() + r.slice(1)}</SelectItem>)}</SelectContent>
                 </Select>

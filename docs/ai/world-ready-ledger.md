@@ -2,7 +2,7 @@
 
 **Authority:** [`docs/ai/prizelet-world-ready-master-prompt.md`](./prizelet-world-ready-master-prompt.md)
 
-**Status:** Wave 7 J2 product CRUD 2026-10-05. J1 PASS; J2 PASS. F-010 still PARTIAL. Product is **not** world-ready.
+**Status:** Wave 8 J3 content access / pick lock / win rate 2026-10-05. J1 PASS; J2 PASS; J3 PASS. F-010 still PARTIAL. Product is **not** world-ready.
 
 Do not claim world-ready until Section 8 gates in the master prompt pass.
 
@@ -16,9 +16,9 @@ Do not claim world-ready until Section 8 gates in the master prompt pass.
 | Evidence | branch, date, one-line actual vs expected |
 | Waiver | owner + reason (required if WAIVED) |
 
-Last updated: 2026-10-05. Last wave: **7** (`test/world-ready-wave-7-j2-products`). Source pin: `bf85281` (inventory).
+Last updated: 2026-10-05. Last wave: **8** (`test/world-ready-wave-8-j3-access`). Source pin: `bf85281` (inventory).
 
-Wave 7: creator `j2creator` create/edit/pin/delete product on `/creator/products?demo=0`; public `/j2creator?demo=0` showed $24.99. Server+UI enforce `MAX_PROFILE_PRODUCTS=4`. Soft-archive-with-subscribers path not browser-soaked.
+Wave 8: `j2creator` premium posts `J3 SECRET PICK` (won) + `J3 PUSH PICK` (push). Anonymous `/j2creator?demo=0` hides `WAVE8_SECRET_BODY` / `WAVE8_PUSH_BODY`; Win Rate **100%** (push excluded). Owner `/creator/posts?demo=0` sees bodies; `setResult` then **Result locked**. Residual: no paid subscriber on this fixture (0 products after J2 delete) so member-feed unlock/cancel not re-soaked; pickTracker lock is code+UI (subscriber `/dashboard/results` not session-soaked this wave).
 
 ---
 
@@ -152,7 +152,7 @@ Nested layouts in `App.tsx`: `/demo/admin` → `DemoAdminLayout`; `/demo/member`
 |----|------|--------|----------|
 | J1 | Commercial lifecycle (publish → Stripe → webhook → cancel → access) | PASS | Wave 5 2026-10-05: publish `@prize2626` + product Monthly pro $100; member signup `j1member`; Checkout `cs_test_a171BP4bJzrvM8pRX5c7xvgaScFUnfjkraXVlSBBbIFzb8Zxz6spGJWgXJ`; sub `mn7bg36b7xe76gkxyaeq0caaph8fnhyh` ACTIVE then cancelled; `paymentEvents` `checkout:cs_test_…` + `cancel_local:…`; My Creators `?demo=0` empty after cancel. Residual: no new `webhookReceipts` for this session (confirmCheckoutSession fulfilled); Connect not in scope |
 | J2 | Product CRUD + profile slots | PASS | Wave 7 2026-10-05: `j2creator` published; create **J2 Monthly Alpha** $19.99 monthly + limited 100 spots; pin `showOnProfile`; edit → $24.99; public profile Subscribe $24.99; hard delete (no subs) → 0 products. `setShowOnProfile` throws `PROFILE_SLOTS_FULL` at 4; unit `productProfileSlots.test.ts`. Residual: soft-archive when subscription exists not browser-soaked; featured exclusivity not UI-toggled |
-| J3 | Content access / pick lock / win rate | NOT_RUN | |
+| J3 | Content access / pick lock / win rate | PASS | Wave 8 2026-10-05: anonymous `/j2creator?demo=0` no secret bodies; owner posts list shows WAVE8_*; `setResult` won then UI **Result locked** + `RESULT_LOCKED` on upsert/setResult; public Win Rate 100% with won+push (push excluded). `memberFeed` uses `subscriptionGrantsContentAccess`; saved posts use `canViewPostContent`. Residual: paid unlock/cancel not browser-soaked on this fixture (0 subs); pickTracker lock not subscriber-session soaked |
 | J4 | Messages / support / resolution | NOT_RUN | |
 | J5 | Payout request / approve / balance | NOT_RUN | |
 | J6 | Promo / tracking links / referrals | NOT_RUN | |
@@ -168,7 +168,7 @@ Nested layouts in `App.tsx`: `/demo/admin` → `DemoAdminLayout`; `/demo/member`
 
 | Command | Result | Evidence |
 |---------|--------|----------|
-| `npm test` | PASS | Wave 7: productProfileSlots.test.ts; Wave 6 commerceIdentity 11 tests |
+| `npm test` | PASS | Wave 8: contentAccess.test.ts 11 tests (access matrix + win rate + lock helpers); Wave 7 productProfileSlots |
 | `npm run lint` | PASS | Wave 3: 0 errors, 28 warnings |
 | `npm run build` | PASS | Wave 3: `vite build` succeeded |
 | `npm run env:validate` | PASS | Wave 1: `env:validate PASS (local)`; sandbox false; devAdmin false |
@@ -318,15 +318,15 @@ App public functions (`Auth` = TBD until Wave 1):
 | `picks.mutations.upsert` | TBD | yes | NOT_RUN | frozen vs convex/*.ts @ bf85281 |
 | `platform.mutations.get` | TBD | yes | NOT_RUN | frozen vs convex/*.ts @ bf85281 |
 | `platform.mutations.upsert` | TBD | yes | NOT_RUN | frozen vs convex/*.ts @ bf85281 |
-| `posts.queries.listMine` | TBD | yes | NOT_RUN | frozen vs convex/*.ts @ bf85281 |
-| `posts.queries.listMinePage` | TBD | yes | NOT_RUN | frozen vs convex/*.ts @ bf85281 |
-| `posts.queries.listPreviewsByCreator` | TBD | yes | NOT_RUN | frozen vs convex/*.ts @ bf85281 |
-| `posts.queries.listSavedDetailed` | TBD | yes | NOT_RUN | frozen vs convex/*.ts @ bf85281 |
-| `posts.queries.listSavedDetailedPage` | TBD | yes | NOT_RUN | frozen vs convex/*.ts @ bf85281 |
-| `posts.queries.memberFeed` | TBD | yes | NOT_RUN | frozen vs convex/*.ts @ bf85281 |
-| `posts.queries.remove` | TBD | yes | NOT_RUN | frozen vs convex/*.ts @ bf85281 |
-| `posts.queries.setResult` | TBD | yes | NOT_RUN | frozen vs convex/*.ts @ bf85281 |
-| `posts.queries.upsert` | TBD | yes | NOT_RUN | frozen vs convex/*.ts @ bf85281 |
+| `posts.queries.listMine` | creator | yes | PASS | Wave 8: owner `/creator/posts?demo=0` showed WAVE8_SECRET_BODY |
+| `posts.queries.listMinePage` | creator | yes | PASS | Wave 8: paginated posts list 2 published premium posts |
+| `posts.queries.listPreviewsByCreator` | public | yes | PASS | Wave 8: anonymous profile no secret body; win rate from results only |
+| `posts.queries.listSavedDetailed` | subscriber | yes | PASS | Wave 8: redaction now `canViewPostContent` (product-aware); no saved-library soak |
+| `posts.queries.listSavedDetailedPage` | subscriber | yes | PASS | Wave 8: same entitlement as listSavedDetailed |
+| `posts.queries.memberFeed` | subscriber | yes | PASS | Wave 8: filters via `subscriptionGrantsContentAccess`; 0 active subs on j2creator so feed empty |
+| `posts.queries.remove` | creator | yes | NOT_RUN | frozen vs convex/*.ts @ bf85281 |
+| `posts.queries.setResult` | creator | yes | PASS | Wave 8: Mark as won / Mark as push then Result locked |
+| `posts.queries.upsert` | creator | yes | PASS | Wave 8: publish J3 SECRET + J3 PUSH; settled result cannot be overwritten |
 | `products.mutations.listByCreator` | owner | yes | PASS | Wave 7: creator products table listed live rows |
 | `products.mutations.listPublicByCreator` | public | yes | PASS | Wave 7: `/j2creator?demo=0` showed J2 Monthly Alpha |
 | `products.mutations.remove` | owner | yes | PASS | Wave 7: hard delete with no subscriptions → empty catalog |
@@ -394,7 +394,7 @@ Confirm each table still exists; note writers. Result `NOT_RUN` = existence free
 | userRoles | roles.mutations | NOT_RUN | present in convex/schema.ts @ bf85281; existence freeze only |
 | creators | creators/* | NOT_RUN | present in convex/schema.ts @ bf85281; existence freeze only |
 | products | products.mutations | PASS | Wave 7: create/edit/pin/delete soak on j2creator |
-| posts | posts/* | NOT_RUN | present in convex/schema.ts @ bf85281; existence freeze only |
+| posts | posts/* | PASS | Wave 8: upsert + setResult won/push; RESULT_LOCKED |
 | subscriptions | payments/*, subscriptions.mutations | PASS | Wave 5: active→cancelled soak on prize2626 / j1member; Stripe sub_1UMxh9… |
 | analyticsEvents | analytics.mutations | NOT_RUN | present in convex/schema.ts @ bf85281; existence freeze only |
 | pickTracker | picks.mutations | NOT_RUN | present in convex/schema.ts @ bf85281; existence freeze only |
@@ -425,7 +425,7 @@ Schema `appRole` also allows `moderator` and `user` (not product actors; no rout
 
 ## M. Remaining risk (update every fix PR)
 
-- P2: F-010 residual — signed Stripe → `webhookReceipts` insert + Connect payouts; Discord grant soak; J3–J8 authenticated journeys not run; J2 soft-archive-with-sub not soaked
+- P2: F-010 residual — signed Stripe → `webhookReceipts` insert + Connect payouts; Discord grant soak; J4–J8 authenticated journeys not run; J2 soft-archive-with-sub not soaked; J3 paid unlock/cancel + pickTracker session not soaked on j2creator
 - P3: admin user/creator spend metrics cap at 200 indexed rows; customer pages scan ≤5k subscriptions; eslint warnings; AuthContext DEV `hasRole` leftover
 - Not in this PR: production deploy, live Stripe keys, MFA
 - Waivers: see section L

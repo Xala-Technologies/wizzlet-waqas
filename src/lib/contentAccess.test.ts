@@ -96,4 +96,9 @@ describe("computeWinRate", () => {
   it("returns 0 when no decided picks", () => {
     expect(computeWinRate(["push", "pending"]).winRatePct).toBe(0);
   });
+
+  it("does not treat push as a loss in the percentage", () => {
+    expect(computeWinRate(["won", "push"]).winRatePct).toBe(100);
+    expect(computeWinRate(["won", "push", "lost"]).winRatePct).toBe(50);
+  });
 });
