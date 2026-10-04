@@ -1,0 +1,14 @@
+---
+description: Merge PRs as work finishes; do not deploy live until the user says so
+alwaysApply: true
+---
+
+# Merge now, live later
+
+When a requested change is done (or the user says merge):
+
+1. **Commit** (wahidullahr), **push**, **open a PR** to `production` with reviewer `xalatechnologies`.
+2. **Merge** the PR, then fast-forward `main` and `dev` to that tip.
+3. **Do not** run `npx vercel --prod`, `npx convex deploy` to Prizelet production, or otherwise publish www.prizelet.com until the user says **make it live** / **deploy** / **ship**.
+
+Return the PR URL after merge. Wait for an explicit live/deploy instruction at the end of the batch.
