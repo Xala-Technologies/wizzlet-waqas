@@ -537,7 +537,6 @@ const CreatorSettings = () => {
     saving || uploadingAvatar || uploadingBanner || uploadingLogo || uploadingFavicon;
   const usernameLocked = Boolean(creator.username?.trim());
   const showSave = tab === 'general' || tab === 'branding';
-  const stripeConnected = Boolean(creator.stripeAccountId?.trim());
   const liveEmail = me?.email || email;
 
   const quickAction = (label: string, description: string) => {
@@ -1574,7 +1573,7 @@ const CreatorSettings = () => {
                         <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-emerald-500/15 text-emerald-700 dark:text-emerald-400">
                           <Check className="h-3 w-3" />
                         </span>
-                        Payouts go to your connected Stripe account
+                        Payouts are paid manually until Stripe Connect is enabled
                       </li>
                     </ul>
                   </div>
