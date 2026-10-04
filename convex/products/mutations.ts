@@ -6,6 +6,7 @@ import {
   MAX_PROFILE_PRODUCTS,
   wouldExceedProfileSlots,
 } from "../lib/productProfileSlots";
+import { siblingIdsToUnfeature } from "../lib/productFeatured";
 import { productRemoveMode } from "../lib/productRemove";
 import { productDocValidator, productPublicValidator } from "../lib/validators";
 
@@ -86,8 +87,9 @@ export const upsert = mutation({
         .query("products")
         .withIndex("by_creatorId", (q) => q.eq("creatorId", args.creatorId))
         .collect();
+      const clearIds = new Set(siblingIdsToUnfeature(siblings, args.productId));
       for (const sibling of siblings) {
-        if (sibling.isFeatured && sibling._id !== args.productId) {
+        if (clearIds.has(sibling._id)) {
           await ctx.db.patch(sibling._id, { isFeatured: false, updatedAt: now });
         }
       }

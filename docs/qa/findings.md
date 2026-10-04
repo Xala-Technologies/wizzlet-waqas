@@ -1,3 +1,20 @@
+# Findings — Wave 26 J2 featured exclusivity UI 2026-10-05
+
+Branch `test/world-ready-wave-26-j2-featured`. Fixture `j2creator` on `combative-mongoose-559`.
+
+| Step | Result | Evidence |
+|------|--------|----------|
+| Bug | PASS (fix) | Create/edit form hard-coded `isFeatured: false` (wiped featured on every save) |
+| Featured switch | PASS | Create Product Visibility → **Featured list price** switch |
+| Create featured | PASS | **WAVE26 Featured Tier** $19.99 published with Featured badge |
+| Exclusivity | PASS | Edit **WAVE24** → Featured on → only WAVE24 shows Featured; WAVE26 cleared |
+| Public CTA | PASS | `/j2creator?demo=0` Subscribe **$14.99 / month** (featured price) |
+| Unit | PASS | `productFeatured.test.ts` 3/3 |
+
+**J2 featured exclusivity residual:** PASS. Next: J-DISCORD human OAuth; referral cash; Connect live transfers; J7 OAuth/multi-role residual.
+
+---
+
 # Findings — Wave 25 admin Lifetime from paymentEvents 2026-10-05
 
 Branch `test/world-ready-wave-25-admin-lifetime`. Fixtures platform owner + `j4creator` on `combative-mongoose-559`.

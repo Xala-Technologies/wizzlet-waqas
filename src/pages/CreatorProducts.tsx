@@ -799,7 +799,15 @@ const CreatorProducts = () => {
                             <Icon className="h-4 w-4" aria-hidden />
                           </span>
                           <div className="min-w-0">
-                            <p className="font-bold text-foreground">{row.name}</p>
+                            <div className="flex flex-wrap items-center gap-2">
+                              <p className="font-bold text-foreground">{row.name}</p>
+                              {'isFeatured' in row && row.isFeatured ? (
+                                <span className="inline-flex items-center gap-1 rounded-full bg-amber-500/15 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-amber-700 dark:text-amber-400">
+                                  <Star className="h-3 w-3 fill-current" aria-hidden />
+                                  Featured
+                                </span>
+                              ) : null}
+                            </div>
                             <p className="truncate text-xs text-muted-foreground">
                               {row.description || '—'}
                             </p>
