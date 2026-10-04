@@ -548,8 +548,12 @@ const CreatorProducts = () => {
     }
     setDeleting(true);
     try {
-      await removeProduct({ productId: deleteId as Id<'products'> });
-      toast.success('Product deleted');
+      const result = await removeProduct({ productId: deleteId as Id<'products'> });
+      toast.success(
+        result.archived
+          ? 'Product archived — subscribers keep access'
+          : 'Product deleted',
+      );
       setDeleteId(null);
     } catch (e) {
       toast.error(e instanceof Error ? e.message : 'Failed to delete');
