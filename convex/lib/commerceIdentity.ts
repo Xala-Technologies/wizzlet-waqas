@@ -11,6 +11,31 @@ export function commercialRefForInvoice(invoiceId: string): string {
   return `invoice:${invoiceId}`;
 }
 
+export type WebhookReceiptLookup = {
+  provider: string;
+  eventId: string;
+};
+
+/** Delivery identity for Stripe (and other) webhook events — not a ledger key. */
+export function webhookReceiptKey(provider: string, eventId: string): string {
+  return `${provider}:${eventId}`;
+}
+
+/**
+ * First delivery writes; retries with the same provider+eventId are duplicates.
+ * Distinct event ids on the same checkout session are not duplicates (ledger
+ * still dedupes via commercialRef).
+ */
+export function isDuplicateWebhookReceipt(
+  existing: WebhookReceiptLookup | null | undefined,
+  incoming: WebhookReceiptLookup,
+): boolean {
+  if (!existing) return false;
+  return (
+    existing.provider === incoming.provider && existing.eventId === incoming.eventId
+  );
+}
+
 /** True when redirect confirm and webhook would collide on the same purchase. */
 export function isSameCheckoutFulfillment(
   redirectKey: string,

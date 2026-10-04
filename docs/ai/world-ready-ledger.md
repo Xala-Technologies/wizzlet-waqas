@@ -2,7 +2,7 @@
 
 **Authority:** [`docs/ai/prizelet-world-ready-master-prompt.md`](./prizelet-world-ready-master-prompt.md)
 
-**Status:** Wave 5 J1 Stripe test soak 2026-10-05 on `combative-mongoose-559`. J1 PASS (confirmCheckoutSession path). F-010 PARTIAL (no new `webhookReceipts` / Connect not run). Product is **not** world-ready.
+**Status:** Wave 6 F-010 webhook HTTP + receipt-dedupe 2026-10-05. J1 PASS (confirmCheckoutSession). F-010 still PARTIAL (signed Stripe delivery not observed; Connect NOT_RUN). Product is **not** world-ready.
 
 Do not claim world-ready until Section 8 gates in the master prompt pass.
 
@@ -16,9 +16,9 @@ Do not claim world-ready until Section 8 gates in the master prompt pass.
 | Evidence | branch, date, one-line actual vs expected |
 | Waiver | owner + reason (required if WAIVED) |
 
-Last updated: 2026-10-05. Last wave: **5** (`test/world-ready-wave-5-j1-stripe`). Source pin: `bf85281` (inventory).
+Last updated: 2026-10-05. Last wave: **6** (`test/world-ready-wave-6-f010-webhook`). Source pin: `bf85281` (inventory).
 
-Wave 5: published `@prize2626` → member `j1member` → Stripe Checkout `cs_test_a171…` (4242) → `paymentEvents` charge + cancel → My Creators access removed. Async `webhookReceipts` row for this session **not** observed (fulfillment via `confirmCheckoutSession`).
+Wave 6: `POST https://combative-mongoose-559.convex.site/stripe/webhook` returns 400 without signature and 400 with a forged signature (`STRIPE_WEBHOOK_SECRET` is set). Receipt dedupe extracted to `isDuplicateWebhookReceipt`. Signed `webhookReceipts` insert still needs Stripe CLI / Dashboard destination.
 
 ---
 
@@ -142,7 +142,7 @@ Nested layouts in `App.tsx`: `/demo/admin` → `DemoAdminLayout`; `/demo/member`
 | Surface | Module | Result | Evidence |
 |---------|--------|--------|----------|
 | Convex Auth HTTP routes | `convex/http.ts` + `auth.addHttpRoutes` | NOT_RUN | frozen vs convex/http.ts + crons.ts @ bf85281; chore/world-ready-wave-0-inventory; 2026-10-04 |
-| `POST /stripe/webhook` | `payments.stripeNode.fulfillWebhook` | PARTIAL | Wave 5: handler present; prior receipts processed historically; no new receipt for Wave 5 `cs_test_a171…` (confirmCheckoutSession fulfilled instead) |
+| `POST /stripe/webhook` | `payments.stripeNode.fulfillWebhook` | PARTIAL | Wave 6: live HTTP 400 missing signature; 400 forged signature (secret present). Signed event → `webhookReceipts` still not observed. Wave 5 fulfill used confirmCheckoutSession |
 | `GET /discord/bot-install/callback` | `discord.roles.completeBotInstall` | NOT_RUN | frozen vs convex/http.ts + crons.ts @ bf85281; chore/world-ready-wave-0-inventory; 2026-10-04 |
 | Cron 5m pending Discord grants | `discord.roles.retryPendingGrants` | NOT_RUN | frozen vs convex/http.ts + crons.ts @ bf85281; chore/world-ready-wave-0-inventory; 2026-10-04 |
 
@@ -168,7 +168,7 @@ Nested layouts in `App.tsx`: `/demo/admin` → `DemoAdminLayout`; `/demo/member`
 
 | Command | Result | Evidence |
 |---------|--------|----------|
-| `npm test` | PASS | Wave 4 2026-10-05: 25 files / 138 tests including adminLists.test.ts |
+| `npm test` | PASS | Wave 6: commerceIdentity 11 tests (webhook receipt dedupe). Prior Wave 4 25 files / 138 tests |
 | `npm run lint` | PASS | Wave 3: 0 errors, 28 warnings |
 | `npm run build` | PASS | Wave 3: `vite build` succeeded |
 | `npm run env:validate` | PASS | Wave 1: `env:validate PASS (local)`; sandbox false; devAdmin false |
@@ -188,7 +188,7 @@ Nested layouts in `App.tsx`: `/demo/admin` → `DemoAdminLayout`; `/demo/member`
 | F-004 JWT subject as user id | PASS | Wave 1: listPreviewsByCreator uses getAuthUserId |
 | F-005 public migration mutations | PASS | Wave 1: importBatch/load are internalMutation |
 | F-009 / J5 payout reserved vs paid | PASS | Wave 1: payoutBalance.test.ts 5/5. Live UI Wave 2 |
-| F-010 webhook soak / Connect | PARTIAL | Wave 5: live Checkout+confirmCheckoutSession+cancel+ledger on combative-mongoose-559. No new `webhookReceipts` for `cs_test_a171…` (async webhook not observed). Connect payouts still NOT_RUN |
+| F-010 webhook soak / Connect | PARTIAL | Wave 6: endpoint live + secret verified via reject; `isDuplicateWebhookReceipt` unit tests. Signed soak + Connect still NOT_RUN |
 | F-012 admin full-table scans | PASS | Wave 4: listUsersPage/listCreatorsPage indexed joins use `.take(ADMIN_JOIN_LIMIT=200)`. Customers still `adminScanAll` cap 5k |
 | F-015 lint / tsc | PASS | Wave 3: `npx tsc -b` exit 0; lint still 0 errors / 28 warnings |
 
@@ -399,7 +399,7 @@ Confirm each table still exists; note writers. Result `NOT_RUN` = existence free
 | analyticsEvents | analytics.mutations | NOT_RUN | present in convex/schema.ts @ bf85281; existence freeze only |
 | pickTracker | picks.mutations | NOT_RUN | present in convex/schema.ts @ bf85281; existence freeze only |
 | paymentEvents | payments/* | PASS | Wave 5: subscription_charge $10000 test + subscription_cancel for cs_test_a171… |
-| webhookReceipts | stripeNode.fulfillWebhook | PARTIAL | Wave 5: prior processed receipts exist; no new receipt for cs_test_a171… (async path unproven this soak) |
+| webhookReceipts | stripeNode.fulfillWebhook | PARTIAL | Wave 6: HTTP reject + helper tests. No new signed receipt this wave |
 | sportEvents | events / platform | NOT_RUN | present in convex/schema.ts @ bf85281; existence freeze only |
 | notifications | notifications / notify | NOT_RUN | present in convex/schema.ts @ bf85281; existence freeze only |
 | savedPosts / creatorBookmarks | bookmarks.mutations | NOT_RUN | present in convex/schema.ts @ bf85281; existence freeze only |
@@ -425,7 +425,7 @@ Schema `appRole` also allows `moderator` and `user` (not product actors; no rout
 
 ## M. Remaining risk (update every fix PR)
 
-- P2: F-010 residual — async `webhookReceipts` for latest soak + Connect payouts; Discord grant soak; J2–J8 authenticated journeys not run
+- P2: F-010 residual — signed Stripe → `webhookReceipts` insert + Connect payouts; Discord grant soak; J2–J8 authenticated journeys not run
 - P3: admin user/creator spend metrics cap at 200 indexed rows; customer pages scan ≤5k subscriptions; eslint warnings; AuthContext DEV `hasRole` leftover
 - Not in this PR: production deploy, live Stripe keys, MFA
 - Waivers: see section L

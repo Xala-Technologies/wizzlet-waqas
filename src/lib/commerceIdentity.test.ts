@@ -2,7 +2,9 @@ import { describe, expect, it } from "vitest";
 import {
   commercialRefForCheckout,
   commercialRefForInvoice,
+  isDuplicateWebhookReceipt,
   isSameCheckoutFulfillment,
+  webhookReceiptKey,
   isStripeAlreadyCanceledError,
   normalizeBillingPeriod,
   normalizeImportSubscriptionStatus,
@@ -25,6 +27,19 @@ describe("PAY-01/02 commerce identity", () => {
     const webhookEventId = "evt_123";
     expect(ledgerKey).not.toBe(webhookEventId);
     expect(ledgerKey).not.toBe(`cs_${sessionId}`);
+  });
+
+  it("dedupes webhook receipts by provider+eventId, not checkout session", () => {
+    const first = { provider: "stripe", eventId: "evt_same" };
+    expect(isDuplicateWebhookReceipt(null, first)).toBe(false);
+    expect(isDuplicateWebhookReceipt(first, first)).toBe(true);
+    expect(
+      isDuplicateWebhookReceipt(first, { provider: "stripe", eventId: "evt_retry_other" }),
+    ).toBe(false);
+    expect(webhookReceiptKey("stripe", "evt_same")).toBe("stripe:evt_same");
+    expect(webhookReceiptKey("stripe", "evt_same")).not.toBe(
+      commercialRefForCheckout("cs_test_abc"),
+    );
   });
 
   it("uses invoice id for renewals", () => {
