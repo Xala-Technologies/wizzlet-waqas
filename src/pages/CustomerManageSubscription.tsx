@@ -225,7 +225,10 @@ const CustomerManageSubscription = () => {
   if (loading) {
     return (
       <DashboardLayout type="member" mainClassName="bg-clay-page">
-        <Seo title="Manage Subscription — Prizelet" />
+        <Seo
+          title="Manage Subscription — Prizelet"
+          description="Manage your Prizelet creator subscription, billing, and cancel options."
+        />
         <div className="flex min-h-[40vh] items-center justify-center">
           <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
         </div>
@@ -236,7 +239,10 @@ const CustomerManageSubscription = () => {
   if (!detail) {
     return (
       <DashboardLayout type="member" mainClassName="bg-clay-page">
-        <Seo title="Manage Subscription — Prizelet" />
+        <Seo
+          title="Manage Subscription — Prizelet"
+          description="Manage your Prizelet creator subscription, billing, and cancel options."
+        />
         <Link
           to={backHref}
           className="mb-4 inline-flex items-center gap-1 text-sm font-semibold text-primary hover:underline"

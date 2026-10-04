@@ -43,7 +43,7 @@ export function paymentTypeLabel(type: string): string {
   if (t.includes('tip')) return 'Tip';
   if (t.includes('one') || t.includes('purchase')) return 'One-time purchase';
   if (t.includes('subscription') || t.includes('charge')) return 'Subscription';
-  return type.replaceAll('_', ' ');
+  return type.replace(/_/g, ' ');
 }
 
 export function paymentStatusLabel(status: string): string {

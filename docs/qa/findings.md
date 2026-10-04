@@ -1,3 +1,13 @@
+# Findings — Wave 3 F-015 tsc 2026-10-05
+
+Branch `fix/world-ready-wave-3-tsc`. Closed F-015: `npx tsc -b` now exits 0.
+
+Fixes: `replaceAll` → ES2020-safe replace; payouts `SelectTrigger`/`Input` invalid `size`; products `never` false-branch; unreachable Settings integrations panel (redirect to `/creator/integrations` remains); Seo `description` on manage-subscription.
+
+`npm test` includes `paymentFeeDetail.test.ts`. Next cluster: F-012.
+
+---
+
 # Findings — Wave 2 e2e 2026-10-04
 
 Branch `test/world-ready-wave-2-e2e`. `npm run test:e2e`: **18 passed**, 6 skipped (world-ready surface spec Chromium-only; WebKit/Firefox still run J9 + browser-matrix).

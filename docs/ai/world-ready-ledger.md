@@ -2,7 +2,7 @@
 
 **Authority:** [`docs/ai/prizelet-world-ready-master-prompt.md`](./prizelet-world-ready-master-prompt.md)
 
-**Status:** Wave 2 Playwright surface smoke recorded 2026-10-04. Route inventory load-tested; money/identity journeys J1–J8 still `NOT_RUN`. Product is **not** world-ready.
+**Status:** Wave 3 F-015 `tsc` cluster fixed 2026-10-05. J1–J8 still `NOT_RUN`. Product is **not** world-ready.
 
 Do not claim world-ready until Section 8 gates in the master prompt pass.
 
@@ -16,7 +16,7 @@ Do not claim world-ready until Section 8 gates in the master prompt pass.
 | Evidence | branch, date, one-line actual vs expected |
 | Waiver | owner + reason (required if WAIVED) |
 
-Last updated: 2026-10-04. Last wave: **2** (`test/world-ready-wave-2-e2e`). Source pin: `bf85281` (inventory).
+Last updated: 2026-10-05. Last wave: **3** (`fix/world-ready-wave-3-tsc`). Source pin: `bf85281` (inventory).
 
 Wave 2 smoke: Chromium walked every `App.tsx` public/demo path (no ErrorBoundary) and every protected path (anonymous → `/login`). WebKit/Firefox still run J9 public-nav + browser-matrix. Authenticated happy paths (J1–J8) are **not** claimed PASS.
 
@@ -168,12 +168,12 @@ Nested layouts in `App.tsx`: `/demo/admin` → `DemoAdminLayout`; `/demo/member`
 
 | Command | Result | Evidence |
 |---------|--------|----------|
-| `npm test` | PASS | Wave 1 2026-10-04: 23 files, 134 tests, vitest 3.2.7 |
-| `npm run lint` | PASS | Wave 1: 0 errors, 28 warnings (react-refresh / hooks / generated eslint-disable) |
-| `npm run build` | PASS | Wave 1: `vite build` succeeded (~12s). Chunk size warning only |
+| `npm test` | PASS | Wave 3 2026-10-05: 24 files / 136 tests after paymentFeeDetail.test.ts |
+| `npm run lint` | PASS | Wave 3: 0 errors, 28 warnings |
+| `npm run build` | PASS | Wave 3: `vite build` succeeded |
 | `npm run env:validate` | PASS | Wave 1: `env:validate PASS (local)`; sandbox false; devAdmin false |
 | `npm run test:e2e` | PASS | Wave 2: 18 passed, 6 skipped (full surface spec chromium-only). Timeout 120s, 4 workers |
-| `npx tsc -b` (F-015) | FAIL | Wave 1: errors in CreatorPayouts, CreatorProducts, CreatorSettings, CustomerManageSubscription, paymentFeeDetail |
+| `npx tsc -b` (F-015) | PASS | Wave 3: `npx tsc -b` exit 0 after payouts/products/settings/SEO/replaceAll fixes |
 
 ## I. Residual-risk retest
 
@@ -190,7 +190,7 @@ Nested layouts in `App.tsx`: `/demo/admin` → `DemoAdminLayout`; `/demo/member`
 | F-009 / J5 payout reserved vs paid | PASS | Wave 1: payoutBalance.test.ts 5/5. Live UI Wave 2 |
 | F-010 webhook soak / Connect | NOT_RUN | Wave 1: handler present; soak/Connect not executed |
 | F-012 admin full-table scans | FAIL | Wave 1: pagination exists; residual unbounded `.collect()` joins on listUsersPage |
-| F-015 lint / tsc | FAIL | Wave 1: lint 0 errors; `npx tsc -b` still errors (see findings) |
+| F-015 lint / tsc | PASS | Wave 3: `npx tsc -b` exit 0; lint still 0 errors / 28 warnings |
 
 ## J. Public Convex API coverage (Wave 0 freeze)
 
@@ -426,6 +426,6 @@ Schema `appRole` also allows `moderator` and `user` (not product actors; no rout
 ## M. Remaining risk (update every fix PR)
 
 - P2: F-012 residual `.collect()` joins; F-010 Stripe soak / Connect; Discord grant soak; J1–J8 authenticated journeys not run
-- P3: `npx tsc -b` FAIL (F-015); eslint warnings; AuthContext DEV `hasRole` leftover
-- Not in this PR: production deploy, live Stripe keys, MFA, tsc/F-012 fix clusters (Wave 3+)
+- P3: eslint warnings; AuthContext DEV `hasRole` leftover
+- Not in this PR: production deploy, live Stripe keys, MFA, F-012 pagination cluster
 - Waivers: see section L
