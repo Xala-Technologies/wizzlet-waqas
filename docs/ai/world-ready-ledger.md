@@ -2,7 +2,7 @@
 
 **Authority:** [`docs/ai/prizelet-world-ready-master-prompt.md`](./prizelet-world-ready-master-prompt.md)
 
-**Status:** Wave 8 J3 content access / pick lock / win rate 2026-10-05. J1 PASS; J2 PASS; J3 PASS. F-010 still PARTIAL. Product is **not** world-ready.
+**Status:** Wave 9 J4 messages / support / resolution 2026-10-05. J1–J4 PASS. F-010 still PARTIAL. Product is **not** world-ready.
 
 Do not claim world-ready until Section 8 gates in the master prompt pass.
 
@@ -16,9 +16,9 @@ Do not claim world-ready until Section 8 gates in the master prompt pass.
 | Evidence | branch, date, one-line actual vs expected |
 | Waiver | owner + reason (required if WAIVED) |
 
-Last updated: 2026-10-05. Last wave: **8** (`test/world-ready-wave-8-j3-access`). Source pin: `bf85281` (inventory).
+Last updated: 2026-10-05. Last wave: **9** (`test/world-ready-wave-9-j4-messages`). Source pin: `bf85281` (inventory).
 
-Wave 8: `j2creator` premium posts `J3 SECRET PICK` (won) + `J3 PUSH PICK` (push). Anonymous `/j2creator?demo=0` hides `WAVE8_SECRET_BODY` / `WAVE8_PUSH_BODY`; Win Rate **100%** (push excluded). Owner `/creator/posts?demo=0` sees bodies; `setResult` then **Result locked**. Residual: no paid subscriber on this fixture (0 products after J2 delete) so member-feed unlock/cancel not re-soaked; pickTracker lock is code+UI (subscriber `/dashboard/results` not session-soaked this wave).
+Wave 9: fixtures `j4creator` / `j4member` (+wave9@example.com). Stripe Checkout → active sub on **J4 Monthly Access** $29.99; member DM `WAVE9_DM_BODY`; creator inbox unread badge + reply `WAVE9_CREATOR_REPLY`; messaging toggle off → send denied; cancel → My Creators empty; post-cancel DM → `ConvexError: FORBIDDEN`. Creator/admin support + resolution + growth inbox soaked earlier in wave. Inbox header now exposes messaging toggle when threads exist. Residual: member composer still visible when messaging off / cancelled (server deny only); creator side panel can briefly show Premium after cancel.
 
 ---
 
@@ -153,7 +153,7 @@ Nested layouts in `App.tsx`: `/demo/admin` → `DemoAdminLayout`; `/demo/member`
 | J1 | Commercial lifecycle (publish → Stripe → webhook → cancel → access) | PASS | Wave 5 2026-10-05: publish `@prize2626` + product Monthly pro $100; member signup `j1member`; Checkout `cs_test_a171BP4bJzrvM8pRX5c7xvgaScFUnfjkraXVlSBBbIFzb8Zxz6spGJWgXJ`; sub `mn7bg36b7xe76gkxyaeq0caaph8fnhyh` ACTIVE then cancelled; `paymentEvents` `checkout:cs_test_…` + `cancel_local:…`; My Creators `?demo=0` empty after cancel. Residual: no new `webhookReceipts` for this session (confirmCheckoutSession fulfilled); Connect not in scope |
 | J2 | Product CRUD + profile slots | PASS | Wave 7 2026-10-05: `j2creator` published; create **J2 Monthly Alpha** $19.99 monthly + limited 100 spots; pin `showOnProfile`; edit → $24.99; public profile Subscribe $24.99; hard delete (no subs) → 0 products. `setShowOnProfile` throws `PROFILE_SLOTS_FULL` at 4; unit `productProfileSlots.test.ts`. Residual: soft-archive when subscription exists not browser-soaked; featured exclusivity not UI-toggled |
 | J3 | Content access / pick lock / win rate | PASS | Wave 8 2026-10-05: anonymous `/j2creator?demo=0` no secret bodies; owner posts list shows WAVE8_*; `setResult` won then UI **Result locked** + `RESULT_LOCKED` on upsert/setResult; public Win Rate 100% with won+push (push excluded). `memberFeed` uses `subscriptionGrantsContentAccess`; saved posts use `canViewPostContent`. Residual: paid unlock/cancel not browser-soaked on this fixture (0 subs); pickTracker lock not subscriber-session soaked |
-| J4 | Messages / support / resolution | NOT_RUN | |
+| J4 | Messages / support / resolution | PASS | Wave 9 2026-10-05: `j4creator`/`j4member` Stripe sub; DM + creator unread/reply; support/resolution/growth admin replies; messaging off deny; cancel → `FORBIDDEN` on send. Unit `messaging.security.test.ts` 6/6. Fix: messaging toggle on populated CreatorMessages inbox. Residual: UI composer still shown when gated (server enforces) |
 | J5 | Payout request / approve / balance | NOT_RUN | |
 | J6 | Promo / tracking links / referrals | NOT_RUN | |
 | J7 | Identity (password, OAuth, roles, email request) | NOT_RUN | |
@@ -425,7 +425,7 @@ Schema `appRole` also allows `moderator` and `user` (not product actors; no rout
 
 ## M. Remaining risk (update every fix PR)
 
-- P2: F-010 residual — signed Stripe → `webhookReceipts` insert + Connect payouts; Discord grant soak; J4–J8 authenticated journeys not run; J2 soft-archive-with-sub not soaked; J3 paid unlock/cancel + pickTracker session not soaked on j2creator
+- P2: F-010 residual — signed Stripe → `webhookReceipts` insert + Connect payouts; Discord grant soak; J5–J8 authenticated journeys not run; J2 soft-archive-with-sub not soaked; J3 paid unlock/cancel + pickTracker session not soaked on j2creator
 - P3: admin user/creator spend metrics cap at 200 indexed rows; customer pages scan ≤5k subscriptions; eslint warnings; AuthContext DEV `hasRole` leftover
 - Not in this PR: production deploy, live Stripe keys, MFA
 - Waivers: see section L
