@@ -1,5 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { calculatePlatformFee, dollarsToCents, centsToDollars } from "../../convex/lib/money";
+import {
+  calculatePlatformFee,
+  centsToDollars,
+  dollarsToCents,
+  resolveCreatorFeePolicy,
+} from "../../convex/lib/money";
 
 describe("dollarsToCents", () => {
   it("rounds decimal dollars", () => {
@@ -31,5 +36,17 @@ describe("calculatePlatformFee", () => {
 
   it("round-trips cents", () => {
     expect(centsToDollars(999)).toBe(9.99);
+  });
+});
+
+describe("resolveCreatorFeePolicy", () => {
+  const settings = { introFeePercent: 5, standardFeePercent: 10, introFeeDays: 90 };
+  const created = Date.parse("2026-01-01T00:00:00Z");
+
+  it("counts remaining intro days", () => {
+    const now = Date.parse("2026-01-16T00:00:00Z");
+    const policy = resolveCreatorFeePolicy(settings, created, now);
+    expect(policy.currentFeePercent).toBe(5);
+    expect(policy.introDaysLeft).toBe(75);
   });
 });

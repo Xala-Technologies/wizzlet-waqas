@@ -213,7 +213,7 @@ export function CreatorTopBar() {
                 </Link>
               </DropdownMenuItem>
               <DropdownMenuItem asChild className="cursor-pointer gap-2">
-                <Link to="/support">
+                <Link to="/creator/support">
                   <HelpCircle className="h-4 w-4" aria-hidden />
                   Help & Support
                 </Link>

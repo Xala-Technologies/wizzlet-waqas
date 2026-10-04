@@ -234,6 +234,13 @@ export const fulfillCheckout = internalMutation({
     await ctx.scheduler.runAfter(0, internal.discord.roles.syncSubscriberRole, {
       userId: args.userId,
       creatorId: args.creatorId,
+      productId: args.productId,
+      assign: true,
+    });
+    await ctx.scheduler.runAfter(120_000, internal.discord.roles.syncSubscriberRole, {
+      userId: args.userId,
+      creatorId: args.creatorId,
+      productId: args.productId,
       assign: true,
     });
 
@@ -316,6 +323,7 @@ export const markSubscriptionCancelled = internalMutation({
     await ctx.scheduler.runAfter(0, internal.discord.roles.syncSubscriberRole, {
       userId: sub.userId,
       creatorId: sub.creatorId,
+      productId: sub.productId,
       assign: false,
     });
     return { ok: true as const, duplicate: false };
@@ -436,6 +444,18 @@ export const applySubscriptionUpdated = internalMutation({
     if (args.cancelAtPeriodEnd !== undefined) patch.cancelAtPeriodEnd = args.cancelAtPeriodEnd;
     if (args.accessStatus !== undefined) patch.status = args.accessStatus;
     await ctx.db.patch(sub._id, patch);
+    const ended =
+      args.accessStatus === "cancelled" ||
+      args.billingStatus === "canceled" ||
+      args.billingStatus === "unpaid";
+    if (ended) {
+      await ctx.scheduler.runAfter(0, internal.discord.roles.syncSubscriberRole, {
+        userId: sub.userId,
+        creatorId: sub.creatorId,
+        productId: sub.productId,
+        assign: false,
+      });
+    }
     return { ok: true as const };
   },
 });
@@ -548,6 +568,7 @@ export const cancelBySubscriptionId = internalMutation({
     await ctx.scheduler.runAfter(0, internal.discord.roles.syncSubscriberRole, {
       userId: sub.userId,
       creatorId: sub.creatorId,
+      productId: sub.productId,
       assign: false,
     });
     return { ok: true as const, duplicate: false };

@@ -57,6 +57,7 @@ function creatorTitle(loc: Loc): string {
   if (path.startsWith('/creator/earnings')) return 'Finance';
   if (path.startsWith('/creator/settings')) return settingsTabLabel(tab);
   if (path.startsWith('/creator/personal-growth-manager')) return 'Growth Manager';
+  if (path.startsWith('/creator/support')) return 'Support Center';
   if (path.startsWith('/creator/notifications')) return 'Notifications';
   if (path.startsWith('/creator/access-control')) return 'Access Control';
   if (path.startsWith('/creator/smart-pricing')) return 'Smart Pricing';

@@ -55,7 +55,8 @@ export default defineSchema({
     .index("by_externalAuthId", ["externalAuthId"])
     .index("by_legacyId", ["legacyId"])
     .index("by_username", ["username"])
-    .index("by_stripeCustomerId", ["stripeCustomerId"]),
+    .index("by_stripeCustomerId", ["stripeCustomerId"])
+    .index("by_discordId", ["discordId"]),
 
   userRoles: defineTable({
     legacyId: v.optional(v.string()),
@@ -81,6 +82,10 @@ export default defineSchema({
     isPublished: v.boolean(),
     discordServerId: v.optional(v.string()),
     discordRoleId: v.optional(v.string()),
+    discordGuildName: v.optional(v.string()),
+    discordGuildIcon: v.optional(v.string()),
+    discordApproxMemberCount: v.optional(v.number()),
+    discordConnectedAt: v.optional(v.number()),
     referralCode: v.optional(v.string()),
     messagingEnabled: v.boolean(),
     verificationStatus: v.optional(verificationStatus),
@@ -111,6 +116,8 @@ export default defineSchema({
     maxSpots: v.optional(v.number()),
     isLimited: v.boolean(),
     isClosed: v.boolean(),
+    discordRoleId: v.optional(v.string()),
+    discordRoleName: v.optional(v.string()),
     createdAt: v.number(),
     updatedAt: v.number(),
   })
@@ -510,4 +517,36 @@ export default defineSchema({
     .index("by_userId", ["userId"])
     .index("by_status", ["status"])
     .index("by_userId_category", ["userId", "category"]),
+
+  discordBotInstalls: defineTable({
+    nonce: v.string(),
+    creatorId: v.id("creators"),
+    expiresAt: v.number(),
+    createdAt: v.number(),
+  })
+    .index("by_nonce", ["nonce"])
+    .index("by_creatorId", ["creatorId"]),
+
+  discordAccessGrants: defineTable({
+    userId: v.id("users"),
+    creatorId: v.id("creators"),
+    productId: v.optional(v.id("products")),
+    guildId: v.string(),
+    roleId: v.string(),
+    status: v.union(
+      v.literal("pending"),
+      v.literal("granted"),
+      v.literal("revoked"),
+      v.literal("failed"),
+    ),
+    lastError: v.optional(v.string()),
+    inviteUrl: v.optional(v.string()),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  })
+    .index("by_userId_creatorId", ["userId", "creatorId"])
+    .index("by_userId_productId", ["userId", "productId"])
+    .index("by_status", ["status"])
+    .index("by_productId", ["productId"])
+    .index("by_creatorId", ["creatorId"]),
 });

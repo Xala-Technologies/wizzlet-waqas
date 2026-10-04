@@ -10,6 +10,7 @@ import { AdminTopBar } from './AdminTopBar';
 import { AdminQueryBoundary } from './AdminQueryBoundary';
 import { UnreadMessageWatcher } from './UnreadMessageWatcher';
 import { SupportChatWidget } from './SupportChatWidget';
+import { SupportChatProvider } from '@/contexts/SupportChatContext';
 import { DASHBOARD_CONTENT_CLASS, DASHBOARD_GUTTER_CLASS } from '@/lib/dashboardSidebar';
 import { dashboardPageTitle } from '@/lib/dashboardPageTitle';
 import { cn } from '@/lib/utils';
@@ -85,5 +86,11 @@ export function DashboardLayout({ children, type, mainClassName }: DashboardLayo
     </div>
   );
 
-  return type === 'admin' ? <AdminQueryBoundary>{body}</AdminQueryBoundary> : body;
+  const inner =
+    type === 'admin' ? <AdminQueryBoundary>{body}</AdminQueryBoundary> : body;
+
+  if (type === 'creator' || type === 'member') {
+    return <SupportChatProvider>{inner}</SupportChatProvider>;
+  }
+  return inner;
 }
