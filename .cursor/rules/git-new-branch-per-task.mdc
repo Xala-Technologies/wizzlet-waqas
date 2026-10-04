@@ -11,7 +11,7 @@ When starting a new task or continuing after a completed PR/commit wave:
 - Name branches by intent, e.g. `fix/…`, `feat/…`, `chore/…`.
 - **Base on the newest shipped tip** — the latest production-deployed feature branch (or `main`/`dev` only if it already contains that tip). Never cut from a stale `dev` that lags Prizelet branding or recent polish.
 - Before branching: `git fetch` and confirm the base has current package/branding (e.g. `prizelet`, `PrizeletLogo`) and recent layout work.
-- Commit only when asked (or when the user explicitly requests push/PR); then **push the new branch** and **open a new PR**.
+- After a completed change (or when the user says merge): **push**, **open a PR**, and **merge** — see `merge-now-live-later`. Do **not** Vercel/Convex-prod deploy until they say make it live.
 - Prefer a focused PR for the current change set; do not dump unrelated work onto an old branch.
 
 ## Examples
