@@ -1,3 +1,13 @@
+# Findings — Wave 2 e2e 2026-10-04
+
+Branch `test/world-ready-wave-2-e2e`. `npm run test:e2e`: **18 passed**, 6 skipped (world-ready surface spec Chromium-only; WebKit/Firefox still run J9 + browser-matrix).
+
+- Public + demo routes: HTTP <500, no ErrorBoundary text.
+- Protected routes (anonymous): navigate to `/login`.
+- J9 PASS. J1–J8 / Stripe soak **NOT_RUN**.
+
+---
+
 # Findings — Wave 1 retest 2026-10-04
 
 Campaign: world-ready Wave 1 (static + unit). Branch `chore/world-ready-wave-1-audit` atop `ab53b2d`. No product code changes this wave.
