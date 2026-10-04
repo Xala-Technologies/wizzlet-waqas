@@ -8,6 +8,7 @@ import { useConvex, useMutation } from 'convex/react';
 import { useAuth } from '@/contexts/AuthContext';
 import { AuthShell } from '@/components/auth/AuthShell';
 import { SocialAuthSection } from '@/components/auth/SocialAuthButtons';
+import { authInputClass } from '@/components/auth/authFieldClass';
 import { ADMIN_BOOTSTRAP } from '@/lib/adminBootstrap';
 import { useConvexAuthReady, waitForAuthenticated, withAuthRetry, isAuthOriginAligned } from '@/lib/authSession';
 import { isAppRole, type AppRole } from '@/lib/roles';
@@ -162,7 +163,7 @@ const Login = () => {
   return (
     <AuthShell
       title="Welcome back"
-      subtitle="Sign in to your account"
+      subtitle="Sign in with email, X, or Discord."
       seoTitle="Sign in — Sweeph"
       seoDescription="Sign in to your Sweeph account to manage picks, subscriptions and payouts."
       banner={
@@ -209,7 +210,7 @@ const Login = () => {
             }}
             required
             disabled={loading}
-            className="h-12 bg-background text-ui"
+            className={authInputClass}
           />
         </div>
         <div className="space-y-2">
@@ -230,7 +231,7 @@ const Login = () => {
               }}
               required
               disabled={loading}
-              className="h-12 bg-background pr-11 text-ui"
+              className={`${authInputClass} pr-11`}
               aria-invalid={formError ? true : undefined}
               aria-describedby={formError ? 'login-error' : undefined}
             />
@@ -249,7 +250,7 @@ const Login = () => {
             {formError}
           </p>
         ) : null}
-        <Button type="submit" variant="default" className="h-12 w-full text-ui font-semibold" disabled={loading}>
+        <Button type="submit" variant="default" className="h-12 w-full rounded-xl text-[15px] font-semibold" disabled={loading}>
           {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
           Sign in
         </Button>

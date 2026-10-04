@@ -8,6 +8,7 @@ import { useMutation } from 'convex/react';
 import { api } from '@convex/_generated/api';
 import { useAuth } from '@/contexts/AuthContext';
 import { AuthShell } from '@/components/auth/AuthShell';
+import { authInputClass } from '@/components/auth/authFieldClass';
 import { SocialAuthSection } from '@/components/auth/SocialAuthButtons';
 import { ACTIVE_ROLE_STORAGE_KEY } from '@/lib/roles';
 import { useConvexAuthReady, waitForAuthenticated, withAuthRetry } from '@/lib/authSession';
@@ -122,7 +123,7 @@ const Signup = () => {
   return (
     <AuthShell
       title="Create your account"
-      subtitle="Join Sweeph and get started"
+      subtitle="A username, email, and password — or continue with X or Discord."
       seoTitle="Create your Sweeph account"
       seoDescription="Join Sweeph — create an account to follow creators or run your own page."
       progressStep={1}
@@ -152,7 +153,7 @@ const Signup = () => {
           </p>
         ) : null}
         <div className="space-y-1.5">
-          <Label htmlFor="username">Username</Label>
+          <Label htmlFor="username" className="text-[13px]">Username</Label>
           <div className="relative">
             <Input
               id="username"
@@ -169,7 +170,7 @@ const Signup = () => {
               required
               disabled={loading}
               aria-invalid={touched.username && !usernameOk}
-              className="h-12 rounded-xl bg-background pr-11 text-ui"
+              className={`${authInputClass} pr-11`}
             />
             {usernameOk ? (
               <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-emerald-600 dark:text-emerald-400">
@@ -179,13 +180,13 @@ const Signup = () => {
             ) : null}
           </div>
           {touched.username && username.length > 0 && !usernameOk ? (
-            <p className="text-[12px] text-destructive">3–32 characters: letters, numbers, underscore.</p>
-          ) : (
-            <p className="text-[12px] text-muted-foreground">Letters, numbers, and underscore. 3–32 characters.</p>
-          )}
+            <p className="text-[12px] text-destructive">
+              3–32 characters: letters, numbers, underscore.
+            </p>
+          ) : null}
         </div>
         <div className="space-y-1.5">
-          <Label htmlFor="email">Email</Label>
+          <Label htmlFor="email" className="text-[13px]">Email</Label>
           <div className="relative">
             <Input
               id="email"
@@ -202,7 +203,7 @@ const Signup = () => {
               required
               disabled={loading}
               aria-invalid={touched.email && !emailOk}
-              className="h-12 rounded-xl bg-background pr-11 text-ui"
+              className={`${authInputClass} pr-11`}
             />
             {emailOk ? (
               <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-emerald-600 dark:text-emerald-400">
@@ -216,14 +217,14 @@ const Signup = () => {
           ) : null}
         </div>
         <div className="space-y-1.5">
-          <Label htmlFor="password">Password</Label>
+          <Label htmlFor="password" className="text-[13px]">Password</Label>
           <div className="relative">
             <Input
               id="password"
               name="password"
               type={showPassword ? 'text' : 'password'}
               autoComplete="new-password"
-              placeholder="At least 8 characters"
+              placeholder="8+ characters"
               value={password}
               onChange={(e) => {
                 setPassword(e.target.value);
@@ -234,7 +235,7 @@ const Signup = () => {
               disabled={loading}
               minLength={8}
               aria-invalid={touched.password && !passwordOk}
-              className="h-12 rounded-xl bg-background pr-11 text-ui"
+              className={`${authInputClass} pr-11`}
             />
             <button
               type="button"
@@ -245,29 +246,29 @@ const Signup = () => {
               {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
             </button>
           </div>
-          <div className="flex gap-1 pt-0.5" aria-hidden>
-            {[0, 1, 2].map((i) => (
-              <span
-                key={i}
-                className={`h-1 flex-1 rounded-full ${
-                  password.length === 0
-                    ? 'bg-border'
-                    : password.length < 8
+          {password.length > 0 ? (
+            <div className="flex gap-1 pt-0.5" aria-hidden>
+              {[0, 1, 2].map((i) => (
+                <span
+                  key={i}
+                  className={`h-1 flex-1 rounded-full ${
+                    password.length < 8
                       ? i === 0
                         ? 'bg-amber-500/80'
                         : 'bg-border'
                       : 'bg-emerald-500/80'
-                }`}
-              />
-            ))}
-          </div>
-          <p className="text-[12px] text-muted-foreground">
-            {password.length === 0
-              ? 'At least 8 characters.'
-              : passwordOk
-                ? 'Strong enough to continue.'
+                  }`}
+                />
+              ))}
+            </div>
+          ) : null}
+          {password.length > 0 ? (
+            <p className="text-[12px] text-muted-foreground">
+              {passwordOk
+                ? 'Ready to continue.'
                 : `${8 - password.length} more character${8 - password.length === 1 ? '' : 's'}.`}
-          </p>
+            </p>
+          ) : null}
         </div>
         <Button
           type="submit"

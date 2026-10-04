@@ -8,6 +8,14 @@ import { toast } from 'sonner';
 import { authCallbackUrl, ensureCanonicalAuthOrigin } from '@/lib/authSession';
 import { storeReturnTo } from '@/lib/safeReturnPath';
 
+function DiscordMark({ className }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 24 24" className={className} fill="#5865F2" aria-hidden>
+      <path d="M19.27 5.33A17.4 17.4 0 0 0 14.94 4l-.3.55a16.1 16.1 0 0 1 3.13.84 16.6 16.6 0 0 0-13.54 0A16 16 0 0 1 7.36 4L7.06 4a17.4 17.4 0 0 0-4.33 1.33C.46 9.05-.28 12.66.09 16.22A17.6 17.6 0 0 0 5.4 19.1l.72-.96a11.4 11.4 0 0 1-1.8-.86l.36-.27c3.57 1.67 7.44 1.67 11.01 0l.36.27c-.57.34-1.17.63-1.8.86l.72.96a17.6 17.6 0 0 0 5.31-2.88c.43-4.02-.73-7.6-1.71-10.89ZM8.02 14.53c-1.07 0-1.95-.98-1.95-2.18s.86-2.18 1.95-2.18 1.97.98 1.95 2.18c0 1.2-.86 2.18-1.95 2.18Zm7.96 0c-1.07 0-1.95-.98-1.95-2.18s.86-2.18 1.95-2.18 1.97.98 1.95 2.18c0 1.2-.86 2.18-1.95 2.18Z" />
+    </svg>
+  );
+}
+
 type SocialProvider = 'twitter' | 'discord';
 
 interface SocialAuthButtonsProps {
@@ -66,14 +74,14 @@ export function SocialAuthButtons({
         <Button
           type="button"
           variant="outline"
-          className="h-12 w-full justify-center gap-2.5 rounded-xl border-border bg-background font-medium text-foreground shadow-none"
+          className="h-12 w-full justify-center gap-2.5 rounded-xl border-border bg-card font-medium text-foreground shadow-none"
           disabled={pending !== null}
           onClick={() => void start('twitter')}
         >
           {pending === 'twitter' ? (
-            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            <Loader2 className="h-4 w-4 animate-spin" />
           ) : (
-            <span className="mr-2 text-sm font-bold text-foreground" aria-hidden>
+            <span className="text-[15px] font-semibold leading-none" aria-hidden>
               𝕏
             </span>
           )}
@@ -84,19 +92,14 @@ export function SocialAuthButtons({
         <Button
           type="button"
           variant="outline"
-          className="h-12 w-full justify-center gap-2.5 rounded-xl border-border bg-background font-medium text-foreground shadow-none"
+          className="h-12 w-full justify-center gap-2.5 rounded-xl border-border bg-card font-medium text-foreground shadow-none"
           disabled={pending !== null}
           onClick={() => void start('discord')}
         >
           {pending === 'discord' ? (
-            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            <Loader2 className="h-4 w-4 animate-spin" />
           ) : (
-            <span
-              className="mr-2 inline-flex h-5 w-5 items-center justify-center rounded-md bg-foreground text-caption font-bold text-background"
-              aria-hidden
-            >
-              D
-            </span>
+            <DiscordMark className="h-4 w-4" />
           )}
           {verb} with Discord
         </Button>
@@ -118,9 +121,7 @@ export function SocialAuthSection(props: SocialAuthButtonsProps) {
           <span className="w-full border-t border-border" />
         </div>
         <div className="relative flex justify-center">
-          <span className="bg-background px-3 text-[12px] text-muted-foreground">
-            or continue with
-          </span>
+          <span className="bg-background px-3 text-[12px] text-muted-foreground">or</span>
         </div>
       </div>
       <SocialAuthButtons {...props} />
