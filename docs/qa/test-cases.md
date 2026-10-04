@@ -21,7 +21,7 @@
 | TC-SEC-F014 | PLAT-01 | Static | No `Date.now()` in queries | FAIL | `events/queries.ts:44` still uses `Date.now()` |
 | TC-SEC-W1-01 | SEC-06 | Static | Admin bootstrap not grantable by arbitrary accounts in prod | FAIL | Email allowlist without deployment-kind gate |
 | TC-SEC-W1-02 | SEC-05 | Static | UI cannot bypass DB roles outside intentional local tooling | FAIL | `ProtectedRoute` + `AuthContext` DEV bypass |
-| TC-J1–J9 | Journeys | E2E | See agent prompt | NOT_RUN / J8 BLOCKED | No Playwright specs yet |
+| TC-J1–J9 | Journeys | E2E | See agent prompt | J1–J7 PASS; J8 PASS (W13) | J8 static + secret unset; remaining journeys in ledger |
 
 ## Journey status
 
@@ -34,7 +34,7 @@
 | J5 Payout reconciliation | **PASS** (W16 — unit + browser UI) |
 | J6 Promo/referral | **PASS** (W17 — CRUD + attribution; commission cash TBD) |
 | J7 Identity continuity | **PASS** (W18 — login + select-role continuity) |
-| J8 Migration continuity | BLOCKED |
+| J8 Migration continuity | **PASS** (W13) |
 | J9 Public nav/controls | PASS (W2) |
 
 ---

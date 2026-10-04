@@ -1,3 +1,20 @@
+# Findings — Wave 13 J8 migration ETL 2026-10-05
+
+Branch `test/world-ready-wave-13-j8-migration`. Deployment `combative-mongoose-559`.
+
+| Step | Result | Evidence |
+|------|--------|----------|
+| importBatch internal-only | PASS | All exports `internalMutation`; secret-gated `FORBIDDEN_MIGRATION` |
+| load helpers internal-only | PASS | `upsert*` / `countTable` are `internalMutation` |
+| Client API exposure | PASS | No `api.migrations` / path refs under `src/` |
+| MIGRATION_SECRET after cutover | PASS (fix) | Was set on Convex env; **unset** on combative-mongoose-559 |
+| Unit | PASS | `migrations.security.test.ts` 3/3 |
+| Historical data parity | Residual | ETL scripts deleted; greenfield — do not claim Supabase parity |
+
+**J8:** PASS. Next: remaining residual journeys (J-ADMIN / J-DISCORD / J-FILES / J-DEMO) or F-010.
+
+---
+
 # Findings — Wave 12 J7 identity 2026-10-05
 
 Branch `test/world-ready-wave-12-j7-identity`. Fixture `j4member+wave9@example.com` on `combative-mongoose-559`.

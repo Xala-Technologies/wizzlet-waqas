@@ -2,7 +2,7 @@
 
 **Authority:** [`docs/ai/prizelet-world-ready-master-prompt.md`](./prizelet-world-ready-master-prompt.md)
 
-**Status:** Wave 12 J7 identity 2026-10-05. J1–J7 PASS. F-010 still PARTIAL. Product is **not** world-ready.
+**Status:** Wave 13 J8 migration ETL 2026-10-05. J1–J8 PASS. F-010 still PARTIAL. Product is **not** world-ready.
 
 Do not claim world-ready until Section 8 gates in the master prompt pass.
 
@@ -16,9 +16,9 @@ Do not claim world-ready until Section 8 gates in the master prompt pass.
 | Evidence | branch, date, one-line actual vs expected |
 | Waiver | owner + reason (required if WAIVED) |
 
-Last updated: 2026-10-05. Last wave: **12** (`test/world-ready-wave-12-j7-identity`). Source pin: `bf85281` (inventory).
+Last updated: 2026-10-05. Last wave: **13** (`test/world-ready-wave-13-j8-migration`). Source pin: `bf85281` (inventory).
 
-Wave 12: password login `j4member+wave9`; open-redirect `returnTo=https://evil.example/phish` → `/dashboard` on 127.0.0.1; sign-out → `/` (no `/select-role` flash); email-change request `j4member+wave12@example.com` open + sign-in email unchanged; `switchRole` gated to held roles; `ROLE_PRIORITY` + `safeReturnPath` unit 19/19. Residual: full X/Discord OAuth callback not browser-soaked; multi-role UI switcher not exercised (fixtures single-role).
+Wave 13: `migrations/importBatch` + `migrations/load` are `internalMutation` only; no client `api.migrations` references; `MIGRATION_SECRET` unset on `combative-mongoose-559` after cutover; unit `migrations.security.test.ts` 3/3. Residual: historical Supabase→Convex data parity still BLOCKED (greenfield; ETL scripts deleted).
 
 ---
 
@@ -157,7 +157,7 @@ Nested layouts in `App.tsx`: `/demo/admin` → `DemoAdminLayout`; `/demo/member`
 | J5 | Payout request / approve / balance | PASS | Wave 10 2026-10-05: `j4creator` $28.49 available → request → reserved $0 avail; admin failed frees balance; re-request → completed; Paid ≠ reserved; Connect stub copy honest. `payoutBalance.test.ts` 5/5. Residual: admin Lifetime from active subs only |
 | J6 | Promo / tracking links / referrals | PASS | Wave 11 2026-10-05: promo CRUD WAVE11OFF10; `/go/{id}` click+redirect; signup `?ref=` banner; commission UI honest (—). Fixes shortPath + duration control + referral demo rates. Residual: paid conversion attribution not browser-soaked |
 | J7 | Identity (password, OAuth, roles, email request) | PASS | Wave 12 2026-10-05: password login; evil `returnTo` blocked → `/dashboard`; logout → `/` no select-role; email request open (email unchanged); roles unit + `switchRole` held-only. Residual: OAuth callback + multi-role switcher UI not browser-soaked |
-| J8 | Migration ETL internal-only | NOT_RUN | |
+| J8 | Migration ETL internal-only | PASS | Wave 13 2026-10-05: all migration exports `internalMutation`; client has zero import refs; `MIGRATION_SECRET` unset on combative-mongoose-559; `migrations.security.test.ts` 3/3. Residual: historical data parity not claimed |
 | J9 | Public nav + chrome | PASS | Wave 2: public-nav + browser-matrix on chromium/webkit/firefox; platform-owner bootstrap visible in DEV |
 | J-ADMIN | Admin lists, fees, reports, campaigns | NOT_RUN | |
 | J-DISCORD | Bot install + grants + revoke | NOT_RUN | |
@@ -425,7 +425,7 @@ Schema `appRole` also allows `moderator` and `user` (not product actors; no rout
 
 ## M. Remaining risk (update every fix PR)
 
-- P2: F-010 residual — signed Stripe → `webhookReceipts` insert + Connect payouts; Discord grant soak; J8 migration ETL not run; J7 OAuth callback + multi-role switcher UI residual; J2 soft-archive-with-sub not soaked; J3 paid unlock/cancel + pickTracker session not soaked on j2creator; admin payout Lifetime ignores cancelled-sub paymentEvents; referral commission cash TBD
+- P2: F-010 residual — signed Stripe → `webhookReceipts` insert + Connect payouts; Discord grant soak; J7 OAuth callback + multi-role switcher UI residual; historical migration data parity BLOCKED (greenfield); J2 soft-archive-with-sub not soaked; J3 paid unlock/cancel + pickTracker session not soaked on j2creator; admin payout Lifetime ignores cancelled-sub paymentEvents; referral commission cash TBD
 - P3: admin user/creator spend metrics cap at 200 indexed rows; customer pages scan ≤5k subscriptions; eslint warnings; AuthContext DEV `hasRole` leftover
 - Not in this PR: production deploy, live Stripe keys, MFA
 - Waivers: see section L
