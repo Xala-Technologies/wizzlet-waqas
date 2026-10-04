@@ -13,6 +13,7 @@ export type CreatorProfileDemoProduct = {
   ctaLabel: string;
   features: string[];
   icon: 'chart' | 'gem' | 'users';
+  includesDiscordAccess?: boolean;
 };
 
 export type CreatorProfileDemo = {
@@ -70,6 +71,7 @@ export const CREATOR_PUBLIC_PROFILE_DEMO: CreatorProfileDemo = {
         'Early access to plays',
         'Win more together',
       ],
+      includesDiscordAccess: true,
     },
     {
       id: 'demo-prod-vip',
@@ -86,6 +88,7 @@ export const CREATOR_PUBLIC_PROFILE_DEMO: CreatorProfileDemo = {
         'Live chats with Alex',
         'Priority support',
       ],
+      includesDiscordAccess: true,
     },
     {
       id: 'demo-prod-free',
@@ -102,6 +105,7 @@ export const CREATOR_PUBLIC_PROFILE_DEMO: CreatorProfileDemo = {
         'Free picks (limited)',
         'Be part of the community',
       ],
+      includesDiscordAccess: false,
     },
   ],
   pillars: [
