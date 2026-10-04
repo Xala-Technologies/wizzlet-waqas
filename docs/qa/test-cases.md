@@ -15,7 +15,7 @@
 | TC-SEC-F005 | SEC-04 | Static | Migration imports are `internalMutation` | PASS | `importBatch.ts` |
 | TC-SEC-F006 | CR-05/12 | Static | Promo/link patch ownership | PASS | `requireCreatorOwner` / `creatorId` match |
 | TC-SEC-F007 | PUB-09 | Static | Public creator projection | PASS | `getByUsername` omits stripe/discord |
-| TC-SEC-F008 | SEC-03 | Static | `getUrl` requires auth + owner when asset registered | PARTIAL | Auth required; **legacy unowned** files still readable by any auth user |
+| TC-SEC-F008 | SEC-03 | Static+Runtime | `getUrl` requires auth + owner; unowned denied | PASS | Wave 14: unowned/foreign FORBIDDEN; owner URL OK |
 | TC-SEC-F009 | CR-15 | Unit | Payout balance math | PASS | `payoutBalance.test.ts` |
 | TC-SEC-F010 | COM-02/05 | Static | Stripe webhook path exists | PASS (code) | Runtime soak NOT_RUN |
 | TC-SEC-F014 | PLAT-01 | Static | No `Date.now()` in queries | FAIL | `events/queries.ts:44` still uses `Date.now()` |

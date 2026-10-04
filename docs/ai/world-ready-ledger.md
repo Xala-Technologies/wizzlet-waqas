@@ -2,7 +2,7 @@
 
 **Authority:** [`docs/ai/prizelet-world-ready-master-prompt.md`](./prizelet-world-ready-master-prompt.md)
 
-**Status:** Wave 13 J8 migration ETL 2026-10-05. J1–J8 PASS. F-010 still PARTIAL. Product is **not** world-ready.
+**Status:** Wave 14 J-FILES storage ACL 2026-10-05. J1–J8 + J-FILES PASS. F-010 still PARTIAL. Product is **not** world-ready.
 
 Do not claim world-ready until Section 8 gates in the master prompt pass.
 
@@ -16,9 +16,9 @@ Do not claim world-ready until Section 8 gates in the master prompt pass.
 | Evidence | branch, date, one-line actual vs expected |
 | Waiver | owner + reason (required if WAIVED) |
 
-Last updated: 2026-10-05. Last wave: **13** (`test/world-ready-wave-13-j8-migration`). Source pin: `bf85281` (inventory).
+Last updated: 2026-10-05. Last wave: **14** (`test/world-ready-wave-14-j-files`). Source pin: `bf85281` (inventory).
 
-Wave 13: `migrations/importBatch` + `migrations/load` are `internalMutation` only; no client `api.migrations` references; `MIGRATION_SECRET` unset on `combative-mongoose-559` after cutover; unit `migrations.security.test.ts` 3/3. Residual: historical Supabase→Convex data parity still BLOCKED (greenfield; ETL scripts deleted).
+Wave 14: upload `kg2bkv…` without `fileAssets` → `FORBIDDEN`; after `registerOwnedFile` owner URL succeeds; `j4member` foreign getUrl → `FORBIDDEN` (storage.ts:59). Unit `files.security.test.ts` 4/4.
 
 ---
 
@@ -161,7 +161,7 @@ Nested layouts in `App.tsx`: `/demo/admin` → `DemoAdminLayout`; `/demo/member`
 | J9 | Public nav + chrome | PASS | Wave 2: public-nav + browser-matrix on chromium/webkit/firefox; platform-owner bootstrap visible in DEV |
 | J-ADMIN | Admin lists, fees, reports, campaigns | NOT_RUN | |
 | J-DISCORD | Bot install + grants + revoke | NOT_RUN | |
-| J-FILES | Storage ownership `getUrl` | NOT_RUN | |
+| J-FILES | Storage ownership `getUrl` | PASS | Wave 14 2026-10-05: unowned→FORBIDDEN; owner URL OK; foreign j4member→FORBIDDEN; `files.security.test.ts` 4/4 |
 | J-DEMO | Demo writes zero money rows | NOT_RUN | |
 
 ## H. Tooling gates
@@ -279,7 +279,7 @@ App public functions (`Auth` = TBD until Wave 1):
 | `events.queries.seedTodayDev` | TBD | yes | NOT_RUN | frozen vs convex/*.ts @ bf85281 |
 | `events.queries.upsertAdmin` | TBD | yes | NOT_RUN | frozen vs convex/*.ts @ bf85281 |
 | `files.storage.generateUploadUrl` | TBD | yes | NOT_RUN | frozen vs convex/*.ts @ bf85281 |
-| `files.storage.getUrl` | requireAppUser + owner | yes | NOT_RUN | Wave 1 static: FORBIDDEN if no fileAssets / wrong owner @ files/storage.ts |
+| `files.storage.getUrl` | requireAppUser + owner | yes | PASS | Wave 14 runtime: unowned/foreign FORBIDDEN; owner URL returned |
 | `files.storage.registerOwnedFile` | TBD | yes | NOT_RUN | frozen vs convex/*.ts @ bf85281 |
 | `messaging.mutations.listThread` | TBD | yes | NOT_RUN | frozen vs convex/*.ts @ bf85281 |
 | `messaging.mutations.markReadCreator` | TBD | yes | NOT_RUN | frozen vs convex/*.ts @ bf85281 |
@@ -410,7 +410,7 @@ Confirm each table still exists; note writers. Result `NOT_RUN` = existence free
 | platformSettings | platform.mutations | NOT_RUN | present in convex/schema.ts @ bf85281; existence freeze only |
 | directMessages | messaging.mutations | NOT_RUN | present in convex/schema.ts @ bf85281; existence freeze only |
 | emailCampaigns | admin | NOT_RUN | present in convex/schema.ts @ bf85281; existence freeze only |
-| fileAssets | files/storage | NOT_RUN | present in convex/schema.ts @ bf85281; existence freeze only |
+| fileAssets | files/storage | PASS | Wave 14: registerOwnedFile + owner getUrl; foreign denied |
 | migrationCheckpoints / mutationLog | migrations/* internal | NOT_RUN | present in convex/schema.ts @ bf85281; existence freeze only |
 | accountRequests | accountRequests | PASS | Wave 12: email_change open for j4member; sign-in email not mutated in-app |
 | discordBotInstalls / discordAccessGrants | discord/* | NOT_RUN | present in convex/schema.ts @ bf85281; existence freeze only |
