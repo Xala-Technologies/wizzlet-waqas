@@ -70,7 +70,7 @@ export const CREATOR_SUPPORT_ARTICLES: SupportArticle[] = [
     id: 'payouts',
     categoryId: 'payments',
     title: 'How payouts work',
-    body: 'Net earnings after the Prizelet fee are paid out from Payouts to your connected Stripe account. Prizelet does not charge your card. Timing follows Stripe’s payout schedule for your country.',
+    body: 'Net earnings after the Prizelet fee are requested from Payouts and paid manually by the platform until Stripe Connect is enabled. Prizelet does not charge your card.',
   },
   {
     id: 'connect-discord',

@@ -294,7 +294,12 @@ const CreatorPayouts = () => {
             <span className="font-mono text-xs">?demo=0</span> to see empty real states.
           </p>
         </div>
-      ) : null}
+      ) : (
+        <div className="clay-card mb-6 px-4 py-3.5 text-sm text-muted-foreground sm:px-5">
+          Withdrawals update the Prizelet ledger. Funds are paid out manually until Stripe Connect
+          is enabled — Connect onboarding is not available yet.
+        </div>
+      )}
 
       <div className="mb-6 sm:mb-8">
         <section className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">

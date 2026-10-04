@@ -2,7 +2,7 @@
 
 **Authority:** [`docs/ai/prizelet-world-ready-master-prompt.md`](./prizelet-world-ready-master-prompt.md)
 
-**Status:** Wave 21 J-SETTINGS / J-SMART-PRICING 2026-10-05. Settings stubs + list-price/heuristic honesty PASS. J-DISCORD still BLOCKED. Connect residual. Product is **not** world-ready.
+**Status:** Wave 22 J-CONNECT residual 2026-10-05. Connect honesty PASS (ledger-only; no live Connect). J-DISCORD still BLOCKED. Product is **not** world-ready.
 
 Do not claim world-ready until Section 8 gates in the master prompt pass.
 
@@ -16,9 +16,9 @@ Do not claim world-ready until Section 8 gates in the master prompt pass.
 | Evidence | branch, date, one-line actual vs expected |
 | Waiver | owner + reason (required if WAIVED) |
 
-Last updated: 2026-10-05. Last wave: **21** (`test/world-ready-wave-21-j-settings-smart-pricing`). Source pin: `bf85281` (inventory).
+Last updated: 2026-10-05. Last wave: **22** (`test/world-ready-wave-22-connect-residual`). Source pin: `bf85281` (inventory).
 
-Wave 21: settings 2FA/team stubs honest; smart pricing heuristic “directional only” + `updateSettings` list price $9.99→$11.99; access-control limit spots via product upsert.
+Wave 22: fixed creator billing “connected Stripe account” lie; creator payouts + admin treasury ledger Connect-not-enabled copy; `createConnectOnboardingLink` toast stub.
 
 ---
 
@@ -85,9 +85,9 @@ PASS below is **anonymous → `/login`**, not an authenticated creator session.
 | `/creator/links` | CreatorLinks | creator | mixed | PASS | Wave 2 chromium surface smoke 2026-10-04; inventory pin bf85281 |
 | `/creator/referrals` | CreatorReferrals | creator | mixed | PASS | Wave 2 chromium surface smoke 2026-10-04; inventory pin bf85281 |
 | `/creator/earnings` | CreatorEarnings | creator | mixed | PASS | Wave 2 chromium surface smoke 2026-10-04; inventory pin bf85281 |
-| `/creator/payouts` | CreatorPayouts | creator | mixed | PASS | Wave 2 chromium surface smoke 2026-10-04; inventory pin bf85281 |
+| `/creator/payouts` | CreatorPayouts | creator | mixed | PASS | Wave 22: manual-until-Connect banner; Wave 10 balance soak; Wave 2 smoke |
 | `/creator/transactions` | CreatorTransactions | creator | mixed | PASS | Wave 2 chromium surface smoke 2026-10-04; inventory pin bf85281 |
-| `/creator/settings` | CreatorSettings | creator | mixed | PASS | Wave 21: 2FA toast “coming soon”; team invite “not wired”; profile fields live; Wave 2 smoke |
+| `/creator/settings` | CreatorSettings | creator | mixed | PASS | Wave 22: billing Connect honesty; Wave 21: 2FA/team stubs; Wave 2 smoke |
 | `/creator/integrations` | CreatorIntegrations | creator | mixed | PASS | Wave 2 chromium surface smoke 2026-10-04; inventory pin bf85281 |
 | `/creator/support` | CreatorSupport | creator | mixed | PASS | Wave 2 chromium surface smoke 2026-10-04; inventory pin bf85281 |
 | `/creator/onboarding` | CreatorOnboarding | creator | convex | PASS | Wave 2 chromium surface smoke 2026-10-04; inventory pin bf85281 |
@@ -109,7 +109,7 @@ PASS below is **anonymous → `/login`**, not an authenticated admin session.
 | `/admin/customer-email` | AdminCustomerEmail | admin | convex | PASS | Wave 2 chromium surface smoke 2026-10-04; inventory pin bf85281 |
 | `/admin/growth-manager-inbox` | AdminGrowthManagerInbox | admin | convex | PASS | Wave 2 chromium surface smoke 2026-10-04; inventory pin bf85281 |
 | `/admin/resolution-cases` | AdminResolutionCases | admin | convex | PASS | Wave 2 chromium surface smoke 2026-10-04; inventory pin bf85281 |
-| `/admin/payouts` | AdminPayouts | admin | convex | PASS | Wave 2 chromium surface smoke 2026-10-04; inventory pin bf85281 |
+| `/admin/payouts` | AdminPayouts | admin | convex | PASS | Wave 22: ledger-only until Connect copy; Wave 10 approve/fail soak; Wave 2 smoke |
 | `/admin/alerts` | AdminAlerts | admin | convex | PASS | Wave 2 chromium surface smoke 2026-10-04; inventory pin bf85281 |
 | `/admin/notifications` | CustomerNotifications | admin | mixed | PASS | Wave 2 chromium surface smoke 2026-10-04; inventory pin bf85281 |
 | `/admin/reports` | AdminReports | admin | convex | PASS | Wave 2 chromium surface smoke 2026-10-04; inventory pin bf85281 |
@@ -167,6 +167,7 @@ Nested layouts in `App.tsx`: `/demo/admin` → `DemoAdminLayout`; `/demo/member`
 | J-NOTIFICATIONS | Inbox create + mark read | PASS | Wave 20 2026-10-05: adminInsert + member markRead/markAllRead; pay/message rows; admin shared page |
 | J-SETTINGS | Settings live vs toast-stub honesty | PASS | Wave 21 2026-10-05: 2FA “coming soon”; team invite preview “not wired to the backend yet”; account profile editable |
 | J-SMART-PRICING | Smart pricing + access control honesty | PASS | Wave 21 2026-10-05: heuristic “directional only”; list price via updateSettings (not fake Stripe product prices); access-control limit spots persists |
+| J-CONNECT | Stripe Connect residual honesty | PASS | Wave 22 2026-10-05: admin ledger-only until Connect; creator payouts manual-until-Connect banner; billing fee bullet fixed; onboarding link toast stub. Live Connect transfer still not implemented (honest residual). |
 
 ## H. Tooling gates
 
@@ -192,7 +193,7 @@ Nested layouts in `App.tsx`: `/demo/admin` → `DemoAdminLayout`; `/demo/member`
 | F-004 JWT subject as user id | PASS | Wave 1: listPreviewsByCreator uses getAuthUserId |
 | F-005 public migration mutations | PASS | Wave 1: importBatch/load are internalMutation |
 | F-009 / J5 payout reserved vs paid | PASS | Wave 1: payoutBalance.test.ts 5/5. Live UI Wave 2 |
-| F-010 webhook soak / Connect | PASS | Wave 18: signed delivery → `webhookReceipts` + dedupe. Connect payouts still ledger-only residual (not claimed) |
+| F-010 webhook soak / Connect | PASS | Wave 18: signed delivery → `webhookReceipts` + dedupe. Wave 22: Connect residual honesty PASS (ledger-only; no live transfers claimed) |
 | F-012 admin full-table scans | PASS | Wave 4: listUsersPage/listCreatorsPage indexed joins use `.take(ADMIN_JOIN_LIMIT=200)`. Customers still `adminScanAll` cap 5k |
 | F-015 lint / tsc | PASS | Wave 3: `npx tsc -b` exit 0; lint still 0 errors / 28 warnings |
 
@@ -429,7 +430,7 @@ Schema `appRole` also allows `moderator` and `user` (not product actors; no rout
 
 ## M. Remaining risk (update every fix PR)
 
-- P2: Stripe Connect payouts (ledger-only until Connect); J-DISCORD BLOCKED pending interactive guild OAuth + grant/revoke; J7 OAuth callback + multi-role switcher UI residual; historical migration data parity BLOCKED (greenfield); J2 soft-archive-with-sub not soaked; J3 paid unlock/cancel + pickTracker session not soaked on j2creator; admin payout Lifetime ignores cancelled-sub paymentEvents; referral commission cash TBD
+- P2: Stripe Connect live transfers still unimplemented (Wave 22 honesty PASS — ledger/manual only); J-DISCORD BLOCKED pending interactive guild OAuth + grant/revoke; J7 OAuth callback + multi-role switcher UI residual; historical migration data parity BLOCKED (greenfield); J2 soft-archive-with-sub not soaked; J3 paid unlock/cancel + pickTracker session not soaked on j2creator; admin payout Lifetime ignores cancelled-sub paymentEvents; referral commission cash TBD
 - P3: admin user/creator spend metrics cap at 200 indexed rows; customer pages scan ≤5k subscriptions; eslint warnings; AuthContext DEV `hasRole` leftover
 - Not in this PR: production deploy, live Stripe keys, MFA
 - Waivers: see section L

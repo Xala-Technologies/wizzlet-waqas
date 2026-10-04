@@ -1,3 +1,19 @@
+# Findings — Wave 22 J-CONNECT residual honesty 2026-10-05
+
+Branch `test/world-ready-wave-22-connect-residual`. Fixtures `j4creator` + platform owner on `combative-mongoose-559`.
+
+| Step | Result | Evidence |
+|------|--------|----------|
+| Creator billing copy | PASS (fix) | Was “Payouts go to your connected Stripe account”; now **paid manually until Stripe Connect is enabled** |
+| Creator payouts banner | PASS | `/creator/payouts?demo=0` ledger/manual until Connect; onboarding not available |
+| Admin payouts | PASS | `/admin/payouts` “ledger only… until Stripe Connect is enabled” |
+| Onboarding stub | PASS | `createConnectOnboardingLink` toast: Connect not enabled yet / manual payouts |
+| Live Connect transfers | Residual | Not implemented — honesty PASS, capability still open P2 |
+
+**J-CONNECT:** PASS (honesty). Next: J-DISCORD needs human Discord OAuth; other P2 residuals (soft-archive, paid unlock, Lifetime payout metric).
+
+---
+
 # Findings — Wave 21 J-SETTINGS / J-SMART-PRICING 2026-10-05
 
 Branch `test/world-ready-wave-21-j-settings-smart-pricing`. Fixture `j4creator` on `combative-mongoose-559`.
