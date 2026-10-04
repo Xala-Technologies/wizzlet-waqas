@@ -4,6 +4,7 @@ import { calculatePlatformFee } from "../lib/money";
 import {
   commercialRefForCheckout,
   commercialRefForInvoice,
+  isDuplicateWebhookReceipt,
   LAUNCH_BILLING_PERIOD,
   normalizeBillingPeriod,
 } from "../lib/commerceIdentity";
@@ -267,8 +268,13 @@ export const recordWebhookReceipt = internalMutation({
         q.eq("provider", args.provider).eq("eventId", args.eventId),
       )
       .unique();
-    if (existing) {
-      return { duplicate: true as const, id: existing._id };
+    if (
+      isDuplicateWebhookReceipt(existing, {
+        provider: args.provider,
+        eventId: args.eventId,
+      })
+    ) {
+      return { duplicate: true as const, id: existing!._id };
     }
     const id = await ctx.db.insert("webhookReceipts", {
       provider: args.provider,

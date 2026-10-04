@@ -1,3 +1,19 @@
+# Findings — Wave 6 F-010 webhook HTTP 2026-10-05
+
+Branch `test/world-ready-wave-6-f010-webhook`. Target `https://combative-mongoose-559.convex.site/stripe/webhook`.
+
+| Check | Result | Evidence |
+|-------|--------|----------|
+| Missing `stripe-signature` | PASS | HTTP 400 `Missing stripe-signature` |
+| Forged signature | PASS | HTTP 400 Stripe constructEvent reject — `STRIPE_WEBHOOK_SECRET` is configured |
+| Receipt dedupe helper | PASS | `isDuplicateWebhookReceipt` / `webhookReceiptKey`; `commerceIdentity.test.ts` 11/11 |
+| Signed Stripe delivery → `webhookReceipts` | NOT_RUN | Stripe CLI unauthenticated; no local `sk_test`; cannot construct a valid `whsec` payload without echoing Convex secrets |
+| Connect payouts | NOT_RUN | Separate residual |
+
+F-010 remains **PARTIAL**. Next: Stripe Dashboard destination or `stripe listen --forward-to …convex.site/stripe/webhook`, then J2 product CRUD.
+
+---
+
 # Findings — Wave 5 J1 / F-010 Stripe soak 2026-10-05
 
 Branch `test/world-ready-wave-5-j1-stripe`. Dev Convex `combative-mongoose-559`, Stripe test Checkout (Prizlett sandbox).
