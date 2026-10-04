@@ -2,7 +2,7 @@
 
 **Authority:** [`docs/ai/prizelet-world-ready-master-prompt.md`](./prizelet-world-ready-master-prompt.md)
 
-**Status:** Wave 18 F-010 webhook soak 2026-10-05. Signed Stripe → `webhookReceipts` **PASS**. J-DISCORD still BLOCKED. Connect payouts residual. Product is **not** world-ready.
+**Status:** Wave 19 J-EVENTS 2026-10-05. Today’s slate from `sportEvents` PASS. J-DISCORD still BLOCKED. Connect residual. Product is **not** world-ready.
 
 Do not claim world-ready until Section 8 gates in the master prompt pass.
 
@@ -16,9 +16,9 @@ Do not claim world-ready until Section 8 gates in the master prompt pass.
 | Evidence | branch, date, one-line actual vs expected |
 | Waiver | owner + reason (required if WAIVED) |
 
-Last updated: 2026-10-05. Last wave: **18** (`test/world-ready-wave-18-f010-webhook`). Source pin: `bf85281` (inventory).
+Last updated: 2026-10-05. Last wave: **19** (`test/world-ready-wave-19-j-events`). Source pin: `bf85281` (inventory).
 
-Wave 18: signed `ping` `evt_wave18_292f5ef2530b1dc5` → HTTP 200 + `webhookReceipts` row `processed`; replay same event → 200, still one receipt (dedupe). Connect payouts still ledger-only (admin honesty copy).
+Wave 19: restored `/todays-events` (was redirect-only); empty copy then `seedTodayDev` → Broncos/Celtics/Dodgers cards; `events.test.ts` 2/2.
 
 ---
 
@@ -29,7 +29,7 @@ Wave 18: signed `ping` `evt_wave18_292f5ef2530b1dc5` → HTTP 200 + `webhookRece
 | `/` | Index | anonymous | public | PASS | Wave 2 chromium surface smoke 2026-10-04; inventory pin bf85281 |
 | `/network` | Network | anonymous | public | PASS | Wave 2 chromium surface smoke 2026-10-04; inventory pin bf85281 |
 | `/creators` | Creators | anonymous | public | PASS | Wave 2 chromium surface smoke 2026-10-04; inventory pin bf85281 |
-| `/todays-events` | TodaysEvents | anonymous | mixed | PASS | Wave 2 chromium surface smoke 2026-10-04; inventory pin bf85281 |
+| `/todays-events` | TodaysEvents | anonymous | convex | PASS | Wave 19: empty + seeded slate from `listPublishedToday`; Wave 2 smoke |
 | `/discover` | Discover | anonymous | public | PASS | Wave 2 chromium surface smoke 2026-10-04; inventory pin bf85281 |
 | `/top-creators` | TopCreators | anonymous | public | PASS | Wave 2 chromium surface smoke 2026-10-04; inventory pin bf85281 |
 | `/pricing` | Pricing | anonymous | public | PASS | Wave 2 chromium surface smoke 2026-10-04; inventory pin bf85281 |
@@ -163,6 +163,7 @@ Nested layouts in `App.tsx`: `/demo/admin` → `DemoAdminLayout`; `/demo/member`
 | J-DISCORD | Bot install + grants + revoke | BLOCKED | Wave 17 2026-10-05: bot configured + OAuth URL + callback/cron verified; **blocked** on interactive guild install + subscribe grant/revoke (no Discord GUI session). Reason: requires human Discord OAuth. |
 | J-FILES | Storage ownership `getUrl` | PASS | Wave 14 2026-10-05: unowned→FORBIDDEN; owner URL OK; foreign j4member→FORBIDDEN; `files.security.test.ts` 4/4 |
 | J-DEMO | Demo writes zero money rows | PASS | Wave 15 2026-10-05: demo Withdraw toast-only; listMine unchanged (2); Demo.ts no money API imports; `demo.security.test.ts` 2/2 |
+| J-EVENTS | Today’s sportEvents slate | PASS | Wave 19 2026-10-05: restored page; empty “No events published for today yet”; seed → 3 cards (NFL/NBA/MLB); bounds unit 2/2 |
 
 ## H. Tooling gates
 
@@ -274,9 +275,9 @@ App public functions (`Auth` = TBD until Wave 1):
 | `discord.queries.memberAccess` | TBD | yes | NOT_RUN | frozen vs convex/*.ts @ bf85281 |
 | `discord.roles.createMemberInvite` | TBD | yes | NOT_RUN | frozen vs convex/*.ts @ bf85281 |
 | `discord.roles.listAssignableRoles` | TBD | yes | NOT_RUN | frozen vs convex/*.ts @ bf85281 |
-| `events.queries.listPublishedToday` | TBD | yes | NOT_RUN | frozen vs convex/*.ts @ bf85281 |
+| `events.queries.listPublishedToday` | public | yes | PASS | Wave 19: empty then 3 published today |
 | `events.queries.removeAdmin` | TBD | yes | NOT_RUN | frozen vs convex/*.ts @ bf85281 |
-| `events.queries.seedTodayDev` | TBD | yes | NOT_RUN | frozen vs convex/*.ts @ bf85281 |
+| `events.queries.seedTodayDev` | auth + ALLOW_DEV_ADMIN_GRANT | yes | PASS | Wave 19: inserted 3 for local day |
 | `events.queries.upsertAdmin` | TBD | yes | NOT_RUN | frozen vs convex/*.ts @ bf85281 |
 | `files.storage.generateUploadUrl` | TBD | yes | NOT_RUN | frozen vs convex/*.ts @ bf85281 |
 | `files.storage.getUrl` | requireAppUser + owner | yes | PASS | Wave 14 runtime: unowned/foreign FORBIDDEN; owner URL returned |
@@ -400,7 +401,7 @@ Confirm each table still exists; note writers. Result `NOT_RUN` = existence free
 | pickTracker | picks.mutations | NOT_RUN | present in convex/schema.ts @ bf85281; existence freeze only |
 | paymentEvents | payments/* | PASS | Wave 5: subscription_charge $10000 test + subscription_cancel for cs_test_a171… |
 | webhookReceipts | stripeNode.fulfillWebhook | PARTIAL | Wave 6: HTTP reject + helper tests. No new signed receipt this wave |
-| sportEvents | events / platform | NOT_RUN | present in convex/schema.ts @ bf85281; existence freeze only |
+| sportEvents | events / platform | PASS | Wave 19: published today slate via seedTodayDev + public list |
 | notifications | notifications / notify | NOT_RUN | present in convex/schema.ts @ bf85281; existence freeze only |
 | savedPosts / creatorBookmarks | bookmarks.mutations | NOT_RUN | present in convex/schema.ts @ bf85281; existence freeze only |
 | payouts / creatorPayoutSettings | payouts.mutations | NOT_RUN | present in convex/schema.ts @ bf85281; existence freeze only |

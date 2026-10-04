@@ -1,3 +1,19 @@
+# Findings — Wave 19 J-EVENTS today’s slate 2026-10-05
+
+Branch `test/world-ready-wave-19-j-events`. Deployment `combative-mongoose-559`.
+
+| Step | Result | Evidence |
+|------|--------|----------|
+| Route restore | PASS (fix) | `/todays-events` was `<Navigate to="/" />`; now renders `TodaysEventsSection` |
+| Empty state | PASS | “No events published for today yet” (stale seeded rows outside today) |
+| Seed today | PASS | `seedTodayDev` → inserted **3** |
+| Populated UI | PASS | Broncos/Chiefs Featured; Celtics/Knicks Starting Soon; Dodgers/Padres Upcoming |
+| Unit | PASS | `events.test.ts` 2/2 (`todayBoundsMs`, no fake client games) |
+
+**J-EVENTS:** PASS. Next: J-NOTIFICATIONS / settings honesty / smart pricing.
+
+---
+
 # Findings — Wave 18 F-010 signed webhook 2026-10-05
 
 Branch `test/world-ready-wave-18-f010-webhook`. Target `https://combative-mongoose-559.convex.site/stripe/webhook`.
