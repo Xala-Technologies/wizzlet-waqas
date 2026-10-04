@@ -2,7 +2,7 @@
 
 **Authority:** [`docs/ai/prizelet-world-ready-master-prompt.md`](./prizelet-world-ready-master-prompt.md)
 
-**Status:** Wave 4 F-012 admin join caps 2026-10-05. J1–J8 still `NOT_RUN`. Product is **not** world-ready.
+**Status:** Wave 5 J1 Stripe test soak 2026-10-05 on `combative-mongoose-559`. J1 PASS (confirmCheckoutSession path). F-010 PARTIAL (no new `webhookReceipts` / Connect not run). Product is **not** world-ready.
 
 Do not claim world-ready until Section 8 gates in the master prompt pass.
 
@@ -16,9 +16,9 @@ Do not claim world-ready until Section 8 gates in the master prompt pass.
 | Evidence | branch, date, one-line actual vs expected |
 | Waiver | owner + reason (required if WAIVED) |
 
-Last updated: 2026-10-05. Last wave: **4** (`fix/world-ready-wave-4-f012`). Source pin: `bf85281` (inventory).
+Last updated: 2026-10-05. Last wave: **5** (`test/world-ready-wave-5-j1-stripe`). Source pin: `bf85281` (inventory).
 
-Wave 2 smoke: Chromium walked every `App.tsx` public/demo path (no ErrorBoundary) and every protected path (anonymous → `/login`). WebKit/Firefox still run J9 public-nav + browser-matrix. Authenticated happy paths (J1–J8) are **not** claimed PASS.
+Wave 5: published `@prize2626` → member `j1member` → Stripe Checkout `cs_test_a171…` (4242) → `paymentEvents` charge + cancel → My Creators access removed. Async `webhookReceipts` row for this session **not** observed (fulfillment via `confirmCheckoutSession`).
 
 ---
 
@@ -142,7 +142,7 @@ Nested layouts in `App.tsx`: `/demo/admin` → `DemoAdminLayout`; `/demo/member`
 | Surface | Module | Result | Evidence |
 |---------|--------|--------|----------|
 | Convex Auth HTTP routes | `convex/http.ts` + `auth.addHttpRoutes` | NOT_RUN | frozen vs convex/http.ts + crons.ts @ bf85281; chore/world-ready-wave-0-inventory; 2026-10-04 |
-| `POST /stripe/webhook` | `payments.stripeNode.fulfillWebhook` | NOT_RUN | frozen vs convex/http.ts + crons.ts @ bf85281; chore/world-ready-wave-0-inventory; 2026-10-04 |
+| `POST /stripe/webhook` | `payments.stripeNode.fulfillWebhook` | PARTIAL | Wave 5: handler present; prior receipts processed historically; no new receipt for Wave 5 `cs_test_a171…` (confirmCheckoutSession fulfilled instead) |
 | `GET /discord/bot-install/callback` | `discord.roles.completeBotInstall` | NOT_RUN | frozen vs convex/http.ts + crons.ts @ bf85281; chore/world-ready-wave-0-inventory; 2026-10-04 |
 | Cron 5m pending Discord grants | `discord.roles.retryPendingGrants` | NOT_RUN | frozen vs convex/http.ts + crons.ts @ bf85281; chore/world-ready-wave-0-inventory; 2026-10-04 |
 
@@ -150,7 +150,7 @@ Nested layouts in `App.tsx`: `/demo/admin` → `DemoAdminLayout`; `/demo/member`
 
 | ID | Name | Result | Evidence |
 |----|------|--------|----------|
-| J1 | Commercial lifecycle (publish → Stripe → webhook → cancel → access) | NOT_RUN | |
+| J1 | Commercial lifecycle (publish → Stripe → webhook → cancel → access) | PASS | Wave 5 2026-10-05: publish `@prize2626` + product Monthly pro $100; member signup `j1member`; Checkout `cs_test_a171BP4bJzrvM8pRX5c7xvgaScFUnfjkraXVlSBBbIFzb8Zxz6spGJWgXJ`; sub `mn7bg36b7xe76gkxyaeq0caaph8fnhyh` ACTIVE then cancelled; `paymentEvents` `checkout:cs_test_…` + `cancel_local:…`; My Creators `?demo=0` empty after cancel. Residual: no new `webhookReceipts` for this session (confirmCheckoutSession fulfilled); Connect not in scope |
 | J2 | Product CRUD + profile slots | NOT_RUN | |
 | J3 | Content access / pick lock / win rate | NOT_RUN | |
 | J4 | Messages / support / resolution | NOT_RUN | |
@@ -188,7 +188,7 @@ Nested layouts in `App.tsx`: `/demo/admin` → `DemoAdminLayout`; `/demo/member`
 | F-004 JWT subject as user id | PASS | Wave 1: listPreviewsByCreator uses getAuthUserId |
 | F-005 public migration mutations | PASS | Wave 1: importBatch/load are internalMutation |
 | F-009 / J5 payout reserved vs paid | PASS | Wave 1: payoutBalance.test.ts 5/5. Live UI Wave 2 |
-| F-010 webhook soak / Connect | NOT_RUN | Wave 1: handler present; soak/Connect not executed |
+| F-010 webhook soak / Connect | PARTIAL | Wave 5: live Checkout+confirmCheckoutSession+cancel+ledger on combative-mongoose-559. No new `webhookReceipts` for `cs_test_a171…` (async webhook not observed). Connect payouts still NOT_RUN |
 | F-012 admin full-table scans | PASS | Wave 4: listUsersPage/listCreatorsPage indexed joins use `.take(ADMIN_JOIN_LIMIT=200)`. Customers still `adminScanAll` cap 5k |
 | F-015 lint / tsc | PASS | Wave 3: `npx tsc -b` exit 0; lint still 0 errors / 28 warnings |
 
@@ -301,10 +301,10 @@ App public functions (`Auth` = TBD until Wave 1):
 | `notifications.mutations.unreadCount` | TBD | yes | NOT_RUN | frozen vs convex/*.ts @ bf85281 |
 | `payments.sandbox.sandboxCancel` | TBD | yes | NOT_RUN | frozen vs convex/*.ts @ bf85281 |
 | `payments.sandbox.sandboxSubscribe` | TBD | yes | NOT_RUN | frozen vs convex/*.ts @ bf85281 |
-| `payments.stripeNode.cancelCreatorSubscription` | TBD | yes | NOT_RUN | frozen vs convex/*.ts @ bf85281 |
-| `payments.stripeNode.confirmCheckoutSession` | TBD | yes | NOT_RUN | frozen vs convex/*.ts @ bf85281 |
+| `payments.stripeNode.cancelCreatorSubscription` | auth | yes | PASS | Wave 5: cancelled sub `mn7bg36…` / Stripe `sub_1UMxh9…`; billingStatus canceled |
+| `payments.stripeNode.confirmCheckoutSession` | auth | yes | PASS | Wave 5: session `cs_test_a171…` → settled `paymentEvents` commercialRef |
 | `payments.stripeNode.createBillingPortalSession` | TBD | yes | NOT_RUN | frozen vs convex/*.ts @ bf85281 |
-| `payments.stripeNode.createCheckoutSession` | TBD | yes | NOT_RUN | frozen vs convex/*.ts @ bf85281 |
+| `payments.stripeNode.createCheckoutSession` | auth | yes | PASS | Wave 5: redirected to checkout.stripe.com Prizlett sandbox Monthly pro $100 |
 | `payouts.mutations.availableBalance` | TBD | yes | NOT_RUN | frozen vs convex/*.ts @ bf85281 |
 | `payouts.mutations.createAdmin` | TBD | yes | NOT_RUN | frozen vs convex/*.ts @ bf85281 |
 | `payouts.mutations.getMySettings` | TBD | yes | NOT_RUN | frozen vs convex/*.ts @ bf85281 |
@@ -395,11 +395,11 @@ Confirm each table still exists; note writers. Result `NOT_RUN` = existence free
 | creators | creators/* | NOT_RUN | present in convex/schema.ts @ bf85281; existence freeze only |
 | products | products.mutations | NOT_RUN | present in convex/schema.ts @ bf85281; existence freeze only |
 | posts | posts/* | NOT_RUN | present in convex/schema.ts @ bf85281; existence freeze only |
-| subscriptions | payments/*, subscriptions.mutations | NOT_RUN | present in convex/schema.ts @ bf85281; existence freeze only |
+| subscriptions | payments/*, subscriptions.mutations | PASS | Wave 5: active→cancelled soak on prize2626 / j1member; Stripe sub_1UMxh9… |
 | analyticsEvents | analytics.mutations | NOT_RUN | present in convex/schema.ts @ bf85281; existence freeze only |
 | pickTracker | picks.mutations | NOT_RUN | present in convex/schema.ts @ bf85281; existence freeze only |
-| paymentEvents | payments/* | NOT_RUN | present in convex/schema.ts @ bf85281; existence freeze only |
-| webhookReceipts | stripeNode.fulfillWebhook | NOT_RUN | present in convex/schema.ts @ bf85281; existence freeze only |
+| paymentEvents | payments/* | PASS | Wave 5: subscription_charge $10000 test + subscription_cancel for cs_test_a171… |
+| webhookReceipts | stripeNode.fulfillWebhook | PARTIAL | Wave 5: prior processed receipts exist; no new receipt for cs_test_a171… (async path unproven this soak) |
 | sportEvents | events / platform | NOT_RUN | present in convex/schema.ts @ bf85281; existence freeze only |
 | notifications | notifications / notify | NOT_RUN | present in convex/schema.ts @ bf85281; existence freeze only |
 | savedPosts / creatorBookmarks | bookmarks.mutations | NOT_RUN | present in convex/schema.ts @ bf85281; existence freeze only |
@@ -425,7 +425,7 @@ Schema `appRole` also allows `moderator` and `user` (not product actors; no rout
 
 ## M. Remaining risk (update every fix PR)
 
-- P2: F-010 Stripe soak / Connect; Discord grant soak; J1–J8 authenticated journeys not run
+- P2: F-010 residual — async `webhookReceipts` for latest soak + Connect payouts; Discord grant soak; J2–J8 authenticated journeys not run
 - P3: admin user/creator spend metrics cap at 200 indexed rows; customer pages scan ≤5k subscriptions; eslint warnings; AuthContext DEV `hasRole` leftover
 - Not in this PR: production deploy, live Stripe keys, MFA
 - Waivers: see section L
