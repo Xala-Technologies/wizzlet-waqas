@@ -2,7 +2,7 @@
 
 **Authority:** [`docs/ai/prizelet-world-ready-master-prompt.md`](./prizelet-world-ready-master-prompt.md)
 
-**Status:** Wave 26 J2 featured exclusivity UI 2026-10-05. Featured list-price toggle + sibling clear PASS. J-DISCORD still BLOCKED. Product is **not** world-ready.
+**Status:** Wave 27 J-DISCORD end-to-end 2026-10-05. Bot install + role map + grant/revoke PASS. Product is **not** world-ready (other P2s remain).
 
 Do not claim world-ready until Section 8 gates in the master prompt pass.
 
@@ -16,9 +16,9 @@ Do not claim world-ready until Section 8 gates in the master prompt pass.
 | Evidence | branch, date, one-line actual vs expected |
 | Waiver | owner + reason (required if WAIVED) |
 
-Last updated: 2026-10-05. Last wave: **26** (`test/world-ready-wave-26-j2-featured`). Source pin: `bf85281` (inventory).
+Last updated: 2026-10-05. Last wave: **27** (`test/world-ready-wave-27-j-discord`). Source pin: `bf85281` (inventory).
 
-Wave 26: create/edit was hardcoding `isFeatured: false`; Featured switch wired; exclusivity helper + soak (`WAVE26` then re-feature `WAVE24` → only WAVE24 Featured; public CTA **$14.99**).
+Wave 27: Discord Developer Portal OAuth redirects OK; `j2creator` bot install → **Prizelet VIP**; WAVE24 → **Monthly Pro**; Discord OAuth member `prize262626` Checkout → grant **granted**; cancel → **revoked**.
 
 ---
 
@@ -143,7 +143,7 @@ Nested layouts in `App.tsx`: `/demo/admin` → `DemoAdminLayout`; `/demo/member`
 |---------|--------|--------|----------|
 | Convex Auth HTTP routes | `convex/http.ts` + `auth.addHttpRoutes` | NOT_RUN | frozen vs convex/http.ts + crons.ts @ bf85281; chore/world-ready-wave-0-inventory; 2026-10-04 |
 | `POST /stripe/webhook` | `payments.stripeNode.fulfillWebhook` | PASS | Wave 18: signed `evt_wave18_292f5ef…` ping → 200 + receipt; replay deduped. Wave 6: missing/forged sig → 400 |
-| `GET /discord/bot-install/callback` | `discord.roles.completeBotInstall` | PARTIAL | Wave 17: missing/invalid code → 302 `/creator/integrations?discord=error`; signed OAuth guild exchange not soaked |
+| `GET /discord/bot-install/callback` | `discord.roles.completeBotInstall` | PASS | Wave 27: live OAuth code → `?discord=connected` + guild **Prizelet VIP**; Wave 17 missing-code error path |
 | Cron 5m pending Discord grants | `discord.roles.retryPendingGrants` | PASS | Wave 17: registered in `crons.ts` (5m); `discord.security.test.ts` |
 
 ## G. Journeys
@@ -160,7 +160,7 @@ Nested layouts in `App.tsx`: `/demo/admin` → `DemoAdminLayout`; `/demo/member`
 | J8 | Migration ETL internal-only | PASS | Wave 13 2026-10-05: all migration exports `internalMutation`; client has zero import refs; `MIGRATION_SECRET` unset on combative-mongoose-559; `migrations.security.test.ts` 3/3. Residual: historical data parity not claimed |
 | J9 | Public nav + chrome | PASS | Wave 2: public-nav + browser-matrix on chromium/webkit/firefox; platform-owner bootstrap visible in DEV |
 | J-ADMIN | Admin lists, fees, reports, campaigns | PASS | Wave 16 2026-10-05: users/creators paginated; fees analytics; CSV export; campaigns in-app-only honesty; alerts strip |
-| J-DISCORD | Bot install + grants + revoke | BLOCKED | Wave 17 2026-10-05: bot configured + OAuth URL + callback/cron verified; **blocked** on interactive guild install + subscribe grant/revoke (no Discord GUI session). Reason: requires human Discord OAuth. |
+| J-DISCORD | Bot install + grants + revoke | PASS | Wave 27 2026-10-05: portal redirects include bot-install callback; `j2creator` Add to Discord → Prizelet VIP connected; WAVE24 mapped Monthly Pro; Discord login `prize262626` Checkout `cs_test_a1at5i…` → grant **granted**; cancel → **revoked**. `discord.security.test.ts` 3/3 |
 | J-FILES | Storage ownership `getUrl` | PASS | Wave 14 2026-10-05: unowned→FORBIDDEN; owner URL OK; foreign j4member→FORBIDDEN; `files.security.test.ts` 4/4 |
 | J-DEMO | Demo writes zero money rows | PASS | Wave 15 2026-10-05: demo Withdraw toast-only; listMine unchanged (2); Demo.ts no money API imports; `demo.security.test.ts` 2/2 |
 | J-EVENTS | Today’s sportEvents slate | PASS | Wave 19 2026-10-05: restored page; empty “No events published for today yet”; seed → 3 cards (NFL/NBA/MLB); bounds unit 2/2 |
@@ -270,15 +270,15 @@ App public functions (`Auth` = TBD until Wave 1):
 | `creators.queries.setVerificationStatus` | TBD | yes | NOT_RUN | frozen vs convex/*.ts @ bf85281 |
 | `creators.queries.updateSettings` | owner | yes | PASS | Wave 21: monthlyPriceCents $9.99→$11.99 from Smart Pricing |
 | `creators.queries.upsertOnboarding` | TBD | yes | NOT_RUN | frozen vs convex/*.ts @ bf85281 |
-| `discord.mutations.disconnect` | TBD | yes | NOT_RUN | frozen vs convex/*.ts @ bf85281 |
-| `discord.mutations.retryMyAccess` | TBD | yes | NOT_RUN | frozen vs convex/*.ts @ bf85281 |
-| `discord.mutations.setProductRole` | TBD | yes | NOT_RUN | frozen vs convex/*.ts @ bf85281 |
-| `discord.mutations.startBotInstall` | TBD | yes | NOT_RUN | frozen vs convex/*.ts @ bf85281 |
-| `discord.queries.botStatus` | TBD | yes | NOT_RUN | frozen vs convex/*.ts @ bf85281 |
-| `discord.queries.connection` | TBD | yes | NOT_RUN | frozen vs convex/*.ts @ bf85281 |
-| `discord.queries.memberAccess` | TBD | yes | NOT_RUN | frozen vs convex/*.ts @ bf85281 |
-| `discord.roles.createMemberInvite` | TBD | yes | NOT_RUN | frozen vs convex/*.ts @ bf85281 |
-| `discord.roles.listAssignableRoles` | TBD | yes | NOT_RUN | frozen vs convex/*.ts @ bf85281 |
+| `discord.mutations.disconnect` | creator | yes | NOT_RUN | frozen vs convex/*.ts @ bf85281 |
+| `discord.mutations.retryMyAccess` | subscriber | yes | NOT_RUN | frozen vs convex/*.ts @ bf85281 |
+| `discord.mutations.setProductRole` | creator | yes | PASS | Wave 27: WAVE24 → Monthly Pro |
+| `discord.mutations.startBotInstall` | creator | yes | PASS | Wave 27: OAuth URL → guild authorize Prizelet VIP |
+| `discord.queries.botStatus` | creator | yes | PASS | Wave 17/27: configured true |
+| `discord.queries.connection` | creator | yes | PASS | Wave 27: Prizelet VIP / 2 members |
+| `discord.queries.memberAccess` | subscriber | yes | PASS | Wave 27: success page Join Discord CTA after Checkout |
+| `discord.roles.createMemberInvite` | subscriber | yes | PASS | Wave 27: Join Discord from subscription success |
+| `discord.roles.listAssignableRoles` | creator | yes | PASS | Wave 27: Monthly Pro listed |
 | `events.queries.listPublishedToday` | public | yes | PASS | Wave 19: empty then 3 published today |
 | `events.queries.removeAdmin` | TBD | yes | NOT_RUN | frozen vs convex/*.ts @ bf85281 |
 | `events.queries.seedTodayDev` | auth + ALLOW_DEV_ADMIN_GRANT | yes | PASS | Wave 19: inserted 3 for local day |
@@ -418,7 +418,7 @@ Confirm each table still exists; note writers. Result `NOT_RUN` = existence free
 | fileAssets | files/storage | PASS | Wave 14: registerOwnedFile + owner getUrl; foreign denied |
 | migrationCheckpoints / mutationLog | migrations/* internal | NOT_RUN | present in convex/schema.ts @ bf85281; existence freeze only |
 | accountRequests | accountRequests | PASS | Wave 12: email_change open for j4member; sign-in email not mutated in-app |
-| discordBotInstalls / discordAccessGrants | discord/* | NOT_RUN | present in convex/schema.ts @ bf85281; existence freeze only |
+| discordBotInstalls / discordAccessGrants | discord/* | PASS | Wave 27: install nonce + grant row granted then revoked for prize262626 |
 
 Schema `appRole` also allows `moderator` and `user` (not product actors; no routes).
 
@@ -430,7 +430,7 @@ Schema `appRole` also allows `moderator` and `user` (not product actors; no rout
 
 ## M. Remaining risk (update every fix PR)
 
-- P2: Stripe Connect live transfers still unimplemented (Wave 22 honesty PASS — ledger/manual only); J-DISCORD BLOCKED pending interactive guild OAuth + grant/revoke; J7 OAuth callback + multi-role switcher UI residual; historical migration data parity BLOCKED (greenfield); referral commission cash TBD
+- P2: Stripe Connect live transfers still unimplemented (Wave 22 honesty PASS — ledger/manual only); J7 OAuth callback + multi-role switcher UI residual; historical migration data parity BLOCKED (greenfield); referral commission cash TBD
 - P3: admin user/creator spend metrics cap at 200 indexed rows; customer pages scan ≤5k subscriptions; eslint warnings; AuthContext DEV `hasRole` leftover
 - Not in this PR: production deploy, live Stripe keys, MFA
 - Waivers: see section L

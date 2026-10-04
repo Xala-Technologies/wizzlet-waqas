@@ -1,3 +1,21 @@
+# Findings — Wave 27 J-DISCORD end-to-end 2026-10-05
+
+Branch `test/world-ready-wave-27-j-discord`. Fixtures `j2creator` + Discord OAuth member `prize262626` on `combative-mongoose-559`. Portal app `1546839405245759508`.
+
+| Step | Result | Evidence |
+|------|--------|----------|
+| Portal redirects | PASS | Auth + `…/discord/bot-install/callback` on combative-mongoose-559 ([Discord OAuth2](https://discord.com/developers/applications/1546839405245759508/oauth2)) |
+| Bot install | PASS | `/creator/integrations` Add to Discord → authorize **Prizelet VIP** → `?discord=connected` |
+| Role map | PASS | WAVE24 → **Monthly Pro** (“Role mapped”) |
+| Member Discord login | PASS | Continue with Discord → subscriber `prize262626` / discordId set |
+| Subscribe grant | PASS | Checkout `cs_test_a1at5i…` WAVE24 → `discordAccessGrants.status` **granted** |
+| Cancel revoke | PASS | Manage cancel → grant **revoked** |
+| Unit | PASS | `discord.security.test.ts` 3/3 |
+
+**J-DISCORD:** PASS. Next: referral cash; Connect live transfers; J7 OAuth/multi-role residual.
+
+---
+
 # Findings — Wave 26 J2 featured exclusivity UI 2026-10-05
 
 Branch `test/world-ready-wave-26-j2-featured`. Fixture `j2creator` on `combative-mongoose-559`.
