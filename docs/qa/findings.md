@@ -1,3 +1,18 @@
+# Findings — Wave 23 J2 soft-archive with subscription 2026-10-05
+
+Branch `test/world-ready-wave-23-j2-soft-archive`. Fixture `j4creator` on `combative-mongoose-559`.
+
+| Step | Result | Evidence |
+|------|--------|----------|
+| Delete with sub history | PASS | Delete **J4 Monthly Access** (cancelled sub row linked) → **Archived (1)** / All Products (0) |
+| Public storefront | PASS | `/j4creator?demo=0` **No products yet** (list price CTA $11.99 remains) |
+| Toast honesty | PASS (code) | UI uses `archived` return → “Product archived — subscribers keep access” |
+| Unit | PASS | `productRemove.test.ts` 2/2 |
+
+**J2 soft-archive residual:** PASS. Next: J3 paid unlock/cancel + pickTracker; admin Lifetime metric; J-DISCORD human OAuth.
+
+---
+
 # Findings — Wave 22 J-CONNECT residual honesty 2026-10-05
 
 Branch `test/world-ready-wave-22-connect-residual`. Fixtures `j4creator` + platform owner on `combative-mongoose-559`.

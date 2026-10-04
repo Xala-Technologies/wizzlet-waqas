@@ -6,6 +6,7 @@ import {
   MAX_PROFILE_PRODUCTS,
   wouldExceedProfileSlots,
 } from "../lib/productProfileSlots";
+import { productRemoveMode } from "../lib/productRemove";
 import { productDocValidator, productPublicValidator } from "../lib/validators";
 
 /** Public projection — active, non-closed products only. */
@@ -175,7 +176,7 @@ export const remove = mutation({
       .query("subscriptions")
       .withIndex("by_productId", (q) => q.eq("productId", args.productId))
       .first();
-    if (linked) {
+    if (productRemoveMode(Boolean(linked)) === "archive") {
       await ctx.db.patch(args.productId, {
         isActive: false,
         isClosed: true,

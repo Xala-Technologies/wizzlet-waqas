@@ -2,7 +2,7 @@
 
 **Authority:** [`docs/ai/prizelet-world-ready-master-prompt.md`](./prizelet-world-ready-master-prompt.md)
 
-**Status:** Wave 22 J-CONNECT residual 2026-10-05. Connect honesty PASS (ledger-only; no live Connect). J-DISCORD still BLOCKED. Product is **not** world-ready.
+**Status:** Wave 23 J2 soft-archive 2026-10-05. Soft-archive with subscription history PASS. J-DISCORD still BLOCKED. Product is **not** world-ready.
 
 Do not claim world-ready until Section 8 gates in the master prompt pass.
 
@@ -16,9 +16,9 @@ Do not claim world-ready until Section 8 gates in the master prompt pass.
 | Evidence | branch, date, one-line actual vs expected |
 | Waiver | owner + reason (required if WAIVED) |
 
-Last updated: 2026-10-05. Last wave: **22** (`test/world-ready-wave-22-connect-residual`). Source pin: `bf85281` (inventory).
+Last updated: 2026-10-05. Last wave: **23** (`test/world-ready-wave-23-j2-soft-archive`). Source pin: `bf85281` (inventory).
 
-Wave 22: fixed creator billing “connected Stripe account” lie; creator payouts + admin treasury ledger Connect-not-enabled copy; `createConnectOnboardingLink` toast stub.
+Wave 23: delete **J4 Monthly Access** with cancelled-sub history → archived (not hard-deleted); public profile “No products yet”; toast distinguishes archive vs delete; `productRemove.test.ts` 2/2.
 
 ---
 
@@ -151,7 +151,7 @@ Nested layouts in `App.tsx`: `/demo/admin` → `DemoAdminLayout`; `/demo/member`
 | ID | Name | Result | Evidence |
 |----|------|--------|----------|
 | J1 | Commercial lifecycle (publish → Stripe → webhook → cancel → access) | PASS | Wave 5 2026-10-05: publish `@prize2626` + product Monthly pro $100; member signup `j1member`; Checkout `cs_test_a171BP4bJzrvM8pRX5c7xvgaScFUnfjkraXVlSBBbIFzb8Zxz6spGJWgXJ`; sub `mn7bg36b7xe76gkxyaeq0caaph8fnhyh` ACTIVE then cancelled; `paymentEvents` `checkout:cs_test_…` + `cancel_local:…`; My Creators `?demo=0` empty after cancel. Residual: no new `webhookReceipts` for this session (confirmCheckoutSession fulfilled); Connect not in scope |
-| J2 | Product CRUD + profile slots | PASS | Wave 7 2026-10-05: `j2creator` published; create **J2 Monthly Alpha** $19.99 monthly + limited 100 spots; pin `showOnProfile`; edit → $24.99; public profile Subscribe $24.99; hard delete (no subs) → 0 products. `setShowOnProfile` throws `PROFILE_SLOTS_FULL` at 4; unit `productProfileSlots.test.ts`. Residual: soft-archive when subscription exists not browser-soaked; featured exclusivity not UI-toggled |
+| J2 | Product CRUD + profile slots | PASS | Wave 7 CRUD + slots; Wave 23 2026-10-05: soft-archive **J4 Monthly Access** (linked cancelled sub) → Archived (1), public “No products yet”; hard-delete path still Wave 7; `productRemove.test.ts` 2/2. Residual: featured exclusivity not UI-toggled |
 | J3 | Content access / pick lock / win rate | PASS | Wave 8 2026-10-05: anonymous `/j2creator?demo=0` no secret bodies; owner posts list shows WAVE8_*; `setResult` won then UI **Result locked** + `RESULT_LOCKED` on upsert/setResult; public Win Rate 100% with won+push (push excluded). `memberFeed` uses `subscriptionGrantsContentAccess`; saved posts use `canViewPostContent`. Residual: paid unlock/cancel not browser-soaked on this fixture (0 subs); pickTracker lock not subscriber-session soaked |
 | J4 | Messages / support / resolution | PASS | Wave 9 2026-10-05: `j4creator`/`j4member` Stripe sub; DM + creator unread/reply; support/resolution/growth admin replies; messaging off deny; cancel → `FORBIDDEN` on send. Unit `messaging.security.test.ts` 6/6. Fix: messaging toggle on populated CreatorMessages inbox. Residual: UI composer still shown when gated (server enforces) |
 | J5 | Payout request / approve / balance | PASS | Wave 10 2026-10-05: `j4creator` $28.49 available → request → reserved $0 avail; admin failed frees balance; re-request → completed; Paid ≠ reserved; Connect stub copy honest. `payoutBalance.test.ts` 5/5. Residual: admin Lifetime from active subs only |
@@ -334,7 +334,7 @@ App public functions (`Auth` = TBD until Wave 1):
 | `posts.queries.upsert` | creator | yes | PASS | Wave 8: publish J3 SECRET + J3 PUSH; settled result cannot be overwritten |
 | `products.mutations.listByCreator` | owner | yes | PASS | Wave 7: creator products table listed live rows |
 | `products.mutations.listPublicByCreator` | public | yes | PASS | Wave 7: `/j2creator?demo=0` showed J2 Monthly Alpha |
-| `products.mutations.remove` | owner | yes | PASS | Wave 7: hard delete with no subscriptions → empty catalog |
+| `products.mutations.remove` | owner | yes | PASS | Wave 7 hard delete; Wave 23 soft-archive when subscription linked → Archived tab |
 | `products.mutations.setShowOnProfile` | owner | yes | PASS | Wave 7: pin + MAX_PROFILE_PRODUCTS=4 server guard |
 | `products.mutations.upsert` | owner | yes | PASS | Wave 7: create $1999→edit $2499 monthly limited product |
 | `resolution.mutations.addMessage` | TBD | yes | NOT_RUN | frozen vs convex/*.ts @ bf85281 |
@@ -430,7 +430,7 @@ Schema `appRole` also allows `moderator` and `user` (not product actors; no rout
 
 ## M. Remaining risk (update every fix PR)
 
-- P2: Stripe Connect live transfers still unimplemented (Wave 22 honesty PASS — ledger/manual only); J-DISCORD BLOCKED pending interactive guild OAuth + grant/revoke; J7 OAuth callback + multi-role switcher UI residual; historical migration data parity BLOCKED (greenfield); J2 soft-archive-with-sub not soaked; J3 paid unlock/cancel + pickTracker session not soaked on j2creator; admin payout Lifetime ignores cancelled-sub paymentEvents; referral commission cash TBD
+- P2: Stripe Connect live transfers still unimplemented (Wave 22 honesty PASS — ledger/manual only); J-DISCORD BLOCKED pending interactive guild OAuth + grant/revoke; J7 OAuth callback + multi-role switcher UI residual; historical migration data parity BLOCKED (greenfield); J3 paid unlock/cancel + pickTracker session not soaked on j2creator; admin payout Lifetime ignores cancelled-sub paymentEvents; referral commission cash TBD; J2 featured exclusivity UI not toggled
 - P3: admin user/creator spend metrics cap at 200 indexed rows; customer pages scan ≤5k subscriptions; eslint warnings; AuthContext DEV `hasRole` leftover
 - Not in this PR: production deploy, live Stripe keys, MFA
 - Waivers: see section L
