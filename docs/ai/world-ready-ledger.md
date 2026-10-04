@@ -2,7 +2,7 @@
 
 **Authority:** [`docs/ai/prizelet-world-ready-master-prompt.md`](./prizelet-world-ready-master-prompt.md)
 
-**Status:** Wave 17 J-DISCORD 2026-10-05. J-DISCORD **BLOCKED** (guild OAuth + grant/revoke not interactive-soaked). F-010 still PARTIAL. Product is **not** world-ready.
+**Status:** Wave 18 F-010 webhook soak 2026-10-05. Signed Stripe → `webhookReceipts` **PASS**. J-DISCORD still BLOCKED. Connect payouts residual. Product is **not** world-ready.
 
 Do not claim world-ready until Section 8 gates in the master prompt pass.
 
@@ -16,9 +16,9 @@ Do not claim world-ready until Section 8 gates in the master prompt pass.
 | Evidence | branch, date, one-line actual vs expected |
 | Waiver | owner + reason (required if WAIVED) |
 
-Last updated: 2026-10-05. Last wave: **17** (`test/world-ready-wave-17-j-discord`). Source pin: `bf85281` (inventory).
+Last updated: 2026-10-05. Last wave: **18** (`test/world-ready-wave-18-f010-webhook`). Source pin: `bf85281` (inventory).
 
-Wave 17: Discord bot **configured**; integrations UI live (`?demo=0`); `startBotInstall` returns OAuth URL; HTTP callback 302→`?discord=error` without code; cron `retryPendingGrants` 5m + unit 3/3. **BLOCKED:** no interactive Discord guild authorize + member grant/revoke soak available in this agent session.
+Wave 18: signed `ping` `evt_wave18_292f5ef2530b1dc5` → HTTP 200 + `webhookReceipts` row `processed`; replay same event → 200, still one receipt (dedupe). Connect payouts still ledger-only (admin honesty copy).
 
 ---
 
@@ -142,7 +142,7 @@ Nested layouts in `App.tsx`: `/demo/admin` → `DemoAdminLayout`; `/demo/member`
 | Surface | Module | Result | Evidence |
 |---------|--------|--------|----------|
 | Convex Auth HTTP routes | `convex/http.ts` + `auth.addHttpRoutes` | NOT_RUN | frozen vs convex/http.ts + crons.ts @ bf85281; chore/world-ready-wave-0-inventory; 2026-10-04 |
-| `POST /stripe/webhook` | `payments.stripeNode.fulfillWebhook` | PARTIAL | Wave 6: live HTTP 400 missing signature; 400 forged signature (secret present). Signed event → `webhookReceipts` still not observed. Wave 5 fulfill used confirmCheckoutSession |
+| `POST /stripe/webhook` | `payments.stripeNode.fulfillWebhook` | PASS | Wave 18: signed `evt_wave18_292f5ef…` ping → 200 + receipt; replay deduped. Wave 6: missing/forged sig → 400 |
 | `GET /discord/bot-install/callback` | `discord.roles.completeBotInstall` | PARTIAL | Wave 17: missing/invalid code → 302 `/creator/integrations?discord=error`; signed OAuth guild exchange not soaked |
 | Cron 5m pending Discord grants | `discord.roles.retryPendingGrants` | PASS | Wave 17: registered in `crons.ts` (5m); `discord.security.test.ts` |
 
@@ -188,7 +188,7 @@ Nested layouts in `App.tsx`: `/demo/admin` → `DemoAdminLayout`; `/demo/member`
 | F-004 JWT subject as user id | PASS | Wave 1: listPreviewsByCreator uses getAuthUserId |
 | F-005 public migration mutations | PASS | Wave 1: importBatch/load are internalMutation |
 | F-009 / J5 payout reserved vs paid | PASS | Wave 1: payoutBalance.test.ts 5/5. Live UI Wave 2 |
-| F-010 webhook soak / Connect | PARTIAL | Wave 6: endpoint live + secret verified via reject; `isDuplicateWebhookReceipt` unit tests. Signed soak + Connect still NOT_RUN |
+| F-010 webhook soak / Connect | PASS | Wave 18: signed delivery → `webhookReceipts` + dedupe. Connect payouts still ledger-only residual (not claimed) |
 | F-012 admin full-table scans | PASS | Wave 4: listUsersPage/listCreatorsPage indexed joins use `.take(ADMIN_JOIN_LIMIT=200)`. Customers still `adminScanAll` cap 5k |
 | F-015 lint / tsc | PASS | Wave 3: `npx tsc -b` exit 0; lint still 0 errors / 28 warnings |
 
@@ -425,7 +425,7 @@ Schema `appRole` also allows `moderator` and `user` (not product actors; no rout
 
 ## M. Remaining risk (update every fix PR)
 
-- P2: F-010 residual — signed Stripe → `webhookReceipts` insert + Connect payouts; J-DISCORD BLOCKED pending interactive guild OAuth + grant/revoke; J7 OAuth callback + multi-role switcher UI residual; historical migration data parity BLOCKED (greenfield); J2 soft-archive-with-sub not soaked; J3 paid unlock/cancel + pickTracker session not soaked on j2creator; admin payout Lifetime ignores cancelled-sub paymentEvents; referral commission cash TBD
+- P2: Stripe Connect payouts (ledger-only until Connect); J-DISCORD BLOCKED pending interactive guild OAuth + grant/revoke; J7 OAuth callback + multi-role switcher UI residual; historical migration data parity BLOCKED (greenfield); J2 soft-archive-with-sub not soaked; J3 paid unlock/cancel + pickTracker session not soaked on j2creator; admin payout Lifetime ignores cancelled-sub paymentEvents; referral commission cash TBD
 - P3: admin user/creator spend metrics cap at 200 indexed rows; customer pages scan ≤5k subscriptions; eslint warnings; AuthContext DEV `hasRole` leftover
 - Not in this PR: production deploy, live Stripe keys, MFA
 - Waivers: see section L

@@ -1,3 +1,18 @@
+# Findings — Wave 18 F-010 signed webhook 2026-10-05
+
+Branch `test/world-ready-wave-18-f010-webhook`. Target `https://combative-mongoose-559.convex.site/stripe/webhook`.
+
+| Step | Result | Evidence |
+|------|--------|----------|
+| Signed delivery | PASS | `evt_wave18_292f5ef2530b1dc5` type `ping` → HTTP **200** |
+| webhookReceipts insert | PASS | Row `p974wd00…` provider stripe / processed |
+| Replay dedupe | PASS | Same event → HTTP 200; still **one** receipt for that eventId |
+| Connect payouts | Residual | Admin copy: ledger only until Stripe Connect enabled |
+
+**F-010:** PASS (webhook soak). Connect remains residual. World-ready still blocked by J-DISCORD + other P2s.
+
+---
+
 # Findings — Wave 17 J-DISCORD 2026-10-05
 
 Branch `test/world-ready-wave-17-j-discord`. Fixture `j4creator` on `combative-mongoose-559`.
