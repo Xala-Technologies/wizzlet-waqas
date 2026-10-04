@@ -58,7 +58,6 @@ const primaryItems: NavItem[] = [
   { label: 'Marketing', href: '/creator/promo', icon: Megaphone, chevron: true },
   { label: 'Finance', href: '/creator/earnings', icon: DollarSign, chevron: true },
   { label: 'Growth Manager', href: '/creator/personal-growth-manager', icon: Brain },
-  { label: 'Support', href: '/creator/support', icon: HelpCircle },
 ];
 
 const marketingChildItems: NavItem[] = [
