@@ -54,13 +54,13 @@ export function DashboardLayout({ children, type, mainClassName }: DashboardLayo
   const Sidebar = type === 'creator' ? CreatorSidebar : type === 'admin' ? AdminSidebar : MemberSidebar;
 
   const body = (
-    <div className="flex h-dvh max-h-dvh overflow-hidden bg-background">
+    <div className="flex h-dvh max-h-dvh overflow-hidden bg-clay-page">
       <UnreadMessageWatcher />
       <Sidebar />
       <main
         className={cn(
-          'min-h-0 min-w-0 flex-1 overflow-x-hidden overflow-y-auto overscroll-y-contain',
-          mainClassName ?? (type === 'member' ? 'bg-[var(--bg-page)]' : 'bg-muted/40'),
+          'min-h-0 min-w-0 flex-1 overflow-x-hidden overflow-y-auto overscroll-y-contain bg-clay-page',
+          mainClassName,
         )}
       >
         <MobileTopBar homeHref={HOME_HREF[type]} title={pageTitle}>
@@ -74,7 +74,6 @@ export function DashboardLayout({ children, type, mainClassName }: DashboardLayo
             'pt-4 pb-[max(1.25rem,env(safe-area-inset-bottom))] sm:pt-5 md:pt-6 sm:pb-7 md:pb-9',
             DASHBOARD_GUTTER_CLASS,
             DASHBOARD_CONTENT_CLASS,
-            type === 'member' && 'bg-[var(--bg-page)]',
           )}
         >
           {children}
