@@ -66,7 +66,7 @@ export function SocialAuthButtons({
         <Button
           type="button"
           variant="outline"
-          className="h-12 w-full bg-background text-foreground"
+          className="h-12 w-full justify-center gap-2.5 rounded-xl border-border bg-background font-medium text-foreground shadow-none"
           disabled={pending !== null}
           onClick={() => void start('twitter')}
         >
@@ -84,7 +84,7 @@ export function SocialAuthButtons({
         <Button
           type="button"
           variant="outline"
-          className="h-12 w-full bg-background text-foreground"
+          className="h-12 w-full justify-center gap-2.5 rounded-xl border-border bg-background font-medium text-foreground shadow-none"
           disabled={pending !== null}
           onClick={() => void start('discord')}
         >
@@ -113,12 +113,14 @@ export function SocialAuthSection(props: SocialAuthButtonsProps) {
 
   return (
     <>
-      <div className="relative my-6">
-        <div className="absolute inset-0 flex items-center">
+      <div className="relative my-7">
+        <div className="absolute inset-0 flex items-center" aria-hidden>
           <span className="w-full border-t border-border" />
         </div>
-        <div className="relative flex justify-center text-caption font-medium uppercase tracking-[0.14em]">
-          <span className="bg-card px-3 text-muted-foreground">Or</span>
+        <div className="relative flex justify-center">
+          <span className="bg-background px-3 text-[12px] text-muted-foreground">
+            or continue with
+          </span>
         </div>
       </div>
       <SocialAuthButtons {...props} />

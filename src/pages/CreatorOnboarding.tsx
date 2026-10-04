@@ -246,11 +246,11 @@ const CreatorOnboarding = () => {
       ) : null}
 
       {step === 1 ? (
-        <div className="flex flex-col items-center gap-4 py-2">
+        <div className="flex flex-col items-center gap-4 py-1">
           <button
             type="button"
             onClick={() => avatarRef.current?.click()}
-            className="relative flex h-36 w-36 items-center justify-center overflow-hidden rounded-full border-2 border-dashed border-border bg-muted/40 transition-colors hover:border-primary/50"
+            className="relative flex h-36 w-36 items-center justify-center overflow-hidden rounded-full border border-dashed border-border bg-muted/30 transition-colors hover:border-primary/60"
             aria-label="Upload profile image"
           >
             {avatarPreview ? (
@@ -264,6 +264,9 @@ const CreatorOnboarding = () => {
               <Camera className="h-8 w-8 text-muted-foreground" />
             )}
           </button>
+          <p className="max-w-[16rem] text-center text-[13px] leading-relaxed text-muted-foreground">
+            JPG, PNG, or WebP. Max 5MB. Optional — you can add this later in Settings.
+          </p>
           <input
             ref={avatarRef}
             type="file"
@@ -293,53 +296,48 @@ const CreatorOnboarding = () => {
       <Button
         type="button"
         variant="default"
-        className="mt-6 h-12 w-full text-ui font-semibold"
+        className="mt-8 h-12 w-full rounded-xl text-[15px] font-semibold"
         onClick={handleContinue}
         disabled={loading || (step === 0 && !nameOk)}
       >
         {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-        {step === 1 && !avatarPreview ? 'Upload Image' : 'Continue'}
+        {loading
+          ? 'Saving…'
+          : step === 1 && !avatarPreview
+            ? 'Upload image'
+            : step === 2
+              ? 'Finish setup'
+              : 'Continue'}
       </Button>
 
-      {step === 1 ? (
-        <p className="mt-3 text-center">
-          <button
-            type="button"
-            className="text-support font-medium text-muted-foreground hover:text-foreground"
-            onClick={handleSkip}
-            disabled={loading}
-          >
-            Skip for now
-          </button>
-        </p>
+      {step === 1 || step === 2 ? (
+        <Button
+          type="button"
+          variant="ghost"
+          className="mt-2 h-11 w-full rounded-xl text-[14px] font-medium text-muted-foreground"
+          onClick={handleSkip}
+          disabled={loading}
+        >
+          Skip for now
+        </Button>
       ) : null}
 
-      {step === 2 ? (
-        <p className="mt-3 text-center">
-          <button
-            type="button"
-            className="text-support font-medium text-muted-foreground hover:text-foreground"
-            onClick={handleSkip}
-            disabled={loading}
-          >
-            Skip for now
-          </button>
-        </p>
-      ) : null}
-
-      <p className="mt-4 text-center">
+      <p className="mt-5 text-center">
         {step > 0 ? (
           <button
             type="button"
-            className="text-support font-medium text-muted-foreground hover:text-foreground"
+            className="text-[14px] font-medium text-muted-foreground underline-offset-4 hover:text-foreground hover:underline"
             onClick={() => setStep(step - 1)}
             disabled={loading}
           >
-            Go Back
+            Go back
           </button>
         ) : (
-          <Link to="/" className="text-support font-medium text-muted-foreground hover:text-foreground">
-            Go Back
+          <Link
+            to="/"
+            className="text-[14px] font-medium text-muted-foreground underline-offset-4 hover:text-foreground hover:underline"
+          >
+            Go back
           </Link>
         )}
       </p>
