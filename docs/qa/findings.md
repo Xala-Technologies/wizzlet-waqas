@@ -1,3 +1,21 @@
+# Findings — Wave 12 J7 identity 2026-10-05
+
+Branch `test/world-ready-wave-12-j7-identity`. Fixture `j4member+wave9@example.com` on `combative-mongoose-559`.
+
+| Step | Result | Evidence |
+|------|--------|----------|
+| Password login | PASS | Sign-in → `/dashboard` (“Good morning, j4member”) |
+| Open redirect | PASS | `/login?returnTo=https://evil.example/phish` → post-login `http://127.0.0.1:8080/dashboard` (not evil) |
+| Sign-out path | PASS | Log out → `/` immediately; no `/select-role` flash (creator + member) |
+| Email change request | PASS | Request `j4member+wave12@example.com`; UI “Open email-change request”; Email Address still `j4member+wave9@…` |
+| Roles / switchRole | PASS | Unit `roles.test.ts` + `safeReturnPath.test.ts` 19/19; `switchRole` no-ops unless role held |
+| OAuth X/Discord | Residual | Buttons present on login; full OAuth callback not browser-soaked |
+| Multi-role switcher UI | Residual | Fixtures single-role; RoleSwitcher not exercised in browser |
+
+**J7:** PASS. Next: J8 migration ETL internal-only.
+
+---
+
 # Findings — Wave 11 J6 promo / links / referrals 2026-10-05
 
 Branch `test/world-ready-wave-11-j6-promo`. Fixture `j4creator` on `combative-mongoose-559`.

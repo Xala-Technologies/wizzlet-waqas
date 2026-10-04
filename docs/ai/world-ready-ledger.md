@@ -2,7 +2,7 @@
 
 **Authority:** [`docs/ai/prizelet-world-ready-master-prompt.md`](./prizelet-world-ready-master-prompt.md)
 
-**Status:** Wave 11 J6 promo / links / referrals 2026-10-05. J1–J6 PASS. F-010 still PARTIAL. Product is **not** world-ready.
+**Status:** Wave 12 J7 identity 2026-10-05. J1–J7 PASS. F-010 still PARTIAL. Product is **not** world-ready.
 
 Do not claim world-ready until Section 8 gates in the master prompt pass.
 
@@ -16,9 +16,9 @@ Do not claim world-ready until Section 8 gates in the master prompt pass.
 | Evidence | branch, date, one-line actual vs expected |
 | Waiver | owner + reason (required if WAIVED) |
 
-Last updated: 2026-10-05. Last wave: **11** (`test/world-ready-wave-11-j6-promo`). Source pin: `bf85281` (inventory).
+Last updated: 2026-10-05. Last wave: **12** (`test/world-ready-wave-12-j7-identity`). Source pin: `bf85281` (inventory).
 
-Wave 11: `j4creator` promo **WAVE11OFF10** (10%, max 100, expires 2027-12-31); tracking link `/go/jd75mwt8…` click → `/j4creator` + clicks **1**; signup `?ref=j4creator-jn79vx` shows referred banner. Fixes: live `/go/` paths use document ids (not cosmetic slugs); promo duration once|forever control + empty default expiry; referrals stop showing demo commission rates as live. Unit `promoCodes.test.ts` 4/4. Residual: subscribe conversion attribution not re-soaked this wave; commission cash still TBD.
+Wave 12: password login `j4member+wave9`; open-redirect `returnTo=https://evil.example/phish` → `/dashboard` on 127.0.0.1; sign-out → `/` (no `/select-role` flash); email-change request `j4member+wave12@example.com` open + sign-in email unchanged; `switchRole` gated to held roles; `ROLE_PRIORITY` + `safeReturnPath` unit 19/19. Residual: full X/Discord OAuth callback not browser-soaked; multi-role UI switcher not exercised (fixtures single-role).
 
 ---
 
@@ -156,7 +156,7 @@ Nested layouts in `App.tsx`: `/demo/admin` → `DemoAdminLayout`; `/demo/member`
 | J4 | Messages / support / resolution | PASS | Wave 9 2026-10-05: `j4creator`/`j4member` Stripe sub; DM + creator unread/reply; support/resolution/growth admin replies; messaging off deny; cancel → `FORBIDDEN` on send. Unit `messaging.security.test.ts` 6/6. Fix: messaging toggle on populated CreatorMessages inbox. Residual: UI composer still shown when gated (server enforces) |
 | J5 | Payout request / approve / balance | PASS | Wave 10 2026-10-05: `j4creator` $28.49 available → request → reserved $0 avail; admin failed frees balance; re-request → completed; Paid ≠ reserved; Connect stub copy honest. `payoutBalance.test.ts` 5/5. Residual: admin Lifetime from active subs only |
 | J6 | Promo / tracking links / referrals | PASS | Wave 11 2026-10-05: promo CRUD WAVE11OFF10; `/go/{id}` click+redirect; signup `?ref=` banner; commission UI honest (—). Fixes shortPath + duration control + referral demo rates. Residual: paid conversion attribution not browser-soaked |
-| J7 | Identity (password, OAuth, roles, email request) | NOT_RUN | |
+| J7 | Identity (password, OAuth, roles, email request) | PASS | Wave 12 2026-10-05: password login; evil `returnTo` blocked → `/dashboard`; logout → `/` no select-role; email request open (email unchanged); roles unit + `switchRole` held-only. Residual: OAuth callback + multi-role switcher UI not browser-soaked |
 | J8 | Migration ETL internal-only | NOT_RUN | |
 | J9 | Public nav + chrome | PASS | Wave 2: public-nav + browser-matrix on chromium/webkit/firefox; platform-owner bootstrap visible in DEV |
 | J-ADMIN | Admin lists, fees, reports, campaigns | NOT_RUN | |
@@ -200,8 +200,8 @@ Convex Auth library public API (from `convex/auth.ts` `convexAuth()`; validators
 
 | API | Auth | returns validator | Result | Evidence |
 |-----|------|-------------------|--------|----------|
-| `auth.signIn` | TBD | library | NOT_RUN | frozen vs convex/auth.ts @ bf85281 |
-| `auth.signOut` | TBD | library | NOT_RUN | frozen vs convex/auth.ts @ bf85281 |
+| `auth.signIn` | auth | library | PASS | Wave 12: password sign-in `j4member+wave9` → `/dashboard` |
+| `auth.signOut` | auth | library | PASS | Wave 12: logout → `/` without `/select-role` flash |
 | `auth.store` | TBD | library | NOT_RUN | frozen vs convex/auth.ts @ bf85281 |
 | `auth.isAuthenticated` | TBD | library | NOT_RUN | frozen vs convex/auth.ts @ bf85281 |
 
@@ -209,10 +209,10 @@ App public functions (`Auth` = TBD until Wave 1):
 
 | API | Auth | returns validator | Result | Evidence |
 |-----|------|-------------------|--------|----------|
-| `accountRequests.listMine` | TBD | yes | NOT_RUN | frozen vs convex/*.ts @ bf85281 |
+| `accountRequests.listMine` | auth | yes | PASS | Wave 12: open email-change shown on settings |
 | `accountRequests.listOpenAdmin` | TBD | yes | NOT_RUN | frozen vs convex/*.ts @ bf85281 |
 | `accountRequests.requestAccountDeletion` | TBD | yes | NOT_RUN | frozen vs convex/*.ts @ bf85281 |
-| `accountRequests.requestEmailChange` | TBD | yes | NOT_RUN | frozen vs convex/*.ts @ bf85281 |
+| `accountRequests.requestEmailChange` | auth | yes | PASS | Wave 12: request `j4member+wave12@example.com`; sign-in email unchanged |
 | `admin.exportReports.exportReportBundle` | TBD | yes | NOT_RUN | frozen vs convex/*.ts @ bf85281 |
 | `admin.paginatedLists.listCampaignsPage` | TBD | yes | NOT_RUN | frozen vs convex/*.ts @ bf85281 |
 | `admin.paginatedLists.listCasesPage` | TBD | yes | NOT_RUN | frozen vs convex/*.ts @ bf85281 |
@@ -412,7 +412,7 @@ Confirm each table still exists; note writers. Result `NOT_RUN` = existence free
 | emailCampaigns | admin | NOT_RUN | present in convex/schema.ts @ bf85281; existence freeze only |
 | fileAssets | files/storage | NOT_RUN | present in convex/schema.ts @ bf85281; existence freeze only |
 | migrationCheckpoints / mutationLog | migrations/* internal | NOT_RUN | present in convex/schema.ts @ bf85281; existence freeze only |
-| accountRequests | accountRequests | NOT_RUN | present in convex/schema.ts @ bf85281; existence freeze only |
+| accountRequests | accountRequests | PASS | Wave 12: email_change open for j4member; sign-in email not mutated in-app |
 | discordBotInstalls / discordAccessGrants | discord/* | NOT_RUN | present in convex/schema.ts @ bf85281; existence freeze only |
 
 Schema `appRole` also allows `moderator` and `user` (not product actors; no routes).
@@ -425,7 +425,7 @@ Schema `appRole` also allows `moderator` and `user` (not product actors; no rout
 
 ## M. Remaining risk (update every fix PR)
 
-- P2: F-010 residual — signed Stripe → `webhookReceipts` insert + Connect payouts; Discord grant soak; J7–J8 authenticated journeys not run; J2 soft-archive-with-sub not soaked; J3 paid unlock/cancel + pickTracker session not soaked on j2creator; admin payout Lifetime ignores cancelled-sub paymentEvents; referral commission cash TBD
+- P2: F-010 residual — signed Stripe → `webhookReceipts` insert + Connect payouts; Discord grant soak; J8 migration ETL not run; J7 OAuth callback + multi-role switcher UI residual; J2 soft-archive-with-sub not soaked; J3 paid unlock/cancel + pickTracker session not soaked on j2creator; admin payout Lifetime ignores cancelled-sub paymentEvents; referral commission cash TBD
 - P3: admin user/creator spend metrics cap at 200 indexed rows; customer pages scan ≤5k subscriptions; eslint warnings; AuthContext DEV `hasRole` leftover
 - Not in this PR: production deploy, live Stripe keys, MFA
 - Waivers: see section L
