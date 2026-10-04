@@ -183,9 +183,9 @@ const Login = () => {
         ) : null
       }
       footer={
-        <p className="text-center text-support text-muted-foreground">
+        <p className="text-center text-[14px] text-muted-foreground">
           Don&apos;t have an account?{' '}
-          <Link to={signupHref} className="font-medium text-primary hover:underline">
+          <Link to={signupHref} className="font-semibold text-foreground underline-offset-4 hover:underline">
             Sign up
           </Link>
         </p>

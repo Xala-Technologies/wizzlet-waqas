@@ -38,15 +38,32 @@ const Signup = () => {
   const [username, setUsername] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [formError, setFormError] = useState<string | null>(null);
+  const [touched, setTouched] = useState({ username: false, email: false, password: false });
+
+  const usernameOk = usernameLooksValid(username);
+  const emailOk = emailLooksValid(email);
+  const passwordOk = password.length >= 8;
+  const canSubmit = usernameOk && emailOk && passwordOk && !loading;
 
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
     if (loading) return;
-    if (password.length < 8) {
-      toast.error('Password must be at least 8 characters');
+    setTouched({ username: true, email: true, password: true });
+    if (!canSubmit) {
+      if (!usernameOk) {
+        setFormError('Username must be 3–32 characters: letters, numbers, underscore.');
+        return;
+      }
+      if (!emailOk) {
+        setFormError('Enter a valid email address.');
+        return;
+      }
+      setFormError('Password must be at least 8 characters.');
       return;
     }
     setLoading(true);
+    setFormError(null);
     try {
       const form = new FormData();
       form.set('email', email.trim().toLowerCase());
@@ -81,13 +98,18 @@ const Signup = () => {
         /* ignore */
       }
       if (returnTo) storeReturnTo(returnTo);
-      toast.success('Account created!');
+      toast.success('Account created');
       const roleHref = returnTo
         ? `/select-role?returnTo=${encodeURIComponent(returnTo)}`
         : '/select-role';
       navigate(roleHref, { replace: true });
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Sign up failed');
+      const raw = err instanceof Error ? err.message : 'Sign up failed';
+      const friendly = /already|exists|taken/i.test(raw)
+        ? 'That email or username is already in use. Try logging in.'
+        : raw;
+      setFormError(friendly);
+      toast.error(friendly);
     } finally {
       setLoading(false);
     }
@@ -102,46 +124,67 @@ const Signup = () => {
       title="Create your account"
       subtitle="Join Sweeph and get started"
       seoTitle="Create your Sweeph account"
-      seoDescription="Join the Sweeph private network — create an account to follow creators or apply as a creator."
+      seoDescription="Join Sweeph — create an account to follow creators or run your own page."
       progressStep={1}
       banner={
         referralCode ? (
-          <p className="text-support text-primary mt-2">Referred via code {referralCode}</p>
+          <p className="mt-3 rounded-lg border border-primary/20 bg-primary/5 px-3 py-2 text-[13px] text-foreground">
+            Referred with code <span className="font-semibold">{referralCode}</span>
+          </p>
         ) : null
       }
       footer={
-        <p className="text-center text-support text-muted-foreground">
+        <p className="text-center text-[14px] text-muted-foreground">
           Already have an account?{' '}
-          <Link to={loginHref} className="font-medium text-primary hover:underline">
+          <Link to={loginHref} className="font-semibold text-foreground underline-offset-4 hover:underline">
             Log in
           </Link>
         </p>
       }
     >
-      <form onSubmit={(e) => void handleSignup(e)} className="space-y-5">
-        <div className="space-y-2">
+      <form onSubmit={(e) => void handleSignup(e)} className="space-y-4" noValidate>
+        {formError ? (
+          <p
+            role="alert"
+            className="rounded-lg border border-destructive/20 bg-destructive/5 px-3 py-2.5 text-[13px] text-destructive"
+          >
+            {formError}
+          </p>
+        ) : null}
+        <div className="space-y-1.5">
           <Label htmlFor="username">Username</Label>
           <div className="relative">
             <Input
               id="username"
               name="username"
               autoComplete="username"
-              placeholder="Choose a username"
+              autoFocus
+              placeholder="sharkpicks"
               value={username}
-              onChange={(e) => setUsername(e.target.value)}
+              onChange={(e) => {
+                setUsername(e.target.value);
+                if (formError) setFormError(null);
+              }}
+              onBlur={() => setTouched((t) => ({ ...t, username: true }))}
               required
               disabled={loading}
-              className="h-12 bg-background pr-11 text-ui"
+              aria-invalid={touched.username && !usernameOk}
+              className="h-12 rounded-xl bg-background pr-11 text-ui"
             />
-            {usernameLooksValid(username) ? (
+            {usernameOk ? (
               <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-emerald-600 dark:text-emerald-400">
                 <Check className="h-5 w-5" aria-hidden />
                 <span className="sr-only">Username looks valid</span>
               </span>
             ) : null}
           </div>
+          {touched.username && username.length > 0 && !usernameOk ? (
+            <p className="text-[12px] text-destructive">3–32 characters: letters, numbers, underscore.</p>
+          ) : (
+            <p className="text-[12px] text-muted-foreground">Letters, numbers, and underscore. 3–32 characters.</p>
+          )}
         </div>
-        <div className="space-y-2">
+        <div className="space-y-1.5">
           <Label htmlFor="email">Email</Label>
           <div className="relative">
             <Input
@@ -151,36 +194,47 @@ const Signup = () => {
               autoComplete="email"
               placeholder="you@example.com"
               value={email}
-              onChange={(e) => setEmail(e.target.value)}
+              onChange={(e) => {
+                setEmail(e.target.value);
+                if (formError) setFormError(null);
+              }}
+              onBlur={() => setTouched((t) => ({ ...t, email: true }))}
               required
               disabled={loading}
-              className="h-12 bg-background pr-11 text-ui"
+              aria-invalid={touched.email && !emailOk}
+              className="h-12 rounded-xl bg-background pr-11 text-ui"
             />
-            {emailLooksValid(email) ? (
+            {emailOk ? (
               <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-emerald-600 dark:text-emerald-400">
                 <Check className="h-5 w-5" aria-hidden />
                 <span className="sr-only">Email looks valid</span>
               </span>
             ) : null}
           </div>
+          {touched.email && email.length > 0 && !emailOk ? (
+            <p className="text-[12px] text-destructive">Enter a valid email address.</p>
+          ) : null}
         </div>
-        <div className="space-y-2">
-          <Label htmlFor="password">
-            Password
-          </Label>
+        <div className="space-y-1.5">
+          <Label htmlFor="password">Password</Label>
           <div className="relative">
             <Input
               id="password"
               name="password"
               type={showPassword ? 'text' : 'password'}
               autoComplete="new-password"
-              placeholder="••••••••"
+              placeholder="At least 8 characters"
               value={password}
-              onChange={(e) => setPassword(e.target.value)}
+              onChange={(e) => {
+                setPassword(e.target.value);
+                if (formError) setFormError(null);
+              }}
+              onBlur={() => setTouched((t) => ({ ...t, password: true }))}
               required
               disabled={loading}
               minLength={8}
-              className="h-12 bg-background pr-11 text-ui"
+              aria-invalid={touched.password && !passwordOk}
+              className="h-12 rounded-xl bg-background pr-11 text-ui"
             />
             <button
               type="button"
@@ -191,11 +245,38 @@ const Signup = () => {
               {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
             </button>
           </div>
-          <p className="text-caption text-muted-foreground">At least 8 characters</p>
+          <div className="flex gap-1 pt-0.5" aria-hidden>
+            {[0, 1, 2].map((i) => (
+              <span
+                key={i}
+                className={`h-1 flex-1 rounded-full ${
+                  password.length === 0
+                    ? 'bg-border'
+                    : password.length < 8
+                      ? i === 0
+                        ? 'bg-amber-500/80'
+                        : 'bg-border'
+                      : 'bg-emerald-500/80'
+                }`}
+              />
+            ))}
+          </div>
+          <p className="text-[12px] text-muted-foreground">
+            {password.length === 0
+              ? 'At least 8 characters.'
+              : passwordOk
+                ? 'Strong enough to continue.'
+                : `${8 - password.length} more character${8 - password.length === 1 ? '' : 's'}.`}
+          </p>
         </div>
-        <Button type="submit" variant="default" className="h-12 w-full text-ui font-semibold" disabled={loading}>
+        <Button
+          type="submit"
+          variant="default"
+          className="mt-2 h-12 w-full rounded-xl text-[15px] font-semibold"
+          disabled={loading}
+        >
           {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-          Create Account
+          {loading ? 'Creating account…' : 'Create Account'}
         </Button>
       </form>
 

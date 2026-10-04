@@ -125,7 +125,7 @@ const SelectRole = () => {
       logoLinkTo=""
       progressStep={2}
     >
-      <div className="grid gap-3" role="radiogroup" aria-label="Account role">
+      <div className="grid gap-3 sm:grid-cols-2" role="radiogroup" aria-label="Account role">
         {roleOptions.map((option) => {
           const Icon = option.icon;
           const isSelected = selected === option.id;
@@ -136,22 +136,24 @@ const SelectRole = () => {
               role="radio"
               aria-checked={isSelected}
               onClick={() => setSelected(option.id)}
-              className={`flex items-start gap-4 rounded-xl border p-5 text-left transition-colors ${
+              className={`relative flex flex-col items-start gap-4 rounded-2xl border p-5 text-left transition-colors ${
                 isSelected
-                  ? 'border-primary bg-primary/5'
-                  : 'border-border bg-background hover:border-foreground/20'
+                  ? 'border-primary bg-primary/5 ring-1 ring-primary'
+                  : 'border-border bg-background hover:border-foreground/25'
               }`}
             >
               <div
-                className={`mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-lg ${
+                className={`flex h-11 w-11 items-center justify-center rounded-xl ${
                   isSelected ? 'bg-primary text-primary-foreground' : 'bg-muted text-foreground'
                 }`}
               >
                 <Icon className="h-5 w-5" />
               </div>
               <div>
-                <p className="font-semibold text-ui text-foreground">{option.title}</p>
-                <p className="mt-1 text-support text-muted-foreground">{option.description}</p>
+                <p className="font-semibold text-[15px] text-foreground">{option.title}</p>
+                <p className="mt-1.5 text-[13px] leading-relaxed text-muted-foreground">
+                  {option.description}
+                </p>
               </div>
             </button>
           );
@@ -161,16 +163,19 @@ const SelectRole = () => {
       <Button
         type="button"
         variant="default"
-        className="mt-6 h-12 w-full text-ui font-semibold"
+        className="mt-8 h-12 w-full rounded-xl text-[15px] font-semibold"
         onClick={() => void handleContinue()}
         disabled={!selected || saving || loading}
       >
         {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-        Continue
+        {saving ? 'Saving…' : 'Continue'}
       </Button>
-      <p className="mt-4 text-center">
-        <Link to="/" className="text-support font-medium text-muted-foreground hover:text-foreground">
-          Go Back
+      <p className="mt-5 text-center">
+        <Link
+          to="/"
+          className="text-[14px] font-medium text-muted-foreground underline-offset-4 hover:text-foreground hover:underline"
+        >
+          Go back
         </Link>
       </p>
     </AuthShell>
