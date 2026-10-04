@@ -2,6 +2,10 @@ import { mutation, query } from "../_generated/server";
 import { ConvexError, v } from "convex/values";
 import { requireCreatorOwner, requireAppUser, logMutation } from "../lib/auth";
 import { normalizeProductBillingPeriod } from "../lib/commerceIdentity";
+import {
+  MAX_PROFILE_PRODUCTS,
+  wouldExceedProfileSlots,
+} from "../lib/productProfileSlots";
 import { productDocValidator, productPublicValidator } from "../lib/validators";
 
 /** Public projection — active, non-closed products only. */
@@ -196,6 +200,22 @@ export const setShowOnProfile = mutation({
     if (!product) throw new ConvexError("NOT_FOUND");
     await requireCreatorOwner(ctx, product.creatorId);
     const now = Date.now();
+
+    if (args.showOnProfile) {
+      const siblings = await ctx.db
+        .query("products")
+        .withIndex("by_creatorId", (q) => q.eq("creatorId", product.creatorId))
+        .collect();
+      const currentlyShown = siblings.filter(
+        (p) =>
+          p._id !== args.productId &&
+          (p.showOnProfile === true ||
+            (p.showOnProfile === undefined && p.isFeatured)),
+      ).length;
+      if (wouldExceedProfileSlots(currentlyShown, true, MAX_PROFILE_PRODUCTS)) {
+        throw new ConvexError("PROFILE_SLOTS_FULL");
+      }
+    }
 
     await ctx.db.patch(args.productId, {
       showOnProfile: args.showOnProfile,

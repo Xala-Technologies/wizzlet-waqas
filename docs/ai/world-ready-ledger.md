@@ -2,7 +2,7 @@
 
 **Authority:** [`docs/ai/prizelet-world-ready-master-prompt.md`](./prizelet-world-ready-master-prompt.md)
 
-**Status:** Wave 6 F-010 webhook HTTP + receipt-dedupe 2026-10-05. J1 PASS (confirmCheckoutSession). F-010 still PARTIAL (signed Stripe delivery not observed; Connect NOT_RUN). Product is **not** world-ready.
+**Status:** Wave 7 J2 product CRUD 2026-10-05. J1 PASS; J2 PASS. F-010 still PARTIAL. Product is **not** world-ready.
 
 Do not claim world-ready until Section 8 gates in the master prompt pass.
 
@@ -16,9 +16,9 @@ Do not claim world-ready until Section 8 gates in the master prompt pass.
 | Evidence | branch, date, one-line actual vs expected |
 | Waiver | owner + reason (required if WAIVED) |
 
-Last updated: 2026-10-05. Last wave: **6** (`test/world-ready-wave-6-f010-webhook`). Source pin: `bf85281` (inventory).
+Last updated: 2026-10-05. Last wave: **7** (`test/world-ready-wave-7-j2-products`). Source pin: `bf85281` (inventory).
 
-Wave 6: `POST https://combative-mongoose-559.convex.site/stripe/webhook` returns 400 without signature and 400 with a forged signature (`STRIPE_WEBHOOK_SECRET` is set). Receipt dedupe extracted to `isDuplicateWebhookReceipt`. Signed `webhookReceipts` insert still needs Stripe CLI / Dashboard destination.
+Wave 7: creator `j2creator` create/edit/pin/delete product on `/creator/products?demo=0`; public `/j2creator?demo=0` showed $24.99. Server+UI enforce `MAX_PROFILE_PRODUCTS=4`. Soft-archive-with-subscribers path not browser-soaked.
 
 ---
 
@@ -151,7 +151,7 @@ Nested layouts in `App.tsx`: `/demo/admin` → `DemoAdminLayout`; `/demo/member`
 | ID | Name | Result | Evidence |
 |----|------|--------|----------|
 | J1 | Commercial lifecycle (publish → Stripe → webhook → cancel → access) | PASS | Wave 5 2026-10-05: publish `@prize2626` + product Monthly pro $100; member signup `j1member`; Checkout `cs_test_a171BP4bJzrvM8pRX5c7xvgaScFUnfjkraXVlSBBbIFzb8Zxz6spGJWgXJ`; sub `mn7bg36b7xe76gkxyaeq0caaph8fnhyh` ACTIVE then cancelled; `paymentEvents` `checkout:cs_test_…` + `cancel_local:…`; My Creators `?demo=0` empty after cancel. Residual: no new `webhookReceipts` for this session (confirmCheckoutSession fulfilled); Connect not in scope |
-| J2 | Product CRUD + profile slots | NOT_RUN | |
+| J2 | Product CRUD + profile slots | PASS | Wave 7 2026-10-05: `j2creator` published; create **J2 Monthly Alpha** $19.99 monthly + limited 100 spots; pin `showOnProfile`; edit → $24.99; public profile Subscribe $24.99; hard delete (no subs) → 0 products. `setShowOnProfile` throws `PROFILE_SLOTS_FULL` at 4; unit `productProfileSlots.test.ts`. Residual: soft-archive when subscription exists not browser-soaked; featured exclusivity not UI-toggled |
 | J3 | Content access / pick lock / win rate | NOT_RUN | |
 | J4 | Messages / support / resolution | NOT_RUN | |
 | J5 | Payout request / approve / balance | NOT_RUN | |
@@ -168,7 +168,7 @@ Nested layouts in `App.tsx`: `/demo/admin` → `DemoAdminLayout`; `/demo/member`
 
 | Command | Result | Evidence |
 |---------|--------|----------|
-| `npm test` | PASS | Wave 6: commerceIdentity 11 tests (webhook receipt dedupe). Prior Wave 4 25 files / 138 tests |
+| `npm test` | PASS | Wave 7: productProfileSlots.test.ts; Wave 6 commerceIdentity 11 tests |
 | `npm run lint` | PASS | Wave 3: 0 errors, 28 warnings |
 | `npm run build` | PASS | Wave 3: `vite build` succeeded |
 | `npm run env:validate` | PASS | Wave 1: `env:validate PASS (local)`; sandbox false; devAdmin false |
@@ -327,11 +327,11 @@ App public functions (`Auth` = TBD until Wave 1):
 | `posts.queries.remove` | TBD | yes | NOT_RUN | frozen vs convex/*.ts @ bf85281 |
 | `posts.queries.setResult` | TBD | yes | NOT_RUN | frozen vs convex/*.ts @ bf85281 |
 | `posts.queries.upsert` | TBD | yes | NOT_RUN | frozen vs convex/*.ts @ bf85281 |
-| `products.mutations.listByCreator` | TBD | yes | NOT_RUN | frozen vs convex/*.ts @ bf85281 |
-| `products.mutations.listPublicByCreator` | TBD | yes | NOT_RUN | frozen vs convex/*.ts @ bf85281 |
-| `products.mutations.remove` | TBD | yes | NOT_RUN | frozen vs convex/*.ts @ bf85281 |
-| `products.mutations.setShowOnProfile` | TBD | yes | NOT_RUN | frozen vs convex/*.ts @ bf85281 |
-| `products.mutations.upsert` | TBD | yes | NOT_RUN | frozen vs convex/*.ts @ bf85281 |
+| `products.mutations.listByCreator` | owner | yes | PASS | Wave 7: creator products table listed live rows |
+| `products.mutations.listPublicByCreator` | public | yes | PASS | Wave 7: `/j2creator?demo=0` showed J2 Monthly Alpha |
+| `products.mutations.remove` | owner | yes | PASS | Wave 7: hard delete with no subscriptions → empty catalog |
+| `products.mutations.setShowOnProfile` | owner | yes | PASS | Wave 7: pin + MAX_PROFILE_PRODUCTS=4 server guard |
+| `products.mutations.upsert` | owner | yes | PASS | Wave 7: create $1999→edit $2499 monthly limited product |
 | `resolution.mutations.addMessage` | TBD | yes | NOT_RUN | frozen vs convex/*.ts @ bf85281 |
 | `resolution.mutations.create` | TBD | yes | NOT_RUN | frozen vs convex/*.ts @ bf85281 |
 | `resolution.mutations.listAllAdmin` | TBD | yes | NOT_RUN | frozen vs convex/*.ts @ bf85281 |
@@ -393,7 +393,7 @@ Confirm each table still exists; note writers. Result `NOT_RUN` = existence free
 | authRateLimits | Convex Auth (authTables) | NOT_RUN | present in convex/schema.ts @ bf85281; existence freeze only |
 | userRoles | roles.mutations | NOT_RUN | present in convex/schema.ts @ bf85281; existence freeze only |
 | creators | creators/* | NOT_RUN | present in convex/schema.ts @ bf85281; existence freeze only |
-| products | products.mutations | NOT_RUN | present in convex/schema.ts @ bf85281; existence freeze only |
+| products | products.mutations | PASS | Wave 7: create/edit/pin/delete soak on j2creator |
 | posts | posts/* | NOT_RUN | present in convex/schema.ts @ bf85281; existence freeze only |
 | subscriptions | payments/*, subscriptions.mutations | PASS | Wave 5: active→cancelled soak on prize2626 / j1member; Stripe sub_1UMxh9… |
 | analyticsEvents | analytics.mutations | NOT_RUN | present in convex/schema.ts @ bf85281; existence freeze only |
@@ -425,7 +425,7 @@ Schema `appRole` also allows `moderator` and `user` (not product actors; no rout
 
 ## M. Remaining risk (update every fix PR)
 
-- P2: F-010 residual — signed Stripe → `webhookReceipts` insert + Connect payouts; Discord grant soak; J2–J8 authenticated journeys not run
+- P2: F-010 residual — signed Stripe → `webhookReceipts` insert + Connect payouts; Discord grant soak; J3–J8 authenticated journeys not run; J2 soft-archive-with-sub not soaked
 - P3: admin user/creator spend metrics cap at 200 indexed rows; customer pages scan ≤5k subscriptions; eslint warnings; AuthContext DEV `hasRole` leftover
 - Not in this PR: production deploy, live Stripe keys, MFA
 - Waivers: see section L
