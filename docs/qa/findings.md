@@ -1,3 +1,22 @@
+# Findings — Wave 9 J4 messages / support / resolution 2026-10-05
+
+Branch `test/world-ready-wave-9-j4-messages`. Fixtures `j4creator+wave9@example.com` / `j4member+wave9@example.com` on `combative-mongoose-559`.
+
+| Step | Result | Evidence |
+|------|--------|----------|
+| Creator support → admin reply | PASS | `WAVE9_*` support/growth threads; admin replies unread on creator |
+| Resolution case | PASS | Creator case `md7934…` + admin `WAVE9_CASE_REPLY` |
+| Stripe subscribe + product | PASS | Product `kx7c96…` **J4 Monthly Access** $29.99; member `n1788zg…` active then cancelled |
+| Member → creator DM | PASS | `WAVE9_DM_BODY`; creator nav **Messages 1**; reply `WAVE9_CREATOR_REPLY` |
+| Messaging off deny | PASS | Creator toggle off; member send kept draft, no new message |
+| Cancel → DM deny | PASS | My Creators empty; send → `ConvexError: FORBIDDEN` toast |
+| Unit matrix | PASS | `messaging.security.test.ts` 6/6 |
+| Inbox messaging toggle (populated) | PASS (fix) | Toggle was empty-state only; added to main CreatorMessages header |
+
+**J4:** PASS. Next: J5 payouts.
+
+---
+
 # Findings — Wave 8 J3 content access / pick lock / win rate 2026-10-05
 
 Branch `test/world-ready-wave-8-j3-access`. Fixture creator `j2creator` on `combative-mongoose-559`.

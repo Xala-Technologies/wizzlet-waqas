@@ -789,18 +789,39 @@ const CreatorMessages = () => {
             Connect with your subscribers, answer questions, and build your community.
           </p>
         </div>
-        <Button
-          type="button"
-          size="sm"
-          className="clay-btn shrink-0 rounded-[0.875rem]"
-          onClick={() =>
-            toast.message('New message', {
-              description: 'Pick a subscriber from the list, or message them from Subscribers.',
-            })
-          }
-        >
-          <Pencil className="mr-1.5 h-4 w-4" /> New Message
-        </Button>
+        <div className="flex shrink-0 flex-wrap items-center gap-3">
+          {!useDemo ? (
+            <div className="flex items-center gap-2 text-support text-muted-foreground">
+              <Power
+                className={cn(
+                  'h-3.5 w-3.5',
+                  messagingEnabled ? 'text-emerald-500' : 'text-muted-foreground',
+                )}
+              />
+              <span className="sr-only sm:not-sr-only">
+                {messagingEnabled ? 'Messaging on' : 'Messaging off'}
+              </span>
+              <Switch
+                aria-label="Accept subscriber messages"
+                checked={messagingEnabled}
+                onCheckedChange={(v) => void toggleMessaging(v)}
+                disabled={savingToggle}
+              />
+            </div>
+          ) : null}
+          <Button
+            type="button"
+            size="sm"
+            className="clay-btn rounded-[0.875rem]"
+            onClick={() =>
+              toast.message('New message', {
+                description: 'Pick a subscriber from the list, or message them from Subscribers.',
+              })
+            }
+          >
+            <Pencil className="mr-1.5 h-4 w-4" /> New Message
+          </Button>
+        </div>
       </header>
 
       {useDemo ? (
