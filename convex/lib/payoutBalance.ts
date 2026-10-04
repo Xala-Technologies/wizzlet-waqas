@@ -48,6 +48,29 @@ export function computeAvailableBalanceCents(
   return Math.max(0, earnedCents - reservedCents);
 }
 
+/**
+ * Lifetime earned cents by creator from settled paymentEvents.
+ * Includes charges from cancelled subscriptions (events persist); excludes sandbox.
+ */
+export function sumSettledEarningsByCreatorCents(
+  events: Array<{
+    creatorId: string;
+    creatorEarningsCents: number;
+    status: string;
+    paymentMode?: string;
+  }>,
+): Map<string, number> {
+  const earnedBy = new Map<string, number>();
+  for (const event of events) {
+    if (!isSettledEarningEvent(event)) continue;
+    earnedBy.set(
+      event.creatorId,
+      (earnedBy.get(event.creatorId) ?? 0) + event.creatorEarningsCents,
+    );
+  }
+  return earnedBy;
+}
+
 export async function getCreatorAvailableBalanceCents(
   ctx: Ctx,
   creatorId: Id<"creators">,

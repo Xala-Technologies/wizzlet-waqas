@@ -1,3 +1,18 @@
+# Findings — Wave 25 admin Lifetime from paymentEvents 2026-10-05
+
+Branch `test/world-ready-wave-25-admin-lifetime`. Fixtures platform owner + `j4creator` on `combative-mongoose-559`.
+
+| Step | Result | Evidence |
+|------|--------|----------|
+| Unit | PASS | `payoutBalance.test.ts` 6/6 (cancelled-sub settled events still sum) |
+| Convex push | PASS | `npx convex dev --once` → combative-mongoose-559 |
+| Admin Lifetime | PASS | `/admin/payouts` **j4creator** Lifetime **$28.49** / Paid $28.49 / Available $0 (cancelled j4member sub) |
+| Other rows | PASS | Prize $95 / j2creator $14.24 / QA Creator W3 $28.47 also from events |
+
+**Admin Lifetime residual:** PASS (was active-subs-only). Next: J-DISCORD human OAuth; referral cash; J2 featured exclusivity; Connect live transfers.
+
+---
+
 # Findings — Wave 24 J3 paid unlock / cancel / pickTracker 2026-10-05
 
 Branch `test/world-ready-wave-24-j3-paid-unlock`. Fixtures `j2creator` + `j3member+wave24@example.com` on `combative-mongoose-559`.
