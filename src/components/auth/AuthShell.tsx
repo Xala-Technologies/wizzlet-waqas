@@ -1,6 +1,7 @@
 import { ReactNode } from 'react';
 import { SweephLogo } from '@/components/SweephLogo';
 import { Seo } from '@/components/Seo';
+import { AuthWizardProgress } from '@/components/auth/AuthWizardProgress';
 import { cn } from '@/lib/utils';
 
 interface AuthShellProps {
@@ -16,6 +17,9 @@ interface AuthShellProps {
   /** Empty string disables link (e.g. select-role while authenticated). */
   logoLinkTo?: string;
   banner?: ReactNode;
+  /** 1-based funnel step; omit on login. */
+  progressStep?: number;
+  progressTotal?: number;
 }
 
 /**
@@ -33,6 +37,8 @@ export function AuthShell({
   logoSize = 'md',
   logoLinkTo = '/',
   banner,
+  progressStep,
+  progressTotal,
 }: AuthShellProps) {
   return (
     <main
@@ -47,6 +53,9 @@ export function AuthShell({
             linkTo={logoLinkTo}
             className="mb-8 justify-center"
           />
+          {progressStep != null ? (
+            <AuthWizardProgress step={progressStep} total={progressTotal} />
+          ) : null}
           <h1
             className={cn(
               'font-bold tracking-tight text-foreground',
