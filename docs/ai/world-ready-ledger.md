@@ -2,7 +2,7 @@
 
 **Authority:** [`docs/ai/prizelet-world-ready-master-prompt.md`](./prizelet-world-ready-master-prompt.md)
 
-**Status:** Wave 10 J5 payouts 2026-10-05. J1–J5 PASS. F-010 still PARTIAL. Product is **not** world-ready.
+**Status:** Wave 11 J6 promo / links / referrals 2026-10-05. J1–J6 PASS. F-010 still PARTIAL. Product is **not** world-ready.
 
 Do not claim world-ready until Section 8 gates in the master prompt pass.
 
@@ -16,9 +16,9 @@ Do not claim world-ready until Section 8 gates in the master prompt pass.
 | Evidence | branch, date, one-line actual vs expected |
 | Waiver | owner + reason (required if WAIVED) |
 
-Last updated: 2026-10-05. Last wave: **10** (`test/world-ready-wave-10-j5-payouts`). Source pin: `bf85281` (inventory).
+Last updated: 2026-10-05. Last wave: **11** (`test/world-ready-wave-11-j6-promo`). Source pin: `bf85281` (inventory).
 
-Wave 10: `j4creator` Available **$28.49** from Stripe test checkout (not sandbox-excluded); min payout lowered to $5; Withdraw → Available **$0** / History `requested`; admin Mark failed → Available restored; re-request → Mark paid → `completed` / Paid **$28.49**; Connect disclaimer honest. Unit `payoutBalance.test.ts` 5/5. Residual: admin Lifetime uses active-subscription earnings (cancelled sub shows Lifetime $0 while Paid $28.49); Connect money movement still NOT_RUN.
+Wave 11: `j4creator` promo **WAVE11OFF10** (10%, max 100, expires 2027-12-31); tracking link `/go/jd75mwt8…` click → `/j4creator` + clicks **1**; signup `?ref=j4creator-jn79vx` shows referred banner. Fixes: live `/go/` paths use document ids (not cosmetic slugs); promo duration once|forever control + empty default expiry; referrals stop showing demo commission rates as live. Unit `promoCodes.test.ts` 4/4. Residual: subscribe conversion attribution not re-soaked this wave; commission cash still TBD.
 
 ---
 
@@ -155,7 +155,7 @@ Nested layouts in `App.tsx`: `/demo/admin` → `DemoAdminLayout`; `/demo/member`
 | J3 | Content access / pick lock / win rate | PASS | Wave 8 2026-10-05: anonymous `/j2creator?demo=0` no secret bodies; owner posts list shows WAVE8_*; `setResult` won then UI **Result locked** + `RESULT_LOCKED` on upsert/setResult; public Win Rate 100% with won+push (push excluded). `memberFeed` uses `subscriptionGrantsContentAccess`; saved posts use `canViewPostContent`. Residual: paid unlock/cancel not browser-soaked on this fixture (0 subs); pickTracker lock not subscriber-session soaked |
 | J4 | Messages / support / resolution | PASS | Wave 9 2026-10-05: `j4creator`/`j4member` Stripe sub; DM + creator unread/reply; support/resolution/growth admin replies; messaging off deny; cancel → `FORBIDDEN` on send. Unit `messaging.security.test.ts` 6/6. Fix: messaging toggle on populated CreatorMessages inbox. Residual: UI composer still shown when gated (server enforces) |
 | J5 | Payout request / approve / balance | PASS | Wave 10 2026-10-05: `j4creator` $28.49 available → request → reserved $0 avail; admin failed frees balance; re-request → completed; Paid ≠ reserved; Connect stub copy honest. `payoutBalance.test.ts` 5/5. Residual: admin Lifetime from active subs only |
-| J6 | Promo / tracking links / referrals | NOT_RUN | |
+| J6 | Promo / tracking links / referrals | PASS | Wave 11 2026-10-05: promo CRUD WAVE11OFF10; `/go/{id}` click+redirect; signup `?ref=` banner; commission UI honest (—). Fixes shortPath + duration control + referral demo rates. Residual: paid conversion attribution not browser-soaked |
 | J7 | Identity (password, OAuth, roles, email request) | NOT_RUN | |
 | J8 | Migration ETL internal-only | NOT_RUN | |
 | J9 | Public nav + chrome | PASS | Wave 2: public-nav + browser-matrix on chromium/webkit/firefox; platform-owner bootstrap visible in DEV |
@@ -425,7 +425,7 @@ Schema `appRole` also allows `moderator` and `user` (not product actors; no rout
 
 ## M. Remaining risk (update every fix PR)
 
-- P2: F-010 residual — signed Stripe → `webhookReceipts` insert + Connect payouts; Discord grant soak; J6–J8 authenticated journeys not run; J2 soft-archive-with-sub not soaked; J3 paid unlock/cancel + pickTracker session not soaked on j2creator; admin payout Lifetime ignores cancelled-sub paymentEvents
+- P2: F-010 residual — signed Stripe → `webhookReceipts` insert + Connect payouts; Discord grant soak; J7–J8 authenticated journeys not run; J2 soft-archive-with-sub not soaked; J3 paid unlock/cancel + pickTracker session not soaked on j2creator; admin payout Lifetime ignores cancelled-sub paymentEvents; referral commission cash TBD
 - P3: admin user/creator spend metrics cap at 200 indexed rows; customer pages scan ≤5k subscriptions; eslint warnings; AuthContext DEV `hasRole` leftover
 - Not in this PR: production deploy, live Stripe keys, MFA
 - Waivers: see section L

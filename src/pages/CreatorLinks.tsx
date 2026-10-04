@@ -121,7 +121,9 @@ function shortSlugFromLive(id: string, name: string): string {
 }
 
 function shortPath(row: Pick<TableRowModel, 'id' | 'shortSlug' | 'isDemo'>): string {
-  if (row.isDemo || row.shortSlug) return `/go/${row.shortSlug || row.id}`;
+  // Live redirects resolve Convex document ids only (`getLinkPublic`).
+  // Cosmetic short slugs are demo/preview labels — never use them for live /go/ URLs.
+  if (row.isDemo) return `/go/${row.shortSlug || row.id}`;
   return `/go/${row.id}`;
 }
 

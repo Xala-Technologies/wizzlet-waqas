@@ -138,7 +138,7 @@ const CreatorPromoCodes = () => {
   const [appliesTo, setAppliesTo] = useState('all');
   const [duration, setDuration] = useState<PromoDiscountDuration>('once');
   const [maxUses, setMaxUses] = useState('100');
-  const [expiresDate, setExpiresDate] = useState('2025-03-31');
+  const [expiresDate, setExpiresDate] = useState('');
   const [promoActive, setPromoActive] = useState(true);
   const [saving, setSaving] = useState(false);
   const [deleteId, setDeleteId] = useState<string | null>(null);
@@ -260,7 +260,7 @@ const CreatorPromoCodes = () => {
     setAppliesTo('all');
     setDuration('once');
     setMaxUses('100');
-    setExpiresDate('2025-03-31');
+    setExpiresDate('');
     setPromoActive(true);
     setCreateOpen(true);
   };
@@ -904,6 +904,25 @@ const CreatorPromoCodes = () => {
                 </Select>
                 <p className="text-xs text-muted-foreground">
                   Choose which products this discount applies to.
+                </p>
+              </div>
+
+              <div className="space-y-2">
+                <Label className="text-sm font-semibold text-foreground">Discount duration</Label>
+                <Select
+                  value={duration}
+                  onValueChange={(v) => setDuration(v as PromoDiscountDuration)}
+                >
+                  <SelectTrigger className="h-11 min-h-11" aria-label="Discount duration">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="once">First billing period only</SelectItem>
+                    <SelectItem value="forever">Every billing period</SelectItem>
+                  </SelectContent>
+                </Select>
+                <p className="text-xs text-muted-foreground">
+                  Once applies to the first charge; forever repeats on renewals.
                 </p>
               </div>
 
