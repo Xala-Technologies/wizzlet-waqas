@@ -56,6 +56,7 @@ function creatorTitle(loc: Loc): string {
   if (path.startsWith('/creator/earnings') && hash === '#tax-docs') return 'Tax Documents';
   if (path.startsWith('/creator/earnings')) return 'Finance';
   if (path.startsWith('/creator/settings')) return settingsTabLabel(tab);
+  if (path.startsWith('/creator/integrations')) return 'Discord Integration';
   if (path.startsWith('/creator/personal-growth-manager')) return 'Growth Manager';
   if (path.startsWith('/creator/support')) return 'Support Center';
   if (path.startsWith('/creator/notifications')) return 'Notifications';

@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { Link, useSearchParams } from 'react-router-dom';
+import { Link, Navigate, useSearchParams } from 'react-router-dom';
 import { useConvex, useMutation, useQuery } from 'convex/react';
 import { api } from '../../convex/_generated/api';
 import { uploadToConvexStorage } from '@/lib/upload';
@@ -530,6 +530,10 @@ const CreatorSettings = () => {
     setFaviconUrl('');
     toast.message('Favicon removed — save to publish');
   };
+
+  if (tab === 'integrations') {
+    return <Navigate to="/creator/integrations" replace />;
+  }
 
   if (creator === undefined || me === undefined) {
     return (

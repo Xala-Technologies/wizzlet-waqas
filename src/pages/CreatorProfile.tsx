@@ -78,6 +78,17 @@ function money(cents: number): string {
   }).format(cents / 100);
 }
 
+function DiscordMark({ className }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 24 24" className={className} aria-hidden>
+      <path
+        fill="currentColor"
+        d="M19.27 5.33C17.94 4.71 16.5 4.26 15 4a.1.1 0 0 0-.07.03c-.18.33-.39.76-.53 1.09a16.1 16.1 0 0 0-4.8 0c-.14-.34-.37-.76-.54-1.09A.1.1 0 0 0 8.99 4c-1.5.26-2.93.71-4.27 1.33a.09.09 0 0 0-.04.03C2.43 9.07 1.8 12.7 2.12 16.28c0 .02 0 .04.02.05 1.8 1.32 3.53 2.12 5.24 2.65a.1.1 0 0 0 .12-.04c.4-.55.76-1.13 1.07-1.74a.1.1 0 0 0-.05-.13 10.7 10.7 0 0 1-1.52-.73.1.1 0 0 1-.02-.16c.1-.08.2-.16.3-.24a.1.1 0 0 1 .1-.01c3.19 1.46 6.64 1.46 9.8 0a.1.1 0 0 1 .11.01c.1.08.2.16.3.24a.1.1 0 0 1-.01.16c-.49.28-.99.52-1.53.73a.1.1 0 0 0-.05.13c.31.61.67 1.19 1.07 1.74a.1.1 0 0 0 .12.04c1.72-.53 3.45-1.33 5.25-2.65a.1.1 0 0 0 .02-.05c.38-4.14-.64-7.74-2.7-10.92a.07.07 0 0 0-.03-.03ZM8.52 14.33c-.96 0-1.75-.88-1.75-1.96s.77-1.96 1.75-1.96 1.77.88 1.75 1.96c0 1.08-.79 1.96-1.75 1.96Zm6.97 0c-.96 0-1.75-.88-1.75-1.96s.77-1.96 1.75-1.96 1.77.88 1.75 1.96c0 1.08-.78 1.96-1.75 1.96Z"
+      />
+    </svg>
+  );
+}
+
 const PRODUCT_ICONS = {
   chart: BarChart3,
   gem: Gem,
@@ -292,6 +303,7 @@ const CreatorProfile = () => {
             ),
           )
           .slice(0, 4),
+        includesDiscordAccess: p.includesDiscordAccess,
       }));
 
   const featured = products.find((p) => p.isFeatured) ?? products[0];
@@ -548,6 +560,19 @@ const CreatorProfile = () => {
                         {money(product.priceCents)}
                         <span className="text-ui font-medium text-muted-foreground"> / month</span>
                       </p>
+                      {product.includesDiscordAccess ? (
+                        <div className="mt-4 rounded-2xl border border-[#5865F2]/20 bg-[#5865F2]/8 px-4 py-3">
+                          <p className="flex items-center gap-2 text-sm font-extrabold text-foreground">
+                            <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-[#5865F2] text-white">
+                              <DiscordMark className="h-4 w-4" />
+                            </span>
+                            Discord Access
+                          </p>
+                          <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
+                            Get access to our private Discord channels via Discord.
+                          </p>
+                        </div>
+                      ) : null}
                       <Button
                         type="button"
                         variant={product.isFeatured ? 'default' : 'secondary'}

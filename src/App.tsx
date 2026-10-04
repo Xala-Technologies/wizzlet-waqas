@@ -58,6 +58,7 @@ import CreatorPayouts from "./pages/CreatorPayouts";
 import CreatorTransactions from "./pages/CreatorTransactions";
 import CreatorSettings from "./pages/CreatorSettings";
 import CreatorSupport from "./pages/CreatorSupport";
+import CreatorIntegrations from "./pages/CreatorIntegrations";
 import CreatorOnboarding from "./pages/CreatorOnboarding";
 import CreatorProfile from "./pages/CreatorProfile";
 import CreatorProfileRedirect from "./pages/CreatorProfileRedirect";
@@ -176,6 +177,7 @@ const App = () => (
             <Route path="/creator/payouts" element={<ProtectedRoute allowedRoles={['creator']}><CreatorPayouts /></ProtectedRoute>} />
             <Route path="/creator/transactions" element={<ProtectedRoute allowedRoles={['creator']}><CreatorTransactions /></ProtectedRoute>} />
             <Route path="/creator/settings" element={<ProtectedRoute allowedRoles={['creator']}><CreatorSettings /></ProtectedRoute>} />
+            <Route path="/creator/integrations" element={<ProtectedRoute allowedRoles={['creator']}><CreatorIntegrations /></ProtectedRoute>} />
             <Route path="/creator/support" element={<ProtectedRoute allowedRoles={['creator']}><CreatorSupport /></ProtectedRoute>} />
             <Route path="/creator/onboarding" element={<ProtectedRoute allowedRoles={['creator']}><CreatorOnboarding /></ProtectedRoute>} />
             <Route path="/admin" element={<ProtectedRoute allowedRoles={['admin']}><AdminDashboard /></ProtectedRoute>} />
