@@ -1,3 +1,23 @@
+# Findings — Wave 10 J5 payouts 2026-10-05
+
+Branch `test/world-ready-wave-10-j5-payouts`. Fixture `j4creator+wave9@example.com` on `combative-mongoose-559`.
+
+| Step | Result | Evidence |
+|------|--------|----------|
+| Available balance (test Stripe) | PASS | `/creator/payouts?demo=0` Available **$28.49**; sandbox mode excluded by design; test mode counts |
+| Below platform min blocks withdraw | PASS | Default min $50 → Withdraw disabled until settings min **$5** |
+| Request reserves balance | PASS | Withdraw → Available **$0**; History `Requested` $28.49 (`h2n8fnb41`) |
+| Admin reject (failed) | PASS | Mark failed → status `failed`; Available restored **$28.49** |
+| Re-request + admin complete | PASS | Second request `n858fngdy` → Mark paid → `completed`; creator Paid **$28.49** |
+| Paid ≠ reserved | PASS | While requested: Paid $0 / available $0; after complete: Paid $28.49 / in-progress $0 |
+| Connect honesty | PASS | Admin copy: ledger only until Stripe Connect enabled |
+| Unit matrix | PASS | `payoutBalance.test.ts` 5/5 |
+| Admin Lifetime vs paymentEvents | Residual | Overview Lifetime from **active** subscriptions; cancelled j4member sub → Lifetime $0 while Paid $28.49 |
+
+**J5:** PASS. Next: J6 promo / links / referrals.
+
+---
+
 # Findings — Wave 9 J4 messages / support / resolution 2026-10-05
 
 Branch `test/world-ready-wave-9-j4-messages`. Fixtures `j4creator+wave9@example.com` / `j4member+wave9@example.com` on `combative-mongoose-559`.
