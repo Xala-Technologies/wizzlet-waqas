@@ -1,3 +1,18 @@
+# Findings — Wave 14 J-FILES storage ACL 2026-10-05
+
+Branch `test/world-ready-wave-14-j-files`. Fixtures `j4creator` / `j4member` on `combative-mongoose-559`.
+
+| Step | Result | Evidence |
+|------|--------|----------|
+| Unowned getUrl | PASS | Upload `kg2bkvwtb4mg8sese237tjrvbn8fm9gn` before register → `FORBIDDEN` @ storage.ts:56 |
+| Owner register + getUrl | PASS | `registerOwnedFile` → `p57aez…`; URL `…/api/storage/0e74cb2e-…` |
+| Foreign getUrl | PASS | `j4member` getUrl same id → `FORBIDDEN` @ storage.ts:59 |
+| Unit | PASS | `files.security.test.ts` 4/4 |
+
+**J-FILES:** PASS. Next: J-DEMO / J-ADMIN / J-DISCORD / F-010.
+
+---
+
 # Findings — Wave 13 J8 migration ETL 2026-10-05
 
 Branch `test/world-ready-wave-13-j8-migration`. Deployment `combative-mongoose-559`.
