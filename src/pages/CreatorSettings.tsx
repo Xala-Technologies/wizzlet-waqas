@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { Link, useSearchParams } from 'react-router-dom';
+import { Link, Navigate, useSearchParams } from 'react-router-dom';
 import { useConvex, useMutation, useQuery } from 'convex/react';
 import { api } from '../../convex/_generated/api';
 import { uploadToConvexStorage } from '@/lib/upload';
@@ -26,13 +26,11 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import {
-  BarChart3,
   Bell,
   Check,
   ChevronDown,
   ChevronRight,
   CircleHelp,
-  CreditCard,
   Crown,
   Download,
   ExternalLink,
@@ -40,33 +38,23 @@ import {
   FileText,
   Globe,
   Info,
-  LayoutGrid,
   LifeBuoy,
   Lightbulb,
-  Link as LinkIcon,
   Loader2,
   Lock,
   Mail,
-  MessageSquare,
   Monitor,
   MoreVertical,
-  Music2,
   RefreshCw,
-  Send,
   Settings,
   Share2,
   Shield,
   Smartphone,
   Sparkles,
-  Target,
   Trash2,
   Upload,
   User,
   UserCog,
-  Wallet,
-  Webhook,
-  Youtube,
-  Zap,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import {
@@ -76,8 +64,6 @@ import {
   CREATOR_BRANDING_DEMO,
   CREATOR_BRANDING_INFO,
   CREATOR_BRANDING_TIPS,
-  CREATOR_INTEGRATIONS_CATALOG,
-  CREATOR_INTEGRATIONS_GROWTH,
   CREATOR_NOTIFICATIONS_TIPS,
   CREATOR_SECURITY_TIPS,
   CREATOR_SETTINGS_DEMO,
@@ -89,7 +75,6 @@ import {
   type TeamRole,
 } from '@/lib/creatorSettingsDemo';
 import { cn } from '@/lib/utils';
-import type { LucideIcon } from 'lucide-react';
 
 const MAX_IMAGE_BYTES = 5 * 1024 * 1024;
 const BIO_MAX = 500;
@@ -151,21 +136,6 @@ function teamRoleIcon(role: TeamRole) {
   return Eye;
 }
 
-const INTEGRATION_ICONS: Record<string, LucideIcon> = {
-  discord: MessageSquare,
-  telegram: Send,
-  stripe: CreditCard,
-  paypal: Wallet,
-  ga: BarChart3,
-  meta: Target,
-  zapier: Zap,
-  youtube: Youtube,
-  tiktok: Music2,
-  x: Share2,
-  email: Mail,
-  webhooks: Webhook,
-};
-
 const softPrimaryBtn =
   'min-h-11 rounded-xl border-0 bg-violet-500/10 text-violet-800 hover:bg-violet-500/15 dark:text-violet-200';
 
@@ -197,8 +167,6 @@ const CreatorSettings = () => {
   const [bio, setBio] = useState('');
   const [avatarUrl, setAvatarUrl] = useState('');
   const [bannerUrl, setBannerUrl] = useState('');
-  const [discordServerId, setDiscordServerId] = useState('');
-  const [discordRoleId, setDiscordRoleId] = useState('');
   const [email, setEmail] = useState('');
 
   const [brandName, setBrandName] = useState('');
@@ -233,8 +201,6 @@ const CreatorSettings = () => {
   const [inviteEmail, setInviteEmail] = useState('');
   const [inviteRole, setInviteRole] = useState<TeamRole>('member');
   const [sendingInvite, setSendingInvite] = useState(false);
-  const [discordExpanded, setDiscordExpanded] = useState(false);
-  const [savingDiscord, setSavingDiscord] = useState(false);
   const [twoFactorEnabled, setTwoFactorEnabled] = useState(true);
   const [loginAlertsEnabled, setLoginAlertsEnabled] = useState(true);
   const [sessionsOpen, setSessionsOpen] = useState(false);
@@ -261,8 +227,6 @@ const CreatorSettings = () => {
     setBio(creator.bio ?? '');
     setAvatarUrl(creator.avatarUrl ?? '');
     setBannerUrl(creator.bannerUrl ?? '');
-    setDiscordServerId(creator.discordServerId ?? '');
-    setDiscordRoleId(creator.discordRoleId ?? '');
     setBrandName(creator.displayName ?? '');
     setLogoUrl(creator.avatarUrl ?? '');
   }, [creator]);
@@ -353,8 +317,6 @@ const CreatorSettings = () => {
         bio: bio.trim() || undefined,
         avatarUrl: nextAvatar || undefined,
         bannerUrl: bannerUrl.trim() || undefined,
-        discordServerId: discordServerId.trim() || null,
-        discordRoleId: discordRoleId.trim() || null,
       });
       writeStoredBranding(creator._id, {
         brandName: brandName.trim() || nextDisplayName,
@@ -501,6 +463,10 @@ const CreatorSettings = () => {
     setFaviconUrl('');
     toast.message('Favicon removed — save to publish');
   };
+
+  if (tab === 'integrations') {
+    return <Navigate to="/creator/integrations" replace />;
+  }
 
   if (creator === undefined || me === undefined) {
     return (
@@ -1854,227 +1820,6 @@ const CreatorSettings = () => {
                 onClick={() =>
                   toast.message('Help Center', {
                     description: 'Billing help articles will open here soon.',
-                  })
-                }
-              >
-                View Help Center
-                <ExternalLink className="h-3.5 w-3.5" aria-hidden />
-              </Button>
-            </section>
-          </aside>
-        </div>
-      ) : null}
-
-      {tab === 'integrations' ? (
-        <div className="grid grid-cols-1 gap-4 xl:grid-cols-12">
-          <div className="flex flex-col gap-4 xl:col-span-8">
-            <section className={cn(cardClass, 'space-y-5')}>
-              <div>
-                <h2 className="text-base font-extrabold tracking-tight text-foreground">
-                  Integrations
-                </h2>
-                <p className="mt-1 text-sm text-muted-foreground">
-                  Connect Prizelet with your favorite tools and services to streamline your
-                  workflow.
-                </p>
-              </div>
-
-              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                {CREATOR_INTEGRATIONS_CATALOG.map((item) => {
-                  const Icon = INTEGRATION_ICONS[item.id] ?? LinkIcon;
-                  const discordConnected = Boolean(
-                    discordServerId.trim() && discordRoleId.trim(),
-                  );
-                  const connected =
-                    item.id === 'stripe'
-                      ? stripeConnected || useDemo
-                      : item.id === 'discord'
-                        ? discordConnected
-                        : false;
-                  const actionLabel =
-                    item.id === 'stripe'
-                      ? connected
-                        ? 'Manage'
-                        : 'Connect'
-                      : item.id === 'discord'
-                        ? connected || discordExpanded
-                          ? 'Manage'
-                          : 'Connect'
-                        : 'Connect';
-
-                  return (
-                    <div
-                      key={item.id}
-                      className="rounded-xl border border-border bg-card p-4 shadow-sm"
-                    >
-                      <div className="flex items-start gap-3">
-                        <span
-                          className={cn(
-                            'flex h-10 w-10 shrink-0 items-center justify-center rounded-xl',
-                            item.tone,
-                          )}
-                        >
-                          <Icon className="h-4 w-4" aria-hidden />
-                        </span>
-                        <div className="min-w-0 flex-1">
-                          <p className="text-sm font-bold text-foreground">{item.name}</p>
-                          <p className="mt-0.5 text-xs text-muted-foreground">{item.description}</p>
-                          <p
-                            className={cn(
-                              'mt-2 flex items-center gap-1.5 text-xs font-semibold',
-                              connected
-                                ? 'text-emerald-600 dark:text-emerald-400'
-                                : 'text-muted-foreground',
-                            )}
-                          >
-                            <span
-                              className={cn(
-                                'h-1.5 w-1.5 rounded-full',
-                                connected ? 'bg-emerald-500' : 'bg-muted-foreground/50',
-                              )}
-                              aria-hidden
-                            />
-                            {connected ? 'Connected' : 'Not connected'}
-                          </p>
-                        </div>
-                        <div className="flex shrink-0 items-center gap-1">
-                          {item.id === 'stripe' ? (
-                            <Button asChild variant="secondary" className={cn(softPrimaryBtn, 'h-9 px-3 text-xs font-bold')}>
-                              <Link to="/creator/payouts">{actionLabel}</Link>
-                            </Button>
-                          ) : (
-                            <Button
-                              type="button"
-                              variant="secondary"
-                              className={cn(softPrimaryBtn, 'h-9 px-3 text-xs font-bold')}
-                              onClick={() => {
-                                if (item.id === 'discord') {
-                                  setDiscordExpanded((open) => !open);
-                                  return;
-                                }
-                                toast.message(`${item.name}`, {
-                                  description: useDemo
-                                    ? 'Sample preview — connection is display-only.'
-                                    : 'This integration is coming soon.',
-                                });
-                              }}
-                            >
-                              {actionLabel}
-                            </Button>
-                          )}
-                          <ChevronRight className="h-4 w-4 text-muted-foreground" aria-hidden />
-                        </div>
-                      </div>
-
-                      {item.id === 'discord' && discordExpanded ? (
-                        <div className="mt-4 space-y-3 border-t border-border pt-4">
-                          <div className="grid gap-3 sm:grid-cols-2">
-                            <div className="space-y-2">
-                              <Label htmlFor="discord-guild">Server (guild) ID</Label>
-                              <Input
-                                id="discord-guild"
-                                className="min-h-10 rounded-xl font-mono text-sm"
-                                value={discordServerId}
-                                onChange={(e) => setDiscordServerId(e.target.value)}
-                                placeholder="123456789012345678"
-                              />
-                            </div>
-                            <div className="space-y-2">
-                              <Label htmlFor="discord-role">Role ID</Label>
-                              <Input
-                                id="discord-role"
-                                className="min-h-10 rounded-xl font-mono text-sm"
-                                value={discordRoleId}
-                                onChange={(e) => setDiscordRoleId(e.target.value)}
-                                placeholder="123456789012345678"
-                              />
-                            </div>
-                          </div>
-                          <p className="text-[11px] text-muted-foreground">
-                            Requires platform env{' '}
-                            <span className="font-mono">DISCORD_BOT_TOKEN</span> and Manage Roles.
-                            Clear both fields and save to disconnect.
-                          </p>
-                          <Button
-                            type="button"
-                            size="sm"
-                            disabled={savingDiscord || saving}
-                            onClick={async () => {
-                              if (useDemo) {
-                                toast.message('Sample preview — Discord settings not saved');
-                                return;
-                              }
-                              if (!creator) return;
-                              setSavingDiscord(true);
-                              try {
-                                await updateSettings({
-                                  discordServerId: discordServerId.trim() || null,
-                                  discordRoleId: discordRoleId.trim() || null,
-                                });
-                                toast.success('Discord settings saved');
-                              } catch (err) {
-                                toast.error(
-                                  err instanceof Error ? err.message : 'Could not save Discord',
-                                );
-                              } finally {
-                                setSavingDiscord(false);
-                              }
-                            }}
-                          >
-                            {savingDiscord ? (
-                              <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />
-                            ) : null}
-                            Save Discord
-                          </Button>
-                        </div>
-                      ) : null}
-                    </div>
-                  );
-                })}
-              </div>
-            </section>
-          </div>
-
-          <aside className="flex flex-col gap-4 xl:col-span-4">
-            <section className={cn(clayCard, 'border-violet-500/20 bg-violet-500/5 p-5')}>
-              <div className="mb-3 flex items-center gap-2">
-                <LayoutGrid className="h-4 w-4 text-violet-600 dark:text-violet-400" aria-hidden />
-                <h2 className="text-base font-extrabold tracking-tight text-foreground">
-                  Get More from Prizelet
-                </h2>
-              </div>
-              <p className="mb-3 text-sm text-muted-foreground">
-                Integrate with your favorite tools to automate tasks, grow your audience, and save
-                time.
-              </p>
-              <ul className="space-y-2.5">
-                {CREATOR_INTEGRATIONS_GROWTH.map((tip) => (
-                  <li key={tip} className="flex items-start gap-2.5 text-sm text-muted-foreground">
-                    <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-emerald-500/15 text-emerald-700 dark:text-emerald-400">
-                      <Check className="h-3 w-3" aria-hidden />
-                    </span>
-                    <span>{tip}</span>
-                  </li>
-                ))}
-              </ul>
-            </section>
-            <section className={cn(cardClass, 'space-y-3')}>
-              <div className="flex items-center gap-2">
-                <CircleHelp className="h-4 w-4 text-primary" aria-hidden />
-                <h2 className="text-base font-extrabold tracking-tight text-foreground">
-                  Need Help?
-                </h2>
-              </div>
-              <p className="text-sm text-muted-foreground">
-                Visit our Help Center for step-by-step guides on setting up integrations.
-              </p>
-              <Button
-                type="button"
-                variant="secondary"
-                className={cn(softPrimaryBtn, 'w-full gap-2')}
-                onClick={() =>
-                  toast.message('Help Center', {
-                    description: 'Integration docs will open here soon.',
                   })
                 }
               >

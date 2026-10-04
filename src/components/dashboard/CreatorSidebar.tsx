@@ -81,7 +81,7 @@ const settingsChildItems: NavItem[] = [
   { label: 'Branding', href: '/creator/settings?tab=branding', icon: Settings },
   { label: 'Team', href: '/creator/settings?tab=team', icon: Users },
   { label: 'Billing', href: '/creator/settings?tab=billing', icon: Wallet },
-  { label: 'Integrations', href: '/creator/settings?tab=integrations', icon: Link2 },
+  { label: 'Integrations', href: '/creator/integrations', icon: Link2 },
   { label: 'Notifications', href: '/creator/settings?tab=notifications', icon: HelpCircle },
   { label: 'Security', href: '/creator/settings?tab=security', icon: Settings },
   { label: 'Advanced', href: '/creator/settings?tab=advanced', icon: Settings },
@@ -126,7 +126,11 @@ function isEarningsChildActive(pathname: string, href: string, hash: string): bo
 }
 
 function isSettingsPath(pathname: string): boolean {
-  return pathname === '/creator/settings' || pathname.startsWith('/creator/settings/');
+  return (
+    pathname === '/creator/settings' ||
+    pathname.startsWith('/creator/settings/') ||
+    pathname === '/creator/integrations'
+  );
 }
 
 function settingsTabFromHref(href: string): string | null {
@@ -139,7 +143,10 @@ function settingsTabFromHref(href: string): string | null {
 }
 
 function isSettingsChildActive(pathname: string, search: string, href: string): boolean {
-  if (!isSettingsPath(pathname)) return false;
+  if (href === '/creator/integrations') {
+    return pathname === '/creator/integrations';
+  }
+  if (!isSettingsPath(pathname) || pathname === '/creator/integrations') return false;
   const currentTab = new URLSearchParams(search).get('tab');
   const targetTab = settingsTabFromHref(href);
   if (!targetTab) {

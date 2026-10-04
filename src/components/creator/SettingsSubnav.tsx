@@ -29,7 +29,11 @@ export function SettingsSubnav({ active }: { active?: SettingsTabId }) {
       {TABS.map((tab) => {
         const isActive = resolved === tab.id;
         const href =
-          tab.id === 'general' ? '/creator/settings' : `/creator/settings?tab=${tab.id}`;
+          tab.id === 'general'
+            ? '/creator/settings'
+            : tab.id === 'integrations'
+              ? '/creator/integrations'
+              : `/creator/settings?tab=${tab.id}`;
         return (
           <Link
             key={tab.id}

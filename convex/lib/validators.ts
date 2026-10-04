@@ -175,6 +175,10 @@ export const creatorDocValidator = v.object({
   isPublished: v.boolean(),
   discordServerId: v.optional(v.string()),
   discordRoleId: v.optional(v.string()),
+  discordGuildName: v.optional(v.string()),
+  discordGuildIcon: v.optional(v.string()),
+  discordApproxMemberCount: v.optional(v.number()),
+  discordConnectedAt: v.optional(v.number()),
   referralCode: v.optional(v.string()),
   messagingEnabled: v.boolean(),
   verificationStatus: v.optional(verificationStatusValidator),
@@ -291,6 +295,8 @@ export const productDocValidator = v.object({
   maxSpots: v.optional(v.number()),
   isLimited: v.boolean(),
   isClosed: v.boolean(),
+  discordRoleId: v.optional(v.string()),
+  discordRoleName: v.optional(v.string()),
   createdAt: v.number(),
   updatedAt: v.number(),
 });
@@ -309,6 +315,7 @@ export const productPublicValidator = v.object({
   isLimited: v.boolean(),
   maxSpots: v.optional(v.number()),
   isClosed: v.boolean(),
+  includesDiscordAccess: v.boolean(),
 });
 
 export const notificationDocValidator = v.object({
