@@ -2,7 +2,7 @@
 
 **Authority:** [`docs/ai/prizelet-world-ready-master-prompt.md`](./prizelet-world-ready-master-prompt.md)
 
-**Status:** Wave 0 inventory frozen against live `src/App.tsx`, `convex/schema.ts`, and `convex/_generated/api.d.ts` @ `bf85281`. Journey / tooling / residual-risk rows stay `NOT_RUN` until Wave 1+. Audit not started.
+**Status:** Wave 1 static+unit audit recorded 2026-10-04. Inventory still pinned to `App.tsx` / schema / `api.d.ts` @ `bf85281`. Journeys and Playwright remain `NOT_RUN` until Wave 2. Product is **not** world-ready.
 
 Do not claim world-ready until Section 8 gates in the master prompt pass.
 
@@ -16,7 +16,7 @@ Do not claim world-ready until Section 8 gates in the master prompt pass.
 | Evidence | branch, date, one-line actual vs expected |
 | Waiver | owner + reason (required if WAIVED) |
 
-Last updated: 2026-10-04. Last wave: **0** (`chore/world-ready-wave-0-inventory`). Source pin: `bf85281`.
+Last updated: 2026-10-04. Last wave: **1** (`chore/world-ready-wave-1-audit`). Source pin: `bf85281` (inventory). Audit HEAD: branch tip at merge.
 
 Wave 0 does **not** exercise wrong-role redirects (Wave 2). Each route has one intended-role row.
 
@@ -162,28 +162,29 @@ Nested layouts in `App.tsx`: `/demo/admin` → `DemoAdminLayout`; `/demo/member`
 
 | Command | Result | Evidence |
 |---------|--------|----------|
-| `npm test` | NOT_RUN | Wave 0 did not run gates |
-| `npm run lint` | NOT_RUN | Wave 0 did not run gates |
-| `npm run build` | NOT_RUN | Wave 0 did not run gates |
-| `npm run env:validate` | NOT_RUN | Wave 0 did not run gates |
-| `npm run test:e2e` | NOT_RUN | Wave 0 did not run gates |
+| `npm test` | PASS | Wave 1 2026-10-04: 23 files, 134 tests, vitest 3.2.7 |
+| `npm run lint` | PASS | Wave 1: 0 errors, 28 warnings (react-refresh / hooks / generated eslint-disable) |
+| `npm run build` | PASS | Wave 1: `vite build` succeeded (~12s). Chunk size warning only |
+| `npm run env:validate` | PASS | Wave 1: `env:validate PASS (local)`; sandbox false; devAdmin false |
+| `npm run test:e2e` | NOT_RUN | Deferred to Wave 2 after this PR merges |
+| `npx tsc -b` (F-015) | FAIL | Wave 1: errors in CreatorPayouts, CreatorProducts, CreatorSettings, CustomerManageSubscription, paymentFeeDetail |
 
 ## I. Residual-risk retest
 
 | ID | Result | Evidence |
 |----|--------|----------|
-| QA-W1-01 grantTestAdmin / ALLOW_DEV_ADMIN_GRANT | NOT_RUN | |
-| QA-W1-02 ProtectedRoute DEV bypass | NOT_RUN | |
-| QA-W1-03 unowned file getUrl | NOT_RUN | |
-| F-001 sandbox client flag | NOT_RUN | |
-| F-002 public createSubscriptionRecord | NOT_RUN | |
-| F-003 owner setStatus active | NOT_RUN | |
-| F-004 JWT subject as user id | NOT_RUN | |
-| F-005 public migration mutations | NOT_RUN | |
-| F-009 / J5 payout reserved vs paid | NOT_RUN | |
-| F-010 webhook soak / Connect | NOT_RUN | |
-| F-012 admin full-table scans | NOT_RUN | |
-| F-015 lint / tsc | NOT_RUN | |
+| QA-W1-01 grantTestAdmin / ALLOW_DEV_ADMIN_GRANT | PASS | Wave 1 2026-10-04: env+allowlist+assertProductionSafeEnv; authMatrix.security.test.ts |
+| QA-W1-02 ProtectedRoute DEV bypass | PASS | Wave 1: ProtectedRoute uses DB roles only. Residual: AuthContext hasRole DEV-only (prod build strips) |
+| QA-W1-03 unowned file getUrl | PASS | Wave 1: getUrl FORBIDDEN if missing asset or non-owner. E2E J-FILES still NOT_RUN |
+| F-001 sandbox client flag | PASS | Wave 1: server env only; envGuards + subscriptions.security tests |
+| F-002 public createSubscriptionRecord | PASS | Wave 1: internalMutation only |
+| F-003 owner setStatus active | PASS | Wave 1: public setStatus is admin-only; owner activate throws in unit tests |
+| F-004 JWT subject as user id | PASS | Wave 1: listPreviewsByCreator uses getAuthUserId |
+| F-005 public migration mutations | PASS | Wave 1: importBatch/load are internalMutation |
+| F-009 / J5 payout reserved vs paid | PASS | Wave 1: payoutBalance.test.ts 5/5. Live UI Wave 2 |
+| F-010 webhook soak / Connect | NOT_RUN | Wave 1: handler present; soak/Connect not executed |
+| F-012 admin full-table scans | FAIL | Wave 1: pagination exists; residual unbounded `.collect()` joins on listUsersPage |
+| F-015 lint / tsc | FAIL | Wave 1: lint 0 errors; `npx tsc -b` still errors (see findings) |
 
 ## J. Public Convex API coverage (Wave 0 freeze)
 
@@ -272,7 +273,7 @@ App public functions (`Auth` = TBD until Wave 1):
 | `events.queries.seedTodayDev` | TBD | yes | NOT_RUN | frozen vs convex/*.ts @ bf85281 |
 | `events.queries.upsertAdmin` | TBD | yes | NOT_RUN | frozen vs convex/*.ts @ bf85281 |
 | `files.storage.generateUploadUrl` | TBD | yes | NOT_RUN | frozen vs convex/*.ts @ bf85281 |
-| `files.storage.getUrl` | TBD | yes | NOT_RUN | frozen vs convex/*.ts @ bf85281 |
+| `files.storage.getUrl` | requireAppUser + owner | yes | NOT_RUN | Wave 1 static: FORBIDDEN if no fileAssets / wrong owner @ files/storage.ts |
 | `files.storage.registerOwnedFile` | TBD | yes | NOT_RUN | frozen vs convex/*.ts @ bf85281 |
 | `messaging.mutations.listThread` | TBD | yes | NOT_RUN | frozen vs convex/*.ts @ bf85281 |
 | `messaging.mutations.markReadCreator` | TBD | yes | NOT_RUN | frozen vs convex/*.ts @ bf85281 |
@@ -337,7 +338,7 @@ App public functions (`Auth` = TBD until Wave 1):
 | `resolution.mutations.unreadCountCreator` | TBD | yes | NOT_RUN | frozen vs convex/*.ts @ bf85281 |
 | `roles.mutations.assignSelfRole` | TBD | yes | NOT_RUN | frozen vs convex/*.ts @ bf85281 |
 | `roles.mutations.grantRole` | TBD | yes | NOT_RUN | frozen vs convex/*.ts @ bf85281 |
-| `roles.mutations.grantTestAdmin` | TBD | yes | NOT_RUN | frozen vs convex/*.ts @ bf85281 |
+| `roles.mutations.grantTestAdmin` | requireAppUser + ALLOW_DEV_ADMIN_GRANT + allowlist | yes | NOT_RUN | Wave 1 static+unit PASS (QA-W1-01) |
 | `roles.mutations.myRoles` | TBD | yes | NOT_RUN | frozen vs convex/*.ts @ bf85281 |
 | `subscriptions.mutations.countActiveByCreator` | TBD | yes | NOT_RUN | frozen vs convex/*.ts @ bf85281 |
 | `subscriptions.mutations.listAllAdmin` | TBD | yes | NOT_RUN | frozen vs convex/*.ts @ bf85281 |
@@ -347,7 +348,7 @@ App public functions (`Auth` = TBD until Wave 1):
 | `subscriptions.mutations.myPaymentEvents` | TBD | yes | NOT_RUN | frozen vs convex/*.ts @ bf85281 |
 | `subscriptions.mutations.mySubscriptions` | TBD | yes | NOT_RUN | frozen vs convex/*.ts @ bf85281 |
 | `subscriptions.mutations.mySubscriptionsDetailed` | TBD | yes | NOT_RUN | frozen vs convex/*.ts @ bf85281 |
-| `subscriptions.mutations.setStatus` | TBD | yes | NOT_RUN | frozen vs convex/*.ts @ bf85281 |
+| `subscriptions.mutations.setStatus` | requireAdmin | yes | NOT_RUN | Wave 1 static: owner cannot activate (F-003) |
 | `support.mutations.listAllAdmin` | TBD | yes | NOT_RUN | frozen vs convex/*.ts @ bf85281 |
 | `support.mutations.listForMember` | TBD | yes | NOT_RUN | frozen vs convex/*.ts @ bf85281 |
 | `support.mutations.listForMyCreator` | TBD | yes | NOT_RUN | frozen vs convex/*.ts @ bf85281 |
@@ -418,6 +419,7 @@ Schema `appRole` also allows `moderator` and `user` (not product actors; no rout
 
 ## M. Remaining risk (update every fix PR)
 
-- P2: Wave 1+ not started (auth audit, entitlement matrix, payout math, pagination, Discord soak)
-- Not in this PR: production deploy, live Stripe keys, MFA, journey execution, tooling gates
+- P2: F-012 residual `.collect()` joins in `admin/paginatedLists.listUsersPage`; F-010 Stripe soak / Connect; Discord grant soak
+- P3: `npx tsc -b` FAIL (F-015); eslint warnings; AuthContext DEV `hasRole` leftover
+- Not in this PR: production deploy, live Stripe keys, MFA, Playwright (Wave 2), tsc fix cluster (Wave 3+)
 - Waivers: see section L
