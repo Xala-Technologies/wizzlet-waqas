@@ -616,7 +616,7 @@ const CreatorPayouts = () => {
             <div className="space-y-2">
               <Label>Method</Label>
               <Select value={method} onValueChange={setMethod}>
-                <SelectTrigger size="sm">
+                <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -633,13 +633,12 @@ const CreatorPayouts = () => {
                 value={accountLabel}
                 onChange={(e) => setAccountLabel(e.target.value)}
                 placeholder="**** 4582"
-                size="sm"
               />
             </div>
             <div className="space-y-2">
               <Label>Preferred schedule</Label>
               <Select value={schedule} onValueChange={setSchedule}>
-                <SelectTrigger size="sm">
+                <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -655,7 +654,6 @@ const CreatorPayouts = () => {
                 type="number"
                 value={minimumPayout}
                 onChange={(e) => setMinimumPayout(Number(e.target.value))}
-                size="sm"
               />
             </div>
           </div>

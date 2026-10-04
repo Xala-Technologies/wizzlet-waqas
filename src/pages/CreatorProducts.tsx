@@ -754,12 +754,7 @@ const CreatorProducts = () => {
                     row.type,
                     'isFeatured' in row ? row.isFeatured : false,
                   );
-                  const revenue =
-                    'revenueMrrCents' in row
-                      ? row.revenueMrrCents
-                      : row.type === 'one-time' || row.type === 'free'
-                        ? 0
-                        : row.subscribers * row.priceCents;
+                  const revenue = row.revenueMrrCents;
                   const subsLabel =
                     row.subscribersLabel ??
                     (row.type === 'one-time'
