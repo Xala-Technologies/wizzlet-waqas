@@ -1,3 +1,28 @@
+# Findings — Wave 1 retest 2026-10-04
+
+Campaign: world-ready Wave 1 (static + unit). Branch `chore/world-ready-wave-1-audit` atop `ab53b2d`. No product code changes this wave.
+
+| ID | Result | Evidence |
+|----|--------|----------|
+| QA-W1-01 | **PASS (unit)** | `isDevAdminGrantAllowed` requires `ALLOW_DEV_ADMIN_GRANT===true` **and** allowlisted email. `grantTestAdmin` also calls `assertProductionSafeEnv()`. Tests in `src/lib/authMatrix.security.test.ts`, `src/lib/envGuards.test.ts`. Residual: emails still in source; must stay unset on prod. |
+| QA-W1-02 | **PASS (router)** | `ProtectedRoute` always uses DB `roles` (`src/components/ProtectedRoute.tsx`). Residual P3: `AuthContext` `setDevRole` / `hasRole` still honor `import.meta.env.DEV` (stripped in production `vite build`). |
+| QA-W1-03 / F-008 | **PASS (static)** | `files/storage.getUrl` throws `FORBIDDEN` when no `fileAssets` row or owner mismatch. Runtime soak still Wave 2 (`J-FILES`). |
+| F-001 | **PASS** | Server `isSandboxEnabled` / `assertProductionSafeEnv`; client `VITE_ALLOW_SANDBOX_CHECKOUT` refused in production `publicEnv`. Vitest PASS. |
+| F-002 | **PASS** | `createSubscriptionRecord` is `internalMutation`. |
+| F-003 | **PASS** | Public `subscriptions.setStatus` is `requireAdmin` + `assertSubscriptionStatusTransition`. Owner activate blocked in unit tests. |
+| F-004 | **PASS** | `listPreviewsByCreator` uses `getAuthUserId(ctx)`, not JWT subject. |
+| F-005 | **PASS** | `migrations/importBatch` + `migrations/load` are `internalMutation` + `MIGRATION_SECRET`. |
+| F-009 | **PASS (unit)** | `payoutBalance` reserved vs paid-out; Vitest 5/5. Live UI reconcile is Wave 2 J5. |
+| F-010 | **NOT_RUN (soak)** | Webhook HTTP + `fulfillWebhook` exist. Stripe test-card soak / Connect payouts not executed this wave. |
+| F-012 | **PARTIAL** | List UIs use cursor pagination; aggregates `adminScanAll` cap 5k. Residual: per-user `.collect()` joins inside `admin/paginatedLists.listUsersPage`. |
+| F-015 | **FAIL (`tsc`)** | `npm run lint`: 0 errors, 28 warnings. `npm run build` (Vite) PASS. `npx tsc -b`: errors in `paymentFeeDetail.ts`, `CreatorPayouts.tsx`, `CreatorProducts.tsx`, `CreatorSettings.tsx`, `CustomerManageSubscription.tsx`. Not fixed in Wave 1 (not a P0 one-liner). |
+| Discord cron | **PASS (static)** | `convex/crons.ts` every 5m → `retryPendingGrants`. Runtime soak Wave 2. |
+| Stale docs | **PASS (this campaign)** | Master prompt + ledger prefer live Convex/Stripe; Wave 0 froze surfaces. |
+
+Tooling 2026-10-04: `npm test` 23 files / 134 tests PASS. `npm run env:validate` PASS (local). `npm run test:e2e` deferred to Wave 2 (merge-before-next).
+
+---
+
 # Findings (QA Wave 1 — 2026-09-06)
 
 Campaign: full-application AUDIT_AND_TEST. Branch `fix/login-ensureuser-auth-race` (dirty) atop `bafb16a`. Environment: Vite `localhost:8080` → Convex `combative-mongoose-559` (dev), Stripe `pk_test`.
