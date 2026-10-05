@@ -389,6 +389,8 @@ export const availableBalanceValidator = v.object({
   earnedCents: v.number(),
   reservedCents: v.number(),
   availableCents: v.number(),
+  truncated: v.boolean(),
+  listLimit: v.number(),
 });
 
 export const resolutionCaseDocValidator = v.object({

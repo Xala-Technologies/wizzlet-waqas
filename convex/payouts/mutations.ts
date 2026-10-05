@@ -31,7 +31,13 @@ export const availableBalance = query({
     const user = await requireAppUser(ctx);
     const creator = await getCreatorForUser(ctx, user._id);
     if (!creator) {
-      return { earnedCents: 0, reservedCents: 0, availableCents: 0 };
+      return {
+        earnedCents: 0,
+        reservedCents: 0,
+        availableCents: 0,
+        truncated: false,
+        listLimit: 0,
+      };
     }
     return getCreatorAvailableBalanceCents(ctx, creator._id);
   },
@@ -176,6 +182,9 @@ export const requestPayout = mutation({
     }
 
     const balance = await getCreatorAvailableBalanceCents(ctx, creator._id);
+    if (balance.truncated) {
+      throw new ConvexError("BALANCE_TRUNCATED");
+    }
     if (args.amountCents > balance.availableCents) {
       throw new ConvexError("INSUFFICIENT_BALANCE");
     }
