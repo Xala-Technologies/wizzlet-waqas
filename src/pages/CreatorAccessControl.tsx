@@ -92,11 +92,6 @@ const CreatorAccessControl = () => {
   if (!creator) {
     return (
       <DashboardLayout type="creator">
-        <header className="mb-4">
-          <p className="text-caption font-semibold uppercase tracking-[0.14em] text-muted-foreground">
-            Products
-          </p>
-        </header>
         <div className="rounded-2xl border border-border bg-card p-10 text-center shadow-[var(--shadow-card)]">
           <Lock className="mx-auto mb-4 h-10 w-10 text-muted-foreground" />
           <h3 className="mb-2 text-ui font-semibold text-foreground">No creator profile yet</h3>
@@ -113,18 +108,13 @@ const CreatorAccessControl = () => {
 
   return (
     <DashboardLayout type="creator">
-      <header className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div className="min-w-0">
-          <p className="text-caption font-semibold uppercase tracking-[0.14em] text-muted-foreground">
-            Products
-          </p>
-        </div>
+      <div className="mb-4 flex justify-end">
         <Button asChild variant="outline" size="sm" className="shrink-0">
           <Link to="/creator/products">
             <ArrowLeft className="mr-1.5 h-4 w-4" /> Back to Products
           </Link>
         </Button>
-      </header>
+      </div>
 
       {items.length === 0 ? (
         <div className="rounded-2xl border border-border bg-card p-10 text-center shadow-[var(--shadow-card)]">

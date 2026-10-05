@@ -70,15 +70,7 @@ export function EarningsTaxDocumentsPanel({
 
   return (
     <div id="tax-docs" className="scroll-mt-24 space-y-6">
-      <header className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-        <div className="min-w-0">
-          <h1 className="text-heading font-bold tracking-tight text-foreground md:text-heading-lg">
-            Tax Documents
-          </h1>
-          <p className="mt-1.5 text-support text-muted-foreground">
-            Access and download your tax documents for reporting purposes.
-          </p>
-        </div>
+      <div className="mb-2 flex justify-end sm:mb-0">
         <Select value={year} onValueChange={setYear}>
           <SelectTrigger className="h-10 w-[8.5rem] rounded-xl border-border bg-card text-sm font-semibold shadow-sm">
             <span className="flex items-center gap-1.5">
@@ -93,7 +85,7 @@ export function EarningsTaxDocumentsPanel({
             <SelectItem value="2022">2022</SelectItem>
           </SelectContent>
         </Select>
-      </header>
+      </div>
 
       {beforeContent}
 
