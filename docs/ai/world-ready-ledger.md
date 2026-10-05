@@ -2,7 +2,7 @@
 
 **Authority:** [`docs/ai/prizelet-world-ready-master-prompt.md`](./prizelet-world-ready-master-prompt.md)
 
-**Status:** Wave 65 stripeDb/sandbox/migration collect caps 2026-10-05. Product is **not** world-ready.
+**Status:** Wave 66 Connect currency honesty 2026-10-05. Product is **not** world-ready.
 
 Do not claim world-ready until Section 8 gates in the master prompt pass.
 
@@ -16,7 +16,9 @@ Do not claim world-ready until Section 8 gates in the master prompt pass.
 | Evidence | branch, date, one-line actual vs expected |
 | Waiver | owner + reason (required if WAIVED) |
 
-Last updated: 2026-10-05. Last wave: **65** (`fix/world-ready-wave-65-stripeDb-sandbox-migration-caps`). Source pin: `bf85281` (inventory).
+Last updated: 2026-10-05. Last wave: **66** (`fix/world-ready-wave-66-connect-currency-honesty`). Source pin: `bf85281` (inventory).
+
+Wave 66: real Stripe soak — platform **NO**/available **NOK 255.32**, charges/ledger **USD**, Express `acct_1UN8ktRyfauxBCWX` US/USD `payouts_enabled=false`. Transfers refuse ledger≠destination or missing USD available (no NOK-as-USD-cents). Admin live balance action; UI no longer claims transfers “not built”. `STRIPE_CONNECT_COUNTRY=US` on combative-mongoose-559. Units `stripeConnect.security.test.ts`.
 
 Wave 65: `payments/stripeDb`, `payments/sandbox`, `migrations/load` countTable — no `.collect` left in app Convex TS (comments excluded). Units `stripeDbSandboxMigrationCap.security.test.ts` 2/2.
 
@@ -217,7 +219,7 @@ Nested layouts in `App.tsx`: `/demo/admin` → `DemoAdminLayout`; `/demo/member`
 | J-NOTIFICATIONS | Inbox create + mark read | PASS | Wave 20 2026-10-05: adminInsert + member markRead/markAllRead; pay/message rows; admin shared page |
 | J-SETTINGS | Settings live vs toast-stub honesty | PASS | Wave 21 2026-10-05: 2FA “coming soon”; team invite preview “not wired to the backend yet”; account profile editable |
 | J-SMART-PRICING | Smart pricing + access control honesty | PASS | Wave 21 2026-10-05: heuristic “directional only”; list price via updateSettings (not fake Stripe product prices); access-control limit spots persists |
-| J-CONNECT | Stripe Connect residual honesty | PASS | Wave 49 2026-10-05: admin Transfer action; soak j2 pending **$142.40** not marked paid (`CONNECT_PAYOUTS_NOT_ENABLED`). Residual: Express KYC; NOK platform vs USD Express. Wave 48 Account Link `acct_1UN8ktRyfauxBCWX`. |
+| J-CONNECT | Stripe Connect residual honesty | PASS | Wave 66: ledger/destination/available must all be USD; live balance NOK-only → Transfer refuse; UI honest. Wave 49 Transfer action; j2 `acct_1UN8ktRyfauxBCWX` KYC incomplete. Residual: Express KYC + fund USD available (or migrate Checkout to NOK end-to-end). |
 
 ## H. Tooling gates
 
@@ -483,7 +485,7 @@ Schema `appRole` also allows `moderator` and `user` (not product actors; no rout
 
 ## M. Remaining risk (update every fix PR)
 
-- P2: Connect Transfer action is live but blocked until Express KYC (`payouts_enabled`) and USD vs NOK platform balance; referral cash still outside Stripe; member self-serve verified email OTP still missing; historical migration data parity BLOCKED (greenfield)
-- P3: admin join spend still capped at 500; F-012 Convex `.collect` closed Waves 59–65 (takes/indexes; migration counts capped); Connect KYC/currency + referral cash + email OTP still open; customers/alerts/finance/dashboard/fees/payouts/announcement/reports KPIs PASS (Wave 43–47, 50–55); eslint PASS Wave 57; join honesty PASS Wave 58
+- P2: Connect Transfer is real but blocked until Express KYC (`payouts_enabled`) **and** platform available **USD** (today only NOK on combative-mongoose-559 while Checkout/ledger are USD — Wave 66 refuses mismatch, does not convert); referral cash still outside Stripe; member self-serve verified email OTP still missing; historical migration data parity BLOCKED (greenfield)
+- P3: admin join spend still capped at 500; F-012 Convex `.collect` closed Waves 59–65; Connect KYC + USD balance funding (or full NOK pricing migration) + referral cash + email OTP still open; customers/alerts/finance/dashboard/fees/payouts/announcement/reports KPIs PASS (Wave 43–47, 50–55); eslint PASS Wave 57; join honesty PASS Wave 58
 - Not in this PR: production deploy, live Stripe keys, MFA
 - Waivers: see section L

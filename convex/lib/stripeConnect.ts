@@ -2,6 +2,12 @@
 
 export const CONNECT_ONBOARDING_PATH = "/creator/payouts";
 
+/**
+ * Prizelet Checkout + ledger amounts are USD minor units today.
+ * Connect transfers must use this currency — never treat USD cents as NOK øre.
+ */
+export const PRIZELET_LEDGER_CURRENCY = "usd";
+
 export function connectOnboardingUrls(siteUrl: string): {
   returnUrl: string;
   refreshUrl: string;
@@ -58,12 +64,17 @@ export function isConnectTransferReference(reference: string | undefined | null)
 }
 
 export function resolveConnectTransferCurrency(args: {
+  ledgerCurrency?: string;
   destinationCurrency: string;
   amountCents: number;
   available: Array<{ amount: number; currency: string }>;
 }): { currency: string } {
+  const ledger = (args.ledgerCurrency ?? PRIZELET_LEDGER_CURRENCY).trim().toLowerCase();
   const dest = args.destinationCurrency.trim().toLowerCase();
-  if (!/^[a-z]{3}$/.test(dest)) {
+  if (!/^[a-z]{3}$/.test(ledger) || !/^[a-z]{3}$/.test(dest)) {
+    throw new Error("STRIPE_CURRENCY_MISMATCH");
+  }
+  if (ledger !== dest) {
     throw new Error("STRIPE_CURRENCY_MISMATCH");
   }
   if (!Number.isInteger(args.amountCents) || args.amountCents <= 0) {
@@ -87,7 +98,7 @@ export function connectPayoutUserMessage(message: string): string {
     return "This creator has no Stripe Connect account. Ledger was not marked paid.";
   }
   if (message.includes("STRIPE_CURRENCY_MISMATCH")) {
-    return "Platform Stripe balance currency does not match the connected account. Ledger was not marked paid.";
+    return "Ledger is USD: platform available balance and the Express account must both be USD (NOK-only balance cannot fund a USD transfer). Ledger was not marked paid.";
   }
   if (message.includes("STRIPE_INSUFFICIENT_BALANCE")) {
     return "Platform Stripe balance is too low for this transfer. Ledger was not marked paid.";

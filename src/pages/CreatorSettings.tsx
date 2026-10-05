@@ -1573,7 +1573,7 @@ const CreatorSettings = () => {
                         <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-emerald-500/15 text-emerald-700 dark:text-emerald-400">
                           <Check className="h-3 w-3" />
                         </span>
-                        Connect Stripe on Payouts (Express). Automatic transfers are not live yet — ledger payouts stay manual.
+                        Connect Stripe on Payouts (Express). Admin Send via Stripe creates a real Transfer after KYC and when platform USD balance matches.
                       </li>
                     </ul>
                   </div>
