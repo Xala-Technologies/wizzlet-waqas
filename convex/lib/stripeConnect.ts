@@ -37,3 +37,18 @@ export function isStripeConnectNotEnabledError(message: string): boolean {
     message,
   );
 }
+
+export function isStripeAccountsV1DisabledError(message: string): boolean {
+  return /Accounts v1|feat_accounts_v1_support|\/v2\/core\/accounts/i.test(message);
+}
+
+/** US Express requires card_payments when requesting transfers. */
+export function expressConnectCapabilities(): {
+  card_payments: { requested: true };
+  transfers: { requested: true };
+} {
+  return {
+    card_payments: { requested: true },
+    transfers: { requested: true },
+  };
+}

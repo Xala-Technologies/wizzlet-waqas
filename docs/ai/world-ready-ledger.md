@@ -2,7 +2,7 @@
 
 **Authority:** [`docs/ai/prizelet-world-ready-master-prompt.md`](./prizelet-world-ready-master-prompt.md)
 
-**Status:** Wave 47 dashboardStats indexed money/cases 2026-10-05. Product is **not** world-ready.
+**Status:** Wave 48 Connect Express onboarding live on Prizlett sandbox 2026-10-05. Product is **not** world-ready.
 
 Do not claim world-ready until Section 8 gates in the master prompt pass.
 
@@ -16,7 +16,9 @@ Do not claim world-ready until Section 8 gates in the master prompt pass.
 | Evidence | branch, date, one-line actual vs expected |
 | Waiver | owner + reason (required if WAIVED) |
 
-Last updated: 2026-10-05. Last wave: **47** (`fix/world-ready-wave-47-dashboard-stats-indexes`). Source pin: `bf85281` (inventory).
+Last updated: 2026-10-05. Last wave: **48** (`feat/world-ready-wave-48-connect-express-capabilities`). Source pin: `bf85281` (inventory).
+
+Wave 48: Prizlett sandbox Connect = marketplace; Accounts v1 policy enabled. Express create requests `card_payments`+`transfers`. Soak `j2creator` → Account Link `acct_1UN8ktRyfauxBCWX`; return shows Continue onboarding. Transfers still unimplemented. Units `stripeConnect.security.test.ts` 8/8.
 
 Wave 47: `dashboardStats` uses status indexes for active subs, paid/completed payouts, open cases; users/creators/events still capped scans for counts. Units `dashboardStats.security.test.ts` 1/1.
 
@@ -99,7 +101,7 @@ PASS below is **anonymous → `/login`**, not an authenticated creator session.
 | `/creator/links` | CreatorLinks | creator | mixed | PASS | Wave 2 chromium surface smoke 2026-10-04; inventory pin bf85281 |
 | `/creator/referrals` | CreatorReferrals | creator | mixed | PASS | Wave 2 chromium surface smoke 2026-10-04; inventory pin bf85281 |
 | `/creator/earnings` | CreatorEarnings | creator | mixed | PASS | Wave 2 chromium surface smoke 2026-10-04; inventory pin bf85281 |
-| `/creator/payouts` | CreatorPayouts | creator | mixed | PASS | Wave 42: Connect Stripe Express onboarding (honest `STRIPE_CONNECT_NOT_ENABLED` on test platform); Wave 22 banner; Wave 10 balance |
+| `/creator/payouts` | CreatorPayouts | creator | mixed | PASS | Wave 48: Express Account Link `acct_1UN8ktRyfauxBCWX` (j2creator); Continue onboarding after return; transfers not live. Wave 42 action; Wave 22 banner |
 | `/creator/transactions` | CreatorTransactions | creator | mixed | PASS | Wave 2 chromium surface smoke 2026-10-04; inventory pin bf85281 |
 | `/creator/settings` | CreatorSettings | creator | mixed | PASS | Wave 42: billing bullet Connect-on-Payouts / transfers not live; Wave 21: 2FA/team stubs |
 | `/creator/integrations` | CreatorIntegrations | creator | mixed | PASS | Wave 2 chromium surface smoke 2026-10-04; inventory pin bf85281 |
@@ -181,7 +183,7 @@ Nested layouts in `App.tsx`: `/demo/admin` → `DemoAdminLayout`; `/demo/member`
 | J-NOTIFICATIONS | Inbox create + mark read | PASS | Wave 20 2026-10-05: adminInsert + member markRead/markAllRead; pay/message rows; admin shared page |
 | J-SETTINGS | Settings live vs toast-stub honesty | PASS | Wave 21 2026-10-05: 2FA “coming soon”; team invite preview “not wired to the backend yet”; account profile editable |
 | J-SMART-PRICING | Smart pricing + access control honesty | PASS | Wave 21 2026-10-05: heuristic “directional only”; list price via updateSettings (not fake Stripe product prices); access-control limit spots persists |
-| J-CONNECT | Stripe Connect residual honesty | PASS | Wave 42 2026-10-05: Express onboarding action + persist `stripeAccountId`/capability flags; soak `j2creator` Connect click → `STRIPE_CONNECT_NOT_ENABLED` (Stripe dashboard Connect off). Wave 22 ledger-only honesty. Live transfers still unimplemented. |
+| J-CONNECT | Stripe Connect residual honesty | PASS | Wave 48 2026-10-05: Prizlett sandbox Connect marketplace + Accounts v1; `j2creator` Express `acct_1UN8ktRyfauxBCWX` Account Link; KYC unfinished; **transfers still unimplemented**. Wave 42 wiring. |
 
 ## H. Tooling gates
 
@@ -207,7 +209,7 @@ Nested layouts in `App.tsx`: `/demo/admin` → `DemoAdminLayout`; `/demo/member`
 | F-004 JWT subject as user id | PASS | Wave 1: listPreviewsByCreator uses getAuthUserId |
 | F-005 public migration mutations | PASS | Wave 1: importBatch/load are internalMutation |
 | F-009 / J5 payout reserved vs paid | PASS | Wave 1: payoutBalance.test.ts 5/5. Live UI Wave 2 |
-| F-010 webhook soak / Connect | PASS | Wave 18 webhook soak. Wave 42: Express onboarding wired; account create BLOCKED until Stripe Connect is enabled on the platform account. Transfers still unimplemented. |
+| F-010 webhook soak / Connect | PASS | Wave 18 webhook soak. Wave 48: Express onboarding creates `acct_` + Account Link on Prizlett sandbox. Transfers still unimplemented. |
 | F-012 admin full-table scans | PASS | Wave 47: dashboardStats indexed money/cases (users/creators/events still capped). Waves 43–46 list/customers/alerts/finance |
 | F-015 lint / tsc | PASS | Wave 3: `npx tsc -b` exit 0; lint still 0 errors / 28 warnings |
 
@@ -447,7 +449,7 @@ Schema `appRole` also allows `moderator` and `user` (not product actors; no rout
 
 ## M. Remaining risk (update every fix PR)
 
-- P2: Stripe Connect Express onboarding wired (Wave 42) but platform Stripe account does not have Connect enabled (`STRIPE_CONNECT_NOT_ENABLED`); live transfers still unimplemented; referral cash still outside Stripe; member self-serve verified email OTP still missing; historical migration data parity BLOCKED (greenfield)
+- P2: Stripe Connect Express onboarding works (Wave 48) but live transfers still unimplemented; Express KYC unfinished for j2creator; referral cash still outside Stripe; member self-serve verified email OTP still missing; historical migration data parity BLOCKED (greenfield)
 - P3: admin user/creator spend metrics cap at 200 indexed rows; dashboardStats still caps users/creators/events at 5k for counts; eslint warnings; AuthContext DEV `hasRole` leftover; customers/alerts/finance/dashboard money KPIs PASS (Wave 43–47)
 - Not in this PR: production deploy, live Stripe keys, MFA
 - Waivers: see section L

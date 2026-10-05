@@ -12,6 +12,8 @@ import { resolveSiteUrl } from "../lib/envGuards";
 import {
   connectOnboardingUrls,
   connectStatusFromStripeAccount,
+  expressConnectCapabilities,
+  isStripeAccountsV1DisabledError,
   isStripeConnectNotEnabledError,
 } from "../lib/stripeConnect";
 
@@ -552,6 +554,9 @@ function mapStripeConnectError(err: unknown): never {
   if (isStripeConnectNotEnabledError(message)) {
     throw new Error("STRIPE_CONNECT_NOT_ENABLED");
   }
+  if (isStripeAccountsV1DisabledError(message)) {
+    throw new Error("STRIPE_CONNECT_ACCOUNTS_V1_DISABLED");
+  }
   throw err instanceof Error ? err : new Error(message);
 }
 
@@ -582,9 +587,7 @@ export const createConnectOnboardingSession = action({
           type: "express",
           country: connectCountry(),
           email: prep.email,
-          capabilities: {
-            transfers: { requested: true },
-          },
+          capabilities: expressConnectCapabilities(),
           metadata: {
             creatorId: prep.creatorId,
             userId,

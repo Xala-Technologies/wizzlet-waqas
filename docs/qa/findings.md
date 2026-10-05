@@ -1,3 +1,18 @@
+# Findings — Wave 48 Connect Express live on Prizlett sandbox 2026-10-05
+
+Branch `feat/world-ready-wave-48-connect-express-capabilities`. Fixture `j2creator` / `j2creator+wave7@example.com` on `combative-mongoose-559`. Platform Stripe `acct_1UCIO0RpY5TupxHC` (Prizlett sandbox).
+
+| Step | Result | Evidence |
+|------|--------|----------|
+| Dashboard Connect | PASS | Marketplace model “You collect payments and pay recipients”; Accounts v1 support **Enabled** |
+| Express create | PASS | US Express needs `card_payments`+`transfers`; Account Links return `connect.stripe.com/setup/e/…` |
+| Creator soak | PASS | Connect Stripe → `acct_1UN8ktRyfauxBCWX`; `?connect=return` UI **Continue Stripe onboarding** |
+| Unit | PASS | `stripeConnect.security.test.ts` 8/8 |
+
+**Residual:** Express KYC not finished; **transfers not implemented**; two probe accounts from API (`acct_1UN8i3RrQKtZfV1Y` US, `acct_1UN8i7RpIyPG9dcW` NO).
+
+---
+
 # Findings — Wave 47 dashboardStats indexed money/cases 2026-10-05
 
 Branch `fix/world-ready-wave-47-dashboard-stats-indexes`. Admin soak `admin@prizelet.dev` on `combative-mongoose-559`.
