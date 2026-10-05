@@ -2,7 +2,7 @@
 
 **Authority:** [`docs/ai/prizelet-world-ready-master-prompt.md`](./prizelet-world-ready-master-prompt.md)
 
-**Status:** Wave 34 referral commission accrual 2026-10-05. Product is **not** world-ready (other P2s remain).
+**Status:** Wave 35 account-request fulfillment 2026-10-05. Product is **not** world-ready (other P2s remain).
 
 Do not claim world-ready until Section 8 gates in the master prompt pass.
 
@@ -16,11 +16,11 @@ Do not claim world-ready until Section 8 gates in the master prompt pass.
 | Evidence | branch, date, one-line actual vs expected |
 | Waiver | owner + reason (required if WAIVED) |
 
-Last updated: 2026-10-05. Last wave: **34** (`test/world-ready-wave-34-referral-commission`). Source pin: `bf85281` (inventory).
+Last updated: 2026-10-05. Last wave: **35** (`test/world-ready-wave-35-account-request-fulfillment`). Source pin: `bf85281` (inventory).
 
-Wave 34: platform `referralCommissionPercent` (default 10%) accrues `commissionEarnedCents` on referred Checkout. Soak: `j6comm+wave34` `?ref=j2creator-jn73sz` Checkout `cs_test_a1hmxS…` → row **$1.49** / Rewards paid **$1** / rate **10%**. Cash payout still manual/Connect. Units `referralCommission.test.ts` 3/3.
+Wave 35: admin `resolveAdmin` fulfill/reject on `/admin/users`. Email fulfill rotates `users.email` + password `providerAccountId`, clears sessions — soak `j4member+wave9` → `j4member+wave12` then login OK. Deletion fulfill soft-deletes throwaway `j35del` (auth/roles stripped, anonymized). Reject path on `j6oauth` deletion (fixture preserved). Units `accountRequests.security.test.ts` 3/3.
 
-Wave 33: link conversions PASS. Wave 32: saved posts + admin requests PASS.
+Wave 34: referral commission accrual PASS. Wave 33: link conversions PASS.
 
 ---
 
@@ -158,7 +158,7 @@ Nested layouts in `App.tsx`: `/demo/admin` → `DemoAdminLayout`; `/demo/member`
 | J4 | Messages / support / resolution | PASS | Wave 9 2026-10-05: `j4creator`/`j4member` Stripe sub; DM + creator unread/reply; support/resolution/growth admin replies; messaging off deny; cancel → `FORBIDDEN` on send. Unit `messaging.security.test.ts` 6/6. Fix: messaging toggle on populated CreatorMessages inbox. Residual: UI composer still shown when gated (server enforces) |
 | J5 | Payout request / approve / balance | PASS | Wave 10 request/approve; Wave 25 2026-10-05: admin Lifetime from settled `paymentEvents` (cancelled j4member sub still counts) — `j4creator` Lifetime **$28.49** / Paid $28.49. `payoutBalance.test.ts` 6/6. Residual: Connect live transfers still out of scope |
 | J6 | Promo / tracking links / referrals | PASS | Wave 11/29/30/33; Wave 34 2026-10-05: referred Checkout accrues commission (**$1.49** at 10% on $14.99). Residual: cash payout still manual/Connect |
-| J7 | Identity (password, OAuth, roles, email request) | PASS | Wave 12/27/28; Wave 30 AuthCallback referral apply. Residual: X/Twitter OAuth consent not browser-completed (`socialProviders.twitter: true` but no agent X login) |
+| J7 | Identity (password, OAuth, roles, email request) | PASS | Wave 12/27/28/30; Wave 35 admin email fulfill + soft-delete. Residual: X/Twitter OAuth consent not browser-completed; no member self-serve verified email OTP |
 | J8 | Migration ETL internal-only | PASS | Wave 13 2026-10-05: all migration exports `internalMutation`; client has zero import refs; `MIGRATION_SECRET` unset on combative-mongoose-559; `migrations.security.test.ts` 3/3. Residual: historical data parity not claimed |
 | J9 | Public nav + chrome | PASS | Wave 2: public-nav + browser-matrix on chromium/webkit/firefox; platform-owner bootstrap visible in DEV |
 | J-ADMIN | Admin lists, fees, reports, campaigns | PASS | Wave 16 2026-10-05: users/creators paginated; fees analytics; CSV export; campaigns in-app-only honesty; alerts strip |
@@ -220,6 +220,7 @@ App public functions (`Auth` = TBD until Wave 1):
 | `accountRequests.listOpenAdmin` | admin | yes | PASS | Wave 32: `/admin/users` Open account requests — 2 open (j4member email-change + j6oauth deletion) |
 | `accountRequests.requestAccountDeletion` | subscriber | yes | PASS | Wave 31: Settings → Request deletion → status **open** |
 | `accountRequests.requestEmailChange` | auth | yes | PASS | Wave 12: request `j4member+wave12@example.com`; sign-in email unchanged |
+| `accountRequests.resolveAdmin` | admin | yes | PASS | Wave 35: fulfill email + fulfill deletion + reject; cannot resolve own |
 | `admin.exportReports.exportReportBundle` | admin | yes | PASS | Wave 16: creators CSV `creators_2026-10-04.csv` |
 | `admin.paginatedLists.listCampaignsPage` | TBD | yes | NOT_RUN | frozen vs convex/*.ts @ bf85281 |
 | `admin.paginatedLists.listCasesPage` | TBD | yes | NOT_RUN | frozen vs convex/*.ts @ bf85281 |
@@ -419,7 +420,7 @@ Confirm each table still exists; note writers. Result `NOT_RUN` = existence free
 | emailCampaigns | admin | PASS | Wave 16: Announcements UI honest — in-app only, email outbox not enabled |
 | fileAssets | files/storage | PASS | Wave 14: registerOwnedFile + owner getUrl; foreign denied |
 | migrationCheckpoints / mutationLog | migrations/* internal | NOT_RUN | present in convex/schema.ts @ bf85281; existence freeze only |
-| accountRequests | accountRequests | PASS | Wave 12: email_change open for j4member; sign-in email not mutated in-app |
+| accountRequests | accountRequests | PASS | Wave 35: resolveAdmin fulfill/reject; email rotate + soft-delete |
 | discordBotInstalls / discordAccessGrants | discord/* | PASS | Wave 27: install nonce + grant row granted then revoked for prize262626 |
 
 Schema `appRole` also allows `moderator` and `user` (not product actors; no routes).
@@ -432,7 +433,7 @@ Schema `appRole` also allows `moderator` and `user` (not product actors; no rout
 
 ## M. Remaining risk (update every fix PR)
 
-- P2: Stripe Connect live transfers still unimplemented (Wave 22 honesty PASS — ledger/manual only); referral commission accrues but cash payout still manual/Connect (Wave 34); J7 X/Twitter OAuth consent not browser-completed; account-request fulfillment still manual (queue UI shipped Wave 32); historical migration data parity BLOCKED (greenfield)
+- P2: Stripe Connect live transfers still unimplemented (Wave 22 honesty PASS — ledger/manual only); referral commission accrues but cash payout still manual/Connect (Wave 34); J7 X/Twitter OAuth consent not browser-completed; account-request admin fulfill PASS (Wave 35) — residual: no member self-serve verified email OTP; Stripe remote cancel not part of deletion fulfill; historical migration data parity BLOCKED (greenfield)
 - P3: admin user/creator spend metrics cap at 200 indexed rows; customer pages scan ≤5k subscriptions; eslint warnings; AuthContext DEV `hasRole` leftover; All Accounts table shows a single primary role even when `userRoles` is multi
 - Not in this PR: production deploy, live Stripe keys, MFA
 - Waivers: see section L

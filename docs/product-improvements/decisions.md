@@ -20,9 +20,9 @@ Notes:
 
 ## Email change
 
-- Full Convex Auth email rotation: **BLOCKED** until a verified provider change-email flow exists.
-- Disposition: authenticated `accountRequests` row (`category: email_change`) + `mutationLog`; admin reviews manually.
-- UI must not claim the email was changed.
+- Member self-serve verified email OTP: still **not** implemented.
+- Disposition: authenticated `accountRequests` row (`category: email_change`) + admin `resolveAdmin` fulfill rotates profile email and password `providerAccountId` (when present), clears sessions; reject closes without changes.
+- UI must not claim the email was changed until an admin fulfills the request.
 
 ## Settled record lock
 
