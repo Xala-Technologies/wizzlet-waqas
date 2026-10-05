@@ -1,5 +1,6 @@
 import { query } from "../_generated/server";
 import { getCreatorForUser, requireAppUser } from "../lib/auth";
+import { ADMIN_SCAN_MAX_DOCS } from "../lib/adminLists";
 import { yearMonthKey } from "../lib/commerceIdentity";
 import { resolveCreatorFeePolicy } from "../lib/money";
 import { creatorEarningsValidator } from "../lib/validators";
@@ -51,6 +52,8 @@ export const myEarnings = query({
         monthly: [] as { month: string; revenueCents: number }[],
         recentPayments: [],
         feePolicy: emptyFeePolicy(),
+        truncated: false,
+        listLimit: ADMIN_SCAN_MAX_DOCS,
       };
     }
 
@@ -59,7 +62,7 @@ export const myEarnings = query({
     const subs = await ctx.db
       .query("subscriptions")
       .withIndex("by_creatorId", (q) => q.eq("creatorId", creator._id))
-      .collect();
+      .take(ADMIN_SCAN_MAX_DOCS);
     const active = subs.filter((s) => s.status === "active");
     const grossCents = active.reduce((a, b) => a + b.amountCents, 0);
     const feeCents = active.reduce((a, b) => a + b.platformFeeCents, 0);
@@ -68,7 +71,10 @@ export const myEarnings = query({
     const events = await ctx.db
       .query("paymentEvents")
       .withIndex("by_creatorId", (q) => q.eq("creatorId", creator._id))
-      .collect();
+      .take(ADMIN_SCAN_MAX_DOCS);
+    const truncated =
+      subs.length >= ADMIN_SCAN_MAX_DOCS ||
+      events.length >= ADMIN_SCAN_MAX_DOCS;
     const sorted = events
       .filter((e) => e.paymentMode !== "sandbox")
       .sort((a, b) => b.createdAt - a.createdAt);
@@ -137,6 +143,8 @@ export const myEarnings = query({
       monthly,
       recentPayments,
       feePolicy,
+      truncated,
+      listLimit: ADMIN_SCAN_MAX_DOCS,
     };
   },
 });

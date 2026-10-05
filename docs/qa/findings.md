@@ -1,3 +1,18 @@
+# Findings — Wave 60 creator earnings capped reads 2026-10-05
+
+Branch `fix/world-ready-wave-60-creator-earnings-cap`. Convex soak on `combative-mongoose-559`.
+
+| Step | Result | Evidence |
+|------|--------|----------|
+| Query | PASS | `myEarnings` / `countActiveByCreator` / `listForMyCreator` `.take(ADMIN_SCAN_MAX_DOCS)`; no `.collect` |
+| UI | PASS | Creator Earnings amber note when `truncated` |
+| Data soak | PASS | max subs/creator **10**, events/creator **12** |
+| Unit | PASS | `creatorEarningsCap.security.test.ts` 2/2 |
+
+**Residual:** Connect KYC/currency; referral cash outside Stripe; email OTP (no mailer).
+
+---
+
 # Findings — Wave 59 creator balance capped reads 2026-10-05
 
 Branch `fix/world-ready-wave-59-creator-balance-cap`. Convex soak on `combative-mongoose-559`.

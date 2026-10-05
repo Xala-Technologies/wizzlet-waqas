@@ -2,7 +2,7 @@
 
 **Authority:** [`docs/ai/prizelet-world-ready-master-prompt.md`](./prizelet-world-ready-master-prompt.md)
 
-**Status:** Wave 59 creator balance capped reads 2026-10-05. Product is **not** world-ready.
+**Status:** Wave 60 creator earnings capped reads 2026-10-05. Product is **not** world-ready.
 
 Do not claim world-ready until Section 8 gates in the master prompt pass.
 
@@ -16,7 +16,9 @@ Do not claim world-ready until Section 8 gates in the master prompt pass.
 | Evidence | branch, date, one-line actual vs expected |
 | Waiver | owner + reason (required if WAIVED) |
 
-Last updated: 2026-10-05. Last wave: **59** (`fix/world-ready-wave-59-creator-balance-cap`). Source pin: `bf85281` (inventory).
+Last updated: 2026-10-05. Last wave: **60** (`fix/world-ready-wave-60-creator-earnings-cap`). Source pin: `bf85281` (inventory).
+
+Wave 60: `myEarnings` / `countActiveByCreator` / `listForMyCreator` use capped indexed takes (no `.collect`). Earnings returns `truncated`. Soak max subs/creator **10**, events/creator **12**. Units `creatorEarningsCap.security.test.ts` 2/2.
 
 Wave 59: `getCreatorAvailableBalanceCents` takes events/payouts (no `.collect`); returns `truncated`; requestPayout refuses `BALANCE_TRUNCATED`. Soak max events/creator **12**, payouts/creator **2**. Units `creatorBalanceCap.security.test.ts` 2/2 + `payoutBalance.test.ts` 6/6.
 
@@ -289,7 +291,7 @@ App public functions (`Auth` = TBD until Wave 1):
 | `bookmarks.mutations.listSavedPosts` | subscriber | yes | PASS | Wave 31: Saved Posts (0) live query on `/dashboard/saved?demo=0` |
 | `bookmarks.mutations.toggleCreatorBookmark` | subscriber | yes | PASS | Wave 31: profile Bookmark → creatorBookmarks row; Discover control |
 | `bookmarks.mutations.toggleSavedPost` | subscriber | yes | PASS | Wave 32: feed Save → Unsave + `/dashboard/saved` Saved Posts (1) J3 PUSH PICK |
-| `creators.earnings.myEarnings` | TBD | yes | NOT_RUN | frozen vs convex/*.ts @ bf85281 |
+| `creators.earnings.myEarnings` | creator | yes | PASS | Wave 60: capped by_creatorId takes + truncated; UI amber on Earnings |
 | `creators.growth.getLinkPublic` | TBD | yes | NOT_RUN | frozen vs convex/*.ts @ bf85281 |
 | `creators.growth.listMyLinks` | creator | yes | PASS | Wave 33: Links table shows Wave33 Bio live row |
 | `creators.growth.listMyPromos` | TBD | yes | NOT_RUN | frozen vs convex/*.ts @ bf85281 |
@@ -392,7 +394,7 @@ App public functions (`Auth` = TBD until Wave 1):
 | `roles.mutations.grantRole` | admin | yes | PASS | Wave 28: admin granted `subscriber` to `j2creator` (`n179g48…`); roles `[creator, subscriber]` |
 | `roles.mutations.grantTestAdmin` | requireAppUser + ALLOW_DEV_ADMIN_GRANT + allowlist | yes | PASS | Wave 16/28: Sign in as platform owner → `/admin` |
 | `roles.mutations.myRoles` | authenticated | yes | PASS | Wave 28: RoleSwitcher rendered only after dual roles present |
-| `subscriptions.mutations.countActiveByCreator` | TBD | yes | NOT_RUN | frozen vs convex/*.ts @ bf85281 |
+| `subscriptions.mutations.countActiveByCreator` | public | no | PASS | Wave 60: capped `by_creatorId` take then filter active |
 | `subscriptions.mutations.listAllAdmin` | TBD | yes | NOT_RUN | frozen vs convex/*.ts @ bf85281 |
 | `subscriptions.mutations.listForMyCreator` | TBD | yes | NOT_RUN | frozen vs convex/*.ts @ bf85281 |
 | `subscriptions.mutations.listSubscribersDetailed` | TBD | yes | NOT_RUN | frozen vs convex/*.ts @ bf85281 |

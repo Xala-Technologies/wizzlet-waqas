@@ -14,7 +14,7 @@ import {
   subscriptionWithCreatorValidator,
   subscriptionWithUserValidator,
 } from "../lib/validators";
-import { adminTakeNewest } from "../lib/adminLists";
+import { ADMIN_SCAN_MAX_DOCS, adminTakeNewest } from "../lib/adminLists";
 
 async function loadFeeSettings(ctx: MutationCtx) {
   const row = await ctx.db
@@ -85,7 +85,7 @@ export const mySubscriptions = query({
   },
 });
 
-/** Public active subscriber count for creator profiles. */
+/** Public active subscriber count for creator profiles (capped indexed take). */
 export const countActiveByCreator = query({
   args: { creatorId: v.id("creators") },
   returns: v.number(),
@@ -95,7 +95,7 @@ export const countActiveByCreator = query({
     const subs = await ctx.db
       .query("subscriptions")
       .withIndex("by_creatorId", (q) => q.eq("creatorId", args.creatorId))
-      .collect();
+      .take(ADMIN_SCAN_MAX_DOCS);
     return subs.filter((s) => s.status === "active").length;
   },
 });
@@ -247,7 +247,7 @@ export const listForMyCreator = query({
     return ctx.db
       .query("subscriptions")
       .withIndex("by_creatorId", (q) => q.eq("creatorId", creator._id))
-      .collect();
+      .take(ADMIN_SCAN_MAX_DOCS);
   },
 });
 
