@@ -1,5 +1,5 @@
 import { cn } from '@/lib/utils';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useAction, useMutation, usePaginatedQuery, useQuery } from 'convex/react';
 import { api } from '../../convex/_generated/api';
 import type { Id } from '../../convex/_generated/dataModel';
@@ -49,6 +49,7 @@ const fmtDate = (d: number | null) =>
 
 const AdminPayouts = () => {
   const [busyId, setBusyId] = useState<string | null>(null);
+  const [stripeBalanceNote, setStripeBalanceNote] = useState<string | null>(null);
 
   const overview = useQuery(api.admin.snapshots.payoutsOverview);
   const {
@@ -63,9 +64,38 @@ const AdminPayouts = () => {
   const createPayoutMutation = useMutation(api.payouts.mutations.createAdmin);
   const setStatusMutation = useMutation(api.payouts.mutations.setStatusAdmin);
   const sendConnectPayout = useAction(api.payments.stripeNode.sendConnectPayout);
+  const getConnectPlatformBalance = useAction(
+    api.payments.stripeNode.getConnectPlatformBalance,
+  );
   const unpaidCommissions = useQuery(api.creators.growth.listUnpaidCommissionsAdmin);
   const markCommissionPaid = useMutation(api.creators.growth.markCommissionPaidAdmin);
   const platformSettings = useQuery(api.platform.mutations.get);
+
+  useEffect(() => {
+    let cancelled = false;
+    void getConnectPlatformBalance({})
+      .then((bal) => {
+        if (cancelled) return;
+        const available = bal.available
+          .map((row) => `${row.currency.toUpperCase()} ${(row.amount / 100).toFixed(2)}`)
+          .join(', ');
+        setStripeBalanceNote(
+          bal.ledgerCurrencyAvailable
+            ? `Live Stripe available: ${available || 'none'}. Ledger currency ${bal.ledgerCurrency.toUpperCase()} is funded for Connect Transfers.`
+            : `Live Stripe available: ${available || 'none'}. Ledger is ${bal.ledgerCurrency.toUpperCase()} — Send via Stripe will refuse until a ${bal.ledgerCurrency.toUpperCase()} available balance exists (do not treat NOK as USD cents).`,
+        );
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setStripeBalanceNote(
+            'Could not load live Stripe balance. Send via Stripe still requires Express payouts_enabled plus matching USD available funds.',
+          );
+        }
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [getConnectPlatformBalance]);
 
   const payoutDefaults = (platformSettings?.payoutDefaults ?? {}) as Record<string, unknown>;
   const minPayoutDollars = Number(payoutDefaults.minPayoutAmount ?? payoutDefaults.min_payout_amount ?? 0);
@@ -227,8 +257,20 @@ const AdminPayouts = () => {
           Treasury ledger plus optional Stripe Connect transfers
         </p>
         <p className="text-muted-foreground text-xs mt-1">
-          Mark paid in ledger does not move money. Send via Stripe creates a Connect Transfer only when the creator’s Express account can receive payouts and the platform balance is in that currency.
+          Mark paid in ledger does not move money. Send via Stripe creates a real Connect Transfer only when the creator’s Express account has payouts enabled and platform available balance matches the USD ledger (never NOK øre for USD cents).
         </p>
+        {stripeBalanceNote && (
+          <p
+            className={cn(
+              'text-caption mt-2',
+              stripeBalanceNote.includes('will refuse')
+                ? 'text-amber-600'
+                : 'text-muted-foreground',
+            )}
+          >
+            {stripeBalanceNote}
+          </p>
+        )}
         {Number.isFinite(minPayoutDollars) && minPayoutDollars > 0 && (
           <p className="text-caption text-muted-foreground mt-1">Minimum payout: ${minPayoutDollars.toFixed(2)}</p>
         )}

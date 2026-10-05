@@ -134,7 +134,9 @@ const CreatorPayouts = () => {
       try {
         if (connectParam === 'return') {
           await refreshConnect({});
-          toast.success('Stripe Connect status updated. Automatic transfers are not live yet.');
+          toast.success(
+            'Stripe Connect status updated. Admin can Send via Stripe only after Express payouts are enabled and the platform holds USD.',
+          );
           return;
         }
         await createConnectOnboardingLink();
@@ -339,12 +341,16 @@ const CreatorPayouts = () => {
         </div>
       ) : (
         <div className="clay-card mb-6 px-4 py-3.5 text-sm text-muted-foreground sm:px-5">
-          Withdrawals update the Prizelet ledger. Automatic Stripe transfers are not live yet
+          Withdrawals update the Prizelet ledger (USD). Admins send approved payouts with a real
+          Stripe Connect Transfer when your Express account can receive payouts and the platform
+          has matching USD available
           {connectStatus?.stripeAccountId
-            ? ` — Express account ${connectStatus.stripeAccountId} is stored${
-                connectStatus.payoutsEnabled ? ' and payouts are enabled on Stripe' : ''
+            ? ` — Express ${connectStatus.stripeAccountId}${
+                connectStatus.payoutsEnabled
+                  ? ' is payouts-enabled'
+                  : ' still needs Stripe KYC (payouts not enabled)'
               }.`
-            : '. Connect Stripe Express below to start onboarding.'}
+            : '. Connect Stripe Express below to start KYC.'}
           {balanceTruncation ? (
             <p className="mt-2 text-amber-600 dark:text-amber-400">{balanceTruncation}</p>
           ) : null}
@@ -357,10 +363,10 @@ const CreatorPayouts = () => {
             <p className="text-sm font-extrabold tracking-tight text-foreground">Stripe Connect</p>
             <p className="mt-1 text-sm text-muted-foreground">
               {connectStatus?.payoutsEnabled
-                ? 'Express onboarding complete. Cash still moves via the ledger until transfers ship.'
+                ? 'Express payouts enabled. Approved withdrawals can be sent as Stripe Transfers when platform USD balance covers them.'
                 : connectStatus?.stripeAccountId
-                  ? 'Finish Stripe Express onboarding. Transfers are not sent automatically yet.'
-                  : 'Open Stripe Express onboarding. This stores your connected account — it does not send payouts yet.'}
+                  ? 'Finish Stripe Express KYC so this account can receive Connect Transfers.'
+                  : 'Open Stripe Express onboarding (USD / US Express for today’s ledger). KYC is required before any Transfer.'}
             </p>
           </div>
           <Button

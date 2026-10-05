@@ -16,6 +16,7 @@ import {
   isConnectTransferReference,
   isStripeAccountsV1DisabledError,
   isStripeConnectNotEnabledError,
+  PRIZELET_LEDGER_CURRENCY,
   resolveConnectTransferCurrency,
 } from "../lib/stripeConnect";
 
@@ -546,6 +547,11 @@ const connectStatusReturnValidator = v.object({
   payoutsEnabled: v.boolean(),
 });
 
+/**
+ * Express country for new connected accounts. Must match ledger/charge currency
+ * (USD → US by default). Do not default to the platform legal country (NO) while
+ * Checkout still prices in USD — that would invite NOK transfers of USD cents.
+ */
 function connectCountry(): string {
   const raw = process.env.STRIPE_CONNECT_COUNTRY?.trim().toUpperCase();
   return raw && /^[A-Z]{2}$/.test(raw) ? raw : "US";
@@ -579,7 +585,8 @@ function mapStripeConnectError(err: unknown): never {
 
 /**
  * Create (or reuse) a Stripe Express connected account and return an Account Link.
- * Does not move money — payouts remain ledger/manual until a later transfer wave.
+ * Does not move money. Admin Send via Stripe creates Transfers only after KYC
+ * (`payouts_enabled`) and USD ledger/balance/destination alignment.
  */
 export const createConnectOnboardingSession = action({
   args: {},
@@ -637,6 +644,50 @@ export const createConnectOnboardingSession = action({
     } catch (err) {
       mapStripeConnectError(err);
     }
+  },
+});
+
+/** Admin-only: live platform Stripe balance buckets (honest treasury view). */
+export const getConnectPlatformBalance = action({
+  args: {},
+  returns: v.object({
+    ledgerCurrency: v.string(),
+    available: v.array(
+      v.object({
+        amount: v.number(),
+        currency: v.string(),
+      }),
+    ),
+    pending: v.array(
+      v.object({
+        amount: v.number(),
+        currency: v.string(),
+      }),
+    ),
+    ledgerCurrencyAvailable: v.boolean(),
+  }),
+  handler: async (ctx) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) throw new Error("UNAUTHENTICATED");
+    await ctx.runQuery(internal.payments.stripeDb.assertAdminUserId, { userId });
+    const stripe = requireStripe();
+    const balance = await stripe.balance.retrieve();
+    const available = (balance.available ?? []).map((row) => ({
+      amount: row.amount,
+      currency: row.currency.toLowerCase(),
+    }));
+    const pending = (balance.pending ?? []).map((row) => ({
+      amount: row.amount,
+      currency: row.currency.toLowerCase(),
+    }));
+    return {
+      ledgerCurrency: PRIZELET_LEDGER_CURRENCY,
+      available,
+      pending,
+      ledgerCurrencyAvailable: available.some(
+        (row) => row.currency === PRIZELET_LEDGER_CURRENCY && row.amount > 0,
+      ),
+    };
   },
 });
 
@@ -710,7 +761,7 @@ export const sendConnectPayout = action({
         transferId: prep.reference as string,
         alreadySent: true,
         amountCents: prep.amountCents,
-        currency: "usd",
+        currency: PRIZELET_LEDGER_CURRENCY,
       };
     }
     if (prep.status === "completed" || prep.status === "paid") {
@@ -739,7 +790,8 @@ export const sendConnectPayout = action({
     try {
       const balance = await stripe.balance.retrieve();
       currency = resolveConnectTransferCurrency({
-        destinationCurrency: account.default_currency ?? "usd",
+        ledgerCurrency: PRIZELET_LEDGER_CURRENCY,
+        destinationCurrency: account.default_currency ?? PRIZELET_LEDGER_CURRENCY,
         amountCents: prep.amountCents,
         available: (balance.available ?? []).map((row) => ({
           amount: row.amount,

@@ -71,16 +71,26 @@ describe('stripe Connect Express helpers', () => {
     expect(isStripeAccountsV1DisabledError('card declined')).toBe(false);
   });
 
-  it('requires destination currency to exist on the platform balance', () => {
+  it('requires ledger, destination, and available balance currencies to match', () => {
     expect(() =>
       resolveConnectTransferCurrency({
+        ledgerCurrency: 'usd',
         destinationCurrency: 'usd',
+        amountCents: 100,
+        available: [{ amount: 25532, currency: 'nok' }],
+      }),
+    ).toThrow('STRIPE_CURRENCY_MISMATCH');
+    expect(() =>
+      resolveConnectTransferCurrency({
+        ledgerCurrency: 'usd',
+        destinationCurrency: 'nok',
         amountCents: 100,
         available: [{ amount: 25532, currency: 'nok' }],
       }),
     ).toThrow('STRIPE_CURRENCY_MISMATCH');
     expect(
       resolveConnectTransferCurrency({
+        ledgerCurrency: 'usd',
         destinationCurrency: 'usd',
         amountCents: 100,
         available: [{ amount: 500, currency: 'usd' }],
@@ -88,6 +98,7 @@ describe('stripe Connect Express helpers', () => {
     ).toEqual({ currency: 'usd' });
     expect(() =>
       resolveConnectTransferCurrency({
+        ledgerCurrency: 'usd',
         destinationCurrency: 'usd',
         amountCents: 600,
         available: [{ amount: 500, currency: 'usd' }],
@@ -119,6 +130,8 @@ describe('stripe Connect Express wiring', () => {
     expect(stripeNode).toMatch(/accountLinks\.create/);
     expect(stripeNode).toMatch(/type: "account_onboarding"/);
     expect(stripeNode).toMatch(/Does not move money/);
+    expect(stripeNode).toMatch(/PRIZELET_LEDGER_CURRENCY/);
+    expect(stripeNode).toMatch(/export const getConnectPlatformBalance/);
   });
 
   it('persists account id and capability flags on the creator', () => {

@@ -1,3 +1,20 @@
+# Findings — Wave 66 Connect currency honesty (no fake NOK↔USD) 2026-10-05
+
+Branch `fix/world-ready-wave-66-connect-currency-honesty`. Real Stripe soak on `combative-mongoose-559`.
+
+| Step | Result | Evidence |
+|------|--------|----------|
+| Platform | PASS | Stripe account **NO** / `default_currency=nok`; available **nok 25532**, pending **nok 248405** |
+| Ledger | PASS | Checkout + `paymentEvents.currency=usd`; pending payout **14240** USD cents |
+| Express | PASS | `acct_1UN8ktRyfauxBCWX` country **US** / usd / `payouts_enabled=false` (KYC incomplete) |
+| Transfer rule | PASS | `resolveConnectTransferCurrency` requires ledger===destination===available; refuses NOK-only balance for USD ledger |
+| UI | PASS | Creator/Admin copy no longer claims transfers “not built”; admin loads live balance note |
+| Env | PASS | `STRIPE_CONNECT_COUNTRY=US` (aligned with USD ledger, not platform legal NO) |
+
+**Residual:** Finish Express KYC for a US Express account **and** fund USD available (or migrate Checkout/prices/ledger to NOK end-to-end). No fake FX. Referral cash / email OTP still open.
+
+---
+
 # Findings — Wave 65 stripeDb/sandbox/migration collect caps 2026-10-05
 
 Branch `fix/world-ready-wave-65-stripeDb-sandbox-migration-caps`. Convex soak on `combative-mongoose-559`.
