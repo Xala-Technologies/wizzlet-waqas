@@ -10,7 +10,11 @@ import {
   resolutionCaseDocValidator,
   resolutionCaseMessageDocValidator,
 } from "../lib/validators";
-import { adminTakeNewest } from "../lib/adminLists";
+import {
+  ADMIN_JOIN_LIMIT,
+  ADMIN_SCAN_MAX_DOCS,
+  adminTakeNewest,
+} from "../lib/adminLists";
 import {
   createNotification,
   markNotificationsReadByLink,
@@ -32,7 +36,7 @@ export const listMine = query({
     return ctx.db
       .query("resolutionCases")
       .withIndex("by_creatorId", (q) => q.eq("creatorId", creator._id))
-      .collect();
+      .take(ADMIN_SCAN_MAX_DOCS);
   },
 });
 
@@ -145,7 +149,7 @@ export const listMessages = query({
     return ctx.db
       .query("resolutionCaseMessages")
       .withIndex("by_caseId", (q) => q.eq("caseId", args.caseId))
-      .collect();
+      .take(ADMIN_SCAN_MAX_DOCS);
   },
 });
 
@@ -171,13 +175,13 @@ export const unreadCountCreator = query({
     const cases = await ctx.db
       .query("resolutionCases")
       .withIndex("by_creatorId", (q) => q.eq("creatorId", creator._id))
-      .collect();
+      .take(ADMIN_SCAN_MAX_DOCS);
     let unread = 0;
     for (const c of cases) {
       const msgs = await ctx.db
         .query("resolutionCaseMessages")
         .withIndex("by_caseId", (q) => q.eq("caseId", c._id))
-        .collect();
+        .take(ADMIN_JOIN_LIMIT);
       unread += msgs.filter((m) => m.senderRole === "admin" && isUnread(m.read)).length;
     }
     return unread;

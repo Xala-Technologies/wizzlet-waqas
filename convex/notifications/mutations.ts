@@ -2,6 +2,7 @@ import { paginationOptsValidator, paginationResultValidator } from "convex/serve
 import { mutation, query } from "../_generated/server";
 import { ConvexError, v } from "convex/values";
 import { requireAdmin, requireAppUser, logMutation } from "../lib/auth";
+import { ADMIN_SCAN_MAX_DOCS } from "../lib/adminLists";
 import { notificationDocValidator } from "../lib/validators";
 
 /** Bounded list for secondary callers; prefer listMinePage for the Notifications UI. */
@@ -39,7 +40,7 @@ export const unreadCount = query({
     const unread = await ctx.db
       .query("notifications")
       .withIndex("by_userId_read", (q) => q.eq("userId", user._id).eq("read", false))
-      .collect();
+      .take(ADMIN_SCAN_MAX_DOCS);
     return unread.length;
   },
 });
@@ -64,7 +65,7 @@ export const markAllRead = mutation({
     const unread = await ctx.db
       .query("notifications")
       .withIndex("by_userId_read", (q) => q.eq("userId", user._id).eq("read", false))
-      .collect();
+      .take(ADMIN_SCAN_MAX_DOCS);
     for (const n of unread) {
       await ctx.db.patch(n._id, { read: true });
     }
