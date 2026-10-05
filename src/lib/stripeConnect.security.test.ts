@@ -4,6 +4,8 @@ import { describe, expect, it } from 'vitest';
 import {
   connectOnboardingUrls,
   connectStatusFromStripeAccount,
+  expressConnectCapabilities,
+  isStripeAccountsV1DisabledError,
   isStripeConnectNotEnabledError,
 } from '../../convex/lib/stripeConnect';
 
@@ -49,6 +51,22 @@ describe('stripe Connect Express helpers', () => {
     ).toBe(true);
     expect(isStripeConnectNotEnabledError('card declined')).toBe(false);
   });
+
+  it('requests card_payments with transfers for Express', () => {
+    expect(expressConnectCapabilities()).toEqual({
+      card_payments: { requested: true },
+      transfers: { requested: true },
+    });
+  });
+
+  it('detects Accounts v1 policy errors', () => {
+    expect(
+      isStripeAccountsV1DisabledError(
+        'Create connected accounts with POST /v2/core/accounts instead',
+      ),
+    ).toBe(true);
+    expect(isStripeAccountsV1DisabledError('card declined')).toBe(false);
+  });
 });
 
 describe('stripe Connect Express wiring', () => {
@@ -56,6 +74,7 @@ describe('stripe Connect Express wiring', () => {
     expect(stripeNode).toMatch(/export const createConnectOnboardingSession/);
     expect(stripeNode).toMatch(/getAuthUserId/);
     expect(stripeNode).toMatch(/type: "express"/);
+    expect(stripeNode).toMatch(/expressConnectCapabilities/);
     expect(stripeNode).toMatch(/accountLinks\.create/);
     expect(stripeNode).toMatch(/type: "account_onboarding"/);
     expect(stripeNode).toMatch(/Does not move money/);
@@ -72,5 +91,6 @@ describe('stripe Connect Express wiring', () => {
     expect(stripeClient).toMatch(/createConnectOnboardingSession/);
     expect(stripeClient).not.toMatch(/Payout onboarding via Stripe Connect is not enabled yet/);
     expect(stripeClient).toMatch(/STRIPE_CONNECT_NOT_ENABLED/);
+    expect(stripeClient).toMatch(/STRIPE_CONNECT_ACCOUNTS_V1_DISABLED/);
   });
 });

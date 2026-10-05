@@ -166,6 +166,12 @@ export async function createConnectOnboardingLink(_creatorId?: string): Promise<
       );
       return;
     }
+    if (message.includes('STRIPE_CONNECT_ACCOUNTS_V1_DISABLED')) {
+      toast.error(
+        'Stripe blocked Express account creation (Accounts v1 policy). Enable it in Dashboard API policies, or wait for Accounts v2. Payouts stay ledger/manual.',
+      );
+      return;
+    }
     if (message.includes('UNAUTHENTICATED') || message.includes('NOT_FOUND')) {
       toast.error('Sign in as a creator to connect Stripe.');
       return;
