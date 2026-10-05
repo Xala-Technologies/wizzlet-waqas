@@ -1,7 +1,7 @@
 import { FormEvent, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useQuery } from 'convex/react';
-import { Bell, ChevronDown, ExternalLink, HelpCircle, LogOut, Plus, Search } from 'lucide-react';
+import { Bell, ChevronDown, ExternalLink, HelpCircle, LogOut, Plus, Search, Settings } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { api } from '@convex/_generated/api';
 import { ThemeToggle } from '@/components/ThemeToggle';
@@ -198,6 +198,12 @@ export function CreatorTopBar() {
                 <Link to={publicProfileHref}>
                   <ExternalLink className="h-4 w-4" aria-hidden />
                   View public profile
+                </Link>
+              </DropdownMenuItem>
+              <DropdownMenuItem asChild className="cursor-pointer gap-2">
+                <Link to="/creator/settings">
+                  <Settings className="h-4 w-4" aria-hidden />
+                  Settings
                 </Link>
               </DropdownMenuItem>
               <DropdownMenuItem asChild className="cursor-pointer gap-2">
