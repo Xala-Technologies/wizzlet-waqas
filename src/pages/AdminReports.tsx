@@ -197,7 +197,7 @@ const AdminReports = () => {
     <DashboardLayout type="admin" mainClassName="bg-clay-page">
       <div className="mb-8">
         <p className="text-muted-foreground text-sm mt-0.5">
-          Generate CSV exports from Convex admin scans (newest-first).
+          Generate CSV exports from indexed creator, subscription, and payout takes (users newest-first).
         </p>
         <p className="text-amber-600 text-caption mt-2">
           {capNote ?? `Exports include up to ${ADMIN_SCAN_MAX_DOCS.toLocaleString()} newest rows per source table.`}

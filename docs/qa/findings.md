@@ -1,3 +1,17 @@
+# Findings — Wave 53 reportSourceData indexed 2026-10-05
+
+Branch `fix/world-ready-wave-53-report-source-indexes`. Admin soak `admin@prizelet.dev` on `combative-mongoose-559`.
+
+| Step | Result | Evidence |
+|------|--------|----------|
+| Query | PASS | no `adminScanAll`; `takeCreatorsByPublished` + sub/payout status takes; users `.take(ADMIN_SCAN_MAX_DOCS)` |
+| Unit | PASS | `reportSourceData.security.test.ts` 2/2 |
+| UI soak | PASS | `/admin/reports` CSVs generated; Convex tables users **34**, creators **9**, subscriptions **14**, payouts **4** |
+
+**Residual:** Connect KYC/currency; dashboardStats still caps users/creators/events at 5k.
+
+---
+
 # Findings — Wave 52 announcement audience indexed 2026-10-05
 
 Branch `fix/world-ready-wave-52-announcement-audience-indexes`. Admin soak `admin@prizelet.dev` on `combative-mongoose-559`.

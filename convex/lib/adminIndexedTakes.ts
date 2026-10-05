@@ -56,3 +56,20 @@ export async function takePaymentEventsByStatus(
     .take(ADMIN_SCAN_MAX_DOCS);
   return { docs, truncated: docs.length >= ADMIN_SCAN_MAX_DOCS };
 }
+
+export function mergeIndexedTakes<T extends { _id: string }>(
+  scans: { docs: T[]; truncated: boolean }[],
+): { docs: T[]; truncated: boolean } {
+  const seen = new Set<string>();
+  const docs: T[] = [];
+  let truncated = false;
+  for (const scan of scans) {
+    if (scan.truncated) truncated = true;
+    for (const doc of scan.docs) {
+      if (seen.has(doc._id)) continue;
+      seen.add(doc._id);
+      docs.push(doc);
+    }
+  }
+  return { docs, truncated };
+}
