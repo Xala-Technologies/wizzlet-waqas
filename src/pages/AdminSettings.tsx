@@ -211,7 +211,7 @@ const AdminSettings = () => {
             <strong>Current rule:</strong> New creators pay {settings.intro_fee_percent}% for the first{' '}
             {settings.intro_period_days} days, then {settings.standard_fee_percent}% after.
             Referred paid subscribes accrue {settings.referral_commission_percent}% commission
-            (cash payout still manual / Connect).
+            (admin marks paid on Payouts ledger; cash still settles outside until Connect).
           </p>
         </div>
       </div>

@@ -591,6 +591,8 @@ export const referralDocValidator = v.object({
   referredEmail: v.optional(v.string()),
   converted: v.boolean(),
   commissionEarnedCents: v.number(),
+  commissionPaidCents: v.optional(v.number()),
+  commissionPaidAt: v.optional(v.number()),
   createdAt: v.number(),
   updatedAt: v.number(),
 });

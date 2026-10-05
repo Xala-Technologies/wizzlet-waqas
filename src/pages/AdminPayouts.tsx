@@ -61,6 +61,8 @@ const AdminPayouts = () => {
   );
   const createPayoutMutation = useMutation(api.payouts.mutations.createAdmin);
   const setStatusMutation = useMutation(api.payouts.mutations.setStatusAdmin);
+  const unpaidCommissions = useQuery(api.creators.growth.listUnpaidCommissionsAdmin);
+  const markCommissionPaid = useMutation(api.creators.growth.markCommissionPaidAdmin);
   const platformSettings = useQuery(api.platform.mutations.get);
 
   const payoutDefaults = (platformSettings?.payoutDefaults ?? {}) as Record<string, unknown>;
@@ -159,6 +161,30 @@ const AdminPayouts = () => {
       toast.success(`Ledger marked ${status}`);
     } catch (e) {
       toast.error(e instanceof Error ? e.message : 'Failed to update payout');
+    } finally {
+      setBusyId(null);
+    }
+  };
+
+  const markReferralPaid = async (referralId: Id<'referrals'>, amountCents: number) => {
+    if (
+      !window.confirm(
+        `Mark $${(amountCents / 100).toFixed(2)} referral commission paid in the ledger? This does not move Stripe funds.`,
+      )
+    ) {
+      return;
+    }
+    setBusyId(referralId);
+    try {
+      const result = await markCommissionPaid({ referralId });
+      toast.success(
+        `Referral commission $${(result.commissionPaidCents / 100).toFixed(2)} marked paid`,
+      );
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : 'Failed to mark commission paid';
+      if (msg.includes('ALREADY_PAID')) toast.error('Already marked paid');
+      else if (msg.includes('NOTHING_TO_PAY')) toast.error('No accrued commission on this row');
+      else toast.error(msg);
     } finally {
       setBusyId(null);
     }
@@ -277,6 +303,56 @@ const AdminPayouts = () => {
               </table>
             </DesktopTableRegion>
           </>
+        )}
+      </div>
+
+      <div className="rounded-2xl border border-border bg-card shadow-[var(--shadow-card)] overflow-hidden mb-8">
+        <div className="p-4 border-b border-border bg-muted/30">
+          <h2 className="text-sm font-medium">Referral commissions (unpaid)</h2>
+          <p className="text-caption text-muted-foreground mt-0.5">
+            Accrued from referred Checkouts. Mark paid after cash settles outside Prizelet.
+          </p>
+        </div>
+        {unpaidCommissions === undefined ? (
+          <div className="flex justify-center py-8">
+            <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+          </div>
+        ) : unpaidCommissions.length === 0 ? (
+          <p className="text-sm text-muted-foreground text-center py-8">No unpaid referral commissions</p>
+        ) : (
+          <ul className="divide-y divide-border">
+            {unpaidCommissions.map((row) => (
+              <li
+                key={row._id}
+                className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between px-4 py-3"
+              >
+                <div className="min-w-0">
+                  <p className="text-sm font-medium truncate">{row.creatorName}</p>
+                  <p className="text-caption text-muted-foreground truncate">
+                    {row.referredEmail ?? 'Referred subscriber'}
+                  </p>
+                </div>
+                <div className="flex items-center gap-3 shrink-0">
+                  <span className="text-sm font-medium text-emerald-400 tabular-nums">
+                    {fmt(row.commissionEarnedCents / 100)}
+                  </span>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="h-9 text-caption"
+                    disabled={busyId === row._id}
+                    onClick={() => void markReferralPaid(row._id, row.commissionEarnedCents)}
+                  >
+                    {busyId === row._id ? (
+                      <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                    ) : (
+                      'Mark paid'
+                    )}
+                  </Button>
+                </div>
+              </li>
+            ))}
+          </ul>
         )}
       </div>
 
