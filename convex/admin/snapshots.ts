@@ -19,6 +19,39 @@ async function takeSubsByStatus(
   return { docs, truncated: docs.length >= ADMIN_SCAN_MAX_DOCS };
 }
 
+async function takePayoutsByStatus(
+  ctx: QueryCtx,
+  status: string,
+): Promise<{ docs: Doc<"payouts">[]; truncated: boolean }> {
+  const docs = await ctx.db
+    .query("payouts")
+    .withIndex("by_status", (q) => q.eq("status", status))
+    .take(ADMIN_SCAN_MAX_DOCS);
+  return { docs, truncated: docs.length >= ADMIN_SCAN_MAX_DOCS };
+}
+
+async function takeCasesByStatus(
+  ctx: QueryCtx,
+  status: string,
+): Promise<{ docs: Doc<"resolutionCases">[]; truncated: boolean }> {
+  const docs = await ctx.db
+    .query("resolutionCases")
+    .withIndex("by_status", (q) => q.eq("status", status))
+    .take(ADMIN_SCAN_MAX_DOCS);
+  return { docs, truncated: docs.length >= ADMIN_SCAN_MAX_DOCS };
+}
+
+async function takeCreatorsByPublished(
+  ctx: QueryCtx,
+  isPublished: boolean,
+): Promise<{ docs: Doc<"creators">[]; truncated: boolean }> {
+  const docs = await ctx.db
+    .query("creators")
+    .withIndex("by_published", (q) => q.eq("isPublished", isPublished))
+    .take(ADMIN_SCAN_MAX_DOCS);
+  return { docs, truncated: docs.length >= ADMIN_SCAN_MAX_DOCS };
+}
+
 const monthPointValidator = v.object({
   month: v.string(),
   revenue: v.number(),
@@ -294,8 +327,8 @@ export const feesOverview = query({
 });
 
 /**
- * Exact attention counts for Admin Alerts.
- * `nowMs` from client keeps the query deterministic (no Date.now in query).
+ * Attention counts from status/published indexes (F-012).
+ * Caps each bucket at ADMIN_SCAN_MAX_DOCS. Support unread still newest-capped (no read index).
  */
 export const alertsOverview = query({
   args: { nowMs: v.number() },
@@ -312,47 +345,65 @@ export const alertsOverview = query({
   }),
   handler: async (ctx, args) => {
     await requireAdmin(ctx);
-    const subsScan = await adminScanAll(ctx, "subscriptions");
-    const casesScan = await adminScanAll(ctx, "resolutionCases");
-    const supportScan = await adminScanAll(ctx, "supportMessages");
-    const payoutsScan = await adminScanAll(ctx, "payouts");
-    const creatorsScan = await adminScanAll(ctx, "creators");
-    const truncated =
-      subsScan.truncated ||
-      casesScan.truncated ||
-      supportScan.truncated ||
-      payoutsScan.truncated ||
-      creatorsScan.truncated;
+    const [
+      pastDue,
+      failed,
+      openCasesScan,
+      escalatedCases,
+      pendingPay,
+      processingPay,
+      requestedPay,
+      unpublished,
+      published,
+      activeSubs,
+    ] = await Promise.all([
+      takeSubsByStatus(ctx, "past_due"),
+      takeSubsByStatus(ctx, "failed"),
+      takeCasesByStatus(ctx, "open"),
+      takeCasesByStatus(ctx, "escalated"),
+      takePayoutsByStatus(ctx, "pending"),
+      takePayoutsByStatus(ctx, "processing"),
+      takePayoutsByStatus(ctx, "requested"),
+      takeCreatorsByPublished(ctx, false),
+      takeCreatorsByPublished(ctx, true),
+      takeSubsByStatus(ctx, "active"),
+    ]);
 
-    const failedPayments = subsScan.docs.filter(
-      (s) => s.status === "past_due" || s.status === "failed",
-    ).length;
-    const openCases = casesScan.docs.filter(
-      (c) => c.status === "open" || c.status === "escalated",
-    ).length;
-    const unreadMessages = supportScan.docs.filter(
+    const supportDocs = await ctx.db
+      .query("supportMessages")
+      .order("desc")
+      .take(ADMIN_SCAN_MAX_DOCS);
+    const supportTruncated = supportDocs.length >= ADMIN_SCAN_MAX_DOCS;
+
+    const truncated =
+      pastDue.truncated ||
+      failed.truncated ||
+      openCasesScan.truncated ||
+      escalatedCases.truncated ||
+      pendingPay.truncated ||
+      processingPay.truncated ||
+      requestedPay.truncated ||
+      unpublished.truncated ||
+      published.truncated ||
+      activeSubs.truncated ||
+      supportTruncated;
+
+    const failedPayments = pastDue.docs.length + failed.docs.length;
+    const openCases = openCasesScan.docs.length + escalatedCases.docs.length;
+    const unreadMessages = supportDocs.filter(
       (m) => m.senderRole === "creator" && !m.read,
     ).length;
-    const pendingPayouts = payoutsScan.docs.filter(
-      (p) =>
-        p.status === "pending" ||
-        p.status === "processing" ||
-        p.status === "requested",
-    );
-    const unpublishedCreators = creatorsScan.docs.filter((c) => !c.isPublished)
-      .length;
-
-    let inactiveCreators = 0;
-    for (const c of creatorsScan.docs) {
-      const days = Math.floor(
-        (args.nowMs - c.createdAt) / (1000 * 60 * 60 * 24),
-      );
-      if (days <= 30) continue;
-      const activeSubs = subsScan.docs.filter(
-        (s) => s.creatorId === c._id && s.status === "active",
-      );
-      if (activeSubs.length === 0) inactiveCreators += 1;
-    }
+    const pendingPayouts = [
+      ...pendingPay.docs,
+      ...processingPay.docs,
+      ...requestedPay.docs,
+    ];
+    const unpublishedCreators = unpublished.docs.length;
+    const activeCreatorIds = new Set(activeSubs.docs.map((s) => s.creatorId));
+    const inactiveCreators = published.docs.filter((c) => {
+      const days = Math.floor((args.nowMs - c.createdAt) / (1000 * 60 * 60 * 24));
+      return days > 30 && !activeCreatorIds.has(c._id);
+    }).length;
 
     return {
       failedPayments,
