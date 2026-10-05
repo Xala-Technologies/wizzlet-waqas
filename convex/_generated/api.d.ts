@@ -28,6 +28,7 @@ import type * as discord_roles from "../discord/roles.js";
 import type * as events_queries from "../events/queries.js";
 import type * as files_storage from "../files/storage.js";
 import type * as http from "../http.js";
+import type * as lib_adminIndexedTakes from "../lib/adminIndexedTakes.js";
 import type * as lib_adminLists from "../lib/adminLists.js";
 import type * as lib_auth from "../lib/auth.js";
 import type * as lib_commerceIdentity from "../lib/commerceIdentity.js";
@@ -98,6 +99,7 @@ declare const fullApi: ApiFromModules<{
   "events/queries": typeof events_queries;
   "files/storage": typeof files_storage;
   http: typeof http;
+  "lib/adminIndexedTakes": typeof lib_adminIndexedTakes;
   "lib/adminLists": typeof lib_adminLists;
   "lib/auth": typeof lib_auth;
   "lib/commerceIdentity": typeof lib_commerceIdentity;
