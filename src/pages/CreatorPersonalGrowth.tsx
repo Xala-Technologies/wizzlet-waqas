@@ -80,7 +80,7 @@ const CreatorPersonalGrowth = () => {
 
   const [input, setInput] = useState('');
   const [sending, setSending] = useState(false);
-  const endRef = useRef<HTMLDivElement>(null);
+  const listRef = useRef<HTMLDivElement>(null);
   const markedRef = useRef<Set<string>>(new Set());
 
   const sinceMs = Date.now() - 30 * 24 * 60 * 60 * 1000;
@@ -155,8 +155,11 @@ const CreatorPersonalGrowth = () => {
     };
   }, [subs, posts, analytics, sinceMs]);
 
+  // Keep the chat pane pinned to the latest message without scrolling the page shell.
   useEffect(() => {
-    endRef.current?.scrollIntoView({ behavior: 'smooth' });
+    const list = listRef.current;
+    if (!list) return;
+    list.scrollTop = list.scrollHeight;
   }, [messages]);
 
   const insights = useMemo(() => {
@@ -374,7 +377,7 @@ const CreatorPersonalGrowth = () => {
           ) : (
             <>
           <div className={cn(clayCard, 'flex max-h-[min(70vh,720px)] min-h-[420px] flex-1 flex-col overflow-hidden lg:max-h-none')}>
-            <div className="min-h-0 flex-1 space-y-3 overflow-y-auto p-4">
+            <div ref={listRef} className="min-h-0 flex-1 space-y-3 overflow-y-auto p-4">
               {messages.length === 0 ? (
                 <div className="flex h-full min-h-[200px] flex-col items-center justify-center px-4 py-10 text-center">
                   <Users className="mb-3 h-8 w-8 text-muted-foreground" />
@@ -425,7 +428,6 @@ const CreatorPersonalGrowth = () => {
                   </div>
                 ))
               )}
-              <div ref={endRef} />
             </div>
 
             <div className="hidden lg:block">{composer}</div>

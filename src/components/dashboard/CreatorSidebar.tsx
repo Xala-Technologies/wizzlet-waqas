@@ -159,7 +159,15 @@ function NavItemLink({
   dark: boolean;
 }) {
   return (
-    <Link to={item.href} className={sidebarNavItemClass(active, dark)}>
+    <Link
+      to={item.href}
+      preventScrollReset
+      onClick={(e) => {
+        // Already on this page — don't re-navigate (avoids main scroll jumping to top).
+        if (active) e.preventDefault();
+      }}
+      className={sidebarNavItemClass(active, dark)}
+    >
       <item.icon className={sidebarNavIconClass(active, dark)} />
       <span className="flex-1 truncate">{item.label}</span>
       {item.badge ? <span className={SIDEBAR_BADGE_CLASS}>{item.badge}</span> : null}
@@ -234,7 +242,14 @@ function ChildNavLink({
   badge?: string;
 }) {
   return (
-    <Link to={href} className={sidebarChildLinkClass(active, dark)}>
+    <Link
+      to={href}
+      preventScrollReset
+      onClick={(e) => {
+        if (active) e.preventDefault();
+      }}
+      className={sidebarChildLinkClass(active, dark)}
+    >
       <span className={sidebarChildDotClass(active)} aria-hidden />
       <span className="flex-1 truncate">{label}</span>
       {badge ? <span className={SIDEBAR_BADGE_CLASS}>{badge}</span> : null}

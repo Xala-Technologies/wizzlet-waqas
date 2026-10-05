@@ -57,7 +57,7 @@ const AdminGrowthManagerInbox = () => {
   const [sending, setSending] = useState(false);
   const [query, setQuery] = useState('');
   const markedRef = useRef<Set<string>>(new Set());
-  const endRef = useRef<HTMLDivElement>(null);
+  const listRef = useRef<HTMLDivElement>(null);
 
   const { results, status, loadMore } = usePaginatedQuery(
     api.admin.paginatedLists.listSupportMessagesPage,
@@ -144,8 +144,11 @@ const AdminGrowthManagerInbox = () => {
     });
   }, [active, markRead]);
 
+  // Keep the chat pane pinned to the latest message without scrolling the page shell.
   useEffect(() => {
-    endRef.current?.scrollIntoView({ behavior: 'smooth' });
+    const list = listRef.current;
+    if (!list) return;
+    list.scrollTop = list.scrollHeight;
   }, [active?.creatorId, active?.messages.length]);
 
   const openThread = (thread: Thread) => {
@@ -331,7 +334,10 @@ const AdminGrowthManagerInbox = () => {
                   </div>
                 </div>
 
-                <div className="flex-1 overflow-y-auto p-4 sm:p-5 space-y-3 bg-muted/20">
+                <div
+                  ref={listRef}
+                  className="flex-1 overflow-y-auto p-4 sm:p-5 space-y-3 bg-muted/20"
+                >
                   {active.messages.map((m) => {
                     const fromAdmin = m.sender_role === 'admin';
                     return (
@@ -368,7 +374,6 @@ const AdminGrowthManagerInbox = () => {
                       </div>
                     );
                   })}
-                  <div ref={endRef} />
                 </div>
 
                 <div className="border-t border-border p-3 sm:p-4 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
