@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { useMutation, usePaginatedQuery, useQuery } from 'convex/react';
+import { useAction, useMutation, usePaginatedQuery, useQuery } from 'convex/react';
 import { api } from '../../convex/_generated/api';
 import type { Id } from '../../convex/_generated/dataModel';
 import { DashboardLayout } from '@/components/dashboard/DashboardLayout';
@@ -47,6 +47,7 @@ const AdminUsers = () => {
   );
   const openRequests = useQuery(api.accountRequests.listOpenAdmin);
   const resolveRequest = useMutation(api.accountRequests.resolveAdmin);
+  const cancelStripeSubs = useAction(api.payments.stripeNode.cancelStripeSubscriptionsAdmin);
   const grantRoleMutation = useMutation(api.roles.mutations.grantRole);
   const [resolvingId, setResolvingId] = useState<string | null>(null);
 
@@ -144,18 +145,32 @@ const AdminUsers = () => {
     const confirmMsg =
       disposition === 'fulfill'
         ? category === 'account_deletion'
-          ? 'Fulfill deletion? This strips sign-in, roles, and anonymizes the profile. Stripe remote cancel is not included.'
+          ? 'Fulfill deletion? This strips sign-in, roles, anonymizes the profile, and best-effort cancels Stripe subscriptions.'
           : `Fulfill ${label}? This updates the profile email (and password login id when present) and signs the user out.`
         : `Reject this ${label} request?`;
     if (!window.confirm(confirmMsg)) return;
     setResolvingId(requestId);
     try {
       const result = await resolveRequest({ requestId, disposition });
-      toast.success(
-        result.status === 'fulfilled'
-          ? `${categoryLabel(result.category)} fulfilled`
-          : `${categoryLabel(result.category)} rejected`,
-      );
+      if (
+        result.status === 'fulfilled' &&
+        result.category === 'account_deletion' &&
+        result.stripeSubscriptionIds.length > 0
+      ) {
+        const cancel = await cancelStripeSubs({
+          stripeSubscriptionIds: result.stripeSubscriptionIds,
+          reason: `account_deletion:${requestId}`,
+        });
+        toast.success(
+          `Account deletion fulfilled · Stripe cancel ${cancel.canceled + cancel.alreadyCanceled}/${cancel.attempted}`,
+        );
+      } else {
+        toast.success(
+          result.status === 'fulfilled'
+            ? `${categoryLabel(result.category)} fulfilled`
+            : `${categoryLabel(result.category)} rejected`,
+        );
+      }
     } catch (e) {
       const msg = e instanceof Error ? e.message : 'Failed to resolve request';
       if (msg.includes('EMAIL_TAKEN')) toast.error('That email is already in use');

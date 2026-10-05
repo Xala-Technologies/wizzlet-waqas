@@ -31,4 +31,14 @@ describe('accountRequests security', () => {
     expect(src).toMatch(/clearAuthSessions/);
     expect(src).toMatch(/stripUserRoles/);
   });
+
+  it('deletion fulfill returns Stripe sub_* ids and schedules remote cancel', () => {
+    expect(src).toMatch(/stripeSubscriptionIds/);
+    expect(src).toMatch(/startsWith\("sub_"\)/);
+    expect(src).toMatch(/return stripeSubscriptionIds/);
+    expect(src).toMatch(
+      /internal\.payments\.stripeNode\.cancelStripeSubscriptionsBestEffort/,
+    );
+    expect(src).toMatch(/account_deletion:/);
+  });
 });

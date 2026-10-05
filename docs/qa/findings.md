@@ -1,3 +1,20 @@
+# Findings — Wave 41 deletion Stripe cancel 2026-10-05
+
+Branch `fix/world-ready-wave-41-deletion-stripe-cancel`. Fixtures `j41c`/`j41d`/`j41e` on `combative-mongoose-559`.
+
+| Step | Result | Evidence |
+|------|--------|----------|
+| Soft-delete fulfill | PASS | j41c/d/e → `deleted+…@prizelet.invalid`; local sub `cancelled`/`canceled` |
+| Return `sub_*` ids | PASS | `resolveAdmin` returns `stripeSubscriptionIds`; units assert |
+| Admin Stripe cancel action | PASS | `cancelStripeSubscriptionsAdmin` → `{canceled:1}` on live `sub_*` after deploy (`convex dev --once`) |
+| Scheduler backup | PASS (code) | `fulfillAccountDeletion` schedules `cancelStripeSubscriptionsBestEffort` |
+| Admin UI wiring | PASS | `AdminUsers` mutation + `useAction(cancelStripeSubscriptionsAdmin)` |
+| Unit | PASS | `accountRequests.security.test.ts` 4/4 |
+
+**Residual:** Connect live transfers; member self-serve verified email OTP.
+
+---
+
 # Findings — Wave 36 referral commission paid ledger 2026-10-05
 
 Branch `test/world-ready-wave-36-referral-commission-paid`. Fixture `j2creator` / `j6comm+wave34` on `combative-mongoose-559`.

@@ -2,6 +2,7 @@ import { mutation, query } from "./_generated/server";
 import { v } from "convex/values";
 import type { MutationCtx } from "./_generated/server";
 import type { Doc, Id } from "./_generated/dataModel";
+import { internal } from "./_generated/api";
 import { getCreatorForUser, requireAdmin, requireAppUser, logMutation } from "./lib/auth";
 
 const accountRequestDocValidator = v.object({
@@ -107,7 +108,11 @@ async function fulfillEmailChange(ctx: MutationCtx, req: Doc<"accountRequests">)
   await clearAuthSessions(ctx, req.userId);
 }
 
-async function fulfillAccountDeletion(ctx: MutationCtx, req: Doc<"accountRequests">) {
+/** Soft-delete locally; returns `sub_*` ids for the caller to cancel on Stripe. */
+async function fulfillAccountDeletion(
+  ctx: MutationCtx,
+  req: Doc<"accountRequests">,
+): Promise<string[]> {
   const user = await ctx.db.get(req.userId);
   if (!user) throw new Error("USER_NOT_FOUND");
 
@@ -125,8 +130,13 @@ async function fulfillAccountDeletion(ctx: MutationCtx, req: Doc<"accountRequest
     .query("subscriptions")
     .withIndex("by_userId", (q) => q.eq("userId", req.userId))
     .collect();
+  const stripeSubscriptionIds: string[] = [];
   for (const sub of activeSubs) {
     if (sub.status === "active" || sub.billingStatus === "cancel_pending") {
+      const stripeId = sub.stripeSubscriptionId;
+      if (typeof stripeId === "string" && stripeId.startsWith("sub_")) {
+        stripeSubscriptionIds.push(stripeId);
+      }
       await ctx.db.patch(sub._id, {
         status: "cancelled",
         billingStatus: "canceled",
@@ -148,6 +158,19 @@ async function fulfillAccountDeletion(ctx: MutationCtx, req: Doc<"accountRequest
     emailVerificationTime: undefined,
     updatedAt: now,
   });
+
+  // Backup path if the admin client cancel action is skipped/fails.
+  if (stripeSubscriptionIds.length > 0) {
+    await ctx.scheduler.runAfter(
+      0,
+      internal.payments.stripeNode.cancelStripeSubscriptionsBestEffort,
+      {
+        stripeSubscriptionIds,
+        reason: `account_deletion:${req._id}`,
+      },
+    );
+  }
+  return stripeSubscriptionIds;
 }
 
 /** Member/creator: request a sign-in email change (admin fulfillment via resolveAdmin). */
@@ -287,7 +310,8 @@ export const listOpenAdmin = query({
 /**
  * Admin: fulfill or reject an open account request.
  * Email fulfill rotates profile email + password providerAccountId (when present) and clears sessions.
- * Deletion fulfill strips auth/roles, unpublishes creator, cancels local active subs, anonymizes profile.
+ * Deletion fulfill strips auth/roles, unpublishes creator, cancels local active subs,
+ * anonymizes profile, and returns `sub_*` ids for the admin client to cancel on Stripe.
  */
 export const resolveAdmin = mutation({
   args: {
@@ -298,6 +322,7 @@ export const resolveAdmin = mutation({
   returns: v.object({
     status: v.union(v.literal("fulfilled"), v.literal("rejected")),
     category: v.string(),
+    stripeSubscriptionIds: v.array(v.string()),
   }),
   handler: async (ctx, args) => {
     const admin = await requireAdmin(ctx);
@@ -315,13 +340,18 @@ export const resolveAdmin = mutation({
         action: "resolveAdmin:reject",
         actorExternalAuthId: admin.externalAuthId,
       });
-      return { status: "rejected" as const, category: req.category };
+      return {
+        status: "rejected" as const,
+        category: req.category,
+        stripeSubscriptionIds: [],
+      };
     }
 
+    let stripeSubscriptionIds: string[] = [];
     if (req.category === "email_change") {
       await fulfillEmailChange(ctx, req);
     } else if (req.category === "account_deletion") {
-      await fulfillAccountDeletion(ctx, req);
+      stripeSubscriptionIds = await fulfillAccountDeletion(ctx, req);
     } else {
       throw new Error("UNSUPPORTED_CATEGORY");
     }
@@ -340,6 +370,10 @@ export const resolveAdmin = mutation({
       action: "resolveAdmin:fulfill",
       actorExternalAuthId: admin.externalAuthId,
     });
-    return { status: "fulfilled" as const, category: req.category };
+    return {
+      status: "fulfilled" as const,
+      category: req.category,
+      stripeSubscriptionIds,
+    };
   },
 });
