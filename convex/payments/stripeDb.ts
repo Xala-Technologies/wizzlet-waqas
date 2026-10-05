@@ -11,6 +11,19 @@ import {
 import { applySubscribeGrowthAttribution } from "../lib/growthAttribution";
 import type { Id } from "../_generated/dataModel";
 import { internal } from "../_generated/api";
+import { userHasRole } from "../lib/auth";
+
+/** Action auth helper: confirm Convex Auth userId holds the admin role. */
+export const assertAdminUserId = internalQuery({
+  args: { userId: v.id("users") },
+  returns: v.null(),
+  handler: async (ctx, args) => {
+    if (!(await userHasRole(ctx, args.userId, "admin"))) {
+      throw new ConvexError("FORBIDDEN");
+    }
+    return null;
+  },
+});
 
 async function loadFeeSettings(ctx: MutationCtx) {
   const row = await ctx.db

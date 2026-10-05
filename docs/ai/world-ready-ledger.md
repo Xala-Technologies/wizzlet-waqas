@@ -2,7 +2,7 @@
 
 **Authority:** [`docs/ai/prizelet-world-ready-master-prompt.md`](./prizelet-world-ready-master-prompt.md)
 
-**Status:** Wave 40 CRM cancelled label honesty 2026-10-05. Product is **not** world-ready (other P2s remain).
+**Status:** Wave 41 deletion Stripe cancel 2026-10-05. Product is **not** world-ready (other P2s remain).
 
 Do not claim world-ready until Section 8 gates in the master prompt pass.
 
@@ -16,11 +16,11 @@ Do not claim world-ready until Section 8 gates in the master prompt pass.
 | Evidence | branch, date, one-line actual vs expected |
 | Waiver | owner + reason (required if WAIVED) |
 
-Last updated: 2026-10-05. Last wave: **40** (`fix/world-ready-wave-40-crm-cancelled-label`). Source pin: `bf85281` (inventory).
+Last updated: 2026-10-05. Last wave: **41** (`fix/world-ready-wave-41-deletion-stripe-cancel`). Source pin: `bf85281` (inventory).
 
-Wave 40: Creator Messages CRM/header shows **Canceled · was Premium** for cancelled `j4member` (not bare Premium). Prefer active sub row when picking detail. Units `creatorMessageSubscriber.test.ts` 4/4.
+Wave 41: Admin deletion fulfill returns `sub_*` ids; `cancelStripeSubscriptionsAdmin` cancels Stripe (proven `canceled:1`); scheduler backup + soft-delete soaks on j41c/d/e. Units `accountRequests.security.test.ts` 4/4.
 
-Wave 39: gated composer PASS. Wave 38: X OAuth. Wave 37: multi-role.
+Wave 40: CRM cancelled label. Wave 39: gated composer. Wave 38: X OAuth.
 
 ---
 
@@ -158,7 +158,7 @@ Nested layouts in `App.tsx`: `/demo/admin` → `DemoAdminLayout`; `/demo/member`
 | J4 | Messages / support / resolution | PASS | Wave 9/39/40: composer gated; CRM **Canceled · was Premium** for cancelled j4member. Units messaging 7/7 + creatorMessageSubscriber 4/4 |
 | J5 | Payout request / approve / balance | PASS | Wave 10 request/approve; Wave 25 2026-10-05: admin Lifetime from settled `paymentEvents` (cancelled j4member sub still counts) — `j4creator` Lifetime **$28.49** / Paid $28.49. `payoutBalance.test.ts` 6/6. Residual: Connect live transfers still out of scope |
 | J6 | Promo / tracking links / referrals | PASS | Wave 11/29/30/33/34; Wave 36 2026-10-05: admin Mark paid ledger for accrued commission (**$1.49** → Paid). Residual: Stripe Connect cash movement still out of scope |
-| J7 | Identity (password, OAuth, roles, email request) | PASS | Wave 12/27/28/30/38; Wave 35 admin email fulfill + soft-delete; Wave 38 X OAuth consent → Prize `@prize2626` creator session. Residual: no member self-serve verified email OTP |
+| J7 | Identity (password, OAuth, roles, email request) | PASS | Wave 12/27/28/30/38; Wave 35 admin email fulfill + soft-delete; Wave 38 X OAuth; Wave 41 deletion fulfill → Stripe `cancelStripeSubscriptionsAdmin` cancels remote `sub_*`. Residual: no member self-serve verified email OTP |
 | J8 | Migration ETL internal-only | PASS | Wave 13 2026-10-05: all migration exports `internalMutation`; client has zero import refs; `MIGRATION_SECRET` unset on combative-mongoose-559; `migrations.security.test.ts` 3/3. Residual: historical data parity not claimed |
 | J9 | Public nav + chrome | PASS | Wave 2: public-nav + browser-matrix on chromium/webkit/firefox; platform-owner bootstrap visible in DEV |
 | J-ADMIN | Admin lists, fees, reports, campaigns | PASS | Wave 16 2026-10-05: users/creators paginated; fees analytics; CSV export; campaigns in-app-only honesty; alerts strip |
@@ -422,7 +422,7 @@ Confirm each table still exists; note writers. Result `NOT_RUN` = existence free
 | emailCampaigns | admin | PASS | Wave 16: Announcements UI honest — in-app only, email outbox not enabled |
 | fileAssets | files/storage | PASS | Wave 14: registerOwnedFile + owner getUrl; foreign denied |
 | migrationCheckpoints / mutationLog | migrations/* internal | NOT_RUN | present in convex/schema.ts @ bf85281; existence freeze only |
-| accountRequests | accountRequests | PASS | Wave 35: resolveAdmin fulfill/reject; email rotate + soft-delete |
+| accountRequests | accountRequests | PASS | Wave 35: fulfill/reject; Wave 41: deletion returns `stripeSubscriptionIds` + Stripe cancel admin action / scheduler |
 | discordBotInstalls / discordAccessGrants | discord/* | PASS | Wave 27: install nonce + grant row granted then revoked for prize262626 |
 
 Schema `appRole` also allows `moderator` and `user` (not product actors; no routes).
@@ -435,7 +435,7 @@ Schema `appRole` also allows `moderator` and `user` (not product actors; no rout
 
 ## M. Remaining risk (update every fix PR)
 
-- P2: Stripe Connect live transfers still unimplemented (Wave 22 honesty PASS — ledger/manual only); referral commission accrual + ledger Mark paid PASS (Wave 34/36) — cash still settles outside until Connect; J7 X OAuth consent PASS (Wave 38); account-request admin fulfill PASS (Wave 35) — residual: no member self-serve verified email OTP; Stripe remote cancel not part of deletion fulfill; historical migration data parity BLOCKED (greenfield)
+- P2: Stripe Connect live transfers still unimplemented (Wave 22 honesty PASS — ledger/manual only); referral commission accrual + ledger Mark paid PASS (Wave 34/36) — cash still settles outside until Connect; J7 X OAuth + deletion Stripe cancel PASS (Wave 38/41) — residual: no member self-serve verified email OTP; historical migration data parity BLOCKED (greenfield)
 - P3: admin user/creator spend metrics cap at 200 indexed rows; customer pages scan ≤5k subscriptions; eslint warnings; AuthContext DEV `hasRole` leftover; All Accounts multi-role PASS (Wave 37); messaging composer + CRM cancelled label PASS (Wave 39/40)
 - Not in this PR: production deploy, live Stripe keys, MFA
 - Waivers: see section L

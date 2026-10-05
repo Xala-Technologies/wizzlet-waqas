@@ -447,3 +447,85 @@ export const fulfillWebhook = internalAction({
     }
   },
 });
+
+async function cancelStripeSubscriptionsImpl(args: {
+  stripeSubscriptionIds: string[];
+  reason: string;
+}): Promise<{
+  attempted: number;
+  canceled: number;
+  alreadyCanceled: number;
+  failed: number;
+}> {
+  const ids = [
+    ...new Set(
+      args.stripeSubscriptionIds.filter((id) => typeof id === "string" && id.startsWith("sub_")),
+    ),
+  ];
+  if (ids.length === 0) {
+    return { attempted: 0, canceled: 0, alreadyCanceled: 0, failed: 0 };
+  }
+
+  const stripe = requireStripe();
+  let canceled = 0;
+  let alreadyCanceled = 0;
+  let failed = 0;
+  for (const stripeId of ids) {
+    try {
+      await stripe.subscriptions.cancel(stripeId);
+      canceled += 1;
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      if (isStripeAlreadyCanceledError(message)) {
+        alreadyCanceled += 1;
+      } else {
+        console.error(
+          `[stripe] deletion cancel failed ${stripeId} (${args.reason})`,
+          message.slice(0, 200),
+        );
+        failed += 1;
+      }
+    }
+  }
+  return { attempted: ids.length, canceled, alreadyCanceled, failed };
+}
+
+const cancelStripeResultValidator = v.object({
+  attempted: v.number(),
+  canceled: v.number(),
+  alreadyCanceled: v.number(),
+  failed: v.number(),
+});
+
+/**
+ * Best-effort Stripe cancels after admin account-deletion fulfill.
+ * Local subscription rows are already cancelled; this stops remote billing.
+ */
+export const cancelStripeSubscriptionsBestEffort = internalAction({
+  args: {
+    stripeSubscriptionIds: v.array(v.string()),
+    reason: v.string(),
+  },
+  returns: cancelStripeResultValidator,
+  handler: async (_ctx, args) => cancelStripeSubscriptionsImpl(args),
+});
+
+/**
+ * Admin-facing cancel after deletion fulfill (client calls this with returned `sub_*` ids).
+ */
+export const cancelStripeSubscriptionsAdmin = action({
+  args: {
+    stripeSubscriptionIds: v.array(v.string()),
+    reason: v.string(),
+  },
+  returns: cancelStripeResultValidator,
+  handler: async (ctx, args) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) throw new Error("UNAUTHENTICATED");
+    await ctx.runQuery(internal.payments.stripeDb.assertAdminUserId, { userId });
+    return cancelStripeSubscriptionsImpl({
+      stripeSubscriptionIds: args.stripeSubscriptionIds,
+      reason: args.reason.slice(0, 200),
+    });
+  },
+});
