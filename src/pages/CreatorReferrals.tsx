@@ -165,20 +165,29 @@ const CreatorReferrals = () => {
     if (useDemo) {
       return CREATOR_REFERRALS_DEMO_ROWS.map((r) => ({ ...r, isDemo: true }));
     }
-    return liveRows.map((r) => ({
-      id: r._id,
-      referrerName,
-      referrerHandle,
-      referredName: r.referredEmail ?? 'Subscriber',
-      referredHandle: r.referredEmail ? `@${r.referredEmail.split('@')[0]}` : '@user',
-      referredEmail: r.referredEmail ?? null,
-      plan: '—',
-      revenueCents: 0,
-      commissionCents: r.commissionEarnedCents ?? 0,
-      status: (r.converted ? 'approved' : 'pending') as DemoReferralStatus,
-      createdAtMs: r.createdAt,
-      isDemo: false,
-    }));
+    return liveRows.map((r) => {
+      const earned = r.commissionEarnedCents ?? 0;
+      const paid = r.commissionPaidCents ?? 0;
+      const status: DemoReferralStatus = !r.converted
+        ? 'pending'
+        : r.commissionPaidAt != null || (paid >= earned && earned > 0)
+          ? 'paid'
+          : 'approved';
+      return {
+        id: r._id,
+        referrerName,
+        referrerHandle,
+        referredName: r.referredEmail ?? 'Subscriber',
+        referredHandle: r.referredEmail ? `@${r.referredEmail.split('@')[0]}` : '@user',
+        referredEmail: r.referredEmail ?? null,
+        plan: '—',
+        revenueCents: 0,
+        commissionCents: earned,
+        status,
+        createdAtMs: r.createdAt,
+        isDemo: false,
+      };
+    });
   }, [useDemo, liveRows, referrerName, referrerHandle]);
 
   const filtered = useMemo(() => {
@@ -213,6 +222,11 @@ const CreatorReferrals = () => {
     [rows],
   );
 
+  const rewardsPaidCents = useMemo(() => {
+    if (useDemo) return CREATOR_REFERRALS_DEMO_METRICS.rewardsPaidCents;
+    return liveRows.reduce((sum, r) => sum + (r.commissionPaidCents ?? 0), 0);
+  }, [useDemo, liveRows]);
+
   const liveCommissionRatePct = normalizeReferralCommissionPercent(
     platformSettings?.referralCommissionPercent,
   );
@@ -226,8 +240,9 @@ const CreatorReferrals = () => {
         newSubscribersDelta: null as number | null,
         revenueCents: 0,
         revenueDelta: null as number | null,
-        rewardsPaidCents: accruedCommissionCents,
+        rewardsPaidCents,
         rewardsPaidDelta: null as number | null,
+        accruedCommissionCents,
         dateRangeLabel: 'Last 30 days',
         commissionRatePct: liveCommissionRatePct,
         cookieDays: null as number | null,
@@ -708,9 +723,19 @@ const CreatorReferrals = () => {
             <p className="mb-4 text-sm text-muted-foreground">
               {useDemo
                 ? 'Sample program rules for design review.'
-                : 'Commission accrues when a referred fan pays. Cash payout still uses the manual / Connect payout path.'}
+                : 'Commission accrues on paid referred checkouts. Rewards paid updates when an admin marks the ledger paid (cash still settles outside Prizelet until Connect).'}
             </p>
             <dl className="space-y-3 text-sm">
+              <div className="flex items-center justify-between gap-3">
+                <dt className="text-muted-foreground">Commission accrued</dt>
+                <dd className="font-semibold tabular-nums text-foreground">
+                  {!useDemo && accruedCommissionCents > 0
+                    ? money(accruedCommissionCents)
+                    : useDemo
+                      ? money(CREATOR_REFERRALS_DEMO_METRICS.rewardsPaidCents)
+                      : '—'}
+                </dd>
+              </div>
               <div className="flex items-center justify-between gap-3">
                 <dt className="text-muted-foreground">Commission rate</dt>
                 <dd className="font-semibold tabular-nums text-foreground">

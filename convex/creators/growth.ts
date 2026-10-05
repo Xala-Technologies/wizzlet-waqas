@@ -1,6 +1,12 @@
 import { internalQuery, mutation, query } from "../_generated/server";
 import { ConvexError, v } from "convex/values";
-import { getCreatorForUser, requireAppUser, requireCreatorOwner } from "../lib/auth";
+import {
+  getCreatorForUser,
+  logMutation,
+  requireAdmin,
+  requireAppUser,
+  requireCreatorOwner,
+} from "../lib/auth";
 import {
   isPromoRedeemable,
   isValidDiscountDuration,
@@ -338,5 +344,84 @@ export const recordReferral = mutation({
       createdAt: now,
       updatedAt: now,
     });
+  },
+});
+
+const unpaidCommissionRowValidator = v.object({
+  _id: v.id("referrals"),
+  creatorId: v.id("creators"),
+  creatorName: v.string(),
+  referredEmail: v.union(v.string(), v.null()),
+  commissionEarnedCents: v.number(),
+  createdAt: v.number(),
+  convertedAt: v.number(),
+});
+
+/** Admin: accrued referral commissions not yet marked paid in the ledger. */
+export const listUnpaidCommissionsAdmin = query({
+  args: {},
+  returns: v.array(unpaidCommissionRowValidator),
+  handler: async (ctx) => {
+    await requireAdmin(ctx);
+    const recent = await ctx.db.query("referrals").order("desc").take(200);
+    const unpaid = recent.filter(
+      (r) =>
+        r.converted &&
+        r.commissionEarnedCents > 0 &&
+        (r.commissionPaidAt === undefined || r.commissionPaidAt === null),
+    );
+    return Promise.all(
+      unpaid.map(async (row) => {
+        const creator = await ctx.db.get(row.creatorId);
+        return {
+          _id: row._id,
+          creatorId: row.creatorId,
+          creatorName: creator?.displayName ?? creator?.username ?? "Creator",
+          referredEmail: row.referredEmail ?? null,
+          commissionEarnedCents: row.commissionEarnedCents,
+          createdAt: row.createdAt,
+          convertedAt: row.updatedAt,
+        };
+      }),
+    );
+  },
+});
+
+/**
+ * Admin: mark referral commission paid in the Prizelet ledger.
+ * Does not move Stripe funds — cash still settles outside the app until Connect.
+ */
+export const markCommissionPaidAdmin = mutation({
+  args: {
+    referralId: v.id("referrals"),
+  },
+  returns: v.object({
+    commissionPaidCents: v.number(),
+    commissionPaidAt: v.number(),
+  }),
+  handler: async (ctx, args) => {
+    const admin = await requireAdmin(ctx);
+    const row = await ctx.db.get(args.referralId);
+    if (!row) throw new ConvexError("NOT_FOUND");
+    if (!row.converted || row.commissionEarnedCents <= 0) {
+      throw new ConvexError("NOTHING_TO_PAY");
+    }
+    if (row.commissionPaidAt != null) {
+      throw new ConvexError("ALREADY_PAID");
+    }
+    const now = Date.now();
+    const commissionPaidCents = row.commissionEarnedCents;
+    await ctx.db.patch(row._id, {
+      commissionPaidCents,
+      commissionPaidAt: now,
+      updatedAt: now,
+    });
+    await logMutation(ctx, {
+      table: "referrals",
+      documentId: row._id,
+      action: "markCommissionPaidAdmin",
+      actorExternalAuthId: admin.externalAuthId,
+    });
+    return { commissionPaidCents, commissionPaidAt: now };
   },
 });

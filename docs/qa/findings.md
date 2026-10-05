@@ -1,3 +1,18 @@
+# Findings — Wave 36 referral commission paid ledger 2026-10-05
+
+Branch `test/world-ready-wave-36-referral-commission-paid`. Fixture `j2creator` / `j6comm+wave34` on `combative-mongoose-559`.
+
+| Step | Result | Evidence |
+|------|--------|----------|
+| Unpaid admin queue | PASS | `/admin/payouts` Referral commissions — j2creator / j6comm **$1.49** |
+| Mark paid | PASS | `commissionPaidCents` **149** + `commissionPaidAt` set |
+| Creator honesty | PASS | `/creator/referrals?demo=0` accrued **$1.49**; Rewards paid **$1**; row status **Paid** |
+| Unit | PASS | `referralCommissionPaid.security.test.ts` 3/3 |
+
+**Commission cash residual:** Ledger Mark paid PASS. Next: Connect live transfers; X OAuth consent.
+
+---
+
 # Findings — Wave 35 account-request fulfillment 2026-10-05
 
 Branch `test/world-ready-wave-35-account-request-fulfillment`. Fixtures `j4member` / throwaway `j35del` on `combative-mongoose-559`.
