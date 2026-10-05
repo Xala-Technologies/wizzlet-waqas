@@ -1,6 +1,7 @@
 import { mutation, query } from "../_generated/server";
 import { v } from "convex/values";
 import { requireAppUser, logMutation } from "../lib/auth";
+import { ADMIN_SCAN_MAX_DOCS } from "../lib/adminLists";
 import { creatorBookmarkDocValidator, savedPostDocValidator } from "../lib/validators";
 
 export const listSavedPosts = query({
@@ -11,7 +12,7 @@ export const listSavedPosts = query({
     return ctx.db
       .query("savedPosts")
       .withIndex("by_userId", (q) => q.eq("userId", user._id))
-      .collect();
+      .take(ADMIN_SCAN_MAX_DOCS);
   },
 });
 
@@ -51,7 +52,7 @@ export const listCreatorBookmarks = query({
     return ctx.db
       .query("creatorBookmarks")
       .withIndex("by_userId", (q) => q.eq("userId", user._id))
-      .collect();
+      .take(ADMIN_SCAN_MAX_DOCS);
   },
 });
 
@@ -77,7 +78,7 @@ export const listCreatorBookmarksDetailed = query({
     const rows = await ctx.db
       .query("creatorBookmarks")
       .withIndex("by_userId", (q) => q.eq("userId", user._id))
-      .collect();
+      .take(ADMIN_SCAN_MAX_DOCS);
     const out = [];
     for (const row of rows) {
       const creator = await ctx.db.get(row.creatorId);

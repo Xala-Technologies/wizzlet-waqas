@@ -2,7 +2,7 @@
 
 **Authority:** [`docs/ai/prizelet-world-ready-master-prompt.md`](./prizelet-world-ready-master-prompt.md)
 
-**Status:** Wave 62 support/resolution/inbox caps 2026-10-05. Product is **not** world-ready.
+**Status:** Wave 63 products/growth/events/bookmarks caps 2026-10-05. Product is **not** world-ready.
 
 Do not claim world-ready until Section 8 gates in the master prompt pass.
 
@@ -16,7 +16,9 @@ Do not claim world-ready until Section 8 gates in the master prompt pass.
 | Evidence | branch, date, one-line actual vs expected |
 | Waiver | owner + reason (required if WAIVED) |
 
-Last updated: 2026-10-05. Last wave: **62** (`fix/world-ready-wave-62-support-resolution-caps`). Source pin: `bf85281` (inventory).
+Last updated: 2026-10-05. Last wave: **63** (`fix/world-ready-wave-63-products-growth-events-caps`). Source pin: `bf85281` (inventory).
+
+Wave 63: products list/sibling, growth links/promos/referrals, `listPublishedToday` indexed range take, bookmarks lists — no `.collect`. Soak products **7**, links **2**, promos **3**, referrals **3**, events **6**, savedPosts **1**, bookmarks **1**. Units `productsGrowthEventsCap.security.test.ts` 2/2.
 
 Wave 62: support/resolution list+unread, notifications unread/markAllRead, messaging `listThread`, `mySubscriptions*` use capped takes (no `.collect`). Soak support **24**, memberSupport **1**, cases **1**/msgs **1**, notifications **66**, DMs **2**, subs **14**. Units `supportResolutionCap.security.test.ts` 2/2.
 
@@ -290,16 +292,16 @@ App public functions (`Auth` = TBD until Wave 1):
 | `analytics.mutations.listMine` | subscriber | yes | PASS | Wave 31: CustomerActivity / member events after profile visit |
 | `analytics.mutations.track` | authenticated | yes | PASS | Wave 31: `/j2creator` → `page_view:creator:j2creator` + `post_view` rows |
 | `authProviders.socialProviders` | public | yes | PASS | Wave 38: Continue with X visible + authorize; Wave 27/30/31 `{ twitter: true, discord: true }` |
-| `bookmarks.mutations.listCreatorBookmarks` | subscriber | yes | PASS | Wave 31: Discover shows Remove bookmark for j2creator |
-| `bookmarks.mutations.listCreatorBookmarksDetailed` | subscriber | yes | PASS | Wave 31: `/dashboard/saved` Bookmarked Creators (1) j2creator |
-| `bookmarks.mutations.listSavedPosts` | subscriber | yes | PASS | Wave 31: Saved Posts (0) live query on `/dashboard/saved?demo=0` |
+| `bookmarks.mutations.listCreatorBookmarks` | subscriber | yes | PASS | Wave 63: capped take; Wave 31 Discover bookmark |
+| `bookmarks.mutations.listCreatorBookmarksDetailed` | subscriber | yes | PASS | Wave 63: capped take; Wave 31 `/dashboard/saved` |
+| `bookmarks.mutations.listSavedPosts` | subscriber | yes | PASS | Wave 63: capped take; Wave 31 Saved Posts |
 | `bookmarks.mutations.toggleCreatorBookmark` | subscriber | yes | PASS | Wave 31: profile Bookmark → creatorBookmarks row; Discover control |
 | `bookmarks.mutations.toggleSavedPost` | subscriber | yes | PASS | Wave 32: feed Save → Unsave + `/dashboard/saved` Saved Posts (1) J3 PUSH PICK |
 | `creators.earnings.myEarnings` | creator | yes | PASS | Wave 60: capped by_creatorId takes + truncated; UI amber on Earnings |
 | `creators.growth.getLinkPublic` | TBD | yes | NOT_RUN | frozen vs convex/*.ts @ bf85281 |
-| `creators.growth.listMyLinks` | creator | yes | PASS | Wave 33: Links table shows Wave33 Bio live row |
-| `creators.growth.listMyPromos` | TBD | yes | NOT_RUN | frozen vs convex/*.ts @ bf85281 |
-| `creators.growth.listMyReferrals` | creator | yes | PASS | Wave 29: `/creator/referrals?demo=0` showed j6ref Approved |
+| `creators.growth.listMyLinks` | creator | yes | PASS | Wave 63: capped take; Wave 33 Links table |
+| `creators.growth.listMyPromos` | creator | yes | PASS | Wave 63: `.take(ADMIN_SCAN_MAX_DOCS)` |
+| `creators.growth.listMyReferrals` | creator | yes | PASS | Wave 63: capped take; Wave 29 referrals UI |
 | `creators.growth.listUnpaidCommissionsAdmin` | admin | yes | PASS | Wave 36: `/admin/payouts` unpaid queue showed j6comm **$1.49** |
 | `creators.growth.markCommissionPaidAdmin` | admin | yes | PASS | Wave 36: Mark paid → `commissionPaidCents` 149; creator status Paid |
 | `creators.growth.recordLinkClick` | public | yes | PASS | Wave 33: `/go/jd72413…` → clicks **1** |
@@ -326,7 +328,7 @@ App public functions (`Auth` = TBD until Wave 1):
 | `discord.queries.memberAccess` | subscriber | yes | PASS | Wave 27: success page Join Discord CTA after Checkout |
 | `discord.roles.createMemberInvite` | subscriber | yes | PASS | Wave 27: Join Discord from subscription success |
 | `discord.roles.listAssignableRoles` | creator | yes | PASS | Wave 27: Monthly Pro listed |
-| `events.queries.listPublishedToday` | public | yes | PASS | Wave 19: empty then 3 published today |
+| `events.queries.listPublishedToday` | public | yes | PASS | Wave 63: published+startsAt range take; Wave 19 slate |
 | `events.queries.removeAdmin` | TBD | yes | NOT_RUN | frozen vs convex/*.ts @ bf85281 |
 | `events.queries.seedTodayDev` | auth + ALLOW_DEV_ADMIN_GRANT | yes | PASS | Wave 19: inserted 3 for local day |
 | `events.queries.upsertAdmin` | TBD | yes | NOT_RUN | frozen vs convex/*.ts @ bf85281 |
@@ -379,8 +381,8 @@ App public functions (`Auth` = TBD until Wave 1):
 | `posts.queries.remove` | creator | yes | NOT_RUN | frozen vs convex/*.ts @ bf85281 |
 | `posts.queries.setResult` | creator | yes | PASS | Wave 8: Mark as won / Mark as push then Result locked |
 | `posts.queries.upsert` | creator | yes | PASS | Wave 8: publish J3 SECRET + J3 PUSH; settled result cannot be overwritten |
-| `products.mutations.listByCreator` | owner | yes | PASS | Wave 7: creator products table listed live rows |
-| `products.mutations.listPublicByCreator` | public | yes | PASS | Wave 7: `/j2creator?demo=0` showed J2 Monthly Alpha |
+| `products.mutations.listByCreator` | owner | yes | PASS | Wave 63: capped take; Wave 7 products table |
+| `products.mutations.listPublicByCreator` | public | yes | PASS | Wave 63: capped take; Wave 7 `/j2creator` |
 | `products.mutations.remove` | owner | yes | PASS | Wave 7 hard delete; Wave 23 soft-archive when subscription linked → Archived tab |
 | `products.mutations.setShowOnProfile` | owner | yes | PASS | Wave 7: pin + MAX_PROFILE_PRODUCTS=4 server guard |
 | `products.mutations.upsert` | owner | yes | PASS | Wave 7: create $1999→edit $2499 monthly limited product |
@@ -478,6 +480,6 @@ Schema `appRole` also allows `moderator` and `user` (not product actors; no rout
 ## M. Remaining risk (update every fix PR)
 
 - P2: Connect Transfer action is live but blocked until Express KYC (`payouts_enabled`) and USD vs NOK platform balance; referral cash still outside Stripe; member self-serve verified email OTP still missing; historical migration data parity BLOCKED (greenfield)
-- P3: admin join spend still capped at 500; creator balance/earnings/listPublished + support/resolution/inbox/mySubscriptions capped (Waves 59–62); residual collects remain in growth/products/discord/events/accountRequests/entitlements/notify/auth/stripeDb/migrations; customers/alerts/finance/dashboard/fees/payouts/announcement/reports KPIs PASS (Wave 43–47, 50–55); eslint PASS Wave 57; join honesty PASS Wave 58
+- P3: admin join spend still capped at 500; creator/public list caps Waves 59–63; residual collects remain in discord/accountRequests/entitlements/notify/auth/stripeDb/migrations/sandbox/growthAttribution; customers/alerts/finance/dashboard/fees/payouts/announcement/reports KPIs PASS (Wave 43–47, 50–55); eslint PASS Wave 57; join honesty PASS Wave 58
 - Not in this PR: production deploy, live Stripe keys, MFA
 - Waivers: see section L

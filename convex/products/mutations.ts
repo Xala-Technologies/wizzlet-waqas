@@ -8,6 +8,7 @@ import {
 } from "../lib/productProfileSlots";
 import { siblingIdsToUnfeature } from "../lib/productFeatured";
 import { productRemoveMode } from "../lib/productRemove";
+import { ADMIN_SCAN_MAX_DOCS } from "../lib/adminLists";
 import { productDocValidator, productPublicValidator } from "../lib/validators";
 
 /** Public projection — active, non-closed products only. */
@@ -18,7 +19,7 @@ export const listPublicByCreator = query({
     const rows = await ctx.db
       .query("products")
       .withIndex("by_creatorId", (q) => q.eq("creatorId", args.creatorId))
-      .collect();
+      .take(ADMIN_SCAN_MAX_DOCS);
     const out = [];
     for (const p of rows) {
       if (!p.isActive || p.isClosed) continue;
@@ -54,7 +55,7 @@ export const listByCreator = query({
     const rows = await ctx.db
       .query("products")
       .withIndex("by_creatorId", (q) => q.eq("creatorId", args.creatorId))
-      .collect();
+      .take(ADMIN_SCAN_MAX_DOCS);
     if (args.activeOnly) return rows.filter((p) => p.isActive);
     return rows;
   },
@@ -86,7 +87,7 @@ export const upsert = mutation({
       const siblings = await ctx.db
         .query("products")
         .withIndex("by_creatorId", (q) => q.eq("creatorId", args.creatorId))
-        .collect();
+        .take(ADMIN_SCAN_MAX_DOCS);
       const clearIds = new Set(siblingIdsToUnfeature(siblings, args.productId));
       for (const sibling of siblings) {
         if (clearIds.has(sibling._id)) {
@@ -208,7 +209,7 @@ export const setShowOnProfile = mutation({
       const siblings = await ctx.db
         .query("products")
         .withIndex("by_creatorId", (q) => q.eq("creatorId", product.creatorId))
-        .collect();
+        .take(ADMIN_SCAN_MAX_DOCS);
       const currentlyShown = siblings.filter(
         (p) =>
           p._id !== args.productId &&

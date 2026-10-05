@@ -15,6 +15,7 @@ import {
   normalizePromoCode,
   resolveDiscountDuration,
 } from "../lib/promoCodes";
+import { ADMIN_SCAN_MAX_DOCS } from "../lib/adminLists";
 import {
   creatorLinkDocValidator,
   promoCodeDocValidator,
@@ -31,7 +32,7 @@ export const listMyLinks = query({
     return ctx.db
       .query("creatorLinks")
       .withIndex("by_creatorId", (q) => q.eq("creatorId", creator._id))
-      .collect();
+      .take(ADMIN_SCAN_MAX_DOCS);
   },
 });
 
@@ -128,7 +129,7 @@ export const listMyPromos = query({
     return ctx.db
       .query("promoCodes")
       .withIndex("by_creatorId", (q) => q.eq("creatorId", creator._id))
-      .collect();
+      .take(ADMIN_SCAN_MAX_DOCS);
   },
 });
 
@@ -266,7 +267,7 @@ export const listMyReferrals = query({
     return ctx.db
       .query("referrals")
       .withIndex("by_creatorId", (q) => q.eq("creatorId", creator._id))
-      .collect();
+      .take(ADMIN_SCAN_MAX_DOCS);
   },
 });
 
@@ -297,7 +298,7 @@ export const recordReferralByCode = mutation({
     const existing = await ctx.db
       .query("referrals")
       .withIndex("by_creatorId", (q) => q.eq("creatorId", creator._id))
-      .collect();
+      .take(ADMIN_SCAN_MAX_DOCS);
     const prior = existing.find((r) => r.referredUserId === user._id);
     if (prior) return prior._id;
 
@@ -330,7 +331,7 @@ export const recordReferral = mutation({
     const existing = await ctx.db
       .query("referrals")
       .withIndex("by_creatorId", (q) => q.eq("creatorId", args.creatorId))
-      .collect();
+      .take(ADMIN_SCAN_MAX_DOCS);
     const prior = existing.find((r) => r.referredUserId === user._id);
     if (prior) return prior._id;
 
