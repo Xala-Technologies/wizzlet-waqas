@@ -1,6 +1,7 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
-import { useMutation, useQuery } from 'convex/react';
+import { useAction, useMutation, useQuery } from 'convex/react';
+import { createConnectOnboardingLink } from '@/lib/stripe';
 import { format } from 'date-fns';
 import {
   ArrowUpFromLine,
@@ -100,6 +101,10 @@ const CreatorPayouts = () => {
   const balance = useQuery(api.payouts.mutations.availableBalance);
   const upsertSettings = useMutation(api.payouts.mutations.upsertSettings);
   const requestPayoutMut = useMutation(api.payouts.mutations.requestPayout);
+  const connectStatus = useQuery(api.creators.queries.myConnectStatus);
+  const refreshConnect = useAction(api.payments.stripeNode.refreshConnectAccountStatus);
+  const handledConnectParam = useRef<string | null>(null);
+  const [connecting, setConnecting] = useState(false);
 
   const [method, setMethod] = useState('bank_transfer');
   const [accountLabel, setAccountLabel] = useState('');
@@ -117,6 +122,32 @@ const CreatorPayouts = () => {
     setSchedule(settingsRow.schedule);
     setMinimumPayout(settingsRow.minimumPayoutCents / 100);
   }, [settingsRow]);
+
+  const connectParam = searchParams.get('connect');
+  useEffect(() => {
+    if (forceDemo) return;
+    if (connectParam !== 'return' && connectParam !== 'refresh') return;
+    if (handledConnectParam.current === connectParam) return;
+    handledConnectParam.current = connectParam;
+    void (async () => {
+      try {
+        if (connectParam === 'return') {
+          await refreshConnect({});
+          toast.success('Stripe Connect status updated. Automatic transfers are not live yet.');
+          return;
+        }
+        await createConnectOnboardingLink();
+      } catch (error) {
+        const message =
+          error instanceof Error ? error.message : 'Could not refresh Stripe Connect.';
+        if (message.includes('CONNECT_ACCOUNT_MISSING')) {
+          toast.info('Connect Stripe to continue onboarding.');
+          return;
+        }
+        toast.error(message);
+      }
+    })();
+  }, [connectParam, forceDemo, refreshConnect]);
 
   const loading =
     creator === undefined || payoutRows === undefined || balance === undefined;
@@ -296,10 +327,49 @@ const CreatorPayouts = () => {
         </div>
       ) : (
         <div className="clay-card mb-6 px-4 py-3.5 text-sm text-muted-foreground sm:px-5">
-          Withdrawals update the Prizelet ledger. Funds are paid out manually until Stripe Connect
-          is enabled — Connect onboarding is not available yet.
+          Withdrawals update the Prizelet ledger. Automatic Stripe transfers are not live yet
+          {connectStatus?.stripeAccountId
+            ? ` — Express account ${connectStatus.stripeAccountId} is stored${
+                connectStatus.payoutsEnabled ? ' and payouts are enabled on Stripe' : ''
+              }.`
+            : '. Connect Stripe Express below to start onboarding.'}
         </div>
       )}
+
+      {!useDemo ? (
+        <div className={cn(clayCard, 'mb-6 flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between sm:p-5')}>
+          <div className="min-w-0">
+            <p className="text-sm font-extrabold tracking-tight text-foreground">Stripe Connect</p>
+            <p className="mt-1 text-sm text-muted-foreground">
+              {connectStatus?.payoutsEnabled
+                ? 'Express onboarding complete. Cash still moves via the ledger until transfers ship.'
+                : connectStatus?.stripeAccountId
+                  ? 'Finish Stripe Express onboarding. Transfers are not sent automatically yet.'
+                  : 'Open Stripe Express onboarding. This stores your connected account — it does not send payouts yet.'}
+            </p>
+          </div>
+          <Button
+            type="button"
+            variant={connectStatus?.payoutsEnabled ? 'outline' : 'default'}
+            className="h-11 shrink-0 rounded-xl"
+            disabled={connecting}
+            onClick={() => {
+              setConnecting(true);
+              void createConnectOnboardingLink().finally(() => setConnecting(false));
+            }}
+          >
+            {connecting ? (
+              <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
+            ) : connectStatus?.payoutsEnabled ? (
+              'Update Stripe account'
+            ) : connectStatus?.stripeAccountId ? (
+              'Continue Stripe onboarding'
+            ) : (
+              'Connect Stripe'
+            )}
+          </Button>
+        </div>
+      ) : null}
 
       <div className="mb-6 sm:mb-8">
         <section className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">

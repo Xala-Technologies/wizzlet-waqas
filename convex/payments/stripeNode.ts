@@ -9,6 +9,11 @@ import type { Id } from "../_generated/dataModel";
 import { isStripeAlreadyCanceledError } from "../lib/commerceIdentity";
 import { stripeCouponDuration } from "../lib/promoCodes";
 import { resolveSiteUrl } from "../lib/envGuards";
+import {
+  connectOnboardingUrls,
+  connectStatusFromStripeAccount,
+  isStripeConnectNotEnabledError,
+} from "../lib/stripeConnect";
 
 function requireStripe(): Stripe {
   const key = process.env.STRIPE_SECRET_KEY;
@@ -527,5 +532,126 @@ export const cancelStripeSubscriptionsAdmin = action({
       stripeSubscriptionIds: args.stripeSubscriptionIds,
       reason: args.reason.slice(0, 200),
     });
+  },
+});
+
+const connectStatusReturnValidator = v.object({
+  stripeAccountId: v.string(),
+  detailsSubmitted: v.boolean(),
+  chargesEnabled: v.boolean(),
+  payoutsEnabled: v.boolean(),
+});
+
+function connectCountry(): string {
+  const raw = process.env.STRIPE_CONNECT_COUNTRY?.trim().toUpperCase();
+  return raw && /^[A-Z]{2}$/.test(raw) ? raw : "US";
+}
+
+function mapStripeConnectError(err: unknown): never {
+  const message = err instanceof Error ? err.message : String(err);
+  if (isStripeConnectNotEnabledError(message)) {
+    throw new Error("STRIPE_CONNECT_NOT_ENABLED");
+  }
+  throw err instanceof Error ? err : new Error(message);
+}
+
+/**
+ * Create (or reuse) a Stripe Express connected account and return an Account Link.
+ * Does not move money — payouts remain ledger/manual until a later transfer wave.
+ */
+export const createConnectOnboardingSession = action({
+  args: {},
+  returns: v.object({ url: v.string(), stripeAccountId: v.string() }),
+  handler: async (ctx): Promise<{ url: string; stripeAccountId: string }> => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) throw new Error("UNAUTHENTICATED");
+    const stripe = requireStripe();
+    const prep: {
+      creatorId: Id<"creators">;
+      username: string;
+      email?: string;
+      stripeAccountId?: string;
+    } = await ctx.runQuery(internal.payments.stripeDb.getConnectOnboardingContext, {
+      userId,
+    });
+
+    let stripeAccountId = prep.stripeAccountId;
+    if (!stripeAccountId) {
+      try {
+        const account = await stripe.accounts.create({
+          type: "express",
+          country: connectCountry(),
+          email: prep.email,
+          capabilities: {
+            transfers: { requested: true },
+          },
+          metadata: {
+            creatorId: prep.creatorId,
+            userId,
+            username: prep.username,
+          },
+        });
+        stripeAccountId = account.id;
+      } catch (err) {
+        mapStripeConnectError(err);
+      }
+      if (!stripeAccountId) throw new Error("CONNECT_ACCOUNT_MISSING");
+      await ctx.runMutation(internal.payments.stripeDb.persistConnectAccount, {
+        creatorId: prep.creatorId,
+        userId,
+        stripeAccountId,
+      });
+    }
+
+    if (!stripeAccountId) throw new Error("CONNECT_ACCOUNT_MISSING");
+    const urls = connectOnboardingUrls(siteUrl());
+    try {
+      const link = await stripe.accountLinks.create({
+        account: stripeAccountId,
+        refresh_url: urls.refreshUrl,
+        return_url: urls.returnUrl,
+        type: "account_onboarding",
+      });
+      if (!link.url) throw new Error("CONNECT_LINK_MISSING");
+      return { url: link.url, stripeAccountId };
+    } catch (err) {
+      mapStripeConnectError(err);
+    }
+  },
+});
+
+export const refreshConnectAccountStatus = action({
+  args: {},
+  returns: connectStatusReturnValidator,
+  handler: async (
+    ctx,
+  ): Promise<{
+    stripeAccountId: string;
+    detailsSubmitted: boolean;
+    chargesEnabled: boolean;
+    payoutsEnabled: boolean;
+  }> => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) throw new Error("UNAUTHENTICATED");
+    const stripe = requireStripe();
+    const prep = await ctx.runQuery(internal.payments.stripeDb.getConnectOnboardingContext, {
+      userId,
+    });
+    if (!prep.stripeAccountId) {
+      throw new Error("CONNECT_ACCOUNT_MISSING");
+    }
+    let account: Stripe.Account;
+    try {
+      account = await stripe.accounts.retrieve(prep.stripeAccountId);
+    } catch (err) {
+      mapStripeConnectError(err);
+    }
+    const status = connectStatusFromStripeAccount(account);
+    await ctx.runMutation(internal.payments.stripeDb.persistConnectStatus, {
+      creatorId: prep.creatorId,
+      userId,
+      ...status,
+    });
+    return status;
   },
 });

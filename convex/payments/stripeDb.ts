@@ -614,3 +614,80 @@ export const clearCancelPending = internalMutation({
     return { ok: true as const };
   },
 });
+
+export const getConnectOnboardingContext = internalQuery({
+  args: { userId: v.id("users") },
+  returns: v.object({
+    creatorId: v.id("creators"),
+    username: v.string(),
+    email: v.optional(v.string()),
+    stripeAccountId: v.optional(v.string()),
+  }),
+  handler: async (ctx, args) => {
+    const user = await ctx.db.get(args.userId);
+    if (!user) throw new ConvexError("USER_NOT_FOUND");
+    const creator = await ctx.db
+      .query("creators")
+      .withIndex("by_userId", (q) => q.eq("userId", args.userId))
+      .unique();
+    if (!creator) throw new ConvexError("NOT_FOUND");
+    return {
+      creatorId: creator._id,
+      username: creator.username,
+      email: user.email ?? undefined,
+      stripeAccountId: creator.stripeAccountId,
+    };
+  },
+});
+
+export const persistConnectAccount = internalMutation({
+  args: {
+    creatorId: v.id("creators"),
+    userId: v.id("users"),
+    stripeAccountId: v.string(),
+  },
+  returns: v.null(),
+  handler: async (ctx, args) => {
+    const creator = await ctx.db.get(args.creatorId);
+    if (!creator || creator.userId !== args.userId) {
+      throw new ConvexError("FORBIDDEN");
+    }
+    if (creator.stripeAccountId && creator.stripeAccountId !== args.stripeAccountId) {
+      throw new ConvexError("CONNECT_ACCOUNT_LOCKED");
+    }
+    await ctx.db.patch(creator._id, {
+      stripeAccountId: args.stripeAccountId,
+      updatedAt: Date.now(),
+    });
+    return null;
+  },
+});
+
+export const persistConnectStatus = internalMutation({
+  args: {
+    creatorId: v.id("creators"),
+    userId: v.id("users"),
+    stripeAccountId: v.string(),
+    detailsSubmitted: v.boolean(),
+    chargesEnabled: v.boolean(),
+    payoutsEnabled: v.boolean(),
+  },
+  returns: v.null(),
+  handler: async (ctx, args) => {
+    const creator = await ctx.db.get(args.creatorId);
+    if (!creator || creator.userId !== args.userId) {
+      throw new ConvexError("FORBIDDEN");
+    }
+    if (creator.stripeAccountId && creator.stripeAccountId !== args.stripeAccountId) {
+      throw new ConvexError("CONNECT_ACCOUNT_LOCKED");
+    }
+    await ctx.db.patch(creator._id, {
+      stripeAccountId: args.stripeAccountId,
+      stripeConnectDetailsSubmitted: args.detailsSubmitted,
+      stripeConnectChargesEnabled: args.chargesEnabled,
+      stripeConnectPayoutsEnabled: args.payoutsEnabled,
+      updatedAt: Date.now(),
+    });
+    return null;
+  },
+});

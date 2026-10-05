@@ -1,3 +1,19 @@
+# Findings — Wave 42 Stripe Connect Express onboarding 2026-10-05
+
+Branch `feat/world-ready-wave-42-stripe-connect-onboarding`. Fixture `j2creator` / `j2creator+wave7@example.com` on `combative-mongoose-559`.
+
+| Step | Result | Evidence |
+|------|--------|----------|
+| Payouts Connect UI | PASS | `/creator/payouts?demo=0` Stripe Connect card + **Connect Stripe**; copy says it does not send payouts yet |
+| Authenticated action | PASS | Convex `payments/stripeNode:createConnectOnboardingSession` + `getConnectOnboardingContext` |
+| Express account create | BLOCKED | Stripe: Connect not enabled on platform → `STRIPE_CONNECT_NOT_ENABLED` (~1.95s). No `acct_` persisted |
+| Transfers | Residual | Not implemented — onboarding only |
+| Unit | PASS | `stripeConnect.security.test.ts` 6/6 |
+
+**Residual:** Enable Stripe Connect on the platform account, then complete Express KYC + transfers. Member email OTP still out of scope.
+
+---
+
 # Findings — Wave 41 deletion Stripe cancel 2026-10-05
 
 Branch `fix/world-ready-wave-41-deletion-stripe-cancel`. Fixtures `j41c`/`j41d`/`j41e` on `combative-mongoose-559`.

@@ -2,7 +2,7 @@
 
 **Authority:** [`docs/ai/prizelet-world-ready-master-prompt.md`](./prizelet-world-ready-master-prompt.md)
 
-**Status:** Wave 41 deletion Stripe cancel 2026-10-05. Product is **not** world-ready (other P2s remain).
+**Status:** Wave 42 Stripe Connect Express onboarding 2026-10-05. Product is **not** world-ready (transfers + other P2s remain).
 
 Do not claim world-ready until Section 8 gates in the master prompt pass.
 
@@ -16,7 +16,9 @@ Do not claim world-ready until Section 8 gates in the master prompt pass.
 | Evidence | branch, date, one-line actual vs expected |
 | Waiver | owner + reason (required if WAIVED) |
 
-Last updated: 2026-10-05. Last wave: **41** (`fix/world-ready-wave-41-deletion-stripe-cancel`). Source pin: `bf85281` (inventory).
+Last updated: 2026-10-05. Last wave: **42** (`feat/world-ready-wave-42-stripe-connect-onboarding`). Source pin: `bf85281` (inventory).
+
+Wave 42: Creator Payouts `Connect Stripe` → `createConnectOnboardingSession` (Express + Account Link). Soak `j2creator`: action ran; Stripe returned Connect-not-enabled → `STRIPE_CONNECT_NOT_ENABLED` (no fake account, no transfers). Units `stripeConnect.security.test.ts` 6/6.
 
 Wave 41: Admin deletion fulfill returns `sub_*` ids; `cancelStripeSubscriptionsAdmin` cancels Stripe (proven `canceled:1`); scheduler backup + soft-delete soaks on j41c/d/e. Units `accountRequests.security.test.ts` 4/4.
 
@@ -87,9 +89,9 @@ PASS below is **anonymous → `/login`**, not an authenticated creator session.
 | `/creator/links` | CreatorLinks | creator | mixed | PASS | Wave 2 chromium surface smoke 2026-10-04; inventory pin bf85281 |
 | `/creator/referrals` | CreatorReferrals | creator | mixed | PASS | Wave 2 chromium surface smoke 2026-10-04; inventory pin bf85281 |
 | `/creator/earnings` | CreatorEarnings | creator | mixed | PASS | Wave 2 chromium surface smoke 2026-10-04; inventory pin bf85281 |
-| `/creator/payouts` | CreatorPayouts | creator | mixed | PASS | Wave 22: manual-until-Connect banner; Wave 10 balance soak; Wave 2 smoke |
+| `/creator/payouts` | CreatorPayouts | creator | mixed | PASS | Wave 42: Connect Stripe Express onboarding (honest `STRIPE_CONNECT_NOT_ENABLED` on test platform); Wave 22 banner; Wave 10 balance |
 | `/creator/transactions` | CreatorTransactions | creator | mixed | PASS | Wave 2 chromium surface smoke 2026-10-04; inventory pin bf85281 |
-| `/creator/settings` | CreatorSettings | creator | mixed | PASS | Wave 22: billing Connect honesty; Wave 21: 2FA/team stubs; Wave 2 smoke |
+| `/creator/settings` | CreatorSettings | creator | mixed | PASS | Wave 42: billing bullet Connect-on-Payouts / transfers not live; Wave 21: 2FA/team stubs |
 | `/creator/integrations` | CreatorIntegrations | creator | mixed | PASS | Wave 2 chromium surface smoke 2026-10-04; inventory pin bf85281 |
 | `/creator/support` | CreatorSupport | creator | mixed | PASS | Wave 2 chromium surface smoke 2026-10-04; inventory pin bf85281 |
 | `/creator/onboarding` | CreatorOnboarding | creator | convex | PASS | Wave 2 chromium surface smoke 2026-10-04; inventory pin bf85281 |
@@ -169,7 +171,7 @@ Nested layouts in `App.tsx`: `/demo/admin` → `DemoAdminLayout`; `/demo/member`
 | J-NOTIFICATIONS | Inbox create + mark read | PASS | Wave 20 2026-10-05: adminInsert + member markRead/markAllRead; pay/message rows; admin shared page |
 | J-SETTINGS | Settings live vs toast-stub honesty | PASS | Wave 21 2026-10-05: 2FA “coming soon”; team invite preview “not wired to the backend yet”; account profile editable |
 | J-SMART-PRICING | Smart pricing + access control honesty | PASS | Wave 21 2026-10-05: heuristic “directional only”; list price via updateSettings (not fake Stripe product prices); access-control limit spots persists |
-| J-CONNECT | Stripe Connect residual honesty | PASS | Wave 22 2026-10-05: admin ledger-only until Connect; creator payouts manual-until-Connect banner; billing fee bullet fixed; onboarding link toast stub. Live Connect transfer still not implemented (honest residual). |
+| J-CONNECT | Stripe Connect residual honesty | PASS | Wave 42 2026-10-05: Express onboarding action + persist `stripeAccountId`/capability flags; soak `j2creator` Connect click → `STRIPE_CONNECT_NOT_ENABLED` (Stripe dashboard Connect off). Wave 22 ledger-only honesty. Live transfers still unimplemented. |
 
 ## H. Tooling gates
 
@@ -195,7 +197,7 @@ Nested layouts in `App.tsx`: `/demo/admin` → `DemoAdminLayout`; `/demo/member`
 | F-004 JWT subject as user id | PASS | Wave 1: listPreviewsByCreator uses getAuthUserId |
 | F-005 public migration mutations | PASS | Wave 1: importBatch/load are internalMutation |
 | F-009 / J5 payout reserved vs paid | PASS | Wave 1: payoutBalance.test.ts 5/5. Live UI Wave 2 |
-| F-010 webhook soak / Connect | PASS | Wave 18: signed delivery → `webhookReceipts` + dedupe. Wave 22: Connect residual honesty PASS (ledger-only; no live transfers claimed) |
+| F-010 webhook soak / Connect | PASS | Wave 18 webhook soak. Wave 42: Express onboarding wired; account create BLOCKED until Stripe Connect is enabled on the platform account. Transfers still unimplemented. |
 | F-012 admin full-table scans | PASS | Wave 4: listUsersPage/listCreatorsPage indexed joins use `.take(ADMIN_JOIN_LIMIT=200)`. Customers still `adminScanAll` cap 5k |
 | F-015 lint / tsc | PASS | Wave 3: `npx tsc -b` exit 0; lint still 0 errors / 28 warnings |
 
@@ -435,7 +437,7 @@ Schema `appRole` also allows `moderator` and `user` (not product actors; no rout
 
 ## M. Remaining risk (update every fix PR)
 
-- P2: Stripe Connect live transfers still unimplemented (Wave 22 honesty PASS — ledger/manual only); referral commission accrual + ledger Mark paid PASS (Wave 34/36) — cash still settles outside until Connect; J7 X OAuth + deletion Stripe cancel PASS (Wave 38/41) — residual: no member self-serve verified email OTP; historical migration data parity BLOCKED (greenfield)
+- P2: Stripe Connect Express onboarding wired (Wave 42) but platform Stripe account does not have Connect enabled (`STRIPE_CONNECT_NOT_ENABLED`); live transfers still unimplemented; referral cash still outside Stripe; member self-serve verified email OTP still missing; historical migration data parity BLOCKED (greenfield)
 - P3: admin user/creator spend metrics cap at 200 indexed rows; customer pages scan ≤5k subscriptions; eslint warnings; AuthContext DEV `hasRole` leftover; All Accounts multi-role PASS (Wave 37); messaging composer + CRM cancelled label PASS (Wave 39/40)
 - Not in this PR: production deploy, live Stripe keys, MFA
 - Waivers: see section L

@@ -143,7 +143,33 @@ export async function openCustomerPortal(): Promise<void> {
 }
 
 export async function createConnectOnboardingLink(_creatorId?: string): Promise<void> {
-  toast.info(
-    'Payout onboarding via Stripe Connect is not enabled yet. Earnings are tracked and paid out manually by the platform.',
-  );
+  const toastId = toast.loading('Opening Stripe Connect…');
+  try {
+    const result = await convex.action(api.payments.stripeNode.createConnectOnboardingSession, {});
+    toast.dismiss(toastId);
+    if (!result.url) {
+      toast.error('Stripe Connect did not return an onboarding URL.');
+      return;
+    }
+    window.location.assign(result.url);
+  } catch (error) {
+    const message =
+      error instanceof Error ? error.message : 'Could not start Stripe Connect onboarding.';
+    toast.dismiss(toastId);
+    if (message.includes('STRIPE_NOT_CONFIGURED')) {
+      toast.error('Stripe is not configured. Payouts stay on the Prizelet ledger.');
+      return;
+    }
+    if (message.includes('STRIPE_CONNECT_NOT_ENABLED')) {
+      toast.error(
+        'Stripe Connect is not enabled on this Stripe account. Payouts stay ledger/manual.',
+      );
+      return;
+    }
+    if (message.includes('UNAUTHENTICATED') || message.includes('NOT_FOUND')) {
+      toast.error('Sign in as a creator to connect Stripe.');
+      return;
+    }
+    toast.error(message);
+  }
 }
