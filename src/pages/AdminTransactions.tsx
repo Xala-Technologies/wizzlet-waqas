@@ -147,20 +147,9 @@ const AdminTransactions = () => {
     toast.success(`Exported ${filtered.length} loaded transactions`);
   };
 
-  const statusHint =
-    statusFilter === 'failed'
-      ? ' · failed + past due'
-      : statusFilter !== 'all'
-        ? ` · ${statusFilter}`
-        : '';
-  const loadHint =
-    status === 'CanLoadMore' || status === 'LoadingMore' ? ' (more available)' : '';
-
   return (
     <DashboardLayout type="admin" mainClassName="bg-clay-page">
       <AdminPageHeader
-        title="Transactions"
-        description={`${transactions.length} loaded${statusHint}${loadHint}`}
         actions={
           <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto">
             <div className="relative w-full sm:w-48">

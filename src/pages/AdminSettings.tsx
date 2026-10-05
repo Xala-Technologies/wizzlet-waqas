@@ -3,10 +3,7 @@ import { useEffect, useState } from 'react';
 import { useAction, useMutation, useQuery } from 'convex/react';
 import { api } from '../../convex/_generated/api';
 import { DashboardLayout } from '@/components/dashboard/DashboardLayout';
-import {
-  AdminPageHeader,
-  adminSectionTitle,
-} from '@/components/dashboard/AdminPageHeader';
+import { adminSectionTitle } from '@/components/dashboard/AdminPageHeader';
 import { clayCard } from '@/lib/overviewClay';
 import { kpiIconTone } from '@/lib/kpiIconTones';
 import { Button } from '@/components/ui/button';
@@ -199,11 +196,6 @@ const AdminSettings = () => {
 
   return (
     <DashboardLayout type="admin" mainClassName="bg-clay-page">
-      <AdminPageHeader
-        title="Settings"
-        description="Configure platform-wide fees, payouts, branding, and feature flags."
-      />
-
       <section className={cn(clayCard, 'mb-6 p-4 sm:p-6')}>
         <SettingsSectionHeader icon={Percent} tone={kpiIconTone.violet} title="Platform fee settings" />
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">

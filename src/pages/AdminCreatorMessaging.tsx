@@ -144,11 +144,7 @@ const AdminCreatorMessaging = () => {
 
   return (
     <DashboardLayout type="admin" mainClassName="bg-clay-page">
-      <AdminPageHeader
-        title="Creator Messaging"
-        description="Creator coaching conversations and platform broadcasts"
-        actions={<AdminSupportTabs />}
-      />
+      <AdminPageHeader actions={<AdminSupportTabs />} />
 
       {!messagingEnabled && (
         <div className="mb-4 flex items-start gap-2.5 rounded-lg border border-amber-500/25 bg-amber-500/5 px-3.5 py-3 text-sm text-amber-800 dark:text-amber-200">

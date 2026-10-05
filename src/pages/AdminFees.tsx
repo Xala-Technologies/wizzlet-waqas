@@ -13,6 +13,7 @@ import { clayCard } from '@/lib/overviewClay';
 import { kpiIconTone } from '@/lib/kpiIconTones';
 import { Percent, DollarSign, TrendingUp, Loader2, Crown, Settings } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts';
+import { Button } from '@/components/ui/button';
 import { scanTruncationNote } from '@/lib/adminTruncation';
 
 const chartTooltipStyle = {
@@ -78,20 +79,13 @@ const AdminFees = () => {
   return (
     <DashboardLayout type="admin" mainClassName="bg-clay-page">
       <AdminPageHeader
-        title="Platform Fees"
-        description={
-          <>
-            Fee revenue analytics.{' '}
-            <Link
-              to="/admin/settings"
-              className="inline-flex items-center gap-1 text-primary hover:underline"
-            >
-              <Settings className="h-3.5 w-3.5" /> Edit fee rules in Settings
+        notice={truncation}
+        actions={
+          <Button asChild variant="outline" size="sm" className="h-9 text-caption">
+            <Link to="/admin/settings" className="inline-flex items-center gap-1.5">
+              <Settings className="h-3.5 w-3.5" /> Fee rules
             </Link>
-            {truncation ? (
-              <p className="mt-2 text-caption text-amber-600 dark:text-amber-400">{truncation}</p>
-            ) : null}
-          </>
+          </Button>
         }
       />
 

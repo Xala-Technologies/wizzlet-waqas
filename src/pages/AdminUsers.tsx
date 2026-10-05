@@ -244,21 +244,7 @@ const AdminUsers = () => {
 
   return (
     <DashboardLayout type="admin" mainClassName="bg-clay-page">
-      <AdminPageHeader
-        title="All Accounts"
-        description={
-          <>
-            <p>
-              All accounts including admins and creators · {users.length} loaded
-              {status === 'CanLoadMore' || status === 'LoadingMore' ? ' (more available)' : ''}
-            </p>
-            {joinNote ? (
-              <p className="mt-1 text-xs text-amber-600 dark:text-amber-400">{joinNote}</p>
-            ) : null}
-          </>
-        }
-        actions={headerActions}
-      />
+      <AdminPageHeader notice={joinNote} actions={headerActions} />
 
       {!loading && <DashboardKpiStrip items={userKpiItems} variant="clay" className="mb-6 sm:mb-8" />}
 

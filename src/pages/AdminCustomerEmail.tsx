@@ -6,7 +6,7 @@ import { api } from '../../convex/_generated/api';
 import type { Id } from '../../convex/_generated/dataModel';
 import { DashboardLayout } from '@/components/dashboard/DashboardLayout';
 import { clayCard } from '@/lib/overviewClay';
-import { AdminPageHeader, adminSectionTitle } from '@/components/dashboard/AdminPageHeader';
+import { adminSectionTitle } from '@/components/dashboard/AdminPageHeader';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -124,11 +124,6 @@ const AdminCustomerEmail = () => {
 
   return (
     <DashboardLayout type="admin" mainClassName="bg-clay-page">
-      <AdminPageHeader
-        title="Announcements"
-        description="Delivers notifications in the app. Email outbox is not enabled yet."
-      />
-
       <section className={cn(clayCard, 'mb-6 p-4 sm:mb-8 sm:p-6')}>
         <h2 className={cn(adminSectionTitle, 'mb-4 flex items-center gap-2')}>
           <Megaphone className="h-4 w-4 text-primary" /> Compose announcement

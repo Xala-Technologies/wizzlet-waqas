@@ -204,20 +204,11 @@ const CustomerNotifications = () => {
   return (
     <DashboardLayout type={layoutType} mainClassName="bg-clay-page">
       {layoutType === 'admin' ? (
-        <AdminPageHeader
-          title="Notifications"
-          description="Platform alerts and admin account messages"
-          actions={markAllButton}
-        />
+        <AdminPageHeader actions={markAllButton} />
       ) : (
-        <header className="mb-6 flex flex-wrap items-center justify-between gap-3">
-          <div className="min-w-0">
-            <p className="text-support text-muted-foreground mt-0.5">
-              Messages, billing updates, and platform announcements
-            </p>
-          </div>
+        <div className="mb-6 flex flex-wrap items-center justify-end gap-3">
           {markAllButton}
-        </header>
+        </div>
       )}
 
       {items.length === 0 ? (
