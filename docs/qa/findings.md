@@ -1,3 +1,19 @@
+# Findings — Wave 32 saved posts + admin account requests 2026-10-05
+
+Branch `test/world-ready-wave-32-saved-posts-admin-requests`. Fixture `j6oauthwave30` + platform owner on `combative-mongoose-559`.
+
+| Step | Result | Evidence |
+|------|--------|----------|
+| Subscribe for feed | PASS | Checkout `cs_test_a1lGXn…` WAVE24 → success |
+| Feed Save | PASS | `/dashboard?demo=0` Save → Unsave on `J3 PUSH PICK` |
+| Saved Posts | PASS | `/dashboard/saved?demo=0` Saved Posts **(1)** |
+| Admin open queue | PASS | `/admin/users` Open account requests **2 open** (email-change + deletion) |
+| Unit | PASS | `accountRequests.security.test.ts` 2/2 |
+
+**Saved-post / admin requests residual:** PASS. Next: Connect transfers; commission cash; X consent; link `conversions` product.
+
+---
+
 # Findings — Wave 31 bookmarks + analytics + account deletion 2026-10-05
 
 Branch `test/world-ready-wave-31-bookmarks-analytics`. Fixture `j6oauthwave30` on `combative-mongoose-559`.

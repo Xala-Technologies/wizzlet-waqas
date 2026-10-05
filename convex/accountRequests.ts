@@ -112,15 +112,38 @@ export const listMine = query({
   },
 });
 
+const openAdminRowValidator = v.object({
+  _id: v.id("accountRequests"),
+  _creationTime: v.number(),
+  userId: v.id("users"),
+  email: v.union(v.string(), v.null()),
+  fullName: v.union(v.string(), v.null()),
+  category: v.string(),
+  reason: v.string(),
+  requestedEmail: v.optional(v.string()),
+  status: v.string(),
+  createdAt: v.number(),
+  updatedAt: v.number(),
+});
+
 export const listOpenAdmin = query({
   args: {},
-  returns: v.array(accountRequestDocValidator),
+  returns: v.array(openAdminRowValidator),
   handler: async (ctx) => {
     await requireAdmin(ctx);
     const open = await ctx.db
       .query("accountRequests")
       .withIndex("by_status", (q) => q.eq("status", "open"))
       .take(100);
-    return open;
+    return Promise.all(
+      open.map(async (row) => {
+        const user = await ctx.db.get(row.userId);
+        return {
+          ...row,
+          email: user?.email ?? null,
+          fullName: user?.fullName ?? user?.name ?? null,
+        };
+      }),
+    );
   },
 });

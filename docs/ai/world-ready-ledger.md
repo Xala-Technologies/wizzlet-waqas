@@ -2,7 +2,7 @@
 
 **Authority:** [`docs/ai/prizelet-world-ready-master-prompt.md`](./prizelet-world-ready-master-prompt.md)
 
-**Status:** Wave 31 member bookmarks + analytics + account deletion 2026-10-05. Product is **not** world-ready (other P2s remain).
+**Status:** Wave 32 saved-post feed + admin open account requests 2026-10-05. Product is **not** world-ready (other P2s remain).
 
 Do not claim world-ready until Section 8 gates in the master prompt pass.
 
@@ -16,11 +16,11 @@ Do not claim world-ready until Section 8 gates in the master prompt pass.
 | Evidence | branch, date, one-line actual vs expected |
 | Waiver | owner + reason (required if WAIVED) |
 
-Last updated: 2026-10-05. Last wave: **31** (`test/world-ready-wave-31-bookmarks-analytics`). Source pin: `bf85281` (inventory).
+Last updated: 2026-10-05. Last wave: **32** (`test/world-ready-wave-32-saved-posts-admin-requests`). Source pin: `bf85281` (inventory).
 
-Wave 31: Profile Favorite → real `toggleCreatorBookmark`; Discover bookmark control; `j6oauthwave30` bookmarked j2creator → Saved Creators; analytics `page_view:creator:j2creator` + `post_view`; Settings deletion request **open**. Fixed fake local Favorite toast.
+Wave 32: `j6oauthwave30` Checkout `cs_test_a1lGXn…` → feed Save → Saved Posts (1) `J3 PUSH PICK`; `/admin/users` Open account requests shows email-change + deletion (2 open). `listOpenAdmin` enriched with email/fullName; `accountRequests.security.test.ts` 2/2.
 
-Wave 30: OAuth `?ref=` handoff PASS. Wave 29: paid referral convert PASS.
+Wave 31: bookmarks/analytics/deletion PASS. Wave 30: OAuth `?ref=` handoff PASS.
 
 ---
 
@@ -217,7 +217,7 @@ App public functions (`Auth` = TBD until Wave 1):
 | API | Auth | returns validator | Result | Evidence |
 |-----|------|-------------------|--------|----------|
 | `accountRequests.listMine` | auth | yes | PASS | Wave 12: open email-change shown on settings |
-| `accountRequests.listOpenAdmin` | admin | yes | NOT_RUN | open deletion row exists for j6oauth; admin UI/query soak not run |
+| `accountRequests.listOpenAdmin` | admin | yes | PASS | Wave 32: `/admin/users` Open account requests — 2 open (j4member email-change + j6oauth deletion) |
 | `accountRequests.requestAccountDeletion` | subscriber | yes | PASS | Wave 31: Settings → Request deletion → status **open** |
 | `accountRequests.requestEmailChange` | auth | yes | PASS | Wave 12: request `j4member+wave12@example.com`; sign-in email unchanged |
 | `admin.exportReports.exportReportBundle` | admin | yes | PASS | Wave 16: creators CSV `creators_2026-10-04.csv` |
@@ -251,7 +251,7 @@ App public functions (`Auth` = TBD until Wave 1):
 | `bookmarks.mutations.listCreatorBookmarksDetailed` | subscriber | yes | PASS | Wave 31: `/dashboard/saved` Bookmarked Creators (1) j2creator |
 | `bookmarks.mutations.listSavedPosts` | subscriber | yes | PASS | Wave 31: Saved Posts (0) live query on `/dashboard/saved?demo=0` |
 | `bookmarks.mutations.toggleCreatorBookmark` | subscriber | yes | PASS | Wave 31: profile Bookmark → creatorBookmarks row; Discover control |
-| `bookmarks.mutations.toggleSavedPost` | subscriber | yes | NOT_RUN | Dashboard Save wired; no active-feed post soak this wave |
+| `bookmarks.mutations.toggleSavedPost` | subscriber | yes | PASS | Wave 32: feed Save → Unsave + `/dashboard/saved` Saved Posts (1) J3 PUSH PICK |
 | `creators.earnings.myEarnings` | TBD | yes | NOT_RUN | frozen vs convex/*.ts @ bf85281 |
 | `creators.growth.getLinkPublic` | TBD | yes | NOT_RUN | frozen vs convex/*.ts @ bf85281 |
 | `creators.growth.listMyLinks` | TBD | yes | NOT_RUN | frozen vs convex/*.ts @ bf85281 |
@@ -409,7 +409,7 @@ Confirm each table still exists; note writers. Result `NOT_RUN` = existence free
 | webhookReceipts | stripeNode.fulfillWebhook | PARTIAL | Wave 6: HTTP reject + helper tests. No new signed receipt this wave |
 | sportEvents | events / platform | PASS | Wave 19: published today slate via seedTodayDev + public list |
 | notifications | notifications / notify | PASS | Wave 20: adminInsert + markRead/markAllRead on j4member |
-| savedPosts / creatorBookmarks | bookmarks.mutations | PASS | Wave 31: creatorBookmarks for j2creator; savedPosts queried empty on Saved |
+| savedPosts / creatorBookmarks | bookmarks.mutations | PASS | Wave 32: savedPosts (1) J3 PUSH; Wave 31 creatorBookmarks j2creator |
 | payouts / creatorPayoutSettings | payouts.mutations | NOT_RUN | present in convex/schema.ts @ bf85281; existence freeze only |
 | creatorLinks / promoCodes / referrals | creators.growth | PASS | Wave 11 promo/links; Wave 29 referrals convert on Checkout (`m57b0n7…` converted true, commission 0) |
 | resolutionCases / resolutionCaseMessages | resolution.mutations | NOT_RUN | present in convex/schema.ts @ bf85281; existence freeze only |
@@ -432,7 +432,7 @@ Schema `appRole` also allows `moderator` and `user` (not product actors; no rout
 
 ## M. Remaining risk (update every fix PR)
 
-- P2: Stripe Connect live transfers still unimplemented (Wave 22 honesty PASS — ledger/manual only); referral commission cash product TBD; J7 X/Twitter OAuth consent not browser-completed; `creatorLinks.conversions` needs click→subscribe attribution product (honest UI note shipped Wave 30); `toggleSavedPost` feed soak residual; historical migration data parity BLOCKED (greenfield)
+- P2: Stripe Connect live transfers still unimplemented (Wave 22 honesty PASS — ledger/manual only); referral commission cash product TBD; J7 X/Twitter OAuth consent not browser-completed; `creatorLinks.conversions` needs click→subscribe attribution product (honest UI note shipped Wave 30); account-request fulfillment still manual (queue UI shipped Wave 32); historical migration data parity BLOCKED (greenfield)
 - P3: admin user/creator spend metrics cap at 200 indexed rows; customer pages scan ≤5k subscriptions; eslint warnings; AuthContext DEV `hasRole` leftover; All Accounts table shows a single primary role even when `userRoles` is multi
 - Not in this PR: production deploy, live Stripe keys, MFA
 - Waivers: see section L

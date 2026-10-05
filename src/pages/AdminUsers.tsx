@@ -1,14 +1,12 @@
-import { cn } from '@/lib/utils';
 import { useMemo, useState } from 'react';
-import { useMutation, usePaginatedQuery } from 'convex/react';
+import { useMutation, usePaginatedQuery, useQuery } from 'convex/react';
 import { api } from '../../convex/_generated/api';
 import type { Id } from '../../convex/_generated/dataModel';
 import { DashboardLayout } from '@/components/dashboard/DashboardLayout';
-import { clayCard } from '@/lib/overviewClay';
 import { DesktopTableRegion, MobileRecordCards } from '@/components/dashboard/MobileRecordList';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Users, Loader2, Search, Eye, Download, Shield } from 'lucide-react';
+import { Users, Loader2, Search, Eye, Download, Shield, Inbox } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { downloadCsv } from '@/lib/csv';
@@ -29,6 +27,12 @@ interface UserRow {
   paidOut: number;
 }
 
+const categoryLabel = (category: string) => {
+  if (category === 'account_deletion') return 'Account deletion';
+  if (category === 'email_change') return 'Email change';
+  return category;
+};
+
 const AdminUsers = () => {
   const [selected, setSelected] = useState<UserRow | null>(null);
   const [search, setSearch] = useState('');
@@ -40,6 +44,7 @@ const AdminUsers = () => {
     {},
     { initialNumItems: PAGE_SIZE },
   );
+  const openRequests = useQuery(api.accountRequests.listOpenAdmin);
   const grantRoleMutation = useMutation(api.roles.mutations.grantRole);
 
   const loading = status === 'LoadingFirstPage';
@@ -126,6 +131,55 @@ const AdminUsers = () => {
           </Button>
         </div>
       </div>
+
+      <section className="mb-6 rounded-2xl border border-border bg-card shadow-[var(--shadow-card)] p-4 sm:p-5">
+        <div className="flex items-start gap-3 mb-3">
+          <div className="rounded-xl bg-amber-500/10 p-2 text-amber-600">
+            <Inbox className="h-4 w-4" aria-hidden />
+          </div>
+          <div className="min-w-0">
+            <h2 className="text-sm font-semibold">Open account requests</h2>
+            <p className="text-caption text-muted-foreground mt-0.5">
+              Manual review queue (email change / deletion). Fulfillment is not automated yet.
+            </p>
+          </div>
+          <span className="ml-auto text-caption font-medium tabular-nums text-muted-foreground shrink-0">
+            {openRequests === undefined ? '…' : `${openRequests.length} open`}
+          </span>
+        </div>
+        {openRequests === undefined ? (
+          <div className="flex justify-center py-6">
+            <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+          </div>
+        ) : openRequests.length === 0 ? (
+          <p className="text-sm text-muted-foreground py-2">No open requests.</p>
+        ) : (
+          <ul className="divide-y divide-border rounded-xl border border-border overflow-hidden">
+            {openRequests.map((req) => (
+              <li key={req._id} className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between px-3 py-3 bg-background/40">
+                <div className="min-w-0">
+                  <p className="text-sm font-medium truncate">
+                    {req.fullName ?? req.email ?? 'Unknown user'}
+                  </p>
+                  <p className="text-caption text-muted-foreground truncate">
+                    {req.email ?? String(req.userId)}
+                    {req.requestedEmail ? ` → ${req.requestedEmail}` : ''}
+                  </p>
+                  <p className="text-caption text-muted-foreground mt-0.5 line-clamp-2">{req.reason}</p>
+                </div>
+                <div className="flex items-center gap-2 shrink-0 mt-1 sm:mt-0">
+                  <span className="inline-flex items-center rounded-full px-2 py-0.5 text-caption font-medium bg-amber-500/10 text-amber-700 dark:text-amber-400">
+                    {categoryLabel(req.category)}
+                  </span>
+                  <span className="text-caption text-muted-foreground">
+                    {format(new Date(req.createdAt), 'MMM d, yyyy')}
+                  </span>
+                </div>
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
 
       {loading ? (
         <div className="flex justify-center py-20"><Loader2 className="h-5 w-5 animate-spin text-primary" /></div>
