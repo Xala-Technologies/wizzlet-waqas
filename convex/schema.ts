@@ -235,6 +235,7 @@ export default defineSchema({
     .index("by_subscriptionId", ["subscriptionId"])
     .index("by_createdAt", ["createdAt"])
     .index("by_legacyId", ["legacyId"])
+    .index("by_status", ["status"])
     .index("by_externalRef", ["externalRef"])
     .index("by_commercialRef", ["commercialRef"])
     .index("by_checkoutSessionId", ["checkoutSessionId"]),

@@ -1,3 +1,17 @@
+# Findings — Wave 51 payoutsOverview indexed events/payouts 2026-10-05
+
+Branch `fix/world-ready-wave-51-payouts-overview-indexes`. Admin soak `admin@prizelet.dev` on `combative-mongoose-559`. Added `paymentEvents.by_status`.
+
+| Step | Result | Evidence |
+|------|--------|----------|
+| Query | PASS | `takePaymentEventsByStatus(settled/paid)` + payout status takes; `db.get` names; no `adminScanAll` |
+| Unit | PASS | `payoutsOverview.security.test.ts` 3/3 |
+| UI soak | PASS | `/admin/payouts` Owed **$104.49**, queued **$142.40**, paid **$47.47**; OPEN 1 / COMPLETED 2 / FAILED 1; j2 in-flight **$142.40** |
+
+**Residual:** Connect KYC/currency; announcement audience + reportSourceData scans.
+
+---
+
 # Findings — Wave 50 feesOverview indexed active fees 2026-10-05
 
 Branch `fix/world-ready-wave-50-fees-overview-indexes`. Admin soak `admin@prizelet.dev` on `combative-mongoose-559`.

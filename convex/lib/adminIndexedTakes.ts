@@ -45,3 +45,14 @@ export async function takeCreatorsByPublished(
     .take(ADMIN_SCAN_MAX_DOCS);
   return { docs, truncated: docs.length >= ADMIN_SCAN_MAX_DOCS };
 }
+
+export async function takePaymentEventsByStatus(
+  ctx: QueryCtx,
+  status: string,
+): Promise<{ docs: Doc<"paymentEvents">[]; truncated: boolean }> {
+  const docs = await ctx.db
+    .query("paymentEvents")
+    .withIndex("by_status", (q) => q.eq("status", status))
+    .take(ADMIN_SCAN_MAX_DOCS);
+  return { docs, truncated: docs.length >= ADMIN_SCAN_MAX_DOCS };
+}
