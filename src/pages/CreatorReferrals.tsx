@@ -375,19 +375,18 @@ const CreatorReferrals = () => {
 
   return (
     <DashboardLayout type="creator" mainClassName="bg-clay-page">
-      <header className="mb-4 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-        <div className="min-w-0">
-          <p className="mt-1.5 max-w-2xl text-sm font-medium text-muted-foreground sm:text-base">
-            Turn your community into a growth engine. Reward your users for bringing in new
-            subscribers.
-          </p>
-        </div>
-        <div className={cn(clayCard, 'inline-flex h-11 shrink-0 items-center gap-2 px-3.5 text-sm font-semibold text-foreground')}>
+      <div className="mb-4 flex justify-end sm:mb-5">
+        <div
+          className={cn(
+            clayCard,
+            'inline-flex h-11 shrink-0 items-center gap-2 px-3.5 text-sm font-semibold text-foreground',
+          )}
+        >
           <Calendar className="h-4 w-4 text-muted-foreground" aria-hidden />
           <span className="tabular-nums">{dateRangeLabel}</span>
           <ChevronDown className="h-4 w-4 text-muted-foreground" aria-hidden />
         </div>
-      </header>
+      </div>
 
       <MarketingSubnav active="referrals" />
 

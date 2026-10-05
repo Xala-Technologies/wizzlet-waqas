@@ -245,11 +245,6 @@ const CreatorPersonalGrowth = () => {
   if (!creator) {
     return (
       <DashboardLayout type="creator" mainClassName="bg-clay-page">
-        <header className="mb-4">
-          <p className="text-caption font-semibold uppercase tracking-[0.14em] text-muted-foreground">
-            Support
-          </p>
-        </header>
         <div className={cn(clayCard, 'p-10 text-center')}>
           <Users className="mx-auto mb-4 h-10 w-10 text-muted-foreground" />
           <h3 className="mb-2 text-ui font-semibold text-foreground">No creator profile yet</h3>
@@ -307,10 +302,7 @@ const CreatorPersonalGrowth = () => {
 
   return (
     <DashboardLayout type="creator" mainClassName="bg-clay-page">
-      <header className="mb-4 flex flex-col gap-3 sm:mb-6 sm:flex-row sm:items-center sm:justify-between">
-        <p className="text-caption font-semibold uppercase tracking-[0.14em] text-muted-foreground">
-          Support
-        </p>
+      <div className="mb-4 flex justify-end sm:mb-6">
         <Button
           asChild
           className="h-11 w-full shrink-0 gap-1.5 rounded-xl px-4 font-semibold shadow-sm sm:w-auto"
@@ -320,7 +312,7 @@ const CreatorPersonalGrowth = () => {
             Create Post
           </Link>
         </Button>
-      </header>
+      </div>
 
       <div className="mb-6">
         <DashboardKpiStrip

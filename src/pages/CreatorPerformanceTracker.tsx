@@ -291,18 +291,18 @@ const CreatorPerformanceTracker = () => {
 
   return (
     <DashboardLayout type="creator" mainClassName="bg-clay-page">
-      <header className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div className="min-w-0">
-          <p className="mt-1.5 max-w-xl text-sm font-medium text-muted-foreground sm:text-base">
-            Track your growth, analyze your content, and make smarter decisions.
-          </p>
-        </div>
-        <div className={cn(clayCard, 'flex h-11 shrink-0 items-center gap-2 px-3.5 text-sm font-semibold text-foreground')}>
+      <div className="mb-4 flex justify-end sm:mb-5">
+        <div
+          className={cn(
+            clayCard,
+            'flex h-11 shrink-0 items-center gap-2 px-3.5 text-sm font-semibold text-foreground',
+          )}
+        >
           <Calendar className="h-4 w-4 text-muted-foreground" aria-hidden />
           <span className="tabular-nums">{metrics.dateRangeLabel}</span>
           <ChevronDown className="h-4 w-4 text-muted-foreground" aria-hidden />
         </div>
-      </header>
+      </div>
 
       {useDemo ? (
         <div className="clay-card mb-6 flex items-start gap-3 bg-[#fbf8f3] px-4 py-3.5 text-amber-950 dark:bg-amber-500/10 dark:text-amber-100 sm:items-center sm:px-5">

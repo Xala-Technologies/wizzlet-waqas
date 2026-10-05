@@ -137,12 +137,6 @@ const CreatorResolutionCase = () => {
 
   return (
     <DashboardLayout type="creator">
-      <header className="mb-4">
-        <p className="text-caption font-semibold uppercase tracking-[0.14em] text-muted-foreground">
-          Support
-        </p>
-      </header>
-
       <section className="mb-8 rounded-2xl border border-border bg-card p-5 shadow-[var(--shadow-card)] sm:p-6">
         <h2 className="mb-4 text-base font-extrabold tracking-tight text-foreground">
           Open a New Case

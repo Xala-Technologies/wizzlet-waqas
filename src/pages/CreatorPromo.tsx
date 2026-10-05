@@ -279,11 +279,6 @@ const CreatorPromo = () => {
   if (!creator) {
     return (
       <DashboardLayout type="creator" mainClassName="bg-clay-page">
-        <header className="mb-4">
-          <p className="mt-1.5 text-sm font-medium text-muted-foreground sm:text-base">
-            Grow your audience, drive more sales, and track what works.
-          </p>
-        </header>
         <div className={cn(clayCard, 'p-10 text-center')}>
           <Megaphone className="mx-auto mb-4 h-10 w-10 text-muted-foreground" />
           <h3 className="mb-2 text-ui font-semibold text-foreground">No creator profile yet</h3>
@@ -309,18 +304,18 @@ const CreatorPromo = () => {
 
   return (
     <DashboardLayout type="creator" mainClassName="bg-clay-page">
-      <header className="mb-4 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-        <div className="min-w-0">
-          <p className="mt-1.5 text-sm font-medium text-muted-foreground sm:text-base">
-            Grow your audience, drive more sales, and track what works.
-          </p>
-        </div>
-        <div className={cn(clayCard, 'inline-flex h-11 shrink-0 items-center gap-2 px-3.5 text-sm font-semibold text-foreground')}>
+      <div className="mb-4 flex justify-end sm:mb-5">
+        <div
+          className={cn(
+            clayCard,
+            'inline-flex h-11 shrink-0 items-center gap-2 px-3.5 text-sm font-semibold text-foreground',
+          )}
+        >
           <Calendar className="h-4 w-4 text-muted-foreground" aria-hidden />
           <span className="tabular-nums">{metrics.dateRangeLabel}</span>
           <ChevronDown className="h-4 w-4 text-muted-foreground" aria-hidden />
         </div>
-      </header>
+      </div>
 
       <MarketingSubnav active="overview" />
 

@@ -823,12 +823,7 @@ const CreatorMessages = () => {
 
   return (
     <DashboardLayout type="creator" mainClassName="bg-clay-page">
-      <header className="mb-5 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-        <div className="min-w-0">
-          <p className="mt-1.5 max-w-xl text-sm font-medium text-muted-foreground sm:text-base">
-            Connect with your subscribers, answer questions, and build your community.
-          </p>
-        </div>
+      <header className="mb-5 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-end">
         <div className="flex shrink-0 flex-wrap items-center gap-3">
           {!useDemo ? (
             <div className="flex items-center gap-2 text-support text-muted-foreground">
