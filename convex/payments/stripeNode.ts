@@ -54,6 +54,8 @@ export const createCheckoutSession = action({
     productId: v.optional(v.id("products")),
     creatorUsername: v.string(),
     promoCode: v.optional(v.string()),
+    /** Optional `/go/:linkId` attribution from client session handoff. */
+    creatorLinkId: v.optional(v.id("creatorLinks")),
   },
   returns: v.object({
     url: v.string(),
@@ -139,6 +141,7 @@ export const createCheckoutSession = action({
         amountCents: String(prep.amountCents),
         promoId: promo?.promoId ?? "",
         promoCode: promo?.code ?? "",
+        creatorLinkId: args.creatorLinkId ?? "",
       },
       subscription_data: {
         metadata: {
@@ -146,6 +149,7 @@ export const createCheckoutSession = action({
           creatorId: args.creatorId,
           productId: args.productId ?? "",
           promoId: promo?.promoId ?? "",
+          creatorLinkId: args.creatorLinkId ?? "",
         },
       },
     });
@@ -182,6 +186,9 @@ export const confirmCheckoutSession = action({
         : undefined;
     const amountCents = checkoutAmountCents(session);
     const promoId = optionalMetaId<Id<"promoCodes">>(session.metadata?.promoId);
+    const creatorLinkId = optionalMetaId<Id<"creatorLinks">>(
+      session.metadata?.creatorLinkId,
+    );
     const stripeSubscriptionId =
       typeof session.subscription === "string"
         ? session.subscription
@@ -200,6 +207,7 @@ export const confirmCheckoutSession = action({
         checkoutSessionId: session.id,
         paymentMode: stripeMode(session.livemode),
         promoId,
+        creatorLinkId,
       });
     return { ok: true, duplicate: result.duplicate };
   },
@@ -347,6 +355,9 @@ export const fulfillWebhook = internalAction({
             : undefined;
         const amountCents = checkoutAmountCents(session);
         const promoId = optionalMetaId<Id<"promoCodes">>(session.metadata?.promoId);
+        const creatorLinkId = optionalMetaId<Id<"creatorLinks">>(
+          session.metadata?.creatorLinkId,
+        );
         const stripeSubscriptionId =
           typeof session.subscription === "string"
             ? session.subscription
@@ -365,6 +376,7 @@ export const fulfillWebhook = internalAction({
           deliveryRef: event.id,
           paymentMode: stripeMode(event.livemode),
           promoId,
+          creatorLinkId,
         });
       } else if (event.type === "invoice.paid") {
         const invoice = event.data.object as Stripe.Invoice & {

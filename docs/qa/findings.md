@@ -1,3 +1,19 @@
+# Findings — Wave 33 creatorLinks paid conversions 2026-10-05
+
+Branch `test/world-ready-wave-33-link-conversions`. Fixtures `j2creator` + `j4member+wave9` on `combative-mongoose-559`.
+
+| Step | Result | Evidence |
+|------|--------|----------|
+| Create link | PASS | Wave33 Bio → `/go/jd72413kctd49fqj00arzq048h8fq08t` |
+| `/go/` handoff | PASS | `sessionStorage.prizelet.creatorLinkId` set before redirect |
+| Paid convert | PASS | Checkout `cs_test_a1LSVo…` WAVE24 → row clicks/sign-ups/conversions **1** |
+| Links honesty | PASS | Copy: conversions increment after `/go/` + Checkout |
+| Unit | PASS | `creatorLinkHandoff.test.ts` + `growthAttribution.security.test.ts` 3/3 |
+
+**Link conversion residual:** PASS. Next: Connect transfers; commission cash; X consent.
+
+---
+
 # Findings — Wave 32 saved posts + admin account requests 2026-10-05
 
 Branch `test/world-ready-wave-32-saved-posts-admin-requests`. Fixture `j6oauthwave30` + platform owner on `combative-mongoose-559`.

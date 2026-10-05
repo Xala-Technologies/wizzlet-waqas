@@ -1,13 +1,14 @@
 import type { MutationCtx } from "../_generated/server";
 import type { Id } from "../_generated/dataModel";
 
-/** After a successful subscribe: bump promo uses and mark referrals converted. */
+/** After a successful subscribe: bump promo uses, mark referrals converted, attribute /go/ links. */
 export async function applySubscribeGrowthAttribution(
   ctx: MutationCtx,
   args: {
     userId: Id<"users">;
     creatorId: Id<"creators">;
     promoId?: Id<"promoCodes">;
+    creatorLinkId?: Id<"creatorLinks">;
     nowMs: number;
   },
 ): Promise<void> {
@@ -16,6 +17,16 @@ export async function applySubscribeGrowthAttribution(
     if (promo && promo.creatorId === args.creatorId) {
       await ctx.db.patch(args.promoId, {
         usedCount: promo.usedCount + 1,
+        updatedAt: args.nowMs,
+      });
+    }
+  }
+
+  if (args.creatorLinkId) {
+    const link = await ctx.db.get(args.creatorLinkId);
+    if (link && link.creatorId === args.creatorId) {
+      await ctx.db.patch(args.creatorLinkId, {
+        conversions: link.conversions + 1,
         updatedAt: args.nowMs,
       });
     }
