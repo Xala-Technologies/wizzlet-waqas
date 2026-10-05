@@ -543,6 +543,72 @@
       border-color var(--duration-normal) var(--ease-standard);
   }
 
+  /**
+   * KPI tint washes — declared after `.clay-card` so they win the background
+   * cascade (same utilities layer). Light tints match dark’s visible color language.
+   */
+  .clay-fill-emerald {
+    background-color: #ecfdf5;
+  }
+  .clay-fill-violet {
+    background-color: #f5f3ff;
+  }
+  .clay-fill-sky {
+    background-color: #f0f9ff;
+  }
+  .clay-fill-amber {
+    background-color: #fffbeb;
+  }
+  .clay-fill-rose {
+    background-color: #fff1f2;
+  }
+  .clay-fill-orange {
+    background-color: #fff7ed;
+  }
+  .clay-fill-cyan {
+    background-color: #ecfeff;
+  }
+  .clay-fill-teal {
+    background-color: #f0fdfa;
+  }
+  .clay-fill-lime {
+    background-color: #f7fee7;
+  }
+  .clay-fill-primary {
+    background-color: var(--brand-50);
+  }
+
+  .dark .clay-fill-emerald {
+    background-color: rgb(16 185 129 / 0.1);
+  }
+  .dark .clay-fill-violet {
+    background-color: var(--active-bg);
+  }
+  .dark .clay-fill-sky {
+    background-color: rgb(14 165 233 / 0.1);
+  }
+  .dark .clay-fill-amber {
+    background-color: rgb(245 158 11 / 0.1);
+  }
+  .dark .clay-fill-rose {
+    background-color: rgb(244 63 94 / 0.1);
+  }
+  .dark .clay-fill-orange {
+    background-color: rgb(249 115 22 / 0.1);
+  }
+  .dark .clay-fill-cyan {
+    background-color: rgb(6 182 212 / 0.1);
+  }
+  .dark .clay-fill-teal {
+    background-color: rgb(20 184 166 / 0.1);
+  }
+  .dark .clay-fill-lime {
+    background-color: rgb(132 204 22 / 0.1);
+  }
+  .dark .clay-fill-primary {
+    background-color: var(--active-bg);
+  }
+
   .clay-card-interactive:hover {
     box-shadow: var(--shadow-clay-hover);
     border-color: hsl(var(--border));
