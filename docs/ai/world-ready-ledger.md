@@ -16,7 +16,9 @@ Do not claim world-ready until Section 8 gates in the master prompt pass.
 | Evidence | branch, date, one-line actual vs expected |
 | Waiver | owner + reason (required if WAIVED) |
 
-Last updated: 2026-10-05. Last wave: **67** (`fix/world-ready-wave-67-usd-platform-currency`). Source pin: `bf85281` (inventory).
+Last updated: 2026-10-05. Last wave: **68** (`feat/world-ready-wave-68-connect-stripe-fx`). Source pin: `bf85281` (inventory).
+
+Wave 68: Connect Transfer funding — matched USD available, else **Stripe-native FX** from NO settlement (NOK) using Stripe `exchange_rate` (never 1 øre = 1 cent). Express `acct_1UNI6YRzsXVyRAzD` KYC `payouts_enabled`. Decision log updated. Units `stripeConnect.security.test.ts`.
 
 Wave 67: Product decision — commercial currency **USD**. Checkout/stripeDb/sandbox use `PRIZELET_LEDGER_CURRENCY`; Connect country **US**. Stripe entity still **NO**/settles **nok** with NOK-only available — admin note tells ops to fund USD. Decision log updated. Units `stripeConnect.security.test.ts`.
 
@@ -487,7 +489,7 @@ Schema `appRole` also allows `moderator` and `user` (not product actors; no rout
 
 ## M. Remaining risk (update every fix PR)
 
-- P2: USD currency locked (Wave 67). Connect Transfer blocked until Express KYC (`payouts_enabled`) **and** Stripe available **USD** (entity NO still settles NOK today — fund USD in Dashboard/support; no FX fake); referral cash still outside Stripe; member self-serve verified email OTP still missing; historical migration data parity BLOCKED (greenfield)
+- P2: USD currency locked (Wave 67). Connect Transfer: Express KYC done + Wave 68 Stripe-native FX from NOK settlement when USD available missing; referral cash still outside Stripe; member self-serve verified email OTP still missing; historical migration data parity BLOCKED (greenfield)
 - P3: admin join spend still capped at 500; F-012 Convex `.collect` closed Waves 59–65; Connect KYC + USD available funding + referral cash + email OTP still open; customers/alerts/finance/dashboard/fees/payouts/announcement/reports KPIs PASS (Wave 43–47, 50–55); eslint PASS Wave 57; join honesty PASS Wave 58
 - Not in this PR: production deploy, live Stripe keys, MFA
 - Waivers: see section L

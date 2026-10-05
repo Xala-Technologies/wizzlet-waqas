@@ -17,7 +17,7 @@ import {
   isStripeAccountsV1DisabledError,
   isStripeConnectNotEnabledError,
   PRIZELET_LEDGER_CURRENCY,
-  resolveConnectTransferCurrency,
+  resolveConnectTransferPlan,
 } from "../lib/stripeConnect";
 
 function requireStripe(): Stripe {
@@ -557,11 +557,37 @@ function connectCountry(): string {
   return raw && /^[A-Z]{2}$/.test(raw) ? raw : "US";
 }
 
+async function stripeExchangeRateForLedger(
+  stripe: Stripe,
+  ledgerCurrency: string,
+  settlementCurrency: string,
+): Promise<number> {
+  const ledger = ledgerCurrency.toLowerCase();
+  const settlement = settlementCurrency.toLowerCase();
+  if (ledger === settlement) return 1;
+  const page = await stripe.balanceTransactions.list({
+    limit: 30,
+    type: "charge",
+  });
+  for (const tx of page.data) {
+    if (tx.currency.toLowerCase() !== settlement) continue;
+    if (typeof tx.exchange_rate !== "number" || !(tx.exchange_rate > 0)) continue;
+    const sourceId = typeof tx.source === "string" ? tx.source : tx.source?.id;
+    if (!sourceId || !sourceId.startsWith("ch_")) continue;
+    const charge = await stripe.charges.retrieve(sourceId);
+    if (charge.currency.toLowerCase() === ledger) {
+      return tx.exchange_rate;
+    }
+  }
+  throw new Error("STRIPE_FX_RATE_UNAVAILABLE");
+}
+
 function mapStripeConnectError(err: unknown): never {
   const message = err instanceof Error ? err.message : String(err);
   if (
     message === "STRIPE_CURRENCY_MISMATCH" ||
     message === "STRIPE_INSUFFICIENT_BALANCE" ||
+    message === "STRIPE_FX_RATE_UNAVAILABLE" ||
     message === "INVALID_AMOUNT" ||
     message === "CONNECT_PAYOUTS_NOT_ENABLED" ||
     message === "CONNECT_ACCOUNT_MISSING"
@@ -586,7 +612,7 @@ function mapStripeConnectError(err: unknown): never {
 /**
  * Create (or reuse) a Stripe Express connected account and return an Account Link.
  * Does not move money. Admin Send via Stripe creates Transfers only after KYC
- * (`payouts_enabled`) and USD ledger/balance/destination alignment.
+ * (`payouts_enabled`) with matched USD available or Stripe-native FX from settlement.
  */
 export const createConnectOnboardingSession = action({
   args: {},
@@ -667,6 +693,7 @@ export const getConnectPlatformBalance = action({
       }),
     ),
     ledgerCurrencyAvailable: v.boolean(),
+    stripeFxFundingAvailable: v.boolean(),
   }),
   handler: async (ctx) => {
     const userId = await getAuthUserId(ctx);
@@ -685,15 +712,23 @@ export const getConnectPlatformBalance = action({
       amount: row.amount,
       currency: row.currency.toLowerCase(),
     }));
+    const settlement = (account.default_currency ?? "").toLowerCase();
+    const ledgerCurrencyAvailable = available.some(
+      (row) => row.currency === PRIZELET_LEDGER_CURRENCY && row.amount > 0,
+    );
+    const stripeFxFundingAvailable =
+      !ledgerCurrencyAvailable &&
+      !!settlement &&
+      settlement !== PRIZELET_LEDGER_CURRENCY &&
+      available.some((row) => row.currency === settlement && row.amount > 0);
     return {
       ledgerCurrency: PRIZELET_LEDGER_CURRENCY,
       platformCountry: (account.country ?? "").toUpperCase(),
-      platformDefaultCurrency: (account.default_currency ?? "").toLowerCase(),
+      platformDefaultCurrency: settlement,
       available,
       pending,
-      ledgerCurrencyAvailable: available.some(
-        (row) => row.currency === PRIZELET_LEDGER_CURRENCY && row.amount > 0,
-      ),
+      ledgerCurrencyAvailable,
+      stripeFxFundingAvailable,
     };
   },
 });
@@ -735,8 +770,9 @@ export const refreshConnectAccountStatus = action({
 });
 
 /**
- * Move ledger payout funds via Stripe Connect Transfer when Express payouts are enabled
- * and the platform balance is in the connected account's currency. Does not mark the
+ * Move ledger payout funds via Stripe Connect Transfer when Express payouts are enabled.
+ * Uses matched USD available when present; otherwise Stripe-native FX from platform
+ * settlement currency (e.g. NOK) sized with Stripe's exchange_rate. Does not mark the
  * ledger paid unless Stripe accepts the transfer.
  */
 export const sendConnectPayout = action({
@@ -746,6 +782,9 @@ export const sendConnectPayout = action({
     alreadySent: v.boolean(),
     amountCents: v.number(),
     currency: v.string(),
+    transferCurrency: v.string(),
+    transferAmount: v.number(),
+    funding: v.union(v.literal("matched"), v.literal("stripe_fx")),
   }),
   handler: async (
     ctx,
@@ -755,6 +794,9 @@ export const sendConnectPayout = action({
     alreadySent: boolean;
     amountCents: number;
     currency: string;
+    transferCurrency: string;
+    transferAmount: number;
+    funding: "matched" | "stripe_fx";
   }> => {
     const userId = await getAuthUserId(ctx);
     if (!userId) throw new Error("UNAUTHENTICATED");
@@ -769,6 +811,9 @@ export const sendConnectPayout = action({
         alreadySent: true,
         amountCents: prep.amountCents,
         currency: PRIZELET_LEDGER_CURRENCY,
+        transferCurrency: PRIZELET_LEDGER_CURRENCY,
+        transferAmount: prep.amountCents,
+        funding: "matched",
       };
     }
     if (prep.status === "completed" || prep.status === "paid") {
@@ -793,18 +838,33 @@ export const sendConnectPayout = action({
       throw new Error("CONNECT_PAYOUTS_NOT_ENABLED");
     }
 
-    let currency: string;
+    let plan: ReturnType<typeof resolveConnectTransferPlan>;
     try {
-      const balance = await stripe.balance.retrieve();
-      currency = resolveConnectTransferCurrency({
+      const [balance, platform] = await Promise.all([
+        stripe.balance.retrieve(),
+        stripe.accounts.retrieve(null),
+      ]);
+      const settlement = (platform.default_currency ?? "nok").toLowerCase();
+      const available = (balance.available ?? []).map((row) => ({
+        amount: row.amount,
+        currency: row.currency,
+      }));
+      const matchedBucket = available.find(
+        (row) => row.currency.toLowerCase() === PRIZELET_LEDGER_CURRENCY,
+      );
+      const matchedCovers =
+        !!matchedBucket && matchedBucket.amount >= prep.amountCents;
+      const exchangeRate = matchedCovers
+        ? undefined
+        : await stripeExchangeRateForLedger(stripe, PRIZELET_LEDGER_CURRENCY, settlement);
+      plan = resolveConnectTransferPlan({
         ledgerCurrency: PRIZELET_LEDGER_CURRENCY,
         destinationCurrency: account.default_currency ?? PRIZELET_LEDGER_CURRENCY,
+        platformSettlementCurrency: settlement,
         amountCents: prep.amountCents,
-        available: (balance.available ?? []).map((row) => ({
-          amount: row.amount,
-          currency: row.currency,
-        })),
-      }).currency;
+        available,
+        exchangeRate,
+      });
     } catch (err) {
       mapStripeConnectError(err);
     }
@@ -812,12 +872,18 @@ export const sendConnectPayout = action({
     let transfer: Stripe.Transfer;
     try {
       transfer = await stripe.transfers.create({
-        amount: prep.amountCents,
-        currency,
+        amount: plan.transferAmount,
+        currency: plan.transferCurrency,
         destination: prep.stripeAccountId,
         metadata: {
           payoutId: prep.payoutId,
           creatorId: prep.creatorId,
+          ledgerCurrency: plan.ledgerCurrency,
+          ledgerAmountCents: String(plan.ledgerAmountCents),
+          funding: plan.funding,
+          ...(plan.exchangeRate != null
+            ? { exchangeRate: String(plan.exchangeRate) }
+            : {}),
         },
       });
     } catch (err) {
@@ -831,8 +897,11 @@ export const sendConnectPayout = action({
     return {
       transferId: transfer.id,
       alreadySent: false,
-      amountCents: prep.amountCents,
-      currency,
+      amountCents: plan.ledgerAmountCents,
+      currency: plan.ledgerCurrency,
+      transferCurrency: plan.transferCurrency,
+      transferAmount: plan.transferAmount,
+      funding: plan.funding,
     };
   },
 });

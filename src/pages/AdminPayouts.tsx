@@ -83,13 +83,15 @@ const AdminPayouts = () => {
         setStripeBalanceNote(
           bal.ledgerCurrencyAvailable
             ? `Prizelet currency USD. Stripe entity ${platform}. Available: ${available || 'none'}. USD funded — Connect Transfers can run after Express KYC.`
-            : `Prizelet currency USD. Stripe entity ${platform}. Available: ${available || 'none'}. Fund USD available in Stripe (Dashboard → Balances / support) before Send via Stripe — NOK cannot pay a USD ledger.`,
+            : bal.stripeFxFundingAvailable
+              ? `Prizelet currency USD. Stripe entity ${platform}. Available: ${available || 'none'}. No USD available — Send via Stripe uses Stripe-native FX from settlement currency (not 1 øre = 1 cent).`
+              : `Prizelet currency USD. Stripe entity ${platform}. Available: ${available || 'none'}. Fund Stripe available balance before Send via Stripe.`,
         );
       })
       .catch(() => {
         if (!cancelled) {
           setStripeBalanceNote(
-            'Could not load live Stripe balance. Send via Stripe still requires Express payouts_enabled plus matching USD available funds.',
+            'Could not load live Stripe balance. Send via Stripe still requires Express payouts_enabled plus USD available or Stripe-native FX from settlement funds.',
           );
         }
       });
@@ -206,7 +208,9 @@ const AdminPayouts = () => {
       toast.success(
         result.alreadySent
           ? `Already transferred ${result.transferId}`
-          : `Stripe transfer ${result.transferId} sent`,
+          : result.funding === 'stripe_fx'
+            ? `Stripe transfer ${result.transferId} sent (${(result.transferAmount / 100).toFixed(2)} ${result.transferCurrency.toUpperCase()} via Stripe FX for $${(result.amountCents / 100).toFixed(2)})`
+            : `Stripe transfer ${result.transferId} sent`,
       );
     } catch (e) {
       toast.error(
@@ -258,7 +262,7 @@ const AdminPayouts = () => {
           Treasury ledger plus optional Stripe Connect transfers
         </p>
         <p className="text-muted-foreground text-xs mt-1">
-          Mark paid in ledger does not move money. Send via Stripe creates a real Connect Transfer only when the creator’s Express account has payouts enabled and platform available balance matches the USD ledger (never NOK øre for USD cents).
+          Mark paid in ledger does not move money. Send via Stripe creates a real Connect Transfer when Express payouts are enabled — matched USD available, or Stripe-native FX from settlement currency sized with Stripe’s exchange rate (never 1 øre = 1 cent).
         </p>
         {stripeBalanceNote && (
           <p

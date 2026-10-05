@@ -10,6 +10,7 @@ import {
   isStripeAccountsV1DisabledError,
   isStripeConnectNotEnabledError,
   resolveConnectTransferCurrency,
+  resolveConnectTransferPlan,
 } from '../../convex/lib/stripeConnect';
 
 const stripeNode = readFileSync(
@@ -71,31 +72,92 @@ describe('stripe Connect Express helpers', () => {
     expect(isStripeAccountsV1DisabledError('card declined')).toBe(false);
   });
 
-  it('requires ledger, destination, and available balance currencies to match', () => {
-    expect(() =>
-      resolveConnectTransferCurrency({
-        ledgerCurrency: 'usd',
-        destinationCurrency: 'usd',
-        amountCents: 100,
-        available: [{ amount: 25532, currency: 'nok' }],
-      }),
-    ).toThrow('STRIPE_CURRENCY_MISMATCH');
-    expect(() =>
-      resolveConnectTransferCurrency({
-        ledgerCurrency: 'usd',
-        destinationCurrency: 'nok',
-        amountCents: 100,
-        available: [{ amount: 25532, currency: 'nok' }],
-      }),
-    ).toThrow('STRIPE_CURRENCY_MISMATCH');
+  it('prefers matched USD available, else Stripe-native FX from settlement', () => {
     expect(
-      resolveConnectTransferCurrency({
+      resolveConnectTransferPlan({
         ledgerCurrency: 'usd',
         destinationCurrency: 'usd',
+        platformSettlementCurrency: 'nok',
         amountCents: 100,
         available: [{ amount: 500, currency: 'usd' }],
       }),
-    ).toEqual({ currency: 'usd' });
+    ).toEqual({
+      funding: 'matched',
+      transferCurrency: 'usd',
+      transferAmount: 100,
+      ledgerCurrency: 'usd',
+      ledgerAmountCents: 100,
+    });
+
+    expect(
+      resolveConnectTransferPlan({
+        ledgerCurrency: 'usd',
+        destinationCurrency: 'usd',
+        platformSettlementCurrency: 'nok',
+        amountCents: 100,
+        available: [{ amount: 25532, currency: 'nok' }],
+        exchangeRate: 9.59358,
+      }),
+    ).toEqual({
+      funding: 'stripe_fx',
+      transferCurrency: 'nok',
+      transferAmount: 960,
+      ledgerCurrency: 'usd',
+      ledgerAmountCents: 100,
+      exchangeRate: 9.59358,
+    });
+
+    expect(() =>
+      resolveConnectTransferPlan({
+        ledgerCurrency: 'usd',
+        destinationCurrency: 'nok',
+        platformSettlementCurrency: 'nok',
+        amountCents: 100,
+        available: [{ amount: 25532, currency: 'nok' }],
+        exchangeRate: 9.5,
+      }),
+    ).toThrow('STRIPE_CURRENCY_MISMATCH');
+
+    expect(() =>
+      resolveConnectTransferPlan({
+        ledgerCurrency: 'usd',
+        destinationCurrency: 'usd',
+        platformSettlementCurrency: 'nok',
+        amountCents: 100,
+        available: [{ amount: 25532, currency: 'nok' }],
+      }),
+    ).toThrow('STRIPE_FX_RATE_UNAVAILABLE');
+
+    expect(() =>
+      resolveConnectTransferPlan({
+        ledgerCurrency: 'usd',
+        destinationCurrency: 'usd',
+        platformSettlementCurrency: 'nok',
+        amountCents: 600,
+        available: [{ amount: 500, currency: 'usd' }],
+        exchangeRate: 9.5,
+      }),
+    ).toThrow('STRIPE_CURRENCY_MISMATCH');
+
+    expect(
+      resolveConnectTransferPlan({
+        ledgerCurrency: 'usd',
+        destinationCurrency: 'usd',
+        platformSettlementCurrency: 'nok',
+        amountCents: 600,
+        available: [
+          { amount: 500, currency: 'usd' },
+          { amount: 100_000, currency: 'nok' },
+        ],
+        exchangeRate: 9.5,
+      }),
+    ).toMatchObject({
+      funding: 'stripe_fx',
+      transferCurrency: 'nok',
+      transferAmount: 5700,
+      ledgerAmountCents: 600,
+    });
+
     expect(() =>
       resolveConnectTransferCurrency({
         ledgerCurrency: 'usd',
@@ -118,6 +180,9 @@ describe('stripe Connect Express helpers', () => {
     expect(connectPayoutUserMessage('STRIPE_CURRENCY_MISMATCH')).toMatch(
       /not marked paid/i,
     );
+    expect(connectPayoutUserMessage('STRIPE_FX_RATE_UNAVAILABLE')).toMatch(
+      /not marked paid/i,
+    );
   });
 });
 
@@ -133,6 +198,7 @@ describe('stripe Connect Express wiring', () => {
     expect(stripeNode).toMatch(/PRIZELET_LEDGER_CURRENCY/);
     expect(stripeNode).toMatch(/export const getConnectPlatformBalance/);
     expect(stripeNode).toMatch(/platformDefaultCurrency/);
+    expect(stripeNode).toMatch(/stripeFxFundingAvailable/);
     expect(stripeDb).toMatch(/PRIZELET_LEDGER_CURRENCY/);
   });
 
@@ -155,6 +221,8 @@ describe('stripe Connect Express wiring', () => {
     expect(stripeNode).toMatch(/assertAdminUserId/);
     expect(stripeNode).toMatch(/transfers\.create/);
     expect(stripeNode).toMatch(/CONNECT_PAYOUTS_NOT_ENABLED/);
+    expect(stripeNode).toMatch(/resolveConnectTransferPlan/);
+    expect(stripeNode).toMatch(/stripeExchangeRateForLedger/);
     expect(stripeNode).toMatch(/Does not mark the/);
     expect(stripeDb).toMatch(/export const recordConnectTransfer/);
     expect(stripeDb).toMatch(/PAYOUT_ALREADY_SETTLED/);

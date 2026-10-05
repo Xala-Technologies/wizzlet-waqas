@@ -8,7 +8,8 @@ Extends [`decisions.md`](./decisions.md). Page-pack baseline only; no new commer
 |---------|----------|
 | Product / Checkout / ledger | **USD** (`PRIZELET_LEDGER_CURRENCY`) |
 | Connect Express country | **US** (`STRIPE_CONNECT_COUNTRY=US`) while ledger is USD |
-| Stripe legal entity | May remain **NO** with `default_currency=nok` settlement — ops must fund **USD available** for Connect Transfers; never treat NOK øre as USD cents |
+| Stripe legal entity | May remain **NO** with `default_currency=nok` settlement |
+| Connect Transfer funding | Prefer **matched USD available**. If only settlement currency is available, use **Stripe-native FX**: Transfer in settlement currency sized with Stripe `balance_transaction.exchange_rate`. Never treat NOK øre as USD cents 1:1 |
 | NOK pricing migration | Not chosen — out of scope while USD is the platform currency |
 
 ## Layout and typography (approved)
