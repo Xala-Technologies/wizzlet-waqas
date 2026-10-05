@@ -79,6 +79,9 @@ export default defineSchema({
     bannerUrl: v.optional(v.string()),
     monthlyPriceCents: v.optional(v.number()),
     stripeAccountId: v.optional(v.string()),
+    stripeConnectChargesEnabled: v.optional(v.boolean()),
+    stripeConnectPayoutsEnabled: v.optional(v.boolean()),
+    stripeConnectDetailsSubmitted: v.optional(v.boolean()),
     isPublished: v.boolean(),
     discordServerId: v.optional(v.string()),
     discordRoleId: v.optional(v.string()),
@@ -98,7 +101,8 @@ export default defineSchema({
     .index("by_username", ["username"])
     .index("by_legacyId", ["legacyId"])
     .index("by_published", ["isPublished"])
-    .index("by_referralCode", ["referralCode"]),
+    .index("by_referralCode", ["referralCode"])
+    .index("by_stripeAccountId", ["stripeAccountId"]),
 
   products: defineTable({
     legacyId: v.optional(v.string()),

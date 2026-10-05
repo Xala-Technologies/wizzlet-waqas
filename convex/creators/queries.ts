@@ -119,6 +119,34 @@ export const myCreator = query({
   },
 });
 
+export const myConnectStatus = query({
+  args: {},
+  returns: v.object({
+    stripeAccountId: v.union(v.string(), v.null()),
+    detailsSubmitted: v.boolean(),
+    payoutsEnabled: v.boolean(),
+    chargesEnabled: v.boolean(),
+  }),
+  handler: async (ctx) => {
+    const user = await requireAppUser(ctx);
+    const creator = await getCreatorForUser(ctx, user._id);
+    if (!creator) {
+      return {
+        stripeAccountId: null,
+        detailsSubmitted: false,
+        payoutsEnabled: false,
+        chargesEnabled: false,
+      };
+    }
+    return {
+      stripeAccountId: creator.stripeAccountId ?? null,
+      detailsSubmitted: creator.stripeConnectDetailsSubmitted === true,
+      payoutsEnabled: creator.stripeConnectPayoutsEnabled === true,
+      chargesEnabled: creator.stripeConnectChargesEnabled === true,
+    };
+  },
+});
+
 export const upsertOnboarding = mutation({
   args: {
     username: v.string(),

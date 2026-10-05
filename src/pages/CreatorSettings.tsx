@@ -1573,7 +1573,7 @@ const CreatorSettings = () => {
                         <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-emerald-500/15 text-emerald-700 dark:text-emerald-400">
                           <Check className="h-3 w-3" />
                         </span>
-                        Payouts are paid manually until Stripe Connect is enabled
+                        Connect Stripe on Payouts (Express). Automatic transfers are not live yet — ledger payouts stay manual.
                       </li>
                     </ul>
                   </div>

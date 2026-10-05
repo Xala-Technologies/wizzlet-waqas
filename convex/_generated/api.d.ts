@@ -50,6 +50,7 @@ import type * as lib_referralCommission from "../lib/referralCommission.js";
 import type * as lib_results from "../lib/results.js";
 import type * as lib_sandbox from "../lib/sandbox.js";
 import type * as lib_socialAuth from "../lib/socialAuth.js";
+import type * as lib_stripeConnect from "../lib/stripeConnect.js";
 import type * as lib_subscriptions from "../lib/subscriptions.js";
 import type * as lib_validators from "../lib/validators.js";
 import type * as messaging_mutations from "../messaging/mutations.js";
@@ -119,6 +120,7 @@ declare const fullApi: ApiFromModules<{
   "lib/results": typeof lib_results;
   "lib/sandbox": typeof lib_sandbox;
   "lib/socialAuth": typeof lib_socialAuth;
+  "lib/stripeConnect": typeof lib_stripeConnect;
   "lib/subscriptions": typeof lib_subscriptions;
   "lib/validators": typeof lib_validators;
   "messaging/mutations": typeof messaging_mutations;
