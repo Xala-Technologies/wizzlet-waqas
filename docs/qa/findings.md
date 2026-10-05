@@ -1,3 +1,20 @@
+# Findings — Wave 28 J7 multi-role switcher + OAuth residual 2026-10-05
+
+Branch `test/world-ready-wave-28-j7-multi-role`. Fixture `j2creator` / `j2creator+wave7@example.com` on `combative-mongoose-559`.
+
+| Step | Result | Evidence |
+|------|--------|----------|
+| Admin grant | PASS | `/admin/users` Grant **Subscriber** → `userRoles` `[creator, subscriber]` (`n179g48…`) |
+| Switcher visible | PASS | `/creator` shows **Switch to Member** |
+| Member switch | PASS | Click → `/dashboard` + **Switch to Creator** |
+| Creator switch | PASS | Click → `/creator` + **Switch to Member** again |
+| Discord OAuth residual | PASS | Closed via Wave 27 Continue with Discord → AuthCallback (`prize262626`) |
+| Unit | PASS | `authMatrix.security.test.ts` 7/7 |
+
+**J7 multi-role / Discord OAuth residual:** PASS. Remaining J7: X/Twitter OAuth not soaked. Next: referral cash; Connect live transfers.
+
+---
+
 # Findings — Wave 27 J-DISCORD end-to-end 2026-10-05
 
 Branch `test/world-ready-wave-27-j-discord`. Fixtures `j2creator` + Discord OAuth member `prize262626` on `combative-mongoose-559`. Portal app `1546839405245759508`.
