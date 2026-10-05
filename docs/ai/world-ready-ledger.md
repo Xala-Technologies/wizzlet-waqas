@@ -2,7 +2,7 @@
 
 **Authority:** [`docs/ai/prizelet-world-ready-master-prompt.md`](./prizelet-world-ready-master-prompt.md)
 
-**Status:** Wave 39 messaging composer honesty 2026-10-05. Product is **not** world-ready (other P2s remain).
+**Status:** Wave 40 CRM cancelled label honesty 2026-10-05. Product is **not** world-ready (other P2s remain).
 
 Do not claim world-ready until Section 8 gates in the master prompt pass.
 
@@ -16,11 +16,11 @@ Do not claim world-ready until Section 8 gates in the master prompt pass.
 | Evidence | branch, date, one-line actual vs expected |
 | Waiver | owner + reason (required if WAIVED) |
 
-Last updated: 2026-10-05. Last wave: **39** (`fix/world-ready-wave-39-messaging-composer-honesty`). Source pin: `bf85281` (inventory).
+Last updated: 2026-10-05. Last wave: **40** (`fix/world-ready-wave-40-crm-cancelled-label`). Source pin: `bf85281` (inventory).
 
-Wave 39: hide DM composer when gated; soak `j4member` cancelled → read-only note (no Send); creator inbox same. Units `messaging.security.test.ts` 7/7.
+Wave 40: Creator Messages CRM/header shows **Canceled · was Premium** for cancelled `j4member` (not bare Premium). Prefer active sub row when picking detail. Units `creatorMessageSubscriber.test.ts` 4/4.
 
-Wave 38: X OAuth PASS. Wave 37: multi-role All Accounts. Wave 36: referral Mark paid.
+Wave 39: gated composer PASS. Wave 38: X OAuth. Wave 37: multi-role.
 
 ---
 
@@ -155,7 +155,7 @@ Nested layouts in `App.tsx`: `/demo/admin` → `DemoAdminLayout`; `/demo/member`
 | J1 | Commercial lifecycle (publish → Stripe → webhook → cancel → access) | PASS | Wave 5 2026-10-05: publish `@prize2626` + product Monthly pro $100; member signup `j1member`; Checkout `cs_test_a171BP4bJzrvM8pRX5c7xvgaScFUnfjkraXVlSBBbIFzb8Zxz6spGJWgXJ`; sub `mn7bg36b7xe76gkxyaeq0caaph8fnhyh` ACTIVE then cancelled; `paymentEvents` `checkout:cs_test_…` + `cancel_local:…`; My Creators `?demo=0` empty after cancel. Residual: no new `webhookReceipts` for this session (confirmCheckoutSession fulfilled); Connect not in scope |
 | J2 | Product CRUD + profile slots | PASS | Wave 7 CRUD + slots; Wave 23 soft-archive; Wave 26 2026-10-05: Featured list-price switch; upsert exclusivity clears siblings; soak j2creator WAVE26 featured then WAVE24 featured → only WAVE24 badge; `/j2creator` Subscribe **$14.99**. `productFeatured.test.ts` 3/3 |
 | J3 | Content access / pick lock / win rate | PASS | Wave 8 owner lock/win-rate; Wave 24 2026-10-05: `j3member` Checkout `cs_test_a13a8w…` ACTIVE → dashboard shows WAVE8_SECRET_BODY; cancel `sub_1UMytH…` → status cancelled, feed empty (no secret); pickTracker settled Win → Result combobox **disabled**. Residual: cancel UI previously lied about period-end (fixed this wave) |
-| J4 | Messages / support / resolution | PASS | Wave 9 + Wave 39 2026-10-05: composer hidden when cancelled/disabled — member note + creator note; server `FORBIDDEN`/`MESSAGING_DISABLED` unchanged. Units 7/7. Residual: CRM panel can still label cancelled as Premium |
+| J4 | Messages / support / resolution | PASS | Wave 9/39/40: composer gated; CRM **Canceled · was Premium** for cancelled j4member. Units messaging 7/7 + creatorMessageSubscriber 4/4 |
 | J5 | Payout request / approve / balance | PASS | Wave 10 request/approve; Wave 25 2026-10-05: admin Lifetime from settled `paymentEvents` (cancelled j4member sub still counts) — `j4creator` Lifetime **$28.49** / Paid $28.49. `payoutBalance.test.ts` 6/6. Residual: Connect live transfers still out of scope |
 | J6 | Promo / tracking links / referrals | PASS | Wave 11/29/30/33/34; Wave 36 2026-10-05: admin Mark paid ledger for accrued commission (**$1.49** → Paid). Residual: Stripe Connect cash movement still out of scope |
 | J7 | Identity (password, OAuth, roles, email request) | PASS | Wave 12/27/28/30/38; Wave 35 admin email fulfill + soft-delete; Wave 38 X OAuth consent → Prize `@prize2626` creator session. Residual: no member self-serve verified email OTP |
@@ -436,6 +436,6 @@ Schema `appRole` also allows `moderator` and `user` (not product actors; no rout
 ## M. Remaining risk (update every fix PR)
 
 - P2: Stripe Connect live transfers still unimplemented (Wave 22 honesty PASS — ledger/manual only); referral commission accrual + ledger Mark paid PASS (Wave 34/36) — cash still settles outside until Connect; J7 X OAuth consent PASS (Wave 38); account-request admin fulfill PASS (Wave 35) — residual: no member self-serve verified email OTP; Stripe remote cancel not part of deletion fulfill; historical migration data parity BLOCKED (greenfield)
-- P3: admin user/creator spend metrics cap at 200 indexed rows; customer pages scan ≤5k subscriptions; eslint warnings; AuthContext DEV `hasRole` leftover; All Accounts multi-role PASS (Wave 37); messaging composer honesty PASS (Wave 39) — CRM Premium label on cancelled residual
+- P3: admin user/creator spend metrics cap at 200 indexed rows; customer pages scan ≤5k subscriptions; eslint warnings; AuthContext DEV `hasRole` leftover; All Accounts multi-role PASS (Wave 37); messaging composer + CRM cancelled label PASS (Wave 39/40)
 - Not in this PR: production deploy, live Stripe keys, MFA
 - Waivers: see section L
