@@ -6,13 +6,11 @@ import { ADMIN_JOIN_LIMIT, ADMIN_SCAN_MAX_DOCS, adminScanAll } from "../lib/admi
 import {
   takeCasesByStatus,
   takeCreatorsByPublished,
+  takePaymentEventsByStatus,
   takePayoutsByStatus,
   takeSubsByStatus,
 } from "../lib/adminIndexedTakes";
-import {
-  isPaidOutPayoutStatus,
-  sumSettledEarningsByCreatorCents,
-} from "../lib/payoutBalance";
+import { sumSettledEarningsByCreatorCents } from "../lib/payoutBalance";
 
 const monthPointValidator = v.object({
   month: v.string(),
@@ -540,10 +538,9 @@ const payoutBalanceRowValidator = v.object({
 });
 
 /**
- * Exact-ish payout balances for Admin Payouts (D1).
- * Lifetime earned comes from settled paymentEvents (not active-sub rows),
- * so cancelled subscriptions still count toward Lifetime.
- * Does not use paginated history pages for paid/in-flight totals.
+ * Payout balances for Admin Payouts (F-012).
+ * Lifetime from status-indexed settled/paid paymentEvents; payouts by status;
+ * creator names via `db.get`. Caps each bucket at ADMIN_SCAN_MAX_DOCS.
  */
 export const payoutsOverview = query({
   args: {},
@@ -561,13 +558,31 @@ export const payoutsOverview = query({
   }),
   handler: async (ctx) => {
     await requireAdmin(ctx);
-    const eventsScan = await adminScanAll(ctx, "paymentEvents");
-    const payoutsScan = await adminScanAll(ctx, "payouts");
-    const creatorsScan = await adminScanAll(ctx, "creators");
+    const [settledEvents, paidEvents, paidPayouts, completedPayouts, pendingPayouts, processingPayouts, requestedPayouts, approvedPayouts, failedPayouts] =
+      await Promise.all([
+        takePaymentEventsByStatus(ctx, "settled"),
+        takePaymentEventsByStatus(ctx, "paid"),
+        takePayoutsByStatus(ctx, "paid"),
+        takePayoutsByStatus(ctx, "completed"),
+        takePayoutsByStatus(ctx, "pending"),
+        takePayoutsByStatus(ctx, "processing"),
+        takePayoutsByStatus(ctx, "requested"),
+        takePayoutsByStatus(ctx, "approved"),
+        takePayoutsByStatus(ctx, "failed"),
+      ]);
     const truncated =
-      eventsScan.truncated || payoutsScan.truncated || creatorsScan.truncated;
+      settledEvents.truncated ||
+      paidEvents.truncated ||
+      paidPayouts.truncated ||
+      completedPayouts.truncated ||
+      pendingPayouts.truncated ||
+      processingPayouts.truncated ||
+      requestedPayouts.truncated ||
+      approvedPayouts.truncated ||
+      failedPayouts.truncated;
 
-    const earnedCentsBy = sumSettledEarningsByCreatorCents(eventsScan.docs);
+    const eventDocs = [...settledEvents.docs, ...paidEvents.docs];
+    const earnedCentsBy = sumSettledEarningsByCreatorCents(eventDocs);
     const earnedBy = new Map<string, number>();
     for (const [creatorId, cents] of earnedCentsBy) {
       earnedBy.set(creatorId, cents / 100);
@@ -579,38 +594,52 @@ export const payoutsOverview = query({
     let pending = 0;
     let processingCount = 0;
     let completedCount = 0;
-    let failedCount = 0;
     let lastPayoutAt: number | null = null;
 
-    for (const p of payoutsScan.docs) {
+    for (const p of [...paidPayouts.docs, ...completedPayouts.docs]) {
       const amount = p.amountCents / 100;
-      if (isPaidOutPayoutStatus(p.status)) {
-        paidBy.set(p.creatorId, (paidBy.get(p.creatorId) ?? 0) + amount);
-        totalPaidOut += amount;
-        completedCount += 1;
-        const at = p.processedAt ?? p.createdAt;
-        if (lastPayoutAt === null || at > lastPayoutAt) lastPayoutAt = at;
-      } else if (
-        p.status === "pending" ||
-        p.status === "processing" ||
-        p.status === "requested"
-      ) {
-        inFlightBy.set(p.creatorId, (inFlightBy.get(p.creatorId) ?? 0) + amount);
-        pending += amount;
-        processingCount += 1;
-      } else if (p.status === "failed") {
-        failedCount += 1;
-      }
+      paidBy.set(p.creatorId, (paidBy.get(p.creatorId) ?? 0) + amount);
+      totalPaidOut += amount;
+      completedCount += 1;
+      const at = p.processedAt ?? p.createdAt;
+      if (lastPayoutAt === null || at > lastPayoutAt) lastPayoutAt = at;
+    }
+    for (const p of [
+      ...pendingPayouts.docs,
+      ...processingPayouts.docs,
+      ...requestedPayouts.docs,
+      ...approvedPayouts.docs,
+    ]) {
+      const amount = p.amountCents / 100;
+      inFlightBy.set(p.creatorId, (inFlightBy.get(p.creatorId) ?? 0) + amount);
+      pending += amount;
+      processingCount += 1;
+    }
+    const failedCount = failedPayouts.docs.length;
+
+    const creatorIds = new Set<Id<"creators">>();
+    for (const id of earnedBy.keys()) creatorIds.add(id as Id<"creators">);
+    for (const id of paidBy.keys()) creatorIds.add(id as Id<"creators">);
+    for (const id of inFlightBy.keys()) creatorIds.add(id as Id<"creators">);
+    const idList = [...creatorIds];
+    const namesTruncated = idList.length > ADMIN_JOIN_LIMIT;
+    const creatorNames = new Map<Id<"creators">, string>();
+    for (const id of idList.slice(0, ADMIN_JOIN_LIMIT)) {
+      const c = await ctx.db.get(id);
+      creatorNames.set(
+        id,
+        c ? c.displayName || `@${c.username ?? "unknown"}` : "Unknown creator",
+      );
     }
 
-    const balances = creatorsScan.docs
-      .map((c) => {
-        const earned = earnedBy.get(c._id) ?? 0;
-        const paid = paidBy.get(c._id) ?? 0;
-        const inFlight = inFlightBy.get(c._id) ?? 0;
+    const balances = idList
+      .map((creatorId) => {
+        const earned = earnedBy.get(creatorId) ?? 0;
+        const paid = paidBy.get(creatorId) ?? 0;
+        const inFlight = inFlightBy.get(creatorId) ?? 0;
         return {
-          creatorId: c._id,
-          name: c.displayName || `@${c.username ?? "unknown"}`,
+          creatorId,
+          name: creatorNames.get(creatorId) ?? "Unknown creator",
           earned,
           paid,
           inFlight,
@@ -631,7 +660,7 @@ export const payoutsOverview = query({
       processingCount,
       completedCount,
       failedCount,
-      truncated,
+      truncated: truncated || namesTruncated,
       listLimit: ADMIN_SCAN_MAX_DOCS,
     };
   },
