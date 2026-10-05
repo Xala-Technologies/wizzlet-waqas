@@ -116,6 +116,7 @@ export const fulfillCheckout = internalMutation({
     deliveryRef: v.optional(v.string()),
     paymentMode: v.optional(v.union(v.literal("test"), v.literal("live"), v.literal("sandbox"))),
     promoId: v.optional(v.id("promoCodes")),
+    creatorLinkId: v.optional(v.id("creatorLinks")),
   },
   handler: async (ctx, args) => {
     const commercialRef = commercialRefForCheckout(args.checkoutSessionId);
@@ -229,6 +230,7 @@ export const fulfillCheckout = internalMutation({
       userId: args.userId,
       creatorId: args.creatorId,
       promoId: args.promoId,
+      creatorLinkId: args.creatorLinkId,
       nowMs: now,
     });
 

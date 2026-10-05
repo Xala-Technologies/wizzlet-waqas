@@ -15,6 +15,7 @@ export const sandboxSubscribe = mutation({
   args: {
     creatorId: v.id("creators"),
     productId: v.optional(v.id("products")),
+    creatorLinkId: v.optional(v.id("creatorLinks")),
   },
   returns: v.union(
     v.object({
@@ -136,6 +137,7 @@ export const sandboxSubscribe = mutation({
     await applySubscribeGrowthAttribution(ctx, {
       userId: user._id,
       creatorId: creator._id,
+      creatorLinkId: args.creatorLinkId,
       nowMs: now,
     });
 

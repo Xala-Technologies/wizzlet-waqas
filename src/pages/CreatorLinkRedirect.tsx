@@ -3,10 +3,12 @@ import { useMutation, useQuery } from 'convex/react';
 import { useParams } from 'react-router-dom';
 import { api } from '../../convex/_generated/api';
 import type { Id } from '../../convex/_generated/dataModel';
+import { storeCreatorLinkId } from '@/lib/creatorLinkHandoff';
 import { Loader2 } from 'lucide-react';
 
 /**
  * Public tracking redirect: `/go/:linkId` records a click then navigates to the destination.
+ * Stashes the link id so a later Checkout on the same browser can attribute a paid conversion.
  */
 const CreatorLinkRedirect = () => {
   const { linkId } = useParams<{ linkId: string }>();
@@ -22,6 +24,7 @@ const CreatorLinkRedirect = () => {
     if (link === null) return;
     if (recorded.current) return;
     recorded.current = true;
+    storeCreatorLinkId(linkId);
     void recordClick({ linkId: linkId as Id<'creatorLinks'> })
       .catch(() => {
         /* still redirect even if click write fails */

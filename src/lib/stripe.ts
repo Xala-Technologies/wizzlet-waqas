@@ -7,6 +7,10 @@ import { convex } from '@/integrations/convex/client';
 import { api } from '@convex/_generated/api';
 import type { Id } from '@convex/_generated/dataModel';
 import { publicEnv } from '@/config/publicEnv';
+import {
+  clearStoredCreatorLinkId,
+  readStoredCreatorLinkId,
+} from '@/lib/creatorLinkHandoff';
 
 export const PAYMENTS_MODE = publicEnv.stripeMode;
 
@@ -28,18 +32,24 @@ export async function createCheckoutSession(
     PAYMENTS_MODE === 'stripe' ? 'Redirecting to Stripe…' : 'Processing sandbox payment…',
   );
   try {
+    const creatorLinkId = readStoredCreatorLinkId();
     if (PAYMENTS_MODE === 'stripe') {
       const result = await convex.action(api.payments.stripeNode.createCheckoutSession, {
         creatorId: creatorId as Id<'creators'>,
         productId: productId ? (productId as Id<'products'>) : undefined,
         creatorUsername,
         promoCode: promoCode?.trim() || undefined,
+        creatorLinkId: creatorLinkId
+          ? (creatorLinkId as Id<'creatorLinks'>)
+          : undefined,
       });
       if (result.alreadySubscribed) {
+        clearStoredCreatorLinkId();
         toast.success('You are already subscribed to this creator.', { id: toastId });
         window.location.href = `/subscription/success?creator=${encodeURIComponent(creatorUsername)}`;
         return;
       }
+      clearStoredCreatorLinkId();
       toast.dismiss(toastId);
       window.location.href = result.url;
       return;
@@ -52,7 +62,11 @@ export async function createCheckoutSession(
     const result = await convex.mutation(api.payments.sandbox.sandboxSubscribe, {
       creatorId: creatorId as Id<'creators'>,
       productId: productId ? (productId as Id<'products'>) : undefined,
+      creatorLinkId: creatorLinkId
+        ? (creatorLinkId as Id<'creatorLinks'>)
+        : undefined,
     });
+    clearStoredCreatorLinkId();
     if ((result as { alreadySubscribed?: boolean })?.alreadySubscribed) {
       toast.success('You are already subscribed to this creator.', { id: toastId });
       return;

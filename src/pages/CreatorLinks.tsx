@@ -354,8 +354,8 @@ const CreatorLinks = () => {
         </div>
       ) : (
         <p className="mb-4 text-support text-muted-foreground">
-          Clicks are tracked on share. Paid conversions from links are not attributed yet — the
-          column stays at 0 until that product ships.
+          Clicks are tracked on share. Paid conversions increment when a fan opens your `/go/…`
+          link in this browser and completes Checkout for your profile.
         </p>
       )}
 

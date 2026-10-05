@@ -2,7 +2,7 @@
 
 **Authority:** [`docs/ai/prizelet-world-ready-master-prompt.md`](./prizelet-world-ready-master-prompt.md)
 
-**Status:** Wave 32 saved-post feed + admin open account requests 2026-10-05. Product is **not** world-ready (other P2s remain).
+**Status:** Wave 33 creatorLinks paid conversion attribution 2026-10-05. Product is **not** world-ready (other P2s remain).
 
 Do not claim world-ready until Section 8 gates in the master prompt pass.
 
@@ -16,11 +16,11 @@ Do not claim world-ready until Section 8 gates in the master prompt pass.
 | Evidence | branch, date, one-line actual vs expected |
 | Waiver | owner + reason (required if WAIVED) |
 
-Last updated: 2026-10-05. Last wave: **32** (`test/world-ready-wave-32-saved-posts-admin-requests`). Source pin: `bf85281` (inventory).
+Last updated: 2026-10-05. Last wave: **33** (`test/world-ready-wave-33-link-conversions`). Source pin: `bf85281` (inventory).
 
-Wave 32: `j6oauthwave30` Checkout `cs_test_a1lGXn…` → feed Save → Saved Posts (1) `J3 PUSH PICK`; `/admin/users` Open account requests shows email-change + deletion (2 open). `listOpenAdmin` enriched with email/fullName; `accountRequests.security.test.ts` 2/2.
+Wave 33: `/go/` stashes `prizelet.creatorLinkId` → Checkout metadata → `applySubscribeGrowthAttribution` bumps `creatorLinks.conversions`. Soak: Wave33 Bio `/go/jd72413…` + `j4member` Checkout `cs_test_a1LSVo…` → row clicks/sign-ups/conversions **1**. Units handoff + growthAttribution 3/3.
 
-Wave 31: bookmarks/analytics/deletion PASS. Wave 30: OAuth `?ref=` handoff PASS.
+Wave 32: saved posts + admin open requests PASS. Wave 31: bookmarks/analytics/deletion PASS.
 
 ---
 
@@ -157,7 +157,7 @@ Nested layouts in `App.tsx`: `/demo/admin` → `DemoAdminLayout`; `/demo/member`
 | J3 | Content access / pick lock / win rate | PASS | Wave 8 owner lock/win-rate; Wave 24 2026-10-05: `j3member` Checkout `cs_test_a13a8w…` ACTIVE → dashboard shows WAVE8_SECRET_BODY; cancel `sub_1UMytH…` → status cancelled, feed empty (no secret); pickTracker settled Win → Result combobox **disabled**. Residual: cancel UI previously lied about period-end (fixed this wave) |
 | J4 | Messages / support / resolution | PASS | Wave 9 2026-10-05: `j4creator`/`j4member` Stripe sub; DM + creator unread/reply; support/resolution/growth admin replies; messaging off deny; cancel → `FORBIDDEN` on send. Unit `messaging.security.test.ts` 6/6. Fix: messaging toggle on populated CreatorMessages inbox. Residual: UI composer still shown when gated (server enforces) |
 | J5 | Payout request / approve / balance | PASS | Wave 10 request/approve; Wave 25 2026-10-05: admin Lifetime from settled `paymentEvents` (cancelled j4member sub still counts) — `j4creator` Lifetime **$28.49** / Paid $28.49. `payoutBalance.test.ts` 6/6. Residual: Connect live transfers still out of scope |
-| J6 | Promo / tracking links / referrals | PASS | Wave 11/29 attribution; Wave 30 2026-10-05: OAuth `?ref=` handoff — Discord click stores `j2creator-jn73sz`; AuthCallback → referral for `j6oauth+wave30` (`m571wjav…`); Creator Links copy that paid link conversions stay 0. Residual: commission cash TBD; `creatorLinks.conversions` product (no click→sub attribution surface) |
+| J6 | Promo / tracking links / referrals | PASS | Wave 11/29/30; Wave 33 2026-10-05: `/go/` → Checkout metadata → `creatorLinks.conversions` (Wave33 Bio **1**). Residual: referral commission cash TBD |
 | J7 | Identity (password, OAuth, roles, email request) | PASS | Wave 12/27/28; Wave 30 AuthCallback referral apply. Residual: X/Twitter OAuth consent not browser-completed (`socialProviders.twitter: true` but no agent X login) |
 | J8 | Migration ETL internal-only | PASS | Wave 13 2026-10-05: all migration exports `internalMutation`; client has zero import refs; `MIGRATION_SECRET` unset on combative-mongoose-559; `migrations.security.test.ts` 3/3. Residual: historical data parity not claimed |
 | J9 | Public nav + chrome | PASS | Wave 2: public-nav + browser-matrix on chromium/webkit/firefox; platform-owner bootstrap visible in DEV |
@@ -254,15 +254,15 @@ App public functions (`Auth` = TBD until Wave 1):
 | `bookmarks.mutations.toggleSavedPost` | subscriber | yes | PASS | Wave 32: feed Save → Unsave + `/dashboard/saved` Saved Posts (1) J3 PUSH PICK |
 | `creators.earnings.myEarnings` | TBD | yes | NOT_RUN | frozen vs convex/*.ts @ bf85281 |
 | `creators.growth.getLinkPublic` | TBD | yes | NOT_RUN | frozen vs convex/*.ts @ bf85281 |
-| `creators.growth.listMyLinks` | TBD | yes | NOT_RUN | frozen vs convex/*.ts @ bf85281 |
+| `creators.growth.listMyLinks` | creator | yes | PASS | Wave 33: Links table shows Wave33 Bio live row |
 | `creators.growth.listMyPromos` | TBD | yes | NOT_RUN | frozen vs convex/*.ts @ bf85281 |
 | `creators.growth.listMyReferrals` | creator | yes | PASS | Wave 29: `/creator/referrals?demo=0` showed j6ref Approved |
-| `creators.growth.recordLinkClick` | TBD | yes | NOT_RUN | frozen vs convex/*.ts @ bf85281 |
+| `creators.growth.recordLinkClick` | public | yes | PASS | Wave 33: `/go/jd72413…` → clicks **1** |
 | `creators.growth.recordReferral` | authenticated | yes | PASS | Wave 11/29 path via code helper |
 | `creators.growth.recordReferralByCode` | authenticated | yes | PASS | Wave 29: signup `?ref=j2creator-jn73sz` → referral row pending then converted |
 | `creators.growth.removeLink` | TBD | yes | NOT_RUN | frozen vs convex/*.ts @ bf85281 |
 | `creators.growth.removePromo` | TBD | yes | NOT_RUN | frozen vs convex/*.ts @ bf85281 |
-| `creators.growth.upsertLink` | TBD | yes | NOT_RUN | frozen vs convex/*.ts @ bf85281 |
+| `creators.growth.upsertLink` | creator | yes | PASS | Wave 33: created Wave33 Bio → `/j2creator` |
 | `creators.growth.upsertPromo` | TBD | yes | NOT_RUN | frozen vs convex/*.ts @ bf85281 |
 | `creators.queries.getByUsername` | TBD | yes | NOT_RUN | frozen vs convex/*.ts @ bf85281 |
 | `creators.queries.listAllAdmin` | TBD | yes | NOT_RUN | frozen vs convex/*.ts @ bf85281 |
@@ -411,7 +411,7 @@ Confirm each table still exists; note writers. Result `NOT_RUN` = existence free
 | notifications | notifications / notify | PASS | Wave 20: adminInsert + markRead/markAllRead on j4member |
 | savedPosts / creatorBookmarks | bookmarks.mutations | PASS | Wave 32: savedPosts (1) J3 PUSH; Wave 31 creatorBookmarks j2creator |
 | payouts / creatorPayoutSettings | payouts.mutations | NOT_RUN | present in convex/schema.ts @ bf85281; existence freeze only |
-| creatorLinks / promoCodes / referrals | creators.growth | PASS | Wave 11 promo/links; Wave 29 referrals convert on Checkout (`m57b0n7…` converted true, commission 0) |
+| creatorLinks / promoCodes / referrals | creators.growth | PASS | Wave 33: link conversions **1** on Checkout; Wave 29 referrals convert (`m57b0n7…`); Wave 11 promo/links |
 | resolutionCases / resolutionCaseMessages | resolution.mutations | NOT_RUN | present in convex/schema.ts @ bf85281; existence freeze only |
 | supportMessages / memberSupportMessages | support.mutations | NOT_RUN | present in convex/schema.ts @ bf85281; existence freeze only |
 | platformSettings | platform.mutations | PASS | Wave 16: Platform Fees shows intro/standard rates from settings |
@@ -432,7 +432,7 @@ Schema `appRole` also allows `moderator` and `user` (not product actors; no rout
 
 ## M. Remaining risk (update every fix PR)
 
-- P2: Stripe Connect live transfers still unimplemented (Wave 22 honesty PASS — ledger/manual only); referral commission cash product TBD; J7 X/Twitter OAuth consent not browser-completed; `creatorLinks.conversions` needs click→subscribe attribution product (honest UI note shipped Wave 30); account-request fulfillment still manual (queue UI shipped Wave 32); historical migration data parity BLOCKED (greenfield)
+- P2: Stripe Connect live transfers still unimplemented (Wave 22 honesty PASS — ledger/manual only); referral commission cash product TBD; J7 X/Twitter OAuth consent not browser-completed; account-request fulfillment still manual (queue UI shipped Wave 32); historical migration data parity BLOCKED (greenfield)
 - P3: admin user/creator spend metrics cap at 200 indexed rows; customer pages scan ≤5k subscriptions; eslint warnings; AuthContext DEV `hasRole` leftover; All Accounts table shows a single primary role even when `userRoles` is multi
 - Not in this PR: production deploy, live Stripe keys, MFA
 - Waivers: see section L
