@@ -1,5 +1,6 @@
+import type { MouseEventHandler } from 'react';
 import { Link } from 'react-router-dom';
-import { BadgeCheck } from 'lucide-react';
+import { BadgeCheck, Bookmark } from 'lucide-react';
 import { creatorProfilePath } from '@/lib/creatorProfilePath';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
@@ -20,6 +21,8 @@ export type MemberDiscoverCreatorCardProps = {
   followersLabel: string | null;
   monthlyPriceCents: number;
   verified?: boolean;
+  bookmarked?: boolean;
+  onBookmarkClick?: MouseEventHandler<HTMLButtonElement>;
   className?: string;
 };
 
@@ -39,6 +42,8 @@ export function MemberDiscoverCreatorCard({
   followersLabel,
   monthlyPriceCents,
   verified = true,
+  bookmarked = false,
+  onBookmarkClick,
   className,
 }: MemberDiscoverCreatorCardProps) {
   const initials =
@@ -76,6 +81,22 @@ export function MemberDiscoverCreatorCard({
           <span className="absolute left-3 top-3 rounded-md border border-border bg-card px-2 py-1 text-xs font-bold text-foreground shadow-sm">
             #{rank}
           </span>
+          {onBookmarkClick ? (
+            <button
+              type="button"
+              onClick={onBookmarkClick}
+              aria-label={
+                bookmarked ? `Remove ${displayName} from bookmarks` : `Bookmark ${displayName}`
+              }
+              className={cn(
+                'absolute right-3 top-3 z-10 inline-flex h-9 w-9 items-center justify-center rounded-full border border-border bg-card text-foreground shadow-sm',
+                'transition-colors hover:border-primary/40 hover:text-primary',
+                bookmarked && 'text-primary',
+              )}
+            >
+              <Bookmark className={cn('h-4 w-4', bookmarked && 'fill-current')} aria-hidden />
+            </button>
+          ) : null}
         </div>
 
         <div className="relative flex flex-1 flex-col px-4 pb-4 pt-0">

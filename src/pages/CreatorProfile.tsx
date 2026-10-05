@@ -1,12 +1,14 @@
 import { useParams, Link, useSearchParams } from 'react-router-dom';
 import { useEffect, useMemo, useState } from 'react';
-import { useConvexAuth, useQuery } from 'convex/react';
+import { useConvexAuth, useMutation, useQuery } from 'convex/react';
 import { api } from '../../convex/_generated/api';
+import type { Id } from '../../convex/_generated/dataModel';
 import { Button } from '@/components/ui/button';
 import { Seo } from '@/components/Seo';
 import { Navbar } from '@/components/landing/Navbar';
 import { createCheckoutSession } from '@/data/payments';
 import { trackPageView, trackPostView, trackSubscribeClick } from '@/lib/analytics';
+import { buildLoginHref } from '@/lib/safeReturnPath';
 import {
   BadgeCheck,
   BarChart3,
@@ -109,7 +111,12 @@ const CreatorProfile = () => {
   const forceDemo = searchParams.get('demo') === '1';
   const disableDemo = searchParams.get('demo') === '0';
   const { isAuthenticated } = useConvexAuth();
-  const [liked, setLiked] = useState(false);
+  const toggleCreatorBookmark = useMutation(api.bookmarks.mutations.toggleCreatorBookmark);
+  const bookmarks = useQuery(
+    api.bookmarks.mutations.listCreatorBookmarks,
+    isAuthenticated ? {} : 'skip',
+  );
+  const [bookmarkBusy, setBookmarkBusy] = useState(false);
 
   const creatorData = useQuery(
     api.creators.queries.getByUsername,
@@ -130,6 +137,11 @@ const CreatorProfile = () => {
   const mySubs = useQuery(
     api.subscriptions.mutations.mySubscriptions,
     isAuthenticated ? {} : 'skip',
+  );
+
+  const bookmarked = Boolean(
+    creatorData &&
+      (bookmarks ?? []).some((b) => b.creatorId === creatorData._id),
   );
 
   const loading =
@@ -433,20 +445,40 @@ const CreatorProfile = () => {
                 variant="outline"
                 className={cn(
                   'h-12 w-12 shrink-0 rounded-2xl border-white/25 bg-white/5 text-white hover:bg-white/10 hover:text-white',
-                  liked && 'border-rose-400/50 text-rose-400',
+                  bookmarked && 'border-rose-400/50 text-rose-400',
                 )}
-                aria-label={liked ? 'Unfavorite' : 'Favorite'}
-                aria-pressed={liked}
+                aria-label={bookmarked ? 'Remove bookmark' : 'Bookmark creator'}
+                aria-pressed={bookmarked}
+                disabled={bookmarkBusy}
                 onClick={() => {
-                  setLiked((v) => !v);
-                  toast.message(liked ? 'Removed from favorites' : 'Saved to favorites', {
-                    description: useDemo
-                      ? 'Sample preview — favorites sync when you leave demo mode.'
-                      : undefined,
-                  });
+                  if (useDemo) {
+                    toast.message('Sample preview — bookmarks sync when you leave demo mode.');
+                    return;
+                  }
+                  if (!isAuthenticated) {
+                    toast.message('Sign in to bookmark creators');
+                    window.location.href = buildLoginHref(
+                      `/${creatorData?.username ?? username ?? ''}`,
+                    );
+                    return;
+                  }
+                  if (!creatorData) return;
+                  setBookmarkBusy(true);
+                  void (async () => {
+                    try {
+                      const { bookmarked: next } = await toggleCreatorBookmark({
+                        creatorId: creatorData._id as Id<'creators'>,
+                      });
+                      toast.success(next ? 'Creator bookmarked' : 'Removed from bookmarks');
+                    } catch {
+                      toast.error('Could not update bookmark');
+                    } finally {
+                      setBookmarkBusy(false);
+                    }
+                  })();
                 }}
               >
-                <Heart className={cn('h-5 w-5', liked && 'fill-current')} />
+                <Heart className={cn('h-5 w-5', bookmarked && 'fill-current')} />
               </Button>
             </div>
           </div>
