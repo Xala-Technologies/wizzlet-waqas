@@ -2,7 +2,7 @@ import { query } from "../_generated/server";
 import { v } from "convex/values";
 import type { Doc, Id } from "../_generated/dataModel";
 import { requireAdmin } from "../lib/auth";
-import { ADMIN_SCAN_MAX_DOCS, adminScanAll } from "../lib/adminLists";
+import { ADMIN_JOIN_LIMIT, ADMIN_SCAN_MAX_DOCS, adminScanAll } from "../lib/adminLists";
 import {
   takeCasesByStatus,
   takeCreatorsByPublished,
@@ -236,7 +236,8 @@ export const financeOverview = query({
 });
 
 /**
- * Exact fee aggregates for Admin Fees.
+ * Active-subscription fee aggregates for Admin Fees (F-012).
+ * Indexed `by_status=active` take; creator names via `db.get` (capped unique ids).
  */
 export const feesOverview = query({
   args: { nowMs: v.number() },
@@ -260,11 +261,8 @@ export const feesOverview = query({
   }),
   handler: async (ctx, args) => {
     await requireAdmin(ctx);
-    const subsScan = await adminScanAll(ctx, "subscriptions");
-    const creatorsScan = await adminScanAll(ctx, "creators");
-    const truncated = subsScan.truncated || creatorsScan.truncated;
-    const active = subsScan.docs.filter((s) => s.status === "active");
-    const creatorMap = new Map(creatorsScan.docs.map((c) => [c._id, c]));
+    const activeScan = await takeSubsByStatus(ctx, "active");
+    const active = activeScan.docs;
 
     const now = new Date(args.nowMs);
     const buckets: Array<{ month: string; fees: number }> = [];
@@ -296,13 +294,24 @@ export const feesOverview = query({
       });
     }
 
+    const creatorIds = [...feeByCreator.keys()] as Id<"creators">[];
+    const namesTruncated = creatorIds.length > ADMIN_JOIN_LIMIT;
+    const creatorNames = new Map<Id<"creators">, string>();
+    for (const id of creatorIds.slice(0, ADMIN_JOIN_LIMIT)) {
+      const c = await ctx.db.get(id);
+      creatorNames.set(
+        id,
+        c ? c.displayName || `@${c.username ?? "unknown"}` : "Unknown creator",
+      );
+    }
+
     const creatorFees = [...feeByCreator.entries()]
       .map(([rawId, val]) => {
-        const c = creatorMap.get(rawId as Id<"creators">);
+        const creatorId = rawId as Id<"creators">;
         const effective =
           val.amount > 0 ? Math.round((val.fee / val.amount) * 1000) / 10 : 0;
         return {
-          name: c?.displayName ?? `@${c?.username ?? "unknown"}`,
+          name: creatorNames.get(creatorId) ?? "Unknown creator",
           feeEarned: val.fee,
           feePercent: effective,
           subCount: val.count,
@@ -324,7 +333,7 @@ export const feesOverview = query({
         fees: Number(b.fees.toFixed(2)),
       })),
       creatorFees,
-      truncated,
+      truncated: activeScan.truncated || namesTruncated,
       listLimit: ADMIN_SCAN_MAX_DOCS,
     };
   },
