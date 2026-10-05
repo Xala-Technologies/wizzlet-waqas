@@ -76,11 +76,11 @@ Prizelet uses **two** Convex deployments. Do not share one for local and www —
 | | Dev (`npx convex dev`) | Production (`npx convex deploy`) |
 |--|------------------------|----------------------------------|
 | Deployment | `combative-mongoose-559` | `ceaseless-weasel-494` |
-| App origin / `SITE_URL` | `http://127.0.0.1:8080` | `https://www.prizelet.com` |
+| App origin / `SITE_URL` | `http://127.0.0.1:8080` | `https://www.sweeph.com` |
 | Client `VITE_CONVEX_*` | `.env.local` → **dev** | Vercel Production/Preview → **prod** |
 
 - Local OAuth and Vite always target the **dev** deployment.
-- www.prizelet.com always targets the **prod** deployment.
+- www.sweeph.com always targets the **prod** deployment.
 - Never run `npx convex env set SITE_URL http://127.0.0.1:8080` against prod.
 - After backend changes that must go live: `npx convex deploy` (prod only).
 

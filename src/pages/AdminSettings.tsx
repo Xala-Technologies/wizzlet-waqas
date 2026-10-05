@@ -34,7 +34,7 @@ const DEFAULTS: PlatformSettings = {
   intro_period_days: 30,
   referral_commission_percent: 10,
   platform_name: 'Sweeph',
-  support_email: 'support@prizelet.com',
+  support_email: 'support@sweeph.com',
   tagline: 'The premium creator platform',
   min_payout_amount: 50,
   payout_schedule: 'monthly',

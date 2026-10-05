@@ -69,7 +69,7 @@ Production remains **BLOCKED** until each item is evidenced:
 1. Push release-engineering / feature PRs and merge to `dev` after review.  
 2. Apply GitHub Environment protections for `production`.  
 3. Bind Vercel Production to the `production` branch; stop feature-branch promote as the default.  
-4. Confirm Convex prod deploy key scope; dashboard: no `ALLOW_SANDBOX_CHECKOUT`, no `ALLOW_DEV_ADMIN_GRANT`, `SITE_URL=https://www.prizelet.com`.  
+4. Confirm Convex prod deploy key scope; dashboard: no `ALLOW_SANDBOX_CHECKOUT`, no `ALLOW_DEV_ADMIN_GRANT`, `SITE_URL=https://www.sweeph.com`.  
 5. First tagged release on `production` with matching Convex revision and filled manifest.  
 6. Read-only production smoke (nav, login surfaces, role boundaries).  
 

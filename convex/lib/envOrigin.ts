@@ -4,6 +4,8 @@
  */
 
 export const PRODUCTION_ORIGINS = [
+  "https://www.sweeph.com",
+  "https://sweeph.com",
   "https://www.prizelet.com",
   "https://prizelet.com",
   "https://www.wizzlet.com",

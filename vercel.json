@@ -5,8 +5,20 @@
   "redirects": [
     {
       "source": "/:path*",
+      "has": [{ "type": "host", "value": "sweeph.com" }],
+      "destination": "https://www.sweeph.com/:path*",
+      "permanent": true
+    },
+    {
+      "source": "/:path*",
       "has": [{ "type": "host", "value": "prizelet.com" }],
-      "destination": "https://www.prizelet.com/:path*",
+      "destination": "https://www.sweeph.com/:path*",
+      "permanent": true
+    },
+    {
+      "source": "/:path*",
+      "has": [{ "type": "host", "value": "www.prizelet.com" }],
+      "destination": "https://www.sweeph.com/:path*",
       "permanent": true
     }
   ],

@@ -891,7 +891,7 @@ function SettingsTab({ store }: { store: DemoStore }) {
           <div>
             <Label className="text-caption" htmlFor="set-username">Username</Label>
             <Input id="set-username" className="mt-1" value={form.username} onChange={e => setForm({ ...form, username: e.target.value.replace(/\s/g, '') })} />
-            <p className="text-caption text-muted-foreground mt-1">prizelet.com/{form.username || 'username'}</p>
+            <p className="text-caption text-muted-foreground mt-1">sweeph.com/{form.username || 'username'}</p>
           </div>
           <div><Label className="text-caption" htmlFor="set-bio">Bio</Label><Textarea id="set-bio" className="mt-1" maxLength={280} value={form.bio} onChange={e => setForm({ ...form, bio: e.target.value })} /><p className="text-caption text-muted-foreground mt-1">{form.bio.length}/280</p></div>
           <div>
