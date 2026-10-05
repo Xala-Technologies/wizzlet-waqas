@@ -1,3 +1,17 @@
+# Findings — Wave 46 financeOverview status indexes 2026-10-05
+
+Branch `fix/world-ready-wave-46-finance-overview-indexes`. Admin soak `admin@prizelet.dev` on `combative-mongoose-559`.
+
+| Step | Result | Evidence |
+|------|--------|----------|
+| Query | PASS | `financeOverview` status buckets for subs/payouts; `db.get` creator names; recent `.take(8)`; no `adminScanAll` |
+| Unit | PASS | `financeOverview.security.test.ts` 1/1 |
+| UI soak | PASS | `/admin/finance` Gross **$299.87**, MRR **$69.95 · 5 active**, fees **$15.00**, top **j2creator** 4 active; recent rows include j4member / j6comm |
+
+**Residual:** dashboardStats still `adminScanAll`; Connect transfers; email OTP.
+
+---
+
 # Findings — Wave 45 alertsOverview indexed buckets 2026-10-05
 
 Branch `fix/world-ready-wave-45-alerts-overview-indexes`. Admin soak `admin@prizelet.dev` on `combative-mongoose-559`.

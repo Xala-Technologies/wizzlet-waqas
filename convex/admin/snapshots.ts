@@ -78,8 +78,9 @@ const recentTxnValidator = v.object({
 });
 
 /**
- * Exact finance aggregates for Admin Finance (no 500-row take).
- * `nowMs` from client keeps month buckets deterministic.
+ * Finance aggregates from status-indexed subscription/payout buckets (F-012).
+ * Does not scan the creators table. Gross is subscription rows in those buckets,
+ * not settled paymentEvents (payoutsOverview remains the event-based lifetime).
  */
 export const financeOverview = query({
   args: { nowMs: v.number() },
@@ -102,20 +103,46 @@ export const financeOverview = query({
   }),
   handler: async (ctx, args) => {
     await requireAdmin(ctx);
-    const subsScan = await adminScanAll(ctx, "subscriptions");
-    const payoutsScan = await adminScanAll(ctx, "payouts");
-    const creatorsScan = await adminScanAll(ctx, "creators");
-    const truncated =
-      subsScan.truncated || payoutsScan.truncated || creatorsScan.truncated;
-
-    const subs = subsScan.docs;
-    const payouts = payoutsScan.docs;
-    const creatorNames = new Map(
-      creatorsScan.docs.map((c) => [
-        c._id,
-        c.displayName || `@${c.username ?? "unknown"}`,
-      ]),
+    const subStatuses = [
+      "active",
+      "canceled",
+      "cancelled",
+      "past_due",
+      "failed",
+      "incomplete",
+      "unpaid",
+      "trialing",
+    ] as const;
+    const subScans = await Promise.all(
+      subStatuses.map((status) => takeSubsByStatus(ctx, status)),
     );
+    const [paidScan, completedScan, pendingScan, processingScan, requestedScan] =
+      await Promise.all([
+        takePayoutsByStatus(ctx, "paid"),
+        takePayoutsByStatus(ctx, "completed"),
+        takePayoutsByStatus(ctx, "pending"),
+        takePayoutsByStatus(ctx, "processing"),
+        takePayoutsByStatus(ctx, "requested"),
+      ]);
+    const recentRows = await ctx.db.query("subscriptions").order("desc").take(8);
+
+    const truncated =
+      subScans.some((s) => s.truncated) ||
+      paidScan.truncated ||
+      completedScan.truncated ||
+      pendingScan.truncated ||
+      processingScan.truncated ||
+      requestedScan.truncated;
+
+    const seenSub = new Set<string>();
+    const subs: Doc<"subscriptions">[] = [];
+    for (const scan of subScans) {
+      for (const s of scan.docs) {
+        if (seenSub.has(s._id)) continue;
+        seenSub.add(s._id);
+        subs.push(s);
+      }
+    }
 
     const active = subs.filter((s) => s.status === "active");
     const grossRevenue = subs.reduce((a, b) => a + b.amountCents / 100, 0);
@@ -126,12 +153,15 @@ export const financeOverview = query({
     );
     const mrr = active.reduce((a, b) => a + b.amountCents / 100, 0);
     const feeMrr = active.reduce((a, b) => a + b.platformFeeCents / 100, 0);
-    const paidOut = payouts
-      .filter((p) => isPaidOutPayoutStatus(p.status))
-      .reduce((a, b) => a + b.amountCents / 100, 0);
-    const inFlight = payouts
-      .filter((p) => p.status === "pending" || p.status === "processing" || p.status === "requested")
-      .reduce((a, b) => a + b.amountCents / 100, 0);
+    const paidOut = [...paidScan.docs, ...completedScan.docs].reduce(
+      (a, b) => a + b.amountCents / 100,
+      0,
+    );
+    const inFlight = [
+      ...pendingScan.docs,
+      ...processingScan.docs,
+      ...requestedScan.docs,
+    ].reduce((a, b) => a + b.amountCents / 100, 0);
     const liability = Math.max(0, creatorEarnings - paidOut - inFlight);
     const effectiveRate = grossRevenue > 0 ? (feeRevenue / grossRevenue) * 100 : 0;
 
@@ -180,21 +210,33 @@ export const financeOverview = query({
         subs: prev.subs + 1,
       });
     }
-    const topCreators = [...byCreator.entries()]
-      .map(([id, row]) => {
-        const creatorId = id as Id<"creators">;
-        return {
-          id: creatorId,
-          name: creatorNames.get(creatorId) ?? "Unknown creator",
-          ...row,
-        };
-      })
-      .sort((a, b) => b.revenue - a.revenue)
+    const topCreatorsRaw = [...byCreator.entries()]
+      .sort((a, b) => b[1].revenue - a[1].revenue)
       .slice(0, 8);
 
-    const recentSorted = [...subs].sort((a, b) => b.createdAt - a.createdAt).slice(0, 8);
+    const creatorIds = new Set<Id<"creators">>();
+    for (const [id] of topCreatorsRaw) creatorIds.add(id as Id<"creators">);
+    for (const s of recentRows) creatorIds.add(s.creatorId);
+    const creatorNames = new Map<Id<"creators">, string>();
+    for (const id of creatorIds) {
+      const c = await ctx.db.get(id);
+      creatorNames.set(
+        id,
+        c ? c.displayName || `@${c.username ?? "unknown"}` : "Unknown creator",
+      );
+    }
+
+    const topCreators = topCreatorsRaw.map(([id, row]) => {
+      const creatorId = id as Id<"creators">;
+      return {
+        id: creatorId,
+        name: creatorNames.get(creatorId) ?? "Unknown creator",
+        ...row,
+      };
+    });
+
     const recentTransactions = [];
-    for (const s of recentSorted) {
+    for (const s of recentRows) {
       const user = await ctx.db.get(s.userId);
       recentTransactions.push({
         id: s._id,
