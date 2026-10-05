@@ -1,3 +1,18 @@
+# Findings — Wave 67 USD platform currency locked 2026-10-05
+
+Branch `fix/world-ready-wave-67-usd-platform-currency`. Convex soak on `combative-mongoose-559`.
+
+| Step | Result | Evidence |
+|------|--------|----------|
+| Decision | PASS | Product currency **USD**; Connect country **US**; NOK pricing not chosen |
+| Code | PASS | Checkout / stripeDb / sandbox write `PRIZELET_LEDGER_CURRENCY` |
+| Stripe entity | PASS | Still **NO** / `default_currency=nok`; available NOK-only — admin surfaces fund-USD ops note |
+| Unit | PASS | `stripeConnect.security.test.ts` |
+
+**Residual:** Express KYC + fund USD available on Stripe; then real `tr_` soak. Referral cash / email OTP still open.
+
+---
+
 # Findings — Wave 66 Connect currency honesty (no fake NOK↔USD) 2026-10-05
 
 Branch `fix/world-ready-wave-66-connect-currency-honesty`. Real Stripe soak on `combative-mongoose-559`.

@@ -11,6 +11,7 @@ import { applySubscribeGrowthAttribution } from "../lib/growthAttribution";
 import { assertSandboxEnabled } from "../lib/sandbox";
 import { internal } from "../_generated/api";
 import { ADMIN_SCAN_MAX_DOCS } from "../lib/adminLists";
+import { PRIZELET_LEDGER_CURRENCY } from "../lib/stripeConnect";
 
 export const sandboxSubscribe = mutation({
   args: {
@@ -116,7 +117,7 @@ export const sandboxSubscribe = mutation({
       amountCents,
       platformFeeCents: split.platformFeeCents,
       creatorEarningsCents: split.creatorEarningsCents,
-      currency: "usd",
+      currency: PRIZELET_LEDGER_CURRENCY,
       status: "settled",
       externalRef: sandboxRef,
       commercialRef: `sandbox:${sandboxRef}`,

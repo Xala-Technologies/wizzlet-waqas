@@ -127,7 +127,7 @@ export const createCheckoutSession = action({
       line_items: [
         {
           price_data: {
-            currency: "usd",
+            currency: PRIZELET_LEDGER_CURRENCY,
             unit_amount: prep.amountCents,
             recurring: { interval: "month" },
             product_data: {
@@ -652,6 +652,8 @@ export const getConnectPlatformBalance = action({
   args: {},
   returns: v.object({
     ledgerCurrency: v.string(),
+    platformCountry: v.string(),
+    platformDefaultCurrency: v.string(),
     available: v.array(
       v.object({
         amount: v.number(),
@@ -671,7 +673,10 @@ export const getConnectPlatformBalance = action({
     if (!userId) throw new Error("UNAUTHENTICATED");
     await ctx.runQuery(internal.payments.stripeDb.assertAdminUserId, { userId });
     const stripe = requireStripe();
-    const balance = await stripe.balance.retrieve();
+    const [balance, account] = await Promise.all([
+      stripe.balance.retrieve(),
+      stripe.accounts.retrieve(),
+    ]);
     const available = (balance.available ?? []).map((row) => ({
       amount: row.amount,
       currency: row.currency.toLowerCase(),
@@ -682,6 +687,8 @@ export const getConnectPlatformBalance = action({
     }));
     return {
       ledgerCurrency: PRIZELET_LEDGER_CURRENCY,
+      platformCountry: (account.country ?? "").toUpperCase(),
+      platformDefaultCurrency: (account.default_currency ?? "").toLowerCase(),
       available,
       pending,
       ledgerCurrencyAvailable: available.some(

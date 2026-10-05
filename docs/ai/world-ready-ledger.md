@@ -2,7 +2,7 @@
 
 **Authority:** [`docs/ai/prizelet-world-ready-master-prompt.md`](./prizelet-world-ready-master-prompt.md)
 
-**Status:** Wave 66 Connect currency honesty 2026-10-05. Product is **not** world-ready.
+**Status:** Wave 67 USD platform currency locked 2026-10-05. Product is **not** world-ready.
 
 Do not claim world-ready until Section 8 gates in the master prompt pass.
 
@@ -16,7 +16,9 @@ Do not claim world-ready until Section 8 gates in the master prompt pass.
 | Evidence | branch, date, one-line actual vs expected |
 | Waiver | owner + reason (required if WAIVED) |
 
-Last updated: 2026-10-05. Last wave: **66** (`fix/world-ready-wave-66-connect-currency-honesty`). Source pin: `bf85281` (inventory).
+Last updated: 2026-10-05. Last wave: **67** (`fix/world-ready-wave-67-usd-platform-currency`). Source pin: `bf85281` (inventory).
+
+Wave 67: Product decision — commercial currency **USD**. Checkout/stripeDb/sandbox use `PRIZELET_LEDGER_CURRENCY`; Connect country **US**. Stripe entity still **NO**/settles **nok** with NOK-only available — admin note tells ops to fund USD. Decision log updated. Units `stripeConnect.security.test.ts`.
 
 Wave 66: real Stripe soak — platform **NO**/available **NOK 255.32**, charges/ledger **USD**, Express `acct_1UN8ktRyfauxBCWX` US/USD `payouts_enabled=false`. Transfers refuse ledger≠destination or missing USD available (no NOK-as-USD-cents). Admin live balance action; UI no longer claims transfers “not built”. `STRIPE_CONNECT_COUNTRY=US` on combative-mongoose-559. Units `stripeConnect.security.test.ts`.
 
@@ -485,7 +487,7 @@ Schema `appRole` also allows `moderator` and `user` (not product actors; no rout
 
 ## M. Remaining risk (update every fix PR)
 
-- P2: Connect Transfer is real but blocked until Express KYC (`payouts_enabled`) **and** platform available **USD** (today only NOK on combative-mongoose-559 while Checkout/ledger are USD — Wave 66 refuses mismatch, does not convert); referral cash still outside Stripe; member self-serve verified email OTP still missing; historical migration data parity BLOCKED (greenfield)
-- P3: admin join spend still capped at 500; F-012 Convex `.collect` closed Waves 59–65; Connect KYC + USD balance funding (or full NOK pricing migration) + referral cash + email OTP still open; customers/alerts/finance/dashboard/fees/payouts/announcement/reports KPIs PASS (Wave 43–47, 50–55); eslint PASS Wave 57; join honesty PASS Wave 58
+- P2: USD currency locked (Wave 67). Connect Transfer blocked until Express KYC (`payouts_enabled`) **and** Stripe available **USD** (entity NO still settles NOK today — fund USD in Dashboard/support; no FX fake); referral cash still outside Stripe; member self-serve verified email OTP still missing; historical migration data parity BLOCKED (greenfield)
+- P3: admin join spend still capped at 500; F-012 Convex `.collect` closed Waves 59–65; Connect KYC + USD available funding + referral cash + email OTP still open; customers/alerts/finance/dashboard/fees/payouts/announcement/reports KPIs PASS (Wave 43–47, 50–55); eslint PASS Wave 57; join honesty PASS Wave 58
 - Not in this PR: production deploy, live Stripe keys, MFA
 - Waivers: see section L
