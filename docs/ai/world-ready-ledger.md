@@ -2,7 +2,7 @@
 
 **Authority:** [`docs/ai/prizelet-world-ready-master-prompt.md`](./prizelet-world-ready-master-prompt.md)
 
-**Status:** Wave 37 admin multi-role All Accounts 2026-10-05. Product is **not** world-ready (other P2s remain).
+**Status:** Wave 38 X/Twitter OAuth consent 2026-10-05. Product is **not** world-ready (other P2s remain).
 
 Do not claim world-ready until Section 8 gates in the master prompt pass.
 
@@ -16,11 +16,11 @@ Do not claim world-ready until Section 8 gates in the master prompt pass.
 | Evidence | branch, date, one-line actual vs expected |
 | Waiver | owner + reason (required if WAIVED) |
 
-Last updated: 2026-10-05. Last wave: **37** (`test/world-ready-wave-37-admin-multi-role`). Source pin: `bf85281` (inventory).
+Last updated: 2026-10-05. Last wave: **38** (`test/world-ready-wave-38-x-oauth`). Source pin: `bf85281` (inventory).
 
-Wave 37: `listUsersPage` returns `roles[]`; All Accounts renders multi-role pills + CSV `Roles`. Soak: `j2creator+wave7` shows **CREATOR** + **SUBSCRIBER**. Units `adminMultiRole.security.test.ts` 2/2.
+Wave 38: Continue with X → `x.com/i/oauth2/authorize` (prize2626 app) → Authorize → `/creator` as **Prize** `@prize2626`. Units `socialAuth.test.ts` 3/3.
 
-Wave 36: admin marks referral commission paid. Wave 35: account-request fulfill PASS.
+Wave 37: multi-role All Accounts PASS. Wave 36: referral Mark paid. Wave 35: account-request fulfill.
 
 ---
 
@@ -158,7 +158,7 @@ Nested layouts in `App.tsx`: `/demo/admin` → `DemoAdminLayout`; `/demo/member`
 | J4 | Messages / support / resolution | PASS | Wave 9 2026-10-05: `j4creator`/`j4member` Stripe sub; DM + creator unread/reply; support/resolution/growth admin replies; messaging off deny; cancel → `FORBIDDEN` on send. Unit `messaging.security.test.ts` 6/6. Fix: messaging toggle on populated CreatorMessages inbox. Residual: UI composer still shown when gated (server enforces) |
 | J5 | Payout request / approve / balance | PASS | Wave 10 request/approve; Wave 25 2026-10-05: admin Lifetime from settled `paymentEvents` (cancelled j4member sub still counts) — `j4creator` Lifetime **$28.49** / Paid $28.49. `payoutBalance.test.ts` 6/6. Residual: Connect live transfers still out of scope |
 | J6 | Promo / tracking links / referrals | PASS | Wave 11/29/30/33/34; Wave 36 2026-10-05: admin Mark paid ledger for accrued commission (**$1.49** → Paid). Residual: Stripe Connect cash movement still out of scope |
-| J7 | Identity (password, OAuth, roles, email request) | PASS | Wave 12/27/28/30; Wave 35 admin email fulfill + soft-delete. Residual: X/Twitter OAuth consent not browser-completed; no member self-serve verified email OTP |
+| J7 | Identity (password, OAuth, roles, email request) | PASS | Wave 12/27/28/30/38; Wave 35 admin email fulfill + soft-delete; Wave 38 X OAuth consent → Prize `@prize2626` creator session. Residual: no member self-serve verified email OTP |
 | J8 | Migration ETL internal-only | PASS | Wave 13 2026-10-05: all migration exports `internalMutation`; client has zero import refs; `MIGRATION_SECRET` unset on combative-mongoose-559; `migrations.security.test.ts` 3/3. Residual: historical data parity not claimed |
 | J9 | Public nav + chrome | PASS | Wave 2: public-nav + browser-matrix on chromium/webkit/firefox; platform-owner bootstrap visible in DEV |
 | J-ADMIN | Admin lists, fees, reports, campaigns | PASS | Wave 16 2026-10-05: users/creators paginated; fees analytics; CSV export; campaigns in-app-only honesty; alerts strip |
@@ -247,7 +247,7 @@ App public functions (`Auth` = TBD until Wave 1):
 | `analytics.mutations.listForMyCreator` | creator | yes | PASS | Wave 31: CreatorDashboard query path; Wave 10+ overview soak |
 | `analytics.mutations.listMine` | subscriber | yes | PASS | Wave 31: CustomerActivity / member events after profile visit |
 | `analytics.mutations.track` | authenticated | yes | PASS | Wave 31: `/j2creator` → `page_view:creator:j2creator` + `post_view` rows |
-| `authProviders.socialProviders` | public | yes | PASS | Wave 27/30/31: `{ twitter: true, discord: true }` |
+| `authProviders.socialProviders` | public | yes | PASS | Wave 38: Continue with X visible + authorize; Wave 27/30/31 `{ twitter: true, discord: true }` |
 | `bookmarks.mutations.listCreatorBookmarks` | subscriber | yes | PASS | Wave 31: Discover shows Remove bookmark for j2creator |
 | `bookmarks.mutations.listCreatorBookmarksDetailed` | subscriber | yes | PASS | Wave 31: `/dashboard/saved` Bookmarked Creators (1) j2creator |
 | `bookmarks.mutations.listSavedPosts` | subscriber | yes | PASS | Wave 31: Saved Posts (0) live query on `/dashboard/saved?demo=0` |
@@ -435,7 +435,7 @@ Schema `appRole` also allows `moderator` and `user` (not product actors; no rout
 
 ## M. Remaining risk (update every fix PR)
 
-- P2: Stripe Connect live transfers still unimplemented (Wave 22 honesty PASS — ledger/manual only); referral commission accrual + ledger Mark paid PASS (Wave 34/36) — cash still settles outside until Connect; J7 X/Twitter OAuth consent not browser-completed; account-request admin fulfill PASS (Wave 35) — residual: no member self-serve verified email OTP; Stripe remote cancel not part of deletion fulfill; historical migration data parity BLOCKED (greenfield)
+- P2: Stripe Connect live transfers still unimplemented (Wave 22 honesty PASS — ledger/manual only); referral commission accrual + ledger Mark paid PASS (Wave 34/36) — cash still settles outside until Connect; J7 X OAuth consent PASS (Wave 38); account-request admin fulfill PASS (Wave 35) — residual: no member self-serve verified email OTP; Stripe remote cancel not part of deletion fulfill; historical migration data parity BLOCKED (greenfield)
 - P3: admin user/creator spend metrics cap at 200 indexed rows; customer pages scan ≤5k subscriptions; eslint warnings; AuthContext DEV `hasRole` leftover; All Accounts multi-role display PASS (Wave 37)
 - Not in this PR: production deploy, live Stripe keys, MFA
 - Waivers: see section L
