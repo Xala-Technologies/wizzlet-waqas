@@ -4,7 +4,13 @@ import { useAction, useMutation, usePaginatedQuery, useQuery } from 'convex/reac
 import { api } from '../../convex/_generated/api';
 import type { Id } from '../../convex/_generated/dataModel';
 import { DashboardLayout } from '@/components/dashboard/DashboardLayout';
+import { DashboardKpiStrip } from '@/components/dashboard/DashboardKpiStrip';
+import {
+  AdminPageHeader,
+  adminSectionTitle,
+} from '@/components/dashboard/AdminPageHeader';
 import { clayCard } from '@/lib/overviewClay';
+import { kpiIconTone } from '@/lib/kpiIconTones';
 import { DesktopTableRegion, MobileRecordCards } from '@/components/dashboard/MobileRecordList';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -159,6 +165,60 @@ const AdminPayouts = () => {
     ? scanTruncationNote(overview.truncated, overview.listLimit)
     : null;
 
+  const primaryKpis = useMemo(
+    () => [
+      {
+        label: 'Owed to Creators',
+        value: fmt(totals.owed),
+        icon: Wallet,
+        iconClassName: kpiIconTone.emerald,
+      },
+      {
+        label: 'Queued / In Progress',
+        value: fmt(totals.pending),
+        icon: Clock,
+        iconClassName: kpiIconTone.amber,
+      },
+      {
+        label: 'Total Paid Out',
+        value: fmt(totals.totalPaidOut),
+        icon: TrendingUp,
+        iconClassName: kpiIconTone.sky,
+      },
+      {
+        label: 'Last Completed Payout',
+        value: totals.lastPayoutDate,
+        icon: Calendar,
+        iconClassName: kpiIconTone.violet,
+      },
+    ],
+    [totals],
+  );
+
+  const statusKpis = useMemo(
+    () => [
+      {
+        label: 'Open',
+        value: String(totals.processing),
+        icon: Clock,
+        iconClassName: kpiIconTone.amber,
+      },
+      {
+        label: 'Completed',
+        value: String(totals.completed),
+        icon: CheckCircle2,
+        iconClassName: kpiIconTone.emerald,
+      },
+      {
+        label: 'Failed',
+        value: String(totals.failed),
+        icon: XCircle,
+        iconClassName: kpiIconTone.rose,
+      },
+    ],
+    [totals],
+  );
+
   const creatorName = (p: PayoutRow) =>
     p.creator_name ?? balances.find((b) => b.creatorId === p.creator_id)?.name ?? 'Unknown creator';
 
@@ -257,58 +317,46 @@ const AdminPayouts = () => {
 
   return (
     <DashboardLayout type="admin" mainClassName="bg-clay-page">
-      <div className="mb-8">
-        <p className="text-muted-foreground text-sm mt-0.5">
-          Treasury ledger plus optional Stripe Connect transfers
-        </p>
-        <p className="text-muted-foreground text-xs mt-1">
-          Mark paid in ledger does not move money. Send via Stripe creates a real Connect Transfer when Express payouts are enabled — matched USD available, or Stripe-native FX from settlement currency sized with Stripe’s exchange rate (never 1 øre = 1 cent).
-        </p>
-        {stripeBalanceNote && (
-          <p
-            className={cn(
-              'text-caption mt-2',
-              stripeBalanceNote.includes('will refuse')
-                ? 'text-amber-600'
-                : 'text-muted-foreground',
-            )}
-          >
-            {stripeBalanceNote}
-          </p>
-        )}
-        {Number.isFinite(minPayoutDollars) && minPayoutDollars > 0 && (
-          <p className="text-caption text-muted-foreground mt-1">Minimum payout: ${minPayoutDollars.toFixed(2)}</p>
-        )}
-        {truncation && <p className="text-amber-600 text-caption mt-2">{truncation}</p>}
-      </div>
+      <AdminPageHeader
+        title="Payouts"
+        description={
+          <>
+            <p>Treasury ledger plus optional Stripe Connect transfers</p>
+            <p className="mt-1 text-xs">
+              Mark paid in ledger does not move money. Send via Stripe creates a real Connect Transfer when
+              Express payouts are enabled — matched USD available, or Stripe-native FX from settlement currency
+              sized with Stripe’s exchange rate (never 1 øre = 1 cent).
+            </p>
+            {stripeBalanceNote ? (
+              <p
+                className={cn(
+                  'mt-2 text-caption',
+                  stripeBalanceNote.includes('will refuse')
+                    ? 'text-amber-600 dark:text-amber-400'
+                    : 'text-muted-foreground',
+                )}
+              >
+                {stripeBalanceNote}
+              </p>
+            ) : null}
+            {Number.isFinite(minPayoutDollars) && minPayoutDollars > 0 ? (
+              <p className="mt-1 text-caption text-muted-foreground">
+                Minimum payout: ${minPayoutDollars.toFixed(2)}
+              </p>
+            ) : null}
+            {truncation ? (
+              <p className="mt-2 text-caption text-amber-600 dark:text-amber-400">{truncation}</p>
+            ) : null}
+          </>
+        }
+      />
 
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-        <div className="rounded-xl border border-border bg-card p-5">
-          <Wallet className="h-4 w-4 text-emerald-400 mb-2" />
-          <p className="text-2xl font-bold text-emerald-400">{fmt(totals.owed)}</p>
-          <p className="text-caption text-muted-foreground mt-1">Owed to Creators</p>
-        </div>
-        <div className="rounded-xl border border-border bg-card p-5">
-          <Clock className="h-4 w-4 text-amber-400 mb-2" />
-          <p className="text-2xl font-bold text-amber-400">{fmt(totals.pending)}</p>
-          <p className="text-caption text-muted-foreground mt-1">Queued / In Progress</p>
-        </div>
-        <div className="rounded-xl border border-border bg-card p-5">
-          <TrendingUp className="h-4 w-4 text-blue-400 mb-2" />
-          <p className="text-2xl font-bold">{fmt(totals.totalPaidOut)}</p>
-          <p className="text-caption text-muted-foreground mt-1">Total Paid Out</p>
-        </div>
-        <div className="rounded-xl border border-border bg-card p-5">
-          <Calendar className="h-4 w-4 text-purple-400 mb-2" />
-          <p className="text-lg font-bold">{totals.lastPayoutDate}</p>
-          <p className="text-caption text-muted-foreground mt-1">Last Completed Payout</p>
-        </div>
-      </div>
+      <DashboardKpiStrip items={primaryKpis} variant="clay" className="mb-6 sm:mb-8" />
 
-      <div className="rounded-xl border border-border overflow-hidden mb-8">
-        <div className="p-4 border-b border-border bg-muted/30 flex items-center gap-2">
-          <Crown className="h-4 w-4 text-primary" />
-          <h2 className="text-sm font-medium">Creator Balances</h2>
+      <section className={cn(clayCard, 'mb-8 overflow-hidden')}>
+        <div className="flex items-center gap-2 border-b border-border p-4 sm:px-6">
+          <Crown className="h-4 w-4 text-muted-foreground" aria-hidden />
+          <h2 className={adminSectionTitle}>Creator Balances</h2>
         </div>
         {balances.length === 0 ? (
           <p className="text-sm text-muted-foreground text-center py-10">No creator earnings yet</p>
@@ -316,7 +364,7 @@ const AdminPayouts = () => {
           <>
             <MobileRecordCards>
               {balances.map((b) => (
-                <li key={b.creatorId} className="mx-3 mb-3 last:mb-3 rounded-xl border border-border bg-card p-4 space-y-3 md:mx-0">
+                <li key={b.creatorId} className={cn(clayCard, 'mx-3 mb-3 space-y-3 p-4 last:mb-3 md:mx-0')}>
                   <p className="text-sm font-medium truncate">{b.name}</p>
                   <div className="grid grid-cols-2 gap-2 text-caption">
                     <div><span className="text-muted-foreground">Lifetime</span><p className="mt-0.5">{fmt(b.earned)}</p></div>
@@ -373,12 +421,12 @@ const AdminPayouts = () => {
             </DesktopTableRegion>
           </>
         )}
-      </div>
+      </section>
 
-      <div className="rounded-2xl border border-border bg-card shadow-[var(--shadow-card)] overflow-hidden mb-8">
-        <div className="p-4 border-b border-border bg-muted/30">
-          <h2 className="text-sm font-medium">Referral commissions (unpaid)</h2>
-          <p className="text-caption text-muted-foreground mt-0.5">
+      <section className={cn(clayCard, 'mb-8 overflow-hidden')}>
+        <div className="border-b border-border p-4 sm:px-6">
+          <h2 className={adminSectionTitle}>Referral commissions (unpaid)</h2>
+          <p className="mt-0.5 text-caption text-muted-foreground">
             Accrued from referred Checkouts. Mark paid after cash settles outside Prizelet.
           </p>
         </div>
@@ -423,26 +471,13 @@ const AdminPayouts = () => {
             ))}
           </ul>
         )}
-      </div>
+      </section>
 
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
-        <div className="rounded-xl border border-border bg-card p-5">
-          <p className="text-caption text-muted-foreground uppercase tracking-wider mb-1">Open</p>
-          <p className="text-2xl font-bold text-amber-400">{totals.processing}</p>
-        </div>
-        <div className="rounded-xl border border-border bg-card p-5">
-          <p className="text-caption text-muted-foreground uppercase tracking-wider mb-1">Completed</p>
-          <p className="text-2xl font-bold text-emerald-400">{totals.completed}</p>
-        </div>
-        <div className="rounded-xl border border-border bg-card p-5">
-          <p className="text-caption text-muted-foreground uppercase tracking-wider mb-1">Failed</p>
-          <p className="text-2xl font-bold text-destructive">{totals.failed}</p>
-        </div>
-      </div>
+      <DashboardKpiStrip items={statusKpis} variant="clay" className="mb-6 sm:mb-8" />
 
-      <div className="rounded-xl border border-border overflow-hidden">
-        <div className="p-4 border-b border-border bg-muted/30">
-          <h2 className="text-sm font-medium">Payout History</h2>
+      <section className={cn(clayCard, 'overflow-hidden')}>
+        <div className="border-b border-border p-4 sm:px-6">
+          <h2 className={adminSectionTitle}>Payout History</h2>
         </div>
         {payouts.length === 0 ? (
           <p className="text-sm text-muted-foreground text-center py-10">No payouts recorded yet — record one from a creator balance above</p>
@@ -450,7 +485,7 @@ const AdminPayouts = () => {
           <>
             <MobileRecordCards>
               {payouts.map((p) => (
-                <li key={p.id} className="mx-3 mb-3 rounded-xl border border-border bg-card p-4 space-y-3">
+                <li key={p.id} className={cn(clayCard, 'mx-3 mb-3 space-y-3 p-4')}>
                   <div className="flex items-start justify-between gap-2">
                     <div className="min-w-0">
                       <p className="text-sm font-medium truncate">{creatorName(p)}</p>
@@ -556,7 +591,7 @@ const AdminPayouts = () => {
             </Button>
           </div>
         )}
-      </div>
+      </section>
     </DashboardLayout>
   );
 };

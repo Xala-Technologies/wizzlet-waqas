@@ -2,11 +2,16 @@ import { useMemo, useState } from 'react';
 import { useAction, useMutation, usePaginatedQuery, useQuery } from 'convex/react';
 import { api } from '../../convex/_generated/api';
 import type { Id } from '../../convex/_generated/dataModel';
+import { cn } from '@/lib/utils';
 import { DashboardLayout } from '@/components/dashboard/DashboardLayout';
+import { AdminPageHeader, adminSectionTitle } from '@/components/dashboard/AdminPageHeader';
+import { DashboardKpiStrip } from '@/components/dashboard/DashboardKpiStrip';
+import { clayCard } from '@/lib/overviewClay';
+import { kpiIconTone } from '@/lib/kpiIconTones';
 import { DesktopTableRegion, MobileRecordCards } from '@/components/dashboard/MobileRecordList';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Users, Loader2, Search, Eye, Download, Shield, Inbox } from 'lucide-react';
+import { Users, Loader2, Search, Eye, Download, Shield, Inbox, Crown } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { downloadCsv } from '@/lib/csv';
@@ -189,39 +194,92 @@ const AdminUsers = () => {
     }
   };
 
+  const userKpiItems = useMemo(() => {
+    const adminCount = users.filter((u) => u.roles.includes('admin')).length;
+    const creatorCount = users.filter((u) => u.roles.includes('creator')).length;
+    return [
+      {
+        label: 'Loaded accounts',
+        value: users.length.toString(),
+        icon: Users,
+        iconClassName: kpiIconTone.cyan,
+      },
+      {
+        label: 'Open requests',
+        value: openRequests === undefined ? '…' : openRequests.length.toString(),
+        icon: Inbox,
+        iconClassName: kpiIconTone.amber,
+      },
+      {
+        label: 'Creators (loaded)',
+        value: creatorCount.toString(),
+        icon: Crown,
+        iconClassName: kpiIconTone.violet,
+      },
+      {
+        label: 'Admins (loaded)',
+        value: adminCount.toString(),
+        icon: Shield,
+        iconClassName: kpiIconTone.rose,
+      },
+    ];
+  }, [users, openRequests]);
+
+  const headerActions = (
+    <>
+      <div className="relative w-full sm:w-64">
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+        <Input
+          placeholder="Search loaded users…"
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          className="pl-9 min-h-11"
+        />
+      </div>
+      <Button variant="outline" size="sm" className="min-h-11 text-caption w-full sm:w-auto" onClick={handleExport}>
+        <Download className="mr-1.5 h-3.5 w-3.5" /> Export
+      </Button>
+    </>
+  );
+
   return (
     <DashboardLayout type="admin" mainClassName="bg-clay-page">
-      <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between mb-6">
-        <div className="min-w-0">
-          <p className="text-muted-foreground text-sm mt-0.5">
-            All accounts including admins and creators · {users.length} loaded
-            {status === 'CanLoadMore' || status === 'LoadingMore' ? ' (more available)' : ''}
-          </p>
-          {joinNote && <p className="text-amber-600 text-xs mt-1">{joinNote}</p>}
-        </div>
-        <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
-          <div className="relative w-full sm:w-64">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
-            <Input placeholder="Search loaded users…" value={search} onChange={(e) => setSearch(e.target.value)} className="pl-9 h-11 sm:h-9" />
-          </div>
-          <Button variant="outline" size="sm" className="h-11 sm:h-9 min-h-9 text-caption w-full sm:w-auto" onClick={handleExport}>
-            <Download className="mr-1.5 h-3.5 w-3.5" /> Export
-          </Button>
-        </div>
-      </div>
+      <AdminPageHeader
+        title="All Accounts"
+        description={
+          <>
+            <p>
+              All accounts including admins and creators · {users.length} loaded
+              {status === 'CanLoadMore' || status === 'LoadingMore' ? ' (more available)' : ''}
+            </p>
+            {joinNote ? (
+              <p className="mt-1 text-xs text-amber-600 dark:text-amber-400">{joinNote}</p>
+            ) : null}
+          </>
+        }
+        actions={headerActions}
+      />
 
-      <section className="mb-6 rounded-2xl border border-border bg-card shadow-[var(--shadow-card)] p-4 sm:p-5">
-        <div className="flex items-start gap-3 mb-3">
-          <div className="rounded-xl bg-amber-500/10 p-2 text-amber-600">
-            <Inbox className="h-4 w-4" aria-hidden />
+      {!loading && <DashboardKpiStrip items={userKpiItems} variant="clay" className="mb-6 sm:mb-8" />}
+
+      <section className={cn(clayCard, 'mb-6 p-4 sm:p-6')}>
+        <div className="mb-4 flex items-start gap-3">
+          <div
+            className={cn(
+              'flex h-11 w-11 shrink-0 items-center justify-center rounded-xl',
+              kpiIconTone.amber,
+            )}
+          >
+            <Inbox className="h-5 w-5" aria-hidden />
           </div>
-          <div className="min-w-0">
-            <h2 className="text-sm font-semibold">Open account requests</h2>
-            <p className="text-caption text-muted-foreground mt-0.5">
-              Review queue — Fulfill applies email rotation or soft-deletion; Reject closes without changes.
+          <div className="min-w-0 flex-1">
+            <h2 className={adminSectionTitle}>Open account requests</h2>
+            <p className="mt-1 text-sm text-muted-foreground">
+              Review queue — Fulfill applies email rotation or soft-deletion; Reject closes without
+              changes.
             </p>
           </div>
-          <span className="ml-auto text-caption font-medium tabular-nums text-muted-foreground shrink-0">
+          <span className="ml-auto shrink-0 text-caption font-medium tabular-nums text-muted-foreground">
             {openRequests === undefined ? '…' : `${openRequests.length} open`}
           </span>
         </div>
@@ -232,7 +290,7 @@ const AdminUsers = () => {
         ) : openRequests.length === 0 ? (
           <p className="text-sm text-muted-foreground py-2">No open requests.</p>
         ) : (
-          <ul className="divide-y divide-border rounded-xl border border-border overflow-hidden">
+          <ul className={cn(clayCard, 'divide-y divide-border overflow-hidden p-0')}>
             {openRequests.map((req) => (
               <li key={req._id} className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between px-3 py-3 bg-background/40">
                 <div className="min-w-0">
@@ -285,7 +343,7 @@ const AdminUsers = () => {
       {loading ? (
         <div className="flex justify-center py-20"><Loader2 className="h-5 w-5 animate-spin text-primary" /></div>
       ) : filtered.length === 0 ? (
-        <div className="rounded-xl border border-border bg-card p-10 text-center">
+        <div className={cn(clayCard, 'p-10 text-center')}>
           <Users className="h-10 w-10 text-muted-foreground mx-auto mb-4" />
           <h3 className="font-semibold mb-2">{search ? 'No matching users' : 'No users yet'}</h3>
         </div>
@@ -293,7 +351,7 @@ const AdminUsers = () => {
         <>
           <MobileRecordCards>
             {filtered.map((u) => (
-              <li key={u.id} className="rounded-xl border border-border bg-card p-4">
+              <li key={u.id} className={cn(clayCard, 'p-4')}>
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0">
                     <p className="text-sm font-medium truncate">{u.full_name ?? 'Unknown'}</p>
@@ -314,7 +372,7 @@ const AdminUsers = () => {
             ))}
           </MobileRecordCards>
 
-          <DesktopTableRegion label="Users table" className="overflow-hidden">
+          <DesktopTableRegion label="Users table" className={cn(clayCard, 'overflow-hidden border-0 p-0')}>
             <table className="w-full min-w-[720px] text-sm">
               <thead>
                 <tr className="border-b border-border bg-muted/30">

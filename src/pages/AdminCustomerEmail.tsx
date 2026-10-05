@@ -6,6 +6,7 @@ import { api } from '../../convex/_generated/api';
 import type { Id } from '../../convex/_generated/dataModel';
 import { DashboardLayout } from '@/components/dashboard/DashboardLayout';
 import { clayCard } from '@/lib/overviewClay';
+import { AdminPageHeader, adminSectionTitle } from '@/components/dashboard/AdminPageHeader';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -123,14 +124,13 @@ const AdminCustomerEmail = () => {
 
   return (
     <DashboardLayout type="admin" mainClassName="bg-clay-page">
-      <div className="mb-6">
-        <p className="text-muted-foreground text-sm mt-0.5">
-          Delivers notifications in the app. Email outbox is not enabled yet.
-        </p>
-      </div>
+      <AdminPageHeader
+        title="Announcements"
+        description="Delivers notifications in the app. Email outbox is not enabled yet."
+      />
 
-      <div className="rounded-xl border border-border bg-card p-6 mb-8">
-        <h2 className="text-sm font-semibold mb-4 flex items-center gap-2">
+      <section className={cn(clayCard, 'mb-6 p-4 sm:mb-8 sm:p-6')}>
+        <h2 className={cn(adminSectionTitle, 'mb-4 flex items-center gap-2')}>
           <Megaphone className="h-4 w-4 text-primary" /> Compose announcement
         </h2>
         <div className="space-y-4">
@@ -191,16 +191,16 @@ const AdminCustomerEmail = () => {
             Send to {recipientCount} customer{recipientCount === 1 ? '' : 's'}
           </Button>
         </div>
-      </div>
+      </section>
 
       <div>
-        <h2 className="text-sm font-medium text-muted-foreground uppercase tracking-wider mb-3">Announcement history</h2>
+        <h2 className={cn(adminSectionTitle, 'mb-4')}>Announcement history</h2>
         {campaignStatus === 'LoadingFirstPage' ? (
           <div className="flex items-center justify-center py-12">
             <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
           </div>
         ) : campaigns.length === 0 ? (
-          <div className="rounded-xl border border-border bg-card p-10 text-center">
+          <div className={cn(clayCard, 'p-10 text-center sm:p-6')}>
             <Megaphone className="h-8 w-8 text-muted-foreground/40 mx-auto mb-3" />
             <p className="text-sm text-muted-foreground">No announcements yet.</p>
           </div>
@@ -208,7 +208,7 @@ const AdminCustomerEmail = () => {
           <>
             <div className="space-y-3">
               {campaigns.map((c) => (
-                <div key={c.id} className="rounded-xl border border-border bg-card p-5">
+                <div key={c.id} className={cn(clayCard, 'p-4 sm:p-6')}>
                   <div className="flex items-start justify-between gap-3 mb-2">
                     <div className="min-w-0 flex-1">
                       <p className="text-sm font-semibold">{c.subject}</p>

@@ -6,11 +6,24 @@ import { api } from '../../convex/_generated/api';
 import type { Id } from '../../convex/_generated/dataModel';
 import { DashboardLayout } from '@/components/dashboard/DashboardLayout';
 import { clayCard } from '@/lib/overviewClay';
+import { DashboardKpiStrip } from '@/components/dashboard/DashboardKpiStrip';
+import { AdminPageHeader } from '@/components/dashboard/AdminPageHeader';
+import { kpiIconTone } from '@/lib/kpiIconTones';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { FileWarning, MessageSquare, Clock, User, Loader2, Send } from 'lucide-react';
+import {
+  FileWarning,
+  MessageSquare,
+  Clock,
+  User,
+  Loader2,
+  Send,
+  CircleDot,
+  AlertTriangle,
+  CheckCircle2,
+} from 'lucide-react';
 import { format } from 'date-fns';
 import { toast } from 'sonner';
 import { MessageSeenReceipt } from '@/components/messaging/MessageSeenReceipt';
@@ -123,6 +136,39 @@ const AdminResolutionCases = () => {
     [cases, filter],
   );
 
+  const statusKpis = useMemo(() => {
+    const counts = { open: 0, in_progress: 0, escalated: 0, resolved: 0 };
+    cases.forEach((c) => {
+      if (c.status in counts) counts[c.status as keyof typeof counts] += 1;
+    });
+    return [
+      {
+        label: 'Open',
+        value: String(counts.open),
+        icon: CircleDot,
+        iconClassName: kpiIconTone.sky,
+      },
+      {
+        label: 'In progress',
+        value: String(counts.in_progress),
+        icon: Clock,
+        iconClassName: kpiIconTone.amber,
+      },
+      {
+        label: 'Escalated',
+        value: String(counts.escalated),
+        icon: AlertTriangle,
+        iconClassName: kpiIconTone.rose,
+      },
+      {
+        label: 'Resolved',
+        value: String(counts.resolved),
+        icon: CheckCircle2,
+        iconClassName: kpiIconTone.emerald,
+      },
+    ];
+  }, [cases]);
+
   const updateStatus = async (id: string, status: string) => {
     try {
       await setStatus({ caseId: id as Id<'resolutionCases'>, status });
@@ -160,35 +206,44 @@ const AdminResolutionCases = () => {
   const openCount =
     alertsOverview?.openCases ??
     cases.filter((c) => c.status === 'open' || c.status === 'escalated').length;
+  const filterControl = (
+    <Select value={filter} onValueChange={setFilter}>
+      <SelectTrigger className="w-44 min-h-11"><SelectValue /></SelectTrigger>
+      <SelectContent>
+        <SelectItem value="all">All cases</SelectItem>
+        <SelectItem value="open">Open</SelectItem>
+        <SelectItem value="in_progress">In progress</SelectItem>
+        <SelectItem value="escalated">Escalated</SelectItem>
+        <SelectItem value="resolved">Resolved</SelectItem>
+      </SelectContent>
+    </Select>
+  );
+
   return (
     <DashboardLayout type="admin" mainClassName="bg-clay-page">
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
-        <div>
-          <p className="text-muted-foreground text-sm mt-0.5">
+      <AdminPageHeader
+        title="Resolution Cases"
+        description={
+          <>
             {alertsOverview !== undefined
               ? `${openCount} open platform-wide`
               : `${openCount} open among loaded`}
             {' · '}
             {cases.length} loaded
             {pageStatus === 'CanLoadMore' || pageStatus === 'LoadingMore' ? ' (more available)' : ''}
-          </p>
-        </div>
-        <Select value={filter} onValueChange={setFilter}>
-          <SelectTrigger className="w-44 min-h-11"><SelectValue /></SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All cases</SelectItem>
-            <SelectItem value="open">Open</SelectItem>
-            <SelectItem value="in_progress">In progress</SelectItem>
-            <SelectItem value="escalated">Escalated</SelectItem>
-            <SelectItem value="resolved">Resolved</SelectItem>
-          </SelectContent>
-        </Select>
-      </div>
+          </>
+        }
+        actions={filterControl}
+      />
+
+      {!loading && cases.length > 0 && (
+        <DashboardKpiStrip items={statusKpis} variant="clay" className="mb-6 sm:mb-8" />
+      )}
 
       {loading ? (
         <div className="flex justify-center py-20"><Loader2 className="h-5 w-5 animate-spin text-primary" /></div>
       ) : filtered.length === 0 ? (
-        <div className="rounded-xl border border-border bg-card p-12 text-center">
+        <div className={cn(clayCard, 'p-12 text-center sm:p-6')}>
           <FileWarning className="h-10 w-10 text-muted-foreground mx-auto mb-3" />
           <p className="text-sm text-muted-foreground">No cases in this view.</p>
         </div>
@@ -196,7 +251,7 @@ const AdminResolutionCases = () => {
         <>
           <div className="space-y-3">
             {filtered.map((c) => (
-              <div key={c.id} className="rounded-xl border border-border bg-card p-5">
+              <div key={c.id} className={cn(clayCard, 'p-4 sm:p-6')}>
                 <div className="flex flex-wrap items-start justify-between gap-3">
                   <div className="min-w-0">
                     <div className="flex items-center gap-2 mb-1">

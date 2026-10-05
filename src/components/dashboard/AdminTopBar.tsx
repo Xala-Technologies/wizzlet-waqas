@@ -44,7 +44,7 @@ export function AdminTopBar() {
   return (
     <header className="sticky top-0 z-20 hidden border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80 md:block">
       <div className="mx-auto flex h-[var(--topbar-height)] w-full min-w-0 max-w-[var(--content-max)] items-center gap-3 px-4 sm:px-6 md:px-8 lg:px-10 xl:px-12">
-        <h1 className="min-w-0 flex-1 truncate text-xl font-bold tracking-tight text-foreground sm:text-2xl">
+        <h1 className="type-page-title min-w-0 flex-1 truncate text-xl text-foreground sm:text-2xl">
           {pageTitle}
         </h1>
 
@@ -68,7 +68,7 @@ export function AdminTopBar() {
           <DropdownMenu>
             <DropdownMenuTrigger
               className={cn(
-                'inline-flex h-10 items-center gap-2 rounded-xl border border-border bg-card px-2.5',
+                'inline-flex h-10 items-center gap-2 rounded-2xl border border-border bg-card px-2.5',
                 'text-sm font-semibold text-foreground transition-colors hover:bg-muted/60',
                 'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
               )}

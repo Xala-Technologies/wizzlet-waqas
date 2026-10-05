@@ -4,6 +4,7 @@ import { api } from '../../convex/_generated/api';
 import type { Id } from '../../convex/_generated/dataModel';
 import { DashboardLayout } from '@/components/dashboard/DashboardLayout';
 import { clayCard } from '@/lib/overviewClay';
+import { AdminPageHeader, adminSectionTitle } from '@/components/dashboard/AdminPageHeader';
 import { AdminSupportTabs } from '@/components/dashboard/AdminSupportTabs';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
@@ -177,14 +178,11 @@ const AdminGrowthManagerInbox = () => {
 
   return (
     <DashboardLayout type="admin" mainClassName="bg-clay-page">
-      <div className="mb-5 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-        <div>
-          <p className="text-muted-foreground text-sm mt-1">
-            Creator coaching conversations and platform broadcasts
-          </p>
-        </div>
-        <AdminSupportTabs />
-      </div>
+      <AdminPageHeader
+        title="Growth Inbox"
+        description="Creator coaching conversations and platform broadcasts"
+        actions={<AdminSupportTabs />}
+      />
 
       {!growthEnabled && (
         <div className="mb-4 flex items-start gap-2.5 rounded-lg border border-amber-500/25 bg-amber-500/5 px-3.5 py-3 text-sm text-amber-800 dark:text-amber-200">
@@ -200,11 +198,11 @@ const AdminGrowthManagerInbox = () => {
           <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
         </div>
       ) : threads.length === 0 ? (
-        <div className="rounded-xl border border-border bg-card px-6 py-16 text-center">
+        <div className={cn(clayCard, 'px-6 py-16 text-center p-4 sm:p-6')}>
           <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-muted">
             <Inbox className="h-5 w-5 text-muted-foreground" />
           </div>
-          <h2 className="text-base font-semibold mb-1">No conversations yet</h2>
+          <h2 className={cn(adminSectionTitle, 'mb-1')}>No conversations yet</h2>
           <p className="text-sm text-muted-foreground max-w-sm mx-auto">
             When creators message the growth team, their threads will appear here.
           </p>
@@ -214,13 +212,13 @@ const AdminGrowthManagerInbox = () => {
           {/* Thread list */}
           <div
             className={cn(
-              'rounded-xl border border-border bg-card overflow-hidden flex flex-col min-h-[min(70vh,560px)]',
+              cn(clayCard, 'overflow-hidden flex flex-col min-h-[min(70vh,560px)] p-0'),
               activeId && 'hidden lg:flex',
             )}
           >
             <div className="border-b border-border px-3 py-3 space-y-3">
               <div className="flex items-center justify-between gap-2 px-1">
-                <p className="text-sm font-semibold">Inbox</p>
+                <p className={adminSectionTitle}>Inbox</p>
                 {totalUnread > 0 ? (
                   <span className="inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-primary px-1.5 text-caption font-semibold text-primary-foreground">
                     {totalUnread}
@@ -311,7 +309,7 @@ const AdminGrowthManagerInbox = () => {
           {/* Conversation pane */}
           <div
             className={cn(
-              'rounded-xl border border-border bg-card flex-col min-w-0 min-h-[min(70vh,560px)]',
+              cn(clayCard, 'flex-col min-w-0 min-h-[min(70vh,560px)] overflow-hidden p-0'),
               activeId ? 'flex' : 'hidden lg:flex',
             )}
           >

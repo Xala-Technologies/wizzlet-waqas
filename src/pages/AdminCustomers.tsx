@@ -3,12 +3,28 @@ import { useMemo, useState } from 'react';
 import { usePaginatedQuery, useQuery } from 'convex/react';
 import { api } from '../../convex/_generated/api';
 import { DashboardLayout } from '@/components/dashboard/DashboardLayout';
+import { AdminPageHeader } from '@/components/dashboard/AdminPageHeader';
+import { DashboardKpiStrip } from '@/components/dashboard/DashboardKpiStrip';
 import { clayCard } from '@/lib/overviewClay';
+import { kpiIconTone } from '@/lib/kpiIconTones';
 import { DesktopTableRegion, MobileRecordCards } from '@/components/dashboard/MobileRecordList';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import { Users, Loader2, CheckCircle2, XCircle, Search, Eye, Mail, Download, TrendingDown, AlertTriangle } from 'lucide-react';
+import {
+  Users,
+  Loader2,
+  CheckCircle2,
+  XCircle,
+  Search,
+  Eye,
+  Mail,
+  Download,
+  TrendingDown,
+  AlertTriangle,
+  DollarSign,
+  CreditCard,
+} from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { useNavigate } from 'react-router-dom';
 import { downloadCsv } from '@/lib/csv';
@@ -85,61 +101,90 @@ const AdminCustomers = () => {
     toast.success(`Exported ${filtered.length} loaded customers`);
   };
 
+  const customerKpiItems = useMemo(() => {
+    if (!overview) return [];
+    return [
+      {
+        label: 'Customers',
+        value: overview.customerCount.toString(),
+        icon: Users,
+        iconClassName: kpiIconTone.cyan,
+      },
+      {
+        label: 'Active subs',
+        value: overview.activeSubCount.toString(),
+        icon: CreditCard,
+        iconClassName: kpiIconTone.emerald,
+      },
+      {
+        label: 'Revenue',
+        value: `$${overview.revenue.toFixed(0)}`,
+        icon: DollarSign,
+        iconClassName: kpiIconTone.violet,
+      },
+      {
+        label: 'At risk',
+        value: overview.atRiskCount.toString(),
+        icon: AlertTriangle,
+        iconClassName: kpiIconTone.amber,
+      },
+      {
+        label: 'Churned',
+        value: overview.churnedCount.toString(),
+        icon: TrendingDown,
+        iconClassName: kpiIconTone.rose,
+      },
+    ];
+  }, [overview]);
+
+  const headerActions = (
+    <>
+      <div className="relative w-full sm:w-64">
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+        <Input
+          placeholder="Search loaded customers…"
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          className="pl-9 min-h-11"
+        />
+      </div>
+      <Button variant="outline" size="sm" className="min-h-11 text-caption w-full sm:w-auto" onClick={handleExport}>
+        <Download className="mr-1.5 h-3.5 w-3.5" /> Export
+      </Button>
+    </>
+  );
+
   return (
     <DashboardLayout type="admin" mainClassName="bg-clay-page">
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
-        <div>
-          <p className="text-muted-foreground text-sm mt-0.5">
-            People with subscriptions
-            {overview ? ` · ${overview.customerCount} total` : ''}
-            {customers.length > 0 ? ` · ${customers.length} loaded` : ''}
-            {status === 'CanLoadMore' || status === 'LoadingMore' ? ' (more available)' : ''}
-          </p>
-          {truncation && <p className="text-amber-600 text-xs mt-1">{truncation}</p>}
-          {joinNote && <p className="text-amber-600 text-xs mt-1">{joinNote}</p>}
-        </div>
-        <div className="flex flex-col sm:flex-row flex-wrap items-stretch sm:items-center gap-2 w-full sm:w-auto">
-          <div className="relative w-full sm:w-64">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
-            <Input placeholder="Search loaded customers…" value={search} onChange={(e) => setSearch(e.target.value)} className="pl-9 min-h-11" />
-          </div>
-          <Button variant="outline" size="sm" className="min-h-11 text-caption w-full sm:w-auto" onClick={handleExport}>
-            <Download className="mr-1.5 h-3.5 w-3.5" /> Export
-          </Button>
-        </div>
-      </div>
+      <AdminPageHeader
+        title="Customers"
+        description={
+          <>
+            <p>
+              People with subscriptions
+              {overview ? ` · ${overview.customerCount} total` : ''}
+              {customers.length > 0 ? ` · ${customers.length} loaded` : ''}
+              {status === 'CanLoadMore' || status === 'LoadingMore' ? ' (more available)' : ''}
+            </p>
+            {truncation ? (
+              <p className="mt-1 text-xs text-amber-600 dark:text-amber-400">{truncation}</p>
+            ) : null}
+            {joinNote ? (
+              <p className="mt-1 text-xs text-amber-600 dark:text-amber-400">{joinNote}</p>
+            ) : null}
+          </>
+        }
+        actions={headerActions}
+      />
 
-      {!loading && overview && (
-        <div className="grid grid-cols-2 lg:grid-cols-5 gap-4 mb-6">
-          <div className="rounded-xl border border-border bg-card p-4">
-            <p className="text-caption text-muted-foreground uppercase tracking-wider mb-1">Customers</p>
-            <p className="text-xl font-bold">{overview.customerCount}</p>
-          </div>
-          <div className="rounded-xl border border-border bg-card p-4">
-            <p className="text-caption text-muted-foreground uppercase tracking-wider mb-1">Active Subs</p>
-            <p className="text-xl font-bold text-emerald-400">{overview.activeSubCount}</p>
-          </div>
-          <div className="rounded-xl border border-border bg-card p-4">
-            <p className="text-caption text-muted-foreground uppercase tracking-wider mb-1">Revenue</p>
-            <p className="text-xl font-bold">${overview.revenue.toFixed(0)}</p>
-          </div>
-          <div className="rounded-xl border border-amber-500/20 bg-amber-500/5 p-4">
-            <div className="flex items-center gap-1 mb-1"><AlertTriangle className="h-3 w-3 text-amber-400" /><p className="text-caption text-muted-foreground uppercase tracking-wider">At Risk</p></div>
-            <p className="text-xl font-bold text-amber-400">{overview.atRiskCount}</p>
-            <p className="text-caption text-muted-foreground mt-0.5">Past due or failed</p>
-          </div>
-          <div className="rounded-xl border border-destructive/20 bg-destructive/5 p-4">
-            <div className="flex items-center gap-1 mb-1"><TrendingDown className="h-3 w-3 text-destructive" /><p className="text-caption text-muted-foreground uppercase tracking-wider">Churned</p></div>
-            <p className="text-xl font-bold text-destructive">{overview.churnedCount}</p>
-            <p className="text-caption text-muted-foreground mt-0.5">Canceled · no active</p>
-          </div>
-        </div>
+      {!loading && overview && customerKpiItems.length > 0 && (
+        <DashboardKpiStrip items={customerKpiItems} variant="clay" className="mb-6 sm:mb-8" />
       )}
 
       {loading ? (
         <div className="flex justify-center py-20"><Loader2 className="h-5 w-5 animate-spin text-primary" /></div>
       ) : filtered.length === 0 ? (
-        <div className="rounded-xl border border-border bg-card p-10 text-center">
+        <div className={cn(clayCard, 'p-10 text-center')}>
           <Users className="h-10 w-10 text-muted-foreground mx-auto mb-4" />
           <h3 className="font-semibold mb-2">{search ? 'No matching customers' : 'No customers yet'}</h3>
         </div>
@@ -147,7 +192,7 @@ const AdminCustomers = () => {
         <>
           <MobileRecordCards>
             {filtered.map((c) => (
-              <li key={c.id} className="rounded-xl border border-border bg-card p-4 space-y-3">
+              <li key={c.id} className={cn(clayCard, 'p-4 space-y-3')}>
                 <div className="min-w-0">
                   <p className="text-sm font-medium truncate">{c.full_name ?? 'Unknown'}</p>
                   <p className="text-caption text-muted-foreground truncate mt-0.5">{c.email}</p>
@@ -171,7 +216,7 @@ const AdminCustomers = () => {
             ))}
           </MobileRecordCards>
 
-          <DesktopTableRegion label="Customers table" className="overflow-hidden">
+          <DesktopTableRegion label="Customers table" className={cn(clayCard, 'overflow-hidden border-0 p-0')}>
             <table className="w-full min-w-[640px] text-sm">
               <thead>
                 <tr className="border-b border-border bg-muted/30">

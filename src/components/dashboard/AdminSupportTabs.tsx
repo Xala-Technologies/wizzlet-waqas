@@ -26,7 +26,7 @@ export function AdminSupportTabs() {
 
   return (
     <div
-      className={cn(segmentedTrackClassName, 'mb-6 w-fit')}
+      className={cn(segmentedTrackClassName, 'w-fit')}
       role="tablist"
       aria-label="Support workspace"
     >

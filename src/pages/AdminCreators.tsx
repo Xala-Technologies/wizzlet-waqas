@@ -4,7 +4,10 @@ import { useMutation, usePaginatedQuery } from 'convex/react';
 import { api } from '../../convex/_generated/api';
 import type { Id } from '../../convex/_generated/dataModel';
 import { DashboardLayout } from '@/components/dashboard/DashboardLayout';
+import { AdminPageHeader, adminSectionTitle } from '@/components/dashboard/AdminPageHeader';
+import { DashboardKpiStrip } from '@/components/dashboard/DashboardKpiStrip';
 import { clayCard } from '@/lib/overviewClay';
+import { kpiIconTone } from '@/lib/kpiIconTones';
 import { DesktopTableRegion, MobileRecordCards } from '@/components/dashboard/MobileRecordList';
 import { Button } from '@/components/ui/button';
 import { Crown, Loader2, ExternalLink, Ban, Star, CheckCircle2, XCircle, Search, MessageSquare, ShieldCheck, TrendingDown, UserX } from 'lucide-react';
@@ -108,56 +111,110 @@ const AdminCreators = () => {
   const atRisk = creators.filter((c) => c.subCount > 0 && c.subCount < 3);
   const inactive = creators.filter((c) => c.daysSinceSignup > 30 && c.subCount === 0);
 
+  const creatorKpiItems = useMemo(() => {
+    const published = creators.filter((c) => c.is_published).length;
+    const totalSubs = creators.reduce((sum, c) => sum + c.subCount, 0);
+    return [
+      {
+        label: 'Active (loaded)',
+        value: published.toString(),
+        icon: CheckCircle2,
+        iconClassName: kpiIconTone.emerald,
+      },
+      {
+        label: 'At risk (loaded)',
+        value: atRisk.length.toString(),
+        icon: Crown,
+        iconClassName: kpiIconTone.amber,
+      },
+      {
+        label: 'Inactive (loaded)',
+        value: inactive.length.toString(),
+        icon: UserX,
+        iconClassName: kpiIconTone.rose,
+      },
+      {
+        label: 'Subs (loaded)',
+        value: totalSubs.toString(),
+        icon: Star,
+        iconClassName: kpiIconTone.sky,
+      },
+    ];
+  }, [creators, atRisk.length, inactive.length]);
+
+  const searchField = (
+    <div className="relative w-full sm:w-64">
+      <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+      <Input
+        placeholder="Search loaded creators…"
+        value={search}
+        onChange={(e) => setSearch(e.target.value)}
+        className="pl-9 min-h-11"
+      />
+    </div>
+  );
+
   return (
     <DashboardLayout type="admin" mainClassName="bg-clay-page">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mb-6">
-        <div className="min-w-0">
-          <p className="text-muted-foreground text-sm mt-0.5">
-            {creators.length} loaded{status === 'CanLoadMore' || status === 'LoadingMore' ? ' (more available)' : ''}
-          </p>
-          {joinNote && <p className="text-amber-600 text-xs mt-1">{joinNote}</p>}
-        </div>
-        <div className="relative w-full sm:w-64">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
-          <Input placeholder="Search loaded creators…" value={search} onChange={(e) => setSearch(e.target.value)} className="pl-9 min-h-11" />
-        </div>
-      </div>
+      <AdminPageHeader
+        title="Creators"
+        description={
+          <>
+            <p>
+              {creators.length} loaded
+              {status === 'CanLoadMore' || status === 'LoadingMore' ? ' (more available)' : ''}
+            </p>
+            {joinNote ? (
+              <p className="mt-1 text-xs text-amber-600 dark:text-amber-400">{joinNote}</p>
+            ) : null}
+          </>
+        }
+        actions={searchField}
+      />
 
       {!loading && (
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-          <div className="rounded-xl border border-border bg-card p-4">
-            <div className="flex items-center gap-2 mb-2"><Star className="h-3.5 w-3.5 text-amber-400" /><span className="text-caption font-medium text-muted-foreground">Top (on this page)</span></div>            {topCreators.slice(0, 3).map((c) => (
-              <div key={c.id} className="flex items-center justify-between py-1">
-                <span className="text-caption font-medium truncate">{c.display_name ?? `@${c.username}`}</span>
-                <span className="text-caption text-emerald-400">${c.revenue.toFixed(0)}</span>
-              </div>
-            ))}
+        <>
+          <DashboardKpiStrip items={creatorKpiItems} variant="clay" className="mb-6 sm:mb-8" />
+          <div className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:gap-6">
+            <section className={cn(clayCard, 'p-4 sm:p-6')}>
+              <h2 className={cn(adminSectionTitle, 'mb-4 flex items-center gap-2')}>
+                <Star className="h-4 w-4 text-amber-500" aria-hidden />
+                Top (on this page)
+              </h2>
+              {topCreators.slice(0, 3).map((c) => (
+                <div key={c.id} className="flex items-center justify-between py-1.5 text-sm">
+                  <span className="font-medium truncate">{c.display_name ?? `@${c.username}`}</span>
+                  <span className="font-extrabold tabular-nums text-emerald-600 dark:text-emerald-400">
+                    ${c.revenue.toFixed(0)}
+                  </span>
+                </div>
+              ))}
+            </section>
+            <section className={cn(clayCard, 'p-4 sm:p-6')}>
+              <h2 className={cn(adminSectionTitle, 'mb-4 flex items-center gap-2')}>
+                <TrendingDown className="h-4 w-4 text-sky-600 dark:text-sky-400" aria-hidden />
+                Growing (on this page)
+              </h2>
+              {fastestGrowing.slice(0, 3).map((c) => (
+                <div key={c.id} className="flex items-center justify-between py-1.5 text-sm">
+                  <span className="font-medium truncate">{c.display_name ?? `@${c.username}`}</span>
+                  <span className="font-extrabold tabular-nums text-sky-600 dark:text-sky-400">
+                    {c.subCount} subs
+                  </span>
+                </div>
+              ))}
+              {fastestGrowing.length === 0 && (
+                <p className="text-sm text-muted-foreground py-2">No data</p>
+              )}
+            </section>
           </div>
-          <div className="rounded-xl border border-border bg-card p-4">
-            <div className="flex items-center gap-2 mb-2"><TrendingDown className="h-3.5 w-3.5 text-blue-400" /><span className="text-caption font-medium text-muted-foreground">Growing (on this page)</span></div>            {fastestGrowing.slice(0, 3).map((c) => (
-              <div key={c.id} className="flex items-center justify-between py-1">
-                <span className="text-caption font-medium truncate">{c.display_name ?? `@${c.username}`}</span>
-                <span className="text-caption text-blue-400">{c.subCount} subs</span>
-              </div>
-            ))}
-            {fastestGrowing.length === 0 && <p className="text-caption text-muted-foreground py-2">No data</p>}
-          </div>
-          <div className="rounded-xl border border-amber-500/20 bg-amber-500/5 p-4">
-            <div className="flex items-center gap-2 mb-2"><Crown className="h-3.5 w-3.5 text-amber-400" /><span className="text-caption font-medium text-muted-foreground">At Risk (on this page)</span></div>
-            <p className="text-xl font-bold text-amber-400">{atRisk.length}</p>
-            <p className="text-caption text-muted-foreground">&lt;3 subscribers among loaded rows</p>
-          </div>
-          <div className="rounded-xl border border-border bg-card p-4">
-            <div className="flex items-center gap-2 mb-2"><UserX className="h-3.5 w-3.5 text-muted-foreground" /><span className="text-caption font-medium text-muted-foreground">Inactive (on this page)</span></div>
-            <p className="text-xl font-bold">{inactive.length}</p>
-            <p className="text-caption text-muted-foreground">30d+ / 0 subs among loaded rows</p>          </div>
-        </div>
+        </>
       )}
 
       {loading ? (
         <div className="flex justify-center py-20"><Loader2 className="h-5 w-5 animate-spin text-primary" /></div>
       ) : filtered.length === 0 ? (
-        <div className="rounded-xl border border-border bg-card p-10 text-center">
+        <div className={cn(clayCard, 'p-10 text-center')}>
           <Crown className="h-10 w-10 text-muted-foreground mx-auto mb-4" />
           <h3 className="font-semibold mb-2">{search ? 'No matching creators' : 'No creators yet'}</h3>
         </div>
@@ -165,7 +222,7 @@ const AdminCreators = () => {
         <>
           <MobileRecordCards>
             {filtered.map((c) => (
-              <li key={c.id} className="rounded-xl border border-border bg-card p-4 space-y-3">
+              <li key={c.id} className={cn(clayCard, 'p-4 space-y-3')}>
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0">
                     <p className="text-sm font-medium truncate">{c.display_name ?? 'Unnamed'}</p>
@@ -205,7 +262,7 @@ const AdminCreators = () => {
             ))}
           </MobileRecordCards>
 
-          <DesktopTableRegion label="Creators table" className="overflow-hidden">
+          <DesktopTableRegion label="Creators table" className={cn(clayCard, 'overflow-hidden border-0 p-0')}>
             <table className="w-full min-w-[720px] text-sm">
               <thead>
                 <tr className="border-b border-border bg-muted/30">

@@ -4,6 +4,7 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useMutation, usePaginatedQuery, useQuery } from 'convex/react';
 import { DashboardLayout } from '@/components/dashboard/DashboardLayout';
 import { clayCard } from '@/lib/overviewClay';
+import { AdminPageHeader } from '@/components/dashboard/AdminPageHeader';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
@@ -182,33 +183,42 @@ const CustomerNotifications = () => {
     );
   }
 
+  const markAllButton =
+    items.length > 0 ? (
+      <Button
+        type="button"
+        variant="outline"
+        className="min-h-11"
+        onClick={() => void markAllRead()}
+        disabled={unreadCount === 0 || markingAll}
+      >
+        {markingAll ? (
+          <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
+        ) : (
+          <CheckCircle2 className="mr-1.5 h-3.5 w-3.5" />
+        )}
+        Mark all read
+      </Button>
+    ) : null;
+
   return (
     <DashboardLayout type={layoutType} mainClassName="bg-clay-page">
-      <header className="flex items-center justify-between mb-6 gap-3 flex-wrap">
-        <div className="min-w-0">
-          <p className="text-support text-muted-foreground mt-0.5">
-            {layoutType === 'admin'
-              ? 'Platform alerts and admin account messages'
-              : 'Messages, billing updates, and platform announcements'}
-          </p>
-        </div>
-        {items.length > 0 && (
-          <Button
-            type="button"
-            variant="outline"
-            className="min-h-11"
-            onClick={() => void markAllRead()}
-            disabled={unreadCount === 0 || markingAll}
-          >
-            {markingAll ? (
-              <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
-            ) : (
-              <CheckCircle2 className="mr-1.5 h-3.5 w-3.5" />
-            )}
-            Mark all read
-          </Button>
-        )}
-      </header>
+      {layoutType === 'admin' ? (
+        <AdminPageHeader
+          title="Notifications"
+          description="Platform alerts and admin account messages"
+          actions={markAllButton}
+        />
+      ) : (
+        <header className="mb-6 flex flex-wrap items-center justify-between gap-3">
+          <div className="min-w-0">
+            <p className="text-support text-muted-foreground mt-0.5">
+              Messages, billing updates, and platform announcements
+            </p>
+          </div>
+          {markAllButton}
+        </header>
+      )}
 
       {items.length === 0 ? (
         <div className={cn(clayCard, 'px-6 py-12 text-center sm:px-10 sm:py-14')}>
