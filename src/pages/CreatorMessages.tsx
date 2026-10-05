@@ -53,6 +53,13 @@ import {
   type DemoMessageThread,
 } from '@/lib/creatorMessagesDemo';
 import { initialsFromName } from '@/lib/creatorSubscribersDemo';
+import {
+  mapPlan,
+  mapStatus,
+  pickSubscriberDetailRow,
+  subscriptionPlanHeadline,
+  type SubStatus,
+} from '@/lib/creatorMessageSubscriber';
 import { kpiIconTone } from '@/lib/kpiIconTones';
 import {
   messagingComposeBlockMessage,
@@ -66,7 +73,6 @@ const NOTES_KEY_PREFIX = 'prizelet:creator-msg-notes:';
 
 type InboxTab = 'inbox' | 'unread' | 'starred' | 'archive' | 'broadcasts';
 type ThreadKind = 'subscriber' | 'support' | 'demo';
-type SubStatus = 'active' | 'cancelled' | 'trial';
 
 interface ChatMessage {
   id: string;
@@ -102,19 +108,6 @@ interface Thread {
   totalSpentCents: number | null;
   noteHistory: ThreadNote[];
   isDemo: boolean;
-}
-
-function mapPlan(amountCents: number | undefined): string {
-  if (amountCents == null) return '—';
-  if (amountCents >= 5000) return 'VIP';
-  if (amountCents >= 2500) return 'Premium';
-  return 'Monthly';
-}
-
-function mapStatus(status: string | undefined): SubStatus {
-  if (status === 'active') return 'active';
-  if (status === 'cancelled' || status === 'canceled') return 'cancelled';
-  return 'trial';
 }
 
 function statusPill(status: SubStatus | 'support'): string {
@@ -302,20 +295,38 @@ const CreatorMessages = () => {
 
   const subscriberThreads = useMemo(() => {
     if (inboxStatus === 'LoadingFirstPage') return [] as Thread[];
-    const detailMap = new Map(
-      (subscribers ?? []).map((s) => [
-        s.userId as string,
-        {
-          name: s.user?.fullName || s.user?.username || s.user?.email || 'Subscriber',
-          email: s.user?.email || '—',
-          plan: mapPlan(s.amountCents),
-          planPriceCents: s.amountCents ?? null,
-          status: mapStatus(s.status),
-          memberSinceMs: s.createdAt,
-          totalSpentCents: s.amountCents ?? 0,
-        },
-      ]),
-    );
+    const rowsByUser = new Map<string, NonNullable<typeof subscribers>>();
+    for (const s of subscribers ?? []) {
+      const id = s.userId as string;
+      const list = rowsByUser.get(id) ?? [];
+      list.push(s);
+      rowsByUser.set(id, list);
+    }
+    const detailMap = new Map<
+      string,
+      {
+        name: string;
+        email: string;
+        plan: string;
+        planPriceCents: number | null;
+        status: SubStatus;
+        memberSinceMs: number;
+        totalSpentCents: number;
+      }
+    >();
+    for (const [id, rows] of rowsByUser) {
+      const s = pickSubscriberDetailRow(rows);
+      if (!s) continue;
+      detailMap.set(id, {
+        name: s.user?.fullName || s.user?.username || s.user?.email || 'Subscriber',
+        email: s.user?.email || '—',
+        plan: mapPlan(s.amountCents),
+        planPriceCents: s.amountCents ?? null,
+        status: mapStatus(s.status),
+        memberSinceMs: s.createdAt,
+        totalSpentCents: s.amountCents ?? 0,
+      });
+    }
     const grouped = new Map<string, ChatMessage[]>();
     for (const r of inbox) {
       const msg: ChatMessage = {
@@ -1042,12 +1053,12 @@ const CreatorMessages = () => {
                     {active.kind === 'support'
                       ? 'Official Prizelet announcements'
                       : [
-                          active.plan !== '—' ? active.plan : null,
+                          subscriptionPlanHeadline(active.plan, active.status),
                           active.memberSinceMs
                             ? `Member since ${format(new Date(active.memberSinceMs), 'MMM d, yyyy')}`
                             : null,
                         ]
-                          .filter(Boolean)
+                          .filter((part) => part && part !== '—')
                           .join(' · ') || 'Subscriber'}
                   </p>
                 </div>
@@ -1210,11 +1221,17 @@ const CreatorMessages = () => {
                         <p className="text-[10px] font-bold uppercase tracking-wide text-muted-foreground">
                           Subscription
                         </p>
-                        <p className="mt-1 truncate text-sm font-bold text-foreground">{active.plan}</p>
+                        <p className="mt-1 truncate text-sm font-bold text-foreground">
+                          {subscriptionPlanHeadline(active.plan, active.status)}
+                        </p>
                         <p className="text-xs text-muted-foreground">
-                          {active.planPriceCents != null
-                            ? `$${(active.planPriceCents / 100).toFixed(2)} / month`
-                            : '—'}
+                          {active.status === 'cancelled'
+                            ? active.planPriceCents != null
+                              ? `Was $${(active.planPriceCents / 100).toFixed(2)} / month`
+                              : 'No active plan'
+                            : active.planPriceCents != null
+                              ? `$${(active.planPriceCents / 100).toFixed(2)} / month`
+                              : '—'}
                         </p>
                       </div>
                     </div>
