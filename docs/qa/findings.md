@@ -1,3 +1,17 @@
+# Findings — Wave 52 announcement audience indexed 2026-10-05
+
+Branch `fix/world-ready-wave-52-announcement-audience-indexes`. Admin soak `admin@prizelet.dev` on `combative-mongoose-559`.
+
+| Step | Result | Evidence |
+|------|--------|----------|
+| Query | PASS | `resolveAnnouncementRecipients` no `adminScanAll`; active/canceled status takes; specific `by_creatorId` |
+| Unit | PASS | `announcementAudience.security.test.ts` 1/1 |
+| UI soak | PASS | `/admin/customer-email` All **34**, Active **5**, Canceled **8** |
+
+**Residual:** Connect KYC/currency; reportSourceData scans.
+
+---
+
 # Findings — Wave 51 payoutsOverview indexed events/payouts 2026-10-05
 
 Branch `fix/world-ready-wave-51-payouts-overview-indexes`. Admin soak `admin@prizelet.dev` on `combative-mongoose-559`. Added `paymentEvents.by_status`.
