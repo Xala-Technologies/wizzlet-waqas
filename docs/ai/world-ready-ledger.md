@@ -2,7 +2,7 @@
 
 **Authority:** [`docs/ai/prizelet-world-ready-master-prompt.md`](./prizelet-world-ready-master-prompt.md)
 
-**Status:** Wave 48 Connect Express onboarding live on Prizlett sandbox 2026-10-05. Product is **not** world-ready.
+**Status:** Wave 49 admin Connect Transfer action (honest blocks) 2026-10-05. Product is **not** world-ready.
 
 Do not claim world-ready until Section 8 gates in the master prompt pass.
 
@@ -16,7 +16,9 @@ Do not claim world-ready until Section 8 gates in the master prompt pass.
 | Evidence | branch, date, one-line actual vs expected |
 | Waiver | owner + reason (required if WAIVED) |
 
-Last updated: 2026-10-05. Last wave: **48** (`feat/world-ready-wave-48-connect-express-capabilities`). Source pin: `bf85281` (inventory).
+Last updated: 2026-10-05. Last wave: **49** (`feat/world-ready-wave-49-connect-transfers`). Source pin: `bf85281` (inventory).
+
+Wave 49: Admin `Send via Stripe` → `sendConnectPayout` (admin-only). Ledger stays unpaid unless Stripe accepts a Transfer. Soak `j2creator` pending **$142.40** still pending (`CONNECT_PAYOUTS_NOT_ENABLED`; Express KYC unfinished). Platform balance is NOK vs USD destination (would `STRIPE_CURRENCY_MISMATCH` next). Units `stripeConnect.security.test.ts` 12/12.
 
 Wave 48: Prizlett sandbox Connect = marketplace; Accounts v1 policy enabled. Express create requests `card_payments`+`transfers`. Soak `j2creator` → Account Link `acct_1UN8ktRyfauxBCWX`; return shows Continue onboarding. Transfers still unimplemented. Units `stripeConnect.security.test.ts` 8/8.
 
@@ -125,7 +127,7 @@ PASS below is **anonymous → `/login`**, not an authenticated admin session.
 | `/admin/customer-email` | AdminCustomerEmail | admin | convex | PASS | Wave 2 chromium surface smoke 2026-10-04; inventory pin bf85281 |
 | `/admin/growth-manager-inbox` | AdminGrowthManagerInbox | admin | convex | PASS | Wave 2 chromium surface smoke 2026-10-04; inventory pin bf85281 |
 | `/admin/resolution-cases` | AdminResolutionCases | admin | convex | PASS | Wave 2 chromium surface smoke 2026-10-04; inventory pin bf85281 |
-| `/admin/payouts` | AdminPayouts | admin | convex | PASS | Wave 25: Lifetime from settled paymentEvents (`j4creator` $28.49); Wave 22 Connect honesty; Wave 10 approve/fail |
+| `/admin/payouts` | AdminPayouts | admin | convex | PASS | Wave 49: Send via Stripe honest (j2 $142.40 pending, no `tr_`); Wave 25 Lifetime; Wave 22 ledger |
 | `/admin/alerts` | AdminAlerts | admin | convex | PASS | Wave 45: indexed alertsOverview; Wave 2 smoke |
 | `/admin/notifications` | CustomerNotifications | admin | mixed | PASS | Wave 2 chromium surface smoke 2026-10-04; inventory pin bf85281 |
 | `/admin/reports` | AdminReports | admin | convex | PASS | Wave 2 chromium surface smoke 2026-10-04; inventory pin bf85281 |
@@ -183,7 +185,7 @@ Nested layouts in `App.tsx`: `/demo/admin` → `DemoAdminLayout`; `/demo/member`
 | J-NOTIFICATIONS | Inbox create + mark read | PASS | Wave 20 2026-10-05: adminInsert + member markRead/markAllRead; pay/message rows; admin shared page |
 | J-SETTINGS | Settings live vs toast-stub honesty | PASS | Wave 21 2026-10-05: 2FA “coming soon”; team invite preview “not wired to the backend yet”; account profile editable |
 | J-SMART-PRICING | Smart pricing + access control honesty | PASS | Wave 21 2026-10-05: heuristic “directional only”; list price via updateSettings (not fake Stripe product prices); access-control limit spots persists |
-| J-CONNECT | Stripe Connect residual honesty | PASS | Wave 48 2026-10-05: Prizlett sandbox Connect marketplace + Accounts v1; `j2creator` Express `acct_1UN8ktRyfauxBCWX` Account Link; KYC unfinished; **transfers still unimplemented**. Wave 42 wiring. |
+| J-CONNECT | Stripe Connect residual honesty | PASS | Wave 49 2026-10-05: admin Transfer action; soak j2 pending **$142.40** not marked paid (`CONNECT_PAYOUTS_NOT_ENABLED`). Residual: Express KYC; NOK platform vs USD Express. Wave 48 Account Link `acct_1UN8ktRyfauxBCWX`. |
 
 ## H. Tooling gates
 
@@ -209,7 +211,7 @@ Nested layouts in `App.tsx`: `/demo/admin` → `DemoAdminLayout`; `/demo/member`
 | F-004 JWT subject as user id | PASS | Wave 1: listPreviewsByCreator uses getAuthUserId |
 | F-005 public migration mutations | PASS | Wave 1: importBatch/load are internalMutation |
 | F-009 / J5 payout reserved vs paid | PASS | Wave 1: payoutBalance.test.ts 5/5. Live UI Wave 2 |
-| F-010 webhook soak / Connect | PASS | Wave 18 webhook soak. Wave 48: Express onboarding creates `acct_` + Account Link on Prizlett sandbox. Transfers still unimplemented. |
+| F-010 webhook soak / Connect | PASS | Wave 18 webhook soak. Wave 49: Transfer action refuses without payouts_enabled / matching currency (no fake `tr_`). Wave 48 Express Account Link. |
 | F-012 admin full-table scans | PASS | Wave 47: dashboardStats indexed money/cases (users/creators/events still capped). Waves 43–46 list/customers/alerts/finance |
 | F-015 lint / tsc | PASS | Wave 3: `npx tsc -b` exit 0; lint still 0 errors / 28 warnings |
 
@@ -449,7 +451,7 @@ Schema `appRole` also allows `moderator` and `user` (not product actors; no rout
 
 ## M. Remaining risk (update every fix PR)
 
-- P2: Stripe Connect Express onboarding works (Wave 48) but live transfers still unimplemented; Express KYC unfinished for j2creator; referral cash still outside Stripe; member self-serve verified email OTP still missing; historical migration data parity BLOCKED (greenfield)
+- P2: Connect Transfer action is live but blocked until Express KYC (`payouts_enabled`) and USD vs NOK platform balance; referral cash still outside Stripe; member self-serve verified email OTP still missing; historical migration data parity BLOCKED (greenfield)
 - P3: admin user/creator spend metrics cap at 200 indexed rows; dashboardStats still caps users/creators/events at 5k for counts; eslint warnings; AuthContext DEV `hasRole` leftover; customers/alerts/finance/dashboard money KPIs PASS (Wave 43–47)
 - Not in this PR: production deploy, live Stripe keys, MFA
 - Waivers: see section L

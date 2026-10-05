@@ -691,3 +691,82 @@ export const persistConnectStatus = internalMutation({
     return null;
   },
 });
+
+export const getConnectTransferContext = internalQuery({
+  args: { payoutId: v.id("payouts") },
+  returns: v.object({
+    payoutId: v.id("payouts"),
+    creatorId: v.id("creators"),
+    amountCents: v.number(),
+    status: v.string(),
+    reference: v.optional(v.string()),
+    stripeAccountId: v.optional(v.string()),
+  }),
+  handler: async (ctx, args) => {
+    const payout = await ctx.db.get(args.payoutId);
+    if (!payout) throw new ConvexError("NOT_FOUND");
+    const creator = await ctx.db.get(payout.creatorId);
+    if (!creator) throw new ConvexError("NOT_FOUND");
+    return {
+      payoutId: payout._id,
+      creatorId: creator._id,
+      amountCents: payout.amountCents,
+      status: payout.status,
+      reference: payout.reference,
+      stripeAccountId: creator.stripeAccountId,
+    };
+  },
+});
+
+export const persistConnectStatusByCreatorId = internalMutation({
+  args: {
+    creatorId: v.id("creators"),
+    stripeAccountId: v.string(),
+    detailsSubmitted: v.boolean(),
+    chargesEnabled: v.boolean(),
+    payoutsEnabled: v.boolean(),
+  },
+  returns: v.null(),
+  handler: async (ctx, args) => {
+    const creator = await ctx.db.get(args.creatorId);
+    if (!creator) throw new ConvexError("NOT_FOUND");
+    if (creator.stripeAccountId && creator.stripeAccountId !== args.stripeAccountId) {
+      throw new ConvexError("CONNECT_ACCOUNT_LOCKED");
+    }
+    await ctx.db.patch(creator._id, {
+      stripeAccountId: args.stripeAccountId,
+      stripeConnectDetailsSubmitted: args.detailsSubmitted,
+      stripeConnectChargesEnabled: args.chargesEnabled,
+      stripeConnectPayoutsEnabled: args.payoutsEnabled,
+      updatedAt: Date.now(),
+    });
+    return null;
+  },
+});
+
+export const recordConnectTransfer = internalMutation({
+  args: {
+    payoutId: v.id("payouts"),
+    transferId: v.string(),
+  },
+  returns: v.null(),
+  handler: async (ctx, args) => {
+    const payout = await ctx.db.get(args.payoutId);
+    if (!payout) throw new ConvexError("NOT_FOUND");
+    if (payout.status === "completed" && payout.reference === args.transferId) {
+      return null;
+    }
+    if (payout.status === "completed" || payout.status === "paid") {
+      throw new ConvexError("PAYOUT_ALREADY_SETTLED");
+    }
+    const now = Date.now();
+    await ctx.db.patch(payout._id, {
+      status: "completed",
+      method: "stripe_connect",
+      reference: args.transferId,
+      processedAt: now,
+      updatedAt: now,
+    });
+    return null;
+  },
+});

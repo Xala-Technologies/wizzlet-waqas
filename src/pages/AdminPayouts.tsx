@@ -1,6 +1,6 @@
 import { cn } from '@/lib/utils';
 import { useMemo, useState } from 'react';
-import { useMutation, usePaginatedQuery, useQuery } from 'convex/react';
+import { useAction, useMutation, usePaginatedQuery, useQuery } from 'convex/react';
 import { api } from '../../convex/_generated/api';
 import type { Id } from '../../convex/_generated/dataModel';
 import { DashboardLayout } from '@/components/dashboard/DashboardLayout';
@@ -11,6 +11,7 @@ import { Badge } from '@/components/ui/badge';
 import { Wallet, Clock, CheckCircle2, XCircle, TrendingUp, Calendar, Loader2, Crown, Send } from 'lucide-react';
 import { toast } from 'sonner';
 import { scanTruncationNote } from '@/lib/adminTruncation';
+import { connectPayoutUserMessage } from '../../convex/lib/stripeConnect';
 
 const PAGE_SIZE = 25;
 
@@ -61,6 +62,7 @@ const AdminPayouts = () => {
   );
   const createPayoutMutation = useMutation(api.payouts.mutations.createAdmin);
   const setStatusMutation = useMutation(api.payouts.mutations.setStatusAdmin);
+  const sendConnectPayout = useAction(api.payments.stripeNode.sendConnectPayout);
   const unpaidCommissions = useQuery(api.creators.growth.listUnpaidCommissionsAdmin);
   const markCommissionPaid = useMutation(api.creators.growth.markCommissionPaidAdmin);
   const platformSettings = useQuery(api.platform.mutations.get);
@@ -166,6 +168,26 @@ const AdminPayouts = () => {
     }
   };
 
+  const sendViaStripe = async (id: string) => {
+    setBusyId(id);
+    try {
+      const result = await sendConnectPayout({ payoutId: id as Id<'payouts'> });
+      toast.success(
+        result.alreadySent
+          ? `Already transferred ${result.transferId}`
+          : `Stripe transfer ${result.transferId} sent`,
+      );
+    } catch (e) {
+      toast.error(
+        connectPayoutUserMessage(
+          e instanceof Error ? e.message : 'Failed to send Stripe Connect payout',
+        ),
+      );
+    } finally {
+      setBusyId(null);
+    }
+  };
+
   const markReferralPaid = async (referralId: Id<'referrals'>, amountCents: number) => {
     if (
       !window.confirm(
@@ -202,10 +224,10 @@ const AdminPayouts = () => {
     <DashboardLayout type="admin" mainClassName="bg-clay-page">
       <div className="mb-8">
         <p className="text-muted-foreground text-sm mt-0.5">
-          Manual treasury ledger — record bank transfers and mark them paid in Prizelet
+          Treasury ledger plus optional Stripe Connect transfers
         </p>
         <p className="text-muted-foreground text-xs mt-1">
-          These actions update the ledger only. Funds move outside Prizelet until Stripe Connect is enabled.
+          Mark paid in ledger does not move money. Send via Stripe creates a Connect Transfer only when the creator’s Express account can receive payouts and the platform balance is in that currency.
         </p>
         {Number.isFinite(minPayoutDollars) && minPayoutDollars > 0 && (
           <p className="text-caption text-muted-foreground mt-1">Minimum payout: ${minPayoutDollars.toFixed(2)}</p>
@@ -400,6 +422,11 @@ const AdminPayouts = () => {
                         Mark paid in ledger
                       </Button>
                     )}
+                    {p.status !== 'completed' && p.status !== 'paid' && (
+                      <Button size="sm" variant="outline" className="h-11 flex-1 text-caption" disabled={busyId === p.id} onClick={() => sendViaStripe(p.id)}>
+                        Send via Stripe
+                      </Button>
+                    )}
                     {p.status === 'pending' && (
                       <Button size="sm" variant="outline" className="h-11 flex-1 text-caption" disabled={busyId === p.id} onClick={() => updateStatus(p.id, 'processing')}>
                         Mark processing
@@ -444,6 +471,11 @@ const AdminPayouts = () => {
                         {p.status !== 'completed' && (
                           <Button size="sm" variant="ghost" className="min-h-11 px-2 text-caption" disabled={busyId === p.id} onClick={() => updateStatus(p.id, 'completed')}>
                             Mark paid in ledger
+                          </Button>
+                        )}
+                        {p.status !== 'completed' && p.status !== 'paid' && (
+                          <Button size="sm" variant="ghost" className="min-h-11 px-2 text-caption" disabled={busyId === p.id} onClick={() => sendViaStripe(p.id)}>
+                            Send via Stripe
                           </Button>
                         )}
                         {p.status === 'pending' && (
