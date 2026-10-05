@@ -1,6 +1,6 @@
 import { mutation, query } from "../_generated/server";
 import { v } from "convex/values";
-import type { Id } from "../_generated/dataModel";
+import type { Doc, Id } from "../_generated/dataModel";
 import type { MutationCtx, QueryCtx } from "../_generated/server";
 import { requireAdmin } from "../lib/auth";
 import { ADMIN_SCAN_MAX_DOCS, adminTakeNewest } from "../lib/adminLists";
@@ -11,6 +11,7 @@ import {
   takePaymentEventsByStatus,
   takePayoutsByStatus,
   takeSubsByStatus,
+  takeUserRolesByRole,
 } from "../lib/adminIndexedTakes";
 import {
   adminDashboardStatsValidator,
@@ -43,7 +44,11 @@ export const dashboardStats = query({
       unpublishedCreators,
       settledEvents,
       paidEvents,
-      userDocs,
+      adminRoles,
+      moderatorRoles,
+      userRoles,
+      creatorRoles,
+      subscriberRoles,
       recentSubsRaw,
     ] = await Promise.all([
       takeSubsByStatus(ctx, "active"),
@@ -56,7 +61,11 @@ export const dashboardStats = query({
       takeCreatorsByPublished(ctx, false),
       takePaymentEventsByStatus(ctx, "settled"),
       takePaymentEventsByStatus(ctx, "paid"),
-      ctx.db.query("users").order("desc").take(ADMIN_SCAN_MAX_DOCS),
+      takeUserRolesByRole(ctx, "admin"),
+      takeUserRolesByRole(ctx, "moderator"),
+      takeUserRolesByRole(ctx, "user"),
+      takeUserRolesByRole(ctx, "creator"),
+      takeUserRolesByRole(ctx, "subscriber"),
       ctx.db.query("subscriptions").order("desc").take(6),
     ]);
     const creatorsScan = mergeIndexedTakes([
@@ -64,7 +73,19 @@ export const dashboardStats = query({
       unpublishedCreators,
     ]);
     const eventsScan = mergeIndexedTakes([settledEvents, paidEvents]);
-    const users = userDocs;
+    const roleScan = mergeIndexedTakes([
+      adminRoles,
+      moderatorRoles,
+      userRoles,
+      creatorRoles,
+      subscriberRoles,
+    ]);
+    const accountIds = [...new Set(roleScan.docs.map((row) => row.userId))];
+    const users: Doc<"users">[] = [];
+    for (const id of accountIds) {
+      const u = await ctx.db.get(id);
+      if (u) users.push(u);
+    }
     const creators = creatorsScan.docs;
     const events = eventsScan.docs;
     const truncated =
@@ -74,7 +95,7 @@ export const dashboardStats = query({
       openCasesScan.truncated ||
       pendingCasesScan.truncated ||
       inProgressCasesScan.truncated ||
-      users.length >= ADMIN_SCAN_MAX_DOCS ||
+      roleScan.truncated ||
       creatorsScan.truncated ||
       eventsScan.truncated;
 

@@ -2,7 +2,7 @@
 
 **Authority:** [`docs/ai/prizelet-world-ready-master-prompt.md`](./prizelet-world-ready-master-prompt.md)
 
-**Status:** Wave 54 dashboardStats indexed creators/events 2026-10-05. Product is **not** world-ready.
+**Status:** Wave 55 dashboardStats accounts via userRoles 2026-10-05. Product is **not** world-ready.
 
 Do not claim world-ready until Section 8 gates in the master prompt pass.
 
@@ -16,7 +16,9 @@ Do not claim world-ready until Section 8 gates in the master prompt pass.
 | Evidence | branch, date, one-line actual vs expected |
 | Waiver | owner + reason (required if WAIVED) |
 
-Last updated: 2026-10-05. Last wave: **54** (`fix/world-ready-wave-54-dashboard-stats-indexes`). Source pin: `bf85281` (inventory).
+Last updated: 2026-10-05. Last wave: **55** (`fix/world-ready-wave-55-dashboard-user-role-indexes`). Source pin: `bf85281` (inventory).
+
+Wave 55: `dashboardStats` account count from `userRoles.by_role` unique userIds (not a users table scan). Soak unique role accounts **26** (33 role rows; 8 users have no role, mostly deleted). Other KPIs unchanged. Units `dashboardStats.security.test.ts` 1/1.
 
 Wave 54: `dashboardStats` creators via published index; paymentEvents via settled/paid status takes; users newest-first cap (no status index). Convex soak: Accounts **34**, Creators **9**, Active **5**, MRR **$70**, Fees **$3.50**, Paid out **$47.47**, Open cases **1**. Units `dashboardStats.security.test.ts` 1/1.
 
@@ -126,7 +128,7 @@ PASS below is **anonymous → `/login`**, not an authenticated admin session.
 
 | Route | Page | Roles | Persistence | Result | Evidence |
 |-------|------|-------|-------------|--------|----------|
-| `/admin` | AdminDashboard | admin | convex | PASS | Wave 54: creators/events indexed; Accounts **34** / Creators **9** / Active **5** / MRR **$70** / Fees **$3.50** / Paid **$47.47** |
+| `/admin` | AdminDashboard | admin | convex | PASS | Wave 55: Accounts **26** role-backed; Creators **9** / Active **5** / Fees **$3.50** / Paid **$47.47** |
 | `/admin/creators` | AdminCreators | admin | convex | PASS | Wave 2 chromium surface smoke 2026-10-04; inventory pin bf85281 |
 | `/admin/users` | AdminUsers | admin | convex | PASS | Wave 37: multi-role pills — `j2creator+wave7` **CREATOR**+**SUBSCRIBER**; Wave 16 load; Wave 2 smoke |
 | `/admin/customers` | AdminCustomers | admin | convex | PASS | Wave 43: `listCustomersPage` native paginate + indexed `by_userId` joins; Wave 2 smoke |
@@ -222,7 +224,7 @@ Nested layouts in `App.tsx`: `/demo/admin` → `DemoAdminLayout`; `/demo/member`
 | F-005 public migration mutations | PASS | Wave 1: importBatch/load are internalMutation |
 | F-009 / J5 payout reserved vs paid | PASS | Wave 1: payoutBalance.test.ts 5/5. Live UI Wave 2 |
 | F-010 webhook soak / Connect | PASS | Wave 18 webhook soak. Wave 49: Transfer action refuses without payouts_enabled / matching currency (no fake `tr_`). Wave 48 Express Account Link. |
-| F-012 admin full-table scans | PASS | Wave 54: dashboardStats creators/events indexed (users newest-first cap only). Waves 43–53 list/customers/alerts/finance/reports |
+| F-012 admin full-table scans | PASS | Wave 55: dashboardStats accounts via `userRoles.by_role`. Waves 43–54 list/customers/alerts/finance/reports |
 | F-015 lint / tsc | PASS | Wave 3: `npx tsc -b` exit 0; lint still 0 errors / 28 warnings |
 
 ## J. Public Convex API coverage (Wave 0 freeze)
@@ -258,7 +260,7 @@ App public functions (`Auth` = TBD until Wave 1):
 | `admin.paginatedLists.listTransactionsPage` | TBD | yes | NOT_RUN | frozen vs convex/*.ts @ bf85281 |
 | `admin.paginatedLists.listUsersPage` | admin | yes | PASS | Wave 37: `roles[]` sorted display; soak `j2creator` dual pills; Wave 16 load |
 | `admin.queries.createEmailCampaign` | TBD | yes | NOT_RUN | frozen vs convex/*.ts @ bf85281 |
-| `admin.queries.dashboardStats` | admin | yes | PASS | Wave 54: no `adminScanAll`; published creators + settled/paid events; users newest-first |
+| `admin.queries.dashboardStats` | admin | yes | PASS | Wave 55: unique `userRoles.by_role` accounts; no users 5k scan |
 | `admin.queries.listCampaigns` | TBD | yes | NOT_RUN | frozen vs convex/*.ts @ bf85281 |
 | `admin.queries.listUsers` | TBD | yes | NOT_RUN | frozen vs convex/*.ts @ bf85281 |
 | `admin.queries.previewAnnouncementAudience` | admin | yes | PASS | Wave 52: status-indexed recipients; soak All **34** / Active **5** / Canceled **8** |
@@ -462,6 +464,6 @@ Schema `appRole` also allows `moderator` and `user` (not product actors; no rout
 ## M. Remaining risk (update every fix PR)
 
 - P2: Connect Transfer action is live but blocked until Express KYC (`payouts_enabled`) and USD vs NOK platform balance; referral cash still outside Stripe; member self-serve verified email OTP still missing; historical migration data parity BLOCKED (greenfield)
-- P3: admin user/creator spend metrics cap at 200 indexed rows; dashboardStats users still newest-first 5k cap (no user status index); eslint warnings; AuthContext DEV `hasRole` leftover; customers/alerts/finance/dashboard/fees/payouts/announcement/reports KPIs PASS (Wave 43–47, 50–54)
+- P3: admin user/creator spend metrics cap at 200 indexed rows; eslint warnings; AuthContext DEV `hasRole` leftover; customers/alerts/finance/dashboard/fees/payouts/announcement/reports KPIs PASS (Wave 43–47, 50–55)
 - Not in this PR: production deploy, live Stripe keys, MFA
 - Waivers: see section L

@@ -57,6 +57,17 @@ export async function takePaymentEventsByStatus(
   return { docs, truncated: docs.length >= ADMIN_SCAN_MAX_DOCS };
 }
 
+export async function takeUserRolesByRole(
+  ctx: QueryCtx,
+  role: "admin" | "moderator" | "user" | "creator" | "subscriber",
+): Promise<{ docs: Doc<"userRoles">[]; truncated: boolean }> {
+  const docs = await ctx.db
+    .query("userRoles")
+    .withIndex("by_role", (q) => q.eq("role", role))
+    .take(ADMIN_SCAN_MAX_DOCS);
+  return { docs, truncated: docs.length >= ADMIN_SCAN_MAX_DOCS };
+}
+
 export function mergeIndexedTakes<T extends { _id: string }>(
   scans: { docs: T[]; truncated: boolean }[],
 ): { docs: T[]; truncated: boolean } {

@@ -18,6 +18,8 @@ describe('dashboardStats F-012', () => {
     expect(body).toMatch(/takeCasesByStatus\(ctx, "open"\)/);
     expect(body).toMatch(/takeCreatorsByPublished\(ctx, true\)/);
     expect(body).toMatch(/takePaymentEventsByStatus\(ctx, "settled"\)/);
+    expect(body).toMatch(/takeUserRolesByRole\(ctx, "subscriber"\)/);
     expect(body).not.toMatch(/adminScanAll/);
+    expect(body).not.toMatch(/query\("users"\)\.order\("desc"\)\.take\(ADMIN_SCAN_MAX_DOCS\)/);
   });
 });
