@@ -1,3 +1,18 @@
+# Findings — Wave 49 Connect Transfer action 2026-10-05
+
+Branch `feat/world-ready-wave-49-connect-transfers`. Admin soak `admin@prizelet.dev`; creator `j2creator` Express `acct_1UN8ktRyfauxBCWX` (`payouts_enabled: false`). Platform Stripe available **NOK 255.32**.
+
+| Step | Result | Evidence |
+|------|--------|----------|
+| Action | PASS | `sendConnectPayout` admin-only; `recordConnectTransfer` only after Stripe `transfers.create` |
+| Preflight | PASS | `CONNECT_PAYOUTS_NOT_ENABLED` / `STRIPE_CURRENCY_MISMATCH` / `STRIPE_INSUFFICIENT_BALANCE` helpers |
+| UI soak | PASS | `/admin/payouts` Record payout j2 **$142.40** pending; Send via Stripe left status **pending** (not completed, no `tr_`) |
+| Unit | PASS | `stripeConnect.security.test.ts` 12/12 |
+
+**Residual:** finish Express KYC; align settlement currency (NOK platform vs USD Express); then a real `tr_` soak.
+
+---
+
 # Findings — Wave 48 Connect Express live on Prizlett sandbox 2026-10-05
 
 Branch `feat/world-ready-wave-48-connect-express-capabilities`. Fixture `j2creator` / `j2creator+wave7@example.com` on `combative-mongoose-559`. Platform Stripe `acct_1UCIO0RpY5TupxHC` (Prizlett sandbox).

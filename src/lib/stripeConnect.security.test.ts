@@ -3,10 +3,13 @@ import { resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import {
   connectOnboardingUrls,
+  connectPayoutUserMessage,
   connectStatusFromStripeAccount,
   expressConnectCapabilities,
+  isConnectTransferReference,
   isStripeAccountsV1DisabledError,
   isStripeConnectNotEnabledError,
+  resolveConnectTransferCurrency,
 } from '../../convex/lib/stripeConnect';
 
 const stripeNode = readFileSync(
@@ -67,6 +70,44 @@ describe('stripe Connect Express helpers', () => {
     ).toBe(true);
     expect(isStripeAccountsV1DisabledError('card declined')).toBe(false);
   });
+
+  it('requires destination currency to exist on the platform balance', () => {
+    expect(() =>
+      resolveConnectTransferCurrency({
+        destinationCurrency: 'usd',
+        amountCents: 100,
+        available: [{ amount: 25532, currency: 'nok' }],
+      }),
+    ).toThrow('STRIPE_CURRENCY_MISMATCH');
+    expect(
+      resolveConnectTransferCurrency({
+        destinationCurrency: 'usd',
+        amountCents: 100,
+        available: [{ amount: 500, currency: 'usd' }],
+      }),
+    ).toEqual({ currency: 'usd' });
+    expect(() =>
+      resolveConnectTransferCurrency({
+        destinationCurrency: 'usd',
+        amountCents: 600,
+        available: [{ amount: 500, currency: 'usd' }],
+      }),
+    ).toThrow('STRIPE_INSUFFICIENT_BALANCE');
+  });
+
+  it('treats Stripe transfer ids as Connect settlement refs', () => {
+    expect(isConnectTransferReference('tr_123')).toBe(true);
+    expect(isConnectTransferReference('Payout – October')).toBe(false);
+  });
+
+  it('does not claim the ledger was paid when Connect transfer is blocked', () => {
+    expect(connectPayoutUserMessage('CONNECT_PAYOUTS_NOT_ENABLED')).toMatch(
+      /not marked paid/i,
+    );
+    expect(connectPayoutUserMessage('STRIPE_CURRENCY_MISMATCH')).toMatch(
+      /not marked paid/i,
+    );
+  });
 });
 
 describe('stripe Connect Express wiring', () => {
@@ -92,5 +133,15 @@ describe('stripe Connect Express wiring', () => {
     expect(stripeClient).not.toMatch(/Payout onboarding via Stripe Connect is not enabled yet/);
     expect(stripeClient).toMatch(/STRIPE_CONNECT_NOT_ENABLED/);
     expect(stripeClient).toMatch(/STRIPE_CONNECT_ACCOUNTS_V1_DISABLED/);
+  });
+
+  it('sends Connect transfers from an admin action without marking paid on failure', () => {
+    expect(stripeNode).toMatch(/export const sendConnectPayout/);
+    expect(stripeNode).toMatch(/assertAdminUserId/);
+    expect(stripeNode).toMatch(/transfers\.create/);
+    expect(stripeNode).toMatch(/CONNECT_PAYOUTS_NOT_ENABLED/);
+    expect(stripeNode).toMatch(/Does not mark the/);
+    expect(stripeDb).toMatch(/export const recordConnectTransfer/);
+    expect(stripeDb).toMatch(/PAYOUT_ALREADY_SETTLED/);
   });
 });

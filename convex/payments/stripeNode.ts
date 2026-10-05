@@ -13,8 +13,10 @@ import {
   connectOnboardingUrls,
   connectStatusFromStripeAccount,
   expressConnectCapabilities,
+  isConnectTransferReference,
   isStripeAccountsV1DisabledError,
   isStripeConnectNotEnabledError,
+  resolveConnectTransferCurrency,
 } from "../lib/stripeConnect";
 
 function requireStripe(): Stripe {
@@ -551,11 +553,26 @@ function connectCountry(): string {
 
 function mapStripeConnectError(err: unknown): never {
   const message = err instanceof Error ? err.message : String(err);
+  if (
+    message === "STRIPE_CURRENCY_MISMATCH" ||
+    message === "STRIPE_INSUFFICIENT_BALANCE" ||
+    message === "INVALID_AMOUNT" ||
+    message === "CONNECT_PAYOUTS_NOT_ENABLED" ||
+    message === "CONNECT_ACCOUNT_MISSING"
+  ) {
+    throw new Error(message);
+  }
   if (isStripeConnectNotEnabledError(message)) {
     throw new Error("STRIPE_CONNECT_NOT_ENABLED");
   }
   if (isStripeAccountsV1DisabledError(message)) {
     throw new Error("STRIPE_CONNECT_ACCOUNTS_V1_DISABLED");
+  }
+  if (/insufficient funds|available funds/i.test(message)) {
+    throw new Error("STRIPE_INSUFFICIENT_BALANCE");
+  }
+  if (/currency/i.test(message) && /transfer/i.test(message)) {
+    throw new Error("STRIPE_CURRENCY_MISMATCH");
   }
   throw err instanceof Error ? err : new Error(message);
 }
@@ -656,5 +673,107 @@ export const refreshConnectAccountStatus = action({
       ...status,
     });
     return status;
+  },
+});
+
+/**
+ * Move ledger payout funds via Stripe Connect Transfer when Express payouts are enabled
+ * and the platform balance is in the connected account's currency. Does not mark the
+ * ledger paid unless Stripe accepts the transfer.
+ */
+export const sendConnectPayout = action({
+  args: { payoutId: v.id("payouts") },
+  returns: v.object({
+    transferId: v.string(),
+    alreadySent: v.boolean(),
+    amountCents: v.number(),
+    currency: v.string(),
+  }),
+  handler: async (
+    ctx,
+    args,
+  ): Promise<{
+    transferId: string;
+    alreadySent: boolean;
+    amountCents: number;
+    currency: string;
+  }> => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) throw new Error("UNAUTHENTICATED");
+    await ctx.runQuery(internal.payments.stripeDb.assertAdminUserId, { userId });
+    const stripe = requireStripe();
+    const prep = await ctx.runQuery(internal.payments.stripeDb.getConnectTransferContext, {
+      payoutId: args.payoutId,
+    });
+    if (isConnectTransferReference(prep.reference)) {
+      return {
+        transferId: prep.reference as string,
+        alreadySent: true,
+        amountCents: prep.amountCents,
+        currency: "usd",
+      };
+    }
+    if (prep.status === "completed" || prep.status === "paid") {
+      throw new Error("PAYOUT_ALREADY_SETTLED");
+    }
+    if (!prep.stripeAccountId) {
+      throw new Error("CONNECT_ACCOUNT_MISSING");
+    }
+
+    let account: Stripe.Account;
+    try {
+      account = await stripe.accounts.retrieve(prep.stripeAccountId);
+    } catch (err) {
+      mapStripeConnectError(err);
+    }
+    const status = connectStatusFromStripeAccount(account);
+    await ctx.runMutation(internal.payments.stripeDb.persistConnectStatusByCreatorId, {
+      creatorId: prep.creatorId,
+      ...status,
+    });
+    if (!status.payoutsEnabled) {
+      throw new Error("CONNECT_PAYOUTS_NOT_ENABLED");
+    }
+
+    let currency: string;
+    try {
+      const balance = await stripe.balance.retrieve();
+      currency = resolveConnectTransferCurrency({
+        destinationCurrency: account.default_currency ?? "usd",
+        amountCents: prep.amountCents,
+        available: (balance.available ?? []).map((row) => ({
+          amount: row.amount,
+          currency: row.currency,
+        })),
+      }).currency;
+    } catch (err) {
+      mapStripeConnectError(err);
+    }
+
+    let transfer: Stripe.Transfer;
+    try {
+      transfer = await stripe.transfers.create({
+        amount: prep.amountCents,
+        currency,
+        destination: prep.stripeAccountId,
+        metadata: {
+          payoutId: prep.payoutId,
+          creatorId: prep.creatorId,
+        },
+      });
+    } catch (err) {
+      mapStripeConnectError(err);
+    }
+    if (!transfer.id) throw new Error("CONNECT_TRANSFER_MISSING");
+    await ctx.runMutation(internal.payments.stripeDb.recordConnectTransfer, {
+      payoutId: prep.payoutId,
+      transferId: transfer.id,
+    });
+    return {
+      transferId: transfer.id,
+      alreadySent: false,
+      amountCents: prep.amountCents,
+      currency,
+    };
   },
 });
