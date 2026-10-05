@@ -5,6 +5,7 @@ import { api } from '../../convex/_generated/api';
 import type { Id } from '../../convex/_generated/dataModel';
 import { DashboardLayout } from '@/components/dashboard/DashboardLayout';
 import { clayCard } from '@/lib/overviewClay';
+import { AdminPageHeader, adminSectionTitle } from '@/components/dashboard/AdminPageHeader';
 import { AdminSupportTabs } from '@/components/dashboard/AdminSupportTabs';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
@@ -143,14 +144,11 @@ const AdminCreatorMessaging = () => {
 
   return (
     <DashboardLayout type="admin" mainClassName="bg-clay-page">
-      <div className="mb-5 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-        <div>
-          <p className="text-muted-foreground text-sm mt-1">
-            Creator coaching conversations and platform broadcasts
-          </p>
-        </div>
-        <AdminSupportTabs />
-      </div>
+      <AdminPageHeader
+        title="Creator Messaging"
+        description="Creator coaching conversations and platform broadcasts"
+        actions={<AdminSupportTabs />}
+      />
 
       {!messagingEnabled && (
         <div className="mb-4 flex items-start gap-2.5 rounded-lg border border-amber-500/25 bg-amber-500/5 px-3.5 py-3 text-sm text-amber-800 dark:text-amber-200">
@@ -165,10 +163,10 @@ const AdminCreatorMessaging = () => {
         </div>
       ) : (
         <div className="grid grid-cols-1 lg:grid-cols-[340px_1fr] gap-4">
-          <section className="rounded-xl border border-border bg-card overflow-hidden flex flex-col min-h-[420px]">
+          <section className={cn(clayCard, 'overflow-hidden flex flex-col min-h-[420px] p-0')}>
             <div className="border-b border-border px-4 py-3.5 space-y-3">
               <div className="flex items-center justify-between gap-2">
-                <h2 className="text-sm font-semibold flex items-center gap-2">
+                <h2 className={cn(adminSectionTitle, 'flex items-center gap-2')}>
                   <Users className="h-4 w-4 text-muted-foreground" />
                   Recipients
                 </h2>
@@ -250,8 +248,8 @@ const AdminCreatorMessaging = () => {
             )}
           </section>
 
-          <section className="rounded-xl border border-border bg-card p-5 sm:p-6 flex flex-col min-h-[420px]">
-            <h2 className="text-sm font-semibold mb-1 flex items-center gap-2">
+          <section className={cn(clayCard, 'flex flex-col min-h-[420px] p-4 sm:p-6')}>
+            <h2 className={cn(adminSectionTitle, 'mb-1 flex items-center gap-2')}>
               <MessageSquare className="h-4 w-4 text-muted-foreground" />
               Compose broadcast
             </h2>
@@ -290,9 +288,9 @@ const AdminCreatorMessaging = () => {
         </div>
       )}
 
-      <div className="mt-8">
-        <div className="flex items-center justify-between mb-3">
-          <h2 className="text-sm font-semibold">Recent broadcasts</h2>
+      <div className="mt-6 sm:mt-8">
+        <div className="mb-4 flex items-center justify-between">
+          <h2 className={adminSectionTitle}>Recent broadcasts</h2>
           {(supportStatus === 'CanLoadMore' || supportStatus === 'LoadingMore') && (
             <Button
               variant="ghost"
@@ -312,7 +310,7 @@ const AdminCreatorMessaging = () => {
             <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
           </div>
         ) : recent.length === 0 ? (
-          <div className="rounded-xl border border-dashed border-border bg-card/50 px-6 py-10 text-center">
+          <div className={cn(clayCard, 'border-dashed px-6 py-10 text-center p-4 sm:p-6')}>
             <p className="text-sm text-muted-foreground">No broadcasts sent yet</p>
           </div>
         ) : (
@@ -320,7 +318,7 @@ const AdminCreatorMessaging = () => {
             {recent.map((m) => (
               <div
                 key={m.id}
-                className="rounded-xl border border-border bg-card px-4 py-3.5 flex gap-3"
+                className={cn(clayCard, 'flex gap-3 p-4 sm:p-5')}
               >
                 <Avatar className="h-8 w-8 mt-0.5">
                   <AvatarFallback className="text-caption font-semibold bg-muted text-muted-foreground">

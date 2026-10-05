@@ -3,7 +3,12 @@ import { useEffect, useState } from 'react';
 import { useAction, useMutation, useQuery } from 'convex/react';
 import { api } from '../../convex/_generated/api';
 import { DashboardLayout } from '@/components/dashboard/DashboardLayout';
+import {
+  AdminPageHeader,
+  adminSectionTitle,
+} from '@/components/dashboard/AdminPageHeader';
 import { clayCard } from '@/lib/overviewClay';
+import { kpiIconTone } from '@/lib/kpiIconTones';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -70,6 +75,30 @@ function fromConvex(raw: {
     growth_manager_enabled: Boolean(featureFlags.growthManagerEnabled ?? featureFlags.growth_manager_enabled ?? DEFAULTS.growth_manager_enabled),
     auto_approve_creators: Boolean(featureFlags.autoApproveCreators ?? featureFlags.auto_approve_creators ?? DEFAULTS.auto_approve_creators),
   };
+}
+
+function SettingsSectionHeader({
+  icon: Icon,
+  tone,
+  title,
+}: {
+  icon: React.ElementType;
+  tone: string;
+  title: string;
+}) {
+  return (
+    <div className="mb-4 flex items-center gap-3">
+      <div
+        className={cn(
+          'flex h-11 w-11 shrink-0 items-center justify-center rounded-xl',
+          tone,
+        )}
+      >
+        <Icon className="h-5 w-5" aria-hidden />
+      </div>
+      <h2 className={adminSectionTitle}>{title}</h2>
+    </div>
+  );
 }
 
 const AdminSettings = () => {
@@ -170,13 +199,14 @@ const AdminSettings = () => {
 
   return (
     <DashboardLayout type="admin" mainClassName="bg-clay-page">
-      <div className="mb-6">
-        <p className="text-muted-foreground text-sm mt-0.5">Configure platform-wide settings</p>
-      </div>
+      <AdminPageHeader
+        title="Settings"
+        description="Configure platform-wide fees, payouts, branding, and feature flags."
+      />
 
-      <div className="rounded-xl border border-border bg-card p-6 mb-6">
-        <h2 className="text-sm font-medium mb-4 flex items-center gap-2"><Percent className="h-4 w-4 text-primary" /> Platform Fee Settings</h2>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <section className={cn(clayCard, 'mb-6 p-4 sm:p-6')}>
+        <SettingsSectionHeader icon={Percent} tone={kpiIconTone.violet} title="Platform fee settings" />
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
           <div>
             <Label className="text-caption">Standard Fee (%)</Label>
             <Input type="number" value={settings.standard_fee_percent}
@@ -206,7 +236,7 @@ const AdminSettings = () => {
             <p className="text-caption text-muted-foreground mt-1">Accrued on referred paid subscribe</p>
           </div>
         </div>
-        <div className="mt-4 rounded-lg bg-muted/30 p-3">
+        <div className="mt-4 rounded-2xl bg-muted/30 p-3">
           <p className="text-caption text-muted-foreground">
             <strong>Current rule:</strong> New creators pay {settings.intro_fee_percent}% for the first{' '}
             {settings.intro_period_days} days, then {settings.standard_fee_percent}% after.
@@ -214,11 +244,11 @@ const AdminSettings = () => {
             (admin marks paid on Payouts ledger; cash still settles outside until Connect).
           </p>
         </div>
-      </div>
+      </section>
 
-      <div className="rounded-xl border border-border bg-card p-6 mb-6">
-        <h2 className="text-sm font-medium mb-4 flex items-center gap-2"><Wallet className="h-4 w-4 text-primary" /> Payout Settings</h2>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+      <section className={cn(clayCard, 'mb-6 p-4 sm:p-6')}>
+        <SettingsSectionHeader icon={Wallet} tone={kpiIconTone.emerald} title="Payout settings" />
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <div>
             <Label className="text-caption">Minimum payout threshold ($)</Label>
             <Input type="number" value={settings.min_payout_amount}
@@ -239,11 +269,11 @@ const AdminSettings = () => {
             <p className="text-caption text-muted-foreground mt-1">How often payouts are processed</p>
           </div>
         </div>
-      </div>
+      </section>
 
-      <div className="rounded-xl border border-border bg-card p-6 mb-6">
-        <h2 className="text-sm font-medium mb-4 flex items-center gap-2"><Palette className="h-4 w-4 text-primary" /> Branding</h2>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+      <section className={cn(clayCard, 'mb-6 p-4 sm:p-6')}>
+        <SettingsSectionHeader icon={Palette} tone={kpiIconTone.amber} title="Branding" />
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <div>
             <Label className="text-caption">Platform Name</Label>
             <Input value={settings.platform_name} onChange={e => set('platform_name', e.target.value)} className="mt-1" />
@@ -259,12 +289,12 @@ const AdminSettings = () => {
             <p className="text-caption text-muted-foreground mt-1">{settings.tagline.length}/100</p>
           </div>
         </div>
-      </div>
+      </section>
 
-      <div className="rounded-xl border border-border bg-card p-6 mb-6">
-        <h2 className="text-sm font-medium mb-4 flex items-center gap-2"><MessageSquare className="h-4 w-4 text-primary" /> Messaging Settings</h2>
+      <section className={cn(clayCard, 'mb-6 p-4 sm:p-6')}>
+        <SettingsSectionHeader icon={MessageSquare} tone={kpiIconTone.sky} title="Messaging settings" />
         <div className="space-y-3">
-          <div className="flex items-center justify-between py-3 border-b border-border">
+          <div className="flex items-center justify-between border-b border-border py-3">
             <div><p className="text-sm font-medium">Creator messaging</p><p className="text-caption text-muted-foreground">Allow creators to message subscribers</p></div>
             <Switch aria-label="Creator messaging" checked={settings.creator_messaging_enabled} onCheckedChange={v => set('creator_messaging_enabled', v)} />
           </div>
@@ -273,19 +303,19 @@ const AdminSettings = () => {
             <Switch aria-label="Growth Manager chat" checked={settings.growth_manager_enabled} onCheckedChange={v => set('growth_manager_enabled', v)} />
           </div>
         </div>
-      </div>
+      </section>
 
-      <div className="rounded-xl border border-border bg-card p-6 mb-6">
-        <h2 className="text-sm font-medium mb-4 flex items-center gap-2"><Settings className="h-4 w-4 text-primary" /> General</h2>
+      <section className={cn(clayCard, 'mb-6 p-4 sm:p-6')}>
+        <SettingsSectionHeader icon={Settings} tone={kpiIconTone.cyan} title="General" />
         <div className="flex items-center justify-between py-3">
           <div><p className="text-sm font-medium">Auto-approve creators</p><p className="text-caption text-muted-foreground">New creators are published automatically</p></div>
           <Switch aria-label="Auto-approve creators" checked={settings.auto_approve_creators} onCheckedChange={v => set('auto_approve_creators', v)} />
         </div>
-      </div>
+      </section>
 
-      <div className="rounded-xl border border-border bg-card p-6 mb-6">
-        <h2 className="text-sm font-medium mb-4 flex items-center gap-2"><Shield className="h-4 w-4 text-primary" /> Admin Account</h2>
-        <div className="flex flex-col gap-3 max-w-md">
+      <section className={cn(clayCard, 'mb-6 p-4 sm:p-6')}>
+        <SettingsSectionHeader icon={Shield} tone={kpiIconTone.rose} title="Admin account" />
+        <div className="flex max-w-md flex-col gap-3">
           <div>
             <Label className="text-caption">Current password</Label>
             <Input type="password" value={currentPassword} onChange={e => setCurrentPassword(e.target.value)}
@@ -306,7 +336,7 @@ const AdminSettings = () => {
             Update password
           </Button>
         </div>
-      </div>
+      </section>
 
       <div className="flex justify-end">
         <Button onClick={handleSave} disabled={saving}>

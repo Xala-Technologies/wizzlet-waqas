@@ -3,6 +3,7 @@ import { useQuery } from 'convex/react';
 import { api } from '../../convex/_generated/api';
 import { DashboardLayout } from '@/components/dashboard/DashboardLayout';
 import { DashboardKpiStrip } from '@/components/dashboard/DashboardKpiStrip';
+import { AdminPageHeader } from '@/components/dashboard/AdminPageHeader';
 import { OverviewQuickActions } from '@/components/creator/overview/OverviewQuickActions';
 import { clayCard } from '@/lib/overviewClay';
 import { kpiIconTone } from '@/lib/kpiIconTones';
@@ -137,21 +138,19 @@ const AdminDashboardInner = () => {
 
   return (
     <DashboardLayout type="admin" mainClassName="bg-clay-page">
-      <div className="mb-6 sm:mb-8">
-        <p className="text-caption font-bold uppercase tracking-[0.14em] text-muted-foreground">
-          {todayLabel}
-        </p>
-        <h1 className="type-page-title mt-1 text-foreground md:text-[2.25rem] md:leading-[1.15]">
-          Overview
-        </h1>
-        <p className="mt-1.5 text-sm text-muted-foreground">
-          Executive dashboard — live Convex aggregates. Fee revenue and paid-out come from
-          subscription and payout records — these are not Stripe cash balances.
-        </p>
-        {truncation ? (
-          <p className="mt-2 text-caption text-amber-600 dark:text-amber-400">{truncation}</p>
-        ) : null}
-      </div>
+      <AdminPageHeader
+        eyebrow={todayLabel}
+        title="Overview"
+        description={
+          <>
+            Executive dashboard — live Convex aggregates. Fee revenue and paid-out come from
+            subscription and payout records — these are not Stripe cash balances.
+            {truncation ? (
+              <p className="mt-2 text-caption text-amber-600 dark:text-amber-400">{truncation}</p>
+            ) : null}
+          </>
+        }
+      />
 
       {nextActions.length > 0 ? (
         <div className="mb-6">

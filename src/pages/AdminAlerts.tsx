@@ -4,9 +4,24 @@ import { useQuery } from 'convex/react';
 import { api } from '../../convex/_generated/api';
 import { DashboardLayout } from '@/components/dashboard/DashboardLayout';
 import { clayCard } from '@/lib/overviewClay';
+import { DashboardKpiStrip } from '@/components/dashboard/DashboardKpiStrip';
+import { AdminPageHeader, adminSectionTitle } from '@/components/dashboard/AdminPageHeader';
+import { kpiIconTone } from '@/lib/kpiIconTones';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { CreditCard, UserX, Inbox, FileWarning, Wallet, ShieldCheck, ArrowRight, Loader2, CheckCircle2 } from 'lucide-react';
+import {
+  CreditCard,
+  UserX,
+  Inbox,
+  FileWarning,
+  Wallet,
+  ShieldCheck,
+  ArrowRight,
+  Loader2,
+  CheckCircle2,
+  AlertTriangle,
+  Info,
+} from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { scanTruncationNote } from '@/lib/adminTruncation';
 
@@ -96,46 +111,63 @@ const AdminAlerts = () => {
     .filter((a) => a.type === 'info')
     .reduce((sum, a) => sum + a.count, 0);
 
+  const severityKpis = useMemo(
+    () => [
+      {
+        label: 'Critical items',
+        value: String(criticalCount),
+        icon: AlertTriangle,
+        iconClassName: kpiIconTone.rose,
+      },
+      {
+        label: 'Warning items',
+        value: String(warningCount),
+        icon: FileWarning,
+        iconClassName: kpiIconTone.amber,
+      },
+      {
+        label: 'Info items',
+        value: String(infoCount),
+        icon: Info,
+        iconClassName: kpiIconTone.sky,
+      },
+    ],
+    [criticalCount, warningCount, infoCount],
+  );
+
+  const truncation = scanTruncationNote(!!overview?.truncated, overview?.listLimit);
+
   return (
     <DashboardLayout type="admin" mainClassName="bg-clay-page">
-      <div className="mb-8">
-        <p className="text-muted-foreground text-sm mt-0.5">Items requiring your attention right now</p>
-        {scanTruncationNote(!!overview?.truncated, overview?.listLimit) && (
-          <p className="text-amber-600 text-caption mt-2">
-            {scanTruncationNote(!!overview?.truncated, overview?.listLimit)}
-          </p>
-        )}
-      </div>
+      <AdminPageHeader
+        title="Alerts"
+        description={
+          <>
+            Items requiring your attention right now
+            {truncation ? (
+              <p className="mt-2 text-caption text-amber-600 dark:text-amber-400">{truncation}</p>
+            ) : null}
+          </>
+        }
+      />
 
       {overview === undefined ? (
         <div className="flex justify-center py-20"><Loader2 className="h-5 w-5 animate-spin text-primary" /></div>
       ) : (
         <>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
-            <div className="rounded-xl border border-destructive/30 bg-destructive/5 p-5">
-              <p className="text-caption text-muted-foreground uppercase tracking-wider mb-1">Critical items</p>
-              <p className="text-2xl font-bold text-destructive">{criticalCount}</p>
-            </div>
-            <div className="rounded-xl border border-amber-500/30 bg-amber-500/5 p-5">
-              <p className="text-caption text-muted-foreground uppercase tracking-wider mb-1">Warning items</p>
-              <p className="text-2xl font-bold text-amber-500">{warningCount}</p>
-            </div>
-            <div className="rounded-xl border border-border bg-card p-5">
-              <p className="text-caption text-muted-foreground uppercase tracking-wider mb-1">Info items</p>
-              <p className="text-2xl font-bold">{infoCount}</p>
-            </div>
-          </div>
+          <DashboardKpiStrip items={severityKpis} variant="clay" className="mb-6 sm:mb-8" />
 
           {alerts.length === 0 ? (
-            <div className="rounded-xl border border-border bg-card p-12 text-center">
+            <div className={cn(clayCard, 'p-12 text-center sm:p-6')}>
               <CheckCircle2 className="h-10 w-10 text-emerald-400 mx-auto mb-3" />
               <p className="text-sm font-medium">All clear</p>
               <p className="text-caption text-muted-foreground mt-1">No items need attention right now.</p>
             </div>
           ) : (
-            <div className="space-y-3">
+            <section className="space-y-3">
+              <h2 className={cn(adminSectionTitle, 'sr-only')}>Active alerts</h2>
               {alerts.map((a) => (
-                <div key={a.id} className={`rounded-xl border p-5 ${typeStyles[a.type]}`}>
+                <div key={a.id} className={cn(clayCard, 'p-4 sm:p-6', typeStyles[a.type])}>
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                     <div className="flex items-start gap-3 min-w-0">
                       <a.icon className="h-5 w-5 mt-0.5 shrink-0" />
@@ -153,7 +185,7 @@ const AdminAlerts = () => {
                   </div>
                 </div>
               ))}
-            </div>
+            </section>
           )}
         </>
       )}
