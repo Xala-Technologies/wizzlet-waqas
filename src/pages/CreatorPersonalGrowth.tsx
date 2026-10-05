@@ -26,6 +26,7 @@ import {
   DollarSign,
   UserPlus,
   Percent,
+  Plus,
 } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { toast } from 'sonner';
@@ -306,10 +307,19 @@ const CreatorPersonalGrowth = () => {
 
   return (
     <DashboardLayout type="creator" mainClassName="bg-clay-page">
-      <header className="mb-4">
+      <header className="mb-4 flex flex-col gap-3 sm:mb-6 sm:flex-row sm:items-center sm:justify-between">
         <p className="text-caption font-semibold uppercase tracking-[0.14em] text-muted-foreground">
           Support
         </p>
+        <Button
+          asChild
+          className="h-11 w-full shrink-0 gap-1.5 rounded-xl px-4 font-semibold shadow-sm sm:w-auto"
+        >
+          <Link to="/creator/posts">
+            <Plus className="h-4 w-4" aria-hidden />
+            Create Post
+          </Link>
+        </Button>
       </header>
 
       <div className="mb-6">
