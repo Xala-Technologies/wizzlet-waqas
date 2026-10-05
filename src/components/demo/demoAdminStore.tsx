@@ -117,8 +117,8 @@ const seed = (): DemoAdminState => ({
   ],
   transactions: txSeed(),
   settings: {
-    platformName: 'Prizelet',
-    supportEmail: 'support@prizelet.com',
+    platformName: 'Sweeph',
+    supportEmail: 'support@sweeph.com',
     tagline: 'The premium creator platform',
     standardFeePercent: 10,
     introFeePercent: 5,

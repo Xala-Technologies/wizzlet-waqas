@@ -3,6 +3,14 @@ import { SweephLogo } from '@/components/SweephLogo';
 import { Button } from '@/components/ui/button';
 import { useDemoAdminStore } from '@/components/demo/demoAdminStore';
 import { dashboardSidebarAsideClassName } from '@/lib/dashboardSidebar';
+import { cn } from '@/lib/utils';
+import { useDocumentDark } from '@/hooks/useDocumentDark';
+import {
+  SIDEBAR_BADGE_CLASS,
+  sidebarFooterGhostClass,
+  sidebarNavIconClass,
+  sidebarNavItemClass,
+} from '@/lib/sidebarNav';
 import {
   LayoutGrid,
   Users,
@@ -18,6 +26,7 @@ interface NavItem {
   label: string;
   href: string;
   icon: React.ElementType;
+  badge?: string;
 }
 
 const demoAdminItems: NavItem[] = [
@@ -29,27 +38,25 @@ const demoAdminItems: NavItem[] = [
   { label: 'Settings', href: '/demo/admin/settings', icon: Settings },
 ];
 
-function NavItemLink({ item, active, badge = 0 }: { item: NavItem; active: boolean; badge?: number }) {
+function formatBadge(n: number): string | undefined {
+  if (n <= 0) return undefined;
+  return n > 9 ? '9+' : String(n);
+}
+
+function NavItemLink({
+  item,
+  active,
+  dark,
+}: {
+  item: NavItem;
+  active: boolean;
+  dark: boolean;
+}) {
   return (
-    <Link
-      to={item.href}
-      className={`group flex items-center gap-3 rounded-lg px-3 py-2 text-ui transition-all duration-200 ${
-        active
-          ? 'bg-primary/10 text-primary font-medium shadow-[inset_2px_0_0_0_hsl(var(--primary))]'
-          : 'text-foreground hover:bg-muted/60'
-      }`}
-    >
-      <item.icon
-        className={`h-4 w-4 shrink-0 transition-colors duration-200 ${
-          active ? 'text-primary' : 'text-muted-foreground group-hover:text-foreground'
-        }`}
-      />
-      <span className="flex-1">{item.label}</span>
-      {badge > 0 && (
-        <span className="rounded-full bg-primary px-1.5 py-0.5 text-caption font-semibold leading-none text-primary-foreground">
-          {badge}
-        </span>
-      )}
+    <Link to={item.href} className={sidebarNavItemClass(active, dark)}>
+      <item.icon className={sidebarNavIconClass(active, dark)} />
+      <span className="flex-1 truncate">{item.label}</span>
+      {item.badge ? <span className={SIDEBAR_BADGE_CLASS}>{item.badge}</span> : null}
     </Link>
   );
 }
@@ -61,45 +68,80 @@ export function DemoAdminSidebar({ mobile = false }: { mobile?: boolean } = {}) 
   const location = useLocation();
   const navigate = useNavigate();
   const pathname = location.pathname;
+  const dark = useDocumentDark();
   const { metrics } = useDemoAdminStore();
   const pending = metrics.pendingApplications;
 
-
   return (
-    <aside className={dashboardSidebarAsideClassName(mobile)}>
+    <aside className={dashboardSidebarAsideClassName(mobile, undefined, dark ? 'dark' : 'light')}>
       {!mobile && (
-        <div className="border-b border-border px-5 pb-5 pt-6">
-          <SweephLogo size="sidebar" linkTo="/demo/admin" variant="light" />
+        <div
+          className={cn(
+            'border-b px-5 pb-5 pt-6',
+            dark ? 'border-[var(--border-subtle)]' : 'border-border',
+          )}
+        >
+          <SweephLogo
+            size="sidebar"
+            linkTo="/demo/admin"
+            variant={dark ? 'dark' : 'light'}
+          />
         </div>
       )}
 
-      <div className={`mb-4 px-5 ${mobile ? 'pt-4' : 'pt-4'}`}>
-        <div className="flex items-center gap-2 rounded-lg bg-destructive/10 px-3 py-1.5">
-          <Shield className="h-3.5 w-3.5 text-destructive" />
-          <span className="text-caption font-medium text-destructive">Admin Panel</span>
+      <div className={cn('mb-3 px-5', mobile ? 'pt-4' : 'pt-4')}>
+        <div
+          className={cn(
+            'flex items-center gap-2 rounded-[var(--radius-md)] px-3 py-2',
+            dark ? 'bg-[var(--active-bg)]' : 'bg-[var(--brand-50)]',
+          )}
+        >
+          <Shield
+            className={cn(
+              'h-4 w-4',
+              dark ? 'text-[var(--brand-primary)]' : 'text-[var(--brand-700)]',
+            )}
+          />
+          <span
+            className={cn(
+              'text-caption font-semibold',
+              dark ? 'text-[var(--active-text)]' : 'text-[var(--brand-700)]',
+            )}
+          >
+            Admin Panel
+          </span>
         </div>
       </div>
 
-      <nav className="flex-1 space-y-0.5 overflow-y-auto px-3 pb-4">
-        {demoAdminItems.map((item) => (
-          <NavItemLink
-            key={item.href}
-            item={item}
-            active={isActive(item.href, pathname)}
-            badge={item.href === '/demo/admin/creators' ? pending : 0}
-          />
-        ))}
+      <nav className={cn('flex-1 space-y-1 overflow-y-auto px-3 pb-4', mobile && 'pt-1')}>
+        {demoAdminItems.map((item) => {
+          const badge =
+            item.href === '/demo/admin/creators' ? formatBadge(pending) : undefined;
+          return (
+            <NavItemLink
+              key={item.href}
+              item={badge ? { ...item, badge } : item}
+              active={isActive(item.href, pathname)}
+              dark={dark}
+            />
+          );
+        })}
       </nav>
 
-      <div className="border-t border-border px-3 py-4">
+      <div
+        className={cn(
+          'border-t px-3 py-4',
+          dark ? 'border-[var(--border-subtle)]' : 'border-border',
+        )}
+      >
         <Button
           variant="ghost"
           size="sm"
-          className="w-full justify-start text-ui text-muted-foreground hover:text-foreground"
+          className={sidebarFooterGhostClass(dark)}
           onClick={() => navigate('/')}
         >
-          <LogOut className="mr-2 h-3.5 w-3.5" />
-          Exit Demo
+          <LogOut className="h-4 w-4" />
+          Exit demo
         </Button>
       </div>
     </aside>
