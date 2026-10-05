@@ -2,7 +2,7 @@
 
 **Authority:** [`docs/ai/prizelet-world-ready-master-prompt.md`](./prizelet-world-ready-master-prompt.md)
 
-**Status:** Wave 36 referral commission paid ledger 2026-10-05. Product is **not** world-ready (other P2s remain).
+**Status:** Wave 37 admin multi-role All Accounts 2026-10-05. Product is **not** world-ready (other P2s remain).
 
 Do not claim world-ready until Section 8 gates in the master prompt pass.
 
@@ -16,11 +16,11 @@ Do not claim world-ready until Section 8 gates in the master prompt pass.
 | Evidence | branch, date, one-line actual vs expected |
 | Waiver | owner + reason (required if WAIVED) |
 
-Last updated: 2026-10-05. Last wave: **36** (`test/world-ready-wave-36-referral-commission-paid`). Source pin: `bf85281` (inventory).
+Last updated: 2026-10-05. Last wave: **37** (`test/world-ready-wave-37-admin-multi-role`). Source pin: `bf85281` (inventory).
 
-Wave 36: admin marks referral commission paid (`commissionPaidCents` / `commissionPaidAt`) from `/admin/payouts`. Soak: `j6comm+wave34` **$1.49** → paid; creator referrals shows accrued **$1.49**, Rewards paid **$1**, status **Paid**. Units `referralCommissionPaid.security.test.ts` 3/3. Cash still settles outside until Connect.
+Wave 37: `listUsersPage` returns `roles[]`; All Accounts renders multi-role pills + CSV `Roles`. Soak: `j2creator+wave7` shows **CREATOR** + **SUBSCRIBER**. Units `adminMultiRole.security.test.ts` 2/2.
 
-Wave 35: account-request fulfill PASS. Wave 34: accrual PASS.
+Wave 36: admin marks referral commission paid. Wave 35: account-request fulfill PASS.
 
 ---
 
@@ -102,7 +102,7 @@ PASS below is **anonymous → `/login`**, not an authenticated admin session.
 |-------|------|-------|-------------|--------|----------|
 | `/admin` | AdminDashboard | admin | convex | PASS | Wave 2 chromium surface smoke 2026-10-04; inventory pin bf85281 |
 | `/admin/creators` | AdminCreators | admin | convex | PASS | Wave 2 chromium surface smoke 2026-10-04; inventory pin bf85281 |
-| `/admin/users` | AdminUsers | admin | convex | PASS | Wave 2 chromium surface smoke 2026-10-04; inventory pin bf85281 |
+| `/admin/users` | AdminUsers | admin | convex | PASS | Wave 37: multi-role pills — `j2creator+wave7` **CREATOR**+**SUBSCRIBER**; Wave 16 load; Wave 2 smoke |
 | `/admin/customers` | AdminCustomers | admin | convex | PASS | Wave 2 chromium surface smoke 2026-10-04; inventory pin bf85281 |
 | `/admin/finance` | AdminFinance | admin | convex | PASS | Wave 2 chromium surface smoke 2026-10-04; inventory pin bf85281 |
 | `/admin/transactions` | AdminTransactions | admin | convex | PASS | Wave 2 chromium surface smoke 2026-10-04; inventory pin bf85281 |
@@ -230,7 +230,7 @@ App public functions (`Auth` = TBD until Wave 1):
 | `admin.paginatedLists.listSubscriptionsPage` | TBD | yes | NOT_RUN | frozen vs convex/*.ts @ bf85281 |
 | `admin.paginatedLists.listSupportMessagesPage` | TBD | yes | NOT_RUN | frozen vs convex/*.ts @ bf85281 |
 | `admin.paginatedLists.listTransactionsPage` | TBD | yes | NOT_RUN | frozen vs convex/*.ts @ bf85281 |
-| `admin.paginatedLists.listUsersPage` | admin | yes | PASS | Wave 16: All Accounts **22 loaded** |
+| `admin.paginatedLists.listUsersPage` | admin | yes | PASS | Wave 37: `roles[]` sorted display; soak `j2creator` dual pills; Wave 16 load |
 | `admin.queries.createEmailCampaign` | TBD | yes | NOT_RUN | frozen vs convex/*.ts @ bf85281 |
 | `admin.queries.dashboardStats` | TBD | yes | NOT_RUN | frozen vs convex/*.ts @ bf85281 |
 | `admin.queries.listCampaigns` | TBD | yes | NOT_RUN | frozen vs convex/*.ts @ bf85281 |
@@ -436,6 +436,6 @@ Schema `appRole` also allows `moderator` and `user` (not product actors; no rout
 ## M. Remaining risk (update every fix PR)
 
 - P2: Stripe Connect live transfers still unimplemented (Wave 22 honesty PASS — ledger/manual only); referral commission accrual + ledger Mark paid PASS (Wave 34/36) — cash still settles outside until Connect; J7 X/Twitter OAuth consent not browser-completed; account-request admin fulfill PASS (Wave 35) — residual: no member self-serve verified email OTP; Stripe remote cancel not part of deletion fulfill; historical migration data parity BLOCKED (greenfield)
-- P3: admin user/creator spend metrics cap at 200 indexed rows; customer pages scan ≤5k subscriptions; eslint warnings; AuthContext DEV `hasRole` leftover; All Accounts table shows a single primary role even when `userRoles` is multi
+- P3: admin user/creator spend metrics cap at 200 indexed rows; customer pages scan ≤5k subscriptions; eslint warnings; AuthContext DEV `hasRole` leftover; All Accounts multi-role display PASS (Wave 37)
 - Not in this PR: production deploy, live Stripe keys, MFA
 - Waivers: see section L
