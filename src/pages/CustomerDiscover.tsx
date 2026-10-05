@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
-import { useQuery } from 'convex/react';
+import { useConvexAuth, useMutation, useQuery } from 'convex/react';
 import { ChevronDown, Loader2, Sparkles } from 'lucide-react';
+import { toast } from 'sonner';
 import { DashboardLayout } from '@/components/dashboard/DashboardLayout';
 import { clayCard } from '@/lib/overviewClay';
 import { Button } from '@/components/ui/button';
@@ -25,6 +26,7 @@ import {
 import { Seo } from '@/components/Seo';
 import { SweephRibbonBackground } from '@/components/brand/SweephRibbonBackground';
 import { api } from '@convex/_generated/api';
+import type { Id } from '@convex/_generated/dataModel';
 import { cn } from '@/lib/utils';
 
 const PAGE_SIZE = 24;
@@ -67,6 +69,16 @@ const CustomerDiscover = () => {
   const forceDemo = searchParams.get('demo') === '1';
   const disableDemo = searchParams.get('demo') === '0';
   const qFromUrl = searchParams.get('q') ?? '';
+  const { isAuthenticated } = useConvexAuth();
+  const toggleCreatorBookmark = useMutation(api.bookmarks.mutations.toggleCreatorBookmark);
+  const bookmarks = useQuery(
+    api.bookmarks.mutations.listCreatorBookmarks,
+    isAuthenticated ? {} : 'skip',
+  );
+  const bookmarkedIds = useMemo(
+    () => new Set((bookmarks ?? []).map((b) => b.creatorId as string)),
+    [bookmarks],
+  );
 
   const [query, setQuery] = useState(qFromUrl);
   const [sportFilter, setSportFilter] = useState<MemberDiscoverSportFilter>('All Sports');
@@ -324,6 +336,27 @@ const CustomerDiscover = () => {
                 followersLabel={c.followersLabel}
                 monthlyPriceCents={c.monthlyPriceCents}
                 verified={c.verified}
+                bookmarked={!c.isDemo && bookmarkedIds.has(c.id)}
+                onBookmarkClick={
+                  c.isDemo || !isAuthenticated
+                    ? undefined
+                    : (e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        void (async () => {
+                          try {
+                            const { bookmarked } = await toggleCreatorBookmark({
+                              creatorId: c.id as Id<'creators'>,
+                            });
+                            toast.success(
+                              bookmarked ? 'Creator bookmarked' : 'Removed from bookmarks',
+                            );
+                          } catch {
+                            toast.error('Could not update bookmark');
+                          }
+                        })();
+                      }
+                }
               />
             ))}
           </ul>

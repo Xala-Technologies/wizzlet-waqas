@@ -1,3 +1,20 @@
+# Findings — Wave 31 bookmarks + analytics + account deletion 2026-10-05
+
+Branch `test/world-ready-wave-31-bookmarks-analytics`. Fixture `j6oauthwave30` on `combative-mongoose-559`.
+
+| Step | Result | Evidence |
+|------|--------|----------|
+| Bug | PASS (fix) | Profile Favorite was local toast only — now `toggleCreatorBookmark` |
+| Discover bookmark | PASS | `/dashboard/discover?demo=0&q=j2creator` → Remove bookmark |
+| Saved creators | PASS | `/dashboard/saved` Bookmarked Creators (1) j2creator |
+| Analytics track | PASS | `page_view:creator:j2creator` + `post_view` for member |
+| Account deletion | PASS | Settings Request deletion → `accountRequests` **open** |
+| Unit | PASS | `bookmarks.security.test.ts` 2/2 |
+
+**Member engagement residual:** PASS for bookmarks/track/deletion. Next: Connect; commission cash; X consent; saved-post feed soak.
+
+---
+
 # Findings — Wave 30 OAuth referral handoff + links honesty 2026-10-05
 
 Branch `test/world-ready-wave-30-oauth-ref-x`. Fixture `j6oauthwave30` / `j6oauth+wave30@example.com` on `combative-mongoose-559`.
