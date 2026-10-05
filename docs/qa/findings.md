@@ -1,3 +1,17 @@
+# Findings — Wave 44 customersOverview status indexes 2026-10-05
+
+Branch `fix/world-ready-wave-44-customers-overview-status`. Admin soak `admin@prizelet.dev` on `combative-mongoose-559`.
+
+| Step | Result | Evidence |
+|------|--------|----------|
+| Query | PASS | `customersOverview` `by_status` takes; includes `cancelled`; no `adminScanAll` |
+| Unit | PASS | `customersOverview.security.test.ts` 1/1 |
+| KPI soak | PASS | `/admin/customers` Customers **13**, Active Subs **5**, Revenue **$300**, At Risk **0**, Churned **8** (was 0 before counting `cancelled`) |
+
+**Residual:** finance/dashboard snapshots still `adminScanAll` 5k; Connect transfers; email OTP.
+
+---
+
 # Findings — Wave 43 admin customers F-012 pagination 2026-10-05
 
 Branch `fix/world-ready-wave-43-admin-customers-pagination`. Admin soak `admin@prizelet.dev` on `combative-mongoose-559`.
