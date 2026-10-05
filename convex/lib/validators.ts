@@ -221,6 +221,8 @@ export const creatorPublishedPageValidator = v.object({
   items: v.array(creatorDiscoveryItemValidator),
   continueCursor: v.union(v.id("creators"), v.null()),
   isDone: v.boolean(),
+  truncated: v.boolean(),
+  listLimit: v.number(),
 });
 
 export const postDocValidator = v.object({

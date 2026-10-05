@@ -7,7 +7,7 @@ import {
   creatorPayoutSettingsDocValidator,
   payoutDocValidator,
 } from "../lib/validators";
-import { adminTakeNewest } from "../lib/adminLists";
+import { ADMIN_SCAN_MAX_DOCS, adminTakeNewest } from "../lib/adminLists";
 import { notifyAdmins, previewBody } from "../lib/notify";
 
 export const listMine = query({
@@ -20,7 +20,7 @@ export const listMine = query({
     return ctx.db
       .query("payouts")
       .withIndex("by_creatorId", (q) => q.eq("creatorId", creator._id))
-      .collect();
+      .take(ADMIN_SCAN_MAX_DOCS);
   },
 });
 
