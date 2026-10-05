@@ -2,8 +2,9 @@ import { query } from "../_generated/server";
 import { v } from "convex/values";
 import type { Doc, Id } from "../_generated/dataModel";
 import { requireAdmin } from "../lib/auth";
-import { ADMIN_JOIN_LIMIT, ADMIN_SCAN_MAX_DOCS, adminScanAll } from "../lib/adminLists";
+import { ADMIN_JOIN_LIMIT, ADMIN_SCAN_MAX_DOCS } from "../lib/adminLists";
 import {
+  mergeIndexedTakes,
   takeCasesByStatus,
   takeCreatorsByPublished,
   takePaymentEventsByStatus,
@@ -667,7 +668,8 @@ export const payoutsOverview = query({
 });
 
 /**
- * Scanned source tables for Admin Reports CSV (D2) — honest truncation.
+ * Admin Reports CSV source (F-012). Creators/subs/payouts from published and
+ * status indexes. Users have no status index — newest-first capped take.
  */
 export const reportSourceData = query({
   args: {},
@@ -721,13 +723,48 @@ export const reportSourceData = query({
   }),
   handler: async (ctx) => {
     await requireAdmin(ctx);
-    const creatorsScan = await adminScanAll(ctx, "creators");
-    const usersScan = await adminScanAll(ctx, "users");
-    const subsScan = await adminScanAll(ctx, "subscriptions");
-    const payoutsScan = await adminScanAll(ctx, "payouts");
+    const subStatuses = [
+      "active",
+      "canceled",
+      "cancelled",
+      "past_due",
+      "failed",
+      "incomplete",
+      "unpaid",
+      "trialing",
+    ] as const;
+    const payoutStatuses = [
+      "paid",
+      "completed",
+      "pending",
+      "processing",
+      "requested",
+      "approved",
+      "failed",
+      "rejected",
+      "cancelled",
+      "canceled",
+    ] as const;
+    const [publishedCreators, unpublishedCreators, userDocs, subScans, payoutScans] =
+      await Promise.all([
+        takeCreatorsByPublished(ctx, true),
+        takeCreatorsByPublished(ctx, false),
+        ctx.db.query("users").order("desc").take(ADMIN_SCAN_MAX_DOCS),
+        Promise.all(subStatuses.map((status) => takeSubsByStatus(ctx, status))),
+        Promise.all(
+          payoutStatuses.map((status) => takePayoutsByStatus(ctx, status)),
+        ),
+      ]);
+    const creatorsScan = mergeIndexedTakes([
+      publishedCreators,
+      unpublishedCreators,
+    ]);
+    const subsScan = mergeIndexedTakes(subScans);
+    const payoutsScan = mergeIndexedTakes(payoutScans);
+    const usersTruncated = userDocs.length >= ADMIN_SCAN_MAX_DOCS;
     const truncated =
       creatorsScan.truncated ||
-      usersScan.truncated ||
+      usersTruncated ||
       subsScan.truncated ||
       payoutsScan.truncated;
 
@@ -740,7 +777,7 @@ export const reportSourceData = query({
         monthlyPriceCents: c.monthlyPriceCents ?? null,
         createdAt: c.createdAt,
       })),
-      users: usersScan.docs.map((u) => ({
+      users: userDocs.map((u) => ({
         _id: u._id,
         fullName: u.fullName ?? null,
         username: u.username,
