@@ -20,14 +20,14 @@ const ACTION_TONES = [
 
 export function OverviewQuickActions({ actions }: { actions: QuickAction[] }) {
   return (
-    <section className={cn(clayCard, 'p-5 sm:p-6')}>
+    <section className={cn(clayCard, 'clay-fill-primary p-5 sm:p-6')}>
       <h2 className="mb-3 text-base font-extrabold tracking-tight text-foreground">Quick Actions</h2>
       <ul className="space-y-2">
         {actions.map((a, i) => (
           <li key={a.href + a.label}>
             <Link
               to={a.href}
-              className="flex items-center gap-3 rounded-2xl px-2.5 py-2.5 text-sm font-semibold text-foreground transition-colors hover:bg-muted/50"
+              className="flex items-center gap-3 rounded-2xl px-2.5 py-2.5 text-sm font-semibold text-foreground transition-colors hover:bg-white/70 dark:hover:bg-white/5"
             >
               <span
                 className={cn(
