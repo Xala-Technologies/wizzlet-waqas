@@ -1,3 +1,17 @@
+# Findings — Wave 55 dashboardStats accounts via userRoles 2026-10-05
+
+Branch `fix/world-ready-wave-55-dashboard-user-role-indexes`. Soak via Convex CLI on `combative-mongoose-559`.
+
+| Step | Result | Evidence |
+|------|--------|----------|
+| Query | PASS | `takeUserRolesByRole` for admin/moderator/user/creator/subscriber; unique `userId`; `db.get` |
+| Unit | PASS | `dashboardStats.security.test.ts` 1/1 |
+| Data soak | PASS | Unique role accounts **26** (33 rows); 8 users with no role excluded (deleted + stray); Creators **9**, Active **5** |
+
+**Residual:** Connect KYC/currency; AuthContext DEV leftover; eslint.
+
+---
+
 # Findings — Wave 54 dashboardStats indexed creators/events 2026-10-05
 
 Branch `fix/world-ready-wave-54-dashboard-stats-indexes`. Admin soak via Convex CLI on `combative-mongoose-559` (browser soak skipped — prior hangs).
