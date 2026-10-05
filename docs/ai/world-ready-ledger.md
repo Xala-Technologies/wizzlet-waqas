@@ -2,7 +2,7 @@
 
 **Authority:** [`docs/ai/prizelet-world-ready-master-prompt.md`](./prizelet-world-ready-master-prompt.md)
 
-**Status:** Wave 28 J7 multi-role switcher + Discord OAuth residual 2026-10-05. Product is **not** world-ready (other P2s remain).
+**Status:** Wave 29 J6 paid referral attribution 2026-10-05. Product is **not** world-ready (other P2s remain).
 
 Do not claim world-ready until Section 8 gates in the master prompt pass.
 
@@ -16,11 +16,13 @@ Do not claim world-ready until Section 8 gates in the master prompt pass.
 | Evidence | branch, date, one-line actual vs expected |
 | Waiver | owner + reason (required if WAIVED) |
 
-Last updated: 2026-10-05. Last wave: **28** (`test/world-ready-wave-28-j7-multi-role`). Source pin: `bf85281` (inventory).
+Last updated: 2026-10-05. Last wave: **29** (`test/world-ready-wave-29-j6-referral-attribution`). Source pin: `bf85281` (inventory).
 
-Wave 28: admin `grantRole` subscriber on `j2creator` → `userRoles` creator+subscriber; RoleSwitcher **Switch to Member** → `/dashboard` then **Switch to Creator** → `/creator`. Discord AuthCallback residual closed via Wave 27 `prize262626` Continue with Discord.
+Wave 29: signup `?ref=j2creator-jn73sz` → pending referral; Stripe Checkout `cs_test_a1a8xUI…` WAVE24 → `converted: true` / `commissionEarnedCents: 0`; CreatorReferrals **Approved** with revenue/commission **—**.
 
-Wave 27: Discord Developer Portal OAuth redirects OK; `j2creator` bot install → **Prizelet VIP**; WAVE24 → **Monthly Pro**; Discord OAuth member `prize262626` Checkout → grant **granted**; cancel → **revoked**.
+Wave 28: admin `grantRole` subscriber on `j2creator` → RoleSwitcher Member↔Creator. Discord AuthCallback residual closed via Wave 27.
+
+Wave 27: Discord bot install + grant/revoke PASS.
 
 ---
 
@@ -157,7 +159,7 @@ Nested layouts in `App.tsx`: `/demo/admin` → `DemoAdminLayout`; `/demo/member`
 | J3 | Content access / pick lock / win rate | PASS | Wave 8 owner lock/win-rate; Wave 24 2026-10-05: `j3member` Checkout `cs_test_a13a8w…` ACTIVE → dashboard shows WAVE8_SECRET_BODY; cancel `sub_1UMytH…` → status cancelled, feed empty (no secret); pickTracker settled Win → Result combobox **disabled**. Residual: cancel UI previously lied about period-end (fixed this wave) |
 | J4 | Messages / support / resolution | PASS | Wave 9 2026-10-05: `j4creator`/`j4member` Stripe sub; DM + creator unread/reply; support/resolution/growth admin replies; messaging off deny; cancel → `FORBIDDEN` on send. Unit `messaging.security.test.ts` 6/6. Fix: messaging toggle on populated CreatorMessages inbox. Residual: UI composer still shown when gated (server enforces) |
 | J5 | Payout request / approve / balance | PASS | Wave 10 request/approve; Wave 25 2026-10-05: admin Lifetime from settled `paymentEvents` (cancelled j4member sub still counts) — `j4creator` Lifetime **$28.49** / Paid $28.49. `payoutBalance.test.ts` 6/6. Residual: Connect live transfers still out of scope |
-| J6 | Promo / tracking links / referrals | PASS | Wave 11 2026-10-05: promo CRUD WAVE11OFF10; `/go/{id}` click+redirect; signup `?ref=` banner; commission UI honest (—). Fixes shortPath + duration control + referral demo rates. Residual: paid conversion attribution not browser-soaked |
+| J6 | Promo / tracking links / referrals | PASS | Wave 11 promo/links/`?ref=`; Wave 29 2026-10-05: paid conversion soak — `j6ref+wave29` via `j2creator-jn73sz` → Checkout WAVE24 → referral **Approved** / `converted: true`; KPIs revenue/rewards **—**; copy “Commission cash payouts are not configured yet.” Residual: commission cash product TBD; `creatorLinks.conversions` not incremented; OAuth signup drops `?ref=` |
 | J7 | Identity (password, OAuth, roles, email request) | PASS | Wave 12 password/email/roles unit; Wave 27 Discord OAuth callback; Wave 28 2026-10-05: admin grant subscriber on `j2creator` → RoleSwitcher Member↔Creator round-trip. Residual: X/Twitter OAuth not browser-soaked |
 | J8 | Migration ETL internal-only | PASS | Wave 13 2026-10-05: all migration exports `internalMutation`; client has zero import refs; `MIGRATION_SECRET` unset on combative-mongoose-559; `migrations.security.test.ts` 3/3. Residual: historical data parity not claimed |
 | J9 | Public nav + chrome | PASS | Wave 2: public-nav + browser-matrix on chromium/webkit/firefox; platform-owner bootstrap visible in DEV |
@@ -256,10 +258,10 @@ App public functions (`Auth` = TBD until Wave 1):
 | `creators.growth.getLinkPublic` | TBD | yes | NOT_RUN | frozen vs convex/*.ts @ bf85281 |
 | `creators.growth.listMyLinks` | TBD | yes | NOT_RUN | frozen vs convex/*.ts @ bf85281 |
 | `creators.growth.listMyPromos` | TBD | yes | NOT_RUN | frozen vs convex/*.ts @ bf85281 |
-| `creators.growth.listMyReferrals` | TBD | yes | NOT_RUN | frozen vs convex/*.ts @ bf85281 |
+| `creators.growth.listMyReferrals` | creator | yes | PASS | Wave 29: `/creator/referrals?demo=0` showed j6ref Approved |
 | `creators.growth.recordLinkClick` | TBD | yes | NOT_RUN | frozen vs convex/*.ts @ bf85281 |
-| `creators.growth.recordReferral` | TBD | yes | NOT_RUN | frozen vs convex/*.ts @ bf85281 |
-| `creators.growth.recordReferralByCode` | TBD | yes | NOT_RUN | frozen vs convex/*.ts @ bf85281 |
+| `creators.growth.recordReferral` | authenticated | yes | PASS | Wave 11/29 path via code helper |
+| `creators.growth.recordReferralByCode` | authenticated | yes | PASS | Wave 29: signup `?ref=j2creator-jn73sz` → referral row pending then converted |
 | `creators.growth.removeLink` | TBD | yes | NOT_RUN | frozen vs convex/*.ts @ bf85281 |
 | `creators.growth.removePromo` | TBD | yes | NOT_RUN | frozen vs convex/*.ts @ bf85281 |
 | `creators.growth.upsertLink` | TBD | yes | NOT_RUN | frozen vs convex/*.ts @ bf85281 |
@@ -411,7 +413,7 @@ Confirm each table still exists; note writers. Result `NOT_RUN` = existence free
 | notifications | notifications / notify | PASS | Wave 20: adminInsert + markRead/markAllRead on j4member |
 | savedPosts / creatorBookmarks | bookmarks.mutations | NOT_RUN | present in convex/schema.ts @ bf85281; existence freeze only |
 | payouts / creatorPayoutSettings | payouts.mutations | NOT_RUN | present in convex/schema.ts @ bf85281; existence freeze only |
-| creatorLinks / promoCodes / referrals | creators.growth | NOT_RUN | present in convex/schema.ts @ bf85281; existence freeze only |
+| creatorLinks / promoCodes / referrals | creators.growth | PASS | Wave 11 promo/links; Wave 29 referrals convert on Checkout (`m57b0n7…` converted true, commission 0) |
 | resolutionCases / resolutionCaseMessages | resolution.mutations | NOT_RUN | present in convex/schema.ts @ bf85281; existence freeze only |
 | supportMessages / memberSupportMessages | support.mutations | NOT_RUN | present in convex/schema.ts @ bf85281; existence freeze only |
 | platformSettings | platform.mutations | PASS | Wave 16: Platform Fees shows intro/standard rates from settings |
@@ -432,7 +434,7 @@ Schema `appRole` also allows `moderator` and `user` (not product actors; no rout
 
 ## M. Remaining risk (update every fix PR)
 
-- P2: Stripe Connect live transfers still unimplemented (Wave 22 honesty PASS — ledger/manual only); referral commission cash TBD; J7 X/Twitter OAuth not browser-soaked; historical migration data parity BLOCKED (greenfield)
+- P2: Stripe Connect live transfers still unimplemented (Wave 22 honesty PASS — ledger/manual only); referral commission cash product TBD; J7 X/Twitter OAuth not browser-soaked; `creatorLinks.conversions` never wired on subscribe; OAuth signup drops `?ref=`; historical migration data parity BLOCKED (greenfield)
 - P3: admin user/creator spend metrics cap at 200 indexed rows; customer pages scan ≤5k subscriptions; eslint warnings; AuthContext DEV `hasRole` leftover; All Accounts table shows a single primary role even when `userRoles` is multi
 - Not in this PR: production deploy, live Stripe keys, MFA
 - Waivers: see section L
