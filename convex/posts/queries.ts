@@ -12,6 +12,7 @@ import { canViewPostContent, redactPostContent } from "../lib/entitlements";
 import { subscriptionGrantsContentAccess } from "../lib/contentAccess";
 import { normalizePickResult, isSettledPickResult } from "../lib/results";
 import type { Id } from "../_generated/dataModel";
+import { ADMIN_SCAN_MAX_DOCS } from "../lib/adminLists";
 import {
   memberFeedItemValidator,
   postDocValidator,
@@ -28,7 +29,7 @@ export const listPreviewsByCreator = query({
       .query("posts")
       .withIndex("by_creatorId_createdAt", (q) => q.eq("creatorId", args.creatorId))
       .order("desc")
-      .collect();
+      .take(ADMIN_SCAN_MAX_DOCS);
 
     const out = [];
     for (const post of posts) {
@@ -90,7 +91,7 @@ export const memberFeed = query({
     const subs = await ctx.db
       .query("subscriptions")
       .withIndex("by_userId", (q) => q.eq("userId", user._id))
-      .collect();
+      .take(ADMIN_SCAN_MAX_DOCS);
     const nowMs = Date.now();
     const activeCreatorIds = subs
       .filter((s) => subscriptionGrantsContentAccess(s, nowMs))

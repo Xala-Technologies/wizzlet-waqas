@@ -13,7 +13,11 @@ import {
   creatorPublishedPageValidator,
   verificationStatusValidator,
 } from "../lib/validators";
-import { adminTakeNewest } from "../lib/adminLists";
+import {
+  ADMIN_JOIN_LIMIT,
+  ADMIN_SCAN_MAX_DOCS,
+  adminTakeNewest,
+} from "../lib/adminLists";
 
 export const getByUsername = query({
   args: { username: v.string() },
@@ -54,7 +58,8 @@ export const listPublished = query({
     const rows = await ctx.db
       .query("creators")
       .withIndex("by_published", (q) => q.eq("isPublished", true))
-      .collect();
+      .take(ADMIN_SCAN_MAX_DOCS);
+    const creatorsTruncated = rows.length >= ADMIN_SCAN_MAX_DOCS;
     const q = args.search?.trim().toLowerCase();
     const filtered = q
       ? rows.filter(
@@ -72,18 +77,21 @@ export const listPublished = query({
     }
     const page = sorted.slice(start, start + pageSize);
     const mapped = [];
+    let joinTruncated = false;
     for (const c of page) {
       const posts = await ctx.db
         .query("posts")
         .withIndex("by_creatorId", (q) => q.eq("creatorId", c._id))
-        .collect();
+        .take(ADMIN_JOIN_LIMIT);
+      if (posts.length >= ADMIN_JOIN_LIMIT) joinTruncated = true;
       // Match CreatorProfile checkout: featured active product, else first active.
       const products = await ctx.db
         .query("products")
         .withIndex("by_creatorId_active", (q) =>
           q.eq("creatorId", c._id).eq("isActive", true),
         )
-        .collect();
+        .take(ADMIN_JOIN_LIMIT);
+      if (products.length >= ADMIN_JOIN_LIMIT) joinTruncated = true;
       const sellable = products.filter((p) => !p.isClosed);
       const featured =
         sellable.find((p) => p.isFeatured) ??
@@ -106,6 +114,8 @@ export const listPublished = query({
       items: mapped,
       continueCursor: last && start + pageSize < sorted.length ? last._id : null,
       isDone: start + pageSize >= sorted.length,
+      truncated: creatorsTruncated || joinTruncated,
+      listLimit: ADMIN_SCAN_MAX_DOCS,
     };
   },
 });

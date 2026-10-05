@@ -1,3 +1,18 @@
+# Findings — Wave 61 listPublished + listMine caps 2026-10-05
+
+Branch `fix/world-ready-wave-61-list-published-cap`. Convex soak on `combative-mongoose-559`.
+
+| Step | Result | Evidence |
+|------|--------|----------|
+| Discovery | PASS | `listPublished` `.take(ADMIN_SCAN_MAX_DOCS)` + post/product `.take(ADMIN_JOIN_LIMIT)` |
+| Lists | PASS | payouts/picks/analytics/post preview/memberFeed no longer `.collect` |
+| Data soak | PASS | published creators **9** |
+| Unit | PASS | `listPublishedCap.security.test.ts` 2/2 |
+
+**Residual:** Connect KYC/currency; referral cash outside Stripe; email OTP (no mailer).
+
+---
+
 # Findings — Wave 60 creator earnings capped reads 2026-10-05
 
 Branch `fix/world-ready-wave-60-creator-earnings-cap`. Convex soak on `combative-mongoose-559`.

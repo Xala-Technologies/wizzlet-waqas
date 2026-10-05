@@ -2,7 +2,7 @@
 
 **Authority:** [`docs/ai/prizelet-world-ready-master-prompt.md`](./prizelet-world-ready-master-prompt.md)
 
-**Status:** Wave 60 creator earnings capped reads 2026-10-05. Product is **not** world-ready.
+**Status:** Wave 61 listPublished + listMine caps 2026-10-05. Product is **not** world-ready.
 
 Do not claim world-ready until Section 8 gates in the master prompt pass.
 
@@ -16,7 +16,9 @@ Do not claim world-ready until Section 8 gates in the master prompt pass.
 | Evidence | branch, date, one-line actual vs expected |
 | Waiver | owner + reason (required if WAIVED) |
 
-Last updated: 2026-10-05. Last wave: **60** (`fix/world-ready-wave-60-creator-earnings-cap`). Source pin: `bf85281` (inventory).
+Last updated: 2026-10-05. Last wave: **61** (`fix/world-ready-wave-61-list-published-cap`). Source pin: `bf85281` (inventory).
+
+Wave 61: `listPublished` takes published creators + per-page post/product joins (no `.collect`); also caps payouts/picks/analytics/post preview/memberFeed. Soak published creators **9**. Units `listPublishedCap.security.test.ts` 2/2.
 
 Wave 60: `myEarnings` / `countActiveByCreator` / `listForMyCreator` use capped indexed takes (no `.collect`). Earnings returns `truncated`. Soak max subs/creator **10**, events/creator **12**. Units `creatorEarningsCap.security.test.ts` 2/2.
 
@@ -307,7 +309,7 @@ App public functions (`Auth` = TBD until Wave 1):
 | `creators.growth.upsertPromo` | TBD | yes | NOT_RUN | frozen vs convex/*.ts @ bf85281 |
 | `creators.queries.getByUsername` | TBD | yes | NOT_RUN | frozen vs convex/*.ts @ bf85281 |
 | `creators.queries.listAllAdmin` | TBD | yes | NOT_RUN | frozen vs convex/*.ts @ bf85281 |
-| `creators.queries.listPublished` | TBD | yes | NOT_RUN | frozen vs convex/*.ts @ bf85281 |
+| `creators.queries.listPublished` | public | no | PASS | Wave 61: capped published take + join takes; truncated flag |
 | `creators.queries.myCreator` | TBD | yes | NOT_RUN | frozen vs convex/*.ts @ bf85281 |
 | `creators.queries.setPublished` | TBD | yes | NOT_RUN | frozen vs convex/*.ts @ bf85281 |
 | `creators.queries.setVerificationStatus` | TBD | yes | NOT_RUN | frozen vs convex/*.ts @ bf85281 |

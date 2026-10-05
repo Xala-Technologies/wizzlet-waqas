@@ -1,6 +1,7 @@
 import { mutation, query } from "../_generated/server";
 import { v } from "convex/values";
 import { requireAppUser, logMutation } from "../lib/auth";
+import { ADMIN_SCAN_MAX_DOCS } from "../lib/adminLists";
 import { normalizePickResult, isSettledPickResult } from "../lib/results";
 import { pickTrackerDocValidator } from "../lib/validators";
 
@@ -12,7 +13,7 @@ export const listMine = query({
     return ctx.db
       .query("pickTracker")
       .withIndex("by_userId_date", (q) => q.eq("userId", user._id))
-      .collect();
+      .take(ADMIN_SCAN_MAX_DOCS);
   },
 });
 

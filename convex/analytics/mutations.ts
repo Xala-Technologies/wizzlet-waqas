@@ -38,10 +38,12 @@ export const listMine = query({
   returns: v.array(analyticsActivityItemValidator),
   handler: async (ctx) => {
     const user = await requireAppUser(ctx);
-    const events = (await ctx.db
-      .query("analyticsEvents")
-      .withIndex("by_userId", (q) => q.eq("userId", user._id))
-      .collect())
+    const events = (
+      await ctx.db
+        .query("analyticsEvents")
+        .withIndex("by_userId", (q) => q.eq("userId", user._id))
+        .take(200)
+    )
       .sort((a, b) => b.createdAt - a.createdAt)
       .slice(0, 100);
     const out = [];
@@ -80,7 +82,7 @@ export const listForMyCreator = query({
     return ctx.db
       .query("analyticsEvents")
       .withIndex("by_creatorId", (q) => q.eq("creatorId", creator._id))
-      .collect();
+      .take(200);
   },
 });
 
