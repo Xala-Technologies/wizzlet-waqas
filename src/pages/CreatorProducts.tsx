@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useMutation, useQuery } from 'convex/react';
 import {
@@ -402,15 +402,18 @@ const CreatorProducts = () => {
     };
   }, [liveRows, subs, useDemo]);
 
-  const isOnProfile = (row: TableRowModel): boolean => {
-    if (isCreatorProductsDemoId(row.id) || useDemo) {
-      return demoProfileIds.has(row.id);
-    }
-    if (liveProfileOverrides.has(row.id)) {
-      return liveProfileOverrides.get(row.id) === true;
-    }
-    return rowShowOnProfile(row, demoProfileIds);
-  };
+  const isOnProfile = useCallback(
+    (row: TableRowModel): boolean => {
+      if (isCreatorProductsDemoId(row.id) || useDemo) {
+        return demoProfileIds.has(row.id);
+      }
+      if (liveProfileOverrides.has(row.id)) {
+        return liveProfileOverrides.get(row.id) === true;
+      }
+      return rowShowOnProfile(row, demoProfileIds);
+    },
+    [useDemo, demoProfileIds, liveProfileOverrides],
+  );
 
   const displayedProducts = useMemo(() => {
     return tableRows
@@ -433,7 +436,7 @@ const CreatorProducts = () => {
           iconClassName: iconTone(Icon),
         };
       });
-  }, [tableRows, demoProfileIds, liveProfileOverrides, useDemo]);
+  }, [tableRows, isOnProfile]);
 
   const profileCandidates = useMemo(() => {
     return tableRows
@@ -454,7 +457,7 @@ const CreatorProducts = () => {
           iconClassName: iconTone(Icon),
         };
       });
-  }, [tableRows, demoProfileIds, liveProfileOverrides, useDemo]);
+  }, [tableRows, isOnProfile]);
 
   const applyShowOnProfile = async (row: TableRowModel, show: boolean) => {
     if (show && displayedProducts.length >= MAX_PROFILE_PRODUCTS && !isOnProfile(row)) {

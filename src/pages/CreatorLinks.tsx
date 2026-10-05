@@ -150,10 +150,10 @@ const CreatorLinks = () => {
   const [deleting, setDeleting] = useState(false);
 
   const loading = creatorLoading || links === undefined;
-  const liveRows = links ?? [];
+  const liveCount = links?.length ?? 0;
 
   const useDemo = shouldUseCreatorLinksDemo({
-    count: liveRows.length,
+    count: liveCount,
     forceDemo,
     disableDemo,
   });
@@ -162,7 +162,7 @@ const CreatorLinks = () => {
     if (useDemo) {
       return CREATOR_LINKS_DEMO_ROWS.map((r) => ({ ...r, isDemo: true }));
     }
-    return liveRows.map((l) => ({
+    return (links ?? []).map((l) => ({
       id: l._id,
       name: l.name,
       shortSlug: shortSlugFromLive(l._id, l.name),
@@ -174,7 +174,7 @@ const CreatorLinks = () => {
       status: 'active' as const,
       isDemo: false,
     }));
-  }, [useDemo, liveRows]);
+  }, [useDemo, links]);
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();

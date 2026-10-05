@@ -1,3 +1,18 @@
+# Findings — Wave 57 eslint clean 2026-10-05
+
+Branch `fix/world-ready-wave-57-eslint-cleanup`. Frontend lint hygiene.
+
+| Step | Result | Evidence |
+|------|--------|----------|
+| Lint | PASS | `npm run lint` → 0 errors / 0 warnings (was 28 warnings) |
+| Hooks | PASS | CreatorLinks `links` dep; CreatorProducts `isOnProfile` useCallback; DemoAdminUsers `spendOf` useCallback |
+| Config | PASS | ignore `convex/_generated/**`; co-export override for ui/contexts/demo |
+| Unit | PASS | `eslintConfig.security.test.ts` 1/1 |
+
+**Residual:** Connect KYC/currency; admin join spend metrics still cap at 200.
+
+---
+
 # Findings — Wave 56 AuthContext hasRole is DB-held only 2026-10-05
 
 Branch `fix/world-ready-wave-56-authcontext-dev-hasrole`. Frontend-only; no Convex schema change.

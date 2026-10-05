@@ -2,7 +2,7 @@
 
 **Authority:** [`docs/ai/prizelet-world-ready-master-prompt.md`](./prizelet-world-ready-master-prompt.md)
 
-**Status:** Wave 56 AuthContext hasRole is DB-held only 2026-10-05. Product is **not** world-ready.
+**Status:** Wave 57 eslint clean 2026-10-05. Product is **not** world-ready.
 
 Do not claim world-ready until Section 8 gates in the master prompt pass.
 
@@ -16,7 +16,9 @@ Do not claim world-ready until Section 8 gates in the master prompt pass.
 | Evidence | branch, date, one-line actual vs expected |
 | Waiver | owner + reason (required if WAIVED) |
 
-Last updated: 2026-10-05. Last wave: **56** (`fix/world-ready-wave-56-authcontext-dev-hasrole`). Source pin: `bf85281` (inventory).
+Last updated: 2026-10-05. Last wave: **57** (`fix/world-ready-wave-57-eslint-cleanup`). Source pin: `bf85281` (inventory).
+
+Wave 57: `npm run lint` **0** problems. Fixed hooks deps on CreatorLinks/CreatorProducts/DemoAdminUsers; ignore `_generated` + intentional co-export surfaces. Units `eslintConfig.security.test.ts` 1/1.
 
 Wave 56: `hasRole` / `switchRole` use held roles only. Vite DEV no longer pretends the session holds every role. DevModeBanner unmounted. Units `authContextDevBypass.security.test.ts` 2/2.
 
@@ -466,6 +468,6 @@ Schema `appRole` also allows `moderator` and `user` (not product actors; no rout
 ## M. Remaining risk (update every fix PR)
 
 - P2: Connect Transfer action is live but blocked until Express KYC (`payouts_enabled`) and USD vs NOK platform balance; referral cash still outside Stripe; member self-serve verified email OTP still missing; historical migration data parity BLOCKED (greenfield)
-- P3: admin user/creator spend metrics cap at 200 indexed rows; eslint warnings; customers/alerts/finance/dashboard/fees/payouts/announcement/reports KPIs PASS (Wave 43–47, 50–55)
+- P3: admin user/creator spend metrics cap at 200 indexed rows; customers/alerts/finance/dashboard/fees/payouts/announcement/reports KPIs PASS (Wave 43–47, 50–55); eslint PASS Wave 57
 - Not in this PR: production deploy, live Stripe keys, MFA
 - Waivers: see section L
