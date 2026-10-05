@@ -1,13 +1,13 @@
 import type { LucideIcon } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { cn } from '@/lib/utils';
-import { clayCardInteractive, clayFillFromIconTone } from '@/lib/overviewClay';
+import { clayCardInteractive } from '@/lib/overviewClay';
 
 export type DashboardKpi = {
   label: string;
   value: string;
   icon: LucideIcon;
-  /** Prefer tones from `@/lib/kpiIconTones` (violet / emerald / sky / amber…). */
+  /** Prefer tones from `@/lib/kpiIconTones` (brand blues on the icon tile only). */
   iconClassName?: string;
   /** Honest period delta only — omit when unknown. */
   trendLabel?: string;
@@ -19,8 +19,9 @@ export type DashboardKpi = {
 };
 
 /**
- * Colorful KPI cards used across creator (and shared) dashboards.
- * `variant="clay"` matches Creator Overview medium claymorphism.
+ * KPI cards used across creator (and shared) dashboards.
+ * Neutral card surface; brand color lives on the icon tile only.
+ * `variant="clay"` matches Creator Overview claymorphism.
  */
 export function DashboardKpiStrip({
   items,
@@ -43,11 +44,7 @@ export function DashboardKpiStrip({
     <section className={cn('grid grid-cols-1', clay ? 'gap-4' : 'gap-3', cols, className)}>
       {items.map((item) => {
         const cardClassName = clay
-          ? cn(
-              clayCardInteractive,
-              'p-5 sm:p-6',
-              clayFillFromIconTone(item.iconClassName),
-            )
+          ? cn(clayCardInteractive, 'p-5 sm:p-6')
           : cn(
               'rounded-2xl border border-border bg-card p-4 shadow-[var(--shadow-card)] sm:p-5',
               item.href && 'transition-colors hover:border-primary/40',

@@ -1,13 +1,13 @@
 import type { LucideIcon } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { cn } from '@/lib/utils';
-import { clayCardInteractive, clayFillFromIconTone } from '@/lib/overviewClay';
+import { clayCardInteractive } from '@/lib/overviewClay';
 
 export type OverviewKpi = {
   label: string;
   value: string;
   icon: LucideIcon;
-  /** Prefer tones from `@/lib/kpiIconTones` (violet / emerald / sky / amber…). */
+  /** Prefer tones from `@/lib/kpiIconTones` (brand blues on the icon tile only). */
   iconClassName?: string;
   /** Honest period delta only — omit when unknown. */
   trendLabel?: string;
@@ -18,7 +18,7 @@ export type OverviewKpi = {
 
 /**
  * Claymorphic KPI strip — Creator Overview only.
- * Soft pastel fills + dual inset / outer clay shadows.
+ * Neutral clay cards; brand color on icon tiles only.
  */
 export function OverviewKpiStrip({
   items,
@@ -37,11 +37,7 @@ export function OverviewKpiStrip({
   return (
     <section className={cn('grid grid-cols-1 gap-4', cols, className)}>
       {items.map((item) => {
-        const cardClassName = cn(
-          clayCardInteractive,
-          'p-5 sm:p-6',
-          clayFillFromIconTone(item.iconClassName),
-        );
+        const cardClassName = cn(clayCardInteractive, 'p-5 sm:p-6');
         const body = (
           <>
             <div className="mb-4 flex items-start justify-between gap-2">
