@@ -5,14 +5,17 @@
 
 export type MessagingSendDenial = "MESSAGING_DISABLED" | "FORBIDDEN" | "EMPTY_BODY";
 
-export function canSendDirectMessage(input: {
+export type MessagingComposeGateInput = {
   messagingEnabled: boolean;
   senderRole: "creator" | "subscriber";
   callerIsCreatorOwner: boolean;
   callerIsNamedSubscriber: boolean;
   subscriberHasActiveSub: boolean;
-  body: string;
-}): { ok: true } | { ok: false; reason: MessagingSendDenial } {
+};
+
+export function canSendDirectMessage(
+  input: MessagingComposeGateInput & { body: string },
+): { ok: true } | { ok: false; reason: MessagingSendDenial } {
   if (!input.body.trim()) {
     return { ok: false, reason: "EMPTY_BODY" };
   }
@@ -35,4 +38,28 @@ export function canSendDirectMessage(input: {
     return { ok: false, reason: "FORBIDDEN" };
   }
   return { ok: true };
+}
+
+/** UI gate: same rules as send, ignoring empty body (composer visibility). */
+export function messagingComposeBlockReason(
+  input: MessagingComposeGateInput,
+): Exclude<MessagingSendDenial, "EMPTY_BODY"> | null {
+  const decision = canSendDirectMessage({ ...input, body: "." });
+  if (decision.ok) return null;
+  if (decision.reason === "EMPTY_BODY") return null;
+  return decision.reason;
+}
+
+export function messagingComposeBlockMessage(
+  reason: Exclude<MessagingSendDenial, "EMPTY_BODY">,
+  audience: "creator" | "subscriber",
+): string {
+  if (reason === "MESSAGING_DISABLED") {
+    return audience === "creator"
+      ? "Subscriber messaging is off. Turn it on above to reply."
+      : "This creator has turned off messaging. You can still read past messages.";
+  }
+  return audience === "creator"
+    ? "Messaging requires an active subscription. This member can still read history."
+    : "Messaging requires an active subscription. You can still read past messages.";
 }

@@ -38,6 +38,10 @@ import {
   shouldUseMemberMessagesDemo,
   type MemberMessagesDemoMessage,
 } from '@/lib/memberMessagesDemo';
+import {
+  messagingComposeBlockMessage,
+  messagingComposeBlockReason,
+} from '../../convex/lib/messagingAccess';
 import { cn } from '@/lib/utils';
 
 const PAGE_SIZE = 25;
@@ -165,12 +169,23 @@ const CustomerMessages = () => {
   }, [activeId]);
 
   const nameMap = useMemo(() => {
-    const map = new Map<string, { name: string; username: string; avatarUrl: string | null }>();
+    const map = new Map<
+      string,
+      {
+        name: string;
+        username: string;
+        avatarUrl: string | null;
+        messagingEnabled: boolean;
+        subActive: boolean;
+      }
+    >();
     for (const s of subscriptions ?? []) {
       map.set(s.creator._id, {
         name: s.creator.displayName || s.creator.username || 'Creator',
         username: s.creator.username,
         avatarUrl: s.creator.avatarUrl ?? null,
+        messagingEnabled: s.creator.messagingEnabled !== false,
+        subActive: s.status === 'active',
       });
     }
     return map;
@@ -355,8 +370,28 @@ const CustomerMessages = () => {
     chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [active?.id, active?.messages.length]);
 
+  const composeBlockReason = useMemo(() => {
+    if (!active || active.isDemo || active.kind === 'support') return null;
+    const meta = nameMap.get(active.id);
+    return messagingComposeBlockReason({
+      messagingEnabled: meta?.messagingEnabled ?? true,
+      senderRole: 'subscriber',
+      callerIsCreatorOwner: false,
+      callerIsNamedSubscriber: true,
+      subscriberHasActiveSub: meta?.subActive ?? false,
+    });
+  }, [active, nameMap]);
+
+  const composeBlockCopy = composeBlockReason
+    ? messagingComposeBlockMessage(composeBlockReason, 'subscriber')
+    : null;
+
   const send = async () => {
     if (!active || !reply.trim() || sending) return;
+    if (composeBlockReason) {
+      toast.error(composeBlockCopy ?? 'Messaging is unavailable');
+      return;
+    }
     const body = reply.trim();
     if (active.isDemo || isMemberMessagesDemoId(active.id)) {
       const msg: MemberMessagesDemoMessage = {
@@ -714,65 +749,74 @@ const CustomerMessages = () => {
                   <div ref={chatEndRef} />
                 </div>
 
-                <div className="border-t border-border bg-card p-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] sm:p-4">
-                  <div className="flex items-end gap-2">
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="icon"
-                      className="h-10 w-10 shrink-0 rounded-xl text-muted-foreground"
-                      aria-label="Attach file"
-                      onClick={() =>
-                        toast.message(
-                          active.isDemo
-                            ? 'Sample preview — attachments need a live chat.'
-                            : 'Attachments coming soon.',
-                        )
-                      }
-                    >
-                      <Paperclip className="h-4 w-4" />
-                    </Button>
-                    <div className="relative min-w-0 flex-1">
-                      <Textarea
-                        placeholder="Type a message..."
-                        value={reply}
-                        onChange={(e) => setReply(e.target.value)}
-                        rows={1}
-                        className="min-h-11 resize-none rounded-xl border-border pr-10 text-sm"
-                        onKeyDown={(e) => {
-                          if (e.key === 'Enter' && !e.shiftKey) {
-                            e.preventDefault();
-                            void send();
-                          }
-                        }}
-                      />
-                      <button
+                {composeBlockCopy ? (
+                  <div
+                    role="status"
+                    className="border-t border-border bg-muted/30 px-4 py-3"
+                  >
+                    <p className="text-sm text-muted-foreground">{composeBlockCopy}</p>
+                  </div>
+                ) : (
+                  <div className="border-t border-border bg-card p-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] sm:p-4">
+                    <div className="flex items-end gap-2">
+                      <Button
                         type="button"
-                        className="absolute right-2.5 top-2.5 text-muted-foreground hover:text-foreground"
-                        aria-label="Emoji"
+                        variant="ghost"
+                        size="icon"
+                        className="h-10 w-10 shrink-0 rounded-xl text-muted-foreground"
+                        aria-label="Attach file"
                         onClick={() =>
                           toast.message(
                             active.isDemo
-                              ? 'Sample preview — emoji picker is design-only.'
-                              : 'Emoji picker coming soon.',
+                              ? 'Sample preview — attachments need a live chat.'
+                              : 'Attachments coming soon.',
                           )
                         }
                       >
-                        <Smile className="h-4 w-4" />
-                      </button>
+                        <Paperclip className="h-4 w-4" />
+                      </Button>
+                      <div className="relative min-w-0 flex-1">
+                        <Textarea
+                          placeholder="Type a message..."
+                          value={reply}
+                          onChange={(e) => setReply(e.target.value)}
+                          rows={1}
+                          className="min-h-11 resize-none rounded-xl border-border pr-10 text-sm"
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter' && !e.shiftKey) {
+                              e.preventDefault();
+                              void send();
+                            }
+                          }}
+                        />
+                        <button
+                          type="button"
+                          className="absolute right-2.5 top-2.5 text-muted-foreground hover:text-foreground"
+                          aria-label="Emoji"
+                          onClick={() =>
+                            toast.message(
+                              active.isDemo
+                                ? 'Sample preview — emoji picker is design-only.'
+                                : 'Emoji picker coming soon.',
+                            )
+                          }
+                        >
+                          <Smile className="h-4 w-4" />
+                        </button>
+                      </div>
+                      <Button
+                        type="button"
+                        className="h-11 shrink-0 rounded-xl px-4 font-semibold"
+                        disabled={sending || !reply.trim()}
+                        onClick={() => void send()}
+                      >
+                        {sending ? <Loader2 className="mr-1.5 h-4 w-4 animate-spin" /> : null}
+                        Send
+                        <Send className="ml-1.5 h-3.5 w-3.5" />
+                      </Button>
                     </div>
-                    <Button
-                      type="button"
-                      className="h-11 shrink-0 rounded-xl px-4 font-semibold"
-                      disabled={sending || !reply.trim()}
-                      onClick={() => void send()}
-                    >
-                      {sending ? <Loader2 className="mr-1.5 h-4 w-4 animate-spin" /> : null}
-                      Send
-                      <Send className="ml-1.5 h-3.5 w-3.5" />
-                    </Button>
                   </div>
-                </div>
+                )}
               </>
             ) : (
               <div className="flex flex-1 flex-col items-center justify-center gap-2 px-6 text-center">

@@ -54,6 +54,10 @@ import {
 } from '@/lib/creatorMessagesDemo';
 import { initialsFromName } from '@/lib/creatorSubscribersDemo';
 import { kpiIconTone } from '@/lib/kpiIconTones';
+import {
+  messagingComposeBlockMessage,
+  messagingComposeBlockReason,
+} from '../../convex/lib/messagingAccess';
 import { cn } from '@/lib/utils';
 
 const PAGE_SIZE = 25;
@@ -515,8 +519,27 @@ const CreatorMessages = () => {
     );
   };
 
+  const composeBlockReason = useMemo(() => {
+    if (!active || active.kind === 'support' || active.isDemo) return null;
+    return messagingComposeBlockReason({
+      messagingEnabled,
+      senderRole: 'creator',
+      callerIsCreatorOwner: true,
+      callerIsNamedSubscriber: false,
+      subscriberHasActiveSub: active.status === 'active',
+    });
+  }, [active, messagingEnabled]);
+
+  const composeBlockCopy = composeBlockReason
+    ? messagingComposeBlockMessage(composeBlockReason, 'creator')
+    : null;
+
   const send = async () => {
     if (!active || active.kind === 'support' || !reply.trim() || sending) return;
+    if (composeBlockReason) {
+      toast.error(composeBlockCopy ?? 'Messaging is unavailable');
+      return;
+    }
     if (active.isDemo || !creator) {
       toast.message('Sample conversation', {
         description: 'Replies are preview-only. Real subscriber chats send through Convex.',
@@ -780,6 +803,12 @@ const CreatorMessages = () => {
       </p>
     </div>
   );
+
+  const gatedComposeNote = composeBlockCopy ? (
+    <div role="status" className="border-t border-border bg-muted/30 px-4 py-3">
+      <p className="text-support text-muted-foreground">{composeBlockCopy}</p>
+    </div>
+  ) : null;
 
   return (
     <DashboardLayout type="creator" mainClassName="bg-clay-page">
@@ -1079,7 +1108,9 @@ const CreatorMessages = () => {
                 <div ref={chatEndRef} />
               </div>
 
-              {active.kind === 'support' ? supportReadOnlyNote : composer}
+              {active.kind === 'support'
+                ? supportReadOnlyNote
+                : gatedComposeNote ?? composer}
             </>
           ) : (
             <div className="flex flex-1 flex-col items-center justify-center gap-2 p-8 text-center">

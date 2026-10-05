@@ -1,5 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { canSendDirectMessage } from "../../convex/lib/messagingAccess";
+import {
+  canSendDirectMessage,
+  messagingComposeBlockMessage,
+  messagingComposeBlockReason,
+} from "../../convex/lib/messagingAccess";
 
 const base = {
   messagingEnabled: true,
@@ -93,5 +97,41 @@ describe("canSendDirectMessage (J4)", () => {
         body: "   ",
       }),
     ).toEqual({ ok: false, reason: "EMPTY_BODY" });
+  });
+
+  it("compose block reason ignores empty body and maps copy", () => {
+    expect(
+      messagingComposeBlockReason({
+        messagingEnabled: true,
+        senderRole: "subscriber",
+        callerIsCreatorOwner: false,
+        callerIsNamedSubscriber: true,
+        subscriberHasActiveSub: true,
+      }),
+    ).toBeNull();
+    expect(
+      messagingComposeBlockReason({
+        messagingEnabled: false,
+        senderRole: "subscriber",
+        callerIsCreatorOwner: false,
+        callerIsNamedSubscriber: true,
+        subscriberHasActiveSub: true,
+      }),
+    ).toBe("MESSAGING_DISABLED");
+    expect(
+      messagingComposeBlockReason({
+        messagingEnabled: true,
+        senderRole: "creator",
+        callerIsCreatorOwner: true,
+        callerIsNamedSubscriber: false,
+        subscriberHasActiveSub: false,
+      }),
+    ).toBe("FORBIDDEN");
+    expect(messagingComposeBlockMessage("MESSAGING_DISABLED", "subscriber")).toMatch(
+      /turned off messaging/i,
+    );
+    expect(messagingComposeBlockMessage("FORBIDDEN", "creator")).toMatch(
+      /active subscription/i,
+    );
   });
 });
