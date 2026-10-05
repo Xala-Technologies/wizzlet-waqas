@@ -1,7 +1,7 @@
 import { FormEvent, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useQuery } from 'convex/react';
-import { Bell, ChevronDown, ExternalLink, HelpCircle, LogOut, Plus, Search, Settings } from 'lucide-react';
+import { Bell, ChevronDown, ExternalLink, HelpCircle, LogOut, Search, Settings } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { api } from '@convex/_generated/api';
 import { ThemeToggle } from '@/components/ThemeToggle';
@@ -41,7 +41,6 @@ export function CreatorTopBar() {
   const publicProfileHref = creator?.username?.trim()
     ? creatorProfilePath(creator.username)
     : '/creator/settings';
-  const onOverview = location.pathname === '/creator';
   const onPosts = location.pathname.startsWith('/creator/posts');
   const onProducts = location.pathname.startsWith('/creator/products');
   const onSubscribers = location.pathname.startsWith('/creator/subscribers');
@@ -92,15 +91,6 @@ export function CreatorTopBar() {
                               : onMarketing
                                 ? 'Search anything…'
                                 : 'Search anything…';
-  const hideCreatePost =
-    onOverview ||
-    onPosts ||
-    onProducts ||
-    onSubscribers ||
-    onMessages ||
-    onMarketing ||
-    onEarnings ||
-    onSettings;
 
   const onSearch = (e: FormEvent) => {
     e.preventDefault();
@@ -222,15 +212,6 @@ export function CreatorTopBar() {
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
-
-          {!hideCreatePost ? (
-            <Button asChild className="h-10 gap-1.5 rounded-xl px-4 font-semibold shadow-sm">
-              <Link to="/creator/posts">
-                <Plus className="h-4 w-4" aria-hidden />
-                Create Post
-              </Link>
-            </Button>
-          ) : null}
         </div>
       </div>
     </header>
