@@ -1,3 +1,17 @@
+# Findings — Wave 56 AuthContext hasRole is DB-held only 2026-10-05
+
+Branch `fix/world-ready-wave-56-authcontext-dev-hasrole`. Frontend-only; no Convex schema change.
+
+| Step | Result | Evidence |
+|------|--------|----------|
+| Client | PASS | `hasRole` = `roles.includes`; `switchRole` refuses unheld; `devMode` always false |
+| Unit | PASS | `authContextDevBypass.security.test.ts` 2/2 |
+| UI | PASS | `DevModeBanner` removed from `App.tsx`; ProtectedRoute already DB-held |
+
+**Residual:** Connect KYC/currency; eslint warnings.
+
+---
+
 # Findings — Wave 55 dashboardStats accounts via userRoles 2026-10-05
 
 Branch `fix/world-ready-wave-55-dashboard-user-role-indexes`. Soak via Convex CLI on `combative-mongoose-559`.

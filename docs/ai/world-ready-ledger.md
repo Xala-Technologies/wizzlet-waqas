@@ -2,7 +2,7 @@
 
 **Authority:** [`docs/ai/prizelet-world-ready-master-prompt.md`](./prizelet-world-ready-master-prompt.md)
 
-**Status:** Wave 55 dashboardStats accounts via userRoles 2026-10-05. Product is **not** world-ready.
+**Status:** Wave 56 AuthContext hasRole is DB-held only 2026-10-05. Product is **not** world-ready.
 
 Do not claim world-ready until Section 8 gates in the master prompt pass.
 
@@ -16,7 +16,9 @@ Do not claim world-ready until Section 8 gates in the master prompt pass.
 | Evidence | branch, date, one-line actual vs expected |
 | Waiver | owner + reason (required if WAIVED) |
 
-Last updated: 2026-10-05. Last wave: **55** (`fix/world-ready-wave-55-dashboard-user-role-indexes`). Source pin: `bf85281` (inventory).
+Last updated: 2026-10-05. Last wave: **56** (`fix/world-ready-wave-56-authcontext-dev-hasrole`). Source pin: `bf85281` (inventory).
+
+Wave 56: `hasRole` / `switchRole` use held roles only. Vite DEV no longer pretends the session holds every role. DevModeBanner unmounted. Units `authContextDevBypass.security.test.ts` 2/2.
 
 Wave 55: `dashboardStats` account count from `userRoles.by_role` unique userIds (not a users table scan). Soak unique role accounts **26** (33 role rows; 8 users have no role, mostly deleted). Other KPIs unchanged. Units `dashboardStats.security.test.ts` 1/1.
 
@@ -215,7 +217,7 @@ Nested layouts in `App.tsx`: `/demo/admin` → `DemoAdminLayout`; `/demo/member`
 | ID | Result | Evidence |
 |----|--------|----------|
 | QA-W1-01 grantTestAdmin / ALLOW_DEV_ADMIN_GRANT | PASS | Wave 1 2026-10-04: env+allowlist+assertProductionSafeEnv; authMatrix.security.test.ts |
-| QA-W1-02 ProtectedRoute DEV bypass | PASS | Wave 1: ProtectedRoute uses DB roles only. Residual: AuthContext hasRole DEV-only (prod build strips) |
+| QA-W1-02 ProtectedRoute DEV bypass | PASS | Wave 56: AuthContext `hasRole`/`switchRole` held-roles only; banner unmounted. Wave 1 ProtectedRoute DB roles |
 | QA-W1-03 unowned file getUrl | PASS | Wave 1: getUrl FORBIDDEN if missing asset or non-owner. E2E J-FILES still NOT_RUN |
 | F-001 sandbox client flag | PASS | Wave 1: server env only; envGuards + subscriptions.security tests |
 | F-002 public createSubscriptionRecord | PASS | Wave 1: internalMutation only |
@@ -464,6 +466,6 @@ Schema `appRole` also allows `moderator` and `user` (not product actors; no rout
 ## M. Remaining risk (update every fix PR)
 
 - P2: Connect Transfer action is live but blocked until Express KYC (`payouts_enabled`) and USD vs NOK platform balance; referral cash still outside Stripe; member self-serve verified email OTP still missing; historical migration data parity BLOCKED (greenfield)
-- P3: admin user/creator spend metrics cap at 200 indexed rows; eslint warnings; AuthContext DEV `hasRole` leftover; customers/alerts/finance/dashboard/fees/payouts/announcement/reports KPIs PASS (Wave 43–47, 50–55)
+- P3: admin user/creator spend metrics cap at 200 indexed rows; eslint warnings; customers/alerts/finance/dashboard/fees/payouts/announcement/reports KPIs PASS (Wave 43–47, 50–55)
 - Not in this PR: production deploy, live Stripe keys, MFA
 - Waivers: see section L
