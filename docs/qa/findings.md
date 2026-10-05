@@ -1,3 +1,20 @@
+# Findings — Production release 2026-10-05 (waves 62–68)
+
+Tip `c5b9e9b`. Tag `release/2026-10-05-world-ready-62-68`.
+
+| Layer | Result | Evidence |
+|-------|--------|----------|
+| Git | PASS | `production`/`main`/`dev` = `c5b9e9b`; PRs #186–#192 merged |
+| Convex prod | PASS | Deployed to `ceaseless-weasel-494`; `SITE_URL=https://www.prizelet.com`; `STRIPE_CONNECT_COUNTRY=US`; sandbox/dev-grant unset |
+| Vercel | PASS* | Free-tier build rate limit blocked new prod build; aliased tip preview to `www.prizelet.com` / `prizelet.com`; SPA bakes `ceaseless-weasel-494` |
+| Smoke | PASS | `https://www.prizelet.com` HTTP 200 |
+
+\* Prefer Pro plan or wait 24h for a native Production target build of the same SHA.
+
+**Residual:** Express KYC + fund USD available; referral cash; email OTP. Product not world-ready.
+
+---
+
 # Findings — Wave 67 USD platform currency locked 2026-10-05
 
 Branch `fix/world-ready-wave-67-usd-platform-currency`. Convex soak on `combative-mongoose-559`.
