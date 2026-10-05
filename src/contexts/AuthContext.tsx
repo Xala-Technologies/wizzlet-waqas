@@ -11,8 +11,6 @@ import {
 } from '@/lib/roles';
 import { safeGetItem, safeRemoveItem, safeSetItem } from '@/lib/safeStorage';
 
-const DEV_BYPASS_ALLOWED = import.meta.env.DEV;
-
 interface AuthUser {
   id: string;
   email?: string;
@@ -27,7 +25,7 @@ interface AuthContextType {
   roleLoading: boolean;
   hasRole: (role: AppRole) => boolean;
   switchRole: (role: AppRole) => void;
-  /** Optimistically apply a role just written via assignSelfRole (clears DEV bypass). */
+  /** Optimistically apply a role just written via assignSelfRole. */
   acceptAssignedRole: (role: AppRole) => void;
   clearDevBypass: () => void;
   signOut: () => Promise<void>;
@@ -81,7 +79,6 @@ function AuthProviderInner({ children }: { children: ReactNode }) {
   const [role, setRole] = useState<AppRole | null>(null);
   const [roles, setRoles] = useState<AppRole[]>([]);
   const [roleLoading, setRoleLoading] = useState(true);
-  const [devMode, setDevMode] = useState(false);
   const [ensured, setEnsured] = useState(false);
   const [signingOut, setSigningOut] = useState(false);
 
@@ -93,7 +90,6 @@ function AuthProviderInner({ children }: { children: ReactNode }) {
       setRole(null);
       setRoleLoading(false);
       setEnsured(false);
-      setDevMode(false);
       return;
     }
     if (me === undefined) {
@@ -127,11 +123,10 @@ function AuthProviderInner({ children }: { children: ReactNode }) {
   }, [convexAuthLoading, isAuthenticated, me, ensureUser, ensured]);
 
   const clearDevBypass = useCallback(() => {
-    setDevMode(false);
+    /* Role UI bypass is gone; kept so login/signup still call a stable API. */
   }, []);
 
   const acceptAssignedRole = useCallback((assigned: AppRole) => {
-    setDevMode(false);
     setRoles((prev) => (prev.includes(assigned) ? prev : [...prev, assigned]));
     setRole(assigned);
     persistRole(assigned);
@@ -170,34 +165,27 @@ function AuthProviderInner({ children }: { children: ReactNode }) {
 
   const switchRole = useCallback(
     (next: AppRole) => {
-      if (!(DEV_BYPASS_ALLOWED && devMode) && !roles.includes(next)) return;
+      if (!roles.includes(next)) return;
       setRole(next);
       persistRole(next);
     },
-    [roles, devMode],
+    [roles],
   );
 
-  const setDevRole = useCallback((newRole: AppRole) => {
-    if (!DEV_BYPASS_ALLOWED) return;
-    setDevMode(true);
-    setRole(newRole);
-    persistRole(newRole);
+  const setDevRole = useCallback((_newRole: AppRole) => {
+    /* No client-side role grant. ProtectedRoute uses DB-held roles only. */
   }, []);
 
-  const enableDevMode = useCallback(() => {
-    if (!DEV_BYPASS_ALLOWED) return;
-    setDevMode(true);
-  }, []);
+  const enableDevMode = useCallback(() => {}, []);
 
   const hasRole = useCallback(
-    (target: AppRole) => (DEV_BYPASS_ALLOWED && devMode) || roles.includes(target),
-    [roles, devMode],
+    (target: AppRole) => roles.includes(target),
+    [roles],
   );
 
   const signOut = async () => {
     // Mark first so ProtectedRoute does not treat cleared/stale roles as “pick a role”.
     setSigningOut(true);
-    setDevMode(false);
     persistRole(null);
     resetAnalyticsUser();
     try {
@@ -227,7 +215,7 @@ function AuthProviderInner({ children }: { children: ReactNode }) {
         signOut,
         signingOut,
         refreshRole,
-        devMode: DEV_BYPASS_ALLOWED && devMode,
+        devMode: false,
         setDevRole,
         enableDevMode,
       }}

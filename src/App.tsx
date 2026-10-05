@@ -5,7 +5,6 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
-import { DevModeBanner } from "@/components/dev/DevModeBanner";
 import Index from "./pages/Index";
 import Login from "./pages/Login";
 import DemoCreatorDashboard from "./pages/DemoCreatorDashboard";
@@ -110,7 +109,6 @@ const App = () => (
           <Toaster />
           <Sonner />
           <BrowserRouter>
-            <DevModeBanner />
             <Routes>
             <Route path="/" element={<Index />} />
             <Route path="/network" element={<Network />} />
