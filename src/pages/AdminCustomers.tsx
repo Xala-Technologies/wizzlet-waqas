@@ -140,12 +140,13 @@ const AdminCustomers = () => {
   const headerActions = (
     <>
       <div className="relative w-full sm:w-64">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+        <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-foreground/45" aria-hidden />
         <Input
-          placeholder="Search loaded customers…"
+          placeholder="Search customers…"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          className="pl-9 min-h-11"
+          className="pl-9"
+          aria-label="Search customers"
         />
       </div>
       <Button variant="outline" size="sm" className="min-h-11 text-caption w-full sm:w-auto" onClick={handleExport}>

@@ -513,7 +513,7 @@ const CustomerMessages = () => {
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
                   placeholder="Search messages..."
-                  className="h-10 rounded-xl border-border bg-muted/40 pl-9 text-sm"
+                  className="h-10 pl-9 text-sm"
                 />
               </div>
               <div className="flex flex-wrap gap-2">
