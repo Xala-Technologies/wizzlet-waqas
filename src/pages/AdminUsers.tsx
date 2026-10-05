@@ -45,7 +45,9 @@ const AdminUsers = () => {
     { initialNumItems: PAGE_SIZE },
   );
   const openRequests = useQuery(api.accountRequests.listOpenAdmin);
+  const resolveRequest = useMutation(api.accountRequests.resolveAdmin);
   const grantRoleMutation = useMutation(api.roles.mutations.grantRole);
+  const [resolvingId, setResolvingId] = useState<string | null>(null);
 
   const loading = status === 'LoadingFirstPage';
 
@@ -112,6 +114,38 @@ const AdminUsers = () => {
     }
   };
 
+  const handleResolveRequest = async (
+    requestId: Id<'accountRequests'>,
+    disposition: 'fulfill' | 'reject',
+    category: string,
+  ) => {
+    const label = categoryLabel(category).toLowerCase();
+    const confirmMsg =
+      disposition === 'fulfill'
+        ? category === 'account_deletion'
+          ? 'Fulfill deletion? This strips sign-in, roles, and anonymizes the profile. Stripe remote cancel is not included.'
+          : `Fulfill ${label}? This updates the profile email (and password login id when present) and signs the user out.`
+        : `Reject this ${label} request?`;
+    if (!window.confirm(confirmMsg)) return;
+    setResolvingId(requestId);
+    try {
+      const result = await resolveRequest({ requestId, disposition });
+      toast.success(
+        result.status === 'fulfilled'
+          ? `${categoryLabel(result.category)} fulfilled`
+          : `${categoryLabel(result.category)} rejected`,
+      );
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : 'Failed to resolve request';
+      if (msg.includes('EMAIL_TAKEN')) toast.error('That email is already in use');
+      else if (msg.includes('REQUEST_NOT_OPEN')) toast.error('Request is no longer open');
+      else if (msg.includes('CANNOT_RESOLVE_OWN_REQUEST')) toast.error('Cannot resolve your own request');
+      else toast.error(msg);
+    } finally {
+      setResolvingId(null);
+    }
+  };
+
   return (
     <DashboardLayout type="admin" mainClassName="bg-clay-page">
       <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between mb-6">
@@ -140,7 +174,7 @@ const AdminUsers = () => {
           <div className="min-w-0">
             <h2 className="text-sm font-semibold">Open account requests</h2>
             <p className="text-caption text-muted-foreground mt-0.5">
-              Manual review queue (email change / deletion). Fulfillment is not automated yet.
+              Review queue — Fulfill applies email rotation or soft-deletion; Reject closes without changes.
             </p>
           </div>
           <span className="ml-auto text-caption font-medium tabular-nums text-muted-foreground shrink-0">
@@ -156,7 +190,7 @@ const AdminUsers = () => {
         ) : (
           <ul className="divide-y divide-border rounded-xl border border-border overflow-hidden">
             {openRequests.map((req) => (
-              <li key={req._id} className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between px-3 py-3 bg-background/40">
+              <li key={req._id} className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between px-3 py-3 bg-background/40">
                 <div className="min-w-0">
                   <p className="text-sm font-medium truncate">
                     {req.fullName ?? req.email ?? 'Unknown user'}
@@ -167,13 +201,36 @@ const AdminUsers = () => {
                   </p>
                   <p className="text-caption text-muted-foreground mt-0.5 line-clamp-2">{req.reason}</p>
                 </div>
-                <div className="flex items-center gap-2 shrink-0 mt-1 sm:mt-0">
+                <div className="flex flex-wrap items-center gap-2 shrink-0">
                   <span className="inline-flex items-center rounded-full px-2 py-0.5 text-caption font-medium bg-amber-500/10 text-amber-700 dark:text-amber-400">
                     {categoryLabel(req.category)}
                   </span>
                   <span className="text-caption text-muted-foreground">
                     {format(new Date(req.createdAt), 'MMM d, yyyy')}
                   </span>
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="outline"
+                    className="h-8"
+                    disabled={resolvingId === req._id}
+                    onClick={() => void handleResolveRequest(req._id, 'reject', req.category)}
+                  >
+                    Reject
+                  </Button>
+                  <Button
+                    type="button"
+                    size="sm"
+                    className="h-8"
+                    disabled={resolvingId === req._id}
+                    onClick={() => void handleResolveRequest(req._id, 'fulfill', req.category)}
+                  >
+                    {resolvingId === req._id ? (
+                      <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                    ) : (
+                      'Fulfill'
+                    )}
+                  </Button>
                 </div>
               </li>
             ))}

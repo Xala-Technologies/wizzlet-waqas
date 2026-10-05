@@ -1,3 +1,20 @@
+# Findings — Wave 35 account-request fulfillment 2026-10-05
+
+Branch `test/world-ready-wave-35-account-request-fulfillment`. Fixtures `j4member` / throwaway `j35del` on `combative-mongoose-559`.
+
+| Step | Result | Evidence |
+|------|--------|----------|
+| Admin fulfill email | PASS | `/admin/users` Fulfill → `j4member+wave12@example.com`; password `providerAccountId` rotated |
+| Login after rotate | PASS | Sign-in with new email + `Wave9Pass1!` → `/dashboard` “Good morning, j4member” |
+| Admin reject deletion | PASS | Rejected open `j6oauth` deletion (fixture preserved) |
+| Throwaway deletion request | PASS | `j35del+wave35` Settings → Request deletion → open |
+| Admin fulfill deletion | PASS | Auth/roles stripped; email `deleted+…@prizelet.invalid`; name **Deleted user**; request **fulfilled** |
+| Unit | PASS | `accountRequests.security.test.ts` 3/3 |
+
+**Account-request fulfillment residual:** PASS for admin fulfill/reject. Next: Connect transfers; X OAuth consent; self-serve verified email OTP (not claimed).
+
+---
+
 # Findings — Wave 34 referral commission accrual 2026-10-05
 
 Branch `test/world-ready-wave-34-referral-commission`. Fixtures `j2creator` + `j6commwave34` on `combative-mongoose-559`.

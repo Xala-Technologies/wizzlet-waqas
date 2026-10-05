@@ -655,7 +655,7 @@ const CustomerSettings = () => {
           <DialogHeader>
             <DialogTitle>Request email change</DialogTitle>
             <DialogDescription>
-              Sign-in email cannot be changed in-app. Support will fulfill this manually.
+              Submit a request — admins fulfill email changes from the Users queue (not instant self-serve).
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-3 py-2">
