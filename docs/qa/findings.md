@@ -1,3 +1,20 @@
+# Findings — Wave 63 products/growth/events/bookmarks caps 2026-10-05
+
+Branch `fix/world-ready-wave-63-products-growth-events-caps`. Convex soak on `combative-mongoose-559`.
+
+| Step | Result | Evidence |
+|------|--------|----------|
+| Products | PASS | `listPublicByCreator` / `listByCreator` / sibling upsert takes (no `.collect`) |
+| Growth | PASS | links/promos/referrals list + referral dedupe takes |
+| Events | PASS | `listPublishedToday` published+startsAt range `.take`; seedTodayDev existence take(1) |
+| Bookmarks | PASS | saved posts + creator bookmarks lists capped |
+| Data soak | PASS | products **7**, links **2**, promos **3**, referrals **3**, events **6**, savedPosts **1**, bookmarks **1** |
+| Unit | PASS | `productsGrowthEventsCap.security.test.ts` 2/2 |
+
+**Residual:** Connect KYC/currency; referral cash outside Stripe; email OTP (no mailer); residual `.collect` in discord/accountRequests/entitlements/notify/auth/stripeDb/migrations/sandbox/growthAttribution.
+
+---
+
 # Findings — Wave 62 support/resolution/inbox caps 2026-10-05
 
 Branch `fix/world-ready-wave-62-support-resolution-caps`. Convex soak on `combative-mongoose-559`.

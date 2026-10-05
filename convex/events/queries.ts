@@ -1,6 +1,7 @@
 import { mutation, query } from "../_generated/server";
 import { ConvexError, v } from "convex/values";
 import { requireAdmin, requireAppUser } from "../lib/auth";
+import { ADMIN_SCAN_MAX_DOCS } from "../lib/adminLists";
 import { sportEventDocValidator } from "../lib/validators";
 
 export const listPublishedToday = query({
@@ -12,11 +13,16 @@ export const listPublishedToday = query({
   handler: async (ctx, args) => {
     const rows = await ctx.db
       .query("sportEvents")
-      .withIndex("by_published_startsAt", (q) => q.eq("isPublished", true))
-      .collect();
-    return rows
-      .filter((e) => e.startsAt >= args.fromMs && e.startsAt < args.toMs)
-      .sort((a, b) => b.priority - a.priority || a.startsAt - b.startsAt);
+      .withIndex("by_published_startsAt", (q) =>
+        q
+          .eq("isPublished", true)
+          .gte("startsAt", args.fromMs)
+          .lt("startsAt", args.toMs),
+      )
+      .take(ADMIN_SCAN_MAX_DOCS);
+    return rows.sort(
+      (a, b) => b.priority - a.priority || a.startsAt - b.startsAt,
+    );
   },
 });
 
@@ -39,14 +45,16 @@ export const seedTodayDev = mutation({
     }
     await requireAppUser(ctx);
 
-    const published = await ctx.db
+    const today = await ctx.db
       .query("sportEvents")
-      .withIndex("by_published_startsAt", (q) => q.eq("isPublished", true))
-      .collect();
-    const todayCount = published.filter(
-      (e) => e.startsAt >= args.fromMs && e.startsAt < args.toMs,
-    ).length;
-    if (todayCount > 0) {
+      .withIndex("by_published_startsAt", (q) =>
+        q
+          .eq("isPublished", true)
+          .gte("startsAt", args.fromMs)
+          .lt("startsAt", args.toMs),
+      )
+      .take(1);
+    if (today.length > 0) {
       return { inserted: 0, skipped: true };
     }
 
