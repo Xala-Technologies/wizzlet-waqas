@@ -1,3 +1,18 @@
+# Findings — Wave 29 J6 paid referral attribution 2026-10-05
+
+Branch `test/world-ready-wave-29-j6-referral-attribution`. Fixtures `j2creator` + `j6refwave29` / `j6ref+wave29@example.com` on `combative-mongoose-559`.
+
+| Step | Result | Evidence |
+|------|--------|----------|
+| Referral code | PASS | `/creator/referrals?demo=0` ensured `j2creator-jn73sz` |
+| Signup `?ref=` | PASS | Banner “Referred with code j2creator-jn73sz”; row `converted: false` |
+| Paid convert | PASS | Checkout `cs_test_a1a8xUI…` WAVE24 → `converted: true`, `commissionEarnedCents: 0` |
+| Creator UI | PASS | Total referrals **1** / New subscribers **1**; row **Approved**; revenue/commission **—**; “Commission cash payouts are not configured yet.” |
+
+**J6 paid conversion attribution residual:** PASS. Commission cash remains P2 TBD. Next: Connect live transfers; X OAuth; link `conversions` wiring.
+
+---
+
 # Findings — Wave 28 J7 multi-role switcher + OAuth residual 2026-10-05
 
 Branch `test/world-ready-wave-28-j7-multi-role`. Fixture `j2creator` / `j2creator+wave7@example.com` on `combative-mongoose-559`.
