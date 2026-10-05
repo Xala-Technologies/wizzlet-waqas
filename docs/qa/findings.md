@@ -1,3 +1,17 @@
+# Findings — Wave 45 alertsOverview indexed buckets 2026-10-05
+
+Branch `fix/world-ready-wave-45-alerts-overview-indexes`. Admin soak `admin@prizelet.dev` on `combative-mongoose-559`.
+
+| Step | Result | Evidence |
+|------|--------|----------|
+| Query | PASS | `alertsOverview` status/published indexes; no `adminScanAll`; support unread newest-capped |
+| Unit | PASS | `alertsOverview.security.test.ts` 1/1 |
+| UI soak | PASS | `/admin/alerts` Critical **1** (open cases) + Warning **6** unread; View Cases → **WAVE9 J4 payout hold**; Growth Inbox threads present |
+
+**Residual:** finance/dashboard `adminScanAll`; Connect transfers; email OTP.
+
+---
+
 # Findings — Wave 44 customersOverview status indexes 2026-10-05
 
 Branch `fix/world-ready-wave-44-customers-overview-status`. Admin soak `admin@prizelet.dev` on `combative-mongoose-559`.
