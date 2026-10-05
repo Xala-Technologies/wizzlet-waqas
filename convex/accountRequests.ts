@@ -4,6 +4,7 @@ import type { MutationCtx } from "./_generated/server";
 import type { Doc, Id } from "./_generated/dataModel";
 import { internal } from "./_generated/api";
 import { getCreatorForUser, requireAdmin, requireAppUser, logMutation } from "./lib/auth";
+import { ADMIN_SCAN_MAX_DOCS } from "./lib/adminLists";
 
 const accountRequestDocValidator = v.object({
   _id: v.id("accountRequests"),
@@ -23,12 +24,12 @@ async function clearAuthSessions(ctx: MutationCtx, userId: Id<"users">) {
   const sessions = await ctx.db
     .query("authSessions")
     .withIndex("userId", (q) => q.eq("userId", userId))
-    .collect();
+    .take(ADMIN_SCAN_MAX_DOCS);
   for (const session of sessions) {
     const refreshTokens = await ctx.db
       .query("authRefreshTokens")
       .withIndex("sessionId", (q) => q.eq("sessionId", session._id))
-      .collect();
+      .take(ADMIN_SCAN_MAX_DOCS);
     for (const token of refreshTokens) {
       await ctx.db.delete(token._id);
     }
@@ -54,7 +55,7 @@ async function stripUserRoles(ctx: MutationCtx, userId: Id<"users">) {
   const roles = await ctx.db
     .query("userRoles")
     .withIndex("by_userId", (q) => q.eq("userId", userId))
-    .collect();
+    .take(ADMIN_SCAN_MAX_DOCS);
   for (const role of roles) {
     await ctx.db.delete(role._id);
   }
@@ -129,7 +130,7 @@ async function fulfillAccountDeletion(
   const activeSubs = await ctx.db
     .query("subscriptions")
     .withIndex("by_userId", (q) => q.eq("userId", req.userId))
-    .collect();
+    .take(ADMIN_SCAN_MAX_DOCS);
   const stripeSubscriptionIds: string[] = [];
   for (const sub of activeSubs) {
     if (sub.status === "active" || sub.billingStatus === "cancel_pending") {
@@ -195,7 +196,7 @@ export const requestEmailChange = mutation({
       .withIndex("by_userId_category", (q) =>
         q.eq("userId", user._id).eq("category", "email_change"),
       )
-      .collect();
+      .take(ADMIN_SCAN_MAX_DOCS);
     const alreadyOpen = open.find((r) => r.status === "open");
     if (alreadyOpen) {
       throw new Error("REQUEST_ALREADY_OPEN");
@@ -234,7 +235,7 @@ export const requestAccountDeletion = mutation({
       .withIndex("by_userId_category", (q) =>
         q.eq("userId", user._id).eq("category", "account_deletion"),
       )
-      .collect();
+      .take(ADMIN_SCAN_MAX_DOCS);
     const alreadyOpen = open.find((r) => r.status === "open");
     if (alreadyOpen) {
       throw new Error("REQUEST_ALREADY_OPEN");
@@ -267,7 +268,7 @@ export const listMine = query({
     return ctx.db
       .query("accountRequests")
       .withIndex("by_userId", (q) => q.eq("userId", user._id))
-      .collect();
+      .take(ADMIN_SCAN_MAX_DOCS);
   },
 });
 

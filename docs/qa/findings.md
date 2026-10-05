@@ -1,3 +1,19 @@
+# Findings — Wave 64 notify/discord/auth/accountRequests caps 2026-10-05
+
+Branch `fix/world-ready-wave-64-notify-entitlements-discord-caps`. Convex soak on `combative-mongoose-559`.
+
+| Step | Result | Evidence |
+|------|--------|----------|
+| Notify / entitlements / growthAttribution | PASS | role fanout, unread-by-link, sub entitlement, referral convert — `.take` |
+| Auth | PASS | `listRolesForUser` + `hasContentAccess` capped |
+| Discord | PASS | queries/mutations/grants indexed takes (no `.collect`) |
+| Account requests | PASS | listMine + open-request + fulfill session/role/sub clears capped |
+| Unit | PASS | `notifyDiscordAuthCap.security.test.ts` 2/2 |
+
+**Residual:** Connect KYC/currency; referral cash outside Stripe; email OTP (no mailer); residual `.collect` only in `stripeDb` / sandbox / migrations counts.
+
+---
+
 # Findings — Wave 63 products/growth/events/bookmarks caps 2026-10-05
 
 Branch `fix/world-ready-wave-63-products-growth-events-caps`. Convex soak on `combative-mongoose-559`.
