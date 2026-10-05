@@ -1,3 +1,20 @@
+# Findings — Wave 34 referral commission accrual 2026-10-05
+
+Branch `test/world-ready-wave-34-referral-commission`. Fixtures `j2creator` + `j6commwave34` on `combative-mongoose-559`.
+
+| Step | Result | Evidence |
+|------|--------|----------|
+| Signup `?ref=` | PASS | Banner “Referred with code j2creator-jn73sz” |
+| Paid convert | PASS | Checkout `cs_test_a1hmxS…` WAVE24 |
+| Commission accrue | PASS | Referrals row `j6comm+wave34` **$1.49**; Rewards paid **$1**; rate **10%** |
+| Honesty | PASS | Accrues on pay; cash payout still manual/Connect |
+| Admin rate | PASS | Platform Settings “Referral commission (%)” |
+| Unit | PASS | `referralCommission.test.ts` 3/3 + growthAttribution commission guard |
+
+**Commission accrual residual:** PASS. Next: Connect transfers; X OAuth consent.
+
+---
+
 # Findings — Wave 33 creatorLinks paid conversions 2026-10-05
 
 Branch `test/world-ready-wave-33-link-conversions`. Fixtures `j2creator` + `j4member+wave9` on `combative-mongoose-559`.

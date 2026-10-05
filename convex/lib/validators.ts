@@ -440,6 +440,7 @@ export const platformSettingsDocValidator = v.object({
   introFeePercent: v.number(),
   standardFeePercent: v.number(),
   introFeeDays: v.number(),
+  referralCommissionPercent: v.optional(v.number()),
   branding: v.optional(v.any()),
   payoutDefaults: v.optional(v.any()),
   featureFlags: v.optional(v.any()),

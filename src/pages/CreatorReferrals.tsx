@@ -57,6 +57,7 @@ import {
 import { initialsFromName } from '@/lib/creatorSubscribersDemo';
 import { copyToClipboard } from '@/lib/clipboard';
 import { kpiIconTone, resultPillTone } from '@/lib/kpiIconTones';
+import { normalizeReferralCommissionPercent } from '../../convex/lib/referralCommission';
 import { cn } from '@/lib/utils';
 
 const PAGE_SIZE = 10;
@@ -113,6 +114,7 @@ const CreatorReferrals = () => {
 
   const { creator, loading: creatorLoading } = useCreatorProfile();
   const liveReferrals = useQuery(api.creators.growth.listMyReferrals);
+  const platformSettings = useQuery(api.platform.mutations.get);
   const updateSettings = useMutation(api.creators.queries.updateSettings);
   const [code, setCode] = useState<string | null>(null);
   const [savingCode, setSavingCode] = useState(false);
@@ -172,7 +174,7 @@ const CreatorReferrals = () => {
       referredEmail: r.referredEmail ?? null,
       plan: '—',
       revenueCents: 0,
-      commissionCents: 0,
+      commissionCents: r.commissionEarnedCents ?? 0,
       status: (r.converted ? 'approved' : 'pending') as DemoReferralStatus,
       createdAtMs: r.createdAt,
       isDemo: false,
@@ -206,6 +208,15 @@ const CreatorReferrals = () => {
     [rows],
   );
 
+  const accruedCommissionCents = useMemo(
+    () => rows.reduce((sum, r) => sum + (r.commissionCents > 0 ? r.commissionCents : 0), 0),
+    [rows],
+  );
+
+  const liveCommissionRatePct = normalizeReferralCommissionPercent(
+    platformSettings?.referralCommissionPercent,
+  );
+
   const metrics = useDemo
     ? CREATOR_REFERRALS_DEMO_METRICS
     : {
@@ -215,11 +226,10 @@ const CreatorReferrals = () => {
         newSubscribersDelta: null as number | null,
         revenueCents: 0,
         revenueDelta: null as number | null,
-        rewardsPaidCents: 0,
+        rewardsPaidCents: accruedCommissionCents,
         rewardsPaidDelta: null as number | null,
         dateRangeLabel: 'Last 30 days',
-        // Commission cash rules are not persisted yet — never show demo rates as live.
-        commissionRatePct: null as number | null,
+        commissionRatePct: liveCommissionRatePct,
         cookieDays: null as number | null,
         minPayoutCents: null as number | null,
       };
@@ -698,7 +708,7 @@ const CreatorReferrals = () => {
             <p className="mb-4 text-sm text-muted-foreground">
               {useDemo
                 ? 'Sample program rules for design review.'
-                : 'Attribution links work now. Commission cash payouts are not configured yet.'}
+                : 'Commission accrues when a referred fan pays. Cash payout still uses the manual / Connect payout path.'}
             </p>
             <dl className="space-y-3 text-sm">
               <div className="flex items-center justify-between gap-3">
@@ -724,8 +734,9 @@ const CreatorReferrals = () => {
               type="button"
               className="mt-4 min-h-11 w-full rounded-xl"
               onClick={() =>
-                toast.message('Settings editor coming soon', {
-                  description: 'Commission and payout rules will be editable here.',
+                toast.message('Platform-owned rates', {
+                  description:
+                    'Referral commission percent is set by admins under Platform Settings.',
                 })
               }
             >

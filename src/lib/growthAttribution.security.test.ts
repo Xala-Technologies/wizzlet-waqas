@@ -13,4 +13,10 @@ describe('growthAttribution security', () => {
     expect(src).toMatch(/link\.creatorId === args\.creatorId/);
     expect(src).toMatch(/conversions:\s*link\.conversions \+ 1/);
   });
+
+  it('accrues referral commissionEarnedCents from amountCents × platform rate', () => {
+    expect(src).toMatch(/commissionEarnedCents:\s*commissionCents/);
+    expect(src).toMatch(/referralCommissionCents/);
+    expect(src).toMatch(/amountCents/);
+  });
 });

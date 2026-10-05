@@ -438,6 +438,8 @@ export default defineSchema({
     introFeePercent: v.number(),
     standardFeePercent: v.number(),
     introFeeDays: v.number(),
+    /** Creator referral commission on referred paid subscribe (0–100). Optional for legacy rows. */
+    referralCommissionPercent: v.optional(v.number()),
     branding: v.optional(v.any()),
     payoutDefaults: v.optional(v.any()),
     featureFlags: v.optional(v.any()),
