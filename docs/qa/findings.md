@@ -1,3 +1,17 @@
+# Findings — Wave 50 feesOverview indexed active fees 2026-10-05
+
+Branch `fix/world-ready-wave-50-fees-overview-indexes`. Admin soak `admin@prizelet.dev` on `combative-mongoose-559`.
+
+| Step | Result | Evidence |
+|------|--------|----------|
+| Query | PASS | `feesOverview` `takeSubsByStatus(active)` + `db.get` names; no `adminScanAll` |
+| Unit | PASS | `feesOverview.security.test.ts` 1/1 |
+| UI soak | PASS | `/admin/fees` Volume **$69.95**, Fees **$3.50**, Creator **$66.45**, Active **5** (intro 5 / standard 0); j2creator 4 subs **$3.00**, QA Creator W3 **$0.50** |
+
+**Residual:** Connect KYC/currency; announcement audience + payoutsOverview scans.
+
+---
+
 # Findings — Wave 49 Connect Transfer action 2026-10-05
 
 Branch `feat/world-ready-wave-49-connect-transfers`. Admin soak `admin@prizelet.dev`; creator `j2creator` Express `acct_1UN8ktRyfauxBCWX` (`payouts_enabled: false`). Platform Stripe available **NOK 255.32**.
