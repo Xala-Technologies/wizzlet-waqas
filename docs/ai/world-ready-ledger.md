@@ -2,7 +2,7 @@
 
 **Authority:** [`docs/ai/prizelet-world-ready-master-prompt.md`](./prizelet-world-ready-master-prompt.md)
 
-**Status:** Wave 46 financeOverview status-indexed aggregates 2026-10-05. Product is **not** world-ready.
+**Status:** Wave 47 dashboardStats indexed money/cases 2026-10-05. Product is **not** world-ready.
 
 Do not claim world-ready until Section 8 gates in the master prompt pass.
 
@@ -16,7 +16,9 @@ Do not claim world-ready until Section 8 gates in the master prompt pass.
 | Evidence | branch, date, one-line actual vs expected |
 | Waiver | owner + reason (required if WAIVED) |
 
-Last updated: 2026-10-05. Last wave: **46** (`fix/world-ready-wave-46-finance-overview-indexes`). Source pin: `bf85281` (inventory).
+Last updated: 2026-10-05. Last wave: **47** (`fix/world-ready-wave-47-dashboard-stats-indexes`). Source pin: `bf85281` (inventory).
+
+Wave 47: `dashboardStats` uses status indexes for active subs, paid/completed payouts, open cases; users/creators/events still capped scans for counts. Units `dashboardStats.security.test.ts` 1/1.
 
 Wave 46: `financeOverview` status-indexed subs/payouts; creator names via `db.get`; recent 8 newest. Units `financeOverview.security.test.ts` 1/1.
 
@@ -110,7 +112,7 @@ PASS below is **anonymous → `/login`**, not an authenticated admin session.
 
 | Route | Page | Roles | Persistence | Result | Evidence |
 |-------|------|-------|-------------|--------|----------|
-| `/admin` | AdminDashboard | admin | convex | PASS | Wave 2 chromium surface smoke 2026-10-04; inventory pin bf85281 |
+| `/admin` | AdminDashboard | admin | convex | PASS | Wave 47: indexed dashboardStats money/cases; Wave 2 smoke |
 | `/admin/creators` | AdminCreators | admin | convex | PASS | Wave 2 chromium surface smoke 2026-10-04; inventory pin bf85281 |
 | `/admin/users` | AdminUsers | admin | convex | PASS | Wave 37: multi-role pills — `j2creator+wave7` **CREATOR**+**SUBSCRIBER**; Wave 16 load; Wave 2 smoke |
 | `/admin/customers` | AdminCustomers | admin | convex | PASS | Wave 43: `listCustomersPage` native paginate + indexed `by_userId` joins; Wave 2 smoke |
@@ -206,7 +208,7 @@ Nested layouts in `App.tsx`: `/demo/admin` → `DemoAdminLayout`; `/demo/member`
 | F-005 public migration mutations | PASS | Wave 1: importBatch/load are internalMutation |
 | F-009 / J5 payout reserved vs paid | PASS | Wave 1: payoutBalance.test.ts 5/5. Live UI Wave 2 |
 | F-010 webhook soak / Connect | PASS | Wave 18 webhook soak. Wave 42: Express onboarding wired; account create BLOCKED until Stripe Connect is enabled on the platform account. Transfers still unimplemented. |
-| F-012 admin full-table scans | PASS | Wave 46: financeOverview status buckets. Wave 45 alerts. Wave 44 customers. Dashboard `dashboardStats` still `adminScanAll` |
+| F-012 admin full-table scans | PASS | Wave 47: dashboardStats indexed money/cases (users/creators/events still capped). Waves 43–46 list/customers/alerts/finance |
 | F-015 lint / tsc | PASS | Wave 3: `npx tsc -b` exit 0; lint still 0 errors / 28 warnings |
 
 ## J. Public Convex API coverage (Wave 0 freeze)
@@ -242,7 +244,7 @@ App public functions (`Auth` = TBD until Wave 1):
 | `admin.paginatedLists.listTransactionsPage` | TBD | yes | NOT_RUN | frozen vs convex/*.ts @ bf85281 |
 | `admin.paginatedLists.listUsersPage` | admin | yes | PASS | Wave 37: `roles[]` sorted display; soak `j2creator` dual pills; Wave 16 load |
 | `admin.queries.createEmailCampaign` | TBD | yes | NOT_RUN | frozen vs convex/*.ts @ bf85281 |
-| `admin.queries.dashboardStats` | TBD | yes | NOT_RUN | frozen vs convex/*.ts @ bf85281 |
+| `admin.queries.dashboardStats` | admin | yes | PASS | Wave 47: active/payout/case indexes; users/creators/events capped |
 | `admin.queries.listCampaigns` | TBD | yes | NOT_RUN | frozen vs convex/*.ts @ bf85281 |
 | `admin.queries.listUsers` | TBD | yes | NOT_RUN | frozen vs convex/*.ts @ bf85281 |
 | `admin.queries.previewAnnouncementAudience` | TBD | yes | NOT_RUN | frozen vs convex/*.ts @ bf85281 |
@@ -446,6 +448,6 @@ Schema `appRole` also allows `moderator` and `user` (not product actors; no rout
 ## M. Remaining risk (update every fix PR)
 
 - P2: Stripe Connect Express onboarding wired (Wave 42) but platform Stripe account does not have Connect enabled (`STRIPE_CONNECT_NOT_ENABLED`); live transfers still unimplemented; referral cash still outside Stripe; member self-serve verified email OTP still missing; historical migration data parity BLOCKED (greenfield)
-- P3: admin user/creator spend metrics cap at 200 indexed rows; dashboardStats still scan ≤5k; eslint warnings; AuthContext DEV `hasRole` leftover; customers/alerts/finance overviews PASS (Wave 43–46)
+- P3: admin user/creator spend metrics cap at 200 indexed rows; dashboardStats still caps users/creators/events at 5k for counts; eslint warnings; AuthContext DEV `hasRole` leftover; customers/alerts/finance/dashboard money KPIs PASS (Wave 43–47)
 - Not in this PR: production deploy, live Stripe keys, MFA
 - Waivers: see section L

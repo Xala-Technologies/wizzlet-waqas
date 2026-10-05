@@ -1,3 +1,17 @@
+# Findings — Wave 47 dashboardStats indexed money/cases 2026-10-05
+
+Branch `fix/world-ready-wave-47-dashboard-stats-indexes`. Admin soak `admin@prizelet.dev` on `combative-mongoose-559`.
+
+| Step | Result | Evidence |
+|------|--------|----------|
+| Query | PASS | `dashboardStats` `takeSubsByStatus(active)` / payouts paid+completed / cases open+pending+in_progress; no `adminScanAll` for those tables |
+| Unit | PASS | `dashboardStats.security.test.ts` 1/1 |
+| UI soak | PASS | `/admin` Active subs **5**, MRR **$70**, paid out **$47**, open cases **1**; recent j4member / j6comm |
+
+**Residual:** users/creators/paymentEvents still capped scans; Connect transfers; email OTP.
+
+---
+
 # Findings — Wave 46 financeOverview status indexes 2026-10-05
 
 Branch `fix/world-ready-wave-46-finance-overview-indexes`. Admin soak `admin@prizelet.dev` on `combative-mongoose-559`.

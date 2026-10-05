@@ -8,7 +8,11 @@ import {
   adminScanAll,
   adminTakeNewest,
 } from "../lib/adminLists";
-import { isPaidOutPayoutStatus } from "../lib/payoutBalance";
+import {
+  takeCasesByStatus,
+  takePayoutsByStatus,
+  takeSubsByStatus,
+} from "../lib/adminIndexedTakes";
 import {
   adminDashboardStatsValidator,
   emailCampaignDocValidator,
@@ -29,36 +33,50 @@ export const dashboardStats = query({
   returns: adminDashboardStatsValidator,
   handler: async (ctx) => {
     await requireAdmin(ctx);
-    // Sequential takes — Convex forbids multiple `.paginate()` calls in one function;
-    // `.take()` is safe across tables, but keep scans sequential for clearer failure modes.
+    const [
+      activeScan,
+      paidScan,
+      completedScan,
+      openCasesScan,
+      pendingCasesScan,
+      inProgressCasesScan,
+    ] = await Promise.all([
+      takeSubsByStatus(ctx, "active"),
+      takePayoutsByStatus(ctx, "paid"),
+      takePayoutsByStatus(ctx, "completed"),
+      takeCasesByStatus(ctx, "open"),
+      takeCasesByStatus(ctx, "pending"),
+      takeCasesByStatus(ctx, "in_progress"),
+    ]);
+    // Counts / monthly signups still need capped table reads (no count index).
     const usersScan = await adminScanAll(ctx, "users");
     const creatorsScan = await adminScanAll(ctx, "creators");
-    const subsScan = await adminScanAll(ctx, "subscriptions");
-    const payoutsScan = await adminScanAll(ctx, "payouts");
-    const casesScan = await adminScanAll(ctx, "resolutionCases");
     const eventsScan = await adminScanAll(ctx, "paymentEvents");
+    const recentSubsRaw = await ctx.db.query("subscriptions").order("desc").take(6);
 
     const users = usersScan.docs;
     const creators = creatorsScan.docs;
-    const subs = subsScan.docs;
-    const payouts = payoutsScan.docs;
-    const cases = casesScan.docs;
     const events = eventsScan.docs;
     const truncated =
+      activeScan.truncated ||
+      paidScan.truncated ||
+      completedScan.truncated ||
+      openCasesScan.truncated ||
+      pendingCasesScan.truncated ||
+      inProgressCasesScan.truncated ||
       usersScan.truncated ||
       creatorsScan.truncated ||
-      subsScan.truncated ||
-      payoutsScan.truncated ||
-      casesScan.truncated ||
       eventsScan.truncated;
 
-    const active = subs.filter((s) => s.status === "active");
-    const paidOutCents = payouts
-      .filter((p) => isPaidOutPayoutStatus(p.status))
-      .reduce((a, b) => a + b.amountCents, 0);
-    const openCases = cases.filter(
-      (c) => c.status === "open" || c.status === "pending" || c.status === "in_progress",
-    ).length;
+    const active = activeScan.docs;
+    const paidOutCents = [...paidScan.docs, ...completedScan.docs].reduce(
+      (a, b) => a + b.amountCents,
+      0,
+    );
+    const openCases =
+      openCasesScan.docs.length +
+      pendingCasesScan.docs.length +
+      inProgressCasesScan.docs.length;
 
     const platformFeesCents = active.reduce((a, b) => a + b.platformFeeCents, 0);
     const totalRevenueCents = active.reduce((a, b) => a + b.amountCents, 0);
@@ -101,7 +119,6 @@ export const dashboardStats = query({
         customers: row.customers,
       }));
 
-    const recentSubsRaw = [...subs].sort((a, b) => b.createdAt - a.createdAt).slice(0, 6);
     const recentSubs = [];
     for (const s of recentSubsRaw) {
       const u = await ctx.db.get(s.userId);
@@ -138,7 +155,6 @@ export const dashboardStats = query({
       activeSubscriptionCount: active.length,
       totalRevenueCents,
       platformFeesCents,
-      // Deprecated synthetic fields — kept for schema compat; not real cash position (D4).
       availableBalanceCents: 0,
       pendingBalanceCents: 0,
       paidOutCents,
