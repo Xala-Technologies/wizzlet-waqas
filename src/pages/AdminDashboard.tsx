@@ -147,7 +147,7 @@ const AdminDashboardInner = () => {
       <DashboardKpiStrip items={kpiItems} variant="clay" className="mb-6 sm:mb-8" />
 
       <div className="mb-6 grid min-w-0 grid-cols-1 gap-4 lg:grid-cols-2 lg:gap-6">
-        <section className={cn(clayCard, 'clay-fill-emerald min-w-0 p-4 sm:p-6')}>
+        <section className={cn(clayCard, 'min-w-0 p-4 sm:p-6')}>
           <h2 className="mb-4 text-base font-extrabold tracking-tight text-foreground">
             Monthly Revenue
           </h2>
@@ -179,7 +179,7 @@ const AdminDashboardInner = () => {
             )}
           </div>
         </section>
-        <section className={cn(clayCard, 'clay-fill-violet min-w-0 p-4 sm:p-6')}>
+        <section className={cn(clayCard, 'min-w-0 p-4 sm:p-6')}>
           <h2 className="mb-4 text-base font-extrabold tracking-tight text-foreground">
             Monthly Platform Fees
           </h2>
@@ -217,9 +217,9 @@ const AdminDashboardInner = () => {
       </div>
 
       <div className="mb-6 grid min-w-0 grid-cols-1 gap-4 lg:grid-cols-2 lg:gap-6">
-        <section className={cn(clayCard, 'clay-fill-sky min-w-0 p-4 sm:p-6')}>
+        <section className={cn(clayCard, 'min-w-0 p-4 sm:p-6')}>
           <h2 className="mb-4 flex items-center gap-2 text-base font-extrabold tracking-tight text-foreground">
-            <Activity className="h-4 w-4 text-sky-600 dark:text-sky-400" aria-hidden />
+            <Activity className="h-4 w-4 text-muted-foreground" aria-hidden />
             Creator & customer growth
           </h2>
           <div className="h-56 min-w-0 w-full">
@@ -260,9 +260,9 @@ const AdminDashboardInner = () => {
             )}
           </div>
         </section>
-        <section className={cn(clayCard, 'clay-fill-amber p-4 sm:p-6')}>
+        <section className={cn(clayCard, 'p-4 sm:p-6')}>
           <h2 className="mb-4 flex items-center gap-2 text-base font-extrabold tracking-tight text-foreground">
-            <CreditCard className="h-4 w-4 text-amber-700 dark:text-amber-400" aria-hidden />
+            <CreditCard className="h-4 w-4 text-muted-foreground" aria-hidden />
             Recent subscriptions
           </h2>
           {stats.recentSubs.length === 0 ? (
@@ -291,9 +291,9 @@ const AdminDashboardInner = () => {
       </div>
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-2 lg:gap-6">
-        <section className={cn(clayCard, 'clay-fill-cyan p-4 sm:p-6')}>
+        <section className={cn(clayCard, 'p-4 sm:p-6')}>
           <h2 className="mb-4 flex items-center gap-2 text-base font-extrabold tracking-tight text-foreground">
-            <UserPlus className="h-4 w-4 text-cyan-700 dark:text-cyan-300" aria-hidden />
+            <UserPlus className="h-4 w-4 text-muted-foreground" aria-hidden />
             Recent creators
           </h2>
           {stats.recentCreators.length === 0 ? (
@@ -312,9 +312,9 @@ const AdminDashboardInner = () => {
             </ul>
           )}
         </section>
-        <section className={cn(clayCard, 'clay-fill-rose p-4 sm:p-6')}>
+        <section className={cn(clayCard, 'p-4 sm:p-6')}>
           <h2 className="mb-4 flex items-center gap-2 text-base font-extrabold tracking-tight text-foreground">
-            <Users className="h-4 w-4 text-rose-600 dark:text-rose-400" aria-hidden />
+            <Users className="h-4 w-4 text-muted-foreground" aria-hidden />
             Recent customers
           </h2>
           {stats.recentCustomers.length === 0 ? (

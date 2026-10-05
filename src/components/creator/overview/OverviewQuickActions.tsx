@@ -11,12 +11,7 @@ export type QuickAction = {
   icon: LucideIcon;
 };
 
-const ACTION_TONES = [
-  kpiIconTone.violet,
-  kpiIconTone.emerald,
-  kpiIconTone.sky,
-  kpiIconTone.amber,
-] as const;
+const ACTION_TONES = [kpiIconTone.primary, kpiIconTone.emerald] as const;
 
 export function OverviewQuickActions({ actions }: { actions: QuickAction[] }) {
   return (

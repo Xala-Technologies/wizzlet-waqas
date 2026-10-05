@@ -1,26 +1,31 @@
 /**
- * Shared colorful icon-tile tones for dashboard KPI cards.
- * Match Creator Overview (violet / emerald / sky / amber) and rotate extras
- * for strips with more than four metrics.
+ * Shared icon-tile tones for dashboard KPI cards.
+ * Brand blues only (primary + soft) — legacy key names kept for call-site stability.
+ * Semantic win/loss/pending colors stay on `resultPillTone`, not KPI tiles.
  */
 
+const brandTile =
+  'bg-[var(--brand-100)] text-[var(--brand-700)] dark:bg-[var(--active-bg)] dark:text-[var(--brand-primary)]';
+
+const brandTileSoft =
+  'bg-[var(--info-soft)] text-[var(--logo-blue)] dark:bg-[var(--active-bg)] dark:text-[var(--brand-primary)]';
+
 export const kpiIconTone = {
-  violet:
-    'bg-violet-500/15 text-violet-700 dark:bg-[var(--active-bg)] dark:text-[var(--brand-primary)]',
-  emerald: 'bg-emerald-500/15 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-400',
-  sky: 'bg-sky-500/15 text-sky-700 dark:bg-sky-500/10 dark:text-sky-400',
-  amber: 'bg-amber-500/15 text-amber-800 dark:bg-amber-500/10 dark:text-amber-400',
-  rose: 'bg-rose-500/15 text-rose-700 dark:bg-rose-500/10 dark:text-rose-400',
-  orange: 'bg-orange-500/15 text-orange-800 dark:bg-orange-500/10 dark:text-orange-400',
-  cyan: 'bg-cyan-500/15 text-cyan-800 dark:bg-cyan-500/10 dark:text-cyan-300',
-  lime: 'bg-lime-500/15 text-lime-800 dark:bg-lime-500/10 dark:text-lime-400',
-  primary: 'bg-primary/15 text-primary',
-  teal: 'bg-teal-500/15 text-teal-800 dark:bg-teal-500/10 dark:text-teal-300',
+  violet: brandTile,
+  emerald: brandTileSoft,
+  sky: brandTile,
+  amber: brandTileSoft,
+  rose: brandTile,
+  orange: brandTileSoft,
+  cyan: brandTile,
+  lime: brandTileSoft,
+  primary: brandTile,
+  teal: brandTileSoft,
 } as const;
 
 export type KpiIconTone = keyof typeof kpiIconTone;
 
-/** Result / status pill classes — same language as overview pick rows. */
+/** Result / status pill classes — semantic colors (not brand KPI tiles). */
 export const resultPillTone = {
   win: 'bg-emerald-500/15 text-emerald-700 border-emerald-500/25 dark:bg-emerald-500/10 dark:text-emerald-400',
   won: 'bg-emerald-500/15 text-emerald-700 border-emerald-500/25 dark:bg-emerald-500/10 dark:text-emerald-400',
@@ -36,7 +41,7 @@ export const resultPillTone = {
   canceled: 'bg-rose-500/15 text-rose-800 border-rose-500/25 dark:bg-rose-500/10 dark:text-rose-400',
   trial: 'bg-amber-500/15 text-amber-800 border-amber-500/25 dark:bg-amber-500/10 dark:text-amber-400',
   vip: 'bg-rose-500/15 text-rose-800 border-rose-500/25 dark:bg-rose-500/10 dark:text-rose-400',
-  premium: 'bg-sky-500/15 text-sky-800 border-sky-500/25 dark:bg-sky-500/10 dark:text-sky-400',
+  premium: 'bg-[var(--brand-100)] text-[var(--brand-700)] border-[var(--brand-200)] dark:bg-[var(--active-bg)] dark:text-[var(--brand-primary)]',
   monthly:
     'bg-[var(--brand-100)] text-[var(--brand-700)] border-[var(--brand-200)] dark:bg-[var(--active-bg)] dark:text-[var(--brand-primary)] dark:border-transparent',
 } as const;
