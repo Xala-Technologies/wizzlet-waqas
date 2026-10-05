@@ -152,13 +152,14 @@ const AdminTransactions = () => {
       <AdminPageHeader
         actions={
           <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto">
-            <div className="relative w-full sm:w-48">
-              <Search className="absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
+            <div className="relative w-full sm:w-56">
+              <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-foreground/45" aria-hidden />
               <Input
-                placeholder="Search loaded…"
+                placeholder="Search transactions…"
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                className="min-h-11 pl-9"
+                className="pl-9"
+                aria-label="Search transactions"
               />
             </div>
             <Select value={statusFilter} onValueChange={onStatusChange}>

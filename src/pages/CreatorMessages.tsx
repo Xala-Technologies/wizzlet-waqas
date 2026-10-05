@@ -922,7 +922,7 @@ const CreatorMessages = () => {
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 placeholder="Search conversations..."
-                className="h-10 rounded-xl border-border bg-muted/30 ps-9"
+                className="h-10 ps-9 text-sm"
               />
             </div>
             <button

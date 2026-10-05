@@ -71,7 +71,7 @@ export function MemberTopBar() {
             onChange={(e) => setQ(e.target.value)}
             placeholder="Search creators, sports, or picks..."
             aria-label="Search creators, sports, or picks"
-            className="h-10 border-border bg-card pl-9 text-sm font-medium shadow-none"
+            className="h-10 pl-9 text-sm font-medium"
           />
         </form>
 
