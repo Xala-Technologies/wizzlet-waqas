@@ -342,8 +342,8 @@ const CreatorPayouts = () => {
       ) : (
         <div className="clay-card mb-6 px-4 py-3.5 text-sm text-muted-foreground sm:px-5">
           Withdrawals update the Prizelet ledger (USD). Admins send approved payouts with a real
-          Stripe Connect Transfer when your Express account can receive payouts and the platform
-          has matching USD available
+          Stripe Connect Transfer when your Express account can receive payouts (matched USD or
+          Stripe-native FX from platform settlement)
           {connectStatus?.stripeAccountId
             ? ` — Express ${connectStatus.stripeAccountId}${
                 connectStatus.payoutsEnabled
@@ -363,7 +363,7 @@ const CreatorPayouts = () => {
             <p className="text-sm font-extrabold tracking-tight text-foreground">Stripe Connect</p>
             <p className="mt-1 text-sm text-muted-foreground">
               {connectStatus?.payoutsEnabled
-                ? 'Express payouts enabled. Approved withdrawals can be sent as Stripe Transfers when platform USD balance covers them.'
+                ? 'Express payouts enabled. Approved withdrawals can be sent as Stripe Transfers (USD available or Stripe-native FX).'
                 : connectStatus?.stripeAccountId
                   ? 'Finish Stripe Express KYC so this account can receive Connect Transfers.'
                   : 'Open Stripe Express onboarding (USD / US Express for today’s ledger). KYC is required before any Transfer.'}
