@@ -105,6 +105,11 @@ const CreatorEarnings = () => {
     realDocCount: 0,
   });
 
+  const earningsTruncation =
+    !useDemo && earnings?.truncated
+      ? `Showing up to ${(earnings.listLimit ?? 0).toLocaleString()} subscription/payment rows — totals may be incomplete at this scale.`
+      : null;
+
   const demoBanner = (useDemo || (showTaxDocs && useTaxDemo)) ? (
     <div className="clay-card mb-6 flex items-start gap-3 bg-[#fbf8f3] px-4 py-3.5 text-amber-950 dark:bg-amber-500/10 dark:text-amber-100 sm:items-center sm:px-5">
       <Sparkles
@@ -115,6 +120,10 @@ const CreatorEarnings = () => {
         Sample preview data — charts and tables are mock content for design review. Add{' '}
         <span className="font-mono text-xs">?demo=0</span> to see empty real states.
       </p>
+    </div>
+  ) : earningsTruncation ? (
+    <div className="clay-card mb-6 px-4 py-3.5 text-sm text-amber-600 dark:text-amber-400 sm:px-5">
+      {earningsTruncation}
     </div>
   ) : null;
 

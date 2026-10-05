@@ -552,6 +552,8 @@ export const creatorEarningsValidator = v.object({
     currentFeePercent: v.number(),
     introDaysLeft: v.number(),
   }),
+  truncated: v.boolean(),
+  listLimit: v.number(),
 });
 
 export const creatorLinkDocValidator = v.object({
