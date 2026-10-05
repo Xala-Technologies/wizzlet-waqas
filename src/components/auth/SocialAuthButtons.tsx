@@ -6,6 +6,7 @@ import { Loader2 } from 'lucide-react';
 import { useState } from 'react';
 import { toast } from 'sonner';
 import { authCallbackUrl, ensureCanonicalAuthOrigin } from '@/lib/authSession';
+import { storeReferralCode } from '@/lib/referralHandoff';
 import { storeReturnTo } from '@/lib/safeReturnPath';
 
 function DiscordMark({ className }: { className?: string }) {
@@ -24,12 +25,15 @@ interface SocialAuthButtonsProps {
   mode?: 'signin' | 'signup';
   /** Optional deep-link path stashed for AuthCallback after OAuth. */
   returnTo?: string | null;
+  /** Optional creator referral code (`?ref=`) stashed for AuthCallback after OAuth. */
+  referralCode?: string | null;
 }
 
 export function SocialAuthButtons({
   redirectTo = '/auth/callback',
   mode = 'signin',
   returnTo = null,
+  referralCode = null,
 }: SocialAuthButtonsProps) {
   const { signIn } = useAuthActions();
   const available = useQuery(api.authProviders.socialProviders);
@@ -41,6 +45,7 @@ export function SocialAuthButtons({
       // PKCE verifier is origin-scoped; OAuth must start and finish on SITE_URL.
       if (ensureCanonicalAuthOrigin()) return;
       storeReturnTo(returnTo);
+      storeReferralCode(referralCode);
       // Must match Convex SITE_URL (see VITE_SITE_URL) — not the random Vite preview port.
       await signIn(provider, { redirectTo: authCallbackUrl(redirectTo) });
     } catch (err) {

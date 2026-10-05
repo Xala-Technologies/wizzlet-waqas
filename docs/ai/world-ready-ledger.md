@@ -2,7 +2,7 @@
 
 **Authority:** [`docs/ai/prizelet-world-ready-master-prompt.md`](./prizelet-world-ready-master-prompt.md)
 
-**Status:** Wave 29 J6 paid referral attribution 2026-10-05. Product is **not** world-ready (other P2s remain).
+**Status:** Wave 30 OAuth referral handoff + links honesty 2026-10-05. Product is **not** world-ready (other P2s remain).
 
 Do not claim world-ready until Section 8 gates in the master prompt pass.
 
@@ -16,13 +16,13 @@ Do not claim world-ready until Section 8 gates in the master prompt pass.
 | Evidence | branch, date, one-line actual vs expected |
 | Waiver | owner + reason (required if WAIVED) |
 
-Last updated: 2026-10-05. Last wave: **29** (`test/world-ready-wave-29-j6-referral-attribution`). Source pin: `bf85281` (inventory).
+Last updated: 2026-10-05. Last wave: **30** (`test/world-ready-wave-30-oauth-ref-x`). Source pin: `bf85281` (inventory).
 
-Wave 29: signup `?ref=j2creator-jn73sz` → pending referral; Stripe Checkout `cs_test_a1a8xUI…` WAVE24 → `converted: true` / `commissionEarnedCents: 0`; CreatorReferrals **Approved** with revenue/commission **—**.
+Wave 30: OAuth `?ref=` handoff via `prizelet.referralCode` sessionStorage; Discord click stores code; AuthCallback applies `recordReferralByCode` (`j6oauth+wave30` → pending under j2creator). Creator Links honesty: paid conversions not attributed yet. X OAuth consent still not browser-completed (provider configured `twitter: true`).
 
-Wave 28: admin `grantRole` subscriber on `j2creator` → RoleSwitcher Member↔Creator. Discord AuthCallback residual closed via Wave 27.
+Wave 29: signup `?ref=` → Stripe convert PASS.
 
-Wave 27: Discord bot install + grant/revoke PASS.
+Wave 28: multi-role switcher PASS. Wave 27: J-DISCORD PASS.
 
 ---
 
@@ -41,7 +41,7 @@ Wave 27: Discord bot install + grant/revoke PASS.
 | `/community` | Community | anonymous | public | PASS | Wave 2 chromium surface smoke 2026-10-04; inventory pin bf85281 |
 | `/login` | Login | anonymous | convex | PASS | Wave 2 chromium surface smoke 2026-10-04; inventory pin bf85281 |
 | `/signup` | Signup | anonymous | convex | PASS | Wave 2 chromium surface smoke 2026-10-04; inventory pin bf85281 |
-| `/auth/callback` | AuthCallback | anonymous | convex | PASS | Wave 27/28: Discord OAuth `prize262626` Continue with Discord → subscriber session; Wave 2 surface smoke |
+| `/auth/callback` | AuthCallback | anonymous | convex | PASS | Wave 30: applies stashed `prizelet.referralCode` → referral row; Wave 27 Discord OAuth finish |
 | `/select-role` | SelectRole | authenticated no role | convex | PASS | Wave 2 chromium surface smoke 2026-10-04; inventory pin bf85281 |
 | `/subscription/success` | SubscriptionSuccess | subscriber+ | convex | PASS | Wave 2 chromium surface smoke 2026-10-04; inventory pin bf85281 |
 | `/subscription/cancel` | SubscriptionCancel | subscriber+ | public | PASS | Wave 2 chromium surface smoke 2026-10-04; inventory pin bf85281 |
@@ -159,8 +159,8 @@ Nested layouts in `App.tsx`: `/demo/admin` → `DemoAdminLayout`; `/demo/member`
 | J3 | Content access / pick lock / win rate | PASS | Wave 8 owner lock/win-rate; Wave 24 2026-10-05: `j3member` Checkout `cs_test_a13a8w…` ACTIVE → dashboard shows WAVE8_SECRET_BODY; cancel `sub_1UMytH…` → status cancelled, feed empty (no secret); pickTracker settled Win → Result combobox **disabled**. Residual: cancel UI previously lied about period-end (fixed this wave) |
 | J4 | Messages / support / resolution | PASS | Wave 9 2026-10-05: `j4creator`/`j4member` Stripe sub; DM + creator unread/reply; support/resolution/growth admin replies; messaging off deny; cancel → `FORBIDDEN` on send. Unit `messaging.security.test.ts` 6/6. Fix: messaging toggle on populated CreatorMessages inbox. Residual: UI composer still shown when gated (server enforces) |
 | J5 | Payout request / approve / balance | PASS | Wave 10 request/approve; Wave 25 2026-10-05: admin Lifetime from settled `paymentEvents` (cancelled j4member sub still counts) — `j4creator` Lifetime **$28.49** / Paid $28.49. `payoutBalance.test.ts` 6/6. Residual: Connect live transfers still out of scope |
-| J6 | Promo / tracking links / referrals | PASS | Wave 11 promo/links/`?ref=`; Wave 29 2026-10-05: paid conversion soak — `j6ref+wave29` via `j2creator-jn73sz` → Checkout WAVE24 → referral **Approved** / `converted: true`; KPIs revenue/rewards **—**; copy “Commission cash payouts are not configured yet.” Residual: commission cash product TBD; `creatorLinks.conversions` not incremented; OAuth signup drops `?ref=` |
-| J7 | Identity (password, OAuth, roles, email request) | PASS | Wave 12 password/email/roles unit; Wave 27 Discord OAuth callback; Wave 28 2026-10-05: admin grant subscriber on `j2creator` → RoleSwitcher Member↔Creator round-trip. Residual: X/Twitter OAuth not browser-soaked |
+| J6 | Promo / tracking links / referrals | PASS | Wave 11/29 attribution; Wave 30 2026-10-05: OAuth `?ref=` handoff — Discord click stores `j2creator-jn73sz`; AuthCallback → referral for `j6oauth+wave30` (`m571wjav…`); Creator Links copy that paid link conversions stay 0. Residual: commission cash TBD; `creatorLinks.conversions` product (no click→sub attribution surface) |
+| J7 | Identity (password, OAuth, roles, email request) | PASS | Wave 12/27/28; Wave 30 AuthCallback referral apply. Residual: X/Twitter OAuth consent not browser-completed (`socialProviders.twitter: true` but no agent X login) |
 | J8 | Migration ETL internal-only | PASS | Wave 13 2026-10-05: all migration exports `internalMutation`; client has zero import refs; `MIGRATION_SECRET` unset on combative-mongoose-559; `migrations.security.test.ts` 3/3. Residual: historical data parity not claimed |
 | J9 | Public nav + chrome | PASS | Wave 2: public-nav + browser-matrix on chromium/webkit/firefox; platform-owner bootstrap visible in DEV |
 | J-ADMIN | Admin lists, fees, reports, campaigns | PASS | Wave 16 2026-10-05: users/creators paginated; fees analytics; CSV export; campaigns in-app-only honesty; alerts strip |
@@ -434,7 +434,7 @@ Schema `appRole` also allows `moderator` and `user` (not product actors; no rout
 
 ## M. Remaining risk (update every fix PR)
 
-- P2: Stripe Connect live transfers still unimplemented (Wave 22 honesty PASS — ledger/manual only); referral commission cash product TBD; J7 X/Twitter OAuth not browser-soaked; `creatorLinks.conversions` never wired on subscribe; OAuth signup drops `?ref=`; historical migration data parity BLOCKED (greenfield)
+- P2: Stripe Connect live transfers still unimplemented (Wave 22 honesty PASS — ledger/manual only); referral commission cash product TBD; J7 X/Twitter OAuth consent not browser-completed; `creatorLinks.conversions` needs click→subscribe attribution product (honest UI note shipped Wave 30); historical migration data parity BLOCKED (greenfield)
 - P3: admin user/creator spend metrics cap at 200 indexed rows; customer pages scan ≤5k subscriptions; eslint warnings; AuthContext DEV `hasRole` leftover; All Accounts table shows a single primary role even when `userRoles` is multi
 - Not in this PR: production deploy, live Stripe keys, MFA
 - Waivers: see section L

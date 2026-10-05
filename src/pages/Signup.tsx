@@ -281,7 +281,12 @@ const Signup = () => {
         </Button>
       </form>
 
-      <SocialAuthSection redirectTo="/auth/callback" mode="signup" returnTo={returnTo} />
+      <SocialAuthSection
+        redirectTo="/auth/callback"
+        mode="signup"
+        returnTo={returnTo}
+        referralCode={referralCode || null}
+      />
     </AuthShell>
   );
 };
