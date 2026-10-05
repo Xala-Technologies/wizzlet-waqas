@@ -46,6 +46,7 @@ import type * as lib_productFeatured from "../lib/productFeatured.js";
 import type * as lib_productProfileSlots from "../lib/productProfileSlots.js";
 import type * as lib_productRemove from "../lib/productRemove.js";
 import type * as lib_promoCodes from "../lib/promoCodes.js";
+import type * as lib_referralCommission from "../lib/referralCommission.js";
 import type * as lib_results from "../lib/results.js";
 import type * as lib_sandbox from "../lib/sandbox.js";
 import type * as lib_socialAuth from "../lib/socialAuth.js";
@@ -114,6 +115,7 @@ declare const fullApi: ApiFromModules<{
   "lib/productProfileSlots": typeof lib_productProfileSlots;
   "lib/productRemove": typeof lib_productRemove;
   "lib/promoCodes": typeof lib_promoCodes;
+  "lib/referralCommission": typeof lib_referralCommission;
   "lib/results": typeof lib_results;
   "lib/sandbox": typeof lib_sandbox;
   "lib/socialAuth": typeof lib_socialAuth;
