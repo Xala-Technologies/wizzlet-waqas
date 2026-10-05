@@ -7,6 +7,10 @@ import { useAuth } from '@/contexts/AuthContext';
 import { isAppRole, type AppRole } from '@/lib/roles';
 import { useConvexAuthReady, waitForAuthenticated, withAuthRetry } from '@/lib/authSession';
 import {
+  clearStoredReferralCode,
+  readStoredReferralCode,
+} from '@/lib/referralHandoff';
+import {
   clearStoredReturnTo,
   postAuthDestination,
   readStoredReturnTo,
@@ -19,8 +23,8 @@ import { toast } from 'sonner';
 
 /**
  * Landing after X / Discord OAuth. Ensures profile fields, then routes by role
- * (or /select-role for first-time social users). Honors safe returnTo from
- * query or sessionStorage (stashed before leaving for the provider).
+ * (or /select-role for first-time social users). Honors safe returnTo and
+ * referral `?ref=` from sessionStorage (stashed before leaving for the provider).
  */
 const AuthCallback = () => {
   const navigate = useNavigate();
@@ -31,6 +35,7 @@ const AuthCallback = () => {
   const { isLoading: authLoading, isAuthenticated } = useConvexAuth();
   const authReady = useConvexAuthReady();
   const ensureUser = useMutation(api.users.queries.ensureUser);
+  const recordReferralByCode = useMutation(api.creators.growth.recordReferralByCode);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(true);
   const runId = useRef(0);
@@ -76,6 +81,17 @@ const AuthCallback = () => {
       if (id !== runId.current) return;
       await withAuthRetry(() => ensureUser({})).catch(() => undefined);
       if (id !== runId.current) return;
+
+      const referralCode = readStoredReferralCode();
+      if (referralCode) {
+        try {
+          await withAuthRetry(() => recordReferralByCode({ code: referralCode }));
+        } catch {
+          /* attribution is best-effort — do not block OAuth finish */
+        }
+        clearStoredReferralCode();
+      }
+
       clearDevBypass();
       const active = await refreshRole();
       if (id !== runId.current) return;
@@ -109,6 +125,7 @@ const AuthCallback = () => {
     convex,
     ensureUser,
     navigate,
+    recordReferralByCode,
     refreshRole,
     searchParams,
     signIn,

@@ -1,3 +1,19 @@
+# Findings — Wave 30 OAuth referral handoff + links honesty 2026-10-05
+
+Branch `test/world-ready-wave-30-oauth-ref-x`. Fixture `j6oauthwave30` / `j6oauth+wave30@example.com` on `combative-mongoose-559`.
+
+| Step | Result | Evidence |
+|------|--------|----------|
+| Handoff store | PASS | `/signup?ref=j2creator-jn73sz` → Continue with Discord writes `sessionStorage.prizelet.referralCode` |
+| AuthCallback apply | PASS | Stashed code → `recordReferralByCode` → referral `m571wjav…` pending for j6oauth |
+| Unit | PASS | `referralHandoff.test.ts` 4/4 |
+| Links honesty | PASS | Creator Links live copy: paid conversions not attributed yet |
+| X OAuth full consent | Residual | `socialProviders.twitter: true`; agent lacked X login credentials |
+
+**OAuth `?ref=` drop residual:** PASS (fixed). Next: Connect transfers; commission cash; X consent soak; link conversion product.
+
+---
+
 # Findings — Wave 29 J6 paid referral attribution 2026-10-05
 
 Branch `test/world-ready-wave-29-j6-referral-attribution`. Fixtures `j2creator` + `j6refwave29` / `j6ref+wave29@example.com` on `combative-mongoose-559`.

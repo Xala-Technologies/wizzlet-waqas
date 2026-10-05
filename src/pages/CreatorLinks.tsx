@@ -352,7 +352,12 @@ const CreatorLinks = () => {
             <span className="font-mono text-xs">?demo=0</span> to see empty real states.
           </p>
         </div>
-      ) : null}
+      ) : (
+        <p className="mb-4 text-support text-muted-foreground">
+          Clicks are tracked on share. Paid conversions from links are not attributed yet — the
+          column stays at 0 until that product ships.
+        </p>
+      )}
 
       <div className="mb-6 sm:mb-8">
         <DashboardKpiStrip
