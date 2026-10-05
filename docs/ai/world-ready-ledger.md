@@ -2,7 +2,7 @@
 
 **Authority:** [`docs/ai/prizelet-world-ready-master-prompt.md`](./prizelet-world-ready-master-prompt.md)
 
-**Status:** Wave 51 payoutsOverview indexed events/payouts 2026-10-05. Product is **not** world-ready.
+**Status:** Wave 52 announcement audience indexed 2026-10-05. Product is **not** world-ready.
 
 Do not claim world-ready until Section 8 gates in the master prompt pass.
 
@@ -16,7 +16,9 @@ Do not claim world-ready until Section 8 gates in the master prompt pass.
 | Evidence | branch, date, one-line actual vs expected |
 | Waiver | owner + reason (required if WAIVED) |
 
-Last updated: 2026-10-05. Last wave: **51** (`fix/world-ready-wave-51-payouts-overview-indexes`). Source pin: `bf85281` (inventory).
+Last updated: 2026-10-05. Last wave: **52** (`fix/world-ready-wave-52-announcement-audience-indexes`). Source pin: `bf85281` (inventory).
+
+Wave 52: `resolveAnnouncementRecipients` uses sub status indexes (active/canceled/cancelled/…) and creator `by_creatorId` take; All Customers is a capped users read. Soak All **34** / Active **5** / Canceled **8**. Units `announcementAudience.security.test.ts` 1/1.
 
 Wave 51: `payoutsOverview` status-indexed paymentEvents (settled/paid) + payouts; names via `db.get`. Soak `/admin/payouts` Owed **$104.49**, queued **$142.40**, paid **$47.47**. Units `payoutsOverview.security.test.ts` 3/3.
 
@@ -128,7 +130,7 @@ PASS below is **anonymous → `/login`**, not an authenticated admin session.
 | `/admin/transactions` | AdminTransactions | admin | convex | PASS | Wave 2 chromium surface smoke 2026-10-04; inventory pin bf85281 |
 | `/admin/fees` | AdminFees | admin | convex | PASS | Wave 50: indexed active-sub fees; Volume **$69.95** / Fees **$3.50** / 5 intro; Wave 2 smoke |
 | `/admin/creator-messaging` | AdminCreatorMessaging | admin | convex | PASS | Wave 2 chromium surface smoke 2026-10-04; inventory pin bf85281 |
-| `/admin/customer-email` | AdminCustomerEmail | admin | convex | PASS | Wave 2 chromium surface smoke 2026-10-04; inventory pin bf85281 |
+| `/admin/customer-email` | AdminCustomerEmail | admin | convex | PASS | Wave 52: audience preview All **34** / Active **5** / Canceled **8**; Wave 16 in-app only |
 | `/admin/growth-manager-inbox` | AdminGrowthManagerInbox | admin | convex | PASS | Wave 2 chromium surface smoke 2026-10-04; inventory pin bf85281 |
 | `/admin/resolution-cases` | AdminResolutionCases | admin | convex | PASS | Wave 2 chromium surface smoke 2026-10-04; inventory pin bf85281 |
 | `/admin/payouts` | AdminPayouts | admin | convex | PASS | Wave 51: indexed lifetime/in-flight KPIs (Owed **$104.49** / queued **$142.40** / paid **$47.47**); Wave 49 Send via Stripe honesty; Wave 25 Lifetime |
@@ -255,7 +257,7 @@ App public functions (`Auth` = TBD until Wave 1):
 | `admin.queries.dashboardStats` | admin | yes | PASS | Wave 47: active/payout/case indexes; users/creators/events capped |
 | `admin.queries.listCampaigns` | TBD | yes | NOT_RUN | frozen vs convex/*.ts @ bf85281 |
 | `admin.queries.listUsers` | TBD | yes | NOT_RUN | frozen vs convex/*.ts @ bf85281 |
-| `admin.queries.previewAnnouncementAudience` | TBD | yes | NOT_RUN | frozen vs convex/*.ts @ bf85281 |
+| `admin.queries.previewAnnouncementAudience` | admin | yes | PASS | Wave 52: status-indexed recipients; soak All **34** / Active **5** / Canceled **8** |
 | `admin.queries.sendAnnouncement` | TBD | yes | NOT_RUN | frozen vs convex/*.ts @ bf85281 |
 | `admin.snapshots.alertsOverview` | admin | yes | PASS | Wave 45: status/published indexes; support unread newest-capped |
 | `admin.snapshots.customersOverview` | admin | yes | PASS | Wave 44: indexed status takes + cancelled churn |
@@ -456,6 +458,6 @@ Schema `appRole` also allows `moderator` and `user` (not product actors; no rout
 ## M. Remaining risk (update every fix PR)
 
 - P2: Connect Transfer action is live but blocked until Express KYC (`payouts_enabled`) and USD vs NOK platform balance; referral cash still outside Stripe; member self-serve verified email OTP still missing; historical migration data parity BLOCKED (greenfield)
-- P3: admin user/creator spend metrics cap at 200 indexed rows; dashboardStats still caps users/creators/events at 5k for counts; reportSourceData/announcement audience still scan; eslint warnings; AuthContext DEV `hasRole` leftover; customers/alerts/finance/dashboard/fees/payouts KPIs PASS (Wave 43–47, 50–51)
+- P3: admin user/creator spend metrics cap at 200 indexed rows; dashboardStats still caps users/creators/events at 5k for counts; reportSourceData still scans; eslint warnings; AuthContext DEV `hasRole` leftover; customers/alerts/finance/dashboard/fees/payouts/announcement KPIs PASS (Wave 43–47, 50–52)
 - Not in this PR: production deploy, live Stripe keys, MFA
 - Waivers: see section L

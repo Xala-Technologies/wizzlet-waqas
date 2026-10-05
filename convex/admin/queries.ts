@@ -182,50 +182,72 @@ async function resolveAnnouncementRecipients(
   audience: "all" | "active" | "canceled" | "specific",
   creatorId: Id<"creators"> | undefined,
 ): Promise<{ ids: Id<"users">[]; truncated: boolean; label: string }> {
-  const usersScan = await adminScanAll(ctx, "users");
-  const subsScan = await adminScanAll(ctx, "subscriptions");
-  const truncated = usersScan.truncated || subsScan.truncated;
-  const activeUsers = new Set(
-    subsScan.docs.filter((s) => s.status === "active").map((s) => s.userId),
-  );
-
   if (audience === "all") {
+    const users = await ctx.db.query("users").order("desc").take(ADMIN_SCAN_MAX_DOCS);
     return {
-      ids: usersScan.docs.map((u) => u._id),
-      truncated,
+      ids: users.map((u) => u._id),
+      truncated: users.length >= ADMIN_SCAN_MAX_DOCS,
       label: "All Customers",
     };
   }
+
+  if (audience === "specific") {
+    if (!creatorId) {
+      return { ids: [], truncated: false, label: "Customers of creator" };
+    }
+    const creator = await ctx.db.get(creatorId);
+    const label = `Customers of ${creator?.displayName || creator?.username || "creator"}`;
+    const rows = await ctx.db
+      .query("subscriptions")
+      .withIndex("by_creatorId", (q) => q.eq("creatorId", creatorId))
+      .take(ADMIN_SCAN_MAX_DOCS);
+    const ids = [
+      ...new Set(
+        rows.filter((s) => s.status === "active").map((s) => s.userId),
+      ),
+    ];
+    return {
+      ids,
+      truncated: rows.length >= ADMIN_SCAN_MAX_DOCS,
+      label,
+    };
+  }
+
+  const activeScan = await takeSubsByStatus(ctx, "active");
+  const activeUsers = new Set(activeScan.docs.map((s) => s.userId));
   if (audience === "active") {
     return {
       ids: [...activeUsers],
-      truncated,
+      truncated: activeScan.truncated,
       label: "Active Subscribers",
     };
   }
-  if (audience === "canceled") {
-    const canceled = [
-      ...new Set(
-        subsScan.docs
-          .filter((s) => s.status !== "active" && !activeUsers.has(s.userId))
+
+  const inactiveStatuses = [
+    "canceled",
+    "cancelled",
+    "past_due",
+    "failed",
+    "unpaid",
+    "incomplete",
+  ] as const;
+  const inactiveScans = await Promise.all(
+    inactiveStatuses.map((status) => takeSubsByStatus(ctx, status)),
+  );
+  const canceled = [
+    ...new Set(
+      inactiveScans.flatMap((scan) =>
+        scan.docs
+          .filter((s) => !activeUsers.has(s.userId))
           .map((s) => s.userId),
       ),
-    ];
-    return { ids: canceled, truncated, label: "Canceled Subscribers" };
-  }
-  if (!creatorId) {
-    return { ids: [], truncated, label: "Customers of creator" };
-  }
-  const creator = await ctx.db.get(creatorId);
-  const label = `Customers of ${creator?.displayName || creator?.username || "creator"}`;
-  const ids = [
-    ...new Set(
-      subsScan.docs
-        .filter((s) => s.creatorId === creatorId && s.status === "active")
-        .map((s) => s.userId),
     ),
   ];
-  return { ids, truncated, label };
+  return {
+    ids: canceled,
+    truncated: activeScan.truncated || inactiveScans.some((s) => s.truncated),
+    label: "Canceled Subscribers",
+  };
 }
 
 /** Preview recipient count without shipping full ID lists to the client. */
