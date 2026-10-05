@@ -2,6 +2,7 @@ import { ConvexError } from "convex/values";
 import { getAuthUserId } from "@convex-dev/auth/server";
 import type { MutationCtx, QueryCtx } from "../_generated/server";
 import type { Doc, Id } from "../_generated/dataModel";
+import { ADMIN_SCAN_MAX_DOCS } from "./adminLists";
 
 type Ctx = QueryCtx | MutationCtx;
 
@@ -38,7 +39,7 @@ export async function listRolesForUser(ctx: Ctx, userId: Id<"users">): Promise<A
   const rows = await ctx.db
     .query("userRoles")
     .withIndex("by_userId", (q) => q.eq("userId", userId))
-    .collect();
+    .take(ADMIN_SCAN_MAX_DOCS);
   return rows.map((r) => r.role as AppRole);
 }
 
@@ -97,7 +98,7 @@ export async function hasContentAccess(
     .withIndex("by_userId_creatorId", (q) =>
       q.eq("userId", userId).eq("creatorId", creatorId),
     )
-    .collect();
+    .take(ADMIN_SCAN_MAX_DOCS);
   return subs.some((s) => subscriptionGrantsContentAccess(s, nowMs));
 }
 

@@ -1,5 +1,6 @@
 import type { MutationCtx, QueryCtx } from "../_generated/server";
 import type { Id } from "../_generated/dataModel";
+import { ADMIN_SCAN_MAX_DOCS } from "./adminLists";
 
 type Ctx = QueryCtx | MutationCtx;
 
@@ -11,7 +12,7 @@ export async function listUserIdsWithRole(
   const rows = await ctx.db
     .query("userRoles")
     .withIndex("by_role", (q) => q.eq("role", role))
-    .collect();
+    .take(ADMIN_SCAN_MAX_DOCS);
   return [...new Set(rows.map((r) => r.userId))];
 }
 
@@ -71,7 +72,7 @@ export async function markNotificationsReadByLink(
   const unread = await ctx.db
     .query("notifications")
     .withIndex("by_userId_read", (q) => q.eq("userId", args.userId).eq("read", false))
-    .collect();
+    .take(ADMIN_SCAN_MAX_DOCS);
   let updated = 0;
   for (const n of unread) {
     if (!n.link || !n.link.includes(args.linkIncludes)) continue;

@@ -6,6 +6,7 @@ import {
   requireCreatorOwner,
 } from "../lib/auth";
 import { internal } from "../_generated/api";
+import { ADMIN_SCAN_MAX_DOCS } from "../lib/adminLists";
 
 const BOT_PERMISSIONS = 268435457; // Manage Roles + Create Instant Invite
 
@@ -73,7 +74,7 @@ export const disconnect = mutation({
     const products = await ctx.db
       .query("products")
       .withIndex("by_creatorId", (q) => q.eq("creatorId", creator._id))
-      .collect();
+      .take(ADMIN_SCAN_MAX_DOCS);
     for (const p of products) {
       if (p.discordRoleId || p.discordRoleName) {
         await ctx.db.patch(p._id, {
@@ -118,7 +119,7 @@ export const retryMyAccess = mutation({
       .withIndex("by_userId_creatorId", (q) =>
         q.eq("userId", user._id).eq("creatorId", args.creatorId),
       )
-      .collect();
+      .take(ADMIN_SCAN_MAX_DOCS);
     const allowed = subs.some((s) => s.status === "active" || s.status === "past_due");
     if (!allowed) throw new ConvexError("FORBIDDEN");
     await ctx.scheduler.runAfter(0, internal.discord.roles.syncSubscriberRole, {

@@ -2,6 +2,7 @@ import { internalMutation, internalQuery, query } from "../_generated/server";
 import { v } from "convex/values";
 import { getAuthUserId } from "@convex-dev/auth/server";
 import { getCreatorForUser, requireAppUser } from "../lib/auth";
+import { ADMIN_SCAN_MAX_DOCS } from "../lib/adminLists";
 
 function discordClientId(): string | null {
   return (
@@ -128,7 +129,7 @@ export const roleSyncPrep = internalQuery({
         .withIndex("by_userId_creatorId", (q) =>
           q.eq("userId", args.userId).eq("creatorId", args.creatorId),
         )
-        .collect();
+        .take(ADMIN_SCAN_MAX_DOCS);
       const active =
         subs.find((s) => s.status === "active" || s.status === "past_due") ?? subs[0];
       productId = active?.productId;
@@ -195,7 +196,7 @@ export const memberAccess = query({
       .withIndex("by_userId_creatorId", (q) =>
         q.eq("userId", userId).eq("creatorId", creator._id),
       )
-      .collect();
+      .take(ADMIN_SCAN_MAX_DOCS);
     const sub = subs.find((s) => s.status === "active" || s.status === "past_due");
     if (!sub) return { includesDiscord: false as const };
 
@@ -214,7 +215,7 @@ export const memberAccess = query({
       .withIndex("by_userId_creatorId", (q) =>
         q.eq("userId", userId).eq("creatorId", creator._id),
       )
-      .collect();
+      .take(ADMIN_SCAN_MAX_DOCS);
     const grant = grants[0];
     return {
       includesDiscord: true as const,
@@ -253,7 +254,7 @@ export const hasActiveAccess = internalQuery({
       .withIndex("by_userId_creatorId", (q) =>
         q.eq("userId", args.userId).eq("creatorId", args.creatorId),
       )
-      .collect();
+      .take(ADMIN_SCAN_MAX_DOCS);
     return subs.some((s) => s.status === "active" || s.status === "past_due");
   },
 });

@@ -2,6 +2,7 @@ import type { Doc, Id } from "../_generated/dataModel";
 import type { QueryCtx } from "../_generated/server";
 import { hasContentAccess, userHasRole } from "./auth";
 import { subscriptionGrantsContentAccess } from "./contentAccess";
+import { ADMIN_SCAN_MAX_DOCS } from "./adminLists";
 
 /**
  * Premium post entitlement.
@@ -40,7 +41,7 @@ export async function canViewPostContent(
     .withIndex("by_userId_creatorId", (q) =>
       q.eq("userId", user._id).eq("creatorId", post.creatorId),
     )
-    .collect();
+    .take(ADMIN_SCAN_MAX_DOCS);
 
   return subs.some(
     (s) =>

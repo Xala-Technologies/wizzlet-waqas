@@ -1,6 +1,7 @@
 import { internalMutation, internalQuery } from "../_generated/server";
 import { v } from "convex/values";
 import type { Id } from "../_generated/dataModel";
+import { ADMIN_SCAN_MAX_DOCS } from "../lib/adminLists";
 
 const grantStatus = v.union(
   v.literal("pending"),
@@ -29,13 +30,13 @@ export const upsertGrant = internalMutation({
           .withIndex("by_userId_productId", (q) =>
             q.eq("userId", args.userId).eq("productId", args.productId),
           )
-          .collect()
+          .take(ADMIN_SCAN_MAX_DOCS)
       : await ctx.db
           .query("discordAccessGrants")
           .withIndex("by_userId_creatorId", (q) =>
             q.eq("userId", args.userId).eq("creatorId", args.creatorId),
           )
-          .collect();
+          .take(ADMIN_SCAN_MAX_DOCS);
     const existing =
       rows.find((r) => r.roleId === args.roleId && r.guildId === args.guildId) ??
       rows[0];
@@ -109,7 +110,7 @@ export const listActiveForUserCreator = internalQuery({
       .withIndex("by_userId_creatorId", (q) =>
         q.eq("userId", args.userId).eq("creatorId", args.creatorId),
       )
-      .collect();
+      .take(ADMIN_SCAN_MAX_DOCS);
     return rows
       .filter((r) => r.status === "granted" || r.status === "pending")
       .map((r) => ({
@@ -153,7 +154,7 @@ export const listCancelledDueForRevoke = internalQuery({
         .withIndex("by_userId_creatorId", (q) =>
           q.eq("userId", s.userId).eq("creatorId", s.creatorId),
         )
-        .collect();
+        .take(ADMIN_SCAN_MAX_DOCS);
       if (!grants.some((g) => g.status === "granted" || g.status === "pending")) {
         continue;
       }
@@ -185,7 +186,7 @@ export const setInviteUrl = internalMutation({
       .withIndex("by_userId_creatorId", (q) =>
         q.eq("userId", args.userId).eq("creatorId", args.creatorId),
       )
-      .collect();
+      .take(ADMIN_SCAN_MAX_DOCS);
     const existing =
       (args.productId
         ? rows.find((r) => r.productId === args.productId)

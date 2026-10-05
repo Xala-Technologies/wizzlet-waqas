@@ -4,6 +4,7 @@ import {
   normalizeReferralCommissionPercent,
   referralCommissionCents,
 } from "./referralCommission";
+import { ADMIN_SCAN_MAX_DOCS } from "./adminLists";
 
 /** After a successful subscribe: bump promo uses, mark referrals converted, attribute /go/ links. */
 export async function applySubscribeGrowthAttribution(
@@ -50,7 +51,7 @@ export async function applySubscribeGrowthAttribution(
   const referrals = await ctx.db
     .query("referrals")
     .withIndex("by_creatorId", (q) => q.eq("creatorId", args.creatorId))
-    .collect();
+    .take(ADMIN_SCAN_MAX_DOCS);
   for (const row of referrals) {
     if (row.referredUserId === args.userId && !row.converted) {
       await ctx.db.patch(row._id, {
