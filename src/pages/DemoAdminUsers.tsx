@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 import { Button } from '@/components/ui/button';
@@ -48,7 +48,10 @@ const DemoAdminUsers = () => {
     return map;
   }, [rows, state.users]);
 
-  const spendOf = (u: DemoAdminUser) => +(spendByUser.get(u.name)?.spend ?? 0).toFixed(2);
+  const spendOf = useCallback(
+    (u: DemoAdminUser) => +(spendByUser.get(u.name)?.spend ?? 0).toFixed(2),
+    [spendByUser],
+  );
 
   const counts = useMemo(() => ({
     all: state.users.length,
@@ -72,7 +75,7 @@ const DemoAdminUsers = () => {
         case 'joined': return dir * (a.joinedDaysAgo - b.joinedDaysAgo);
       }
     });
-  }, [state.users, search, role, sortKey, sortAsc, spendByUser]);
+  }, [state.users, search, role, sortKey, sortAsc, spendOf]);
 
   const toggleSort = (key: SortKey) => {
     if (sortKey === key) setSortAsc(a => !a);
