@@ -2,7 +2,7 @@
 
 **Authority:** [`docs/ai/prizelet-world-ready-master-prompt.md`](./prizelet-world-ready-master-prompt.md)
 
-**Status:** Wave 64 notify/discord/auth/accountRequests caps 2026-10-05. Product is **not** world-ready.
+**Status:** Wave 65 stripeDb/sandbox/migration collect caps 2026-10-05. Product is **not** world-ready.
 
 Do not claim world-ready until Section 8 gates in the master prompt pass.
 
@@ -16,7 +16,9 @@ Do not claim world-ready until Section 8 gates in the master prompt pass.
 | Evidence | branch, date, one-line actual vs expected |
 | Waiver | owner + reason (required if WAIVED) |
 
-Last updated: 2026-10-05. Last wave: **64** (`fix/world-ready-wave-64-notify-entitlements-discord-caps`). Source pin: `bf85281` (inventory).
+Last updated: 2026-10-05. Last wave: **65** (`fix/world-ready-wave-65-stripeDb-sandbox-migration-caps`). Source pin: `bf85281` (inventory).
+
+Wave 65: `payments/stripeDb`, `payments/sandbox`, `migrations/load` countTable — no `.collect` left in app Convex TS (comments excluded). Units `stripeDbSandboxMigrationCap.security.test.ts` 2/2.
 
 Wave 64: notify role fanout + unread-by-link, entitlements, growthAttribution, auth role/content access, discord queries/mutations/grants, accountRequests — no `.collect`. Residual collects: `stripeDb` / sandbox / migrations counts only. Units `notifyDiscordAuthCap.security.test.ts` 2/2.
 
@@ -242,7 +244,7 @@ Nested layouts in `App.tsx`: `/demo/admin` → `DemoAdminLayout`; `/demo/member`
 | F-005 public migration mutations | PASS | Wave 1: importBatch/load are internalMutation |
 | F-009 / J5 payout reserved vs paid | PASS | Wave 1: payoutBalance.test.ts 5/5. Live UI Wave 2 |
 | F-010 webhook soak / Connect | PASS | Wave 18 webhook soak. Wave 49: Transfer action refuses without payouts_enabled / matching currency (no fake `tr_`). Wave 48 Express Account Link. |
-| F-012 admin full-table scans | PASS | Wave 55: dashboardStats accounts via `userRoles.by_role`. Waves 43–54 list/customers/alerts/finance/reports |
+| F-012 admin full-table scans | PASS | Waves 43–65: admin KPIs + creator/public/discord/payment/migration collects → indexed takes; no remaining app `.collect()` |
 | F-015 lint / tsc | PASS | Wave 3: `npx tsc -b` exit 0; lint still 0 errors / 28 warnings |
 
 ## J. Public Convex API coverage (Wave 0 freeze)
@@ -482,6 +484,6 @@ Schema `appRole` also allows `moderator` and `user` (not product actors; no rout
 ## M. Remaining risk (update every fix PR)
 
 - P2: Connect Transfer action is live but blocked until Express KYC (`payouts_enabled`) and USD vs NOK platform balance; referral cash still outside Stripe; member self-serve verified email OTP still missing; historical migration data parity BLOCKED (greenfield)
-- P3: admin join spend still capped at 500; F-012 app collects capped Waves 59–64; residual `.collect` only in `payments/stripeDb`, `payments/sandbox`, `migrations/load` counts; customers/alerts/finance/dashboard/fees/payouts/announcement/reports KPIs PASS (Wave 43–47, 50–55); eslint PASS Wave 57; join honesty PASS Wave 58
+- P3: admin join spend still capped at 500; F-012 Convex `.collect` closed Waves 59–65 (takes/indexes; migration counts capped); Connect KYC/currency + referral cash + email OTP still open; customers/alerts/finance/dashboard/fees/payouts/announcement/reports KPIs PASS (Wave 43–47, 50–55); eslint PASS Wave 57; join honesty PASS Wave 58
 - Not in this PR: production deploy, live Stripe keys, MFA
 - Waivers: see section L

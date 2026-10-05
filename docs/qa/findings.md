@@ -1,3 +1,19 @@
+# Findings — Wave 65 stripeDb/sandbox/migration collect caps 2026-10-05
+
+Branch `fix/world-ready-wave-65-stripeDb-sandbox-migration-caps`. Convex soak on `combative-mongoose-559`.
+
+| Step | Result | Evidence |
+|------|--------|----------|
+| stripeDb | PASS | product active count + user/creator sub lookups use `.take` |
+| Sandbox | PASS | subscribe/cancel existing-sub lookups capped |
+| Migrations | PASS | `countTable` uses capped takes (not full table collect) |
+| Repo scan | PASS | no remaining `.collect()` in `convex/**/*.ts` besides comments |
+| Unit | PASS | `stripeDbSandboxMigrationCap.security.test.ts` 2/2 |
+
+**Residual:** Connect KYC/currency; referral cash outside Stripe; email OTP (no mailer). F-012 unbounded collects closed.
+
+---
+
 # Findings — Wave 64 notify/discord/auth/accountRequests caps 2026-10-05
 
 Branch `fix/world-ready-wave-64-notify-entitlements-discord-caps`. Convex soak on `combative-mongoose-559`.

@@ -12,6 +12,7 @@ import { applySubscribeGrowthAttribution } from "../lib/growthAttribution";
 import type { Id } from "../_generated/dataModel";
 import { internal } from "../_generated/api";
 import { userHasRole } from "../lib/auth";
+import { ADMIN_SCAN_MAX_DOCS } from "../lib/adminLists";
 
 /** Action auth helper: confirm Convex Auth userId holds the admin role. */
 export const assertAdminUserId = internalQuery({
@@ -44,7 +45,7 @@ async function countActiveForProduct(
   const subs = await ctx.db
     .query("subscriptions")
     .withIndex("by_productId", (q) => q.eq("productId", productId))
-    .collect();
+    .take(ADMIN_SCAN_MAX_DOCS);
   return subs.filter((s) => s.status === "active").length;
 }
 
@@ -94,7 +95,7 @@ export const getCheckoutContext = internalQuery({
       .withIndex("by_userId_creatorId", (q) =>
         q.eq("userId", args.userId).eq("creatorId", args.creatorId),
       )
-      .collect();
+      .take(ADMIN_SCAN_MAX_DOCS);
     const active = existing.find((s) => s.status === "active");
 
     return {
@@ -171,7 +172,7 @@ export const fulfillCheckout = internalMutation({
       .withIndex("by_userId_creatorId", (q) =>
         q.eq("userId", args.userId).eq("creatorId", args.creatorId),
       )
-      .collect();
+      .take(ADMIN_SCAN_MAX_DOCS);
     const prior = existing[0];
     let subscriptionId: Id<"subscriptions">;
     if (prior) {
@@ -493,7 +494,7 @@ export const getSubscriptionForCancel = internalQuery({
       .withIndex("by_userId_creatorId", (q) =>
         q.eq("userId", args.userId).eq("creatorId", args.creatorId),
       )
-      .collect();
+      .take(ADMIN_SCAN_MAX_DOCS);
     return rows.find((s) => s.status === "active" || s.status === "past_due") ?? rows[0] ?? null;
   },
 });
@@ -512,7 +513,7 @@ export const getBillingPortalContext = internalQuery({
     const subs = await ctx.db
       .query("subscriptions")
       .withIndex("by_userId", (q) => q.eq("userId", args.userId))
-      .collect();
+      .take(ADMIN_SCAN_MAX_DOCS);
     const withStripe = subs.find((s) => !!s.stripeSubscriptionId);
     return {
       stripeCustomerId: user.stripeCustomerId ?? null,
