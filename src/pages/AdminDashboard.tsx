@@ -312,9 +312,9 @@ const AdminDashboardInner = () => {
             </ul>
           )}
         </section>
-        <section className={cn(clayCard, 'p-4 sm:p-6')}>
+        <section className={cn(clayCard, 'clay-fill-rose p-4 sm:p-6')}>
           <h2 className="mb-4 flex items-center gap-2 text-base font-extrabold tracking-tight text-foreground">
-            <Users className="h-4 w-4 text-muted-foreground" aria-hidden />
+            <Users className="h-4 w-4 text-rose-600 dark:text-rose-400" aria-hidden />
             Recent customers
           </h2>
           {stats.recentCustomers.length === 0 ? (
