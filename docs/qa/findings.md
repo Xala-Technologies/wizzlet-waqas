@@ -1,3 +1,19 @@
+# Findings — Wave 62 support/resolution/inbox caps 2026-10-05
+
+Branch `fix/world-ready-wave-62-support-resolution-caps`. Convex soak on `combative-mongoose-559`.
+
+| Step | Result | Evidence |
+|------|--------|----------|
+| Support | PASS | `listForMyCreator` / `listForMember` / growth unread use `.take` (no `.collect`) |
+| Resolution | PASS | `listMine` / `listMessages` / `unreadCountCreator` capped takes |
+| Inbox | PASS | notifications unread/markAllRead + messaging `listThread` + `mySubscriptions*` capped |
+| Data soak | PASS | support **24**, memberSupport **1**, cases **1**, case msgs **1**, notifications **66**, DMs **2**, subs **14** |
+| Unit | PASS | `supportResolutionCap.security.test.ts` 2/2 |
+
+**Residual:** Connect KYC/currency; referral cash outside Stripe; email OTP (no mailer); residual `.collect` in growth/products/discord/events/accountRequests/entitlements/notify/auth/stripeDb/migrations.
+
+---
+
 # Findings — Wave 61 listPublished + listMine caps 2026-10-05
 
 Branch `fix/world-ready-wave-61-list-published-cap`. Convex soak on `combative-mongoose-559`.

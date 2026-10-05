@@ -2,7 +2,11 @@ import { mutation, query } from "../_generated/server";
 import { v } from "convex/values";
 import { getCreatorForUser, requireAdmin, requireAppUser } from "../lib/auth";
 import { supportMessageDocValidator, memberSupportMessageDocValidator } from "../lib/validators";
-import { adminTakeNewest } from "../lib/adminLists";
+import {
+  ADMIN_LIST_LIMIT,
+  ADMIN_SCAN_MAX_DOCS,
+  adminTakeNewest,
+} from "../lib/adminLists";
 import {
   createNotification,
   markNotificationsReadByLink,
@@ -20,7 +24,7 @@ export const listForMyCreator = query({
     return ctx.db
       .query("supportMessages")
       .withIndex("by_creatorId", (q) => q.eq("creatorId", creator._id))
-      .collect();
+      .take(ADMIN_SCAN_MAX_DOCS);
   },
 });
 
@@ -118,7 +122,7 @@ export const unreadCountAdminGrowth = query({
       .query("supportMessages")
       .withIndex("by_channel", (q) => q.eq("channel", "growth"))
       .order("desc")
-      .take(500);
+      .take(ADMIN_LIST_LIMIT);
     return rows.filter((m) => m.senderRole === "creator" && !m.read).length;
   },
 });
@@ -134,7 +138,7 @@ export const unreadCountCreatorGrowth = query({
     const rows = await ctx.db
       .query("supportMessages")
       .withIndex("by_creatorId", (q) => q.eq("creatorId", creator._id))
-      .collect();
+      .take(ADMIN_SCAN_MAX_DOCS);
     return rows.filter(
       (m) => m.channel === "growth" && m.senderRole === "admin" && !m.read,
     ).length;
@@ -215,7 +219,7 @@ export const listForMember = query({
     return ctx.db
       .query("memberSupportMessages")
       .withIndex("by_userId", (q) => q.eq("userId", user._id))
-      .collect();
+      .take(ADMIN_SCAN_MAX_DOCS);
   },
 });
 

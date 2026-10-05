@@ -5,6 +5,7 @@ import type { Id } from "../_generated/dataModel";
 import { getCreatorForUser, requireAppUser, hasActiveSubscription } from "../lib/auth";
 import { canSendDirectMessage } from "../lib/messagingAccess";
 import { directMessageDocValidator } from "../lib/validators";
+import { ADMIN_SCAN_MAX_DOCS } from "../lib/adminLists";
 import {
   createNotification,
   markNotificationsReadByLink,
@@ -29,7 +30,7 @@ export const listThread = query({
       .withIndex("by_creatorId_subscriberId", (q) =>
         q.eq("creatorId", args.creatorId).eq("subscriberId", args.subscriberId),
       )
-      .collect();
+      .take(ADMIN_SCAN_MAX_DOCS);
   },
 });
 

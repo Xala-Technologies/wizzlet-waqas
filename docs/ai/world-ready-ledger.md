@@ -2,7 +2,7 @@
 
 **Authority:** [`docs/ai/prizelet-world-ready-master-prompt.md`](./prizelet-world-ready-master-prompt.md)
 
-**Status:** Wave 61 listPublished + listMine caps 2026-10-05. Product is **not** world-ready.
+**Status:** Wave 62 support/resolution/inbox caps 2026-10-05. Product is **not** world-ready.
 
 Do not claim world-ready until Section 8 gates in the master prompt pass.
 
@@ -16,7 +16,9 @@ Do not claim world-ready until Section 8 gates in the master prompt pass.
 | Evidence | branch, date, one-line actual vs expected |
 | Waiver | owner + reason (required if WAIVED) |
 
-Last updated: 2026-10-05. Last wave: **61** (`fix/world-ready-wave-61-list-published-cap`). Source pin: `bf85281` (inventory).
+Last updated: 2026-10-05. Last wave: **62** (`fix/world-ready-wave-62-support-resolution-caps`). Source pin: `bf85281` (inventory).
+
+Wave 62: support/resolution list+unread, notifications unread/markAllRead, messaging `listThread`, `mySubscriptions*` use capped takes (no `.collect`). Soak support **24**, memberSupport **1**, cases **1**/msgs **1**, notifications **66**, DMs **2**, subs **14**. Units `supportResolutionCap.security.test.ts` 2/2.
 
 Wave 61: `listPublished` takes published creators + per-page post/product joins (no `.collect`); also caps payouts/picks/analytics/post preview/memberFeed. Soak published creators **9**. Units `listPublishedCap.security.test.ts` 2/2.
 
@@ -331,7 +333,7 @@ App public functions (`Auth` = TBD until Wave 1):
 | `files.storage.generateUploadUrl` | TBD | yes | NOT_RUN | frozen vs convex/*.ts @ bf85281 |
 | `files.storage.getUrl` | requireAppUser + owner | yes | PASS | Wave 14 runtime: unowned/foreign FORBIDDEN; owner URL returned |
 | `files.storage.registerOwnedFile` | TBD | yes | NOT_RUN | frozen vs convex/*.ts @ bf85281 |
-| `messaging.mutations.listThread` | TBD | yes | NOT_RUN | frozen vs convex/*.ts @ bf85281 |
+| `messaging.mutations.listThread` | auth | yes | PASS | Wave 62: `.take(ADMIN_SCAN_MAX_DOCS)`; soak DMs **2** |
 | `messaging.mutations.markReadCreator` | TBD | yes | NOT_RUN | frozen vs convex/*.ts @ bf85281 |
 | `messaging.mutations.markReadSubscriber` | TBD | yes | NOT_RUN | frozen vs convex/*.ts @ bf85281 |
 | `messaging.mutations.myCreatorInbox` | TBD | yes | NOT_RUN | frozen vs convex/*.ts @ bf85281 |
@@ -346,9 +348,9 @@ App public functions (`Auth` = TBD until Wave 1):
 | `notifications.mutations.adminInsert` | admin | yes | PASS | Wave 20: WAVE20_NOTIFY_TITLE → j4member |
 | `notifications.mutations.listMine` | auth | yes | PASS | Wave 20: member list includes WAVE20 + pay/message |
 | `notifications.mutations.listMinePage` | auth | yes | PASS | Wave 20: `/dashboard/notifications` UI |
-| `notifications.mutations.markAllRead` | auth | yes | PASS | Wave 20: unread → 0 |
+| `notifications.mutations.markAllRead` | auth | yes | PASS | Wave 62: unread take cap; Wave 20 mark soak |
 | `notifications.mutations.markRead` | auth | yes | PASS | Wave 20: unread 2→1 |
-| `notifications.mutations.unreadCount` | auth | yes | PASS | Wave 20: before/after mark |
+| `notifications.mutations.unreadCount` | auth | yes | PASS | Wave 62: `.take(ADMIN_SCAN_MAX_DOCS)`; soak notifications **66** |
 | `payments.sandbox.sandboxCancel` | TBD | yes | NOT_RUN | frozen vs convex/*.ts @ bf85281 |
 | `payments.sandbox.sandboxSubscribe` | TBD | yes | NOT_RUN | frozen vs convex/*.ts @ bf85281 |
 | `payments.stripeNode.cancelCreatorSubscription` | auth | yes | PASS | Wave 5: cancelled sub `mn7bg36…` / Stripe `sub_1UMxh9…`; billingStatus canceled |
@@ -385,13 +387,13 @@ App public functions (`Auth` = TBD until Wave 1):
 | `resolution.mutations.addMessage` | TBD | yes | NOT_RUN | frozen vs convex/*.ts @ bf85281 |
 | `resolution.mutations.create` | TBD | yes | NOT_RUN | frozen vs convex/*.ts @ bf85281 |
 | `resolution.mutations.listAllAdmin` | TBD | yes | NOT_RUN | frozen vs convex/*.ts @ bf85281 |
-| `resolution.mutations.listMessages` | TBD | yes | NOT_RUN | frozen vs convex/*.ts @ bf85281 |
-| `resolution.mutations.listMine` | TBD | yes | NOT_RUN | frozen vs convex/*.ts @ bf85281 |
+| `resolution.mutations.listMessages` | auth | yes | PASS | Wave 62: case messages `.take(ADMIN_SCAN_MAX_DOCS)` |
+| `resolution.mutations.listMine` | creator | yes | PASS | Wave 62: `.take(ADMIN_SCAN_MAX_DOCS)`; soak cases **1** |
 | `resolution.mutations.markReadAdmin` | TBD | yes | NOT_RUN | frozen vs convex/*.ts @ bf85281 |
 | `resolution.mutations.markReadCreator` | TBD | yes | NOT_RUN | frozen vs convex/*.ts @ bf85281 |
 | `resolution.mutations.setStatus` | TBD | yes | NOT_RUN | frozen vs convex/*.ts @ bf85281 |
 | `resolution.mutations.unreadCountAdmin` | TBD | yes | NOT_RUN | frozen vs convex/*.ts @ bf85281 |
-| `resolution.mutations.unreadCountCreator` | TBD | yes | NOT_RUN | frozen vs convex/*.ts @ bf85281 |
+| `resolution.mutations.unreadCountCreator` | creator | yes | PASS | Wave 62: cases take + per-case `ADMIN_JOIN_LIMIT` |
 | `roles.mutations.assignSelfRole` | authenticated | yes | PASS | Wave 12 select-role + authMatrix allowlist; Wave 28 multi-role fixture already held creator |
 | `roles.mutations.grantRole` | admin | yes | PASS | Wave 28: admin granted `subscriber` to `j2creator` (`n179g48…`); roles `[creator, subscriber]` |
 | `roles.mutations.grantTestAdmin` | requireAppUser + ALLOW_DEV_ADMIN_GRANT + allowlist | yes | PASS | Wave 16/28: Sign in as platform owner → `/admin` |
@@ -402,19 +404,19 @@ App public functions (`Auth` = TBD until Wave 1):
 | `subscriptions.mutations.listSubscribersDetailed` | TBD | yes | NOT_RUN | frozen vs convex/*.ts @ bf85281 |
 | `subscriptions.mutations.listSubscribersDetailedPage` | TBD | yes | NOT_RUN | frozen vs convex/*.ts @ bf85281 |
 | `subscriptions.mutations.myPaymentEvents` | TBD | yes | NOT_RUN | frozen vs convex/*.ts @ bf85281 |
-| `subscriptions.mutations.mySubscriptions` | TBD | yes | NOT_RUN | frozen vs convex/*.ts @ bf85281 |
-| `subscriptions.mutations.mySubscriptionsDetailed` | TBD | yes | NOT_RUN | frozen vs convex/*.ts @ bf85281 |
+| `subscriptions.mutations.mySubscriptions` | auth | yes | PASS | Wave 62: `.take(ADMIN_SCAN_MAX_DOCS)`; soak subs **14** |
+| `subscriptions.mutations.mySubscriptionsDetailed` | auth | yes | PASS | Wave 62: capped by_userId take + db.get creators |
 | `subscriptions.mutations.setStatus` | requireAdmin | yes | NOT_RUN | Wave 1 static: owner cannot activate (F-003) |
 | `support.mutations.listAllAdmin` | TBD | yes | NOT_RUN | frozen vs convex/*.ts @ bf85281 |
-| `support.mutations.listForMember` | TBD | yes | NOT_RUN | frozen vs convex/*.ts @ bf85281 |
-| `support.mutations.listForMyCreator` | TBD | yes | NOT_RUN | frozen vs convex/*.ts @ bf85281 |
+| `support.mutations.listForMember` | auth | yes | PASS | Wave 62: `.take(ADMIN_SCAN_MAX_DOCS)`; soak memberSupport **1** |
+| `support.mutations.listForMyCreator` | creator | yes | PASS | Wave 62: `.take(ADMIN_SCAN_MAX_DOCS)`; soak support **24** |
 | `support.mutations.markReadAdmin` | TBD | yes | NOT_RUN | frozen vs convex/*.ts @ bf85281 |
 | `support.mutations.markReadCreator` | TBD | yes | NOT_RUN | frozen vs convex/*.ts @ bf85281 |
 | `support.mutations.markReadMember` | TBD | yes | NOT_RUN | frozen vs convex/*.ts @ bf85281 |
 | `support.mutations.send` | TBD | yes | NOT_RUN | frozen vs convex/*.ts @ bf85281 |
 | `support.mutations.sendMember` | TBD | yes | NOT_RUN | frozen vs convex/*.ts @ bf85281 |
-| `support.mutations.unreadCountAdminGrowth` | TBD | yes | NOT_RUN | frozen vs convex/*.ts @ bf85281 |
-| `support.mutations.unreadCountCreatorGrowth` | TBD | yes | NOT_RUN | frozen vs convex/*.ts @ bf85281 |
+| `support.mutations.unreadCountAdminGrowth` | admin | yes | PASS | Wave 62: growth channel `.take(ADMIN_LIST_LIMIT)` |
+| `support.mutations.unreadCountCreatorGrowth` | creator | yes | PASS | Wave 62: `.take(ADMIN_SCAN_MAX_DOCS)` filter unread |
 | `users.queries.changePassword` | TBD | yes | NOT_RUN | frozen vs convex/*.ts @ bf85281 |
 | `users.queries.ensureUser` | TBD | yes | NOT_RUN | frozen vs convex/*.ts @ bf85281 |
 | `users.queries.getById` | TBD | yes | NOT_RUN | frozen vs convex/*.ts @ bf85281 |
@@ -476,6 +478,6 @@ Schema `appRole` also allows `moderator` and `user` (not product actors; no rout
 ## M. Remaining risk (update every fix PR)
 
 - P2: Connect Transfer action is live but blocked until Express KYC (`payouts_enabled`) and USD vs NOK platform balance; referral cash still outside Stripe; member self-serve verified email OTP still missing; historical migration data parity BLOCKED (greenfield)
-- P3: admin join spend still capped at 500; creator balance/earnings/listPublished capped (Waves 59–61); customers/alerts/finance/dashboard/fees/payouts/announcement/reports KPIs PASS (Wave 43–47, 50–55); eslint PASS Wave 57; join honesty PASS Wave 58
+- P3: admin join spend still capped at 500; creator balance/earnings/listPublished + support/resolution/inbox/mySubscriptions capped (Waves 59–62); residual collects remain in growth/products/discord/events/accountRequests/entitlements/notify/auth/stripeDb/migrations; customers/alerts/finance/dashboard/fees/payouts/announcement/reports KPIs PASS (Wave 43–47, 50–55); eslint PASS Wave 57; join honesty PASS Wave 58
 - Not in this PR: production deploy, live Stripe keys, MFA
 - Waivers: see section L

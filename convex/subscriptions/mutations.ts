@@ -81,7 +81,7 @@ export const mySubscriptions = query({
     return ctx.db
       .query("subscriptions")
       .withIndex("by_userId", (q) => q.eq("userId", user._id))
-      .collect();
+      .take(ADMIN_SCAN_MAX_DOCS);
   },
 });
 
@@ -109,7 +109,7 @@ export const mySubscriptionsDetailed = query({
     const subs = await ctx.db
       .query("subscriptions")
       .withIndex("by_userId", (q) => q.eq("userId", user._id))
-      .collect();
+      .take(ADMIN_SCAN_MAX_DOCS);
     const out = [];
     for (const s of subs) {
       const creator = await ctx.db.get(s.creatorId);
