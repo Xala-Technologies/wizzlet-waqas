@@ -16,8 +16,8 @@ describe('dashboardStats F-012', () => {
     expect(body).toMatch(/takeSubsByStatus\(ctx, "active"\)/);
     expect(body).toMatch(/takePayoutsByStatus\(ctx, "paid"\)/);
     expect(body).toMatch(/takeCasesByStatus\(ctx, "open"\)/);
-    expect(body).not.toMatch(/adminScanAll\(ctx, "subscriptions"\)/);
-    expect(body).not.toMatch(/adminScanAll\(ctx, "payouts"\)/);
-    expect(body).not.toMatch(/adminScanAll\(ctx, "resolutionCases"\)/);
+    expect(body).toMatch(/takeCreatorsByPublished\(ctx, true\)/);
+    expect(body).toMatch(/takePaymentEventsByStatus\(ctx, "settled"\)/);
+    expect(body).not.toMatch(/adminScanAll/);
   });
 });
