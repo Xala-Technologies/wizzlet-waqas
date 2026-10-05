@@ -7,51 +7,40 @@ export const clayCard = 'clay-card';
 export const clayCardInteractive = 'clay-card clay-card-interactive';
 
 /**
- * Soft KPI card washes (`.clay-fill-*` in index.css — cascade after `.clay-card`).
- * Light mode uses readable pastel cards that match dark’s tinted language.
+ * Brand-only KPI card washes (blue family).
+ * Keys keep legacy names so call sites stay stable; values are one of two blues.
  */
 export const clayKpiFill = {
-  emerald: 'clay-fill-emerald',
-  violet: 'clay-fill-violet',
-  sky: 'clay-fill-sky',
-  amber: 'clay-fill-amber',
-  rose: 'clay-fill-rose',
-  orange: 'clay-fill-orange',
-  cyan: 'clay-fill-cyan',
-  teal: 'clay-fill-teal',
-  lime: 'clay-fill-lime',
+  /** brand-50 */
   primary: 'clay-fill-primary',
+  /** soft blue band — slight alternate to primary */
+  soft: 'clay-fill-soft',
+  emerald: 'clay-fill-primary',
+  violet: 'clay-fill-soft',
+  sky: 'clay-fill-primary',
+  amber: 'clay-fill-soft',
+  rose: 'clay-fill-primary',
+  orange: 'clay-fill-soft',
+  cyan: 'clay-fill-primary',
+  teal: 'clay-fill-soft',
+  lime: 'clay-fill-primary',
 } as const;
 
 export type ClayKpiFillKey = keyof typeof clayKpiFill;
 
 export function clayFillFromIconTone(iconClassName?: string): string {
   if (!iconClassName) return clayKpiFill.primary;
-  if (iconClassName.includes('emerald')) return clayKpiFill.emerald;
+  // Alternate soft vs primary so strips have gentle rhythm without rainbow.
   if (
     iconClassName.includes('violet') ||
+    iconClassName.includes('amber') ||
+    iconClassName.includes('orange') ||
+    iconClassName.includes('teal') ||
+    iconClassName.includes('brand-100') ||
     iconClassName.includes('info-soft') ||
     iconClassName.includes('logo-blue')
   ) {
-    return clayKpiFill.violet;
-  }
-  if (iconClassName.includes('sky')) return clayKpiFill.sky;
-  if (iconClassName.includes('amber')) return clayKpiFill.amber;
-  if (iconClassName.includes('rose')) return clayKpiFill.rose;
-  if (iconClassName.includes('orange')) return clayKpiFill.orange;
-  if (iconClassName.includes('lime')) return clayKpiFill.lime;
-  if (iconClassName.includes('cyan') || iconClassName.includes('brand-50')) {
-    return clayKpiFill.cyan;
-  }
-  if (
-    iconClassName.includes('teal') ||
-    iconClassName.includes('brand-100') ||
-    iconClassName.includes('brand-300')
-  ) {
-    return clayKpiFill.teal;
-  }
-  if (iconClassName.includes('primary') || iconClassName.includes('brand-')) {
-    return clayKpiFill.primary;
+    return clayKpiFill.soft;
   }
   return clayKpiFill.primary;
 }

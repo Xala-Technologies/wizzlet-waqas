@@ -544,68 +544,36 @@
   }
 
   /**
-   * KPI tint washes — declared after `.clay-card` so they win the background
-   * cascade (same utilities layer). Light tints match dark’s visible color language.
+   * KPI tint washes — brand blues only (declared after `.clay-card` for cascade).
+   * `primary` = brand-50, `soft` = soft blue band. Legacy color names alias these two.
    */
-  .clay-fill-emerald {
-    background-color: #ecfdf5;
-  }
-  .clay-fill-violet {
-    background-color: #f5f3ff;
-  }
-  .clay-fill-sky {
-    background-color: #f0f9ff;
-  }
-  .clay-fill-amber {
-    background-color: #fffbeb;
-  }
-  .clay-fill-rose {
-    background-color: #fff1f2;
-  }
-  .clay-fill-orange {
-    background-color: #fff7ed;
-  }
-  .clay-fill-cyan {
-    background-color: #ecfeff;
-  }
-  .clay-fill-teal {
-    background-color: #f0fdfa;
-  }
+  .clay-fill-primary,
+  .clay-fill-emerald,
+  .clay-fill-sky,
+  .clay-fill-rose,
+  .clay-fill-cyan,
   .clay-fill-lime {
-    background-color: #f7fee7;
-  }
-  .clay-fill-primary {
     background-color: var(--brand-50);
   }
+  .clay-fill-soft,
+  .clay-fill-violet,
+  .clay-fill-amber,
+  .clay-fill-orange,
+  .clay-fill-teal {
+    background-color: var(--bg-soft-blue);
+  }
 
-  .dark .clay-fill-emerald {
-    background-color: rgb(16 185 129 / 0.1);
-  }
-  .dark .clay-fill-violet {
-    background-color: var(--active-bg);
-  }
-  .dark .clay-fill-sky {
-    background-color: rgb(14 165 233 / 0.1);
-  }
-  .dark .clay-fill-amber {
-    background-color: rgb(245 158 11 / 0.1);
-  }
-  .dark .clay-fill-rose {
-    background-color: rgb(244 63 94 / 0.1);
-  }
-  .dark .clay-fill-orange {
-    background-color: rgb(249 115 22 / 0.1);
-  }
-  .dark .clay-fill-cyan {
-    background-color: rgb(6 182 212 / 0.1);
-  }
+  .dark .clay-fill-primary,
+  .dark .clay-fill-emerald,
+  .dark .clay-fill-sky,
+  .dark .clay-fill-rose,
+  .dark .clay-fill-cyan,
+  .dark .clay-fill-lime,
+  .dark .clay-fill-soft,
+  .dark .clay-fill-violet,
+  .dark .clay-fill-amber,
+  .dark .clay-fill-orange,
   .dark .clay-fill-teal {
-    background-color: rgb(20 184 166 / 0.1);
-  }
-  .dark .clay-fill-lime {
-    background-color: rgb(132 204 22 / 0.1);
-  }
-  .dark .clay-fill-primary {
     background-color: var(--active-bg);
   }
 
