@@ -1,194 +1,348 @@
-import { cn } from '@/lib/utils';
+import { useMemo } from 'react';
 import { useQuery } from 'convex/react';
 import { api } from '../../convex/_generated/api';
 import { DashboardLayout } from '@/components/dashboard/DashboardLayout';
+import { DashboardKpiStrip } from '@/components/dashboard/DashboardKpiStrip';
+import { OverviewQuickActions } from '@/components/creator/overview/OverviewQuickActions';
 import { clayCard } from '@/lib/overviewClay';
+import { kpiIconTone } from '@/lib/kpiIconTones';
 import { scanTruncationNote } from '@/lib/adminTruncation';
-import { Users, Crown, DollarSign, CreditCard, Loader2, TrendingUp, Activity, UserPlus, Percent, FileWarning, ArrowRight } from 'lucide-react';
-import { Link } from 'react-router-dom';
-import { BarChart, Bar, LineChart, Line, AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts';
+import { cn } from '@/lib/utils';
+import {
+  Users,
+  Crown,
+  DollarSign,
+  CreditCard,
+  Loader2,
+  TrendingUp,
+  Activity,
+  UserPlus,
+  Percent,
+  FileWarning,
+  Bell,
+  Wallet,
+} from 'lucide-react';
+import {
+  BarChart,
+  Bar,
+  LineChart,
+  Line,
+  AreaChart,
+  Area,
+  XAxis,
+  YAxis,
+  Tooltip,
+  ResponsiveContainer,
+  CartesianGrid,
+} from 'recharts';
 import { format } from 'date-fns';
+
+const chartTooltipStyle = {
+  backgroundColor: 'hsl(var(--card))',
+  border: '1px solid hsl(var(--border))',
+  borderRadius: '12px',
+  fontSize: 14,
+  color: 'hsl(var(--foreground))',
+};
 
 const AdminDashboardInner = () => {
   const stats = useQuery(api.admin.queries.dashboardStats);
 
+  const kpiItems = useMemo(() => {
+    if (!stats) return [];
+    return [
+      {
+        label: 'Active sub volume (MRR)',
+        value: `$${(stats.totalRevenueCents / 100).toFixed(0)}`,
+        icon: DollarSign,
+        iconClassName: kpiIconTone.emerald,
+        href: '/admin/finance',
+      },
+      {
+        label: 'Platform fee revenue',
+        value: `$${(stats.platformFeesCents / 100).toFixed(0)}`,
+        icon: Percent,
+        iconClassName: kpiIconTone.violet,
+        href: '/admin/fees',
+      },
+      {
+        label: 'Creator paid out',
+        value: `$${(stats.paidOutCents / 100).toFixed(0)}`,
+        icon: TrendingUp,
+        iconClassName: kpiIconTone.sky,
+        href: '/admin/payouts',
+      },
+      {
+        label: 'Creators',
+        value: stats.creatorCount.toString(),
+        icon: Crown,
+        iconClassName: kpiIconTone.amber,
+        href: '/admin/creators',
+      },
+      {
+        label: 'Accounts',
+        value: stats.userCount.toString(),
+        icon: Users,
+        iconClassName: kpiIconTone.cyan,
+        href: '/admin/users',
+      },
+      {
+        label: 'Active subscriptions',
+        value: stats.activeSubscriptionCount.toString(),
+        icon: CreditCard,
+        iconClassName: kpiIconTone.teal,
+        href: '/admin/customers',
+      },
+      {
+        label: 'Open resolution cases',
+        value: stats.openCases.toString(),
+        icon: FileWarning,
+        iconClassName: kpiIconTone.rose,
+        href: '/admin/resolution-cases',
+      },
+    ];
+  }, [stats]);
+
+  const nextActions = useMemo(() => {
+    if (!stats) return [];
+    const actions = [];
+    if (stats.openCases > 0) {
+      actions.push({
+        label: `${stats.openCases} open resolution case${stats.openCases === 1 ? '' : 's'}`,
+        href: '/admin/resolution-cases',
+        icon: FileWarning,
+      });
+    }
+    actions.push(
+      { label: 'Review ops alerts', href: '/admin/alerts', icon: Bell },
+      { label: 'Review payout ledger', href: '/admin/payouts', icon: Wallet },
+    );
+    return actions;
+  }, [stats]);
+
   if (stats === undefined) {
     return (
       <DashboardLayout type="admin" mainClassName="bg-clay-page">
-        <div className="flex justify-center py-20"><Loader2 className="h-5 w-5 animate-spin text-primary" /></div>
+        <div className="flex justify-center py-20">
+          <Loader2 className="h-5 w-5 animate-spin text-primary" />
+        </div>
       </DashboardLayout>
     );
   }
 
   const truncation = scanTruncationNote(stats.truncated, stats.listLimit);
-
-  const kpi = [
-    { label: 'Active sub volume (MRR)', value: `$${(stats.totalRevenueCents / 100).toFixed(0)}`, icon: DollarSign, color: 'text-emerald-400' },
-    { label: 'Platform fee revenue', value: `$${(stats.platformFeesCents / 100).toFixed(0)}`, icon: Percent, color: 'text-purple-400' },
-    { label: 'Creator paid out', value: `$${(stats.paidOutCents / 100).toFixed(0)}`, icon: TrendingUp, color: 'text-blue-400' },
-    { label: 'Creators', value: stats.creatorCount.toString(), icon: Crown, color: 'text-purple-400' },
-    { label: 'Accounts', value: stats.userCount.toString(), icon: Users, color: 'text-blue-400' },
-    { label: 'Active subscriptions', value: stats.activeSubscriptionCount.toString(), icon: CreditCard, color: 'text-emerald-400' },
-    { label: 'Open resolution cases', value: stats.openCases.toString(), icon: FileWarning, color: 'text-destructive' },
-  ];
-
   const monthlyRevenue = stats.monthly;
   const creatorGrowth = stats.monthly;
+  const todayLabel = format(new Date(), 'EEEE, MMMM d');
 
   return (
     <DashboardLayout type="admin" mainClassName="bg-clay-page">
-      <div className="mb-8">
-        <p className="text-muted-foreground text-sm mt-0.5">Executive dashboard — live Convex aggregates</p>
-        {truncation && (
-          <p className="text-amber-600 text-caption mt-2">{truncation}</p>
-        )}
-        <p className="text-muted-foreground text-caption mt-1">
-          Fee revenue and paid-out come from subscription and payout records. See Finance for detail — these are not Stripe cash balances.
+      <div className="mb-6 sm:mb-8">
+        <p className="text-caption font-bold uppercase tracking-[0.14em] text-muted-foreground">
+          {todayLabel}
         </p>
+        <h1 className="type-page-title mt-1 text-foreground md:text-[2.25rem] md:leading-[1.15]">
+          Overview
+        </h1>
+        <p className="mt-1.5 text-sm text-muted-foreground">
+          Executive dashboard — live Convex aggregates. Fee revenue and paid-out come from
+          subscription and payout records — these are not Stripe cash balances.
+        </p>
+        {truncation ? (
+          <p className="mt-2 text-caption text-amber-600 dark:text-amber-400">{truncation}</p>
+        ) : null}
       </div>
 
-      {(stats.openCases > 0 || stats.activeSubscriptionCount > 0 || stats.creatorCount > 0) && (
-        <div className="rounded-xl border border-border bg-card p-4 mb-6">
-          <h2 className="text-caption font-medium text-muted-foreground uppercase tracking-wider mb-3">Next up</h2>
-          <ul className="space-y-2 text-sm">
-            {stats.openCases > 0 && (
-              <li>
-                <Link to="/admin/resolution-cases" className="text-primary hover:underline inline-flex items-center gap-1">
-                  {stats.openCases} open resolution case{stats.openCases === 1 ? '' : 's'} <ArrowRight className="h-3 w-3" />
-                </Link>
-              </li>
-            )}
-            <li>
-              <Link to="/admin/alerts" className="text-primary hover:underline inline-flex items-center gap-1">
-                Review ops alerts <ArrowRight className="h-3 w-3" />
-              </Link>
-            </li>
-            <li>
-              <Link to="/admin/payouts" className="text-primary hover:underline inline-flex items-center gap-1">
-                Review payout ledger <ArrowRight className="h-3 w-3" />
-              </Link>
-            </li>
-          </ul>
+      {nextActions.length > 0 ? (
+        <div className="mb-6">
+          <OverviewQuickActions actions={nextActions} />
         </div>
-      )}
+      ) : null}
 
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-        {kpi.map((stat) => (
-          <div key={stat.label} className="rounded-xl border border-border bg-card p-4 transition-colors hover:border-primary/20">
-            <div className="flex items-center justify-between mb-2">
-              <stat.icon className={`h-4 w-4 ${stat.color}`} />
-            </div>
-            <p className="text-xl font-bold">{stat.value}</p>
-            <p className="text-caption text-muted-foreground mt-0.5">{stat.label}</p>
-          </div>
-        ))}
-      </div>
+      <DashboardKpiStrip items={kpiItems} variant="clay" className="mb-6 sm:mb-8" />
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6 min-w-0">
-        <div className="rounded-xl border border-border bg-card p-4 sm:p-6 min-w-0">
-          <h2 className="text-sm font-medium mb-4">Monthly Revenue</h2>
+      <div className="mb-6 grid min-w-0 grid-cols-1 gap-4 lg:grid-cols-2 lg:gap-6">
+        <section className={cn(clayCard, 'min-w-0 p-4 sm:p-6')}>
+          <h2 className="mb-4 text-base font-extrabold tracking-tight text-foreground">
+            Monthly Revenue
+          </h2>
           <div className="h-56 min-w-0 w-full">
             {monthlyRevenue.length === 0 ? (
-              <p className="text-sm text-muted-foreground py-16 text-center">No subscription data yet.</p>
+              <p className="py-16 text-center text-sm text-muted-foreground">
+                No subscription data yet.
+              </p>
             ) : (
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={monthlyRevenue}>
                   <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
-                  <XAxis dataKey="month" tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 14 }} axisLine={false} tickLine={false} />
-                  <YAxis tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 14 }} axisLine={false} tickLine={false} tickFormatter={v => `$${v}`} />
-                  <Tooltip contentStyle={{ backgroundColor: 'hsl(var(--card))', border: '1px solid hsl(var(--border))', borderRadius: '8px', fontSize: 14, color: 'hsl(var(--foreground))' }} />
+                  <XAxis
+                    dataKey="month"
+                    tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 14 }}
+                    axisLine={false}
+                    tickLine={false}
+                  />
+                  <YAxis
+                    tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 14 }}
+                    axisLine={false}
+                    tickLine={false}
+                    tickFormatter={(v) => `$${v}`}
+                  />
+                  <Tooltip contentStyle={chartTooltipStyle} />
                   <Bar dataKey="revenue" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
                 </BarChart>
               </ResponsiveContainer>
             )}
           </div>
-        </div>
-        <div className="rounded-xl border border-border bg-card p-4 sm:p-6 min-w-0">
-          <h2 className="text-sm font-medium mb-4">Monthly Platform Fees</h2>
+        </section>
+        <section className={cn(clayCard, 'min-w-0 p-4 sm:p-6')}>
+          <h2 className="mb-4 text-base font-extrabold tracking-tight text-foreground">
+            Monthly Platform Fees
+          </h2>
           <div className="h-56 min-w-0 w-full">
             {monthlyRevenue.length === 0 ? (
-              <p className="text-sm text-muted-foreground py-16 text-center">No fee data yet.</p>
+              <p className="py-16 text-center text-sm text-muted-foreground">No fee data yet.</p>
             ) : (
               <ResponsiveContainer width="100%" height="100%">
                 <AreaChart data={monthlyRevenue}>
                   <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
-                  <XAxis dataKey="month" tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 14 }} axisLine={false} tickLine={false} />
-                  <YAxis tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 14 }} axisLine={false} tickLine={false} tickFormatter={v => `$${v}`} />
-                  <Tooltip contentStyle={{ backgroundColor: 'hsl(var(--card))', border: '1px solid hsl(var(--border))', borderRadius: '8px', fontSize: 14, color: 'hsl(var(--foreground))' }} />
-                  <Area type="monotone" dataKey="fees" stroke="hsl(var(--primary))" fill="hsl(var(--primary) / 0.2)" />
+                  <XAxis
+                    dataKey="month"
+                    tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 14 }}
+                    axisLine={false}
+                    tickLine={false}
+                  />
+                  <YAxis
+                    tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 14 }}
+                    axisLine={false}
+                    tickLine={false}
+                    tickFormatter={(v) => `$${v}`}
+                  />
+                  <Tooltip contentStyle={chartTooltipStyle} />
+                  <Area
+                    type="monotone"
+                    dataKey="fees"
+                    stroke="hsl(var(--primary))"
+                    fill="hsl(var(--primary) / 0.2)"
+                  />
                 </AreaChart>
               </ResponsiveContainer>
             )}
           </div>
-        </div>
+        </section>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6 min-w-0">
-        <div className="rounded-xl border border-border bg-card p-4 sm:p-6 min-w-0">
-          <h2 className="text-sm font-medium mb-4 flex items-center gap-2"><Activity className="h-4 w-4" /> Creator & customer growth</h2>
+      <div className="mb-6 grid min-w-0 grid-cols-1 gap-4 lg:grid-cols-2 lg:gap-6">
+        <section className={cn(clayCard, 'min-w-0 p-4 sm:p-6')}>
+          <h2 className="mb-4 flex items-center gap-2 text-base font-extrabold tracking-tight text-foreground">
+            <Activity className="h-4 w-4 text-muted-foreground" aria-hidden />
+            Creator & customer growth
+          </h2>
           <div className="h-56 min-w-0 w-full">
             {creatorGrowth.length === 0 ? (
-              <p className="text-sm text-muted-foreground py-16 text-center">No growth data yet.</p>
+              <p className="py-16 text-center text-sm text-muted-foreground">No growth data yet.</p>
             ) : (
               <ResponsiveContainer width="100%" height="100%">
                 <LineChart data={creatorGrowth}>
                   <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
-                  <XAxis dataKey="month" tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 14 }} axisLine={false} tickLine={false} />
-                  <YAxis tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 14 }} axisLine={false} tickLine={false} />
-                  <Tooltip contentStyle={{ backgroundColor: 'hsl(var(--card))', border: '1px solid hsl(var(--border))', borderRadius: '8px', fontSize: 14, color: 'hsl(var(--foreground))' }} />
-                  <Line type="monotone" dataKey="creators" stroke="hsl(var(--primary))" strokeWidth={2} dot={false} />
-                  <Line type="monotone" dataKey="customers" stroke="hsl(var(--muted-foreground))" strokeWidth={2} dot={false} />
+                  <XAxis
+                    dataKey="month"
+                    tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 14 }}
+                    axisLine={false}
+                    tickLine={false}
+                  />
+                  <YAxis
+                    tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 14 }}
+                    axisLine={false}
+                    tickLine={false}
+                  />
+                  <Tooltip contentStyle={chartTooltipStyle} />
+                  <Line
+                    type="monotone"
+                    dataKey="creators"
+                    stroke="hsl(var(--primary))"
+                    strokeWidth={2}
+                    dot={false}
+                  />
+                  <Line
+                    type="monotone"
+                    dataKey="customers"
+                    stroke="hsl(var(--muted-foreground))"
+                    strokeWidth={2}
+                    dot={false}
+                  />
                 </LineChart>
               </ResponsiveContainer>
             )}
           </div>
-        </div>
-        <div className="rounded-xl border border-border bg-card p-6">
-          <h2 className="text-sm font-medium mb-4 flex items-center gap-2"><CreditCard className="h-4 w-4" /> Recent subscriptions</h2>
+        </section>
+        <section className={cn(clayCard, 'p-4 sm:p-6')}>
+          <h2 className="mb-4 flex items-center gap-2 text-base font-extrabold tracking-tight text-foreground">
+            <CreditCard className="h-4 w-4 text-muted-foreground" aria-hidden />
+            Recent subscriptions
+          </h2>
           {stats.recentSubs.length === 0 ? (
-            <p className="text-sm text-muted-foreground py-8">No subscriptions yet.</p>
+            <p className="py-8 text-sm text-muted-foreground">No subscriptions yet.</p>
           ) : (
             <ul className="space-y-3">
               {stats.recentSubs.map((s) => (
-                <li key={s.id} className="flex items-center justify-between text-sm">
+                <li
+                  key={s.id}
+                  className="flex items-center justify-between rounded-2xl px-2.5 py-2 text-sm transition-colors hover:bg-muted/40"
+                >
                   <div>
-                    <p className="font-medium">{s.userName}</p>
-                    <p className="text-caption text-muted-foreground">{s.creatorName} · {format(s.createdAt, 'MMM d, yyyy')}</p>
+                    <p className="font-semibold text-foreground">{s.userName}</p>
+                    <p className="text-caption text-muted-foreground">
+                      {s.creatorName} · {format(s.createdAt, 'MMM d, yyyy')}
+                    </p>
                   </div>
-                  <span className="font-semibold">${(s.amountCents / 100).toFixed(2)}</span>
+                  <span className="font-extrabold tabular-nums">
+                    ${(s.amountCents / 100).toFixed(2)}
+                  </span>
                 </li>
               ))}
             </ul>
           )}
-        </div>
+        </section>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div className="rounded-xl border border-border bg-card p-6">
-          <h2 className="text-sm font-medium mb-4 flex items-center gap-2"><UserPlus className="h-4 w-4" /> Recent creators</h2>
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2 lg:gap-6">
+        <section className={cn(clayCard, 'p-4 sm:p-6')}>
+          <h2 className="mb-4 flex items-center gap-2 text-base font-extrabold tracking-tight text-foreground">
+            <UserPlus className="h-4 w-4 text-muted-foreground" aria-hidden />
+            Recent creators
+          </h2>
           {stats.recentCreators.length === 0 ? (
             <p className="text-sm text-muted-foreground">None yet.</p>
           ) : (
-            <ul className="space-y-2">
+            <ul className="space-y-1">
               {stats.recentCreators.map((c, i) => (
-                <li key={i} className="flex justify-between text-sm">
-                  <span>{c.name}</span>
+                <li
+                  key={i}
+                  className="flex justify-between rounded-2xl px-2.5 py-2 text-sm transition-colors hover:bg-muted/40"
+                >
+                  <span className="font-semibold text-foreground">{c.name}</span>
                   <span className="text-muted-foreground">{format(c.date, 'MMM d')}</span>
                 </li>
               ))}
             </ul>
           )}
-        </div>
-        <div className="rounded-xl border border-border bg-card p-6">
-          <h2 className="text-sm font-medium mb-4 flex items-center gap-2"><Users className="h-4 w-4" /> Recent customers</h2>
+        </section>
+        <section className={cn(clayCard, 'p-4 sm:p-6')}>
+          <h2 className="mb-4 flex items-center gap-2 text-base font-extrabold tracking-tight text-foreground">
+            <Users className="h-4 w-4 text-muted-foreground" aria-hidden />
+            Recent customers
+          </h2>
           {stats.recentCustomers.length === 0 ? (
             <p className="text-sm text-muted-foreground">None yet.</p>
           ) : (
-            <ul className="space-y-2">
+            <ul className="space-y-1">
               {stats.recentCustomers.map((u, i) => (
-                <li key={i} className="flex justify-between text-sm">
+                <li
+                  key={i}
+                  className="flex justify-between rounded-2xl px-2.5 py-2 text-sm transition-colors hover:bg-muted/40"
+                >
                   <div>
-                    <p>{u.name}</p>
+                    <p className="font-semibold text-foreground">{u.name}</p>
                     <p className="text-caption text-muted-foreground">{u.email}</p>
                   </div>
                   <span className="text-muted-foreground">{format(u.date, 'MMM d')}</span>
@@ -196,7 +350,7 @@ const AdminDashboardInner = () => {
               ))}
             </ul>
           )}
-        </div>
+        </section>
       </div>
     </DashboardLayout>
   );
