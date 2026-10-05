@@ -675,7 +675,7 @@ export const getConnectPlatformBalance = action({
     const stripe = requireStripe();
     const [balance, account] = await Promise.all([
       stripe.balance.retrieve(),
-      stripe.accounts.retrieve(),
+      stripe.accounts.retrieve(null),
     ]);
     const available = (balance.available ?? []).map((row) => ({
       amount: row.amount,
