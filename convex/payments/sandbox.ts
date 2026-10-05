@@ -10,6 +10,7 @@ import { calculatePlatformFee } from "../lib/money";
 import { applySubscribeGrowthAttribution } from "../lib/growthAttribution";
 import { assertSandboxEnabled } from "../lib/sandbox";
 import { internal } from "../_generated/api";
+import { ADMIN_SCAN_MAX_DOCS } from "../lib/adminLists";
 
 export const sandboxSubscribe = mutation({
   args: {
@@ -57,7 +58,7 @@ export const sandboxSubscribe = mutation({
       .withIndex("by_userId_creatorId", (q) =>
         q.eq("userId", user._id).eq("creatorId", creator._id),
       )
-      .collect();
+      .take(ADMIN_SCAN_MAX_DOCS);
     const active = existing.find((s) => s.status === "active");
     if (active) {
       return { alreadySubscribed: true as const, subscriptionId: active._id };
@@ -183,7 +184,7 @@ export const sandboxCancel = mutation({
       .withIndex("by_userId_creatorId", (q) =>
         q.eq("userId", user._id).eq("creatorId", args.creatorId),
       )
-      .collect();
+      .take(ADMIN_SCAN_MAX_DOCS);
     const sub = subs[0];
     if (!sub) throw new ConvexError("NOT_FOUND");
     await ctx.db.patch(sub._id, { status: "cancelled", updatedAt: Date.now() });

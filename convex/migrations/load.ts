@@ -1,6 +1,7 @@
 import { internalMutation } from "../_generated/server";
 import { v } from "convex/values";
 import type { AppRole } from "../lib/auth";
+import { ADMIN_SCAN_MAX_DOCS } from "../lib/adminLists";
 
 const MIGRATION_VERSION = "1.0.0";
 
@@ -227,10 +228,10 @@ export const countTable = internalMutation({
   handler: async (ctx, args) => {
     // Used by validate scripts via admin queries instead when possible.
     const map: Record<string, () => Promise<number>> = {
-      users: async () => (await ctx.db.query("users").collect()).length,
-      creators: async () => (await ctx.db.query("creators").collect()).length,
-      subscriptions: async () => (await ctx.db.query("subscriptions").collect()).length,
-      posts: async () => (await ctx.db.query("posts").collect()).length,
+      users: async () => (await ctx.db.query("users").take(ADMIN_SCAN_MAX_DOCS)).length,
+      creators: async () => (await ctx.db.query("creators").take(ADMIN_SCAN_MAX_DOCS)).length,
+      subscriptions: async () => (await ctx.db.query("subscriptions").take(ADMIN_SCAN_MAX_DOCS)).length,
+      posts: async () => (await ctx.db.query("posts").take(ADMIN_SCAN_MAX_DOCS)).length,
     };
     const fn = map[args.table];
     if (!fn) return -1;
