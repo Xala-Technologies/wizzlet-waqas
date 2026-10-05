@@ -6,6 +6,7 @@
 
 import type { MutationCtx, QueryCtx } from "../_generated/server";
 import type { Id } from "../_generated/dataModel";
+import { ADMIN_SCAN_MAX_DOCS } from "./adminLists";
 
 type Ctx = QueryCtx | MutationCtx;
 
@@ -78,11 +79,13 @@ export async function getCreatorAvailableBalanceCents(
   earnedCents: number;
   reservedCents: number;
   availableCents: number;
+  truncated: boolean;
+  listLimit: number;
 }> {
   const events = await ctx.db
     .query("paymentEvents")
     .withIndex("by_creatorId", (q) => q.eq("creatorId", creatorId))
-    .collect();
+    .take(ADMIN_SCAN_MAX_DOCS);
   const earnedCents = events
     .filter(isSettledEarningEvent)
     .reduce((sum, e) => sum + e.creatorEarningsCents, 0);
@@ -90,14 +93,20 @@ export async function getCreatorAvailableBalanceCents(
   const payouts = await ctx.db
     .query("payouts")
     .withIndex("by_creatorId", (q) => q.eq("creatorId", creatorId))
-    .collect();
+    .take(ADMIN_SCAN_MAX_DOCS);
   const reservedCents = payouts
     .filter((p) => isReservedPayoutStatus(p.status))
     .reduce((sum, p) => sum + p.amountCents, 0);
+
+  const truncated =
+    events.length >= ADMIN_SCAN_MAX_DOCS ||
+    payouts.length >= ADMIN_SCAN_MAX_DOCS;
 
   return {
     earnedCents,
     reservedCents,
     availableCents: computeAvailableBalanceCents(earnedCents, reservedCents),
+    truncated,
+    listLimit: ADMIN_SCAN_MAX_DOCS,
   };
 }

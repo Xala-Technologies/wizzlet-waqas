@@ -43,6 +43,7 @@ import {
   shouldUseCreatorPayoutsDemo,
 } from '@/lib/creatorPayoutsDemo';
 import { kpiIconTone } from '@/lib/kpiIconTones';
+import { scanTruncationNote } from '@/lib/adminTruncation';
 import { cn } from '@/lib/utils';
 
 const PAGE_SIZE = 10;
@@ -175,6 +176,10 @@ const CreatorPayouts = () => {
     disableDemo,
   });
 
+  const balanceTruncation = !useDemo
+    ? scanTruncationNote(balance?.truncated === true, balance?.listLimit)
+    : null;
+
   const payouts = useDemo ? CREATOR_PAYOUTS_DEMO_HISTORY : livePayouts;
 
   const available = useDemo ? CREATOR_PAYOUTS_DEMO_KPIS.available : liveAvailable;
@@ -262,7 +267,14 @@ const CreatorPayouts = () => {
       });
       toast.success('Payout request saved');
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : 'Failed to request payout');
+      const msg = e instanceof Error ? e.message : 'Failed to request payout';
+      if (msg.includes('BALANCE_TRUNCATED')) {
+        toast.error(
+          'Balance history is too large to verify safely — contact support before withdrawing.',
+        );
+      } else {
+        toast.error(msg);
+      }
     } finally {
       setRequesting(false);
     }
@@ -333,6 +345,9 @@ const CreatorPayouts = () => {
                 connectStatus.payoutsEnabled ? ' and payouts are enabled on Stripe' : ''
               }.`
             : '. Connect Stripe Express below to start onboarding.'}
+          {balanceTruncation ? (
+            <p className="mt-2 text-amber-600 dark:text-amber-400">{balanceTruncation}</p>
+          ) : null}
         </div>
       )}
 

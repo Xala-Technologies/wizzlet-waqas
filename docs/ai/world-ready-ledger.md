@@ -2,7 +2,7 @@
 
 **Authority:** [`docs/ai/prizelet-world-ready-master-prompt.md`](./prizelet-world-ready-master-prompt.md)
 
-**Status:** Wave 58 admin join spend honesty 2026-10-05. Product is **not** world-ready.
+**Status:** Wave 59 creator balance capped reads 2026-10-05. Product is **not** world-ready.
 
 Do not claim world-ready until Section 8 gates in the master prompt pass.
 
@@ -16,7 +16,9 @@ Do not claim world-ready until Section 8 gates in the master prompt pass.
 | Evidence | branch, date, one-line actual vs expected |
 | Waiver | owner + reason (required if WAIVED) |
 
-Last updated: 2026-10-05. Last wave: **58** (`fix/world-ready-wave-58-admin-join-spend-indexes`). Source pin: `bf85281` (inventory).
+Last updated: 2026-10-05. Last wave: **59** (`fix/world-ready-wave-59-creator-balance-cap`). Source pin: `bf85281` (inventory).
+
+Wave 59: `getCreatorAvailableBalanceCents` takes events/payouts (no `.collect`); returns `truncated`; requestPayout refuses `BALANCE_TRUNCATED`. Soak max events/creator **12**, payouts/creator **2**. Units `creatorBalanceCap.security.test.ts` 2/2 + `payoutBalance.test.ts` 6/6.
 
 Wave 58: `ADMIN_JOIN_LIMIT` raised **200 → 500** (list ceiling). Users/customers/creators pages return `metricsTruncated` + amber join note. Soak max subs/user **2**, /creator **10**, join cap not hit. Units `adminJoinMetrics.security.test.ts` 3/3.
 
@@ -349,7 +351,7 @@ App public functions (`Auth` = TBD until Wave 1):
 | `payments.stripeNode.confirmCheckoutSession` | auth | yes | PASS | Wave 5: session `cs_test_a171…` → settled `paymentEvents` commercialRef |
 | `payments.stripeNode.createBillingPortalSession` | TBD | yes | NOT_RUN | frozen vs convex/*.ts @ bf85281 |
 | `payments.stripeNode.createCheckoutSession` | auth | yes | PASS | Wave 5: redirected to checkout.stripe.com Prizlett sandbox Monthly pro $100 |
-| `payouts.mutations.availableBalance` | TBD | yes | NOT_RUN | frozen vs convex/*.ts @ bf85281 |
+| `payouts.mutations.availableBalance` | creator | yes | PASS | Wave 59: capped by_creatorId takes + truncated; refuse request when truncated |
 | `payouts.mutations.createAdmin` | TBD | yes | NOT_RUN | frozen vs convex/*.ts @ bf85281 |
 | `payouts.mutations.getMySettings` | TBD | yes | NOT_RUN | frozen vs convex/*.ts @ bf85281 |
 | `payouts.mutations.listAllAdmin` | TBD | yes | NOT_RUN | frozen vs convex/*.ts @ bf85281 |
@@ -470,6 +472,6 @@ Schema `appRole` also allows `moderator` and `user` (not product actors; no rout
 ## M. Remaining risk (update every fix PR)
 
 - P2: Connect Transfer action is live but blocked until Express KYC (`payouts_enabled`) and USD vs NOK platform balance; referral cash still outside Stripe; member self-serve verified email OTP still missing; historical migration data parity BLOCKED (greenfield)
-- P3: admin join spend still capped at 500 indexed rows/row (honest `metricsTruncated`); customers/alerts/finance/dashboard/fees/payouts/announcement/reports KPIs PASS (Wave 43–47, 50–55); eslint PASS Wave 57; join honesty PASS Wave 58
+- P3: admin join spend still capped at 500 indexed rows/row (honest `metricsTruncated`); creator balance capped at 5k events/payouts (Wave 59); customers/alerts/finance/dashboard/fees/payouts/announcement/reports KPIs PASS (Wave 43–47, 50–55); eslint PASS Wave 57; join honesty PASS Wave 58
 - Not in this PR: production deploy, live Stripe keys, MFA
 - Waivers: see section L

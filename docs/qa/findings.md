@@ -1,3 +1,19 @@
+# Findings — Wave 59 creator balance capped reads 2026-10-05
+
+Branch `fix/world-ready-wave-59-creator-balance-cap`. Convex soak on `combative-mongoose-559`.
+
+| Step | Result | Evidence |
+|------|--------|----------|
+| Query | PASS | `getCreatorAvailableBalanceCents` `.take(ADMIN_SCAN_MAX_DOCS)` on events + payouts; no `.collect` |
+| Mutation | PASS | `requestPayout` throws `BALANCE_TRUNCATED` when capped |
+| UI | PASS | Creator Payouts shows `scanTruncationNote` when truncated |
+| Data soak | PASS | max events/creator **12**, payouts/creator **2** — under 5k |
+| Unit | PASS | `creatorBalanceCap.security.test.ts` 2/2; `payoutBalance.test.ts` 6/6 |
+
+**Residual:** Connect KYC/currency; referral cash outside Stripe; email OTP (no mailer).
+
+---
+
 # Findings — Wave 58 admin join spend honesty 2026-10-05
 
 Branch `fix/world-ready-wave-58-admin-join-spend-indexes`. Convex soak on `combative-mongoose-559`.
