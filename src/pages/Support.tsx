@@ -36,10 +36,10 @@ const Support = () => (
               Typical reply within one business day.
             </p>
             <a
-              href="mailto:support@prizelet.com"
+              href="mailto:support@sweeph.com"
               className="mt-3 inline-flex text-sm font-medium text-primary hover:underline"
             >
-              support@prizelet.com
+              support@sweeph.com
             </a>
           </div>
         </div>

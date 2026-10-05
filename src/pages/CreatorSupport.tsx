@@ -226,12 +226,12 @@ function CreatorSupportBody() {
               Start a conversation
             </Button>
             <a
-              href="mailto:support@prizelet.com"
+              href="mailto:support@sweeph.com"
               className="mt-3 flex min-h-11 items-center justify-center gap-2 text-sm font-semibold text-muted-foreground transition-colors hover:text-foreground"
             >
               <Mail className="h-4 w-4" aria-hidden />
               Email us
-              <span className="font-medium">support@prizelet.com</span>
+              <span className="font-medium">support@sweeph.com</span>
             </a>
           </section>
         </aside>

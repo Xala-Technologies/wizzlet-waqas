@@ -274,7 +274,7 @@ const CreatorMessages = () => {
       id: SUPPORT_THREAD_ID,
       kind: 'support',
       name: 'Prizelet Support',
-      email: 'support@prizelet.com',
+      email: 'support@sweeph.com',
       location: null,
       messages: msgs,
       unread: msgs.filter((m) => m.sender_role === 'admin' && !m.read).length,

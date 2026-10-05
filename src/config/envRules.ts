@@ -131,7 +131,7 @@ export function validateEnvProfile(input: ValidateEnvInput): ValidationIssue[] {
     if (!input.siteUrl || !isProductionOrigin(input.siteUrl)) {
       issues.push({
         code: "PROD_SITE_URL",
-        message: "Production SITE_URL must be a known production origin (e.g. https://www.prizelet.com)",
+        message: "Production SITE_URL must be a known production origin (e.g. https://www.sweeph.com)",
       });
     }
     if (pkMode === "test" || skMode === "test") {

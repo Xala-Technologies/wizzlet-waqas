@@ -225,7 +225,9 @@ const providers = [
 function normalizeAppOrigin(url: string): string {
   try {
     const u = new URL(url);
-    if (u.hostname === "prizelet.com") {
+    if (u.hostname === "sweeph.com") {
+      u.hostname = "www.sweeph.com";
+    } else if (u.hostname === "prizelet.com") {
       u.hostname = "www.prizelet.com";
     }
     return u.toString().replace(/\/$/, "");
