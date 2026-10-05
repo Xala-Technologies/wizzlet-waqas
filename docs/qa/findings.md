@@ -1,3 +1,18 @@
+# Findings — Wave 43 admin customers F-012 pagination 2026-10-05
+
+Branch `fix/world-ready-wave-43-admin-customers-pagination`. Admin soak `admin@prizelet.dev` on `combative-mongoose-559`.
+
+| Step | Result | Evidence |
+|------|--------|----------|
+| Query rewrite | PASS | `listCustomersPage` uses `.paginate()` on `subscriptions`; per-user `by_userId` `.take(joinCap)`; no `adminScanAll` |
+| Unit | PASS | `adminCustomersPage.security.test.ts` 2/2 |
+| Admin UI | PASS | `/admin/customers` **13** loaded; `j4member` Active 2 subs **$44.98**; deleted users **Canceled**; `j6commwave34` Active |
+| Snapshots | Residual | `customersOverview` still `adminScanAll` 5k |
+
+**Residual:** Connect transfers (Stripe dashboard); member email OTP; snapshot scans.
+
+---
+
 # Findings — Wave 42 Stripe Connect Express onboarding 2026-10-05
 
 Branch `feat/world-ready-wave-42-stripe-connect-onboarding`. Fixture `j2creator` / `j2creator+wave7@example.com` on `combative-mongoose-559`.

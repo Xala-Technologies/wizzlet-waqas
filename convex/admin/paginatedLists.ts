@@ -3,7 +3,7 @@ import { query } from "../_generated/server";
 import { v } from "convex/values";
 import type { Id } from "../_generated/dataModel";
 import { listRolesForUser, requireAdmin } from "../lib/auth";
-import { ADMIN_SCAN_MAX_DOCS, adminJoinCap, adminScanAll } from "../lib/adminLists";
+import { ADMIN_SCAN_MAX_DOCS, adminJoinCap } from "../lib/adminLists";
 import { isPaidOutPayoutStatus } from "../lib/payoutBalance";
 
 const ROLE_DISPLAY_ORDER = [
@@ -303,78 +303,54 @@ const adminTransactionRowValidator = v.object({
 });
 
 /**
- * Cursor-paginated customers = users with ≥1 subscription (not all accounts).
- * `canceledCount` is status === canceled only; payment problems are separate rows in Alerts.
+ * Cursor-paginated customers from newest subscriptions (F-012).
+ * Dedupes userIds within the page; per-user stats use indexed `.take(ADMIN_JOIN_LIMIT)`.
+ * `canceledCount` includes `canceled` and `cancelled`.
  */
 export const listCustomersPage = query({
   args: { paginationOpts: paginationOptsValidator },
   returns: paginationResultValidator(adminCustomerRowValidator),
   handler: async (ctx, args) => {
     await requireAdmin(ctx);
-    const subsScan = await adminScanAll(ctx, "subscriptions");
-    const byUser = new Map<
-      Id<"users">,
-      {
-        subs: Array<{
-          status: string;
-          amountCents: number;
-          createdAt: number;
-        }>;
-        lastActivity: number;
-      }
-    >();
+    const result = await ctx.db
+      .query("subscriptions")
+      .order("desc")
+      .paginate(args.paginationOpts);
 
-    for (const s of subsScan.docs) {
-      const cur = byUser.get(s.userId) ?? { subs: [], lastActivity: 0 };
-      cur.subs.push({
-        status: s.status,
-        amountCents: s.amountCents,
-        createdAt: s.createdAt,
-      });
-      cur.lastActivity = Math.max(cur.lastActivity, s.createdAt);
-      byUser.set(s.userId, cur);
-    }
-
-    const userIds = [...byUser.entries()]
-      .sort((a, b) => b[1].lastActivity - a[1].lastActivity)
-      .map(([id]) => id);
-
-    const start = args.paginationOpts.cursor
-      ? Number.parseInt(args.paginationOpts.cursor, 10)
-      : 0;
-    const startIndex = Number.isFinite(start) && start > 0 ? start : 0;
-    const numItems = args.paginationOpts.numItems;
-    const slice = userIds.slice(startIndex, startIndex + numItems);
-    const nextIndex = startIndex + numItems;
-    const isDone = nextIndex >= userIds.length;
-
+    const seen = new Set<Id<"users">>();
     const page = [];
-    for (const userId of slice) {
-      const u = await ctx.db.get(userId);
-      const bucket = byUser.get(userId);
-      if (!u || !bucket) continue;
-      const active = bucket.subs.filter((s) => s.status === "active");
-      const canceled = bucket.subs.filter((s) => s.status === "canceled");
-      const totalSpent = bucket.subs.reduce((a, s) => a + s.amountCents / 100, 0);
+    const joinCap = adminJoinCap();
+
+    for (const row of result.page) {
+      if (seen.has(row.userId)) continue;
+      seen.add(row.userId);
+      const u = await ctx.db.get(row.userId);
+      if (!u) continue;
+      const subs = await ctx.db
+        .query("subscriptions")
+        .withIndex("by_userId", (q) => q.eq("userId", row.userId))
+        .take(joinCap);
+      const active = subs.filter((s) => s.status === "active");
+      const canceled = subs.filter(
+        (s) => s.status === "canceled" || s.status === "cancelled",
+      );
+      const totalSpent = subs.reduce((a, s) => a + s.amountCents / 100, 0);
       const createdAt = u.createdAt ?? u._creationTime;
+      const lastActivity = subs.reduce((max, s) => Math.max(max, s.createdAt), createdAt);
       page.push({
         id: u._id,
         email: u.email ?? "",
         fullName: u.fullName ?? null,
         createdAt,
-        subCount: bucket.subs.length,
+        subCount: subs.length,
         activeCount: active.length,
         canceledCount: canceled.length,
         totalSpent,
-        lastActivity: bucket.lastActivity || createdAt,
+        lastActivity,
       });
     }
 
-    return {
-      page,
-      isDone,
-      continueCursor: String(nextIndex),
-    };
+    return { ...result, page };
   },
 });
 
