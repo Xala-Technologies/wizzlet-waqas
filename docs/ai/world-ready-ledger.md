@@ -2,7 +2,7 @@
 
 **Authority:** [`docs/ai/prizelet-world-ready-master-prompt.md`](./prizelet-world-ready-master-prompt.md)
 
-**Status:** Wave 67 USD platform currency locked 2026-10-05. Product is **not** world-ready.
+**Status:** Wave 69 live Connect Transfer via Stripe-native FX 2026-10-05. Product is **not** world-ready.
 
 Do not claim world-ready until Section 8 gates in the master prompt pass.
 
@@ -16,7 +16,9 @@ Do not claim world-ready until Section 8 gates in the master prompt pass.
 | Evidence | branch, date, one-line actual vs expected |
 | Waiver | owner + reason (required if WAIVED) |
 
-Last updated: 2026-10-05. Last wave: **68** (`feat/world-ready-wave-68-connect-stripe-fx`). Source pin: `bf85281` (inventory).
+Last updated: 2026-10-05. Last wave: **69** (`feat/world-ready-wave-69-connect-transfer-soak`). Source pin: `bf85281` (inventory).
+
+Wave 69: Live Connect Transfer soak on combative-mongoose-559 — admin created pending **$50** for `@prize2626` Express `acct_1UNI6YRzsXVyRAzD` (`payouts_enabled`); `sendConnectPayout` → `funding=stripe_fx`, `tr_1UNKR8RpY5TupxHCGqx0oHZc`, transfer **479.68 NOK** for **$50** USD ledger; payout `completed` / `stripe_connect`. Platform available was NOK-only. Units unchanged (`stripeConnect.security.test.ts`).
 
 Wave 68: Connect Transfer funding — matched USD available, else **Stripe-native FX** from NO settlement (NOK) using Stripe `exchange_rate` (never 1 øre = 1 cent). Express `acct_1UNI6YRzsXVyRAzD` KYC `payouts_enabled`. Decision log updated. Units `stripeConnect.security.test.ts`.
 
@@ -210,7 +212,7 @@ Nested layouts in `App.tsx`: `/demo/admin` → `DemoAdminLayout`; `/demo/member`
 | J2 | Product CRUD + profile slots | PASS | Wave 7 CRUD + slots; Wave 23 soft-archive; Wave 26 2026-10-05: Featured list-price switch; upsert exclusivity clears siblings; soak j2creator WAVE26 featured then WAVE24 featured → only WAVE24 badge; `/j2creator` Subscribe **$14.99**. `productFeatured.test.ts` 3/3 |
 | J3 | Content access / pick lock / win rate | PASS | Wave 8 owner lock/win-rate; Wave 24 2026-10-05: `j3member` Checkout `cs_test_a13a8w…` ACTIVE → dashboard shows WAVE8_SECRET_BODY; cancel `sub_1UMytH…` → status cancelled, feed empty (no secret); pickTracker settled Win → Result combobox **disabled**. Residual: cancel UI previously lied about period-end (fixed this wave) |
 | J4 | Messages / support / resolution | PASS | Wave 9/39/40: composer gated; CRM **Canceled · was Premium** for cancelled j4member. Units messaging 7/7 + creatorMessageSubscriber 4/4 |
-| J5 | Payout request / approve / balance | PASS | Wave 10 request/approve; Wave 25 2026-10-05: admin Lifetime from settled `paymentEvents` (cancelled j4member sub still counts) — `j4creator` Lifetime **$28.49** / Paid $28.49. `payoutBalance.test.ts` 6/6. Residual: Connect live transfers still out of scope |
+| J5 | Payout request / approve / balance | PASS | Wave 10 request/approve; Wave 25 Lifetime math; Wave 69 live Connect FX transfer `tr_1UNKR8…` for `@prize2626` **$50**. `payoutBalance.test.ts` 6/6 |
 | J6 | Promo / tracking links / referrals | PASS | Wave 11/29/30/33/34; Wave 36 2026-10-05: admin Mark paid ledger for accrued commission (**$1.49** → Paid). Residual: Stripe Connect cash movement still out of scope |
 | J7 | Identity (password, OAuth, roles, email request) | PASS | Wave 12/27/28/30/38; Wave 35 admin email fulfill + soft-delete; Wave 38 X OAuth; Wave 41 deletion fulfill → Stripe `cancelStripeSubscriptionsAdmin` cancels remote `sub_*`. Residual: no member self-serve verified email OTP |
 | J8 | Migration ETL internal-only | PASS | Wave 13 2026-10-05: all migration exports `internalMutation`; client has zero import refs; `MIGRATION_SECRET` unset on combative-mongoose-559; `migrations.security.test.ts` 3/3. Residual: historical data parity not claimed |
@@ -223,7 +225,7 @@ Nested layouts in `App.tsx`: `/demo/admin` → `DemoAdminLayout`; `/demo/member`
 | J-NOTIFICATIONS | Inbox create + mark read | PASS | Wave 20 2026-10-05: adminInsert + member markRead/markAllRead; pay/message rows; admin shared page |
 | J-SETTINGS | Settings live vs toast-stub honesty | PASS | Wave 21 2026-10-05: 2FA “coming soon”; team invite preview “not wired to the backend yet”; account profile editable |
 | J-SMART-PRICING | Smart pricing + access control honesty | PASS | Wave 21 2026-10-05: heuristic “directional only”; list price via updateSettings (not fake Stripe product prices); access-control limit spots persists |
-| J-CONNECT | Stripe Connect residual honesty | PASS | Wave 66: ledger/destination/available must all be USD; live balance NOK-only → Transfer refuse; UI honest. Wave 49 Transfer action; j2 `acct_1UN8ktRyfauxBCWX` KYC incomplete. Residual: Express KYC + fund USD available (or migrate Checkout to NOK end-to-end). |
+| J-CONNECT | Stripe Connect residual honesty | PASS | Wave 69: live `tr_1UNKR8…` stripe_fx (**479.68 NOK** for **$50** USD) to `@prize2626` `acct_1UNI6YRzsXVyRAzD` payouts_enabled. Wave 68 FX plan; Wave 66 matched-USD refuse when NOK-only; Wave 49 Transfer action. Residual: optional USD available funding; j2 Express still KYC-incomplete. |
 
 ## H. Tooling gates
 
@@ -249,7 +251,7 @@ Nested layouts in `App.tsx`: `/demo/admin` → `DemoAdminLayout`; `/demo/member`
 | F-004 JWT subject as user id | PASS | Wave 1: listPreviewsByCreator uses getAuthUserId |
 | F-005 public migration mutations | PASS | Wave 1: importBatch/load are internalMutation |
 | F-009 / J5 payout reserved vs paid | PASS | Wave 1: payoutBalance.test.ts 5/5. Live UI Wave 2 |
-| F-010 webhook soak / Connect | PASS | Wave 18 webhook soak. Wave 49: Transfer action refuses without payouts_enabled / matching currency (no fake `tr_`). Wave 48 Express Account Link. |
+| F-010 webhook soak / Connect | PASS | Wave 18 webhook soak. Wave 69: live `tr_1UNKR8…` stripe_fx. Wave 49 refuse without payouts_enabled; Wave 48 Express Account Link. |
 | F-012 admin full-table scans | PASS | Waves 43–65: admin KPIs + creator/public/discord/payment/migration collects → indexed takes; no remaining app `.collect()` |
 | F-015 lint / tsc | PASS | Wave 3: `npx tsc -b` exit 0; lint still 0 errors / 28 warnings |
 
@@ -489,7 +491,7 @@ Schema `appRole` also allows `moderator` and `user` (not product actors; no rout
 
 ## M. Remaining risk (update every fix PR)
 
-- P2: USD currency locked (Wave 67). Connect Transfer: Express KYC done + Wave 68 Stripe-native FX from NOK settlement when USD available missing; referral cash still outside Stripe; member self-serve verified email OTP still missing; historical migration data parity BLOCKED (greenfield)
-- P3: admin join spend still capped at 500; F-012 Convex `.collect` closed Waves 59–65; Connect KYC + USD available funding + referral cash + email OTP still open; customers/alerts/finance/dashboard/fees/payouts/announcement/reports KPIs PASS (Wave 43–47, 50–55); eslint PASS Wave 57; join honesty PASS Wave 58
-- Not in this PR: production deploy, live Stripe keys, MFA
+- P2: USD currency locked (Wave 67). Connect Transfer proven Wave 69 via Stripe-native FX (`tr_1UNKR8…`); referral cash still outside Stripe; member self-serve verified email OTP still missing; historical migration data parity BLOCKED (greenfield)
+- P3: admin join spend still capped at 500; F-012 Convex `.collect` closed Waves 59–65; optional USD available funding (FX path works); referral cash + email OTP still open; customers/alerts/finance/dashboard/fees/payouts/announcement/reports KPIs PASS (Wave 43–47, 50–55); eslint PASS Wave 57; join honesty PASS Wave 58
+- Not in this PR: www.prizelet.com Vercel promote, live Stripe keys, MFA
 - Waivers: see section L

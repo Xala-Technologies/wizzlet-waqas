@@ -43,7 +43,23 @@ Branch `fix/world-ready-wave-66-connect-currency-honesty`. Real Stripe soak on `
 | UI | PASS | Creator/Admin copy no longer claims transfers “not built”; admin loads live balance note |
 | Env | PASS | `STRIPE_CONNECT_COUNTRY=US` (aligned with USD ledger, not platform legal NO) |
 
-**Residual:** Finish Express KYC for a US Express account **and** fund USD available (or migrate Checkout/prices/ledger to NOK end-to-end). No fake FX. Referral cash / email OTP still open.
+**Residual (superseded Wave 69):** Live FX transfer proven; optional USD available funding. Referral cash / email OTP still open.
+
+---
+
+# Findings — Wave 69 live Connect Transfer (Stripe FX) 2026-10-05
+
+Branch `feat/world-ready-wave-69-connect-transfer-soak`. Soak on `combative-mongoose-559` + Stripe test.
+
+| Step | Result | Evidence |
+|------|--------|----------|
+| Express KYC | PASS | `@prize2626` `acct_1UNI6YRzsXVyRAzD` US/USD `payouts_enabled=true` |
+| Platform balance | PASS | Available **NOK only** (pre-transfer ~681.42) |
+| Admin pending payout | PASS | Created **$50** pending for prize2626 |
+| `sendConnectPayout` | PASS | `funding=stripe_fx`, `tr_1UNKR8RpY5TupxHCGqx0oHZc`, **47968** NOK for **5000** USD cents, rate **9.59358** |
+| Ledger | PASS | Payout `completed` / method `stripe_connect` / reference `tr_1UNKR8…` |
+
+**Residual:** Referral cash still outside Stripe; member self-serve verified email OTP; optional fund USD available (FX path works without it).
 
 ---
 
