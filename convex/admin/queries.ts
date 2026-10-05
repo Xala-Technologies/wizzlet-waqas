@@ -3,13 +3,12 @@ import { v } from "convex/values";
 import type { Id } from "../_generated/dataModel";
 import type { MutationCtx, QueryCtx } from "../_generated/server";
 import { requireAdmin } from "../lib/auth";
+import { ADMIN_SCAN_MAX_DOCS, adminTakeNewest } from "../lib/adminLists";
 import {
-  ADMIN_SCAN_MAX_DOCS,
-  adminScanAll,
-  adminTakeNewest,
-} from "../lib/adminLists";
-import {
+  mergeIndexedTakes,
   takeCasesByStatus,
+  takeCreatorsByPublished,
+  takePaymentEventsByStatus,
   takePayoutsByStatus,
   takeSubsByStatus,
 } from "../lib/adminIndexedTakes";
@@ -40,6 +39,12 @@ export const dashboardStats = query({
       openCasesScan,
       pendingCasesScan,
       inProgressCasesScan,
+      publishedCreators,
+      unpublishedCreators,
+      settledEvents,
+      paidEvents,
+      userDocs,
+      recentSubsRaw,
     ] = await Promise.all([
       takeSubsByStatus(ctx, "active"),
       takePayoutsByStatus(ctx, "paid"),
@@ -47,14 +52,19 @@ export const dashboardStats = query({
       takeCasesByStatus(ctx, "open"),
       takeCasesByStatus(ctx, "pending"),
       takeCasesByStatus(ctx, "in_progress"),
+      takeCreatorsByPublished(ctx, true),
+      takeCreatorsByPublished(ctx, false),
+      takePaymentEventsByStatus(ctx, "settled"),
+      takePaymentEventsByStatus(ctx, "paid"),
+      ctx.db.query("users").order("desc").take(ADMIN_SCAN_MAX_DOCS),
+      ctx.db.query("subscriptions").order("desc").take(6),
     ]);
-    // Counts / monthly signups still need capped table reads (no count index).
-    const usersScan = await adminScanAll(ctx, "users");
-    const creatorsScan = await adminScanAll(ctx, "creators");
-    const eventsScan = await adminScanAll(ctx, "paymentEvents");
-    const recentSubsRaw = await ctx.db.query("subscriptions").order("desc").take(6);
-
-    const users = usersScan.docs;
+    const creatorsScan = mergeIndexedTakes([
+      publishedCreators,
+      unpublishedCreators,
+    ]);
+    const eventsScan = mergeIndexedTakes([settledEvents, paidEvents]);
+    const users = userDocs;
     const creators = creatorsScan.docs;
     const events = eventsScan.docs;
     const truncated =
@@ -64,7 +74,7 @@ export const dashboardStats = query({
       openCasesScan.truncated ||
       pendingCasesScan.truncated ||
       inProgressCasesScan.truncated ||
-      usersScan.truncated ||
+      users.length >= ADMIN_SCAN_MAX_DOCS ||
       creatorsScan.truncated ||
       eventsScan.truncated;
 

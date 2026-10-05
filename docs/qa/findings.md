@@ -1,3 +1,17 @@
+# Findings — Wave 54 dashboardStats indexed creators/events 2026-10-05
+
+Branch `fix/world-ready-wave-54-dashboard-stats-indexes`. Admin soak via Convex CLI on `combative-mongoose-559` (browser soak skipped — prior hangs).
+
+| Step | Result | Evidence |
+|------|--------|----------|
+| Query | PASS | no `adminScanAll`; `takeCreatorsByPublished` + `takePaymentEventsByStatus(settled/paid)`; users `.take` |
+| Unit | PASS | `dashboardStats.security.test.ts` 1/1 |
+| Data soak | PASS | Accounts **34**, Creators **9**, Active **5**, volume **$69.95**, fees **$3.50**, paid out **$47.47**, open cases **1** |
+
+**Residual:** Connect KYC/currency; users table still newest-first cap.
+
+---
+
 # Findings — Wave 53 reportSourceData indexed 2026-10-05
 
 Branch `fix/world-ready-wave-53-report-source-indexes`. Admin soak `admin@prizelet.dev` on `combative-mongoose-559`.
