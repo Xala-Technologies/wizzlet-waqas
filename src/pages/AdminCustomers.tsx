@@ -14,7 +14,7 @@ import { useNavigate } from 'react-router-dom';
 import { downloadCsv } from '@/lib/csv';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
-import { scanTruncationNote } from '@/lib/adminTruncation';
+import { joinMetricsTruncationNote, scanTruncationNote } from '@/lib/adminTruncation';
 
 const PAGE_SIZE = 25;
 
@@ -28,6 +28,7 @@ interface Customer {
   canceledCount: number;
   totalSpent: number;
   lastActivity: number;
+  metricsTruncated: boolean;
 }
 
 const AdminCustomers = () => {
@@ -55,6 +56,7 @@ const AdminCustomers = () => {
       canceledCount: c.canceledCount,
       totalSpent: c.totalSpent,
       lastActivity: c.lastActivity,
+      metricsTruncated: c.metricsTruncated,
     }));
   }, [results]);
 
@@ -66,6 +68,9 @@ const AdminCustomers = () => {
   const truncation = overview
     ? scanTruncationNote(overview.truncated, overview.listLimit)
     : null;
+  const joinNote = joinMetricsTruncationNote(
+    customers.some((c) => c.metricsTruncated),
+  );
 
   const handleExport = () => {
     if (filtered.length === 0) { toast.error('Nothing to export'); return; }
@@ -91,6 +96,7 @@ const AdminCustomers = () => {
             {status === 'CanLoadMore' || status === 'LoadingMore' ? ' (more available)' : ''}
           </p>
           {truncation && <p className="text-amber-600 text-xs mt-1">{truncation}</p>}
+          {joinNote && <p className="text-amber-600 text-xs mt-1">{joinNote}</p>}
         </div>
         <div className="flex flex-col sm:flex-row flex-wrap items-stretch sm:items-center gap-2 w-full sm:w-auto">
           <div className="relative w-full sm:w-64">

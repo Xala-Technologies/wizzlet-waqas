@@ -37,6 +37,8 @@ const adminUserRowValidator = v.object({
   totalSpend: v.number(),
   creatorEarnings: v.number(),
   paidOut: v.number(),
+  /** True when a per-row join hit ADMIN_JOIN_LIMIT (spend/earnings may be incomplete). */
+  metricsTruncated: v.boolean(),
 });
 
 const adminCreatorRowValidator = v.object({
@@ -51,6 +53,7 @@ const adminCreatorRowValidator = v.object({
   subCount: v.number(),
   revenue: v.number(),
   verificationStatus: v.optional(v.string()),
+  metricsTruncated: v.boolean(),
 });
 
 const adminPayoutRowValidator = v.object({
@@ -94,11 +97,14 @@ export const listUsersPage = query({
 
       let creatorEarnings = 0;
       let paidOut = 0;
+      let metricsTruncated =
+        subs.length >= joinCap || ownedCreators.length >= joinCap;
       for (const c of ownedCreators) {
         const creatorSubs = await ctx.db
           .query("subscriptions")
           .withIndex("by_creatorId", (q) => q.eq("creatorId", c._id))
           .take(joinCap);
+        if (creatorSubs.length >= joinCap) metricsTruncated = true;
         creatorEarnings += creatorSubs
           .filter((s) => s.status === "active")
           .reduce((a, s) => a + s.creatorEarningsCents / 100, 0);
@@ -107,6 +113,7 @@ export const listUsersPage = query({
           .query("payouts")
           .withIndex("by_creatorId", (q) => q.eq("creatorId", c._id))
           .take(joinCap);
+        if (payouts.length >= joinCap) metricsTruncated = true;
         paidOut += payouts
           .filter((p) => isPaidOutPayoutStatus(p.status))
           .reduce((a, p) => a + p.amountCents / 100, 0);
@@ -142,6 +149,7 @@ export const listUsersPage = query({
         totalSpend,
         creatorEarnings,
         paidOut,
+        metricsTruncated,
       });
     }
 
@@ -160,10 +168,11 @@ export const listCreatorsPage = query({
     const page = [];
     for (const c of result.page) {
       const user = await ctx.db.get(c.userId);
+      const joinCap = adminJoinCap();
       const subs = await ctx.db
         .query("subscriptions")
         .withIndex("by_creatorId", (q) => q.eq("creatorId", c._id))
-        .take(adminJoinCap());
+        .take(joinCap);
       const activeCount = subs.filter((s) => s.status === "active").length;
       const monthly = (c.monthlyPriceCents ?? 999) / 100;
       page.push({
@@ -177,6 +186,7 @@ export const listCreatorsPage = query({
         email: user?.email ?? "—",
         subCount: activeCount,
         revenue: activeCount * monthly,
+        metricsTruncated: subs.length >= joinCap,
         verificationStatus: c.verificationStatus,
       });
     }
@@ -264,6 +274,7 @@ const adminCustomerRowValidator = v.object({
   canceledCount: v.number(),
   totalSpent: v.number(),
   lastActivity: v.number(),
+  metricsTruncated: v.boolean(),
 });
 
 const adminCaseRowValidator = v.object({
@@ -347,6 +358,7 @@ export const listCustomersPage = query({
         canceledCount: canceled.length,
         totalSpent,
         lastActivity,
+        metricsTruncated: subs.length >= joinCap,
       });
     }
 

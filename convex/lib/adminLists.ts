@@ -45,12 +45,12 @@ export async function adminScanAll<TableName extends TableNames>(
   return { docs, truncated: docs.length >= capped };
 }
 
-/** Default page size for admin Load More UIs. */
 /**
  * Cap for per-row indexed joins on admin list pages (F-012).
  * Never `.collect()` subscriptions/payouts/creators while enriching a page of users.
+ * Aligned with ADMIN_LIST_LIMIT so spend/earnings joins can use the full list ceiling.
  */
-export const ADMIN_JOIN_LIMIT = 200;
+export const ADMIN_JOIN_LIMIT = ADMIN_LIST_LIMIT;
 
 export function adminJoinCap(limit: number = ADMIN_JOIN_LIMIT): number {
   return Math.min(Math.max(limit, 1), ADMIN_LIST_LIMIT);

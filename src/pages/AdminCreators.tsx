@@ -13,6 +13,7 @@ import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 import { Link, useNavigate } from 'react-router-dom';
+import { joinMetricsTruncationNote } from '@/lib/adminTruncation';
 
 const PAGE_SIZE = 25;
 
@@ -29,6 +30,7 @@ interface Creator {
   revenue: number;
   verificationStatus: string;
   daysSinceSignup: number;
+  metricsTruncated: boolean;
 }
 
 const AdminCreators = () => {
@@ -62,9 +64,14 @@ const AdminCreators = () => {
         revenue: c.revenue,
         verificationStatus: c.verificationStatus ?? 'none',
         daysSinceSignup: days,
+        metricsTruncated: c.metricsTruncated,
       };
     });
   }, [results]);
+
+  const joinNote = joinMetricsTruncationNote(
+    creators.some((c) => c.metricsTruncated),
+  );
 
   const togglePublish = async (creator: Creator) => {
     try {
@@ -108,6 +115,7 @@ const AdminCreators = () => {
           <p className="text-muted-foreground text-sm mt-0.5">
             {creators.length} loaded{status === 'CanLoadMore' || status === 'LoadingMore' ? ' (more available)' : ''}
           </p>
+          {joinNote && <p className="text-amber-600 text-xs mt-1">{joinNote}</p>}
         </div>
         <div className="relative w-full sm:w-64">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />

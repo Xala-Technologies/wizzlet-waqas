@@ -1,3 +1,19 @@
+# Findings — Wave 58 admin join spend honesty 2026-10-05
+
+Branch `fix/world-ready-wave-58-admin-join-spend-indexes`. Convex soak on `combative-mongoose-559`.
+
+| Step | Result | Evidence |
+|------|--------|----------|
+| Cap | PASS | `ADMIN_JOIN_LIMIT` = `ADMIN_LIST_LIMIT` (**500**) |
+| Query | PASS | `metricsTruncated` on listUsersPage / listCustomersPage / listCreatorsPage |
+| UI | PASS | amber join note via `joinMetricsTruncationNote` on Users/Customers/Creators |
+| Data soak | PASS | max subs/user and /creator well under 500; no truncated rows expected |
+| Unit | PASS | `adminJoinMetrics.security.test.ts` 3/3 |
+
+**Residual:** Connect KYC/currency; referral cash outside Stripe; email OTP (no mailer).
+
+---
+
 # Findings — Wave 57 eslint clean 2026-10-05
 
 Branch `fix/world-ready-wave-57-eslint-cleanup`. Frontend lint hygiene.

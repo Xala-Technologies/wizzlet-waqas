@@ -10,6 +10,7 @@ import { Users, Loader2, Search, Eye, Download, Shield, Inbox } from 'lucide-rea
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { downloadCsv } from '@/lib/csv';
+import { joinMetricsTruncationNote } from '@/lib/adminTruncation';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 
@@ -26,6 +27,7 @@ interface UserRow {
   totalSpend: number;
   creatorEarnings: number;
   paidOut: number;
+  metricsTruncated: boolean;
 }
 
 const categoryLabel = (category: string) => {
@@ -65,8 +67,13 @@ const AdminUsers = () => {
       totalSpend: u.totalSpend,
       creatorEarnings: u.creatorEarnings,
       paidOut: u.paidOut,
+      metricsTruncated: u.metricsTruncated,
     }));
   }, [results]);
+
+  const joinNote = joinMetricsTruncationNote(
+    users.some((u) => u.metricsTruncated),
+  );
 
   const filtered = users.filter((u) => {
     const q = search.toLowerCase();
@@ -190,6 +197,7 @@ const AdminUsers = () => {
             All accounts including admins and creators · {users.length} loaded
             {status === 'CanLoadMore' || status === 'LoadingMore' ? ' (more available)' : ''}
           </p>
+          {joinNote && <p className="text-amber-600 text-xs mt-1">{joinNote}</p>}
         </div>
         <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
           <div className="relative w-full sm:w-64">
