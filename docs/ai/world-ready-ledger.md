@@ -403,13 +403,13 @@ Confirm each table still exists; note writers. Result `NOT_RUN` = existence free
 | products | products.mutations | PASS | Wave 7: create/edit/pin/delete soak on j2creator |
 | posts | posts/* | PASS | Wave 8: upsert + setResult won/push; RESULT_LOCKED |
 | subscriptions | payments/*, subscriptions.mutations | PASS | Wave 5: active→cancelled soak on prize2626 / j1member; Stripe sub_1UMxh9… |
-| analyticsEvents | analytics.mutations | NOT_RUN | present in convex/schema.ts @ bf85281; existence freeze only |
+| analyticsEvents | analytics.mutations | PASS | Wave 31: track wrote page_view/post_view for j6oauth on `/j2creator` |
 | pickTracker | picks.mutations | NOT_RUN | present in convex/schema.ts @ bf85281; existence freeze only |
 | paymentEvents | payments/* | PASS | Wave 5: subscription_charge $10000 test + subscription_cancel for cs_test_a171… |
 | webhookReceipts | stripeNode.fulfillWebhook | PARTIAL | Wave 6: HTTP reject + helper tests. No new signed receipt this wave |
 | sportEvents | events / platform | PASS | Wave 19: published today slate via seedTodayDev + public list |
 | notifications | notifications / notify | PASS | Wave 20: adminInsert + markRead/markAllRead on j4member |
-| savedPosts / creatorBookmarks | bookmarks.mutations | NOT_RUN | present in convex/schema.ts @ bf85281; existence freeze only |
+| savedPosts / creatorBookmarks | bookmarks.mutations | PASS | Wave 31: creatorBookmarks for j2creator; savedPosts queried empty on Saved |
 | payouts / creatorPayoutSettings | payouts.mutations | NOT_RUN | present in convex/schema.ts @ bf85281; existence freeze only |
 | creatorLinks / promoCodes / referrals | creators.growth | PASS | Wave 11 promo/links; Wave 29 referrals convert on Checkout (`m57b0n7…` converted true, commission 0) |
 | resolutionCases / resolutionCaseMessages | resolution.mutations | NOT_RUN | present in convex/schema.ts @ bf85281; existence freeze only |
