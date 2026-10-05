@@ -2,7 +2,7 @@
 
 **Authority:** [`docs/ai/prizelet-world-ready-master-prompt.md`](./prizelet-world-ready-master-prompt.md)
 
-**Status:** Wave 27 J-DISCORD end-to-end 2026-10-05. Bot install + role map + grant/revoke PASS. Product is **not** world-ready (other P2s remain).
+**Status:** Wave 28 J7 multi-role switcher + Discord OAuth residual 2026-10-05. Product is **not** world-ready (other P2s remain).
 
 Do not claim world-ready until Section 8 gates in the master prompt pass.
 
@@ -16,7 +16,9 @@ Do not claim world-ready until Section 8 gates in the master prompt pass.
 | Evidence | branch, date, one-line actual vs expected |
 | Waiver | owner + reason (required if WAIVED) |
 
-Last updated: 2026-10-05. Last wave: **27** (`test/world-ready-wave-27-j-discord`). Source pin: `bf85281` (inventory).
+Last updated: 2026-10-05. Last wave: **28** (`test/world-ready-wave-28-j7-multi-role`). Source pin: `bf85281` (inventory).
+
+Wave 28: admin `grantRole` subscriber on `j2creator` → `userRoles` creator+subscriber; RoleSwitcher **Switch to Member** → `/dashboard` then **Switch to Creator** → `/creator`. Discord AuthCallback residual closed via Wave 27 `prize262626` Continue with Discord.
 
 Wave 27: Discord Developer Portal OAuth redirects OK; `j2creator` bot install → **Prizelet VIP**; WAVE24 → **Monthly Pro**; Discord OAuth member `prize262626` Checkout → grant **granted**; cancel → **revoked**.
 
@@ -37,7 +39,7 @@ Wave 27: Discord Developer Portal OAuth redirects OK; `j2creator` bot install �
 | `/community` | Community | anonymous | public | PASS | Wave 2 chromium surface smoke 2026-10-04; inventory pin bf85281 |
 | `/login` | Login | anonymous | convex | PASS | Wave 2 chromium surface smoke 2026-10-04; inventory pin bf85281 |
 | `/signup` | Signup | anonymous | convex | PASS | Wave 2 chromium surface smoke 2026-10-04; inventory pin bf85281 |
-| `/auth/callback` | AuthCallback | anonymous | convex | PASS | Wave 2 chromium surface smoke 2026-10-04; inventory pin bf85281 |
+| `/auth/callback` | AuthCallback | anonymous | convex | PASS | Wave 27/28: Discord OAuth `prize262626` Continue with Discord → subscriber session; Wave 2 surface smoke |
 | `/select-role` | SelectRole | authenticated no role | convex | PASS | Wave 2 chromium surface smoke 2026-10-04; inventory pin bf85281 |
 | `/subscription/success` | SubscriptionSuccess | subscriber+ | convex | PASS | Wave 2 chromium surface smoke 2026-10-04; inventory pin bf85281 |
 | `/subscription/cancel` | SubscriptionCancel | subscriber+ | public | PASS | Wave 2 chromium surface smoke 2026-10-04; inventory pin bf85281 |
@@ -156,7 +158,7 @@ Nested layouts in `App.tsx`: `/demo/admin` → `DemoAdminLayout`; `/demo/member`
 | J4 | Messages / support / resolution | PASS | Wave 9 2026-10-05: `j4creator`/`j4member` Stripe sub; DM + creator unread/reply; support/resolution/growth admin replies; messaging off deny; cancel → `FORBIDDEN` on send. Unit `messaging.security.test.ts` 6/6. Fix: messaging toggle on populated CreatorMessages inbox. Residual: UI composer still shown when gated (server enforces) |
 | J5 | Payout request / approve / balance | PASS | Wave 10 request/approve; Wave 25 2026-10-05: admin Lifetime from settled `paymentEvents` (cancelled j4member sub still counts) — `j4creator` Lifetime **$28.49** / Paid $28.49. `payoutBalance.test.ts` 6/6. Residual: Connect live transfers still out of scope |
 | J6 | Promo / tracking links / referrals | PASS | Wave 11 2026-10-05: promo CRUD WAVE11OFF10; `/go/{id}` click+redirect; signup `?ref=` banner; commission UI honest (—). Fixes shortPath + duration control + referral demo rates. Residual: paid conversion attribution not browser-soaked |
-| J7 | Identity (password, OAuth, roles, email request) | PASS | Wave 12 2026-10-05: password login; evil `returnTo` blocked → `/dashboard`; logout → `/` no select-role; email request open (email unchanged); roles unit + `switchRole` held-only. Residual: OAuth callback + multi-role switcher UI not browser-soaked |
+| J7 | Identity (password, OAuth, roles, email request) | PASS | Wave 12 password/email/roles unit; Wave 27 Discord OAuth callback; Wave 28 2026-10-05: admin grant subscriber on `j2creator` → RoleSwitcher Member↔Creator round-trip. Residual: X/Twitter OAuth not browser-soaked |
 | J8 | Migration ETL internal-only | PASS | Wave 13 2026-10-05: all migration exports `internalMutation`; client has zero import refs; `MIGRATION_SECRET` unset on combative-mongoose-559; `migrations.security.test.ts` 3/3. Residual: historical data parity not claimed |
 | J9 | Public nav + chrome | PASS | Wave 2: public-nav + browser-matrix on chromium/webkit/firefox; platform-owner bootstrap visible in DEV |
 | J-ADMIN | Admin lists, fees, reports, campaigns | PASS | Wave 16 2026-10-05: users/creators paginated; fees analytics; CSV export; campaigns in-app-only honesty; alerts strip |
@@ -347,10 +349,10 @@ App public functions (`Auth` = TBD until Wave 1):
 | `resolution.mutations.setStatus` | TBD | yes | NOT_RUN | frozen vs convex/*.ts @ bf85281 |
 | `resolution.mutations.unreadCountAdmin` | TBD | yes | NOT_RUN | frozen vs convex/*.ts @ bf85281 |
 | `resolution.mutations.unreadCountCreator` | TBD | yes | NOT_RUN | frozen vs convex/*.ts @ bf85281 |
-| `roles.mutations.assignSelfRole` | TBD | yes | NOT_RUN | frozen vs convex/*.ts @ bf85281 |
-| `roles.mutations.grantRole` | TBD | yes | NOT_RUN | frozen vs convex/*.ts @ bf85281 |
-| `roles.mutations.grantTestAdmin` | requireAppUser + ALLOW_DEV_ADMIN_GRANT + allowlist | yes | NOT_RUN | Wave 1 static+unit PASS (QA-W1-01) |
-| `roles.mutations.myRoles` | TBD | yes | NOT_RUN | frozen vs convex/*.ts @ bf85281 |
+| `roles.mutations.assignSelfRole` | authenticated | yes | PASS | Wave 12 select-role + authMatrix allowlist; Wave 28 multi-role fixture already held creator |
+| `roles.mutations.grantRole` | admin | yes | PASS | Wave 28: admin granted `subscriber` to `j2creator` (`n179g48…`); roles `[creator, subscriber]` |
+| `roles.mutations.grantTestAdmin` | requireAppUser + ALLOW_DEV_ADMIN_GRANT + allowlist | yes | PASS | Wave 16/28: Sign in as platform owner → `/admin` |
+| `roles.mutations.myRoles` | authenticated | yes | PASS | Wave 28: RoleSwitcher rendered only after dual roles present |
 | `subscriptions.mutations.countActiveByCreator` | TBD | yes | NOT_RUN | frozen vs convex/*.ts @ bf85281 |
 | `subscriptions.mutations.listAllAdmin` | TBD | yes | NOT_RUN | frozen vs convex/*.ts @ bf85281 |
 | `subscriptions.mutations.listForMyCreator` | TBD | yes | NOT_RUN | frozen vs convex/*.ts @ bf85281 |
@@ -396,7 +398,7 @@ Confirm each table still exists; note writers. Result `NOT_RUN` = existence free
 | authVerificationCodes | Convex Auth (authTables) | NOT_RUN | present in convex/schema.ts @ bf85281; existence freeze only |
 | authVerifiers | Convex Auth (authTables) | NOT_RUN | present in convex/schema.ts @ bf85281; existence freeze only |
 | authRateLimits | Convex Auth (authTables) | NOT_RUN | present in convex/schema.ts @ bf85281; existence freeze only |
-| userRoles | roles.mutations | NOT_RUN | present in convex/schema.ts @ bf85281; existence freeze only |
+| userRoles | roles.mutations | PASS | Wave 28: `j2creator` holds creator+subscriber after admin grant; switcher uses held roles only |
 | creators | creators/* | NOT_RUN | present in convex/schema.ts @ bf85281; existence freeze only |
 | products | products.mutations | PASS | Wave 7: create/edit/pin/delete soak on j2creator |
 | posts | posts/* | PASS | Wave 8: upsert + setResult won/push; RESULT_LOCKED |
@@ -430,7 +432,7 @@ Schema `appRole` also allows `moderator` and `user` (not product actors; no rout
 
 ## M. Remaining risk (update every fix PR)
 
-- P2: Stripe Connect live transfers still unimplemented (Wave 22 honesty PASS — ledger/manual only); J7 OAuth callback + multi-role switcher UI residual; historical migration data parity BLOCKED (greenfield); referral commission cash TBD
-- P3: admin user/creator spend metrics cap at 200 indexed rows; customer pages scan ≤5k subscriptions; eslint warnings; AuthContext DEV `hasRole` leftover
+- P2: Stripe Connect live transfers still unimplemented (Wave 22 honesty PASS — ledger/manual only); referral commission cash TBD; J7 X/Twitter OAuth not browser-soaked; historical migration data parity BLOCKED (greenfield)
+- P3: admin user/creator spend metrics cap at 200 indexed rows; customer pages scan ≤5k subscriptions; eslint warnings; AuthContext DEV `hasRole` leftover; All Accounts table shows a single primary role even when `userRoles` is multi
 - Not in this PR: production deploy, live Stripe keys, MFA
 - Waivers: see section L
