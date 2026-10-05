@@ -7,8 +7,8 @@ alwaysApply: true
 
 Creator Overview is the visual source of truth. Apply the same style across creator (and shared) dashboards:
 
-1. **KPI strips** — use `DashboardKpiStrip` (`@/components/dashboard/DashboardKpiStrip`) with `kpiIconTone` from `@/lib/kpiIconTones`. Tones are **brand blues only** (primary + soft alternate) — no rainbow card fills. Never use bare muted glyphs.
-2. **Cards** — `rounded-2xl border border-border bg-card shadow-[var(--shadow-card)]`, or brand `clay-fill-primary` / `clay-fill-soft` for KPI clay variants.
+1. **KPI strips** — use `DashboardKpiStrip` (`@/components/dashboard/DashboardKpiStrip`) with `kpiIconTone` from `@/lib/kpiIconTones` on the **icon tile only**. Card surfaces stay neutral (`bg-card` / clay-card white) — do not tint every KPI card. Brand blues only on icons.
+2. **Cards** — `rounded-2xl border border-border bg-card shadow-[var(--shadow-card)]`.
 3. **Trends** — pill badges top-right (`trendLabel` / `trendPositive`), not flat text under the value.
 4. **Sport / pick rows** — use `sportVisual()` emoji chips and `resultPillTone` for Win / Loss / Pending / Published.
 5. **Sample data** — empty accounts get mock preview + amber banner (`?demo=0` / `?demo=1`) per `ui-mock-preview-data` rule.

@@ -15,7 +15,7 @@ const ACTION_TONES = [kpiIconTone.primary, kpiIconTone.emerald] as const;
 
 export function OverviewQuickActions({ actions }: { actions: QuickAction[] }) {
   return (
-    <section className={cn(clayCard, 'clay-fill-primary p-5 sm:p-6')}>
+    <section className={cn(clayCard, 'p-5 sm:p-6')}>
       <h2 className="mb-3 text-base font-extrabold tracking-tight text-foreground">Quick Actions</h2>
       <ul className="space-y-2">
         {actions.map((a, i) => (
