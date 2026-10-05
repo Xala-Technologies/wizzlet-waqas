@@ -2,7 +2,7 @@
 
 **Authority:** [`docs/ai/prizelet-world-ready-master-prompt.md`](./prizelet-world-ready-master-prompt.md)
 
-**Status:** Wave 57 eslint clean 2026-10-05. Product is **not** world-ready.
+**Status:** Wave 58 admin join spend honesty 2026-10-05. Product is **not** world-ready.
 
 Do not claim world-ready until Section 8 gates in the master prompt pass.
 
@@ -16,7 +16,9 @@ Do not claim world-ready until Section 8 gates in the master prompt pass.
 | Evidence | branch, date, one-line actual vs expected |
 | Waiver | owner + reason (required if WAIVED) |
 
-Last updated: 2026-10-05. Last wave: **57** (`fix/world-ready-wave-57-eslint-cleanup`). Source pin: `bf85281` (inventory).
+Last updated: 2026-10-05. Last wave: **58** (`fix/world-ready-wave-58-admin-join-spend-indexes`). Source pin: `bf85281` (inventory).
+
+Wave 58: `ADMIN_JOIN_LIMIT` raised **200 → 500** (list ceiling). Users/customers/creators pages return `metricsTruncated` + amber join note. Soak max subs/user **2**, /creator **10**, join cap not hit. Units `adminJoinMetrics.security.test.ts` 3/3.
 
 Wave 57: `npm run lint` **0** problems. Fixed hooks deps on CreatorLinks/CreatorProducts/DemoAdminUsers; ignore `_generated` + intentional co-export surfaces. Units `eslintConfig.security.test.ts` 1/1.
 
@@ -468,6 +470,6 @@ Schema `appRole` also allows `moderator` and `user` (not product actors; no rout
 ## M. Remaining risk (update every fix PR)
 
 - P2: Connect Transfer action is live but blocked until Express KYC (`payouts_enabled`) and USD vs NOK platform balance; referral cash still outside Stripe; member self-serve verified email OTP still missing; historical migration data parity BLOCKED (greenfield)
-- P3: admin user/creator spend metrics cap at 200 indexed rows; customers/alerts/finance/dashboard/fees/payouts/announcement/reports KPIs PASS (Wave 43–47, 50–55); eslint PASS Wave 57
+- P3: admin join spend still capped at 500 indexed rows/row (honest `metricsTruncated`); customers/alerts/finance/dashboard/fees/payouts/announcement/reports KPIs PASS (Wave 43–47, 50–55); eslint PASS Wave 57; join honesty PASS Wave 58
 - Not in this PR: production deploy, live Stripe keys, MFA
 - Waivers: see section L
