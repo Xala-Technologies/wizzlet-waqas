@@ -22,6 +22,7 @@ interface UserRow {
   created_at: number;
   subCount: number;
   role: string;
+  roles: string[];
   totalSpend: number;
   creatorEarnings: number;
   paidOut: number;
@@ -59,6 +60,7 @@ const AdminUsers = () => {
       created_at: u.createdAt,
       subCount: u.subCount,
       role: u.role,
+      roles: u.roles?.length ? u.roles : [u.role],
       totalSpend: u.totalSpend,
       creatorEarnings: u.creatorEarnings,
       paidOut: u.paidOut,
@@ -82,13 +84,21 @@ const AdminUsers = () => {
     return <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-caption font-medium uppercase tracking-wide ${r.cls}`}>{r.label}</span>;
   };
 
+  const rolePills = (roles: string[]) => (
+    <div className="flex flex-wrap gap-1">
+      {(roles.length > 0 ? roles : ['user']).map((role) => (
+        <span key={role}>{roleLabel(role)}</span>
+      ))}
+    </div>
+  );
+
   const handleExport = () => {
     if (filtered.length === 0) { toast.error('Nothing to export'); return; }
     downloadCsv(
       `users-${new Date().toISOString().split('T')[0]}.csv`,
-      ['Name', 'Email', 'Role', 'Active subscriptions', 'Total spend', 'Creator earnings', 'Paid out', 'Joined'],
+      ['Name', 'Email', 'Roles', 'Active subscriptions', 'Total spend', 'Creator earnings', 'Paid out', 'Joined'],
       filtered.map((u) => [
-        u.full_name ?? 'Unknown', u.email, u.role, u.subCount,
+        u.full_name ?? 'Unknown', u.email, u.roles.join('|'), u.subCount,
         u.totalSpend.toFixed(2), u.creatorEarnings.toFixed(2), u.paidOut.toFixed(2),
         format(new Date(u.created_at), 'yyyy-MM-dd'),
       ]),
@@ -106,7 +116,18 @@ const AdminUsers = () => {
         role: grantRole,
       });
       toast.success(`Granted ${grantRole} to ${selected.email}`);
-      setSelected({ ...selected, role: grantRole });
+      const nextRoles = selected.roles.includes(grantRole)
+        ? selected.roles
+        : [...selected.roles, grantRole];
+      setSelected({
+        ...selected,
+        roles: nextRoles,
+        role: nextRoles.includes('admin')
+          ? 'admin'
+          : nextRoles.includes('creator')
+            ? 'creator'
+            : nextRoles[0] ?? grantRole,
+      });
     } catch (e) {
       toast.error(e instanceof Error ? e.message : 'Failed to grant role');
     } finally {
@@ -255,7 +276,7 @@ const AdminUsers = () => {
                     <p className="text-sm font-medium truncate">{u.full_name ?? 'Unknown'}</p>
                     <p className="text-caption text-muted-foreground truncate mt-0.5">{u.email}</p>
                   </div>
-                  {roleLabel(u.role)}
+                  {rolePills(u.roles)}
                 </div>
                 <div className="mt-3 grid grid-cols-2 gap-2 text-caption">
                   <div><span className="text-muted-foreground">Subs</span><p className="font-medium mt-0.5">{u.subCount > 0 ? `${u.subCount} active` : 'None'}</p></div>
@@ -276,7 +297,7 @@ const AdminUsers = () => {
                 <tr className="border-b border-border bg-muted/30">
                   <th className="text-left text-caption font-medium text-muted-foreground p-4">User</th>
                   <th className="text-left text-caption font-medium text-muted-foreground p-4">Email</th>
-                  <th className="text-left text-caption font-medium text-muted-foreground p-4">Role</th>
+                  <th className="text-left text-caption font-medium text-muted-foreground p-4">Roles</th>
                   <th className="text-left text-caption font-medium text-muted-foreground p-4">Subscriptions</th>
                   <th className="text-left text-caption font-medium text-muted-foreground p-4">Total Spend</th>
                   <th className="text-left text-caption font-medium text-muted-foreground p-4">Creator Earnings</th>
@@ -290,7 +311,7 @@ const AdminUsers = () => {
                   <tr key={u.id} className="border-b border-border last:border-0 hover:bg-muted/20 transition-colors">
                     <td className="p-4 font-medium">{u.full_name ?? 'Unknown'}</td>
                     <td className="p-4 text-muted-foreground text-caption">{u.email}</td>
-                    <td className="p-4">{roleLabel(u.role)}</td>
+                    <td className="p-4">{rolePills(u.roles)}</td>
                     <td className="p-4">
                       {u.subCount > 0 ? (
                         <span className="text-sm font-medium">{u.subCount} active</span>
@@ -336,7 +357,10 @@ const AdminUsers = () => {
           {selected && (
             <div className="space-y-3 text-sm">
               <div className="flex justify-between"><span className="text-muted-foreground">Email</span><span>{selected.email}</span></div>
-              <div className="flex justify-between items-center"><span className="text-muted-foreground">Role</span>{roleLabel(selected.role)}</div>
+              <div className="flex justify-between items-start gap-3">
+                <span className="text-muted-foreground shrink-0">Roles</span>
+                {rolePills(selected.roles)}
+              </div>
               <div className="flex justify-between"><span className="text-muted-foreground">Joined</span><span>{format(new Date(selected.created_at), 'MMM d, yyyy')}</span></div>
               <div className="flex justify-between"><span className="text-muted-foreground">Active subscriptions</span><span>{selected.subCount}</span></div>
               <div className="flex justify-between"><span className="text-muted-foreground">Total spend</span><span>${selected.totalSpend.toFixed(2)}</span></div>

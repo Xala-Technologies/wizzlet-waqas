@@ -6,13 +6,34 @@ import { listRolesForUser, requireAdmin } from "../lib/auth";
 import { ADMIN_SCAN_MAX_DOCS, adminJoinCap, adminScanAll } from "../lib/adminLists";
 import { isPaidOutPayoutStatus } from "../lib/payoutBalance";
 
+const ROLE_DISPLAY_ORDER = [
+  "admin",
+  "creator",
+  "subscriber",
+  "moderator",
+  "user",
+] as const;
+
+function sortRolesForDisplay(roles: string[]): string[] {
+  return [...roles].sort((a, b) => {
+    const ai = ROLE_DISPLAY_ORDER.indexOf(a as (typeof ROLE_DISPLAY_ORDER)[number]);
+    const bi = ROLE_DISPLAY_ORDER.indexOf(b as (typeof ROLE_DISPLAY_ORDER)[number]);
+    const aRank = ai === -1 ? ROLE_DISPLAY_ORDER.length : ai;
+    const bRank = bi === -1 ? ROLE_DISPLAY_ORDER.length : bi;
+    return aRank - bRank || a.localeCompare(b);
+  });
+}
+
 const adminUserRowValidator = v.object({
   id: v.id("users"),
   email: v.string(),
   fullName: v.union(v.string(), v.null()),
   createdAt: v.number(),
   subCount: v.number(),
+  /** Primary role for legacy single-badge consumers. */
   role: v.string(),
+  /** All held `userRoles` (sorted admin → creator → subscriber → …). */
+  roles: v.array(v.string()),
   totalSpend: v.number(),
   creatorEarnings: v.number(),
   paidOut: v.number(),
@@ -91,10 +112,19 @@ export const listUsersPage = query({
           .reduce((a, p) => a + p.amountCents / 100, 0);
       }
 
-      let role = "user";
-      if (roles.includes("admin")) role = "admin";
-      else if (ownedCreators.length > 0 || roles.includes("creator")) role = "creator";
-      else if (activeSubs.length > 0 || roles.includes("subscriber")) role = "subscriber";
+      const heldRoles = sortRolesForDisplay(roles);
+      let role = heldRoles[0] ?? "user";
+      if (heldRoles.length === 0) {
+        if (ownedCreators.length > 0) role = "creator";
+        else if (activeSubs.length > 0) role = "subscriber";
+      } else if (
+        !heldRoles.includes("creator") &&
+        ownedCreators.length > 0 &&
+        !heldRoles.includes("admin")
+      ) {
+        // Creator profile without role row — keep primary as creator for display.
+        role = "creator";
+      }
 
       page.push({
         id: u._id,
@@ -103,6 +133,12 @@ export const listUsersPage = query({
         createdAt: u.createdAt ?? u._creationTime,
         subCount: activeSubs.length,
         role,
+        roles:
+          heldRoles.length > 0
+            ? heldRoles
+            : role !== "user"
+              ? [role]
+              : ["user"],
         totalSpend,
         creatorEarnings,
         paidOut,
