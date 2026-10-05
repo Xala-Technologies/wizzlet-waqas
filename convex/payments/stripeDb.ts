@@ -13,6 +13,7 @@ import type { Id } from "../_generated/dataModel";
 import { internal } from "../_generated/api";
 import { userHasRole } from "../lib/auth";
 import { ADMIN_SCAN_MAX_DOCS } from "../lib/adminLists";
+import { PRIZELET_LEDGER_CURRENCY } from "../lib/stripeConnect";
 
 /** Action auth helper: confirm Convex Auth userId holds the admin role. */
 export const assertAdminUserId = internalQuery({
@@ -221,7 +222,7 @@ export const fulfillCheckout = internalMutation({
       amountCents: args.amountCents,
       platformFeeCents: split.platformFeeCents,
       creatorEarningsCents: split.creatorEarningsCents,
-      currency: "usd",
+      currency: PRIZELET_LEDGER_CURRENCY,
       status: "settled",
       externalRef: args.deliveryRef,
       commercialRef,
@@ -337,7 +338,7 @@ export const markSubscriptionCancelled = internalMutation({
       amountCents: 0,
       platformFeeCents: 0,
       creatorEarningsCents: 0,
-      currency: "usd",
+      currency: PRIZELET_LEDGER_CURRENCY,
       status: "settled",
       externalRef: args.deliveryRef,
       commercialRef: `cancel:${args.stripeSubscriptionId}`,
@@ -407,7 +408,7 @@ export const applyInvoicePaid = internalMutation({
       amountCents: amount,
       platformFeeCents: split.platformFeeCents,
       creatorEarningsCents: split.creatorEarningsCents,
-      currency: "usd",
+      currency: PRIZELET_LEDGER_CURRENCY,
       status: "settled",
       externalRef: args.deliveryRef,
       commercialRef,
@@ -582,7 +583,7 @@ export const cancelBySubscriptionId = internalMutation({
       amountCents: 0,
       platformFeeCents: 0,
       creatorEarningsCents: 0,
-      currency: "usd",
+      currency: PRIZELET_LEDGER_CURRENCY,
       status: "settled",
       externalRef: args.deliveryRef,
       commercialRef: `cancel_local:${sub._id}`,

@@ -3,8 +3,9 @@
 export const CONNECT_ONBOARDING_PATH = "/creator/payouts";
 
 /**
- * Prizelet Checkout + ledger amounts are USD minor units today.
- * Connect transfers must use this currency — never treat USD cents as NOK øre.
+ * Prizelet commercial currency (product decision 2026-10-05): USD minor units.
+ * Checkout, paymentEvents, sandbox settle, and Connect Transfers all use this.
+ * Never treat NOK øre as USD cents when the Stripe entity settles in NOK.
  */
 export const PRIZELET_LEDGER_CURRENCY = "usd";
 

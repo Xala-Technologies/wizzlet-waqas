@@ -2,6 +2,15 @@
 
 Extends [`decisions.md`](./decisions.md). Page-pack baseline only; no new commercial policy.
 
+## Commercial currency (2026-10-05)
+
+| Concern | Contract |
+|---------|----------|
+| Product / Checkout / ledger | **USD** (`PRIZELET_LEDGER_CURRENCY`) |
+| Connect Express country | **US** (`STRIPE_CONNECT_COUNTRY=US`) while ledger is USD |
+| Stripe legal entity | May remain **NO** with `default_currency=nok` settlement — ops must fund **USD available** for Connect Transfers; never treat NOK øre as USD cents |
+| NOK pricing migration | Not chosen — out of scope while USD is the platform currency |
+
 ## Layout and typography (approved)
 
 | Concern | Contract |

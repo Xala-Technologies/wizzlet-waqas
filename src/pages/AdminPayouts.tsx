@@ -79,10 +79,11 @@ const AdminPayouts = () => {
         const available = bal.available
           .map((row) => `${row.currency.toUpperCase()} ${(row.amount / 100).toFixed(2)}`)
           .join(', ');
+        const platform = `${bal.platformCountry || '?'} / settles ${bal.platformDefaultCurrency.toUpperCase() || '?'}`;
         setStripeBalanceNote(
           bal.ledgerCurrencyAvailable
-            ? `Live Stripe available: ${available || 'none'}. Ledger currency ${bal.ledgerCurrency.toUpperCase()} is funded for Connect Transfers.`
-            : `Live Stripe available: ${available || 'none'}. Ledger is ${bal.ledgerCurrency.toUpperCase()} — Send via Stripe will refuse until a ${bal.ledgerCurrency.toUpperCase()} available balance exists (do not treat NOK as USD cents).`,
+            ? `Prizelet currency USD. Stripe entity ${platform}. Available: ${available || 'none'}. USD funded — Connect Transfers can run after Express KYC.`
+            : `Prizelet currency USD. Stripe entity ${platform}. Available: ${available || 'none'}. Fund USD available in Stripe (Dashboard → Balances / support) before Send via Stripe — NOK cannot pay a USD ledger.`,
         );
       })
       .catch(() => {

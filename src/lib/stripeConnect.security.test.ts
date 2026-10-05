@@ -132,6 +132,8 @@ describe('stripe Connect Express wiring', () => {
     expect(stripeNode).toMatch(/Does not move money/);
     expect(stripeNode).toMatch(/PRIZELET_LEDGER_CURRENCY/);
     expect(stripeNode).toMatch(/export const getConnectPlatformBalance/);
+    expect(stripeNode).toMatch(/platformDefaultCurrency/);
+    expect(stripeDb).toMatch(/PRIZELET_LEDGER_CURRENCY/);
   });
 
   it('persists account id and capability flags on the creator', () => {
