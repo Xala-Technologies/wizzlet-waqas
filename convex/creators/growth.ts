@@ -266,7 +266,7 @@ export const listMyReferrals = query({
 
 /**
  * Attribute signup via creator referral code (`?ref=`).
- * Tracks referral row only — cash commission stays 0 until payouts productize it.
+ * Tracks referral row; commission accrues on paid convert via growthAttribution.
  */
 export const recordReferralByCode = mutation({
   args: {

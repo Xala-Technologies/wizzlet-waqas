@@ -2,7 +2,7 @@
 
 **Authority:** [`docs/ai/prizelet-world-ready-master-prompt.md`](./prizelet-world-ready-master-prompt.md)
 
-**Status:** Wave 33 creatorLinks paid conversion attribution 2026-10-05. Product is **not** world-ready (other P2s remain).
+**Status:** Wave 34 referral commission accrual 2026-10-05. Product is **not** world-ready (other P2s remain).
 
 Do not claim world-ready until Section 8 gates in the master prompt pass.
 
@@ -16,11 +16,11 @@ Do not claim world-ready until Section 8 gates in the master prompt pass.
 | Evidence | branch, date, one-line actual vs expected |
 | Waiver | owner + reason (required if WAIVED) |
 
-Last updated: 2026-10-05. Last wave: **33** (`test/world-ready-wave-33-link-conversions`). Source pin: `bf85281` (inventory).
+Last updated: 2026-10-05. Last wave: **34** (`test/world-ready-wave-34-referral-commission`). Source pin: `bf85281` (inventory).
 
-Wave 33: `/go/` stashes `prizelet.creatorLinkId` → Checkout metadata → `applySubscribeGrowthAttribution` bumps `creatorLinks.conversions`. Soak: Wave33 Bio `/go/jd72413…` + `j4member` Checkout `cs_test_a1LSVo…` → row clicks/sign-ups/conversions **1**. Units handoff + growthAttribution 3/3.
+Wave 34: platform `referralCommissionPercent` (default 10%) accrues `commissionEarnedCents` on referred Checkout. Soak: `j6comm+wave34` `?ref=j2creator-jn73sz` Checkout `cs_test_a1hmxS…` → row **$1.49** / Rewards paid **$1** / rate **10%**. Cash payout still manual/Connect. Units `referralCommission.test.ts` 3/3.
 
-Wave 32: saved posts + admin open requests PASS. Wave 31: bookmarks/analytics/deletion PASS.
+Wave 33: link conversions PASS. Wave 32: saved posts + admin requests PASS.
 
 ---
 
@@ -157,7 +157,7 @@ Nested layouts in `App.tsx`: `/demo/admin` → `DemoAdminLayout`; `/demo/member`
 | J3 | Content access / pick lock / win rate | PASS | Wave 8 owner lock/win-rate; Wave 24 2026-10-05: `j3member` Checkout `cs_test_a13a8w…` ACTIVE → dashboard shows WAVE8_SECRET_BODY; cancel `sub_1UMytH…` → status cancelled, feed empty (no secret); pickTracker settled Win → Result combobox **disabled**. Residual: cancel UI previously lied about period-end (fixed this wave) |
 | J4 | Messages / support / resolution | PASS | Wave 9 2026-10-05: `j4creator`/`j4member` Stripe sub; DM + creator unread/reply; support/resolution/growth admin replies; messaging off deny; cancel → `FORBIDDEN` on send. Unit `messaging.security.test.ts` 6/6. Fix: messaging toggle on populated CreatorMessages inbox. Residual: UI composer still shown when gated (server enforces) |
 | J5 | Payout request / approve / balance | PASS | Wave 10 request/approve; Wave 25 2026-10-05: admin Lifetime from settled `paymentEvents` (cancelled j4member sub still counts) — `j4creator` Lifetime **$28.49** / Paid $28.49. `payoutBalance.test.ts` 6/6. Residual: Connect live transfers still out of scope |
-| J6 | Promo / tracking links / referrals | PASS | Wave 11/29/30; Wave 33 2026-10-05: `/go/` → Checkout metadata → `creatorLinks.conversions` (Wave33 Bio **1**). Residual: referral commission cash TBD |
+| J6 | Promo / tracking links / referrals | PASS | Wave 11/29/30/33; Wave 34 2026-10-05: referred Checkout accrues commission (**$1.49** at 10% on $14.99). Residual: cash payout still manual/Connect |
 | J7 | Identity (password, OAuth, roles, email request) | PASS | Wave 12/27/28; Wave 30 AuthCallback referral apply. Residual: X/Twitter OAuth consent not browser-completed (`socialProviders.twitter: true` but no agent X login) |
 | J8 | Migration ETL internal-only | PASS | Wave 13 2026-10-05: all migration exports `internalMutation`; client has zero import refs; `MIGRATION_SECRET` unset on combative-mongoose-559; `migrations.security.test.ts` 3/3. Residual: historical data parity not claimed |
 | J9 | Public nav + chrome | PASS | Wave 2: public-nav + browser-matrix on chromium/webkit/firefox; platform-owner bootstrap visible in DEV |
@@ -432,7 +432,7 @@ Schema `appRole` also allows `moderator` and `user` (not product actors; no rout
 
 ## M. Remaining risk (update every fix PR)
 
-- P2: Stripe Connect live transfers still unimplemented (Wave 22 honesty PASS — ledger/manual only); referral commission cash product TBD; J7 X/Twitter OAuth consent not browser-completed; account-request fulfillment still manual (queue UI shipped Wave 32); historical migration data parity BLOCKED (greenfield)
+- P2: Stripe Connect live transfers still unimplemented (Wave 22 honesty PASS — ledger/manual only); referral commission accrues but cash payout still manual/Connect (Wave 34); J7 X/Twitter OAuth consent not browser-completed; account-request fulfillment still manual (queue UI shipped Wave 32); historical migration data parity BLOCKED (greenfield)
 - P3: admin user/creator spend metrics cap at 200 indexed rows; customer pages scan ≤5k subscriptions; eslint warnings; AuthContext DEV `hasRole` leftover; All Accounts table shows a single primary role even when `userRoles` is multi
 - Not in this PR: production deploy, live Stripe keys, MFA
 - Waivers: see section L

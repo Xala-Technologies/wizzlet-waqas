@@ -138,6 +138,7 @@ export const sandboxSubscribe = mutation({
       userId: user._id,
       creatorId: creator._id,
       creatorLinkId: args.creatorLinkId,
+      amountCents,
       nowMs: now,
     });
 

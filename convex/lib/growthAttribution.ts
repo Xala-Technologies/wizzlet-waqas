@@ -1,5 +1,9 @@
 import type { MutationCtx } from "../_generated/server";
 import type { Id } from "../_generated/dataModel";
+import {
+  normalizeReferralCommissionPercent,
+  referralCommissionCents,
+} from "./referralCommission";
 
 /** After a successful subscribe: bump promo uses, mark referrals converted, attribute /go/ links. */
 export async function applySubscribeGrowthAttribution(
@@ -9,6 +13,8 @@ export async function applySubscribeGrowthAttribution(
     creatorId: Id<"creators">;
     promoId?: Id<"promoCodes">;
     creatorLinkId?: Id<"creatorLinks">;
+    /** Checkout amount used to accrue referral commission. */
+    amountCents?: number;
     nowMs: number;
   },
 ): Promise<void> {
@@ -32,6 +38,15 @@ export async function applySubscribeGrowthAttribution(
     }
   }
 
+  const settings = await ctx.db
+    .query("platformSettings")
+    .withIndex("by_singletonKey", (q) => q.eq("singletonKey", "default"))
+    .unique();
+  const rate = normalizeReferralCommissionPercent(
+    settings?.referralCommissionPercent,
+  );
+  const commissionCents = referralCommissionCents(args.amountCents ?? 0, rate);
+
   const referrals = await ctx.db
     .query("referrals")
     .withIndex("by_creatorId", (q) => q.eq("creatorId", args.creatorId))
@@ -40,6 +55,7 @@ export async function applySubscribeGrowthAttribution(
     if (row.referredUserId === args.userId && !row.converted) {
       await ctx.db.patch(row._id, {
         converted: true,
+        commissionEarnedCents: commissionCents,
         updatedAt: args.nowMs,
       });
     }

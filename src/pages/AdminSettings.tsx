@@ -17,6 +17,7 @@ interface PlatformSettings {
   standard_fee_percent: number;
   intro_fee_percent: number;
   intro_period_days: number;
+  referral_commission_percent: number;
   platform_name: string;
   support_email: string;
   tagline: string;
@@ -31,6 +32,7 @@ const DEFAULTS: PlatformSettings = {
   standard_fee_percent: 10,
   intro_fee_percent: 5,
   intro_period_days: 30,
+  referral_commission_percent: 10,
   platform_name: 'Sweeph',
   support_email: 'support@prizelet.com',
   tagline: 'The premium creator platform',
@@ -45,6 +47,7 @@ function fromConvex(raw: {
   standardFeePercent?: number;
   introFeePercent?: number;
   introFeeDays?: number;
+  referralCommissionPercent?: number;
   branding?: unknown;
   payoutDefaults?: unknown;
   featureFlags?: unknown;
@@ -56,6 +59,8 @@ function fromConvex(raw: {
     standard_fee_percent: raw.standardFeePercent ?? DEFAULTS.standard_fee_percent,
     intro_fee_percent: raw.introFeePercent ?? DEFAULTS.intro_fee_percent,
     intro_period_days: raw.introFeeDays ?? DEFAULTS.intro_period_days,
+    referral_commission_percent:
+      raw.referralCommissionPercent ?? DEFAULTS.referral_commission_percent,
     platform_name: String(branding.platformName ?? branding.platform_name ?? DEFAULTS.platform_name),
     support_email: String(branding.supportEmail ?? branding.support_email ?? DEFAULTS.support_email),
     tagline: String(branding.tagline ?? DEFAULTS.tagline),
@@ -90,6 +95,13 @@ const AdminSettings = () => {
       toast.error('Standard fee must be between 0 and 50%');
       return;
     }
+    if (
+      settings.referral_commission_percent < 0 ||
+      settings.referral_commission_percent > 100
+    ) {
+      toast.error('Referral commission must be between 0 and 100%');
+      return;
+    }
     if (!settings.platform_name.trim() || !settings.support_email.trim()) {
       toast.error('Platform name and support email are required');
       return;
@@ -100,6 +112,7 @@ const AdminSettings = () => {
         standardFeePercent: settings.standard_fee_percent,
         introFeePercent: settings.intro_fee_percent,
         introFeeDays: settings.intro_period_days,
+        referralCommissionPercent: settings.referral_commission_percent,
         branding: {
           platformName: settings.platform_name.trim(),
           supportEmail: settings.support_email.trim(),
@@ -163,7 +176,7 @@ const AdminSettings = () => {
 
       <div className="rounded-xl border border-border bg-card p-6 mb-6">
         <h2 className="text-sm font-medium mb-4 flex items-center gap-2"><Percent className="h-4 w-4 text-primary" /> Platform Fee Settings</h2>
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           <div>
             <Label className="text-caption">Standard Fee (%)</Label>
             <Input type="number" value={settings.standard_fee_percent}
@@ -185,11 +198,20 @@ const AdminSettings = () => {
               className="mt-1" min="1" max="365" />
             <p className="text-caption text-muted-foreground mt-1">How long intro fee lasts</p>
           </div>
+          <div>
+            <Label className="text-caption">Referral commission (%)</Label>
+            <Input type="number" value={settings.referral_commission_percent}
+              onChange={e => set('referral_commission_percent', Number(e.target.value))}
+              className="mt-1" min="0" max="100" step="1" />
+            <p className="text-caption text-muted-foreground mt-1">Accrued on referred paid subscribe</p>
+          </div>
         </div>
         <div className="mt-4 rounded-lg bg-muted/30 p-3">
           <p className="text-caption text-muted-foreground">
             <strong>Current rule:</strong> New creators pay {settings.intro_fee_percent}% for the first{' '}
             {settings.intro_period_days} days, then {settings.standard_fee_percent}% after.
+            Referred paid subscribes accrue {settings.referral_commission_percent}% commission
+            (cash payout still manual / Connect).
           </p>
         </div>
       </div>

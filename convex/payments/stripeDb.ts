@@ -231,6 +231,7 @@ export const fulfillCheckout = internalMutation({
       creatorId: args.creatorId,
       promoId: args.promoId,
       creatorLinkId: args.creatorLinkId,
+      amountCents: args.amountCents,
       nowMs: now,
     });
 
