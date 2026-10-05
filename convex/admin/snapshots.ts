@@ -1,12 +1,23 @@
-import { query } from "../_generated/server";
+import { query, type QueryCtx } from "../_generated/server";
 import { v } from "convex/values";
-import type { Id } from "../_generated/dataModel";
+import type { Doc, Id } from "../_generated/dataModel";
 import { requireAdmin } from "../lib/auth";
 import { ADMIN_SCAN_MAX_DOCS, adminScanAll } from "../lib/adminLists";
 import {
   isPaidOutPayoutStatus,
   sumSettledEarningsByCreatorCents,
 } from "../lib/payoutBalance";
+
+async function takeSubsByStatus(
+  ctx: QueryCtx,
+  status: string,
+): Promise<{ docs: Doc<"subscriptions">[]; truncated: boolean }> {
+  const docs = await ctx.db
+    .query("subscriptions")
+    .withIndex("by_status", (q) => q.eq("status", status))
+    .take(ADMIN_SCAN_MAX_DOCS);
+  return { docs, truncated: docs.length >= ADMIN_SCAN_MAX_DOCS };
+}
 
 const monthPointValidator = v.object({
   month: v.string(),
@@ -361,8 +372,8 @@ export const alertsOverview = query({
 });
 
 /**
- * Exact customer list KPIs (users with ≥1 subscription).
- * Aligns canceled / at-risk with Alerts (past_due | failed).
+ * Customer list KPIs from indexed status buckets (F-012).
+ * Caps each status at ADMIN_SCAN_MAX_DOCS. Counts `canceled` and `cancelled`.
  */
 export const customersOverview = query({
   args: {},
@@ -378,7 +389,21 @@ export const customersOverview = query({
   }),
   handler: async (ctx) => {
     await requireAdmin(ctx);
-    const subsScan = await adminScanAll(ctx, "subscriptions");
+    const [activeScan, canceledScan, cancelledScan, pastDueScan, failedScan] =
+      await Promise.all([
+        takeSubsByStatus(ctx, "active"),
+        takeSubsByStatus(ctx, "canceled"),
+        takeSubsByStatus(ctx, "cancelled"),
+        takeSubsByStatus(ctx, "past_due"),
+        takeSubsByStatus(ctx, "failed"),
+      ]);
+    const truncated =
+      activeScan.truncated ||
+      canceledScan.truncated ||
+      cancelledScan.truncated ||
+      pastDueScan.truncated ||
+      failedScan.truncated;
+
     const byUser = new Map<
       Id<"users">,
       {
@@ -389,19 +414,30 @@ export const customersOverview = query({
       }
     >();
 
-    for (const s of subsScan.docs) {
-      const cur = byUser.get(s.userId) ?? {
-        active: 0,
-        canceled: 0,
-        problem: 0,
-        spent: 0,
-      };
-      cur.spent += s.amountCents / 100;
-      if (s.status === "active") cur.active += 1;
-      else if (s.status === "canceled") cur.canceled += 1;
-      if (s.status === "past_due" || s.status === "failed") cur.problem += 1;
-      byUser.set(s.userId, cur);
-    }
+    const ingest = (
+      docs: Doc<"subscriptions">[],
+      kind: "active" | "canceled" | "problem",
+    ) => {
+      for (const s of docs) {
+        const cur = byUser.get(s.userId) ?? {
+          active: 0,
+          canceled: 0,
+          problem: 0,
+          spent: 0,
+        };
+        cur.spent += s.amountCents / 100;
+        if (kind === "active") cur.active += 1;
+        else if (kind === "canceled") cur.canceled += 1;
+        else cur.problem += 1;
+        byUser.set(s.userId, cur);
+      }
+    };
+
+    ingest(activeScan.docs, "active");
+    ingest(canceledScan.docs, "canceled");
+    ingest(cancelledScan.docs, "canceled");
+    ingest(pastDueScan.docs, "problem");
+    ingest(failedScan.docs, "problem");
 
     let activeSubscriberCount = 0;
     let activeSubCount = 0;
@@ -424,7 +460,7 @@ export const customersOverview = query({
       revenue,
       atRiskCount,
       churnedCount,
-      truncated: subsScan.truncated,
+      truncated,
       listLimit: ADMIN_SCAN_MAX_DOCS,
     };
   },
