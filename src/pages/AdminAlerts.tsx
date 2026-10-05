@@ -139,17 +139,7 @@ const AdminAlerts = () => {
 
   return (
     <DashboardLayout type="admin" mainClassName="bg-clay-page">
-      <AdminPageHeader
-        title="Alerts"
-        description={
-          <>
-            Items requiring your attention right now
-            {truncation ? (
-              <p className="mt-2 text-caption text-amber-600 dark:text-amber-400">{truncation}</p>
-            ) : null}
-          </>
-        }
-      />
+      <AdminPageHeader notice={truncation} />
 
       {overview === undefined ? (
         <div className="flex justify-center py-20"><Loader2 className="h-5 w-5 animate-spin text-primary" /></div>

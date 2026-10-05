@@ -129,15 +129,7 @@ const AdminFinance = () => {
   return (
     <DashboardLayout type="admin" mainClassName="bg-clay-page">
       <AdminPageHeader
-        title="Finance"
-        description={
-          <>
-            Live revenue, fees, creator earnings and payout liability
-            {truncation ? (
-              <p className="mt-2 text-caption text-amber-600 dark:text-amber-400">{truncation}</p>
-            ) : null}
-          </>
-        }
+        notice={truncation}
         actions={
           <>
             <Button asChild variant="outline" size="sm" className="h-9 text-caption">

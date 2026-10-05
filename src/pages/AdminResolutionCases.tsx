@@ -68,9 +68,8 @@ const AdminResolutionCases = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const caseIdParam = searchParams.get('caseId');
   const [filter, setFilter] = useState('all');
-  const [nowMs] = useState(() => Date.now());
-  const alertsOverview = useQuery(api.admin.snapshots.alertsOverview, { nowMs });
-  const [selected, setSelected] = useState<string | null>(caseIdParam);  const [reply, setReply] = useState('');
+  const [selected, setSelected] = useState<string | null>(caseIdParam);
+  const [reply, setReply] = useState('');
   const [sending, setSending] = useState(false);
   const markedRef = useRef<Set<string>>(new Set());
 
@@ -203,9 +202,6 @@ const AdminResolutionCases = () => {
     else setSearchParams({}, { replace: true });
   };
 
-  const openCount =
-    alertsOverview?.openCases ??
-    cases.filter((c) => c.status === 'open' || c.status === 'escalated').length;
   const filterControl = (
     <Select value={filter} onValueChange={setFilter}>
       <SelectTrigger className="w-44 min-h-11"><SelectValue /></SelectTrigger>
@@ -221,20 +217,7 @@ const AdminResolutionCases = () => {
 
   return (
     <DashboardLayout type="admin" mainClassName="bg-clay-page">
-      <AdminPageHeader
-        title="Resolution Cases"
-        description={
-          <>
-            {alertsOverview !== undefined
-              ? `${openCount} open platform-wide`
-              : `${openCount} open among loaded`}
-            {' · '}
-            {cases.length} loaded
-            {pageStatus === 'CanLoadMore' || pageStatus === 'LoadingMore' ? ' (more available)' : ''}
-          </>
-        }
-        actions={filterControl}
-      />
+      <AdminPageHeader actions={filterControl} />
 
       {!loading && cases.length > 0 && (
         <DashboardKpiStrip items={statusKpis} variant="clay" className="mb-6 sm:mb-8" />

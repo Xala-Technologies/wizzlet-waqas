@@ -157,22 +157,13 @@ const AdminCustomers = () => {
   return (
     <DashboardLayout type="admin" mainClassName="bg-clay-page">
       <AdminPageHeader
-        title="Customers"
-        description={
-          <>
-            <p>
-              People with subscriptions
-              {overview ? ` · ${overview.customerCount} total` : ''}
-              {customers.length > 0 ? ` · ${customers.length} loaded` : ''}
-              {status === 'CanLoadMore' || status === 'LoadingMore' ? ' (more available)' : ''}
-            </p>
-            {truncation ? (
-              <p className="mt-1 text-xs text-amber-600 dark:text-amber-400">{truncation}</p>
-            ) : null}
-            {joinNote ? (
-              <p className="mt-1 text-xs text-amber-600 dark:text-amber-400">{joinNote}</p>
-            ) : null}
-          </>
+        notice={
+          truncation || joinNote ? (
+            <>
+              {truncation ? <p>{truncation}</p> : null}
+              {joinNote ? <p className={truncation ? 'mt-1' : undefined}>{joinNote}</p> : null}
+            </>
+          ) : undefined
         }
         actions={headerActions}
       />

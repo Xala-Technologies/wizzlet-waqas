@@ -134,23 +134,9 @@ const AdminDashboardInner = () => {
   const truncation = scanTruncationNote(stats.truncated, stats.listLimit);
   const monthlyRevenue = stats.monthly;
   const creatorGrowth = stats.monthly;
-  const todayLabel = format(new Date(), 'EEEE, MMMM d');
-
   return (
     <DashboardLayout type="admin" mainClassName="bg-clay-page">
-      <AdminPageHeader
-        eyebrow={todayLabel}
-        title="Overview"
-        description={
-          <>
-            Executive dashboard — live Convex aggregates. Fee revenue and paid-out come from
-            subscription and payout records — these are not Stripe cash balances.
-            {truncation ? (
-              <p className="mt-2 text-caption text-amber-600 dark:text-amber-400">{truncation}</p>
-            ) : null}
-          </>
-        }
-      />
+      <AdminPageHeader notice={truncation} />
 
       {nextActions.length > 0 ? (
         <div className="mb-6">

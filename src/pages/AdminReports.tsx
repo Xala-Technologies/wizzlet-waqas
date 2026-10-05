@@ -207,15 +207,9 @@ const AdminReports = () => {
   return (
     <DashboardLayout type="admin" mainClassName="bg-clay-page">
       <AdminPageHeader
-        title="Reports"
-        description={
-          <>
-            Generate CSV exports from indexed creator, subscription, and payout takes (users
-            newest-first).
-            <p className="mt-2 text-caption text-amber-600 dark:text-amber-400">
-              {capNote ?? `Exports include up to ${ADMIN_SCAN_MAX_DOCS.toLocaleString()} newest rows per source table.`}
-            </p>
-          </>
+        notice={
+          capNote ??
+          `Exports include up to ${ADMIN_SCAN_MAX_DOCS.toLocaleString()} newest rows per source table.`
         }
       />
 

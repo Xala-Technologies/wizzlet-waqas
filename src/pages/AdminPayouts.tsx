@@ -318,36 +318,32 @@ const AdminPayouts = () => {
   return (
     <DashboardLayout type="admin" mainClassName="bg-clay-page">
       <AdminPageHeader
-        title="Payouts"
-        description={
-          <>
-            <p>Treasury ledger plus optional Stripe Connect transfers</p>
-            <p className="mt-1 text-xs">
-              Mark paid in ledger does not move money. Send via Stripe creates a real Connect Transfer when
-              Express payouts are enabled — matched USD available, or Stripe-native FX from settlement currency
-              sized with Stripe’s exchange rate (never 1 øre = 1 cent).
-            </p>
-            {stripeBalanceNote ? (
-              <p
-                className={cn(
-                  'mt-2 text-caption',
-                  stripeBalanceNote.includes('will refuse')
-                    ? 'text-amber-600 dark:text-amber-400'
-                    : 'text-muted-foreground',
-                )}
-              >
-                {stripeBalanceNote}
-              </p>
-            ) : null}
-            {Number.isFinite(minPayoutDollars) && minPayoutDollars > 0 ? (
-              <p className="mt-1 text-caption text-muted-foreground">
-                Minimum payout: ${minPayoutDollars.toFixed(2)}
-              </p>
-            ) : null}
-            {truncation ? (
-              <p className="mt-2 text-caption text-amber-600 dark:text-amber-400">{truncation}</p>
-            ) : null}
-          </>
+        notice={
+          stripeBalanceNote || truncation || (Number.isFinite(minPayoutDollars) && minPayoutDollars > 0) ? (
+            <>
+              {stripeBalanceNote ? (
+                <p
+                  className={
+                    stripeBalanceNote.includes('will refuse')
+                      ? undefined
+                      : 'text-muted-foreground dark:text-muted-foreground'
+                  }
+                >
+                  {stripeBalanceNote}
+                </p>
+              ) : null}
+              {Number.isFinite(minPayoutDollars) && minPayoutDollars > 0 ? (
+                <p className={cn('text-muted-foreground', stripeBalanceNote ? 'mt-1' : undefined)}>
+                  Minimum payout: ${minPayoutDollars.toFixed(2)}
+                </p>
+              ) : null}
+              {truncation ? (
+                <p className={stripeBalanceNote || minPayoutDollars > 0 ? 'mt-1' : undefined}>
+                  {truncation}
+                </p>
+              ) : null}
+            </>
+          ) : undefined
         }
       />
 

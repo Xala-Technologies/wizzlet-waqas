@@ -156,21 +156,7 @@ const AdminCreators = () => {
 
   return (
     <DashboardLayout type="admin" mainClassName="bg-clay-page">
-      <AdminPageHeader
-        title="Creators"
-        description={
-          <>
-            <p>
-              {creators.length} loaded
-              {status === 'CanLoadMore' || status === 'LoadingMore' ? ' (more available)' : ''}
-            </p>
-            {joinNote ? (
-              <p className="mt-1 text-xs text-amber-600 dark:text-amber-400">{joinNote}</p>
-            ) : null}
-          </>
-        }
-        actions={searchField}
-      />
+      <AdminPageHeader notice={joinNote} actions={searchField} />
 
       {!loading && (
         <>
