@@ -205,7 +205,7 @@ Treat **every public query/mutation/action** as in-scope. For each: caller ident
 
 | Module | Domain |
 |--------|--------|
-| `accountRequests` | Email-change cases (no fake email mutation) |
+| `accountRequests` | Email-change OTP self-serve + admin fulfill |
 | `admin/exportReports`, `admin/paginatedLists`, `admin/queries`, `admin/snapshots` | Admin reads/exports |
 | `analytics/mutations` | Analytics events |
 | `auth`, `authProviders` | Convex Auth + social |
@@ -231,7 +231,7 @@ Treat **every public query/mutation/action** as in-scope. For each: caller ident
 | `lib/*` | Shared helpers — **not** public client endpoints; test these |
 | `crons`, `http` | Generated module imports only; surfaces in §1.6 |
 
-`auth` also exports Convex Auth public `signIn` / `signOut` / `store` / `isAuthenticated` (library-owned, not listed as app `query({` exports). Wave 0 counted **162** app public functions; all had `returns` validators. Do not treat `lib/*` as skippable product APIs.
+`auth` also exports Convex Auth public `signIn` / `signOut` / `store` / `isAuthenticated` (library-owned, not listed as app `query({` exports). Wave 0 counted **165** app public functions (Wave 70 added `startEmailChange`, `resendEmailChangeOtp`, `verifyEmailChangeOtp`); all had `returns` validators. Do not treat `lib/*` as skippable product APIs.
 
 **Lib files that must stay consistent with UI:** [`convex/lib/contentAccess.ts`](../../convex/lib/contentAccess.ts), [`convex/lib/entitlements.ts`](../../convex/lib/entitlements.ts), [`src/lib/billingAccess.ts`](../../src/lib/billingAccess.ts), [`convex/lib/payoutBalance.ts`](../../convex/lib/payoutBalance.ts), [`convex/lib/envGuards.ts`](../../convex/lib/envGuards.ts), [`convex/lib/commerceIdentity.ts`](../../convex/lib/commerceIdentity.ts).
 
@@ -296,7 +296,7 @@ Promo CRUD, ownership, max uses, expiry, `discountDuration` once|forever. `/go/:
 
 ### J7 — Identity continuity
 
-Password + X/Discord OAuth. [`AuthCallback`](../../src/pages/AuthCallback.tsx) `waitForAuthenticated` / `ensureCanonicalAuthOrigin`. Safe return paths ([`src/lib/safeReturnPath.ts`](../../src/lib/safeReturnPath.ts)) — no open redirects. Multi-role: `ROLE_PRIORITY` admin > creator > subscriber; `switchRole` only among held roles. Sign-out does not flash `/select-role`. Email change: `accountRequests` + audit; **do not claim email already changed**.
+Password + X/Discord OAuth. [`AuthCallback`](../../src/pages/AuthCallback.tsx) `waitForAuthenticated` / `ensureCanonicalAuthOrigin`. Safe return paths ([`src/lib/safeReturnPath.ts`](../../src/lib/safeReturnPath.ts)) — no open redirects. Multi-role: `ROLE_PRIORITY` admin > creator > subscriber; `switchRole` only among held roles. Sign-out does not flash `/select-role`. Email change: self-serve OTP (`startEmailChange` / `verifyEmailChangeOtp`) plus admin `accountRequests` backup; **do not claim email already changed** until OTP verify (or admin fulfill) succeeds.
 
 ### J8 — Migration continuity
 

@@ -38,6 +38,7 @@ import {
 } from '@/components/ui/dialog';
 import { useAuth } from '@/contexts/AuthContext';
 import { api } from '@convex/_generated/api';
+import { EmailChangeOtpDialog } from '@/components/account/EmailChangeOtpDialog';
 import { openCustomerPortal } from '@/lib/stripe';
 import { cn } from '@/lib/utils';
 
@@ -72,7 +73,6 @@ const CustomerSettings = () => {
   const hasPasswordAccount = useQuery(api.users.queries.hasPasswordAccount, user ? {} : 'skip');
   const updateProfile = useMutation(api.users.queries.updateProfile);
   const changePasswordAction = useAction(api.users.queries.changePassword);
-  const requestEmailChange = useMutation(api.accountRequests.requestEmailChange);
   const requestAccountDeletion = useMutation(api.accountRequests.requestAccountDeletion);
   const myAccountRequests = useQuery(api.accountRequests.listMine, user ? {} : 'skip');
   const hydratedUserId = useRef<string | null>(null);
@@ -81,10 +81,7 @@ const CustomerSettings = () => {
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
-  const [requestedEmail, setRequestedEmail] = useState('');
-  const [emailRequestReason, setEmailRequestReason] = useState('');
   const [emailDialogOpen, setEmailDialogOpen] = useState(false);
-  const [savingEmailRequest, setSavingEmailRequest] = useState(false);
   const [savingProfile, setSavingProfile] = useState(false);
   const [passwordDialogOpen, setPasswordDialogOpen] = useState(false);
   const [password, setPassword] = useState('');
@@ -200,33 +197,6 @@ const CustomerSettings = () => {
       toast.error('Could not update notifications');
     } finally {
       setSavingNotif(false);
-    }
-  };
-
-  const submitEmailRequest = async () => {
-    if (savingEmailRequest || !requestedEmail.trim()) return;
-    if (useDemo) {
-      toast.message('Sample preview — email change needs a live account.');
-      return;
-    }
-    setSavingEmailRequest(true);
-    try {
-      await requestEmailChange({
-        requestedEmail: requestedEmail.trim(),
-        reason: emailRequestReason.trim() || undefined,
-      });
-      toast.success('Email change request submitted. Support will follow up.');
-      setRequestedEmail('');
-      setEmailRequestReason('');
-      setEmailDialogOpen(false);
-    } catch (e) {
-      const msg = e instanceof Error ? e.message : 'Request failed';
-      if (msg.includes('REQUEST_ALREADY_OPEN')) toast.error('You already have an open request');
-      else if (msg.includes('EMAIL_UNCHANGED')) toast.error('That is already your email');
-      else if (msg.includes('INVALID_EMAIL')) toast.error('Enter a valid email');
-      else toast.error(msg);
-    } finally {
-      setSavingEmailRequest(false);
     }
   };
 
@@ -427,10 +397,18 @@ const CustomerSettings = () => {
                 <div className="pt-1">
                   {openEmailRequest ? (
                     <p className="text-xs text-muted-foreground">
-                      Open email-change request
+                      Code pending
                       {openEmailRequest.requestedEmail
-                        ? `: ${openEmailRequest.requestedEmail}`
+                        ? ` for ${openEmailRequest.requestedEmail}`
                         : ''}
+                      {' — '}
+                      <button
+                        type="button"
+                        className="font-semibold text-primary hover:underline"
+                        onClick={() => setEmailDialogOpen(true)}
+                      >
+                        enter code
+                      </button>
                     </p>
                   ) : (
                     <button
@@ -438,7 +416,7 @@ const CustomerSettings = () => {
                       className="text-xs font-semibold text-primary hover:underline"
                       onClick={() => setEmailDialogOpen(true)}
                     >
-                      Request email change
+                      Change email
                     </button>
                   )}
                 </div>
@@ -650,44 +628,11 @@ const CustomerSettings = () => {
         </section>
       </div>
 
-      <Dialog open={emailDialogOpen} onOpenChange={setEmailDialogOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Request email change</DialogTitle>
-            <DialogDescription>
-              Submit a request — admins fulfill email changes from the Users queue (not instant self-serve).
-            </DialogDescription>
-          </DialogHeader>
-          <div className="space-y-3 py-2">
-            <Input
-              type="email"
-              className="h-11 rounded-xl"
-              placeholder="New email address"
-              value={requestedEmail}
-              onChange={(e) => setRequestedEmail(e.target.value)}
-            />
-            <Input
-              className="h-11 rounded-xl"
-              placeholder="Reason (optional)"
-              value={emailRequestReason}
-              onChange={(e) => setEmailRequestReason(e.target.value)}
-            />
-          </div>
-          <DialogFooter>
-            <Button type="button" variant="outline" onClick={() => setEmailDialogOpen(false)}>
-              Cancel
-            </Button>
-            <Button
-              type="button"
-              disabled={savingEmailRequest || !requestedEmail.trim()}
-              onClick={() => void submitEmailRequest()}
-            >
-              {savingEmailRequest ? <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" /> : null}
-              Submit request
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <EmailChangeOtpDialog
+        open={emailDialogOpen}
+        onOpenChange={setEmailDialogOpen}
+        demo={useDemo}
+      />
 
       <Dialog open={passwordDialogOpen} onOpenChange={setPasswordDialogOpen}>
         <DialogContent>

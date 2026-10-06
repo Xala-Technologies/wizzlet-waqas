@@ -18,6 +18,19 @@ describe('accountRequests security', () => {
     expect(src).toMatch(/export const requestAccountDeletion[\s\S]*requireAppUser/);
     expect(src).toMatch(/export const requestEmailChange[\s\S]*requireAppUser/);
     expect(src).toMatch(/export const listMine[\s\S]*requireAppUser/);
+    expect(src).toMatch(/export const verifyEmailChangeOtp[\s\S]*requireAppUser/);
+  });
+
+  it('self-serve OTP hashes the code, never returns hash on listMine, and gates delivery', () => {
+    expect(src).toMatch(/export const startEmailChange[\s\S]*mintEmailChangeOtp/);
+    expect(src).toMatch(/export const resendEmailChangeOtp[\s\S]*remintOpenEmailChangeOtp/);
+    expect(src).toMatch(/verifyEmailChangeOtp[\s\S]*otpMatches/);
+    expect(src).toMatch(/MAILER_NOT_CONFIGURED/);
+    expect(src).toMatch(/allowDevOtpEcho/);
+    expect(src).toMatch(/rows\.map\(stripOtpFields\)/);
+    expect(src).not.toMatch(/listOpenAdmin[\s\S]*\.\.\.row/);
+    expect(src).toMatch(/OTP_MAX_ATTEMPTS/);
+    expect(src).toMatch(/EMAIL_TAKEN/);
   });
 
   it('resolveAdmin is admin-only and gates fulfill/reject', () => {

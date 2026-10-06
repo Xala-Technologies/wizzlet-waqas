@@ -514,7 +514,7 @@ export default defineSchema({
     createdAt: v.number(),
   }).index("by_createdAt", ["createdAt"]),
 
-  /** Authenticated account change requests (e.g. email) — manual admin fulfillment. */
+  /** Authenticated account change requests (email OTP self-serve + admin fulfill). */
   accountRequests: defineTable({
     userId: v.id("users"),
     category: v.string(),
@@ -523,6 +523,11 @@ export default defineSchema({
     status: v.string(),
     createdAt: v.number(),
     updatedAt: v.number(),
+    otpHash: v.optional(v.string()),
+    otpSalt: v.optional(v.string()),
+    otpExpiresAt: v.optional(v.number()),
+    otpAttemptCount: v.optional(v.number()),
+    otpLastSentAt: v.optional(v.number()),
   })
     .index("by_userId", ["userId"])
     .index("by_status", ["status"])

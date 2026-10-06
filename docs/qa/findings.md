@@ -1,3 +1,19 @@
+# Findings — Wave 70 email OTP self-serve 2026-10-06
+
+Branch `feat/world-ready-wave-70-email-otp`. Convex soak on `combative-mongoose-559`.
+
+| Step | Result | Evidence |
+|------|--------|----------|
+| Mint | PASS | Hashed SHA-256 OTP on `accountRequests`; `listMine` / admin list strip hash |
+| Delivery | PASS | Resend when `RESEND_API_KEY`+`EMAIL_FROM`; else `ALLOW_DEV_ADMIN_GRANT` echo (blocked on production SITE_URL) |
+| Verify | PASS | `verifyEmailChangeOtp` fulfills email + password provider id + session clear |
+| Unit | PASS | `emailOtp.security.test.ts` + `accountRequests.security.test.ts` |
+| UI | PASS | Member Settings + Creator Settings OTP dialog; soak `@prize2626` Change email → dev code **266295**, invalid `000000` did not rotate email |
+
+**Residual:** Referral cash still outside Stripe; MFA coming soon; Resend must be set on prod for live email delivery.
+
+---
+
 # Findings — Production release 2026-10-05 (waves 62–68)
 
 Tip `c5b9e9b`. Tag `release/2026-10-05-world-ready-62-68`.

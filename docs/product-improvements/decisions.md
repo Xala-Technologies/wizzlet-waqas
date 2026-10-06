@@ -20,9 +20,10 @@ Notes:
 
 ## Email change
 
-- Member self-serve verified email OTP: still **not** implemented.
-- Disposition: authenticated `accountRequests` row (`category: email_change`) + admin `resolveAdmin` fulfill rotates profile email and password `providerAccountId` (when present), clears sessions; reject closes without changes.
-- UI must not claim the email was changed until an admin fulfills the request.
+- Member/creator self-serve: authenticated `startEmailChange` action mints a hashed 6-digit OTP, emails it via Resend (`RESEND_API_KEY` + `EMAIL_FROM`), or echoes the code on **dev** when `ALLOW_DEV_ADMIN_GRANT=true` (never on production origins).
+- `verifyEmailChangeOtp` rotates profile email + password `providerAccountId` (when present), sets `emailVerificationTime`, clears sessions. UI must not claim the email changed until verify succeeds.
+- Admin `resolveAdmin` fulfill remains a backup (Users queue) and still rotates the same way.
+- Hashed OTP fields never leave the server (`listMine` / `listOpenAdmin` strip them).
 
 ## Settled record lock
 
