@@ -2,7 +2,7 @@
 
 **Authority:** [`docs/ai/prizelet-world-ready-master-prompt.md`](./prizelet-world-ready-master-prompt.md)
 
-**Status:** Wave 70 member/creator self-serve email OTP 2026-10-06. Product is **not** world-ready.
+**Status:** Wave 71 referral commission Connect Transfer 2026-10-06. Product is **not** world-ready.
 
 Do not claim world-ready until Section 8 gates in the master prompt pass.
 
@@ -16,7 +16,9 @@ Do not claim world-ready until Section 8 gates in the master prompt pass.
 | Evidence | branch, date, one-line actual vs expected |
 | Waiver | owner + reason (required if WAIVED) |
 
-Last updated: 2026-10-06. Last wave: **70** (`feat/world-ready-wave-70-email-otp`). Source pin: `bf85281` (inventory).
+Last updated: 2026-10-06. Last wave: **71** (`feat/world-ready-wave-71-referral-stripe-cash`). Source pin: `bf85281` (inventory).
+
+Wave 71: Referral commissions use admin `sendReferralCommissionConnect` (same matched-USD / Stripe-native FX helper as payouts). Ledger `markCommissionPaidAdmin` remains an explicit backup. Units `stripeConnect.security.test.ts` + `referralCommissionPaid.security.test.ts`.
 
 Wave 70: Member/creator self-serve email OTP — hashed 6-digit code, Resend when configured, dev echo only with `ALLOW_DEV_ADMIN_GRANT` on non-production SITE_URL. Soak `@prize2626` Settings → Change email → `prize2626+wave70otp@example.com` → `delivery=dev` code **266295**; wrong code `000000` stayed signed in (email unchanged). Admin fulfill remains backup. Units `emailOtp.security.test.ts` + `accountRequests.security.test.ts`.
 
@@ -215,7 +217,7 @@ Nested layouts in `App.tsx`: `/demo/admin` → `DemoAdminLayout`; `/demo/member`
 | J3 | Content access / pick lock / win rate | PASS | Wave 8 owner lock/win-rate; Wave 24 2026-10-05: `j3member` Checkout `cs_test_a13a8w…` ACTIVE → dashboard shows WAVE8_SECRET_BODY; cancel `sub_1UMytH…` → status cancelled, feed empty (no secret); pickTracker settled Win → Result combobox **disabled**. Residual: cancel UI previously lied about period-end (fixed this wave) |
 | J4 | Messages / support / resolution | PASS | Wave 9/39/40: composer gated; CRM **Canceled · was Premium** for cancelled j4member. Units messaging 7/7 + creatorMessageSubscriber 4/4 |
 | J5 | Payout request / approve / balance | PASS | Wave 10 request/approve; Wave 25 Lifetime math; Wave 69 live Connect FX transfer `tr_1UNKR8…` for `@prize2626` **$50**. `payoutBalance.test.ts` 6/6 |
-| J6 | Promo / tracking links / referrals | PASS | Wave 11/29/30/33/34; Wave 36 2026-10-05: admin Mark paid ledger for accrued commission (**$1.49** → Paid). Residual: Stripe Connect cash movement still out of scope |
+| J6 | Promo / tracking links / referrals | PASS | Wave 11/29/30/33/34; Wave 36 ledger Mark paid; Wave 71: `sendReferralCommissionConnect` (Connect Transfer + FX). Ledger-only mark remains backup. |
 | J7 | Identity (password, OAuth, roles, email request) | PASS | Wave 70: self-serve OTP (`startEmailChange` / `verifyEmailChangeOtp` / `resendEmailChangeOtp`); admin fulfill still backup. Wave 12/27/28/30/38; Wave 35 admin email fulfill + soft-delete; Wave 38 X OAuth; Wave 41 deletion fulfill → Stripe `cancelStripeSubscriptionsAdmin` cancels remote `sub_*`. |
 | J8 | Migration ETL internal-only | PASS | Wave 13 2026-10-05: all migration exports `internalMutation`; client has zero import refs; `MIGRATION_SECRET` unset on combative-mongoose-559; `migrations.security.test.ts` 3/3. Residual: historical data parity not claimed |
 | J9 | Public nav + chrome | PASS | Wave 2: public-nav + browser-matrix on chromium/webkit/firefox; platform-owner bootstrap visible in DEV |
@@ -259,7 +261,7 @@ Nested layouts in `App.tsx`: `/demo/admin` → `DemoAdminLayout`; `/demo/member`
 
 ## J. Public Convex API coverage (Wave 0 freeze)
 
-**165** app `query` / `mutation` / `action` exports in `convex/` (excluding `internal*`). **Missing `returns` validators: none.**
+**166** app `query` / `mutation` / `action` exports in `convex/` (excluding `internal*`). **Missing `returns` validators: none.**
 
 Convex Auth library public API (from `convex/auth.ts` `convexAuth()`; validators owned by `@convex-dev/auth`):
 
@@ -320,7 +322,8 @@ App public functions (`Auth` = TBD until Wave 1):
 | `creators.growth.listMyPromos` | creator | yes | PASS | Wave 63: `.take(ADMIN_SCAN_MAX_DOCS)` |
 | `creators.growth.listMyReferrals` | creator | yes | PASS | Wave 63: capped take; Wave 29 referrals UI |
 | `creators.growth.listUnpaidCommissionsAdmin` | admin | yes | PASS | Wave 36: `/admin/payouts` unpaid queue showed j6comm **$1.49** |
-| `creators.growth.markCommissionPaidAdmin` | admin | yes | PASS | Wave 36: Mark paid → `commissionPaidCents` 149; creator status Paid |
+| `creators.growth.markCommissionPaidAdmin` | admin | yes | PASS | Wave 36 ledger mark; Wave 71 backup only (copy honest) |
+| `payments.stripeNode.sendReferralCommissionConnect` | admin | yes | PASS | Wave 71: Connect Transfer + FX; unpaid until Stripe accepts |
 | `creators.growth.recordLinkClick` | public | yes | PASS | Wave 33: `/go/jd72413…` → clicks **1** |
 | `creators.growth.recordReferral` | authenticated | yes | PASS | Wave 11/29 path via code helper |
 | `creators.growth.recordReferralByCode` | authenticated | yes | PASS | Wave 29: signup `?ref=j2creator-jn73sz` → referral row pending then converted |
@@ -496,7 +499,7 @@ Schema `appRole` also allows `moderator` and `user` (not product actors; no rout
 
 ## M. Remaining risk (update every fix PR)
 
-- P2: USD currency locked (Wave 67). Connect Transfer proven Wave 69 via Stripe-native FX (`tr_1UNKR8…`); referral cash still outside Stripe; historical migration data parity BLOCKED (greenfield). Email OTP shipped Wave 70 (Resend env required on prod; dev echo only with ALLOW_DEV_ADMIN_GRANT)
+- P2: USD currency locked (Wave 67). Connect Transfer proven Wave 69 via Stripe-native FX (`tr_1UNKR8…`); referral cash uses the same Transfer helper (Wave 71 — live `tr_` soak still pending if no unpaid row + KYC). Historical migration data parity BLOCKED (greenfield). Email OTP shipped Wave 70 (Resend env required on prod; dev echo only with ALLOW_DEV_ADMIN_GRANT)
 - P3: admin join spend still capped at 500; F-012 Convex `.collect` closed Waves 59–65; optional USD available funding (FX path works); customers/alerts/finance/dashboard/fees/payouts/announcement/reports KPIs PASS (Wave 43–47, 50–55); eslint PASS Wave 57; join honesty PASS Wave 58
 - Not in this PR: www.prizelet.com Vercel promote, live Stripe keys, MFA
 - Waivers: see section L

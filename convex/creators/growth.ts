@@ -1,4 +1,4 @@
-import { internalQuery, mutation, query } from "../_generated/server";
+import { internalMutation, internalQuery, mutation, query } from "../_generated/server";
 import { ConvexError, v } from "convex/values";
 import {
   getCreatorForUser,
@@ -356,6 +356,7 @@ const unpaidCommissionRowValidator = v.object({
   commissionEarnedCents: v.number(),
   createdAt: v.number(),
   convertedAt: v.number(),
+  stripeAccountId: v.union(v.string(), v.null()),
 });
 
 /** Admin: accrued referral commissions not yet marked paid in the ledger. */
@@ -382,6 +383,7 @@ export const listUnpaidCommissionsAdmin = query({
           commissionEarnedCents: row.commissionEarnedCents,
           createdAt: row.createdAt,
           convertedAt: row.updatedAt,
+          stripeAccountId: creator?.stripeAccountId ?? null,
         };
       }),
     );
@@ -389,8 +391,8 @@ export const listUnpaidCommissionsAdmin = query({
 });
 
 /**
- * Admin: mark referral commission paid in the Prizelet ledger.
- * Does not move Stripe funds — cash still settles outside the app until Connect.
+ * Admin: mark referral commission paid in the Prizelet ledger only.
+ * Prefer sendReferralCommissionConnect so cash actually moves on Stripe.
  */
 export const markCommissionPaidAdmin = mutation({
   args: {
@@ -424,5 +426,60 @@ export const markCommissionPaidAdmin = mutation({
       actorExternalAuthId: admin.externalAuthId,
     });
     return { commissionPaidCents, commissionPaidAt: now };
+  },
+});
+
+export const getReferralConnectContext = internalQuery({
+  args: { referralId: v.id("referrals") },
+  returns: v.object({
+    referralId: v.id("referrals"),
+    creatorId: v.id("creators"),
+    amountCents: v.number(),
+    commissionPaidAt: v.optional(v.number()),
+    commissionTransferId: v.optional(v.string()),
+    stripeAccountId: v.optional(v.string()),
+  }),
+  handler: async (ctx, args) => {
+    const row = await ctx.db.get(args.referralId);
+    if (!row) throw new ConvexError("NOT_FOUND");
+    if (!row.converted || row.commissionEarnedCents <= 0) {
+      throw new ConvexError("NOTHING_TO_PAY");
+    }
+    const creator = await ctx.db.get(row.creatorId);
+    if (!creator) throw new ConvexError("NOT_FOUND");
+    return {
+      referralId: row._id,
+      creatorId: creator._id,
+      amountCents: row.commissionEarnedCents,
+      commissionPaidAt: row.commissionPaidAt,
+      commissionTransferId: row.commissionTransferId,
+      stripeAccountId: creator.stripeAccountId,
+    };
+  },
+});
+
+export const recordReferralConnectTransfer = internalMutation({
+  args: {
+    referralId: v.id("referrals"),
+    transferId: v.string(),
+  },
+  returns: v.null(),
+  handler: async (ctx, args) => {
+    const row = await ctx.db.get(args.referralId);
+    if (!row) throw new ConvexError("NOT_FOUND");
+    if (row.commissionTransferId === args.transferId && row.commissionPaidAt != null) {
+      return null;
+    }
+    if (row.commissionPaidAt != null) {
+      throw new ConvexError("ALREADY_PAID");
+    }
+    const now = Date.now();
+    await ctx.db.patch(row._id, {
+      commissionPaidCents: row.commissionEarnedCents,
+      commissionPaidAt: now,
+      commissionTransferId: args.transferId,
+      updatedAt: now,
+    });
+    return null;
   },
 });

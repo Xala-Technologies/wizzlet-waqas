@@ -227,4 +227,11 @@ describe('stripe Connect Express wiring', () => {
     expect(stripeDb).toMatch(/export const recordConnectTransfer/);
     expect(stripeDb).toMatch(/PAYOUT_ALREADY_SETTLED/);
   });
+
+  it('pays referral commissions through the same Connect Transfer helper', () => {
+    expect(stripeNode).toMatch(/export const sendReferralCommissionConnect/);
+    expect(stripeNode).toMatch(/kind: "referral_commission"/);
+    expect(stripeNode).toMatch(/executeLedgerConnectTransfer/);
+    expect(stripeNode).toMatch(/recordReferralConnectTransfer/);
+  });
 });

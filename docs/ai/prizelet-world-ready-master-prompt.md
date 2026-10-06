@@ -231,7 +231,7 @@ Treat **every public query/mutation/action** as in-scope. For each: caller ident
 | `lib/*` | Shared helpers — **not** public client endpoints; test these |
 | `crons`, `http` | Generated module imports only; surfaces in §1.6 |
 
-`auth` also exports Convex Auth public `signIn` / `signOut` / `store` / `isAuthenticated` (library-owned, not listed as app `query({` exports). Wave 0 counted **165** app public functions (Wave 70 added `startEmailChange`, `resendEmailChangeOtp`, `verifyEmailChangeOtp`); all had `returns` validators. Do not treat `lib/*` as skippable product APIs.
+`auth` also exports Convex Auth public `signIn` / `signOut` / `store` / `isAuthenticated` (library-owned, not listed as app `query({` exports). Wave 0 counted **166** app public functions (Wave 71 added `sendReferralCommissionConnect`; Wave 70 added email OTP actions); all had `returns` validators. Do not treat `lib/*` as skippable product APIs.
 
 **Lib files that must stay consistent with UI:** [`convex/lib/contentAccess.ts`](../../convex/lib/contentAccess.ts), [`convex/lib/entitlements.ts`](../../convex/lib/entitlements.ts), [`src/lib/billingAccess.ts`](../../src/lib/billingAccess.ts), [`convex/lib/payoutBalance.ts`](../../convex/lib/payoutBalance.ts), [`convex/lib/envGuards.ts`](../../convex/lib/envGuards.ts), [`convex/lib/commerceIdentity.ts`](../../convex/lib/commerceIdentity.ts).
 
@@ -292,7 +292,7 @@ Balance from `paymentEvents` minus paid/reserved payouts ([`convex/lib/payoutBal
 
 ### J6 — Promo / links / referrals
 
-Promo CRUD, ownership, max uses, expiry, `discountDuration` once|forever. `/go/:linkId` increments clicks; conversion on subscribe. Signup `?ref=` + `creators.referralCode`. Commission cash may be TBD — if unimplemented, UI must not show fake paid commissions as live money.
+Promo CRUD, ownership, max uses, expiry, `discountDuration` once|forever. `/go/:linkId` increments clicks; conversion on subscribe. Signup `?ref=` + `creators.referralCode`. Accrued commission is paid with admin `sendReferralCommissionConnect` (same Connect Transfer / FX rules as creator payouts). Ledger-only `markCommissionPaidAdmin` is an ops backup and must not be described as Stripe cash.
 
 ### J7 — Identity continuity
 

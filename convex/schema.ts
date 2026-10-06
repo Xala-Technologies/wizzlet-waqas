@@ -369,9 +369,11 @@ export default defineSchema({
     referredEmail: v.optional(v.string()),
     converted: v.boolean(),
     commissionEarnedCents: v.number(),
-    /** Ledger-only cash mark — funds still move outside Prizelet until Connect. */
+    /** Set when admin marks paid or Connect Transfer succeeds. */
     commissionPaidCents: v.optional(v.number()),
     commissionPaidAt: v.optional(v.number()),
+    /** Stripe Transfer id (`tr_…`) when cash moved via Connect. */
+    commissionTransferId: v.optional(v.string()),
     createdAt: v.number(),
     updatedAt: v.number(),
   })
