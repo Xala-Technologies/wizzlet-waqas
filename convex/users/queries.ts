@@ -8,6 +8,7 @@ import {
 } from "@convex-dev/auth/server";
 import { listRolesForUser, logMutation, requireAppUser } from "../lib/auth";
 import { internal } from "../_generated/api";
+import { publicUserFields } from "../lib/publicUser";
 import { userDocValidator, userWithRolesValidator } from "../lib/validators";
 
 /**
@@ -51,7 +52,7 @@ export const me = query({
     const user = await ctx.db.get(userId);
     if (!user) return null;
     const roles = await listRolesForUser(ctx, user._id);
-    return { ...user, roles };
+    return { ...publicUserFields(user), roles };
   },
 });
 
@@ -64,7 +65,9 @@ export const getById = query({
     if (!roles.includes("admin") && meUser._id !== args.userId) {
       throw new Error("FORBIDDEN");
     }
-    return ctx.db.get(args.userId);
+    const user = await ctx.db.get(args.userId);
+    if (!user) return null;
+    return publicUserFields(user);
   },
 });
 

@@ -1,4 +1,21 @@
-# Findings — Wave 71 referral Connect cash 2026-10-06
+# Findings — Wave 72 TOTP MFA 2026-10-06
+
+Branch `feat/world-ready-wave-72-totp-mfa`. Convex soak on `combative-mongoose-559`.
+
+| Step | Result | Evidence |
+|------|--------|----------|
+| Schema | PASS | `users.totpSecret` / `totpEnabled`; `mfaSessionGrants` by session |
+| Secret hygiene | PASS | `publicUserFields` strips secret from `me` / `getById` / admin `listUsers` |
+| Gate | PASS | ProtectedRoute + Login + AuthCallback + SelectRole → `/mfa` when required |
+| Settings | PASS | Creator + member `TotpManageCard` (no preview switch) |
+| Soak | PASS | `@prize2626` Security: enroll → confirm TOTP **266588** → switch on; disable with **066885** → switch off. `/mfa` with TOTP off redirected to `/creator` |
+| Unit | PASS | `totp.security.test.ts` + `mfaGate.test.ts` |
+
+**Residual:** No backup codes / admin MFA reset. Resend on prod. Referral `tr_` soak. Do not claim world-ready.
+
+---
+
+
 
 Branch `feat/world-ready-wave-71-referral-stripe-cash`. Convex soak on `combative-mongoose-559`.
 

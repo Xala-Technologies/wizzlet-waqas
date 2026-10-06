@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useAuthActions } from '@convex-dev/auth/react';
-import { useConvex, useMutation } from 'convex/react';
+import { useConvex, useMutation, useQuery } from 'convex/react';
 import { useAuth } from '@/contexts/AuthContext';
 import { AuthShell } from '@/components/auth/AuthShell';
 import { SocialAuthSection } from '@/components/auth/SocialAuthButtons';
@@ -12,6 +12,7 @@ import { authInputClass } from '@/components/auth/authFieldClass';
 import { ADMIN_BOOTSTRAP } from '@/lib/adminBootstrap';
 import { useConvexAuthReady, waitForAuthenticated, withAuthRetry, isAuthOriginAligned } from '@/lib/authSession';
 import { isAppRole, type AppRole } from '@/lib/roles';
+import { destinationAfterMfa } from '@/lib/mfaGate';
 import {
   clearStoredReturnTo,
   postAuthDestination,
@@ -49,6 +50,7 @@ const Login = () => {
   const authReady = useConvexAuthReady();
   const grantTestAdmin = useMutation(api.roles.mutations.grantTestAdmin);
   const ensureUser = useMutation(api.users.queries.ensureUser);
+  const mfa = useQuery(api.mfa.status, user && !signingOut ? {} : 'skip');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -68,7 +70,10 @@ const Login = () => {
     await refreshRole('admin');
     clearStoredReturnTo();
     toast.success('Signed in as platform owner');
-    navigate('/admin');
+    const mfaStatus = await withAuthRetry(() => convex.query(api.mfa.status, {}));
+    navigate(destinationAfterMfa({ mfaRequired: mfaStatus.required, dest: '/admin' }), {
+      replace: true,
+    });
   };
 
   const handleLogin = async (e: React.FormEvent) => {
@@ -100,7 +105,10 @@ const Login = () => {
         returnTo,
       });
       clearStoredReturnTo();
-      navigate(dest, { replace: true });
+      const mfaStatus = await withAuthRetry(() => convex.query(api.mfa.status, {}));
+      navigate(destinationAfterMfa({ mfaRequired: mfaStatus.required, dest }), {
+        replace: true,
+      });
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Sign in failed';
       setFormError(message);
@@ -152,9 +160,17 @@ const Login = () => {
 
   // Already signed in — leave /login once roles have settled (avoids select-role flash).
   if (!authLoading && !roleLoading && !signingOut && user) {
+    if (mfa === undefined) {
+      return (
+        <div className="flex min-h-screen items-center justify-center">
+          <Loader2 className="h-6 w-6 animate-spin text-primary" />
+        </div>
+      );
+    }
+    const dest = postAuthDestination({ roles, preferred: role, returnTo });
     return (
       <Navigate
-        to={postAuthDestination({ roles, preferred: role, returnTo })}
+        to={destinationAfterMfa({ mfaRequired: mfa.required, dest })}
         replace
       />
     );

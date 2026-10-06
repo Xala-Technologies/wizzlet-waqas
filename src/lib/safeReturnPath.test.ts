@@ -62,6 +62,7 @@ describe('buildLoginHref', () => {
   it('omits returnTo for auth pages', () => {
     expect(buildLoginHref('/login', '')).toBe('/login');
     expect(isAuthFlowPath('/signup')).toBe(true);
+    expect(isAuthFlowPath('/mfa')).toBe(true);
   });
 });
 

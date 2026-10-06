@@ -13,6 +13,7 @@ import {
   takeSubsByStatus,
   takeUserRolesByRole,
 } from "../lib/adminIndexedTakes";
+import { publicUserFields } from "../lib/publicUser";
 import {
   adminDashboardStatsValidator,
   emailCampaignDocValidator,
@@ -24,7 +25,8 @@ export const listUsers = query({
   returns: v.array(userDocValidator),
   handler: async (ctx) => {
     await requireAdmin(ctx);
-    return adminTakeNewest(ctx, "users");
+    const users = await adminTakeNewest(ctx, "users");
+    return users.map(publicUserFields);
   },
 });
 

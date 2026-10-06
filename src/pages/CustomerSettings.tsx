@@ -39,6 +39,7 @@ import {
 import { useAuth } from '@/contexts/AuthContext';
 import { api } from '@convex/_generated/api';
 import { EmailChangeOtpDialog } from '@/components/account/EmailChangeOtpDialog';
+import { TotpManageCard } from '@/components/account/TotpManageCard';
 import { openCustomerPortal } from '@/lib/stripe';
 import { cn } from '@/lib/utils';
 
@@ -468,6 +469,9 @@ const CustomerSettings = () => {
                   Change Password
                 </Button>
               </div>
+            </div>
+            <div className="sm:col-span-2">
+              <TotpManageCard demo={useDemo} className="rounded-xl border border-border bg-muted/20 p-4" />
             </div>
           </div>
 

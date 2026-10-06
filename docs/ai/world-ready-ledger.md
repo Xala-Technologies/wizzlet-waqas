@@ -2,7 +2,7 @@
 
 **Authority:** [`docs/ai/prizelet-world-ready-master-prompt.md`](./prizelet-world-ready-master-prompt.md)
 
-**Status:** Wave 71 referral commission Connect Transfer 2026-10-06. Product is **not** world-ready.
+**Status:** Wave 72 TOTP MFA 2026-10-06. Product is **not** world-ready.
 
 Do not claim world-ready until Section 8 gates in the master prompt pass.
 
@@ -16,7 +16,9 @@ Do not claim world-ready until Section 8 gates in the master prompt pass.
 | Evidence | branch, date, one-line actual vs expected |
 | Waiver | owner + reason (required if WAIVED) |
 
-Last updated: 2026-10-06. Last wave: **71** (`feat/world-ready-wave-71-referral-stripe-cash`). Source pin: `bf85281` (inventory).
+Last updated: 2026-10-06. Last wave: **72** (`feat/world-ready-wave-72-totp-mfa`). Source pin: `bf85281` (inventory).
+
+Wave 72: RFC 6238 TOTP (SHA-1, 6 digits, 30s, ±1 window). Enroll/confirm/disable in creator + member settings; new sessions require `/mfa` until `mfaSessionGrants` for the Convex Auth session. `totpSecret` stripped from `me` / `getById` / admin `listUsers`. Soak `@prize2626` confirm **266588** then disable **066885**. Units `totp.security.test.ts` + `mfaGate.test.ts`. Residual: no backup codes / admin MFA reset.
 
 Wave 71: Referral commissions use admin `sendReferralCommissionConnect` (same matched-USD / Stripe-native FX helper as payouts). Ledger `markCommissionPaidAdmin` remains an explicit backup. Units `stripeConnect.security.test.ts` + `referralCommissionPaid.security.test.ts`.
 
@@ -98,6 +100,7 @@ Wave 40: CRM cancelled label. Wave 39: gated composer. Wave 38: X OAuth.
 | `/support` | Support | anonymous | public | PASS | Wave 2 chromium surface smoke 2026-10-04; inventory pin bf85281 |
 | `/community` | Community | anonymous | public | PASS | Wave 2 chromium surface smoke 2026-10-04; inventory pin bf85281 |
 | `/login` | Login | anonymous | convex | PASS | Wave 2 chromium surface smoke 2026-10-04; inventory pin bf85281 |
+| `/mfa` | Mfa | authenticated + TOTP | convex | PASS | Wave 72: session grant after 6-digit verify; ProtectedRoute / login / OAuth redirect here when `status.required` |
 | `/signup` | Signup | anonymous | convex | PASS | Wave 2 chromium surface smoke 2026-10-04; inventory pin bf85281 |
 | `/auth/callback` | AuthCallback | anonymous | convex | PASS | Wave 30: applies stashed `prizelet.referralCode` → referral row; Wave 27 Discord OAuth finish |
 | `/select-role` | SelectRole | authenticated no role | convex | PASS | Wave 2 chromium surface smoke 2026-10-04; inventory pin bf85281 |
@@ -218,7 +221,7 @@ Nested layouts in `App.tsx`: `/demo/admin` → `DemoAdminLayout`; `/demo/member`
 | J4 | Messages / support / resolution | PASS | Wave 9/39/40: composer gated; CRM **Canceled · was Premium** for cancelled j4member. Units messaging 7/7 + creatorMessageSubscriber 4/4 |
 | J5 | Payout request / approve / balance | PASS | Wave 10 request/approve; Wave 25 Lifetime math; Wave 69 live Connect FX transfer `tr_1UNKR8…` for `@prize2626` **$50**. `payoutBalance.test.ts` 6/6 |
 | J6 | Promo / tracking links / referrals | PASS | Wave 11/29/30/33/34; Wave 36 ledger Mark paid; Wave 71: `sendReferralCommissionConnect` (Connect Transfer + FX). Ledger-only mark remains backup. |
-| J7 | Identity (password, OAuth, roles, email request) | PASS | Wave 70: self-serve OTP (`startEmailChange` / `verifyEmailChangeOtp` / `resendEmailChangeOtp`); admin fulfill still backup. Wave 12/27/28/30/38; Wave 35 admin email fulfill + soft-delete; Wave 38 X OAuth; Wave 41 deletion fulfill → Stripe `cancelStripeSubscriptionsAdmin` cancels remote `sub_*`. |
+| J7 | Identity (password, OAuth, roles, email request) | PASS | Wave 72: TOTP MFA enroll + session grant (`mfa.status` / `verifyLogin`). Wave 70: self-serve OTP (`startEmailChange` / `verifyEmailChangeOtp` / `resendEmailChangeOtp`); admin fulfill still backup. Wave 12/27/28/30/38; Wave 35 admin email fulfill + soft-delete; Wave 38 X OAuth; Wave 41 deletion fulfill → Stripe `cancelStripeSubscriptionsAdmin` cancels remote `sub_*`. |
 | J8 | Migration ETL internal-only | PASS | Wave 13 2026-10-05: all migration exports `internalMutation`; client has zero import refs; `MIGRATION_SECRET` unset on combative-mongoose-559; `migrations.security.test.ts` 3/3. Residual: historical data parity not claimed |
 | J9 | Public nav + chrome | PASS | Wave 2: public-nav + browser-matrix on chromium/webkit/firefox; platform-owner bootstrap visible in DEV |
 | J-ADMIN | Admin lists, fees, reports, campaigns | PASS | Wave 16 2026-10-05: users/creators paginated; fees analytics; CSV export; campaigns in-app-only honesty; alerts strip |
@@ -227,7 +230,7 @@ Nested layouts in `App.tsx`: `/demo/admin` → `DemoAdminLayout`; `/demo/member`
 | J-DEMO | Demo writes zero money rows | PASS | Wave 15 2026-10-05: demo Withdraw toast-only; listMine unchanged (2); Demo.ts no money API imports; `demo.security.test.ts` 2/2 |
 | J-EVENTS | Today’s sportEvents slate | PASS | Wave 19 2026-10-05: restored page; empty “No events published for today yet”; seed → 3 cards (NFL/NBA/MLB); bounds unit 2/2 |
 | J-NOTIFICATIONS | Inbox create + mark read | PASS | Wave 20 2026-10-05: adminInsert + member markRead/markAllRead; pay/message rows; admin shared page |
-| J-SETTINGS | Settings live vs toast-stub honesty | PASS | Wave 21 2026-10-05: 2FA “coming soon”; team invite preview “not wired to the backend yet”; account profile editable |
+| J-SETTINGS | Settings live vs toast-stub honesty | PASS | Wave 72: 2FA is live TOTP (not preview). Wave 21: team invite preview “not wired to the backend yet”; account profile editable |
 | J-SMART-PRICING | Smart pricing + access control honesty | PASS | Wave 21 2026-10-05: heuristic “directional only”; list price via updateSettings (not fake Stripe product prices); access-control limit spots persists |
 | J-CONNECT | Stripe Connect residual honesty | PASS | Wave 69: live `tr_1UNKR8…` stripe_fx (**479.68 NOK** for **$50** USD) to `@prize2626` `acct_1UNI6YRzsXVyRAzD` payouts_enabled. Wave 68 FX plan; Wave 66 matched-USD refuse when NOK-only; Wave 49 Transfer action. Residual: optional USD available funding; j2 Express still KYC-incomplete. |
 
@@ -261,7 +264,7 @@ Nested layouts in `App.tsx`: `/demo/admin` → `DemoAdminLayout`; `/demo/member`
 
 ## J. Public Convex API coverage (Wave 0 freeze)
 
-**166** app `query` / `mutation` / `action` exports in `convex/` (excluding `internal*`). **Missing `returns` validators: none.**
+**166** app `query` / `mutation` / `action` exports in `convex/` (excluding `internal*`) at Wave 0 freeze. Wave 72 added 6 MFA exports (`mfa.status` / `startEnroll` / `confirmEnroll` / `cancelEnroll` / `disable` / `verifyLogin`). **Missing `returns` validators: none.**
 
 Convex Auth library public API (from `convex/auth.ts` `convexAuth()`; validators owned by `@convex-dev/auth`):
 
@@ -283,6 +286,12 @@ App public functions (`Auth` = TBD until Wave 1):
 | `accountRequests.startEmailChange` | auth | yes | PASS | Wave 70: action mints + Resend/dev delivery; never echoes code on production SITE_URL |
 | `accountRequests.resendEmailChangeOtp` | auth | yes | PASS | Wave 70: cooldown 60s; remints hashed OTP |
 | `accountRequests.verifyEmailChangeOtp` | auth | yes | PASS | Wave 70: 5 attempts / 10m TTL; fulfill + clear sessions |
+| `mfa.status` | auth | yes | PASS | Wave 72: totpEnabled + session required; no secret |
+| `mfa.startEnroll` | auth | yes | PASS | Wave 72: returns secret + otpauth URL once |
+| `mfa.confirmEnroll` | auth | yes | PASS | Wave 72: verifies TOTP, grants current session |
+| `mfa.cancelEnroll` | auth | yes | PASS | Wave 72: clears pending secret if not enabled |
+| `mfa.disable` | auth | yes | PASS | Wave 72: TOTP required; clears secret + grants |
+| `mfa.verifyLogin` | auth | yes | PASS | Wave 72: grants current authSession |
 | `accountRequests.resolveAdmin` | admin | yes | PASS | Wave 35: fulfill email + fulfill deletion + reject; cannot resolve own |
 | `admin.exportReports.exportReportBundle` | admin | yes | PASS | Wave 16: creators CSV `creators_2026-10-04.csv` |
 | `admin.paginatedLists.listCampaignsPage` | TBD | yes | NOT_RUN | frozen vs convex/*.ts @ bf85281 |
@@ -297,7 +306,7 @@ App public functions (`Auth` = TBD until Wave 1):
 | `admin.queries.createEmailCampaign` | TBD | yes | NOT_RUN | frozen vs convex/*.ts @ bf85281 |
 | `admin.queries.dashboardStats` | admin | yes | PASS | Wave 55: unique `userRoles.by_role` accounts; no users 5k scan |
 | `admin.queries.listCampaigns` | TBD | yes | NOT_RUN | frozen vs convex/*.ts @ bf85281 |
-| `admin.queries.listUsers` | TBD | yes | NOT_RUN | frozen vs convex/*.ts @ bf85281 |
+| `admin.queries.listUsers` | admin | yes | PASS | Wave 72: `publicUserFields` strips `totpSecret` |
 | `admin.queries.previewAnnouncementAudience` | admin | yes | PASS | Wave 52: status-indexed recipients; soak All **34** / Active **5** / Canceled **8** |
 | `admin.queries.sendAnnouncement` | TBD | yes | NOT_RUN | frozen vs convex/*.ts @ bf85281 |
 | `admin.snapshots.alertsOverview` | admin | yes | PASS | Wave 45: status/published indexes; support unread newest-capped |
@@ -441,9 +450,9 @@ App public functions (`Auth` = TBD until Wave 1):
 | `support.mutations.unreadCountCreatorGrowth` | creator | yes | PASS | Wave 62: `.take(ADMIN_SCAN_MAX_DOCS)` filter unread |
 | `users.queries.changePassword` | TBD | yes | NOT_RUN | frozen vs convex/*.ts @ bf85281 |
 | `users.queries.ensureUser` | TBD | yes | NOT_RUN | frozen vs convex/*.ts @ bf85281 |
-| `users.queries.getById` | TBD | yes | NOT_RUN | frozen vs convex/*.ts @ bf85281 |
+| `users.queries.getById` | admin/self | yes | PASS | Wave 72: `publicUserFields` strips `totpSecret` |
 | `users.queries.hasPasswordAccount` | TBD | yes | NOT_RUN | frozen vs convex/*.ts @ bf85281 |
-| `users.queries.me` | TBD | yes | NOT_RUN | frozen vs convex/*.ts @ bf85281 |
+| `users.queries.me` | auth | yes | PASS | Wave 72: `totpEnabled` public; `totpSecret` never returned |
 | `users.queries.updateProfile` | TBD | yes | NOT_RUN | frozen vs convex/*.ts @ bf85281 |
 
 ### J.missing-returns (Wave 0 required artifact)
@@ -466,6 +475,7 @@ Confirm each table still exists; note writers. Result `NOT_RUN` = existence free
 | authVerifiers | Convex Auth (authTables) | NOT_RUN | present in convex/schema.ts @ bf85281; existence freeze only |
 | authRateLimits | Convex Auth (authTables) | NOT_RUN | present in convex/schema.ts @ bf85281; existence freeze only |
 | userRoles | roles.mutations | PASS | Wave 28: `j2creator` holds creator+subscriber after admin grant; switcher uses held roles only |
+| mfaSessionGrants | mfa | PASS | Wave 72: grant per Convex Auth session after TOTP |
 | creators | creators/* | NOT_RUN | present in convex/schema.ts @ bf85281; existence freeze only |
 | products | products.mutations | PASS | Wave 7: create/edit/pin/delete soak on j2creator |
 | posts | posts/* | PASS | Wave 8: upsert + setResult won/push; RESULT_LOCKED |
@@ -499,7 +509,7 @@ Schema `appRole` also allows `moderator` and `user` (not product actors; no rout
 
 ## M. Remaining risk (update every fix PR)
 
-- P2: USD currency locked (Wave 67). Connect Transfer proven Wave 69 via Stripe-native FX (`tr_1UNKR8…`); referral cash uses the same Transfer helper (Wave 71 — live `tr_` soak still pending if no unpaid row + KYC). Historical migration data parity BLOCKED (greenfield). Email OTP shipped Wave 70 (Resend env required on prod; dev echo only with ALLOW_DEV_ADMIN_GRANT)
+- P2: USD currency locked (Wave 67). Connect Transfer proven Wave 69 via Stripe-native FX (`tr_1UNKR8…`); referral cash uses the same Transfer helper (Wave 71 — live `tr_` soak still pending if no unpaid row + KYC). Historical migration data parity BLOCKED (greenfield). Email OTP shipped Wave 70 (Resend env required on prod; dev echo only with ALLOW_DEV_ADMIN_GRANT). TOTP MFA shipped Wave 72 (no backup codes / admin reset).
 - P3: admin join spend still capped at 500; F-012 Convex `.collect` closed Waves 59–65; optional USD available funding (FX path works); customers/alerts/finance/dashboard/fees/payouts/announcement/reports KPIs PASS (Wave 43–47, 50–55); eslint PASS Wave 57; join honesty PASS Wave 58
 - Not in this PR: www.prizelet.com Vercel promote, live Stripe keys, MFA
 - Waivers: see section L

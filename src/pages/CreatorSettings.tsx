@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { Link, Navigate, useSearchParams } from 'react-router-dom';
+import { Link, Navigate, useNavigate, useSearchParams } from 'react-router-dom';
 import { useConvex, useMutation, useQuery } from 'convex/react';
 import { api } from '../../convex/_generated/api';
 import { uploadToConvexStorage } from '@/lib/upload';
@@ -11,6 +11,7 @@ import {
   PaymentFeeStack,
 } from '@/components/creator/PaymentFeeDetailSheet';
 import { EmailChangeOtpDialog } from '@/components/account/EmailChangeOtpDialog';
+import { TotpManageCard } from '@/components/account/TotpManageCard';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -151,6 +152,7 @@ const softPrimaryBtn =
 
 const CreatorSettings = () => {
   const [searchParams] = useSearchParams();
+  const navigate = useNavigate();
   const forceDemo = searchParams.get('demo') === '1';
   const disableDemo = searchParams.get('demo') === '0';
   const tab = useSettingsTab();
@@ -217,7 +219,6 @@ const CreatorSettings = () => {
   const [sendingInvite, setSendingInvite] = useState(false);
   const [discordExpanded, setDiscordExpanded] = useState(false);
   const [savingDiscord, setSavingDiscord] = useState(false);
-  const [twoFactorEnabled, setTwoFactorEnabled] = useState(true);
   const [loginAlertsEnabled, setLoginAlertsEnabled] = useState(true);
   const [sessionsOpen, setSessionsOpen] = useState(false);
   const [publicProfileEnabled, setPublicProfileEnabled] = useState(true);
@@ -821,8 +822,7 @@ const CreatorSettings = () => {
                       label: 'Enable two-factor authentication',
                       icon: Shield,
                       danger: false,
-                      onClick: () =>
-                        quickAction('Enable 2FA', 'Two-factor authentication setup is coming soon.'),
+                      onClick: () => navigate('/creator/settings?tab=security#totp-mfa'),
                     },
                     {
                       label: 'Manage connected accounts',
@@ -1977,48 +1977,8 @@ const CreatorSettings = () => {
                   </Button>
                 </div>
 
-                <div className="flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between sm:p-5">
-                  <div className="flex items-start gap-3">
-                    <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-violet-500/10 text-violet-700 dark:text-violet-400">
-                      <Shield className="h-4 w-4" aria-hidden />
-                    </span>
-                    <div>
-                      <div className="flex flex-wrap items-center gap-2">
-                        <p className="text-sm font-bold text-foreground">
-                          Two-Factor Authentication (2FA)
-                        </p>
-                        <span className="inline-flex rounded-full border border-emerald-500/25 bg-emerald-500/10 px-2 py-0.5 text-[10px] font-bold text-emerald-700 dark:text-emerald-400">
-                          Recommended
-                        </span>
-                      </div>
-                      <p className="text-xs text-muted-foreground">
-                        Add an extra layer of security to your account.
-                      </p>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Switch
-                      checked={twoFactorEnabled}
-                      onCheckedChange={(v) => {
-                        setTwoFactorEnabled(v);
-                        toast.message(v ? '2FA enabled (preview)' : '2FA disabled (preview)', {
-                          description: 'Two-factor setup is not fully wired yet.',
-                        });
-                      }}
-                      aria-label="Two-factor authentication"
-                    />
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      className="shrink-0"
-                      onClick={() =>
-                        quickAction('Manage 2FA', 'Two-factor authentication setup is coming soon.')
-                      }
-                    >
-                      Manage
-                    </Button>
-                  </div>
+                <div className="flex flex-col gap-3 p-4 sm:p-5">
+                  <TotpManageCard demo={useDemo} />
                 </div>
 
                 <div className="flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between sm:p-5">

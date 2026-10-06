@@ -47,6 +47,7 @@ const AUTH_FLOW_PREFIXES = [
   '/signup',
   '/auth/',
   '/select-role',
+  '/mfa',
 ] as const;
 
 export function isAuthFlowPath(path: string): boolean {
