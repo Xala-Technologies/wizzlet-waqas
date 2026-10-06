@@ -12,6 +12,7 @@ describe('referral commission paid ledger', () => {
   it('schema tracks commissionPaidCents / commissionPaidAt', () => {
     expect(schemaSrc).toMatch(/commissionPaidCents:\s*v\.optional\(v\.number\(\)\)/);
     expect(schemaSrc).toMatch(/commissionPaidAt:\s*v\.optional\(v\.number\(\)\)/);
+    expect(schemaSrc).toMatch(/commissionTransferId:\s*v\.optional\(v\.string\(\)\)/);
   });
 
   it('admin mark-paid requires admin and gates already-paid / nothing-to-pay', () => {
@@ -26,5 +27,12 @@ describe('referral commission paid ledger', () => {
     expect(growthSrc).toMatch(/export const listUnpaidCommissionsAdmin[\s\S]*requireAdmin/);
     expect(growthSrc).toMatch(/commissionEarnedCents > 0/);
     expect(growthSrc).toMatch(/commissionPaidAt === undefined/);
+  });
+
+  it('Connect transfer persist is internal and refuses double-pay', () => {
+    expect(growthSrc).toMatch(/export const getReferralConnectContext/);
+    expect(growthSrc).toMatch(/export const recordReferralConnectTransfer/);
+    expect(growthSrc).toMatch(/commissionTransferId: args\.transferId/);
+    expect(growthSrc).toMatch(/Prefer sendReferralCommissionConnect/);
   });
 });

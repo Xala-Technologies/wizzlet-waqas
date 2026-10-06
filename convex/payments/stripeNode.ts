@@ -609,6 +609,61 @@ function mapStripeConnectError(err: unknown): never {
   throw err instanceof Error ? err : new Error(message);
 }
 
+async function executeLedgerConnectTransfer(args: {
+  stripe: Stripe;
+  destinationAccountId: string;
+  destinationDefaultCurrency?: string | null;
+  ledgerAmountCents: number;
+  metadata: Record<string, string>;
+}): Promise<{
+  transfer: Stripe.Transfer;
+  plan: ReturnType<typeof resolveConnectTransferPlan>;
+}> {
+  const [balance, platform] = await Promise.all([
+    args.stripe.balance.retrieve(),
+    args.stripe.accounts.retrieve(null),
+  ]);
+  const settlement = (platform.default_currency ?? "nok").toLowerCase();
+  const available = (balance.available ?? []).map((row) => ({
+    amount: row.amount,
+    currency: row.currency,
+  }));
+  const matchedBucket = available.find(
+    (row) => row.currency.toLowerCase() === PRIZELET_LEDGER_CURRENCY,
+  );
+  const matchedCovers =
+    !!matchedBucket && matchedBucket.amount >= args.ledgerAmountCents;
+  const exchangeRate = matchedCovers
+    ? undefined
+    : await stripeExchangeRateForLedger(
+        args.stripe,
+        PRIZELET_LEDGER_CURRENCY,
+        settlement,
+      );
+  const plan = resolveConnectTransferPlan({
+    ledgerCurrency: PRIZELET_LEDGER_CURRENCY,
+    destinationCurrency: args.destinationDefaultCurrency ?? PRIZELET_LEDGER_CURRENCY,
+    platformSettlementCurrency: settlement,
+    amountCents: args.ledgerAmountCents,
+    available,
+    exchangeRate,
+  });
+  const transfer = await args.stripe.transfers.create({
+    amount: plan.transferAmount,
+    currency: plan.transferCurrency,
+    destination: args.destinationAccountId,
+    metadata: {
+      ...args.metadata,
+      ledgerCurrency: plan.ledgerCurrency,
+      ledgerAmountCents: String(plan.ledgerAmountCents),
+      funding: plan.funding,
+      ...(plan.exchangeRate != null ? { exchangeRate: String(plan.exchangeRate) } : {}),
+    },
+  });
+  if (!transfer.id) throw new Error("CONNECT_TRANSFER_MISSING");
+  return { transfer, plan };
+}
+
 /**
  * Create (or reuse) a Stripe Express connected account and return an Account Link.
  * Does not move money. Admin Send via Stripe creates Transfers only after KYC
@@ -838,70 +893,139 @@ export const sendConnectPayout = action({
       throw new Error("CONNECT_PAYOUTS_NOT_ENABLED");
     }
 
-    let plan: ReturnType<typeof resolveConnectTransferPlan>;
+    let executed: Awaited<ReturnType<typeof executeLedgerConnectTransfer>>;
     try {
-      const [balance, platform] = await Promise.all([
-        stripe.balance.retrieve(),
-        stripe.accounts.retrieve(null),
-      ]);
-      const settlement = (platform.default_currency ?? "nok").toLowerCase();
-      const available = (balance.available ?? []).map((row) => ({
-        amount: row.amount,
-        currency: row.currency,
-      }));
-      const matchedBucket = available.find(
-        (row) => row.currency.toLowerCase() === PRIZELET_LEDGER_CURRENCY,
-      );
-      const matchedCovers =
-        !!matchedBucket && matchedBucket.amount >= prep.amountCents;
-      const exchangeRate = matchedCovers
-        ? undefined
-        : await stripeExchangeRateForLedger(stripe, PRIZELET_LEDGER_CURRENCY, settlement);
-      plan = resolveConnectTransferPlan({
-        ledgerCurrency: PRIZELET_LEDGER_CURRENCY,
-        destinationCurrency: account.default_currency ?? PRIZELET_LEDGER_CURRENCY,
-        platformSettlementCurrency: settlement,
-        amountCents: prep.amountCents,
-        available,
-        exchangeRate,
-      });
-    } catch (err) {
-      mapStripeConnectError(err);
-    }
-
-    let transfer: Stripe.Transfer;
-    try {
-      transfer = await stripe.transfers.create({
-        amount: plan.transferAmount,
-        currency: plan.transferCurrency,
-        destination: prep.stripeAccountId,
+      executed = await executeLedgerConnectTransfer({
+        stripe,
+        destinationAccountId: prep.stripeAccountId,
+        destinationDefaultCurrency: account.default_currency,
+        ledgerAmountCents: prep.amountCents,
         metadata: {
           payoutId: prep.payoutId,
           creatorId: prep.creatorId,
-          ledgerCurrency: plan.ledgerCurrency,
-          ledgerAmountCents: String(plan.ledgerAmountCents),
-          funding: plan.funding,
-          ...(plan.exchangeRate != null
-            ? { exchangeRate: String(plan.exchangeRate) }
-            : {}),
         },
       });
     } catch (err) {
       mapStripeConnectError(err);
     }
-    if (!transfer.id) throw new Error("CONNECT_TRANSFER_MISSING");
     await ctx.runMutation(internal.payments.stripeDb.recordConnectTransfer, {
       payoutId: prep.payoutId,
-      transferId: transfer.id,
+      transferId: executed.transfer.id,
     });
     return {
-      transferId: transfer.id,
+      transferId: executed.transfer.id,
       alreadySent: false,
-      amountCents: plan.ledgerAmountCents,
-      currency: plan.ledgerCurrency,
-      transferCurrency: plan.transferCurrency,
-      transferAmount: plan.transferAmount,
-      funding: plan.funding,
+      amountCents: executed.plan.ledgerAmountCents,
+      currency: executed.plan.ledgerCurrency,
+      transferCurrency: executed.plan.transferCurrency,
+      transferAmount: executed.plan.transferAmount,
+      funding: executed.plan.funding,
+    };
+  },
+});
+
+/**
+ * Pay an accrued referral commission via Connect Transfer (same FX rules as payouts).
+ * Does not mark the referral paid unless Stripe accepts the transfer.
+ */
+export const sendReferralCommissionConnect = action({
+  args: { referralId: v.id("referrals") },
+  returns: v.object({
+    transferId: v.string(),
+    alreadySent: v.boolean(),
+    amountCents: v.number(),
+    currency: v.string(),
+    transferCurrency: v.string(),
+    transferAmount: v.number(),
+    funding: v.union(v.literal("matched"), v.literal("stripe_fx")),
+  }),
+  handler: async (
+    ctx,
+    args,
+  ): Promise<{
+    transferId: string;
+    alreadySent: boolean;
+    amountCents: number;
+    currency: string;
+    transferCurrency: string;
+    transferAmount: number;
+    funding: "matched" | "stripe_fx";
+  }> => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) throw new Error("UNAUTHENTICATED");
+    await ctx.runQuery(internal.payments.stripeDb.assertAdminUserId, { userId });
+    const stripe = requireStripe();
+    const prep: {
+      referralId: Id<"referrals">;
+      creatorId: Id<"creators">;
+      amountCents: number;
+      commissionPaidAt?: number;
+      commissionTransferId?: string;
+      stripeAccountId?: string;
+    } = await ctx.runQuery(internal.creators.growth.getReferralConnectContext, {
+      referralId: args.referralId,
+    });
+    if (isConnectTransferReference(prep.commissionTransferId)) {
+      return {
+        transferId: prep.commissionTransferId as string,
+        alreadySent: true,
+        amountCents: prep.amountCents,
+        currency: PRIZELET_LEDGER_CURRENCY,
+        transferCurrency: PRIZELET_LEDGER_CURRENCY,
+        transferAmount: prep.amountCents,
+        funding: "matched",
+      };
+    }
+    if (prep.commissionPaidAt != null) {
+      throw new Error("ALREADY_PAID");
+    }
+    if (!prep.stripeAccountId) {
+      throw new Error("CONNECT_ACCOUNT_MISSING");
+    }
+
+    let account: Stripe.Account;
+    try {
+      account = await stripe.accounts.retrieve(prep.stripeAccountId);
+    } catch (err) {
+      mapStripeConnectError(err);
+    }
+    const status = connectStatusFromStripeAccount(account);
+    await ctx.runMutation(internal.payments.stripeDb.persistConnectStatusByCreatorId, {
+      creatorId: prep.creatorId,
+      ...status,
+    });
+    if (!status.payoutsEnabled) {
+      throw new Error("CONNECT_PAYOUTS_NOT_ENABLED");
+    }
+
+    let executed: Awaited<ReturnType<typeof executeLedgerConnectTransfer>>;
+    try {
+      executed = await executeLedgerConnectTransfer({
+        stripe,
+        destinationAccountId: prep.stripeAccountId,
+        destinationDefaultCurrency: account.default_currency,
+        ledgerAmountCents: prep.amountCents,
+        metadata: {
+          kind: "referral_commission",
+          referralId: prep.referralId,
+          creatorId: prep.creatorId,
+        },
+      });
+    } catch (err) {
+      mapStripeConnectError(err);
+    }
+    await ctx.runMutation(internal.creators.growth.recordReferralConnectTransfer, {
+      referralId: prep.referralId,
+      transferId: executed.transfer.id,
+    });
+    return {
+      transferId: executed.transfer.id,
+      alreadySent: false,
+      amountCents: executed.plan.ledgerAmountCents,
+      currency: executed.plan.ledgerCurrency,
+      transferCurrency: executed.plan.transferCurrency,
+      transferAmount: executed.plan.transferAmount,
+      funding: executed.plan.funding,
     };
   },
 });

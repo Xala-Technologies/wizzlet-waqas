@@ -70,6 +70,7 @@ const AdminPayouts = () => {
   const createPayoutMutation = useMutation(api.payouts.mutations.createAdmin);
   const setStatusMutation = useMutation(api.payouts.mutations.setStatusAdmin);
   const sendConnectPayout = useAction(api.payments.stripeNode.sendConnectPayout);
+  const sendReferralCommission = useAction(api.payments.stripeNode.sendReferralCommissionConnect);
   const getConnectPlatformBalance = useAction(
     api.payments.stripeNode.getConnectPlatformBalance,
   );
@@ -283,10 +284,38 @@ const AdminPayouts = () => {
     }
   };
 
+  const sendReferralViaStripe = async (referralId: Id<'referrals'>, amountCents: number) => {
+    if (
+      !window.confirm(
+        `Send $${(amountCents / 100).toFixed(2)} referral commission via Stripe Connect Transfer?`,
+      )
+    ) {
+      return;
+    }
+    setBusyId(referralId);
+    try {
+      const result = await sendReferralCommission({ referralId });
+      toast.success(
+        result.alreadySent
+          ? `Already transferred ${result.transferId}`
+          : result.funding === 'stripe_fx'
+            ? `Stripe transfer ${result.transferId} sent (${(result.transferAmount / 100).toFixed(2)} ${result.transferCurrency.toUpperCase()} via Stripe FX for $${(result.amountCents / 100).toFixed(2)})`
+            : `Stripe transfer ${result.transferId} sent`,
+      );
+    } catch (e) {
+      const raw = e instanceof Error ? e.message : 'Failed to send referral commission';
+      if (raw.includes('ALREADY_PAID')) toast.error('Already marked paid');
+      else if (raw.includes('NOTHING_TO_PAY')) toast.error('No accrued commission on this row');
+      else toast.error(connectPayoutUserMessage(raw));
+    } finally {
+      setBusyId(null);
+    }
+  };
+
   const markReferralPaid = async (referralId: Id<'referrals'>, amountCents: number) => {
     if (
       !window.confirm(
-        `Mark $${(amountCents / 100).toFixed(2)} referral commission paid in the ledger? This does not move Stripe funds.`,
+        `Mark $${(amountCents / 100).toFixed(2)} paid in the ledger only? This does not send a Stripe Transfer.`,
       )
     ) {
       return;
@@ -423,7 +452,7 @@ const AdminPayouts = () => {
         <div className="border-b border-border p-4 sm:px-6">
           <h2 className={adminSectionTitle}>Referral commissions (unpaid)</h2>
           <p className="mt-0.5 text-caption text-muted-foreground">
-            Accrued from referred Checkouts. Mark paid after cash settles outside Prizelet.
+            Accrued from referred Checkouts. Send via Stripe Connect (same FX rules as creator payouts). Ledger-only mark is an ops backup.
           </p>
         </div>
         {unpaidCommissions === undefined ? (
@@ -451,16 +480,26 @@ const AdminPayouts = () => {
                   </span>
                   <Button
                     size="sm"
+                    className="h-9 text-caption"
+                    disabled={busyId === row._id}
+                    onClick={() => void sendReferralViaStripe(row._id, row.commissionEarnedCents)}
+                  >
+                    {busyId === row._id ? (
+                      <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                    ) : (
+                      <>
+                        <Send className="mr-1.5 h-3 w-3" /> Send via Stripe
+                      </>
+                    )}
+                  </Button>
+                  <Button
+                    size="sm"
                     variant="outline"
                     className="h-9 text-caption"
                     disabled={busyId === row._id}
                     onClick={() => void markReferralPaid(row._id, row.commissionEarnedCents)}
                   >
-                    {busyId === row._id ? (
-                      <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                    ) : (
-                      'Mark paid'
-                    )}
+                    Ledger only
                   </Button>
                 </div>
               </li>

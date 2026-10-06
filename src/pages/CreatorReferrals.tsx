@@ -722,7 +722,7 @@ const CreatorReferrals = () => {
             <p className="mb-4 text-sm text-muted-foreground">
               {useDemo
                 ? 'Sample program rules for design review.'
-                : 'Commission accrues on paid referred checkouts. Rewards paid updates when an admin marks the ledger paid (cash still settles outside Prizelet until Connect).'}
+                : 'Commission accrues on paid referred checkouts. Rewards paid updates when an admin sends the commission via Stripe Connect (or marks the ledger as a backup).'}
             </p>
             <dl className="space-y-3 text-sm">
               <div className="flex items-center justify-between gap-3">

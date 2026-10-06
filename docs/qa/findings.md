@@ -1,3 +1,17 @@
+# Findings — Wave 71 referral Connect cash 2026-10-06
+
+Branch `feat/world-ready-wave-71-referral-stripe-cash`. Convex soak on `combative-mongoose-559`.
+
+| Step | Result | Evidence |
+|------|--------|----------|
+| Action | PASS | `sendReferralCommissionConnect` reuses payout FX helper; unpaid until Transfer succeeds |
+| Ledger backup | PASS | `markCommissionPaidAdmin` still admin-only; UI labeled Ledger only |
+| Unit | PASS | `stripeConnect.security.test.ts` + `referralCommissionPaid.security.test.ts` |
+
+**Residual:** Live `tr_` soak when an unpaid converted referral exists on a KYC Express creator. MFA; Resend on prod for OTP email.
+
+---
+
 # Findings — Wave 70 email OTP self-serve 2026-10-06
 
 Branch `feat/world-ready-wave-70-email-otp`. Convex soak on `combative-mongoose-559`.
