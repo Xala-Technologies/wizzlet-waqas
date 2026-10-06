@@ -2,7 +2,7 @@
 
 **Authority:** [`docs/ai/prizelet-world-ready-master-prompt.md`](./prizelet-world-ready-master-prompt.md)
 
-**Status:** Wave 69 live Connect Transfer via Stripe-native FX 2026-10-05. Product is **not** world-ready.
+**Status:** Wave 70 member/creator self-serve email OTP 2026-10-06. Product is **not** world-ready.
 
 Do not claim world-ready until Section 8 gates in the master prompt pass.
 
@@ -16,7 +16,9 @@ Do not claim world-ready until Section 8 gates in the master prompt pass.
 | Evidence | branch, date, one-line actual vs expected |
 | Waiver | owner + reason (required if WAIVED) |
 
-Last updated: 2026-10-05. Last wave: **69** (`feat/world-ready-wave-69-connect-transfer-soak`). Source pin: `bf85281` (inventory).
+Last updated: 2026-10-06. Last wave: **70** (`feat/world-ready-wave-70-email-otp`). Source pin: `bf85281` (inventory).
+
+Wave 70: Member/creator self-serve email OTP — hashed 6-digit code, Resend when configured, dev echo only with `ALLOW_DEV_ADMIN_GRANT` on non-production SITE_URL. Soak `@prize2626` Settings → Change email → `prize2626+wave70otp@example.com` → `delivery=dev` code **266295**; wrong code `000000` stayed signed in (email unchanged). Admin fulfill remains backup. Units `emailOtp.security.test.ts` + `accountRequests.security.test.ts`.
 
 Wave 69: Live Connect Transfer soak on combative-mongoose-559 — admin created pending **$50** for `@prize2626` Express `acct_1UNI6YRzsXVyRAzD` (`payouts_enabled`); `sendConnectPayout` → `funding=stripe_fx`, `tr_1UNKR8RpY5TupxHCGqx0oHZc`, transfer **479.68 NOK** for **$50** USD ledger; payout `completed` / `stripe_connect`. Platform available was NOK-only. Units unchanged (`stripeConnect.security.test.ts`).
 
@@ -214,7 +216,7 @@ Nested layouts in `App.tsx`: `/demo/admin` → `DemoAdminLayout`; `/demo/member`
 | J4 | Messages / support / resolution | PASS | Wave 9/39/40: composer gated; CRM **Canceled · was Premium** for cancelled j4member. Units messaging 7/7 + creatorMessageSubscriber 4/4 |
 | J5 | Payout request / approve / balance | PASS | Wave 10 request/approve; Wave 25 Lifetime math; Wave 69 live Connect FX transfer `tr_1UNKR8…` for `@prize2626` **$50**. `payoutBalance.test.ts` 6/6 |
 | J6 | Promo / tracking links / referrals | PASS | Wave 11/29/30/33/34; Wave 36 2026-10-05: admin Mark paid ledger for accrued commission (**$1.49** → Paid). Residual: Stripe Connect cash movement still out of scope |
-| J7 | Identity (password, OAuth, roles, email request) | PASS | Wave 12/27/28/30/38; Wave 35 admin email fulfill + soft-delete; Wave 38 X OAuth; Wave 41 deletion fulfill → Stripe `cancelStripeSubscriptionsAdmin` cancels remote `sub_*`. Residual: no member self-serve verified email OTP |
+| J7 | Identity (password, OAuth, roles, email request) | PASS | Wave 70: self-serve OTP (`startEmailChange` / `verifyEmailChangeOtp` / `resendEmailChangeOtp`); admin fulfill still backup. Wave 12/27/28/30/38; Wave 35 admin email fulfill + soft-delete; Wave 38 X OAuth; Wave 41 deletion fulfill → Stripe `cancelStripeSubscriptionsAdmin` cancels remote `sub_*`. |
 | J8 | Migration ETL internal-only | PASS | Wave 13 2026-10-05: all migration exports `internalMutation`; client has zero import refs; `MIGRATION_SECRET` unset on combative-mongoose-559; `migrations.security.test.ts` 3/3. Residual: historical data parity not claimed |
 | J9 | Public nav + chrome | PASS | Wave 2: public-nav + browser-matrix on chromium/webkit/firefox; platform-owner bootstrap visible in DEV |
 | J-ADMIN | Admin lists, fees, reports, campaigns | PASS | Wave 16 2026-10-05: users/creators paginated; fees analytics; CSV export; campaigns in-app-only honesty; alerts strip |
@@ -257,7 +259,7 @@ Nested layouts in `App.tsx`: `/demo/admin` → `DemoAdminLayout`; `/demo/member`
 
 ## J. Public Convex API coverage (Wave 0 freeze)
 
-**162** app `query` / `mutation` / `action` exports in `convex/` (excluding `internal*`). **Missing `returns` validators: none.**
+**165** app `query` / `mutation` / `action` exports in `convex/` (excluding `internal*`). **Missing `returns` validators: none.**
 
 Convex Auth library public API (from `convex/auth.ts` `convexAuth()`; validators owned by `@convex-dev/auth`):
 
@@ -275,7 +277,10 @@ App public functions (`Auth` = TBD until Wave 1):
 | `accountRequests.listMine` | auth | yes | PASS | Wave 12: open email-change shown on settings |
 | `accountRequests.listOpenAdmin` | admin | yes | PASS | Wave 32: `/admin/users` Open account requests — 2 open (j4member email-change + j6oauth deletion) |
 | `accountRequests.requestAccountDeletion` | subscriber | yes | PASS | Wave 31: Settings → Request deletion → status **open** |
-| `accountRequests.requestEmailChange` | auth | yes | PASS | Wave 12: request `j4member+wave12@example.com`; sign-in email unchanged |
+| `accountRequests.requestEmailChange` | auth | yes | PASS | Wave 70: mints hashed OTP (no plaintext); Wave 12: request created, sign-in email unchanged until verify |
+| `accountRequests.startEmailChange` | auth | yes | PASS | Wave 70: action mints + Resend/dev delivery; never echoes code on production SITE_URL |
+| `accountRequests.resendEmailChangeOtp` | auth | yes | PASS | Wave 70: cooldown 60s; remints hashed OTP |
+| `accountRequests.verifyEmailChangeOtp` | auth | yes | PASS | Wave 70: 5 attempts / 10m TTL; fulfill + clear sessions |
 | `accountRequests.resolveAdmin` | admin | yes | PASS | Wave 35: fulfill email + fulfill deletion + reject; cannot resolve own |
 | `admin.exportReports.exportReportBundle` | admin | yes | PASS | Wave 16: creators CSV `creators_2026-10-04.csv` |
 | `admin.paginatedLists.listCampaignsPage` | TBD | yes | NOT_RUN | frozen vs convex/*.ts @ bf85281 |
@@ -491,7 +496,7 @@ Schema `appRole` also allows `moderator` and `user` (not product actors; no rout
 
 ## M. Remaining risk (update every fix PR)
 
-- P2: USD currency locked (Wave 67). Connect Transfer proven Wave 69 via Stripe-native FX (`tr_1UNKR8…`); referral cash still outside Stripe; member self-serve verified email OTP still missing; historical migration data parity BLOCKED (greenfield)
-- P3: admin join spend still capped at 500; F-012 Convex `.collect` closed Waves 59–65; optional USD available funding (FX path works); referral cash + email OTP still open; customers/alerts/finance/dashboard/fees/payouts/announcement/reports KPIs PASS (Wave 43–47, 50–55); eslint PASS Wave 57; join honesty PASS Wave 58
+- P2: USD currency locked (Wave 67). Connect Transfer proven Wave 69 via Stripe-native FX (`tr_1UNKR8…`); referral cash still outside Stripe; historical migration data parity BLOCKED (greenfield). Email OTP shipped Wave 70 (Resend env required on prod; dev echo only with ALLOW_DEV_ADMIN_GRANT)
+- P3: admin join spend still capped at 500; F-012 Convex `.collect` closed Waves 59–65; optional USD available funding (FX path works); customers/alerts/finance/dashboard/fees/payouts/announcement/reports KPIs PASS (Wave 43–47, 50–55); eslint PASS Wave 57; join honesty PASS Wave 58
 - Not in this PR: www.prizelet.com Vercel promote, live Stripe keys, MFA
 - Waivers: see section L

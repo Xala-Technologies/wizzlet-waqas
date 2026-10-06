@@ -10,6 +10,7 @@ import {
   PaymentFeeDetailSheet,
   PaymentFeeStack,
 } from '@/components/creator/PaymentFeeDetailSheet';
+import { EmailChangeOtpDialog } from '@/components/account/EmailChangeOtpDialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -180,6 +181,7 @@ const CreatorSettings = () => {
   const [discordServerId, setDiscordServerId] = useState('');
   const [discordRoleId, setDiscordRoleId] = useState('');
   const [email, setEmail] = useState('');
+  const [emailDialogOpen, setEmailDialogOpen] = useState(false);
 
   const [brandName, setBrandName] = useState('');
   const [logoUrl, setLogoUrl] = useState('');
@@ -593,9 +595,18 @@ const CreatorSettings = () => {
                       title={
                         useDemo
                           ? undefined
-                          : 'Email is managed by your sign-in provider'
+                          : 'Change sign-in email with a verification code'
                       }
                     />
+                    {!useDemo ? (
+                      <button
+                        type="button"
+                        className="text-xs font-semibold text-primary hover:underline"
+                        onClick={() => setEmailDialogOpen(true)}
+                      >
+                        Change email
+                      </button>
+                    ) : null}
                   </div>
                   <div className="space-y-2">
                     <div className="flex items-center justify-between gap-2">
@@ -2496,6 +2507,11 @@ const CreatorSettings = () => {
           </div>
         </div>
       ) : null}
+      <EmailChangeOtpDialog
+        open={emailDialogOpen}
+        onOpenChange={setEmailDialogOpen}
+        demo={useDemo}
+      />
     </DashboardLayout>
   );
 };
