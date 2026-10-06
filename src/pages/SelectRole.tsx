@@ -1,10 +1,11 @@
 import { useEffect, useState } from 'react';
 import { Link, Navigate, useNavigate, useSearchParams } from 'react-router-dom';
-import { useMutation } from 'convex/react';
+import { useMutation, useQuery } from 'convex/react';
 import { useAuth } from '@/contexts/AuthContext';
 import { AuthShell } from '@/components/auth/AuthShell';
 import { Button } from '@/components/ui/button';
 import { api } from '@convex/_generated/api';
+import { destinationAfterMfa } from '@/lib/mfaGate';
 import {
   clearStoredReturnTo,
   postAuthDestination,
@@ -34,6 +35,7 @@ const SelectRole = () => {
   const [selected, setSelected] = useState<'creator' | 'subscriber' | null>(null);
   const [saving, setSaving] = useState(false);
   const assignSelfRole = useMutation(api.roles.mutations.assignSelfRole);
+  const mfa = useQuery(api.mfa.status, user && !signingOut ? {} : 'skip');
 
   const alreadyHasRoles = heldRoles.length > 0;
 
@@ -56,6 +58,31 @@ const SelectRole = () => {
   if (!user) {
     const loginQs = returnTo ? `?returnTo=${encodeURIComponent(returnTo)}` : '';
     return <Navigate to={`/login${loginQs}`} replace />;
+  }
+
+  if (mfa === undefined) {
+    return (
+      <main id="main-content" className="min-h-screen flex items-center justify-center px-4 bg-background">
+        <Loader2 className="h-6 w-6 animate-spin text-primary" />
+      </main>
+    );
+  }
+  if (mfa.required) {
+    return (
+      <Navigate
+        to={destinationAfterMfa({
+          mfaRequired: true,
+          dest: alreadyHasRoles
+            ? postAuthDestination({
+                roles: heldRoles,
+                preferred: activeRole,
+                returnTo,
+              })
+            : `/select-role${returnTo ? `?returnTo=${encodeURIComponent(returnTo)}` : ''}`,
+        })}
+        replace
+      />
+    );
   }
 
   // Cross-device / re-login: already have DB roles — do not force re-pick.

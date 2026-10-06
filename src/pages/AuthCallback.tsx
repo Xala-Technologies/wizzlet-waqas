@@ -10,6 +10,7 @@ import {
   clearStoredReferralCode,
   readStoredReferralCode,
 } from '@/lib/referralHandoff';
+import { destinationAfterMfa } from '@/lib/mfaGate';
 import {
   clearStoredReturnTo,
   postAuthDestination,
@@ -103,14 +104,15 @@ const AuthCallback = () => {
         sanitizeReturnPath(searchParams.get('returnTo')) ?? readStoredReturnTo();
       clearStoredReturnTo();
 
-      navigate(
-        postAuthDestination({
-          roles: held,
-          preferred: active,
-          returnTo,
-        }),
-        { replace: true },
-      );
+      const dest = postAuthDestination({
+        roles: held,
+        preferred: active,
+        returnTo,
+      });
+      const mfaStatus = await withAuthRetry(() => convex.query(api.mfa.status, {}));
+      navigate(destinationAfterMfa({ mfaRequired: mfaStatus.required, dest }), {
+        replace: true,
+      });
     } catch (err) {
       if (id !== runId.current) return;
       const message =

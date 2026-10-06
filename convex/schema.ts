@@ -46,6 +46,8 @@ export default defineSchema({
     discordId: v.optional(v.string()),
     discordUsername: v.optional(v.string()),
     stripeCustomerId: v.optional(v.string()),
+    totpSecret: v.optional(v.string()),
+    totpEnabled: v.optional(v.boolean()),
     notificationPrefs: v.optional(v.any()),
     createdAt: v.optional(v.number()),
     updatedAt: v.optional(v.number()),
@@ -68,6 +70,14 @@ export default defineSchema({
     .index("by_userId_role", ["userId", "role"])
     .index("by_role", ["role"])
     .index("by_legacyId", ["legacyId"]),
+
+  mfaSessionGrants: defineTable({
+    userId: v.id("users"),
+    sessionId: v.id("authSessions"),
+    verifiedAt: v.number(),
+  })
+    .index("by_sessionId", ["sessionId"])
+    .index("by_userId", ["userId"]),
 
   creators: defineTable({
     legacyId: v.optional(v.string()),

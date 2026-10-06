@@ -85,6 +85,7 @@ Wave 0 must **diff this list against live code**. If `App.tsx` / schema / `api.d
 | `/support` | `Support` | Public support |
 | `/community` | `Community` | Public community |
 | `/login` | `Login` | Email/password, social, safe return path |
+| `/mfa` | `Mfa` | TOTP challenge when `mfa.status.required` |
 | `/signup` | `Signup` | Username/email/password, social, `?ref=` |
 | `/auth/callback` | `AuthCallback` | OAuth finish, errors, retry |
 | `/select-role` | `SelectRole` | Creator vs subscriber; no admin card |
@@ -95,7 +96,7 @@ Wave 0 must **diff this list against live code**. If `App.tsx` / schema / `api.d
 | `/:username` | `CreatorProfile` | Public profile, products, gated posts, subscribe |
 | `*` | `NotFound` | Unknown paths |
 
-Catch-all `/:username` must not shadow real app prefixes (`/dashboard`, `/creator`, `/admin`, `/demo`, `/login`, …).
+Catch-all `/:username` must not shadow real app prefixes (`/dashboard`, `/creator`, `/admin`, `/demo`, `/login`, `/mfa`, …).
 
 ### 1.2 Routes — member (`ProtectedRoute` `subscriber`)
 
@@ -206,6 +207,7 @@ Treat **every public query/mutation/action** as in-scope. For each: caller ident
 | Module | Domain |
 |--------|--------|
 | `accountRequests` | Email-change OTP self-serve + admin fulfill |
+| `mfa` | TOTP enroll / session grant / disable |
 | `admin/exportReports`, `admin/paginatedLists`, `admin/queries`, `admin/snapshots` | Admin reads/exports |
 | `analytics/mutations` | Analytics events |
 | `auth`, `authProviders` | Convex Auth + social |
@@ -231,13 +233,13 @@ Treat **every public query/mutation/action** as in-scope. For each: caller ident
 | `lib/*` | Shared helpers — **not** public client endpoints; test these |
 | `crons`, `http` | Generated module imports only; surfaces in §1.6 |
 
-`auth` also exports Convex Auth public `signIn` / `signOut` / `store` / `isAuthenticated` (library-owned, not listed as app `query({` exports). Wave 0 counted **166** app public functions (Wave 71 added `sendReferralCommissionConnect`; Wave 70 added email OTP actions); all had `returns` validators. Do not treat `lib/*` as skippable product APIs.
+`auth` also exports Convex Auth public `signIn` / `signOut` / `store` / `isAuthenticated` (library-owned, not listed as app `query({` exports). Wave 0 counted **166** app public functions (Wave 72 added TOTP MFA; Wave 71 added `sendReferralCommissionConnect`; Wave 70 added email OTP actions); all had `returns` validators. Do not treat `lib/*` as skippable product APIs.
 
 **Lib files that must stay consistent with UI:** [`convex/lib/contentAccess.ts`](../../convex/lib/contentAccess.ts), [`convex/lib/entitlements.ts`](../../convex/lib/entitlements.ts), [`src/lib/billingAccess.ts`](../../src/lib/billingAccess.ts), [`convex/lib/payoutBalance.ts`](../../convex/lib/payoutBalance.ts), [`convex/lib/envGuards.ts`](../../convex/lib/envGuards.ts), [`convex/lib/commerceIdentity.ts`](../../convex/lib/commerceIdentity.ts).
 
 ### 1.8 Schema tables (product data)
 
-Product tables: `users` (Convex Auth overlay + app fields), `userRoles`, `creators`, `products`, `posts`, `subscriptions`, `analyticsEvents`, `pickTracker`, `paymentEvents`, `webhookReceipts`, `sportEvents`, `notifications`, `savedPosts`, `creatorBookmarks`, `payouts`, `creatorLinks`, `promoCodes`, `referrals`, `creatorPayoutSettings`, `resolutionCases`, `resolutionCaseMessages`, `supportMessages`, `memberSupportMessages`, `platformSettings`, `directMessages`, `emailCampaigns`, `fileAssets`, `migrationCheckpoints`, `mutationLog`, `accountRequests`, `discordBotInstalls`, `discordAccessGrants`.
+Product tables: `users` (Convex Auth overlay + app fields including `totpSecret` / `totpEnabled`), `userRoles`, `mfaSessionGrants`, `creators`, `products`, `posts`, `subscriptions`, `analyticsEvents`, `pickTracker`, `paymentEvents`, `webhookReceipts`, `sportEvents`, `notifications`, `savedPosts`, `creatorBookmarks`, `payouts`, `creatorLinks`, `promoCodes`, `referrals`, `creatorPayoutSettings`, `resolutionCases`, `resolutionCaseMessages`, `supportMessages`, `memberSupportMessages`, `platformSettings`, `directMessages`, `emailCampaigns`, `fileAssets`, `migrationCheckpoints`, `mutationLog`, `accountRequests`, `discordBotInstalls`, `discordAccessGrants`.
 
 `...authTables` overlay (library): `users`, `authSessions`, `authAccounts`, `authRefreshTokens`, `authVerificationCodes`, `authVerifiers`, `authRateLimits`.
 
@@ -296,7 +298,7 @@ Promo CRUD, ownership, max uses, expiry, `discountDuration` once|forever. `/go/:
 
 ### J7 — Identity continuity
 
-Password + X/Discord OAuth. [`AuthCallback`](../../src/pages/AuthCallback.tsx) `waitForAuthenticated` / `ensureCanonicalAuthOrigin`. Safe return paths ([`src/lib/safeReturnPath.ts`](../../src/lib/safeReturnPath.ts)) — no open redirects. Multi-role: `ROLE_PRIORITY` admin > creator > subscriber; `switchRole` only among held roles. Sign-out does not flash `/select-role`. Email change: self-serve OTP (`startEmailChange` / `verifyEmailChangeOtp`) plus admin `accountRequests` backup; **do not claim email already changed** until OTP verify (or admin fulfill) succeeds.
+Password + X/Discord OAuth. [`AuthCallback`](../../src/pages/AuthCallback.tsx) `waitForAuthenticated` / `ensureCanonicalAuthOrigin`. Safe return paths ([`src/lib/safeReturnPath.ts`](../../src/lib/safeReturnPath.ts)) — no open redirects. Multi-role: `ROLE_PRIORITY` admin > creator > subscriber; `switchRole` only among held roles. Sign-out does not flash `/select-role`. Email change: self-serve OTP (`startEmailChange` / `verifyEmailChangeOtp`) plus admin `accountRequests` backup; **do not claim email already changed** until OTP verify (or admin fulfill) succeeds. TOTP MFA: enroll in settings, new sessions hit `/mfa` until `mfaSessionGrants` for the current Convex Auth session. Never return `totpSecret` on `me`.
 
 ### J8 — Migration continuity
 
