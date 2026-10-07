@@ -100,7 +100,7 @@ export function isAuthOriginAligned(): boolean {
 
 /**
  * OAuth PKCE verifier lives in localStorage on the start origin. If the app is
- * opened on apex (sweeph.com / prizelet.com) while SITE_URL is www, bounce to www first so
+ * opened on apex (sweeph.com) while SITE_URL is www, bounce to www first so
  * the verifier and the OAuth return land on the same origin.
  * Returns true when a navigation was triggered (caller should abort).
  */

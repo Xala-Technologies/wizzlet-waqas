@@ -4,7 +4,7 @@
 
 export const CREATOR_SETTINGS_DEMO = {
   displayName: 'AlexPicks',
-  email: 'alex@prizelet.com',
+  email: 'alex@sweeph.com',
   bio: 'Sports analyst | Daily picks | Helping you win more.',
   language: 'en-US',
   timezone: 'Europe/Tallinn',
@@ -61,7 +61,7 @@ export const CREATOR_TEAM_DEMO_MEMBERS: DemoTeamMember[] = [
   {
     id: 'demo-team-1',
     name: 'AlexPicks',
-    email: 'alex@prizelet.com',
+    email: 'alex@sweeph.com',
     role: 'owner',
     status: 'active',
     joinedLabel: 'Jan 15, 2025',
@@ -71,7 +71,7 @@ export const CREATOR_TEAM_DEMO_MEMBERS: DemoTeamMember[] = [
   {
     id: 'demo-team-2',
     name: 'Waqas',
-    email: 'waqas@prizelet.com',
+    email: 'waqas@sweeph.com',
     role: 'admin',
     status: 'active',
     joinedLabel: 'Jan 16, 2025',

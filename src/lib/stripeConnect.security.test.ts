@@ -41,9 +41,9 @@ describe('stripe Connect Express helpers', () => {
   });
 
   it('builds return and refresh URLs on creator payouts', () => {
-    expect(connectOnboardingUrls('https://www.prizelet.com/')).toEqual({
-      returnUrl: 'https://www.prizelet.com/creator/payouts?connect=return',
-      refreshUrl: 'https://www.prizelet.com/creator/payouts?connect=refresh',
+    expect(connectOnboardingUrls('https://www.sweeph.com/')).toEqual({
+      returnUrl: 'https://www.sweeph.com/creator/payouts?connect=return',
+      refreshUrl: 'https://www.sweeph.com/creator/payouts?connect=refresh',
     });
   });
 
