@@ -3,13 +3,10 @@
  * Imported by Convex guards and the Vite/script validator so the lists cannot drift.
  */
 
+/** Canonical production hosts — sweeph.com only (prizelet.com / wizzlet.com retired). */
 export const PRODUCTION_ORIGINS = [
   "https://www.sweeph.com",
   "https://sweeph.com",
-  "https://www.prizelet.com",
-  "https://prizelet.com",
-  "https://www.wizzlet.com",
-  "https://wizzlet.com",
 ] as const;
 
 /** Booleans are enabled only when the value is exactly the string "true". */

@@ -26,10 +26,10 @@ Release tags: **none**.
 | Unmerged / stacked work | Open UI PRs #34–#37; older QA stack PRs #14–#24 |
 | Configuration-only difference | Expected (URLs, Stripe mode, Convex deployment) |
 | Abandoned / duplicate work | Many stacked QA PRs likely superseded by merges into `dev` — preserve until reviewed; **do not delete** without approval |
-| Unexplained code/deployment drift | Live `www.prizelet.com` has been updated via **Vercel CLI promote from feature-branch previews**, so git `production` tip is **not** authoritative for what customers run |
+| Unexplained code/deployment drift | Live production has historically been updated via **Vercel CLI promote from feature-branch previews**, so git `production` tip was not always authoritative for what customers run |
 
 ```text
-feature branch → Vercel preview → CLI promote → www.prizelet.com
+feature branch → Vercel preview → CLI promote → www.sweeph.com
 feature branch → PR → dev  (53 commits not merged to production git tip)
 ```
 

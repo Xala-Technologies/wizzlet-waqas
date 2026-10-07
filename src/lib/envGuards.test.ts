@@ -30,7 +30,7 @@ describe("convex envGuards", () => {
   it("assertProductionSafeEnv blocks sandbox on production origin", () => {
     expect(() =>
       assertProductionSafeEnv({
-        siteUrl: "https://www.prizelet.com",
+        siteUrl: "https://www.sweeph.com",
         allowSandboxCheckout: "true",
       }),
     ).toThrow(ConvexError);

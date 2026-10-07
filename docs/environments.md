@@ -12,7 +12,7 @@ Companion docs: [environment-findings.md](./environment-findings.md), [release-p
 | **development** | Combined testing on `dev` | Convex **dev** deployment; Vercel git/`dev` or preview | Branch SHA, Convex deployment id, synthetic data only |
 | **preview** | Isolated change verification | Vercel PR preview; Convex URL baked at **build** time | Candidate SHA, frontend↔backend pair |
 | **staging** | Release rehearsal (optional label) | Same build recipe on RC SHA against non-prod Convex | Manifest + checks PASS |
-| **production** | Customers | `https://www.prizelet.com` / `https://prizelet.com` + Convex **prod** | Approved release id, deployed revisions, protected credentials |
+| **production** | Customers | `https://www.sweeph.com` / `https://sweeph.com` + Convex **prod** | Approved release id, deployed revisions, protected credentials |
 
 `VITE_APP_ENV` is the explicit deployment-environment identity. It is independent of Vite `MODE` (`development` vs `production` build). Never treat a client-supplied label as security evidence — server gates enforce money and admin.
 
@@ -61,7 +61,7 @@ Dashboard **Settings → Environment Variables** on the target deployment. These
 |----------|---------|-------------|-----------------|
 | `STRIPE_SECRET_KEY` | Stripe API | Critical | Live keys only with live `SITE_URL` |
 | `STRIPE_WEBHOOK_SECRET` | Webhook verify | Critical | Webhook URL = this deployment |
-| `SITE_URL` | Redirect / portal base | High | `https://www.prizelet.com` — never localhost with live Stripe |
+| `SITE_URL` | Redirect / portal base | High | `https://www.sweeph.com` — never localhost with live Stripe |
 | `ALLOW_SANDBOX_CHECKOUT` | Server sandbox gate | Critical | **Unset / not `true`** |
 | `ALLOW_DEV_ADMIN_GRANT` | Mint admin | Critical | **Unset / not `true`** |
 | `MIGRATION_SECRET` | ETL gate | Critical | Prefer unset after cutover |

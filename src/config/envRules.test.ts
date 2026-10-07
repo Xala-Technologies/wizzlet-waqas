@@ -26,7 +26,7 @@ describe("validateEnvProfile", () => {
     const issues = validateEnvProfile({
       appEnv: "production",
       convexUrl: "https://missing.convex.cloud",
-      siteUrl: "https://www.prizelet.com",
+      siteUrl: "https://www.sweeph.com",
       requireProductionBindings: true,
     });
     expect(issues.some((i) => i.code === "CONVEX_URL_INVALID" || i.code === "PROD_DEV_BACKEND")).toBe(
@@ -57,7 +57,7 @@ describe("validateEnvProfile", () => {
     const sandboxIssues = validateEnvProfile({
       appEnv: "production",
       convexUrl: "https://prod-example.convex.cloud",
-      siteUrl: "https://www.prizelet.com",
+      siteUrl: "https://www.sweeph.com",
       allowSandboxCheckout: "true",
       requireProductionBindings: true,
     });
@@ -66,7 +66,7 @@ describe("validateEnvProfile", () => {
     const adminIssues = validateEnvProfile({
       appEnv: "production",
       convexUrl: "https://prod-example.convex.cloud",
-      siteUrl: "https://www.prizelet.com",
+      siteUrl: "https://www.sweeph.com",
       allowDevAdminGrant: "true",
       requireProductionBindings: true,
     });
@@ -109,7 +109,7 @@ describe("validateEnvProfile", () => {
     const issues = validateEnvProfile({
       appEnv: "production",
       convexUrl: "https://prod-example.convex.cloud",
-      siteUrl: "https://www.prizelet.com",
+      siteUrl: "https://www.sweeph.com",
       stripePublishableKey: "pk_live_example",
       stripeSecretKey: "sk_live_example",
       requireProductionBindings: true,
