@@ -1,3 +1,21 @@
+# Findings — Wave 74 Section 8 gates 2026-10-07
+
+Branch `feat/world-ready-wave-74-section8-gates`.
+
+| Step | Result | Evidence |
+|------|--------|----------|
+| `npm test` | PASS | 256/256 after adminJoinMetrics regex + publicApiReturns |
+| `npm run lint` | PASS | exit 0 |
+| `npm run build` | PASS | vite build ~15s |
+| `npm run env:validate` | PASS | local; sandbox/devAdmin false |
+| `npm run test:e2e` | PASS | chromium surface 3/3 (goto 45s); matrix/nav browsers |
+| `npx tsc -b` | PASS | messagingAccess `in` discriminant; force clean |
+| Gate 2 returns | PASS | 183 public query/mutation/action have `returns` |
+
+**Residual:** Ledger API soak NOT_RUN rows remain; Resend on prod; referral `tr_` soak. Do **not** claim world-ready.
+
+---
+
 # Findings — Wave 73 MFA recovery 2026-10-07
 
 Branch `feat/world-ready-wave-73-mfa-recovery`. Convex on `combative-mongoose-559`.
