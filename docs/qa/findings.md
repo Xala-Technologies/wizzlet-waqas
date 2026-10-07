@@ -1,3 +1,20 @@
+# Findings — Wave 73 MFA recovery 2026-10-07
+
+Branch `feat/world-ready-wave-73-mfa-recovery`. Convex on `combative-mongoose-559`.
+
+| Step | Result | Evidence |
+|------|--------|----------|
+| Backup codes | PASS | 8 hashed one-time codes on enroll / regenerate; plaintext shown once |
+| Login | PASS | `/mfa` accepts TOTP or backup; backup consumes hash |
+| Admin reset | PASS | `mfa.adminDisable` clears TOTP + backups + grants; refuses self |
+| Hygiene | PASS | `totpBackupCodeHashes` stripped via `publicUserFields` |
+| Soak | PASS | `@prize2626` enroll → backup panel (e.g. `79JW-PMTJ` …) + “8 backup codes left”; disable after soak so shared QA account stays open |
+| Unit | PASS | `mfaBackup.security.test.ts` |
+
+**Residual:** Resend on prod. Referral `tr_` soak. Section 8 gates. Do not claim world-ready.
+
+---
+
 # Findings — Wave 72 TOTP MFA 2026-10-06
 
 Branch `feat/world-ready-wave-72-totp-mfa`. Convex soak on `combative-mongoose-559`.
@@ -11,7 +28,7 @@ Branch `feat/world-ready-wave-72-totp-mfa`. Convex soak on `combative-mongoose-5
 | Soak | PASS | `@prize2626` Security: enroll → confirm TOTP **266588** → switch on; disable with **066885** → switch off. `/mfa` with TOTP off redirected to `/creator` |
 | Unit | PASS | `totp.security.test.ts` + `mfaGate.test.ts` |
 
-**Residual:** No backup codes / admin MFA reset. Resend on prod. Referral `tr_` soak. Do not claim world-ready.
+**Residual:** Superseded Wave 73 (backup codes + admin reset).
 
 ---
 

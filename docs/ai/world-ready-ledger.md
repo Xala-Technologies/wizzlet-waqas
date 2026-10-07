@@ -2,7 +2,7 @@
 
 **Authority:** [`docs/ai/prizelet-world-ready-master-prompt.md`](./prizelet-world-ready-master-prompt.md)
 
-**Status:** Wave 72 TOTP MFA 2026-10-06. Product is **not** world-ready.
+**Status:** Wave 73 MFA recovery 2026-10-07. Product is **not** world-ready.
 
 Do not claim world-ready until Section 8 gates in the master prompt pass.
 
@@ -16,9 +16,11 @@ Do not claim world-ready until Section 8 gates in the master prompt pass.
 | Evidence | branch, date, one-line actual vs expected |
 | Waiver | owner + reason (required if WAIVED) |
 
-Last updated: 2026-10-06. Last wave: **72** (`feat/world-ready-wave-72-totp-mfa`). Source pin: `bf85281` (inventory).
+Last updated: 2026-10-07. Last wave: **73** (`feat/world-ready-wave-73-mfa-recovery`). Source pin: `bf85281` (inventory).
 
-Wave 72: RFC 6238 TOTP (SHA-1, 6 digits, 30s, ±1 window). Enroll/confirm/disable in creator + member settings; new sessions require `/mfa` until `mfaSessionGrants` for the Convex Auth session. `totpSecret` stripped from `me` / `getById` / admin `listUsers`. Soak `@prize2626` confirm **266588** then disable **066885**. Units `totp.security.test.ts` + `mfaGate.test.ts`. Residual: no backup codes / admin MFA reset.
+Wave 73: MFA recovery — 8 hashed one-time backup codes (shown once on enroll / regenerate), `/mfa` accepts TOTP or backup code, admin `mfa.adminDisable` (not self). Units `mfaBackup.security.test.ts`. Residual: Resend on prod; referral `tr_` soak.
+
+Wave 72: RFC 6238 TOTP (SHA-1, 6 digits, 30s, ±1 window). Enroll/confirm/disable in creator + member settings; new sessions require `/mfa` until `mfaSessionGrants` for the Convex Auth session. `totpSecret` stripped from `me` / `getById` / admin `listUsers`. Soak `@prize2626` confirm **266588** then disable **066885**. Units `totp.security.test.ts` + `mfaGate.test.ts`.
 
 Wave 71: Referral commissions use admin `sendReferralCommissionConnect` (same matched-USD / Stripe-native FX helper as payouts). Ledger `markCommissionPaidAdmin` remains an explicit backup. Units `stripeConnect.security.test.ts` + `referralCommissionPaid.security.test.ts`.
 
@@ -221,7 +223,7 @@ Nested layouts in `App.tsx`: `/demo/admin` → `DemoAdminLayout`; `/demo/member`
 | J4 | Messages / support / resolution | PASS | Wave 9/39/40: composer gated; CRM **Canceled · was Premium** for cancelled j4member. Units messaging 7/7 + creatorMessageSubscriber 4/4 |
 | J5 | Payout request / approve / balance | PASS | Wave 10 request/approve; Wave 25 Lifetime math; Wave 69 live Connect FX transfer `tr_1UNKR8…` for `@prize2626` **$50**. `payoutBalance.test.ts` 6/6 |
 | J6 | Promo / tracking links / referrals | PASS | Wave 11/29/30/33/34; Wave 36 ledger Mark paid; Wave 71: `sendReferralCommissionConnect` (Connect Transfer + FX). Ledger-only mark remains backup. |
-| J7 | Identity (password, OAuth, roles, email request) | PASS | Wave 72: TOTP MFA enroll + session grant (`mfa.status` / `verifyLogin`). Wave 70: self-serve OTP (`startEmailChange` / `verifyEmailChangeOtp` / `resendEmailChangeOtp`); admin fulfill still backup. Wave 12/27/28/30/38; Wave 35 admin email fulfill + soft-delete; Wave 38 X OAuth; Wave 41 deletion fulfill → Stripe `cancelStripeSubscriptionsAdmin` cancels remote `sub_*`. |
+| J7 | Identity (password, OAuth, roles, email request) | PASS | Wave 73: backup codes + admin MFA reset. Wave 72: TOTP MFA enroll + session grant. Wave 70: self-serve OTP; admin fulfill still backup. Wave 12/27/28/30/38; Wave 35 admin email fulfill + soft-delete; Wave 38 X OAuth; Wave 41 deletion fulfill → Stripe cancel. |
 | J8 | Migration ETL internal-only | PASS | Wave 13 2026-10-05: all migration exports `internalMutation`; client has zero import refs; `MIGRATION_SECRET` unset on combative-mongoose-559; `migrations.security.test.ts` 3/3. Residual: historical data parity not claimed |
 | J9 | Public nav + chrome | PASS | Wave 2: public-nav + browser-matrix on chromium/webkit/firefox; platform-owner bootstrap visible in DEV |
 | J-ADMIN | Admin lists, fees, reports, campaigns | PASS | Wave 16 2026-10-05: users/creators paginated; fees analytics; CSV export; campaigns in-app-only honesty; alerts strip |
@@ -286,12 +288,14 @@ App public functions (`Auth` = TBD until Wave 1):
 | `accountRequests.startEmailChange` | auth | yes | PASS | Wave 70: action mints + Resend/dev delivery; never echoes code on production SITE_URL |
 | `accountRequests.resendEmailChangeOtp` | auth | yes | PASS | Wave 70: cooldown 60s; remints hashed OTP |
 | `accountRequests.verifyEmailChangeOtp` | auth | yes | PASS | Wave 70: 5 attempts / 10m TTL; fulfill + clear sessions |
-| `mfa.status` | auth | yes | PASS | Wave 72: totpEnabled + session required; no secret |
+| `mfa.status` | auth | yes | PASS | Wave 73: totpEnabled + session required + backupCodesRemaining; no secrets |
 | `mfa.startEnroll` | auth | yes | PASS | Wave 72: returns secret + otpauth URL once |
-| `mfa.confirmEnroll` | auth | yes | PASS | Wave 72: verifies TOTP, grants current session |
+| `mfa.confirmEnroll` | auth | yes | PASS | Wave 73: verifies TOTP, grants session, returns plaintext backup codes once |
 | `mfa.cancelEnroll` | auth | yes | PASS | Wave 72: clears pending secret if not enabled |
 | `mfa.disable` | auth | yes | PASS | Wave 72: TOTP required; clears secret + grants |
-| `mfa.verifyLogin` | auth | yes | PASS | Wave 72: grants current authSession |
+| `mfa.verifyLogin` | auth | yes | PASS | Wave 73: TOTP or one-time backup code; consumes matching hash |
+| `mfa.regenerateBackupCodes` | auth | yes | PASS | Wave 73: TOTP required; replaces all unused hashes |
+| `mfa.adminDisable` | admin | yes | PASS | Wave 73: clears TOTP + backups + grants; refuses self |
 | `accountRequests.resolveAdmin` | admin | yes | PASS | Wave 35: fulfill email + fulfill deletion + reject; cannot resolve own |
 | `admin.exportReports.exportReportBundle` | admin | yes | PASS | Wave 16: creators CSV `creators_2026-10-04.csv` |
 | `admin.paginatedLists.listCampaignsPage` | TBD | yes | NOT_RUN | frozen vs convex/*.ts @ bf85281 |
@@ -509,7 +513,7 @@ Schema `appRole` also allows `moderator` and `user` (not product actors; no rout
 
 ## M. Remaining risk (update every fix PR)
 
-- P2: USD currency locked (Wave 67). Connect Transfer proven Wave 69 via Stripe-native FX (`tr_1UNKR8…`); referral cash uses the same Transfer helper (Wave 71 — live `tr_` soak still pending if no unpaid row + KYC). Historical migration data parity BLOCKED (greenfield). Email OTP shipped Wave 70 (Resend env required on prod; dev echo only with ALLOW_DEV_ADMIN_GRANT). TOTP MFA shipped Wave 72 (no backup codes / admin reset).
+- P2: USD currency locked (Wave 67). Connect Transfer proven Wave 69 via Stripe-native FX (`tr_1UNKR8…`); referral cash uses the same Transfer helper (Wave 71 — live `tr_` soak still pending if no unpaid row + KYC). Historical migration data parity BLOCKED (greenfield). Email OTP shipped Wave 70 (Resend env required on prod; dev echo only with ALLOW_DEV_ADMIN_GRANT). TOTP MFA + backup codes / admin reset shipped Waves 72–73.
 - P3: admin join spend still capped at 500; F-012 Convex `.collect` closed Waves 59–65; optional USD available funding (FX path works); customers/alerts/finance/dashboard/fees/payouts/announcement/reports KPIs PASS (Wave 43–47, 50–55); eslint PASS Wave 57; join honesty PASS Wave 58
-- Not in this PR: www.prizelet.com Vercel promote, live Stripe keys, MFA
+- Not in this PR: www.prizelet.com Vercel promote, live Stripe keys
 - Waivers: see section L

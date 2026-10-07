@@ -3,9 +3,15 @@ import { v } from "convex/values";
 import { getAuthSessionId } from "@convex-dev/auth/server";
 import type { MutationCtx, QueryCtx } from "./_generated/server";
 import type { Id } from "./_generated/dataModel";
-import { requireAppUser, logMutation } from "./lib/auth";
+import { requireAdmin, requireAppUser, logMutation } from "./lib/auth";
 import { ADMIN_SCAN_MAX_DOCS } from "./lib/adminLists";
-import { generateTotpSecret, otpauthUrl, verifyTotp } from "./lib/totp";
+import {
+  findBackupCodeIndex,
+  generateBackupCodes,
+  hashBackupCodes,
+  isValidBackupCode,
+} from "./lib/mfaBackup";
+import { generateTotpSecret, isValidTotpCode, otpauthUrl, verifyTotp } from "./lib/totp";
 
 async function currentSessionId(ctx: QueryCtx | MutationCtx): Promise<Id<"authSessions">> {
   const sessionId = await getAuthSessionId(ctx);
@@ -55,26 +61,53 @@ async function clearGrantsForUser(ctx: MutationCtx, userId: Id<"users">): Promis
   }
 }
 
+async function clearMfaState(ctx: MutationCtx, userId: Id<"users">): Promise<void> {
+  await ctx.db.patch(userId, {
+    totpSecret: undefined,
+    totpEnabled: false,
+    totpBackupCodeHashes: undefined,
+    updatedAt: Date.now(),
+  });
+  await clearGrantsForUser(ctx, userId);
+}
+
 export const status = query({
   args: {},
   returns: v.object({
     totpEnabled: v.boolean(),
     pendingEnroll: v.boolean(),
     required: v.boolean(),
+    backupCodesRemaining: v.number(),
   }),
   handler: async (ctx) => {
     const user = await requireAppUser(ctx);
     const totpEnabled = Boolean(user.totpEnabled && user.totpSecret);
     const pendingEnroll = Boolean(user.totpSecret && !user.totpEnabled);
+    const backupCodesRemaining = user.totpBackupCodeHashes?.length ?? 0;
     if (!totpEnabled) {
-      return { totpEnabled: false, pendingEnroll, required: false };
+      return {
+        totpEnabled: false,
+        pendingEnroll,
+        required: false,
+        backupCodesRemaining: 0,
+      };
     }
     const sessionId = await getAuthSessionId(ctx);
     if (!sessionId) {
-      return { totpEnabled: true, pendingEnroll: false, required: true };
+      return {
+        totpEnabled: true,
+        pendingEnroll: false,
+        required: true,
+        backupCodesRemaining,
+      };
     }
     const granted = await sessionIsGranted(ctx, sessionId);
-    return { totpEnabled: true, pendingEnroll: false, required: !granted };
+    return {
+      totpEnabled: true,
+      pendingEnroll: false,
+      required: !granted,
+      backupCodesRemaining,
+    };
   },
 });
 
@@ -93,6 +126,7 @@ export const startEnroll = mutation({
     await ctx.db.patch(user._id, {
       totpSecret: secret,
       totpEnabled: false,
+      totpBackupCodeHashes: undefined,
       updatedAt: Date.now(),
     });
     await logMutation(ctx, {
@@ -112,7 +146,7 @@ export const startEnroll = mutation({
 
 export const confirmEnroll = mutation({
   args: { code: v.string() },
-  returns: v.null(),
+  returns: v.object({ backupCodes: v.array(v.string()) }),
   handler: async (ctx, args) => {
     const user = await requireAppUser(ctx);
     if (user.totpEnabled && user.totpSecret) {
@@ -124,8 +158,11 @@ export const confirmEnroll = mutation({
     const ok = await verifyTotp(user.totpSecret, args.code);
     if (!ok) throw new Error("INVALID_CODE");
     const sessionId = await currentSessionId(ctx);
+    const backupCodes = generateBackupCodes();
+    const hashes = await hashBackupCodes(backupCodes);
     await ctx.db.patch(user._id, {
       totpEnabled: true,
+      totpBackupCodeHashes: hashes,
       updatedAt: Date.now(),
     });
     await grantSession(ctx, user._id, sessionId);
@@ -134,7 +171,7 @@ export const confirmEnroll = mutation({
       documentId: user._id,
       action: "mfaConfirmEnroll",
     });
-    return null;
+    return { backupCodes };
   },
 });
 
@@ -145,11 +182,7 @@ export const cancelEnroll = mutation({
     const user = await requireAppUser(ctx);
     if (user.totpEnabled) throw new Error("ALREADY_ENABLED");
     if (!user.totpSecret) return null;
-    await ctx.db.patch(user._id, {
-      totpSecret: undefined,
-      totpEnabled: false,
-      updatedAt: Date.now(),
-    });
+    await clearMfaState(ctx, user._id);
     await logMutation(ctx, {
       table: "users",
       documentId: user._id,
@@ -169,12 +202,7 @@ export const disable = mutation({
     }
     const ok = await verifyTotp(user.totpSecret, args.code);
     if (!ok) throw new Error("INVALID_CODE");
-    await ctx.db.patch(user._id, {
-      totpSecret: undefined,
-      totpEnabled: false,
-      updatedAt: Date.now(),
-    });
-    await clearGrantsForUser(ctx, user._id);
+    await clearMfaState(ctx, user._id);
     await logMutation(ctx, {
       table: "users",
       documentId: user._id,
@@ -184,9 +212,9 @@ export const disable = mutation({
   },
 });
 
-export const verifyLogin = mutation({
+export const regenerateBackupCodes = mutation({
   args: { code: v.string() },
-  returns: v.null(),
+  returns: v.object({ backupCodes: v.array(v.string()) }),
   handler: async (ctx, args) => {
     const user = await requireAppUser(ctx);
     if (!user.totpEnabled || !user.totpSecret) {
@@ -194,12 +222,78 @@ export const verifyLogin = mutation({
     }
     const ok = await verifyTotp(user.totpSecret, args.code);
     if (!ok) throw new Error("INVALID_CODE");
+    const backupCodes = generateBackupCodes();
+    const hashes = await hashBackupCodes(backupCodes);
+    await ctx.db.patch(user._id, {
+      totpBackupCodeHashes: hashes,
+      updatedAt: Date.now(),
+    });
+    await logMutation(ctx, {
+      table: "users",
+      documentId: user._id,
+      action: "mfaRegenerateBackupCodes",
+    });
+    return { backupCodes };
+  },
+});
+
+export const verifyLogin = mutation({
+  args: { code: v.string() },
+  returns: v.object({ usedBackupCode: v.boolean() }),
+  handler: async (ctx, args) => {
+    const user = await requireAppUser(ctx);
+    if (!user.totpEnabled || !user.totpSecret) {
+      throw new Error("NOT_ENABLED");
+    }
     const sessionId = await currentSessionId(ctx);
+    let usedBackupCode = false;
+
+    if (isValidTotpCode(args.code)) {
+      const ok = await verifyTotp(user.totpSecret, args.code);
+      if (!ok) throw new Error("INVALID_CODE");
+    } else if (isValidBackupCode(args.code)) {
+      const hashes = user.totpBackupCodeHashes ?? [];
+      const idx = await findBackupCodeIndex(hashes, args.code);
+      if (idx < 0) throw new Error("INVALID_CODE");
+      const next = hashes.filter((_, i) => i !== idx);
+      await ctx.db.patch(user._id, {
+        totpBackupCodeHashes: next.length > 0 ? next : undefined,
+        updatedAt: Date.now(),
+      });
+      usedBackupCode = true;
+    } else {
+      throw new Error("INVALID_CODE");
+    }
+
     await grantSession(ctx, user._id, sessionId);
     await logMutation(ctx, {
       table: "users",
       documentId: user._id,
-      action: "mfaVerifyLogin",
+      action: usedBackupCode ? "mfaVerifyLoginBackup" : "mfaVerifyLogin",
+    });
+    return { usedBackupCode };
+  },
+});
+
+/** Admin recovery — clears TOTP + backup codes + session grants. Cannot target self. */
+export const adminDisable = mutation({
+  args: { userId: v.id("users") },
+  returns: v.null(),
+  handler: async (ctx, args) => {
+    const admin = await requireAdmin(ctx);
+    if (admin._id === args.userId) {
+      throw new Error("CANNOT_RESET_SELF");
+    }
+    const target = await ctx.db.get(args.userId);
+    if (!target) throw new Error("NOT_FOUND");
+    if (!target.totpEnabled && !target.totpSecret && !target.totpBackupCodeHashes?.length) {
+      throw new Error("NOT_ENABLED");
+    }
+    await clearMfaState(ctx, args.userId);
+    await logMutation(ctx, {
+      table: "users",
+      documentId: args.userId,
+      action: "mfaAdminDisable",
     });
     return null;
   },

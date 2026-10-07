@@ -39,6 +39,7 @@ const adminUserRowValidator = v.object({
   paidOut: v.number(),
   /** True when a per-row join hit ADMIN_JOIN_LIMIT (spend/earnings may be incomplete). */
   metricsTruncated: v.boolean(),
+  totpEnabled: v.boolean(),
 });
 
 const adminCreatorRowValidator = v.object({
@@ -150,6 +151,7 @@ export const listUsersPage = query({
         creatorEarnings,
         paidOut,
         metricsTruncated,
+        totpEnabled: Boolean(u.totpEnabled && u.totpSecret),
       });
     }
 

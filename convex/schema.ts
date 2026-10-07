@@ -48,6 +48,10 @@ export default defineSchema({
     stripeCustomerId: v.optional(v.string()),
     totpSecret: v.optional(v.string()),
     totpEnabled: v.optional(v.boolean()),
+    /** Hashed one-time backup codes — never returned to clients. */
+    totpBackupCodeHashes: v.optional(
+      v.array(v.object({ salt: v.string(), hash: v.string() })),
+    ),
     notificationPrefs: v.optional(v.any()),
     createdAt: v.optional(v.number()),
     updatedAt: v.optional(v.number()),
