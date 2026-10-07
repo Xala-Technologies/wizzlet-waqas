@@ -23,6 +23,7 @@ import {
   allowDevOtpEcho,
   emailChangeOtpMessage,
   mailerConfigured,
+  mailerOpsStatus,
   sendResendEmail,
 } from "./lib/transactionalEmail";
 
@@ -585,6 +586,21 @@ const openAdminRowValidator = v.object({
   status: v.string(),
   createdAt: v.number(),
   updatedAt: v.number(),
+});
+
+/** Admin ops: Resend/mailer readiness without exposing secrets. */
+export const mailerStatusAdmin = query({
+  args: {},
+  returns: v.object({
+    configured: v.boolean(),
+    fromDomain: v.union(v.string(), v.null()),
+    productionOrigin: v.boolean(),
+    devEchoAllowed: v.boolean(),
+  }),
+  handler: async (ctx) => {
+    await requireAdmin(ctx);
+    return mailerOpsStatus();
+  },
 });
 
 export const listOpenAdmin = query({

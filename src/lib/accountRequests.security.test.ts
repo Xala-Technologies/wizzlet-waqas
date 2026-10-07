@@ -14,6 +14,12 @@ describe('accountRequests security', () => {
     expect(src).toMatch(/export const listOpenAdmin[\s\S]*fullName:/);
   });
 
+  it('mailerStatusAdmin is admin-only and returns no secrets', () => {
+    expect(src).toMatch(/export const mailerStatusAdmin[\s\S]*requireAdmin/);
+    expect(src).toMatch(/mailerOpsStatus/);
+    expect(src).not.toMatch(/mailerStatusAdmin[\s\S]*RESEND_API_KEY/);
+  });
+
   it('member mutations require an authenticated app user', () => {
     expect(src).toMatch(/export const requestAccountDeletion[\s\S]*requireAppUser/);
     expect(src).toMatch(/export const requestEmailChange[\s\S]*requireAppUser/);

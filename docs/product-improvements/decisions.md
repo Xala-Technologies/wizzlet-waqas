@@ -42,6 +42,11 @@ Notes:
 - `ALLOW_SANDBOX_CHECKOUT`
 - `ALLOW_DEV_ADMIN_GRANT`
 
+## Prod mailer (must set before live)
+
+- `RESEND_API_KEY` + `EMAIL_FROM` required on production-shaped Convex (`env:validate` `PROD_MAILER`; Admin Settings → Transactional email shows configured/domain only).
+- Without them, production SITE_URL email-change OTP throws `MAILER_NOT_CONFIGURED` (no plaintext echo).
+
 ## Phase 2 — member billing clarity
 
 - UI labels come from `describeSubscriptionAccess` (same rules as `subscriptionGrantsContentAccess`).
