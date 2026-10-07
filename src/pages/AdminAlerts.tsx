@@ -79,7 +79,7 @@ const AdminAlerts = () => {
       {
         id: 'pending-payouts',
         title: 'Pending Payouts',
-        description: `$${overview.pendingPayoutTotal.toFixed(2)} awaiting processing`,
+        description: `$${overview.pendingPayoutTotal.toFixed(2)} awaiting processing (refunds claw back Pending then Available; debt blocks Monday auto-payouts)`,
         type: 'warning' as const, icon: Wallet, count: overview.pendingPayouts,
         link: '/admin/payouts', linkLabel: 'View Payouts',
       },

@@ -15,9 +15,11 @@ export const CREATOR_EARNINGS_DEMO_METRICS = {
   totalPaidOutDelta: 32,
   pendingPayoutCents: 161_000,
   pendingPayoutDelta: 12,
+  pendingEarningsCents: 161_000,
+  inFlightPayoutCents: 0,
   dateRangeLabel: 'Jan 1, 2025 – Jan 31, 2025',
   upcomingPayoutCents: 161_000,
-  upcomingPayoutDateLabel: 'Feb 7, 2025',
+  upcomingPayoutDateLabel: 'Next Monday',
 } as const;
 
 /** Daily series for Revenue & Payouts chart (dollars). */

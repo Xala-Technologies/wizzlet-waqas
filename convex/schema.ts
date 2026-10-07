@@ -229,7 +229,7 @@ export default defineSchema({
     userId: v.optional(v.id("users")),
     subscriptionId: v.optional(v.id("subscriptions")),
     productId: v.optional(v.id("products")),
-    type: v.string(), // subscription_charge | refund | adjustment | payout | renewal
+    type: v.string(), // subscription_charge | refund | adjustment | payout | renewal | dispute
     amountCents: v.number(),
     platformFeeCents: v.number(),
     creatorEarningsCents: v.number(),
@@ -242,6 +242,18 @@ export default defineSchema({
     checkoutSessionId: v.optional(v.string()),
     /** test | live — exclude sandbox/test from real payouts */
     paymentMode: v.optional(v.union(v.literal("test"), v.literal("live"), v.literal("sandbox"))),
+    /** When Pending earnings become Available (ms). Legacy rows omit → immediate. */
+    availableAt: v.optional(v.number()),
+    /** pending | available | reversed — eligibility separate from payment status */
+    balanceState: v.optional(
+      v.union(
+        v.literal("pending"),
+        v.literal("available"),
+        v.literal("reversed"),
+      ),
+    ),
+    /** Links refund/dispute to original commercialRef when known */
+    relatedCommercialRef: v.optional(v.string()),
     createdAt: v.number(),
   })
     .index("by_creatorId", ["creatorId"])
@@ -330,6 +342,9 @@ export default defineSchema({
     status: v.string(),
     method: v.optional(v.string()),
     reference: v.optional(v.string()),
+    /** Idempotency key for Monday auto batch: creatorId:YYYY-MM-DD */
+    batchKey: v.optional(v.string()),
+    errorMessage: v.optional(v.string()),
     periodStart: v.optional(v.number()),
     periodEnd: v.optional(v.number()),
     processedAt: v.optional(v.number()),
@@ -338,7 +353,8 @@ export default defineSchema({
   })
     .index("by_creatorId", ["creatorId"])
     .index("by_status", ["status"])
-    .index("by_legacyId", ["legacyId"]),
+    .index("by_legacyId", ["legacyId"])
+    .index("by_batchKey", ["batchKey"]),
 
   creatorLinks: defineTable({
     legacyId: v.optional(v.string()),

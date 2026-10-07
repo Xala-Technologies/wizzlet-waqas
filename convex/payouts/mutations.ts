@@ -9,6 +9,7 @@ import {
 } from "../lib/validators";
 import { ADMIN_SCAN_MAX_DOCS, adminTakeNewest } from "../lib/adminLists";
 import { notifyAdmins, previewBody } from "../lib/notify";
+import { parsePayoutDefaults } from "../lib/payoutDefaults";
 
 export const listMine = query({
   args: {},
@@ -33,13 +34,30 @@ export const availableBalance = query({
     if (!creator) {
       return {
         earnedCents: 0,
+        pendingCents: 0,
+        releasedCents: 0,
         reservedCents: 0,
+        reserveHoldCents: 0,
         availableCents: 0,
+        debtCents: 0,
+        payoutBlocked: false,
         truncated: false,
         listLimit: 0,
       };
     }
-    return getCreatorAvailableBalanceCents(ctx, creator._id);
+    const settings = await ctx.db
+      .query("platformSettings")
+      .withIndex("by_singletonKey", (q) => q.eq("singletonKey", "default"))
+      .unique();
+    const defaults = parsePayoutDefaults(
+      (settings?.payoutDefaults ?? undefined) as Record<string, unknown> | undefined,
+    );
+    return getCreatorAvailableBalanceCents(
+      ctx,
+      creator._id,
+      Date.now(),
+      defaults.payoutReservePercent,
+    );
   },
 });
 
@@ -181,9 +199,26 @@ export const requestPayout = mutation({
       throw new ConvexError("BELOW_MINIMUM");
     }
 
-    const balance = await getCreatorAvailableBalanceCents(ctx, creator._id);
+    const platformSettings = await ctx.db
+      .query("platformSettings")
+      .withIndex("by_singletonKey", (q) => q.eq("singletonKey", "default"))
+      .unique();
+    const defaults = parsePayoutDefaults(
+      (platformSettings?.payoutDefaults ?? undefined) as
+        | Record<string, unknown>
+        | undefined,
+    );
+    const balance = await getCreatorAvailableBalanceCents(
+      ctx,
+      creator._id,
+      Date.now(),
+      defaults.payoutReservePercent,
+    );
     if (balance.truncated) {
       throw new ConvexError("BALANCE_TRUNCATED");
+    }
+    if (balance.payoutBlocked || balance.debtCents > 0) {
+      throw new ConvexError("PAYOUT_BLOCKED_DEBT");
     }
     if (args.amountCents > balance.availableCents) {
       throw new ConvexError("INSUFFICIENT_BALANCE");

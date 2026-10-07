@@ -14,6 +14,12 @@ import { internal } from "../_generated/api";
 import { userHasRole } from "../lib/auth";
 import { ADMIN_SCAN_MAX_DOCS } from "../lib/adminLists";
 import { PRIZELET_LEDGER_CURRENCY } from "../lib/stripeConnect";
+import {
+  computeAvailableAtMs,
+  parsePayoutDefaults,
+} from "../lib/payoutDefaults";
+import { getCreatorAvailableBalanceCents } from "../lib/payoutBalance";
+import { notifyAdmins, previewBody } from "../lib/notify";
 
 /** Action auth helper: confirm Convex Auth userId holds the admin role. */
 export const assertAdminUserId = internalQuery({
@@ -35,8 +41,19 @@ async function loadFeeSettings(ctx: MutationCtx) {
   return {
     introFeePercent: row?.introFeePercent ?? 5,
     standardFeePercent: row?.standardFeePercent ?? 10,
-    introFeeDays: row?.introFeeDays ?? 90,
+    introFeeDays: row?.introFeeDays ?? 30,
   };
+}
+
+async function loadEarningsHoldDays(ctx: MutationCtx | QueryCtx): Promise<number> {
+  const row = await ctx.db
+    .query("platformSettings")
+    .withIndex("by_singletonKey", (q) => q.eq("singletonKey", "default"))
+    .unique();
+  const defaults = parsePayoutDefaults(
+    (row?.payoutDefaults ?? undefined) as Record<string, unknown> | undefined,
+  );
+  return defaults.earningsHoldDays;
 }
 
 async function countActiveForProduct(
@@ -213,6 +230,8 @@ export const fulfillCheckout = internalMutation({
       });
     }
 
+    const holdDays = await loadEarningsHoldDays(ctx);
+    const availableAt = computeAvailableAtMs(now, holdDays);
     await ctx.db.insert("paymentEvents", {
       creatorId: args.creatorId,
       userId: args.userId,
@@ -228,6 +247,8 @@ export const fulfillCheckout = internalMutation({
       commercialRef,
       checkoutSessionId: args.checkoutSessionId,
       paymentMode: args.paymentMode ?? "test",
+      availableAt,
+      balanceState: holdDays > 0 ? "pending" : "available",
       createdAt: now,
     });
 
@@ -399,6 +420,8 @@ export const applyInvoicePaid = internalMutation({
       updatedAt: now,
     });
 
+    const holdDays = await loadEarningsHoldDays(ctx);
+    const availableAt = computeAvailableAtMs(now, holdDays);
     await ctx.db.insert("paymentEvents", {
       creatorId: sub.creatorId,
       userId: sub.userId,
@@ -413,6 +436,8 @@ export const applyInvoicePaid = internalMutation({
       externalRef: args.deliveryRef,
       commercialRef,
       paymentMode: args.paymentMode ?? "test",
+      availableAt,
+      balanceState: holdDays > 0 ? "pending" : "available",
       createdAt: now,
     });
 
@@ -766,9 +791,182 @@ export const recordConnectTransfer = internalMutation({
       status: "completed",
       method: "stripe_connect",
       reference: args.transferId,
+      errorMessage: undefined,
       processedAt: now,
       updatedAt: now,
     });
     return null;
+  },
+});
+
+export const persistConnectStatusByStripeAccountId = internalMutation({
+  args: {
+    stripeAccountId: v.string(),
+    detailsSubmitted: v.boolean(),
+    chargesEnabled: v.boolean(),
+    payoutsEnabled: v.boolean(),
+  },
+  returns: v.object({
+    ok: v.boolean(),
+    creatorId: v.union(v.id("creators"), v.null()),
+  }),
+  handler: async (ctx, args) => {
+    const creator = await ctx.db
+      .query("creators")
+      .withIndex("by_stripeAccountId", (q) =>
+        q.eq("stripeAccountId", args.stripeAccountId),
+      )
+      .unique();
+    if (!creator) {
+      return { ok: false, creatorId: null };
+    }
+    await ctx.db.patch(creator._id, {
+      stripeConnectDetailsSubmitted: args.detailsSubmitted,
+      stripeConnectChargesEnabled: args.chargesEnabled,
+      stripeConnectPayoutsEnabled: args.payoutsEnabled,
+      updatedAt: Date.now(),
+    });
+    return { ok: true, creatorId: creator._id };
+  },
+});
+
+/**
+ * Ledger clawback for Stripe refunds / disputes.
+ * Inserts a negative paymentEvent; marks original fully reversed when refund covers creator share.
+ */
+export const applyChargeRefund = internalMutation({
+  args: {
+    chargeId: v.string(),
+    refundId: v.optional(v.string()),
+    amountCents: v.number(),
+    invoiceId: v.optional(v.string()),
+    paymentIntentId: v.optional(v.string()),
+    checkoutSessionId: v.optional(v.string()),
+    deliveryRef: v.optional(v.string()),
+    paymentMode: v.optional(
+      v.union(v.literal("test"), v.literal("live"), v.literal("sandbox")),
+    ),
+    kind: v.optional(v.union(v.literal("refund"), v.literal("dispute"))),
+  },
+  returns: v.object({
+    ok: v.boolean(),
+    duplicate: v.boolean(),
+    creatorId: v.union(v.id("creators"), v.null()),
+    debtLikely: v.boolean(),
+  }),
+  handler: async (ctx, args) => {
+    const kind = args.kind ?? "refund";
+    const commercialRef = args.refundId
+      ? `${kind}:${args.refundId}`
+      : `${kind}:charge:${args.chargeId}:${args.amountCents}`;
+
+    const prior = await ctx.db
+      .query("paymentEvents")
+      .withIndex("by_commercialRef", (q) => q.eq("commercialRef", commercialRef))
+      .unique();
+    if (prior) {
+      return {
+        ok: true,
+        duplicate: true,
+        creatorId: prior.creatorId,
+        debtLikely: false,
+      };
+    }
+
+    let original = null as
+      | {
+          _id: Id<"paymentEvents">;
+          creatorId: Id<"creators">;
+          userId?: Id<"users">;
+          subscriptionId?: Id<"subscriptions">;
+          productId?: Id<"products">;
+          amountCents: number;
+          platformFeeCents: number;
+          creatorEarningsCents: number;
+          commercialRef?: string;
+          balanceState?: string;
+        }
+      | null;
+
+    if (args.checkoutSessionId) {
+      original = await ctx.db
+        .query("paymentEvents")
+        .withIndex("by_checkoutSessionId", (q) =>
+          q.eq("checkoutSessionId", args.checkoutSessionId!),
+        )
+        .unique();
+    }
+    if (!original && args.invoiceId) {
+      const invoiceRef = commercialRefForInvoice(args.invoiceId);
+      original = await ctx.db
+        .query("paymentEvents")
+        .withIndex("by_commercialRef", (q) => q.eq("commercialRef", invoiceRef))
+        .unique();
+    }
+    if (!original && args.paymentIntentId) {
+      const events = await ctx.db
+        .query("paymentEvents")
+        .withIndex("by_externalRef", (q) => q.eq("externalRef", args.paymentIntentId!))
+        .take(5);
+      original = events.find((e) => e.creatorEarningsCents > 0) ?? events[0] ?? null;
+    }
+
+    if (!original) {
+      // Best-effort: cannot attribute — ignore quietly (ops can adjust manually).
+      return { ok: false, duplicate: false, creatorId: null, debtLikely: false };
+    }
+
+    const gross = original.amountCents > 0 ? original.amountCents : 1;
+    const refundGross = Math.min(Math.max(0, args.amountCents), gross);
+    const ratio = refundGross / gross;
+    const creatorClawback = Math.round(original.creatorEarningsCents * ratio);
+    const platformClawback = Math.round(original.platformFeeCents * ratio);
+    const now = Date.now();
+
+    await ctx.db.insert("paymentEvents", {
+      creatorId: original.creatorId,
+      userId: original.userId,
+      subscriptionId: original.subscriptionId,
+      productId: original.productId,
+      type: kind,
+      amountCents: -refundGross,
+      platformFeeCents: -platformClawback,
+      creatorEarningsCents: -creatorClawback,
+      currency: PRIZELET_LEDGER_CURRENCY,
+      status: "settled",
+      externalRef: args.deliveryRef ?? args.chargeId,
+      commercialRef,
+      relatedCommercialRef: original.commercialRef,
+      paymentMode: args.paymentMode ?? "test",
+      balanceState: "available",
+      createdAt: now,
+    });
+
+    if (
+      refundGross >= original.amountCents &&
+      original.balanceState !== "reversed"
+    ) {
+      await ctx.db.patch(original._id, { balanceState: "reversed" });
+    }
+
+    const balance = await getCreatorAvailableBalanceCents(ctx, original.creatorId, now);
+    if (balance.debtCents > 0 || balance.payoutBlocked) {
+      const creator = await ctx.db.get(original.creatorId);
+      await notifyAdmins(ctx, {
+        type: "payout_debt",
+        title: `Creator balance debt after ${kind}`,
+        description: previewBody(
+          `${creator?.displayName ?? creator?.username ?? "Creator"}: debt $${(balance.debtCents / 100).toFixed(2)} (charge ${args.chargeId})`,
+        ),
+        link: "/admin/payouts",
+      });
+    }
+
+    return {
+      ok: true,
+      duplicate: false,
+      creatorId: original.creatorId,
+      debtLikely: balance.debtCents > 0,
+    };
   },
 });

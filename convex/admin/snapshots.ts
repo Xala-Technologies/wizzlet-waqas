@@ -11,7 +11,12 @@ import {
   takePayoutsByStatus,
   takeSubsByStatus,
 } from "../lib/adminIndexedTakes";
-import { sumSettledEarningsByCreatorCents } from "../lib/payoutBalance";
+import {
+  computeCreatorBalanceBreakdown,
+  isReservedPayoutStatus,
+  sumSettledEarningsByCreatorCents,
+} from "../lib/payoutBalance";
+import { parsePayoutDefaults } from "../lib/payoutDefaults";
 
 const monthPointValidator = v.object({
   month: v.string(),
@@ -533,9 +538,11 @@ const payoutBalanceRowValidator = v.object({
   creatorId: v.id("creators"),
   name: v.string(),
   earned: v.number(),
+  pending: v.number(),
   paid: v.number(),
   inFlight: v.number(),
   available: v.number(),
+  debt: v.number(),
 });
 
 /**
@@ -583,6 +590,24 @@ export const payoutsOverview = query({
       failedPayouts.truncated;
 
     const eventDocs = [...settledEvents.docs, ...paidEvents.docs];
+    const nowMs = Date.now();
+    const settingsRow = await ctx.db
+      .query("platformSettings")
+      .withIndex("by_singletonKey", (q) => q.eq("singletonKey", "default"))
+      .unique();
+    const payoutDefaults = parsePayoutDefaults(
+      (settingsRow?.payoutDefaults ?? undefined) as
+        | Record<string, unknown>
+        | undefined,
+    );
+
+    const eventsByCreator = new Map<string, typeof eventDocs>();
+    for (const e of eventDocs) {
+      const list = eventsByCreator.get(e.creatorId) ?? [];
+      list.push(e);
+      eventsByCreator.set(e.creatorId, list);
+    }
+
     const earnedCentsBy = sumSettledEarningsByCreatorCents(eventDocs);
     const earnedBy = new Map<string, number>();
     for (const [creatorId, cents] of earnedCentsBy) {
@@ -591,6 +616,7 @@ export const payoutsOverview = query({
 
     const paidBy = new Map<string, number>();
     const inFlightBy = new Map<string, number>();
+    const reservedBy = new Map<string, number>();
     let totalPaidOut = 0;
     let pending = 0;
     let processingCount = 0;
@@ -604,6 +630,12 @@ export const payoutsOverview = query({
       completedCount += 1;
       const at = p.processedAt ?? p.createdAt;
       if (lastPayoutAt === null || at > lastPayoutAt) lastPayoutAt = at;
+      if (isReservedPayoutStatus(p.status)) {
+        reservedBy.set(
+          p.creatorId,
+          (reservedBy.get(p.creatorId) ?? 0) + p.amountCents,
+        );
+      }
     }
     for (const p of [
       ...pendingPayouts.docs,
@@ -615,6 +647,10 @@ export const payoutsOverview = query({
       inFlightBy.set(p.creatorId, (inFlightBy.get(p.creatorId) ?? 0) + amount);
       pending += amount;
       processingCount += 1;
+      reservedBy.set(
+        p.creatorId,
+        (reservedBy.get(p.creatorId) ?? 0) + p.amountCents,
+      );
     }
     const failedCount = failedPayouts.docs.length;
 
@@ -635,6 +671,12 @@ export const payoutsOverview = query({
 
     const balances = idList
       .map((creatorId) => {
+        const breakdown = computeCreatorBalanceBreakdown(
+          eventsByCreator.get(creatorId) ?? [],
+          reservedBy.get(creatorId) ?? 0,
+          nowMs,
+          payoutDefaults.payoutReservePercent,
+        );
         const earned = earnedBy.get(creatorId) ?? 0;
         const paid = paidBy.get(creatorId) ?? 0;
         const inFlight = inFlightBy.get(creatorId) ?? 0;
@@ -642,12 +684,21 @@ export const payoutsOverview = query({
           creatorId,
           name: creatorNames.get(creatorId) ?? "Unknown creator",
           earned,
+          pending: breakdown.pendingCents / 100,
           paid,
           inFlight,
-          available: Math.max(0, earned - paid - inFlight),
+          available: breakdown.availableCents / 100,
+          debt: breakdown.debtCents / 100,
         };
       })
-      .filter((r) => r.earned > 0 || r.paid > 0 || r.inFlight > 0)
+      .filter(
+        (r) =>
+          r.earned > 0 ||
+          r.paid > 0 ||
+          r.inFlight > 0 ||
+          r.pending > 0 ||
+          r.debt > 0,
+      )
       .sort((a, b) => b.available - a.available);
 
     const owed = balances.reduce((a, b) => a + b.available, 0);

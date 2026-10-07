@@ -1,7 +1,7 @@
 "use node";
 
 import Stripe from "stripe";
-import { action, internalAction } from "../_generated/server";
+import { action, internalAction, type ActionCtx } from "../_generated/server";
 import { v } from "convex/values";
 import { getAuthUserId } from "@convex-dev/auth/server";
 import { internal } from "../_generated/api";
@@ -447,6 +447,66 @@ export const fulfillWebhook = internalAction({
           stripeSubscriptionId: subscription.id,
           deliveryRef: event.id,
         });
+      } else if (event.type === "charge.refunded") {
+        const charge = event.data.object as Stripe.Charge & {
+          invoice?: string | { id: string } | null;
+        };
+        const refunds = charge.refunds?.data ?? [];
+        const latest = refunds[0];
+        const amountCents =
+          latest?.amount ??
+          charge.amount_refunded ??
+          charge.amount ??
+          0;
+        const invoiceRaw = charge.invoice;
+        const invoiceId =
+          typeof invoiceRaw === "string"
+            ? invoiceRaw
+            : invoiceRaw && typeof invoiceRaw === "object" && "id" in invoiceRaw
+              ? invoiceRaw.id
+              : undefined;
+        await ctx.runMutation(internal.payments.stripeDb.applyChargeRefund, {
+          chargeId: charge.id,
+          refundId: latest?.id,
+          amountCents,
+          invoiceId,
+          paymentIntentId:
+            typeof charge.payment_intent === "string"
+              ? charge.payment_intent
+              : undefined,
+          deliveryRef: event.id,
+          paymentMode: stripeMode(event.livemode),
+          kind: "refund",
+        });
+      } else if (event.type === "charge.dispute.created") {
+        const dispute = event.data.object as Stripe.Dispute;
+        const chargeId =
+          typeof dispute.charge === "string" ? dispute.charge : dispute.charge?.id;
+        if (chargeId) {
+          await ctx.runMutation(internal.payments.stripeDb.applyChargeRefund, {
+            chargeId,
+            refundId: dispute.id,
+            amountCents: dispute.amount ?? 0,
+            deliveryRef: event.id,
+            paymentMode: stripeMode(event.livemode),
+            kind: "dispute",
+          });
+        }
+      } else if (event.type === "charge.dispute.closed") {
+        // Clawback already applied on charge.dispute.created (idempotent).
+        // Won disputes can be reversed manually via adjustment if needed.
+      } else if (event.type === "account.updated") {
+        const account = event.data.object as Stripe.Account;
+        const status = connectStatusFromStripeAccount(account);
+        await ctx.runMutation(
+          internal.payments.stripeDb.persistConnectStatusByStripeAccountId,
+          {
+            stripeAccountId: status.stripeAccountId,
+            detailsSubmitted: status.detailsSubmitted,
+            chargesEnabled: status.chargesEnabled,
+            payoutsEnabled: status.payoutsEnabled,
+          },
+        );
       }
       return { success: true };
     } catch (err) {
@@ -824,6 +884,112 @@ export const refreshConnectAccountStatus = action({
   },
 });
 
+const connectTransferResultValidator = v.object({
+  transferId: v.string(),
+  alreadySent: v.boolean(),
+  amountCents: v.number(),
+  currency: v.string(),
+  transferCurrency: v.string(),
+  transferAmount: v.number(),
+  funding: v.union(v.literal("matched"), v.literal("stripe_fx")),
+});
+
+type ConnectTransferResult = {
+  transferId: string;
+  alreadySent: boolean;
+  amountCents: number;
+  currency: string;
+  transferCurrency: string;
+  transferAmount: number;
+  funding: "matched" | "stripe_fx";
+};
+
+async function runConnectPayoutTransfer(
+  ctx: ActionCtx,
+  payoutId: Id<"payouts">,
+): Promise<ConnectTransferResult> {
+  const stripe = requireStripe();
+  const prep = await ctx.runQuery(internal.payments.stripeDb.getConnectTransferContext, {
+    payoutId,
+  });
+  if (isConnectTransferReference(prep.reference)) {
+    return {
+      transferId: prep.reference as string,
+      alreadySent: true,
+      amountCents: prep.amountCents,
+      currency: PRIZELET_LEDGER_CURRENCY,
+      transferCurrency: PRIZELET_LEDGER_CURRENCY,
+      transferAmount: prep.amountCents,
+      funding: "matched",
+    };
+  }
+  if (prep.status === "completed" || prep.status === "paid") {
+    throw new Error("PAYOUT_ALREADY_SETTLED");
+  }
+  if (!prep.stripeAccountId) {
+    throw new Error("CONNECT_ACCOUNT_MISSING");
+  }
+
+  let account: Stripe.Account;
+  try {
+    account = await stripe.accounts.retrieve(prep.stripeAccountId);
+  } catch (err) {
+    mapStripeConnectError(err);
+  }
+  const status = connectStatusFromStripeAccount(account);
+  await ctx.runMutation(internal.payments.stripeDb.persistConnectStatusByCreatorId, {
+    creatorId: prep.creatorId,
+    ...status,
+  });
+  if (!status.payoutsEnabled) {
+    throw new Error("CONNECT_PAYOUTS_NOT_ENABLED");
+  }
+
+  // Platform available guard: require some positive available balance in any currency.
+  const platformBalance = await stripe.balance.retrieve();
+  const hasAvailable = (platformBalance.available ?? []).some((row) => row.amount > 0);
+  if (!hasAvailable) {
+    throw new Error("STRIPE_INSUFFICIENT_BALANCE");
+  }
+
+  let executed: Awaited<ReturnType<typeof executeLedgerConnectTransfer>>;
+  try {
+    executed = await executeLedgerConnectTransfer({
+      stripe,
+      destinationAccountId: prep.stripeAccountId,
+      destinationDefaultCurrency: account.default_currency,
+      ledgerAmountCents: prep.amountCents,
+      metadata: {
+        payoutId: prep.payoutId,
+        creatorId: prep.creatorId,
+      },
+    });
+  } catch (err) {
+    mapStripeConnectError(err);
+  }
+  await ctx.runMutation(internal.payments.stripeDb.recordConnectTransfer, {
+    payoutId: prep.payoutId,
+    transferId: executed.transfer.id,
+  });
+  return {
+    transferId: executed.transfer.id,
+    alreadySent: false,
+    amountCents: executed.plan.ledgerAmountCents,
+    currency: executed.plan.ledgerCurrency,
+    transferCurrency: executed.plan.transferCurrency,
+    transferAmount: executed.plan.transferAmount,
+    funding: executed.plan.funding,
+  };
+}
+
+/** Cron / batch path — no admin session required. */
+export const sendConnectPayoutInternal = internalAction({
+  args: { payoutId: v.id("payouts") },
+  returns: connectTransferResultValidator,
+  handler: async (ctx, args): Promise<ConnectTransferResult> =>
+    runConnectPayoutTransfer(ctx, args.payoutId),
+});
+
 /**
  * Move ledger payout funds via Stripe Connect Transfer when Express payouts are enabled.
  * Uses matched USD available when present; otherwise Stripe-native FX from platform
@@ -832,95 +998,12 @@ export const refreshConnectAccountStatus = action({
  */
 export const sendConnectPayout = action({
   args: { payoutId: v.id("payouts") },
-  returns: v.object({
-    transferId: v.string(),
-    alreadySent: v.boolean(),
-    amountCents: v.number(),
-    currency: v.string(),
-    transferCurrency: v.string(),
-    transferAmount: v.number(),
-    funding: v.union(v.literal("matched"), v.literal("stripe_fx")),
-  }),
-  handler: async (
-    ctx,
-    args,
-  ): Promise<{
-    transferId: string;
-    alreadySent: boolean;
-    amountCents: number;
-    currency: string;
-    transferCurrency: string;
-    transferAmount: number;
-    funding: "matched" | "stripe_fx";
-  }> => {
+  returns: connectTransferResultValidator,
+  handler: async (ctx, args): Promise<ConnectTransferResult> => {
     const userId = await getAuthUserId(ctx);
     if (!userId) throw new Error("UNAUTHENTICATED");
     await ctx.runQuery(internal.payments.stripeDb.assertAdminUserId, { userId });
-    const stripe = requireStripe();
-    const prep = await ctx.runQuery(internal.payments.stripeDb.getConnectTransferContext, {
-      payoutId: args.payoutId,
-    });
-    if (isConnectTransferReference(prep.reference)) {
-      return {
-        transferId: prep.reference as string,
-        alreadySent: true,
-        amountCents: prep.amountCents,
-        currency: PRIZELET_LEDGER_CURRENCY,
-        transferCurrency: PRIZELET_LEDGER_CURRENCY,
-        transferAmount: prep.amountCents,
-        funding: "matched",
-      };
-    }
-    if (prep.status === "completed" || prep.status === "paid") {
-      throw new Error("PAYOUT_ALREADY_SETTLED");
-    }
-    if (!prep.stripeAccountId) {
-      throw new Error("CONNECT_ACCOUNT_MISSING");
-    }
-
-    let account: Stripe.Account;
-    try {
-      account = await stripe.accounts.retrieve(prep.stripeAccountId);
-    } catch (err) {
-      mapStripeConnectError(err);
-    }
-    const status = connectStatusFromStripeAccount(account);
-    await ctx.runMutation(internal.payments.stripeDb.persistConnectStatusByCreatorId, {
-      creatorId: prep.creatorId,
-      ...status,
-    });
-    if (!status.payoutsEnabled) {
-      throw new Error("CONNECT_PAYOUTS_NOT_ENABLED");
-    }
-
-    let executed: Awaited<ReturnType<typeof executeLedgerConnectTransfer>>;
-    try {
-      executed = await executeLedgerConnectTransfer({
-        stripe,
-        destinationAccountId: prep.stripeAccountId,
-        destinationDefaultCurrency: account.default_currency,
-        ledgerAmountCents: prep.amountCents,
-        metadata: {
-          payoutId: prep.payoutId,
-          creatorId: prep.creatorId,
-        },
-      });
-    } catch (err) {
-      mapStripeConnectError(err);
-    }
-    await ctx.runMutation(internal.payments.stripeDb.recordConnectTransfer, {
-      payoutId: prep.payoutId,
-      transferId: executed.transfer.id,
-    });
-    return {
-      transferId: executed.transfer.id,
-      alreadySent: false,
-      amountCents: executed.plan.ledgerAmountCents,
-      currency: executed.plan.ledgerCurrency,
-      transferCurrency: executed.plan.transferCurrency,
-      transferAmount: executed.plan.transferAmount,
-      funding: executed.plan.funding,
-    };
+    return runConnectPayoutTransfer(ctx, args.payoutId);
   },
 });
 

@@ -369,6 +369,8 @@ export const payoutDocValidator = v.object({
   status: v.string(),
   method: v.optional(v.string()),
   reference: v.optional(v.string()),
+  batchKey: v.optional(v.string()),
+  errorMessage: v.optional(v.string()),
   periodStart: v.optional(v.number()),
   periodEnd: v.optional(v.number()),
   processedAt: v.optional(v.number()),
@@ -391,8 +393,13 @@ export const creatorPayoutSettingsDocValidator = v.object({
 
 export const availableBalanceValidator = v.object({
   earnedCents: v.number(),
+  pendingCents: v.number(),
+  releasedCents: v.number(),
   reservedCents: v.number(),
+  reserveHoldCents: v.number(),
   availableCents: v.number(),
+  debtCents: v.number(),
+  payoutBlocked: v.boolean(),
   truncated: v.boolean(),
   listLimit: v.number(),
 });
