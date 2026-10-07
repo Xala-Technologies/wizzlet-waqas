@@ -1,3 +1,18 @@
+# Findings — Wave 75 referral Connect `tr_` soak 2026-10-07
+
+Branch `feat/world-ready-wave-75-referral-tr-soak`. Convex on `combative-mongoose-559`.
+
+| Step | Result | Evidence |
+|------|--------|----------|
+| Seed unpaid | PASS | `seedUnpaidReferralCommissionAdmin` → `m572c6mjfaw1r1gnc52gtbzxz58ftkr1` ($1.49) on `@prize2626` `acct_1UNI6YRzsXVyRAzD` |
+| Send via Stripe | PASS | `sendReferralCommissionConnect` → `funding=stripe_fx`, `tr_1UO1mnRpY5TupxHCYVm24hlp`, **1430** NOK for **149** USD cents |
+| Queue empty | PASS | `listUnpaidCommissionsAdmin` → `[]` after transfer |
+| Unit | PASS | `referralCommissionPaid.security.test.ts` (seed ALLOW_DEV_ADMIN_GRANT + requireAdmin) |
+
+**Residual:** Resend on prod; ledger API soak NOT_RUN rows. Do **not** claim world-ready.
+
+---
+
 # Findings — Wave 74 Section 8 gates 2026-10-07
 
 Branch `feat/world-ready-wave-74-section8-gates`.
@@ -12,7 +27,7 @@ Branch `feat/world-ready-wave-74-section8-gates`.
 | `npx tsc -b` | PASS | messagingAccess `in` discriminant; force clean |
 | Gate 2 returns | PASS | 183 public query/mutation/action have `returns` |
 
-**Residual:** Ledger API soak NOT_RUN rows remain; Resend on prod; referral `tr_` soak. Do **not** claim world-ready.
+**Residual:** Ledger API soak NOT_RUN rows remain; Resend on prod; referral `tr_` soak (closed Wave 75). Do **not** claim world-ready.
 
 ---
 
