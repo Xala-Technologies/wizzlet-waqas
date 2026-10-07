@@ -21,8 +21,9 @@ describe('admin join spend metrics F-012', () => {
 
   it('returns metricsTruncated on users, customers, and creators pages', () => {
     expect(src).toMatch(/metricsTruncated: v\.boolean\(\)/);
-    expect(src).toMatch(/metricsTruncated,\n\s*\}\);/);
+    expect(src).toMatch(/metricsTruncated,\n\s*totpEnabled:/);
     expect(src).toMatch(/metricsTruncated: subs\.length >= joinCap/);
+    expect(src.match(/metricsTruncated: v\.boolean\(\)/g)?.length ?? 0).toBeGreaterThanOrEqual(3);
   });
 
   it('exposes an honest join truncation note', () => {

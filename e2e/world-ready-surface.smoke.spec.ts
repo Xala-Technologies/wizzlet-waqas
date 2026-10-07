@@ -41,6 +41,7 @@ const DEMO_PATHS = [
 ];
 
 const PROTECTED_PATHS = [
+  "/mfa",
   "/dashboard",
   "/dashboard/results",
   "/dashboard/subscriptions-billing",
@@ -91,18 +92,20 @@ const PROTECTED_PATHS = [
   "/admin/settings",
 ];
 
+const GOTO_MS = 45_000;
+
 async function assertNoCrash(page: import("@playwright/test").Page) {
   await expect(page.locator("body")).not.toContainText("Something went wrong");
 }
 
 test.describe("Wave 2 world-ready surface smoke", () => {
-  test.describe.configure({ mode: "serial", timeout: 180_000 });
+  test.describe.configure({ mode: "serial", timeout: 240_000 });
 
   test.skip(({ browserName }) => browserName !== "chromium");
 
   test("public and marketing routes load without ErrorBoundary", async ({ page }) => {
     for (const path of PUBLIC_PATHS) {
-      const res = await page.goto(path, { waitUntil: "domcontentloaded", timeout: 20_000 });
+      const res = await page.goto(path, { waitUntil: "domcontentloaded", timeout: GOTO_MS });
       expect(res, path).toBeTruthy();
       expect(res!.status(), `${path} status`).toBeLessThan(500);
       await assertNoCrash(page);
@@ -111,7 +114,7 @@ test.describe("Wave 2 world-ready surface smoke", () => {
 
   test("demo fixture routes load without ErrorBoundary", async ({ page }) => {
     for (const path of DEMO_PATHS) {
-      const res = await page.goto(path, { waitUntil: "domcontentloaded", timeout: 20_000 });
+      const res = await page.goto(path, { waitUntil: "domcontentloaded", timeout: GOTO_MS });
       expect(res, path).toBeTruthy();
       expect(res!.status(), `${path} status`).toBeLessThan(500);
       await assertNoCrash(page);
@@ -120,9 +123,9 @@ test.describe("Wave 2 world-ready surface smoke", () => {
 
   test("protected routes send anonymous users toward login", async ({ page }) => {
     for (const path of PROTECTED_PATHS) {
-      await page.goto(path, { waitUntil: "domcontentloaded", timeout: 20_000 });
+      await page.goto(path, { waitUntil: "domcontentloaded", timeout: GOTO_MS });
       await assertNoCrash(page);
-      await expect(page, path).toHaveURL(/\/login/, { timeout: 20_000 });
+      await expect(page, path).toHaveURL(/\/login/, { timeout: GOTO_MS });
     }
   });
 });

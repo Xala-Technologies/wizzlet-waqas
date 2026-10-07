@@ -2,7 +2,7 @@
 
 **Authority:** [`docs/ai/prizelet-world-ready-master-prompt.md`](./prizelet-world-ready-master-prompt.md)
 
-**Status:** Wave 73 MFA recovery 2026-10-07. Product is **not** world-ready.
+**Status:** Wave 74 Section 8 gates 2026-10-07. Product is **not** world-ready.
 
 Do not claim world-ready until Section 8 gates in the master prompt pass.
 
@@ -16,7 +16,9 @@ Do not claim world-ready until Section 8 gates in the master prompt pass.
 | Evidence | branch, date, one-line actual vs expected |
 | Waiver | owner + reason (required if WAIVED) |
 
-Last updated: 2026-10-07. Last wave: **73** (`feat/world-ready-wave-73-mfa-recovery`). Source pin: `bf85281` (inventory).
+Last updated: 2026-10-07. Last wave: **74** (`feat/world-ready-wave-74-section8-gates`). Source pin: `bf85281` (inventory).
+
+Wave 74: Section 8 tooling re-proof — `npm test` 256/256, lint 0, `vite build`, `env:validate`, e2e chromium surface (goto 45s; `/mfa` anonymous→login), `tsc -b` clean (messagingAccess discriminant). Units `publicApiReturns.security.test.ts` (183 public APIs with `returns`). Residual: many ledger API rows still NOT_RUN for soak; Resend on prod; referral `tr_` soak. **Not** claiming world-ready.
 
 Wave 73: MFA recovery — 8 hashed one-time backup codes (shown once on enroll / regenerate), `/mfa` accepts TOTP or backup code, admin `mfa.adminDisable` (not self). Units `mfaBackup.security.test.ts`. Residual: Resend on prod; referral `tr_` soak.
 
@@ -240,12 +242,29 @@ Nested layouts in `App.tsx`: `/demo/admin` → `DemoAdminLayout`; `/demo/member`
 
 | Command | Result | Evidence |
 |---------|--------|----------|
-| `npm test` | PASS | Wave 8: contentAccess.test.ts 11 tests (access matrix + win rate + lock helpers); Wave 7 productProfileSlots |
-| `npm run lint` | PASS | Wave 3: 0 errors, 28 warnings |
-| `npm run build` | PASS | Wave 3: `vite build` succeeded |
-| `npm run env:validate` | PASS | Wave 1: `env:validate PASS (local)`; sandbox false; devAdmin false |
-| `npm run test:e2e` | PASS | Wave 2: 18 passed, 6 skipped (full surface spec chromium-only). Timeout 120s, 4 workers |
-| `npx tsc -b` (F-015) | PASS | Wave 3: `npx tsc -b` exit 0 after payouts/products/settings/SEO/replaceAll fixes |
+| `npm test` | PASS | Wave 74: **256/256** (incl. `publicApiReturns.security.test.ts`); Wave 8 contentAccess; Wave 7 productProfileSlots |
+| `npm run lint` | PASS | Wave 74: `eslint .` exit 0; Wave 57 0 problems |
+| `npm run build` | PASS | Wave 74: `vite build` succeeded (~15s) |
+| `npm run env:validate` | PASS | Wave 74: `env:validate PASS (local)`; sandbox false; devAdmin false |
+| `npm run test:e2e` | PASS | Wave 74: chromium world-ready surface 3/3 + matrix/nav across browsers; goto timeout 45s; `/mfa` in protected anonymous→login |
+| `npx tsc -b` (F-015) | PASS | Wave 74: `tsc -b --force` exit 0 (messagingAccess `in` discriminant under `strictNullChecks: false`) |
+
+## H2. Section 8 gate board (Wave 74)
+
+| # | Gate | Result | Evidence |
+|---|------|--------|----------|
+| 1 | Every App route ledger PASS/WAIVED | PASS | Routes incl. `/mfa` have ledger rows; Wave 2+ surface smoke |
+| 2 | Public Convex auth + returns documented | PASS* | *returns validators: 183/183 (`publicApiReturns`); many auth soak rows still NOT_RUN |
+| 3 | J1 Stripe money path on dev | PASS | Wave 5 ledger |
+| 4 | J3 entitlement matrix | PASS | Wave 8/24 ledger |
+| 5 | J5 payout reconcile | PASS | Wave 1/2 + payoutBalance tests |
+| 6 | `/demo/*` zero money writes | PASS | demo.security + Wave 2 demo routes |
+| 7 | test/lint/build/env/e2e | PASS | Wave 74 Section H |
+| 8 | No open P0/P1 | PASS | findings.md residuals are P2/ops |
+| 9 | Remaining-risk listed | PASS | Section M |
+| 10 | Not told live / no silent prod deploy | PASS | merge-now-live-later held |
+
+Honest status remains **in progress** until ops residuals (Resend prod, referral `tr_` soak) and remaining NOT_RUN soaks are closed or waived.
 
 ## I. Residual-risk retest
 
@@ -262,7 +281,7 @@ Nested layouts in `App.tsx`: `/demo/admin` → `DemoAdminLayout`; `/demo/member`
 | F-009 / J5 payout reserved vs paid | PASS | Wave 1: payoutBalance.test.ts 5/5. Live UI Wave 2 |
 | F-010 webhook soak / Connect | PASS | Wave 18 webhook soak. Wave 69: live `tr_1UNKR8…` stripe_fx. Wave 49 refuse without payouts_enabled; Wave 48 Express Account Link. |
 | F-012 admin full-table scans | PASS | Waves 43–65: admin KPIs + creator/public/discord/payment/migration collects → indexed takes; no remaining app `.collect()` |
-| F-015 lint / tsc | PASS | Wave 3: `npx tsc -b` exit 0; lint still 0 errors / 28 warnings |
+| F-015 lint / tsc | PASS | Wave 74: `tsc -b --force` 0; lint 0; Wave 57 eslint PASS |
 
 ## J. Public Convex API coverage (Wave 0 freeze)
 
@@ -513,7 +532,7 @@ Schema `appRole` also allows `moderator` and `user` (not product actors; no rout
 
 ## M. Remaining risk (update every fix PR)
 
-- P2: USD currency locked (Wave 67). Connect Transfer proven Wave 69 via Stripe-native FX (`tr_1UNKR8…`); referral cash uses the same Transfer helper (Wave 71 — live `tr_` soak still pending if no unpaid row + KYC). Historical migration data parity BLOCKED (greenfield). Email OTP shipped Wave 70 (Resend env required on prod; dev echo only with ALLOW_DEV_ADMIN_GRANT). TOTP MFA + backup codes / admin reset shipped Waves 72–73.
+- P2: USD currency locked (Wave 67). Connect Transfer proven Wave 69 via Stripe-native FX (`tr_1UNKR8…`); referral cash uses the same Transfer helper (Wave 71 — live `tr_` soak still pending if no unpaid row + KYC). Historical migration data parity BLOCKED (greenfield). Email OTP shipped Wave 70 (Resend env required on prod; dev echo only with ALLOW_DEV_ADMIN_GRANT). TOTP MFA + backup codes / admin reset shipped Waves 72–73. Section 8 tooling PASS Wave 74 (soak NOT_RUN API rows remain).
 - P3: admin join spend still capped at 500; F-012 Convex `.collect` closed Waves 59–65; optional USD available funding (FX path works); customers/alerts/finance/dashboard/fees/payouts/announcement/reports KPIs PASS (Wave 43–47, 50–55); eslint PASS Wave 57; join honesty PASS Wave 58
-- Not in this PR: www.prizelet.com Vercel promote, live Stripe keys
+- Not in this PR: www.prizelet.com Vercel promote, live Stripe keys, Resend prod
 - Waivers: see section L

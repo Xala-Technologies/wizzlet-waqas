@@ -45,9 +45,12 @@ export function messagingComposeBlockReason(
   input: MessagingComposeGateInput,
 ): Exclude<MessagingSendDenial, "EMPTY_BODY"> | null {
   const decision = canSendDirectMessage({ ...input, body: "." });
-  if (decision.ok) return null;
-  if (decision.reason === "EMPTY_BODY") return null;
-  return decision.reason;
+  // Project has strictNullChecks off — use `in` for the denial discriminant.
+  if ("reason" in decision) {
+    if (decision.reason === "EMPTY_BODY") return null;
+    return decision.reason;
+  }
+  return null;
 }
 
 export function messagingComposeBlockMessage(
