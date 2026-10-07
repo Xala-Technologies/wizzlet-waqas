@@ -64,6 +64,8 @@ function main(): void {
     allowSandboxCheckout: env.ALLOW_SANDBOX_CHECKOUT,
     allowDevAdminGrant: env.ALLOW_DEV_ADMIN_GRANT,
     viteAllowSandboxCheckout: env.VITE_ALLOW_SANDBOX_CHECKOUT,
+    resendApiKey: env.RESEND_API_KEY,
+    emailFrom: env.EMAIL_FROM,
     requireProductionBindings: appEnv === "production",
   });
 
@@ -85,6 +87,9 @@ function main(): void {
         hasSiteUrl: Boolean(env.SITE_URL),
         sandbox: env.ALLOW_SANDBOX_CHECKOUT === "true",
         devAdmin: env.ALLOW_DEV_ADMIN_GRANT === "true",
+        mailerConfigured: Boolean(
+          env.RESEND_API_KEY?.trim() && env.EMAIL_FROM?.trim(),
+        ),
       },
       null,
       2,

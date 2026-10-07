@@ -70,6 +70,9 @@ export type ValidateEnvInput = {
   allowSandboxCheckout?: string | undefined;
   allowDevAdminGrant?: string | undefined;
   viteAllowSandboxCheckout?: string | undefined;
+  /** Resend transactional mail (email-change OTP). Required for production bindings. */
+  resendApiKey?: string | undefined;
+  emailFrom?: string | undefined;
   /** When true, require production-grade bindings (CI production profile / release). */
   requireProductionBindings?: boolean;
 };
@@ -138,6 +141,20 @@ export function validateEnvProfile(input: ValidateEnvInput): ValidationIssue[] {
       issues.push({
         code: "PROD_STRIPE_TEST",
         message: "Production must not use Stripe test keys",
+      });
+    }
+    const resendKey = (input.resendApiKey ?? "").trim();
+    const emailFrom = (input.emailFrom ?? "").trim();
+    if (!resendKey || !emailFrom) {
+      issues.push({
+        code: "PROD_MAILER",
+        message:
+          "Production requires RESEND_API_KEY and EMAIL_FROM for email-change OTP delivery",
+      });
+    } else if (!emailFrom.includes("@")) {
+      issues.push({
+        code: "PROD_EMAIL_FROM",
+        message: "EMAIL_FROM must be a valid From address (e.g. Sweeph <noreply@sweeph.com>)",
       });
     }
   }

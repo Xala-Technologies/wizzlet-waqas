@@ -14,7 +14,9 @@ import {
 import {
   allowDevOtpEcho,
   emailChangeOtpMessage,
+  emailFromDomainHint,
   mailerConfigured,
+  mailerOpsStatus,
 } from '../../convex/lib/transactionalEmail';
 
 describe('email OTP helpers', () => {
@@ -69,5 +71,22 @@ describe('email OTP helpers', () => {
     expect(mailerConfigured({})).toBe(false);
     expect(mailerConfigured({ RESEND_API_KEY: 're_x', EMAIL_FROM: 'Prizelet <a@b.co>' })).toBe(true);
     expect(emailChangeOtpMessage('123456').text).toContain('123456');
+  });
+
+  it('mailerOpsStatus exposes readiness without secrets', () => {
+    expect(emailFromDomainHint('Sweeph <noreply@sweeph.com>')).toBe('sweeph.com');
+    expect(
+      mailerOpsStatus({
+        RESEND_API_KEY: 're_x',
+        EMAIL_FROM: 'Sweeph <noreply@sweeph.com>',
+        SITE_URL: 'https://www.sweeph.com',
+        ALLOW_DEV_ADMIN_GRANT: 'true',
+      }),
+    ).toEqual({
+      configured: true,
+      fromDomain: 'sweeph.com',
+      productionOrigin: true,
+      devEchoAllowed: false,
+    });
   });
 });

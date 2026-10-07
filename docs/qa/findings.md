@@ -1,3 +1,19 @@
+# Findings — Wave 76 Resend readiness 2026-10-07
+
+Branch `feat/world-ready-wave-76-resend-readiness`. Convex on `combative-mongoose-559`.
+
+| Step | Result | Evidence |
+|------|--------|----------|
+| Prod env gate | PASS | `APP_ENV_PROFILE=production env:validate` → `PROD_MAILER` (plus SITE_URL/Stripe test failures on local profile) |
+| Admin status | PASS | `mailerStatusAdmin` → `configured=false`, `devEchoAllowed=true`, `productionOrigin=false` |
+| Admin UI | PASS | Settings → Transactional email honesty + amber ops note when unset |
+| API soaks | PASS | `platform.mutations.get`, `listPayoutsPage` (3), `listMine` `[]`, `hasPasswordAccount` `true` |
+| Units | PASS | `envRules` PROD_MAILER; `emailOtp` mailerOpsStatus; `accountRequests` mailerStatusAdmin |
+
+**Residual:** Install Resend on Convex **prod** only at make-it-live (key not in this PR). Remaining NOT_RUN API soaks. Do **not** claim world-ready.
+
+---
+
 # Findings — Wave 75 referral Connect `tr_` soak 2026-10-07
 
 Branch `feat/world-ready-wave-75-referral-tr-soak`. Convex on `combative-mongoose-559`.
@@ -9,7 +25,7 @@ Branch `feat/world-ready-wave-75-referral-tr-soak`. Convex on `combative-mongoos
 | Queue empty | PASS | `listUnpaidCommissionsAdmin` → `[]` after transfer |
 | Unit | PASS | `referralCommissionPaid.security.test.ts` (seed ALLOW_DEV_ADMIN_GRANT + requireAdmin) |
 
-**Residual:** Resend on prod; ledger API soak NOT_RUN rows. Do **not** claim world-ready.
+**Residual:** Resend on prod (code gate Wave 76); ledger API soak NOT_RUN rows. Do **not** claim world-ready.
 
 ---
 

@@ -2,7 +2,7 @@
 
 **Authority:** [`docs/ai/prizelet-world-ready-master-prompt.md`](./prizelet-world-ready-master-prompt.md)
 
-**Status:** Wave 75 referral Connect `tr_` soak 2026-10-07. Product is **not** world-ready.
+**Status:** Wave 76 Resend readiness 2026-10-07. Product is **not** world-ready.
 
 Do not claim world-ready until Section 8 gates in the master prompt pass.
 
@@ -16,9 +16,11 @@ Do not claim world-ready until Section 8 gates in the master prompt pass.
 | Evidence | branch, date, one-line actual vs expected |
 | Waiver | owner + reason (required if WAIVED) |
 
-Last updated: 2026-10-07. Last wave: **75** (`feat/world-ready-wave-75-referral-tr-soak`). Source pin: `bf85281` (inventory).
+Last updated: 2026-10-07. Last wave: **76** (`feat/world-ready-wave-76-resend-readiness`). Source pin: `bf85281` (inventory).
 
-Wave 75: Live referral Connect Transfer soak on combative-mongoose-559 — `seedUnpaidReferralCommissionAdmin` (admin + `ALLOW_DEV_ADMIN_GRANT`) → unpaid **$1.49** on `@prize2626` Express `acct_1UNI6YRzsXVyRAzD`; `sendReferralCommissionConnect` → `funding=stripe_fx`, `tr_1UO1mnRpY5TupxHCYVm24hlp`, transfer **1430** NOK for **149** USD cents. Units `referralCommissionPaid.security.test.ts` (seed gate). Residual: Resend on prod; many ledger API soak NOT_RUN rows. **Not** claiming world-ready.
+Wave 76: Resend production readiness — `env:validate` production profile requires `RESEND_API_KEY` + `EMAIL_FROM` (`PROD_MAILER`); admin `mailerStatusAdmin` + Admin Settings “Transactional email” (no secrets). Dev soak: `configured=false`, `devEchoAllowed=true` on combative-mongoose-559. Also soaked `platform.mutations.get`, `admin.paginatedLists.listPayoutsPage`, `payouts.mutations.listMine`, `users.queries.hasPasswordAccount`. Residual: set Resend env on Convex **prod** at make-it-live; remaining NOT_RUN API soaks. **Not** claiming world-ready.
+
+Wave 75: Live referral Connect Transfer soak on combative-mongoose-559 — `seedUnpaidReferralCommissionAdmin` (admin + `ALLOW_DEV_ADMIN_GRANT`) → unpaid **$1.49** on `@prize2626` Express `acct_1UNI6YRzsXVyRAzD`; `sendReferralCommissionConnect` → `funding=stripe_fx`, `tr_1UO1mnRpY5TupxHCYVm24hlp`, transfer **1430** NOK for **149** USD cents. Units `referralCommissionPaid.security.test.ts` (seed gate). Residual: Resend on prod (code gate Wave 76); many ledger API soak NOT_RUN rows. **Not** claiming world-ready.
 
 Wave 74: Section 8 tooling re-proof — `npm test` 256/256, lint 0, `vite build`, `env:validate`, e2e chromium surface (goto 45s; `/mfa` anonymous→login), `tsc -b` clean (messagingAccess discriminant). Units `publicApiReturns.security.test.ts` (183 public APIs with `returns`). Residual: many ledger API rows still NOT_RUN for soak; Resend on prod; referral `tr_` soak (closed Wave 75).
 
@@ -184,7 +186,7 @@ PASS below is **anonymous → `/login`**, not an authenticated admin session.
 | `/admin/alerts` | AdminAlerts | admin | convex | PASS | Wave 45: indexed alertsOverview; Wave 2 smoke |
 | `/admin/notifications` | CustomerNotifications | admin | mixed | PASS | Wave 2 chromium surface smoke 2026-10-04; inventory pin bf85281 |
 | `/admin/reports` | AdminReports | admin | convex | PASS | Wave 53: CSV exports from indexed takes; Creators/Customers/Transactions/Payouts/Fees files written |
-| `/admin/settings` | AdminSettings | admin | convex | PASS | Wave 2 chromium surface smoke 2026-10-04; inventory pin bf85281 |
+| `/admin/settings` | AdminSettings | admin | convex | PASS | Wave 76: Transactional email Resend readiness card; Wave 2 chromium surface smoke |
 
 ## E. Demo routes (must not write Convex money tables)
 
@@ -256,7 +258,7 @@ Nested layouts in `App.tsx`: `/demo/admin` → `DemoAdminLayout`; `/demo/member`
 | # | Gate | Result | Evidence |
 |---|------|--------|----------|
 | 1 | Every App route ledger PASS/WAIVED | PASS | Routes incl. `/mfa` have ledger rows; Wave 2+ surface smoke |
-| 2 | Public Convex auth + returns documented | PASS* | *returns validators: 184/184 (`publicApiReturns` incl. Wave 75 seed); many auth soak rows still NOT_RUN |
+| 2 | Public Convex auth + returns documented | PASS* | *returns validators: 185/185 (`publicApiReturns` incl. Wave 76 mailerStatusAdmin); many auth soak rows still NOT_RUN |
 | 3 | J1 Stripe money path on dev | PASS | Wave 5 ledger |
 | 4 | J3 entitlement matrix | PASS | Wave 8/24 ledger |
 | 5 | J5 payout reconcile | PASS | Wave 1/2 + payoutBalance tests |
@@ -266,7 +268,7 @@ Nested layouts in `App.tsx`: `/demo/admin` → `DemoAdminLayout`; `/demo/member`
 | 9 | Remaining-risk listed | PASS | Section M |
 | 10 | Not told live / no silent prod deploy | PASS | merge-now-live-later held |
 
-Honest status remains **in progress** until ops residuals (Resend prod) and remaining NOT_RUN soaks are closed or waived.
+Honest status remains **in progress** until ops sets Resend on Convex prod (at make-it-live) and remaining NOT_RUN soaks are closed or waived.
 
 ## I. Residual-risk retest
 
@@ -309,6 +311,7 @@ App public functions (`Auth` = TBD until Wave 1):
 | `accountRequests.startEmailChange` | auth | yes | PASS | Wave 70: action mints + Resend/dev delivery; never echoes code on production SITE_URL |
 | `accountRequests.resendEmailChangeOtp` | auth | yes | PASS | Wave 70: cooldown 60s; remints hashed OTP |
 | `accountRequests.verifyEmailChangeOtp` | auth | yes | PASS | Wave 70: 5 attempts / 10m TTL; fulfill + clear sessions |
+| `accountRequests.mailerStatusAdmin` | admin | yes | PASS | Wave 76: configured/fromDomain/devEcho; soak `configured=false` on dev |
 | `mfa.status` | auth | yes | PASS | Wave 73: totpEnabled + session required + backupCodesRemaining; no secrets |
 | `mfa.startEnroll` | auth | yes | PASS | Wave 72: returns secret + otpauth URL once |
 | `mfa.confirmEnroll` | auth | yes | PASS | Wave 73: verifies TOTP, grants session, returns plaintext backup codes once |
@@ -323,7 +326,7 @@ App public functions (`Auth` = TBD until Wave 1):
 | `admin.paginatedLists.listCasesPage` | TBD | yes | NOT_RUN | frozen vs convex/*.ts @ bf85281 |
 | `admin.paginatedLists.listCreatorsPage` | admin | yes | PASS | Wave 16: Creators **9 loaded** |
 | `admin.paginatedLists.listCustomersPage` | admin | yes | PASS | Wave 43: paginate subscriptions + `by_userId` take(joinCap); no adminScanAll |
-| `admin.paginatedLists.listPayoutsPage` | TBD | yes | NOT_RUN | frozen vs convex/*.ts @ bf85281 |
+| `admin.paginatedLists.listPayoutsPage` | admin | yes | PASS | Wave 76: page numItems=3 → pending j2creator $142.40 + completed j4creator |
 | `admin.paginatedLists.listSubscriptionsPage` | TBD | yes | NOT_RUN | frozen vs convex/*.ts @ bf85281 |
 | `admin.paginatedLists.listSupportMessagesPage` | TBD | yes | NOT_RUN | frozen vs convex/*.ts @ bf85281 |
 | `admin.paginatedLists.listTransactionsPage` | TBD | yes | NOT_RUN | frozen vs convex/*.ts @ bf85281 |
@@ -418,14 +421,14 @@ App public functions (`Auth` = TBD until Wave 1):
 | `payouts.mutations.createAdmin` | TBD | yes | NOT_RUN | frozen vs convex/*.ts @ bf85281 |
 | `payouts.mutations.getMySettings` | TBD | yes | NOT_RUN | frozen vs convex/*.ts @ bf85281 |
 | `payouts.mutations.listAllAdmin` | TBD | yes | NOT_RUN | frozen vs convex/*.ts @ bf85281 |
-| `payouts.mutations.listMine` | TBD | yes | NOT_RUN | frozen vs convex/*.ts @ bf85281 |
+| `payouts.mutations.listMine` | auth | yes | PASS | Wave 76: admin identity → `[]` (no creator payouts) |
 | `payouts.mutations.requestPayout` | TBD | yes | NOT_RUN | frozen vs convex/*.ts @ bf85281 |
 | `payouts.mutations.setStatusAdmin` | TBD | yes | NOT_RUN | frozen vs convex/*.ts @ bf85281 |
 | `payouts.mutations.upsertSettings` | TBD | yes | NOT_RUN | frozen vs convex/*.ts @ bf85281 |
 | `picks.mutations.listMine` | TBD | yes | NOT_RUN | frozen vs convex/*.ts @ bf85281 |
 | `picks.mutations.remove` | TBD | yes | NOT_RUN | frozen vs convex/*.ts @ bf85281 |
 | `picks.mutations.upsert` | TBD | yes | NOT_RUN | frozen vs convex/*.ts @ bf85281 |
-| `platform.mutations.get` | TBD | yes | NOT_RUN | frozen vs convex/*.ts @ bf85281 |
+| `platform.mutations.get` | admin | yes | PASS | Wave 76: singleton platform settings row returned |
 | `platform.mutations.upsert` | TBD | yes | NOT_RUN | frozen vs convex/*.ts @ bf85281 |
 | `posts.queries.listMine` | creator | yes | PASS | Wave 8: owner `/creator/posts?demo=0` showed WAVE8_SECRET_BODY |
 | `posts.queries.listMinePage` | creator | yes | PASS | Wave 8: paginated posts list 2 published premium posts |
@@ -477,7 +480,7 @@ App public functions (`Auth` = TBD until Wave 1):
 | `users.queries.changePassword` | TBD | yes | NOT_RUN | frozen vs convex/*.ts @ bf85281 |
 | `users.queries.ensureUser` | TBD | yes | NOT_RUN | frozen vs convex/*.ts @ bf85281 |
 | `users.queries.getById` | admin/self | yes | PASS | Wave 72: `publicUserFields` strips `totpSecret` |
-| `users.queries.hasPasswordAccount` | TBD | yes | NOT_RUN | frozen vs convex/*.ts @ bf85281 |
+| `users.queries.hasPasswordAccount` | auth | yes | PASS | Wave 76: admin identity → `true` |
 | `users.queries.me` | auth | yes | PASS | Wave 72: `totpEnabled` public; `totpSecret` never returned |
 | `users.queries.updateProfile` | TBD | yes | NOT_RUN | frozen vs convex/*.ts @ bf85281 |
 
@@ -535,7 +538,7 @@ Schema `appRole` also allows `moderator` and `user` (not product actors; no rout
 
 ## M. Remaining risk (update every fix PR)
 
-- P2: USD currency locked (Wave 67). Connect Transfer proven Wave 69 via Stripe-native FX (`tr_1UNKR8…`); referral Connect soak Wave 75 (`tr_1UO1mn…` stripe_fx). Historical migration data parity BLOCKED (greenfield). Email OTP shipped Wave 70 (Resend env required on prod; dev echo only with ALLOW_DEV_ADMIN_GRANT). TOTP MFA + backup codes / admin reset shipped Waves 72–73. Section 8 tooling PASS Wave 74 (soak NOT_RUN API rows remain).
+- P2: USD currency locked (Wave 67). Connect Transfer proven Wave 69 via Stripe-native FX (`tr_1UNKR8…`); referral Connect soak Wave 75 (`tr_1UO1mn…` stripe_fx). Historical migration data parity BLOCKED (greenfield). Email OTP shipped Wave 70; Wave 76 gates Resend via `PROD_MAILER` + admin mailer status (set `RESEND_API_KEY`/`EMAIL_FROM` on Convex prod at make-it-live). TOTP MFA + backup codes / admin reset shipped Waves 72–73. Section 8 tooling PASS Wave 74 (soak NOT_RUN API rows remain).
 - P3: admin join spend still capped at 500; F-012 Convex `.collect` closed Waves 59–65; optional USD available funding (FX path works); customers/alerts/finance/dashboard/fees/payouts/announcement/reports KPIs PASS (Wave 43–47, 50–55); eslint PASS Wave 57; join honesty PASS Wave 58
-- Not in this PR: www / Convex-prod promote, live Stripe keys, Resend prod
+- Not in this PR: www / Convex-prod promote, live Stripe keys, Resend API key install on prod
 - Waivers: see section L

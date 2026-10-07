@@ -105,6 +105,18 @@ describe("validateEnvProfile", () => {
     expect(issues).toEqual([]);
   });
 
+  it("fails production without Resend mailer bindings", () => {
+    const issues = validateEnvProfile({
+      appEnv: "production",
+      convexUrl: "https://prod-example.convex.cloud",
+      siteUrl: "https://www.sweeph.com",
+      stripePublishableKey: "pk_live_example",
+      stripeSecretKey: "sk_live_example",
+      requireProductionBindings: true,
+    });
+    expect(issues.some((i) => i.code === "PROD_MAILER")).toBe(true);
+  });
+
   it("passes a sane production profile", () => {
     const issues = validateEnvProfile({
       appEnv: "production",
@@ -112,6 +124,8 @@ describe("validateEnvProfile", () => {
       siteUrl: "https://www.sweeph.com",
       stripePublishableKey: "pk_live_example",
       stripeSecretKey: "sk_live_example",
+      resendApiKey: "re_test_example",
+      emailFrom: "Sweeph <noreply@sweeph.com>",
       requireProductionBindings: true,
     });
     expect(issues).toEqual([]);

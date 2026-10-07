@@ -12,7 +12,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Settings, Save, Percent, Palette, Shield, MessageSquare, Wallet, Loader2 } from 'lucide-react';
+import { Settings, Save, Percent, Palette, Shield, MessageSquare, Wallet, Loader2, Mail } from 'lucide-react';
 import { toast } from 'sonner';
 
 interface PlatformSettings {
@@ -120,6 +120,7 @@ const AdminSettings = () => {
   const [newPassword, setNewPassword] = useState('');
 
   const platformRaw = useQuery(api.platform.mutations.get);
+  const mailerStatus = useQuery(api.accountRequests.mailerStatusAdmin);
   const upsertPlatform = useMutation(api.platform.mutations.upsert);
   const changePasswordAction = useAction(api.users.queries.changePassword);
 
@@ -348,6 +349,37 @@ const AdminSettings = () => {
           <div><p className="text-sm font-medium">Auto-approve creators</p><p className="text-caption text-muted-foreground">New creators are published automatically</p></div>
           <Switch aria-label="Auto-approve creators" checked={settings.auto_approve_creators} onCheckedChange={v => set('auto_approve_creators', v)} />
         </div>
+      </section>
+
+      <section className={cn(clayCard, 'mb-6 p-4 sm:p-6')}>
+        <SettingsSectionHeader icon={Mail} tone={kpiIconTone.violet} title="Transactional email" />
+        {mailerStatus === undefined ? (
+          <p className="text-caption text-muted-foreground">Checking mailer…</p>
+        ) : (
+          <div className="space-y-2 text-sm">
+            <p>
+              <span className="font-medium">Resend:</span>{' '}
+              {mailerStatus.configured
+                ? `configured${mailerStatus.fromDomain ? ` (${mailerStatus.fromDomain})` : ''}`
+                : 'not configured'}
+            </p>
+            <p className="text-caption text-muted-foreground">
+              {mailerStatus.productionOrigin
+                ? 'Production origin — OTP codes are emailed only; plaintext echo is disabled.'
+                : mailerStatus.devEchoAllowed
+                  ? 'Dev echo allowed when Resend is unset (ALLOW_DEV_ADMIN_GRANT).'
+                  : 'Dev echo off — set RESEND_API_KEY + EMAIL_FROM to send OTP email.'}
+            </p>
+            {!mailerStatus.configured && (
+              <p className="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-caption text-amber-950">
+                Set <code className="text-[11px]">RESEND_API_KEY</code> and{' '}
+                <code className="text-[11px]">EMAIL_FROM</code> on the Convex deployment before
+                making www live. Production <code className="text-[11px]">env:validate</code> fails
+                without them.
+              </p>
+            )}
+          </div>
+        )}
       </section>
 
       <section className={cn(clayCard, 'mb-6 p-4 sm:p-6')}>
