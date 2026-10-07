@@ -207,7 +207,7 @@ Treat **every public query/mutation/action** as in-scope. For each: caller ident
 | Module | Domain |
 |--------|--------|
 | `accountRequests` | Email-change OTP self-serve + admin fulfill |
-| `mfa` | TOTP enroll / session grant / disable |
+| `mfa` | TOTP enroll / session grant / backup codes / admin disable |
 | `admin/exportReports`, `admin/paginatedLists`, `admin/queries`, `admin/snapshots` | Admin reads/exports |
 | `analytics/mutations` | Analytics events |
 | `auth`, `authProviders` | Convex Auth + social |
@@ -298,7 +298,7 @@ Promo CRUD, ownership, max uses, expiry, `discountDuration` once|forever. `/go/:
 
 ### J7 — Identity continuity
 
-Password + X/Discord OAuth. [`AuthCallback`](../../src/pages/AuthCallback.tsx) `waitForAuthenticated` / `ensureCanonicalAuthOrigin`. Safe return paths ([`src/lib/safeReturnPath.ts`](../../src/lib/safeReturnPath.ts)) — no open redirects. Multi-role: `ROLE_PRIORITY` admin > creator > subscriber; `switchRole` only among held roles. Sign-out does not flash `/select-role`. Email change: self-serve OTP (`startEmailChange` / `verifyEmailChangeOtp`) plus admin `accountRequests` backup; **do not claim email already changed** until OTP verify (or admin fulfill) succeeds. TOTP MFA: enroll in settings, new sessions hit `/mfa` until `mfaSessionGrants` for the current Convex Auth session. Never return `totpSecret` on `me`.
+Password + X/Discord OAuth. [`AuthCallback`](../../src/pages/AuthCallback.tsx) `waitForAuthenticated` / `ensureCanonicalAuthOrigin`. Safe return paths ([`src/lib/safeReturnPath.ts`](../../src/lib/safeReturnPath.ts)) — no open redirects. Multi-role: `ROLE_PRIORITY` admin > creator > subscriber; `switchRole` only among held roles. Sign-out does not flash `/select-role`. Email change: self-serve OTP (`startEmailChange` / `verifyEmailChangeOtp`) plus admin `accountRequests` backup; **do not claim email already changed** until OTP verify (or admin fulfill) succeeds. TOTP MFA: enroll in settings, new sessions hit `/mfa` until `mfaSessionGrants` for the current Convex Auth session; one-time backup codes + admin `mfa.adminDisable` (not self). Never return `totpSecret` or backup hashes on `me`.
 
 ### J8 — Migration continuity
 

@@ -33,6 +33,7 @@ interface UserRow {
   creatorEarnings: number;
   paidOut: number;
   metricsTruncated: boolean;
+  totpEnabled: boolean;
 }
 
 const categoryLabel = (category: string) => {
@@ -56,7 +57,9 @@ const AdminUsers = () => {
   const resolveRequest = useMutation(api.accountRequests.resolveAdmin);
   const cancelStripeSubs = useAction(api.payments.stripeNode.cancelStripeSubscriptionsAdmin);
   const grantRoleMutation = useMutation(api.roles.mutations.grantRole);
+  const adminDisableMfa = useMutation(api.mfa.adminDisable);
   const [resolvingId, setResolvingId] = useState<string | null>(null);
+  const [resettingMfa, setResettingMfa] = useState(false);
 
   const loading = status === 'LoadingFirstPage';
 
@@ -73,6 +76,7 @@ const AdminUsers = () => {
       creatorEarnings: u.creatorEarnings,
       paidOut: u.paidOut,
       metricsTruncated: u.metricsTruncated,
+      totpEnabled: u.totpEnabled,
     }));
   }, [results]);
 
@@ -145,6 +149,34 @@ const AdminUsers = () => {
       toast.error(e instanceof Error ? e.message : 'Failed to grant role');
     } finally {
       setGranting(false);
+    }
+  };
+
+  const handleResetMfa = async () => {
+    if (!selected) return;
+    if (
+      !window.confirm(
+        `Reset two-factor authentication for ${selected.email}? They can sign in with password/OAuth only until they re-enroll.`,
+      )
+    ) {
+      return;
+    }
+    setResettingMfa(true);
+    try {
+      await adminDisableMfa({ userId: selected.id as Id<'users'> });
+      toast.success(`MFA reset for ${selected.email}`);
+      setSelected({ ...selected, totpEnabled: false });
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : 'Failed to reset MFA';
+      if (msg.includes('CANNOT_RESET_SELF')) {
+        toast.error('You cannot reset MFA on your own account.');
+      } else if (msg.includes('NOT_ENABLED')) {
+        toast.message('MFA is not enabled on this account.');
+      } else {
+        toast.error(msg);
+      }
+    } finally {
+      setResettingMfa(false);
     }
   };
 
@@ -434,6 +466,23 @@ const AdminUsers = () => {
               <div className="flex justify-between"><span className="text-muted-foreground">Total spend</span><span>${selected.totalSpend.toFixed(2)}</span></div>
               <div className="flex justify-between"><span className="text-muted-foreground">Creator earnings</span><span className="text-emerald-400">${selected.creatorEarnings.toFixed(2)}</span></div>
               <div className="flex justify-between"><span className="text-muted-foreground">Paid out</span><span>${selected.paidOut.toFixed(2)}</span></div>
+              <div className="flex justify-between items-center gap-3">
+                <span className="text-muted-foreground">Two-factor auth</span>
+                <span className="inline-flex items-center gap-2">
+                  {selected.totpEnabled ? 'Enabled' : 'Off'}
+                  {selected.totpEnabled ? (
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="h-8"
+                      disabled={resettingMfa}
+                      onClick={() => void handleResetMfa()}
+                    >
+                      {resettingMfa ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : 'Reset MFA'}
+                    </Button>
+                  ) : null}
+                </span>
+              </div>
               <div className="border-t border-border pt-3 space-y-2">
                 <p className="text-caption font-medium text-muted-foreground flex items-center gap-1">
                   <Shield className="h-3 w-3" /> Grant role
