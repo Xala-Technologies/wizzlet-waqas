@@ -35,4 +35,13 @@ describe('referral commission paid ledger', () => {
     expect(growthSrc).toMatch(/commissionTransferId: args\.transferId/);
     expect(growthSrc).toMatch(/Prefer sendReferralCommissionConnect/);
   });
+
+  it('dev soak seed is admin + ALLOW_DEV_ADMIN_GRANT gated', () => {
+    expect(growthSrc).toMatch(
+      /export const seedUnpaidReferralCommissionAdmin[\s\S]*ALLOW_DEV_ADMIN_GRANT/,
+    );
+    expect(growthSrc).toMatch(
+      /seedUnpaidReferralCommissionAdmin[\s\S]*requireAdmin/,
+    );
+  });
 });

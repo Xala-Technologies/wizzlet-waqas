@@ -429,6 +429,46 @@ export const markCommissionPaidAdmin = mutation({
   },
 });
 
+/**
+ * Dev-only soak helper: insert a converted unpaid referral commission row.
+ * Requires ALLOW_DEV_ADMIN_GRANT=true — never enable on production.
+ */
+export const seedUnpaidReferralCommissionAdmin = mutation({
+  args: {
+    creatorId: v.id("creators"),
+    commissionEarnedCents: v.number(),
+    referredEmail: v.optional(v.string()),
+  },
+  returns: v.object({ referralId: v.id("referrals") }),
+  handler: async (ctx, args) => {
+    if (process.env.ALLOW_DEV_ADMIN_GRANT !== "true") {
+      throw new ConvexError("FORBIDDEN");
+    }
+    const admin = await requireAdmin(ctx);
+    if (args.commissionEarnedCents <= 0 || args.commissionEarnedCents > 10_000) {
+      throw new ConvexError("INVALID_AMOUNT");
+    }
+    const creator = await ctx.db.get(args.creatorId);
+    if (!creator) throw new ConvexError("NOT_FOUND");
+    const now = Date.now();
+    const referralId = await ctx.db.insert("referrals", {
+      creatorId: args.creatorId,
+      referredEmail: args.referredEmail ?? `wave75+referral@example.com`,
+      converted: true,
+      commissionEarnedCents: args.commissionEarnedCents,
+      createdAt: now,
+      updatedAt: now,
+    });
+    await logMutation(ctx, {
+      table: "referrals",
+      documentId: referralId,
+      action: "seedUnpaidReferralCommissionAdmin",
+      actorExternalAuthId: admin.externalAuthId,
+    });
+    return { referralId };
+  },
+});
+
 export const getReferralConnectContext = internalQuery({
   args: { referralId: v.id("referrals") },
   returns: v.object({

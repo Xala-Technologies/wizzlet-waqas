@@ -2,7 +2,7 @@
 
 **Authority:** [`docs/ai/prizelet-world-ready-master-prompt.md`](./prizelet-world-ready-master-prompt.md)
 
-**Status:** Wave 74 Section 8 gates 2026-10-07. Product is **not** world-ready.
+**Status:** Wave 75 referral Connect `tr_` soak 2026-10-07. Product is **not** world-ready.
 
 Do not claim world-ready until Section 8 gates in the master prompt pass.
 
@@ -16,9 +16,11 @@ Do not claim world-ready until Section 8 gates in the master prompt pass.
 | Evidence | branch, date, one-line actual vs expected |
 | Waiver | owner + reason (required if WAIVED) |
 
-Last updated: 2026-10-07. Last wave: **74** (`feat/world-ready-wave-74-section8-gates`). Source pin: `bf85281` (inventory).
+Last updated: 2026-10-07. Last wave: **75** (`feat/world-ready-wave-75-referral-tr-soak`). Source pin: `bf85281` (inventory).
 
-Wave 74: Section 8 tooling re-proof — `npm test` 256/256, lint 0, `vite build`, `env:validate`, e2e chromium surface (goto 45s; `/mfa` anonymous→login), `tsc -b` clean (messagingAccess discriminant). Units `publicApiReturns.security.test.ts` (183 public APIs with `returns`). Residual: many ledger API rows still NOT_RUN for soak; Resend on prod; referral `tr_` soak. **Not** claiming world-ready.
+Wave 75: Live referral Connect Transfer soak on combative-mongoose-559 — `seedUnpaidReferralCommissionAdmin` (admin + `ALLOW_DEV_ADMIN_GRANT`) → unpaid **$1.49** on `@prize2626` Express `acct_1UNI6YRzsXVyRAzD`; `sendReferralCommissionConnect` → `funding=stripe_fx`, `tr_1UO1mnRpY5TupxHCYVm24hlp`, transfer **1430** NOK for **149** USD cents. Units `referralCommissionPaid.security.test.ts` (seed gate). Residual: Resend on prod; many ledger API soak NOT_RUN rows. **Not** claiming world-ready.
+
+Wave 74: Section 8 tooling re-proof — `npm test` 256/256, lint 0, `vite build`, `env:validate`, e2e chromium surface (goto 45s; `/mfa` anonymous→login), `tsc -b` clean (messagingAccess discriminant). Units `publicApiReturns.security.test.ts` (183 public APIs with `returns`). Residual: many ledger API rows still NOT_RUN for soak; Resend on prod; referral `tr_` soak (closed Wave 75).
 
 Wave 73: MFA recovery — 8 hashed one-time backup codes (shown once on enroll / regenerate), `/mfa` accepts TOTP or backup code, admin `mfa.adminDisable` (not self). Units `mfaBackup.security.test.ts`. Residual: Resend on prod; referral `tr_` soak.
 
@@ -224,7 +226,7 @@ Nested layouts in `App.tsx`: `/demo/admin` → `DemoAdminLayout`; `/demo/member`
 | J3 | Content access / pick lock / win rate | PASS | Wave 8 owner lock/win-rate; Wave 24 2026-10-05: `j3member` Checkout `cs_test_a13a8w…` ACTIVE → dashboard shows WAVE8_SECRET_BODY; cancel `sub_1UMytH…` → status cancelled, feed empty (no secret); pickTracker settled Win → Result combobox **disabled**. Residual: cancel UI previously lied about period-end (fixed this wave) |
 | J4 | Messages / support / resolution | PASS | Wave 9/39/40: composer gated; CRM **Canceled · was Premium** for cancelled j4member. Units messaging 7/7 + creatorMessageSubscriber 4/4 |
 | J5 | Payout request / approve / balance | PASS | Wave 10 request/approve; Wave 25 Lifetime math; Wave 69 live Connect FX transfer `tr_1UNKR8…` for `@prize2626` **$50**. `payoutBalance.test.ts` 6/6 |
-| J6 | Promo / tracking links / referrals | PASS | Wave 11/29/30/33/34; Wave 36 ledger Mark paid; Wave 71: `sendReferralCommissionConnect` (Connect Transfer + FX). Ledger-only mark remains backup. |
+| J6 | Promo / tracking links / referrals | PASS | Wave 11/29/30/33/34; Wave 36 ledger Mark paid; Wave 71: `sendReferralCommissionConnect` (Connect Transfer + FX). Wave 75: live `tr_1UO1mn…` stripe_fx (**1430** NOK for **$1.49**) to `@prize2626`. Ledger-only mark remains backup. |
 | J7 | Identity (password, OAuth, roles, email request) | PASS | Wave 73: backup codes + admin MFA reset. Wave 72: TOTP MFA enroll + session grant. Wave 70: self-serve OTP; admin fulfill still backup. Wave 12/27/28/30/38; Wave 35 admin email fulfill + soft-delete; Wave 38 X OAuth; Wave 41 deletion fulfill → Stripe cancel. |
 | J8 | Migration ETL internal-only | PASS | Wave 13 2026-10-05: all migration exports `internalMutation`; client has zero import refs; `MIGRATION_SECRET` unset on combative-mongoose-559; `migrations.security.test.ts` 3/3. Residual: historical data parity not claimed |
 | J9 | Public nav + chrome | PASS | Wave 2: public-nav + browser-matrix on chromium/webkit/firefox; platform-owner bootstrap visible in DEV |
@@ -254,7 +256,7 @@ Nested layouts in `App.tsx`: `/demo/admin` → `DemoAdminLayout`; `/demo/member`
 | # | Gate | Result | Evidence |
 |---|------|--------|----------|
 | 1 | Every App route ledger PASS/WAIVED | PASS | Routes incl. `/mfa` have ledger rows; Wave 2+ surface smoke |
-| 2 | Public Convex auth + returns documented | PASS* | *returns validators: 183/183 (`publicApiReturns`); many auth soak rows still NOT_RUN |
+| 2 | Public Convex auth + returns documented | PASS* | *returns validators: 184/184 (`publicApiReturns` incl. Wave 75 seed); many auth soak rows still NOT_RUN |
 | 3 | J1 Stripe money path on dev | PASS | Wave 5 ledger |
 | 4 | J3 entitlement matrix | PASS | Wave 8/24 ledger |
 | 5 | J5 payout reconcile | PASS | Wave 1/2 + payoutBalance tests |
@@ -264,7 +266,7 @@ Nested layouts in `App.tsx`: `/demo/admin` → `DemoAdminLayout`; `/demo/member`
 | 9 | Remaining-risk listed | PASS | Section M |
 | 10 | Not told live / no silent prod deploy | PASS | merge-now-live-later held |
 
-Honest status remains **in progress** until ops residuals (Resend prod, referral `tr_` soak) and remaining NOT_RUN soaks are closed or waived.
+Honest status remains **in progress** until ops residuals (Resend prod) and remaining NOT_RUN soaks are closed or waived.
 
 ## I. Residual-risk retest
 
@@ -355,7 +357,8 @@ App public functions (`Auth` = TBD until Wave 1):
 | `creators.growth.listMyReferrals` | creator | yes | PASS | Wave 63: capped take; Wave 29 referrals UI |
 | `creators.growth.listUnpaidCommissionsAdmin` | admin | yes | PASS | Wave 36: `/admin/payouts` unpaid queue showed j6comm **$1.49** |
 | `creators.growth.markCommissionPaidAdmin` | admin | yes | PASS | Wave 36 ledger mark; Wave 71 backup only (copy honest) |
-| `payments.stripeNode.sendReferralCommissionConnect` | admin | yes | PASS | Wave 71: Connect Transfer + FX; unpaid until Stripe accepts |
+| `payments.stripeNode.sendReferralCommissionConnect` | admin | yes | PASS | Wave 71: Connect Transfer + FX; Wave 75 soak `tr_1UO1mn…` stripe_fx on `@prize2626` |
+| `creators.growth.seedUnpaidReferralCommissionAdmin` | admin | yes | PASS | Wave 75: ALLOW_DEV_ADMIN_GRANT + requireAdmin; soak seed only |
 | `creators.growth.recordLinkClick` | public | yes | PASS | Wave 33: `/go/jd72413…` → clicks **1** |
 | `creators.growth.recordReferral` | authenticated | yes | PASS | Wave 11/29 path via code helper |
 | `creators.growth.recordReferralByCode` | authenticated | yes | PASS | Wave 29: signup `?ref=j2creator-jn73sz` → referral row pending then converted |
@@ -532,7 +535,7 @@ Schema `appRole` also allows `moderator` and `user` (not product actors; no rout
 
 ## M. Remaining risk (update every fix PR)
 
-- P2: USD currency locked (Wave 67). Connect Transfer proven Wave 69 via Stripe-native FX (`tr_1UNKR8…`); referral cash uses the same Transfer helper (Wave 71 — live `tr_` soak still pending if no unpaid row + KYC). Historical migration data parity BLOCKED (greenfield). Email OTP shipped Wave 70 (Resend env required on prod; dev echo only with ALLOW_DEV_ADMIN_GRANT). TOTP MFA + backup codes / admin reset shipped Waves 72–73. Section 8 tooling PASS Wave 74 (soak NOT_RUN API rows remain).
+- P2: USD currency locked (Wave 67). Connect Transfer proven Wave 69 via Stripe-native FX (`tr_1UNKR8…`); referral Connect soak Wave 75 (`tr_1UO1mn…` stripe_fx). Historical migration data parity BLOCKED (greenfield). Email OTP shipped Wave 70 (Resend env required on prod; dev echo only with ALLOW_DEV_ADMIN_GRANT). TOTP MFA + backup codes / admin reset shipped Waves 72–73. Section 8 tooling PASS Wave 74 (soak NOT_RUN API rows remain).
 - P3: admin join spend still capped at 500; F-012 Convex `.collect` closed Waves 59–65; optional USD available funding (FX path works); customers/alerts/finance/dashboard/fees/payouts/announcement/reports KPIs PASS (Wave 43–47, 50–55); eslint PASS Wave 57; join honesty PASS Wave 58
-- Not in this PR: www.prizelet.com Vercel promote, live Stripe keys, Resend prod
+- Not in this PR: www / Convex-prod promote, live Stripe keys, Resend prod
 - Waivers: see section L
