@@ -11,6 +11,7 @@ import {
   ChevronLeft,
   ChevronRight,
   CircleHelp,
+  Clock,
   ExternalLink,
   Lightbulb,
   Loader2,
@@ -45,6 +46,10 @@ import {
 import { kpiIconTone } from '@/lib/kpiIconTones';
 import { scanTruncationNote } from '@/lib/adminTruncation';
 import { cn } from '@/lib/utils';
+import {
+  formatPayoutDateLabel,
+  nextMondayPayoutAtMs,
+} from '../../convex/lib/payoutSchedule';
 
 const PAGE_SIZE = 10;
 
@@ -170,10 +175,12 @@ const CreatorPayouts = () => {
   );
 
   const liveAvailable = (balance?.availableCents ?? 0) / 100;
+  const livePending = (balance?.pendingCents ?? 0) / 100;
 
   const useDemo = shouldUseCreatorPayoutsDemo({
     historyCount: livePayouts.length,
     available: liveAvailable,
+    pending: livePending,
     forceDemo,
     disableDemo,
   });
@@ -185,6 +192,7 @@ const CreatorPayouts = () => {
   const payouts = useDemo ? CREATOR_PAYOUTS_DEMO_HISTORY : livePayouts;
 
   const available = useDemo ? CREATOR_PAYOUTS_DEMO_KPIS.available : liveAvailable;
+  const pendingEarnings = useDemo ? CREATOR_PAYOUTS_DEMO_KPIS.pending : livePending;
   const paidOut = useDemo
     ? CREATOR_PAYOUTS_DEMO_KPIS.paidOut
     : payouts
@@ -203,12 +211,23 @@ const CreatorPayouts = () => {
   const scheduleLabel = useDemo
     ? CREATOR_PAYOUTS_DEMO_KPIS.scheduleLabel
     : schedule === 'weekly'
-      ? 'Weekly (Fridays)'
+      ? 'Weekly (Mondays)'
       : schedule === 'biweekly'
-        ? 'Biweekly'
-        : 'Monthly';
-  const nextPayoutLabel = useDemo ? CREATOR_PAYOUTS_DEMO_KPIS.nextPayoutLabel : '—';
-  const nextPayoutRemaining = useDemo ? CREATOR_PAYOUTS_DEMO_KPIS.nextPayoutRemaining : undefined;
+        ? 'Biweekly (Mondays)'
+        : schedule === 'manual'
+          ? 'Manual only'
+          : 'Monthly (first Monday)';
+  const nextPayoutMs = nextMondayPayoutAtMs(Date.now());
+  const nextPayoutLabel = useDemo
+    ? CREATOR_PAYOUTS_DEMO_KPIS.nextPayoutLabel
+    : schedule === 'manual'
+      ? 'Manual'
+      : formatPayoutDateLabel(nextPayoutMs);
+  const nextPayoutRemaining = useDemo
+    ? CREATOR_PAYOUTS_DEMO_KPIS.nextPayoutRemaining
+    : schedule === 'manual'
+      ? 'Withdraw when available'
+      : 'Weekly Monday auto-payout';
 
   const pageCount = Math.max(1, Math.ceil(payouts.length / PAGE_SIZE));
   const safePage = Math.min(tablePage, pageCount - 1);
@@ -341,16 +360,18 @@ const CreatorPayouts = () => {
         </div>
       ) : (
         <div className="clay-card mb-6 px-4 py-3.5 text-sm text-muted-foreground sm:px-5">
-          Withdrawals update the Prizelet ledger (USD). Admins send approved payouts with a real
-          Stripe Connect Transfer when your Express account can receive payouts (matched USD or
-          Stripe-native FX from platform settlement)
+          New earnings stay Pending during the clearing hold, then become Available. Default payouts
+          run Mondays via Stripe Connect Transfer (or use Withdraw Now on Available balance).
+          {balance?.debtCents && balance.debtCents > 0
+            ? ` Outstanding clawback debt: $${(balance.debtCents / 100).toFixed(2)} — payouts are blocked until cleared.`
+            : null}
           {connectStatus?.stripeAccountId
-            ? ` — Express ${connectStatus.stripeAccountId}${
+            ? ` Express ${connectStatus.stripeAccountId}${
                 connectStatus.payoutsEnabled
-                  ? ' is payouts-enabled'
-                  : ' still needs Stripe KYC (payouts not enabled)'
-              }.`
-            : '. Connect Stripe Express below to start KYC.'}
+                  ? ' is payouts-enabled.'
+                  : ' still needs Stripe KYC (payouts not enabled).'
+              }`
+            : ' Connect Stripe Express below to start KYC.'}
           {balanceTruncation ? (
             <p className="mt-2 text-amber-600 dark:text-amber-400">{balanceTruncation}</p>
           ) : null}
@@ -393,7 +414,24 @@ const CreatorPayouts = () => {
       ) : null}
 
       <div className="mb-6 sm:mb-8">
-        <section className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        <section className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
+          <div className={cn(clayCard, 'p-4 sm:p-5')}>
+            <div className="mb-3 flex items-start justify-between gap-2">
+              <div
+                className={cn(
+                  'flex h-10 w-10 items-center justify-center rounded-xl',
+                  kpiIconTone.amber,
+                )}
+              >
+                <Clock className="h-5 w-5" aria-hidden />
+              </div>
+            </div>
+            <p className="text-2xl font-extrabold tabular-nums tracking-tight text-foreground sm:text-3xl">
+              {money(pendingEarnings)}
+            </p>
+            <p className="mt-1 text-sm font-semibold text-muted-foreground">Pending earnings</p>
+          </div>
+
           <div className={cn(clayCard, 'p-4 sm:p-5')}>
             <div className="mb-3 flex items-start justify-between gap-2">
               <div
@@ -705,7 +743,7 @@ const CreatorPayouts = () => {
           <DialogHeader>
             <DialogTitle>Edit Payout Settings</DialogTitle>
             <DialogDescription>
-              Preferred schedule is an ops preference — payouts are requested manually.
+              Weekly Mondays is the default auto-payout. Withdraw Now still works on Available balance.
             </DialogDescription>
           </DialogHeader>
           <div className="grid gap-4 py-2">
@@ -738,7 +776,8 @@ const CreatorPayouts = () => {
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="weekly">Weekly (Fridays)</SelectItem>
+                  <SelectItem value="weekly">Weekly (Mondays)</SelectItem>
+                  <SelectItem value="manual">Manual only</SelectItem>
                   <SelectItem value="biweekly">Biweekly</SelectItem>
                   <SelectItem value="monthly">Monthly</SelectItem>
                 </SelectContent>

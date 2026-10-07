@@ -9,11 +9,11 @@ export const CREATOR_PAYOUTS_DEMO_KPIS = {
   available: 9_860,
   paidOut: 82_430,
   paidOutDelta: 28,
-  nextPayoutLabel: 'Feb 7, 2025',
-  nextPayoutRemaining: '2 days remaining',
+  nextPayoutLabel: 'Oct 12, 2026',
+  nextPayoutRemaining: 'Next Monday',
   methodMasked: '**** 4582',
-  methodLabel: 'Wise (USD)',
-  scheduleLabel: 'Weekly (Fridays)',
+  methodLabel: 'Stripe Connect',
+  scheduleLabel: 'Weekly (Mondays)',
   minimumPayout: 50,
   pending: 1_610,
   earned: 12_480,
@@ -60,10 +60,12 @@ export const CREATOR_PAYOUTS_TIPS = [
 export function shouldUseCreatorPayoutsDemo(opts: {
   historyCount: number;
   available: number;
+  pending?: number;
   forceDemo: boolean;
   disableDemo: boolean;
 }): boolean {
   if (opts.disableDemo) return false;
   if (opts.forceDemo) return true;
-  return opts.historyCount === 0 && opts.available <= 0;
+  const pending = opts.pending ?? 0;
+  return opts.historyCount === 0 && opts.available <= 0 && pending <= 0;
 }

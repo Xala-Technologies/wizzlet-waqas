@@ -25,6 +25,8 @@ interface PlatformSettings {
   tagline: string;
   min_payout_amount: number;
   payout_schedule: string;
+  earnings_hold_days: number;
+  auto_payouts_enabled: boolean;
   creator_messaging_enabled: boolean;
   growth_manager_enabled: boolean;
   auto_approve_creators: boolean;
@@ -39,7 +41,9 @@ const DEFAULTS: PlatformSettings = {
   support_email: 'support@sweeph.com',
   tagline: 'The premium creator platform',
   min_payout_amount: 50,
-  payout_schedule: 'monthly',
+  payout_schedule: 'weekly',
+  earnings_hold_days: 7,
+  auto_payouts_enabled: false,
   creator_messaging_enabled: true,
   growth_manager_enabled: true,
   auto_approve_creators: false,
@@ -68,6 +72,16 @@ function fromConvex(raw: {
     tagline: String(branding.tagline ?? DEFAULTS.tagline),
     min_payout_amount: Number(payoutDefaults.minPayoutAmount ?? payoutDefaults.min_payout_amount ?? DEFAULTS.min_payout_amount),
     payout_schedule: String(payoutDefaults.payoutSchedule ?? payoutDefaults.payout_schedule ?? DEFAULTS.payout_schedule),
+    earnings_hold_days: Number(
+      payoutDefaults.earningsHoldDays ??
+        payoutDefaults.earnings_hold_days ??
+        DEFAULTS.earnings_hold_days,
+    ),
+    auto_payouts_enabled: Boolean(
+      featureFlags.autoPayoutsEnabled ??
+        featureFlags.auto_payouts_enabled ??
+        DEFAULTS.auto_payouts_enabled,
+    ),
     creator_messaging_enabled: Boolean(featureFlags.creatorMessagingEnabled ?? featureFlags.creator_messaging_enabled ?? DEFAULTS.creator_messaging_enabled),
     growth_manager_enabled: Boolean(featureFlags.growthManagerEnabled ?? featureFlags.growth_manager_enabled ?? DEFAULTS.growth_manager_enabled),
     auto_approve_creators: Boolean(featureFlags.autoApproveCreators ?? featureFlags.auto_approve_creators ?? DEFAULTS.auto_approve_creators),
@@ -147,11 +161,15 @@ const AdminSettings = () => {
         payoutDefaults: {
           minPayoutAmount: settings.min_payout_amount,
           payoutSchedule: settings.payout_schedule,
+          earningsHoldDays: settings.earnings_hold_days,
+          payoutWeekday: 1,
+          payoutCadence: settings.payout_schedule,
         },
         featureFlags: {
           creatorMessagingEnabled: settings.creator_messaging_enabled,
           growthManagerEnabled: settings.growth_manager_enabled,
           autoApproveCreators: settings.auto_approve_creators,
+          autoPayoutsEnabled: settings.auto_payouts_enabled,
         },
       });
       toast.success('Platform settings saved');
@@ -253,12 +271,39 @@ const AdminSettings = () => {
             <Select value={settings.payout_schedule} onValueChange={v => set('payout_schedule', v)}>
               <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
               <SelectContent>
-                <SelectItem value="weekly">Weekly</SelectItem>
+                <SelectItem value="weekly">Weekly (Mondays)</SelectItem>
                 <SelectItem value="biweekly">Every two weeks</SelectItem>
-                <SelectItem value="monthly">Monthly</SelectItem>
+                <SelectItem value="monthly">Monthly (first Monday)</SelectItem>
               </SelectContent>
             </Select>
-            <p className="text-caption text-muted-foreground mt-1">How often payouts are processed</p>
+            <p className="text-caption text-muted-foreground mt-1">Default creator cadence for Monday batch</p>
+          </div>
+          <div>
+            <Label className="text-caption">Earnings hold (days)</Label>
+            <Input
+              type="number"
+              value={settings.earnings_hold_days}
+              onChange={(e) => set('earnings_hold_days', Number(e.target.value))}
+              className="mt-1"
+              min="0"
+              max="30"
+            />
+            <p className="text-caption text-muted-foreground mt-1">
+              New earnings stay Pending this long before Available
+            </p>
+          </div>
+          <div className="flex items-center justify-between rounded-xl border border-border px-3 py-3">
+            <div>
+              <p className="text-sm font-medium">Monday auto-payouts</p>
+              <p className="text-caption text-muted-foreground">
+                Stripe Connect Transfers every Monday 09:00 UTC when enabled
+              </p>
+            </div>
+            <Switch
+              aria-label="Monday auto-payouts"
+              checked={settings.auto_payouts_enabled}
+              onCheckedChange={(v) => set('auto_payouts_enabled', v)}
+            />
           </div>
         </div>
       </section>

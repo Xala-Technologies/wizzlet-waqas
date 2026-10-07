@@ -88,9 +88,14 @@ const CreatorEarnings = () => {
 
   const earnings = useQuery(api.creators.earnings.myEarnings);
   const payouts = useQuery(api.payouts.mutations.listMine);
+  const balance = useQuery(api.payouts.mutations.availableBalance);
   const subs = useQuery(api.subscriptions.mutations.listForMyCreator);
 
-  const loading = earnings === undefined || payouts === undefined || subs === undefined;
+  const loading =
+    earnings === undefined ||
+    payouts === undefined ||
+    balance === undefined ||
+    subs === undefined;
 
   const useDemo = shouldUseCreatorEarningsDemo({
     netCents: earnings?.netCents ?? 0,
@@ -149,6 +154,8 @@ const CreatorEarnings = () => {
     [payouts],
   );
 
+  const feeRate =
+    (earnings?.feePolicy?.currentFeePercent ?? 10) / 100;
   const metrics = useDemo
     ? CREATOR_EARNINGS_DEMO_METRICS
     : {
@@ -158,24 +165,19 @@ const CreatorEarnings = () => {
         netEarningsDelta: null as number | null,
         totalPaidOutCents: paidOutCents,
         totalPaidOutDelta: null as number | null,
-        pendingPayoutCents:
-          pendingFromPayouts > 0
-            ? pendingFromPayouts
-            : Math.max(0, (earnings?.netCents ?? 0) - paidOutCents),
+        pendingPayoutCents: balance?.pendingCents ?? 0,
         pendingPayoutDelta: null as number | null,
+        inFlightPayoutCents: pendingFromPayouts,
         dateRangeLabel: 'Last 30 days',
-        upcomingPayoutCents:
-          pendingFromPayouts > 0
-            ? pendingFromPayouts
-            : Math.max(0, (earnings?.netCents ?? 0) - paidOutCents),
-        upcomingPayoutDateLabel: 'Next schedule',
+        upcomingPayoutCents: balance?.availableCents ?? 0,
+        upcomingPayoutDateLabel: 'Next Monday',
       };
 
   const series = useDemo
     ? CREATOR_EARNINGS_DEMO_SERIES
     : (earnings?.monthly ?? []).slice(-8).map((m) => {
         const revenue = Math.round(m.revenueCents) / 100;
-        const net = Math.round(revenue * 0.85 * 100) / 100;
+        const net = Math.round(revenue * (1 - feeRate) * 100) / 100;
         const payoutsApprox = Math.round(revenue * 0.4 * 100) / 100;
         return {
           label: m.month.length >= 7 ? m.month.slice(5) : m.month,
@@ -301,7 +303,7 @@ const CreatorEarnings = () => {
                     metrics.totalPaidOutDelta != null ? 'vs. last month' : undefined,
                 },
                 {
-                  label: 'Pending payout',
+                  label: 'Pending earnings',
                   value: money(metrics.pendingPayoutCents),
                   icon: Clock,
                   iconClassName: kpiIconTone.amber,
@@ -311,7 +313,11 @@ const CreatorEarnings = () => {
                       : undefined,
                   trendPositive: true,
                   trendCaption:
-                    metrics.pendingPayoutDelta != null ? 'vs. last month' : undefined,
+                    !useDemo && pendingFromPayouts > 0
+                      ? `Payout in flight $${(pendingFromPayouts / 100).toFixed(0)}`
+                      : metrics.pendingPayoutDelta != null
+                        ? 'vs. last month'
+                        : 'Clearing hold',
                 },
               ]}
             />

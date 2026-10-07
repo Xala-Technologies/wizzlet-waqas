@@ -9,7 +9,7 @@ import type { Id } from "../_generated/dataModel";
 const DEFAULT_FEE = {
   introFeePercent: 5,
   standardFeePercent: 10,
-  introFeeDays: 90,
+  introFeeDays: 30,
 };
 
 function emptyFeePolicy() {

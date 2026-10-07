@@ -37,9 +37,11 @@ interface CreatorBalance {
   creatorId: string;
   name: string;
   earned: number;
+  pending: number;
   paid: number;
   inFlight: number;
   available: number;
+  debt: number;
 }
 
 const statusStyles: Record<string, string> = {
@@ -69,6 +71,8 @@ const AdminPayouts = () => {
   );
   const createPayoutMutation = useMutation(api.payouts.mutations.createAdmin);
   const setStatusMutation = useMutation(api.payouts.mutations.setStatusAdmin);
+  const runWeeklyBatch = useMutation(api.payouts.batch.runWeeklyConnectPayoutsAdmin);
+  const batchPreview = useQuery(api.payouts.batch.previewWeeklyConnectPayouts);
   const sendConnectPayout = useAction(api.payments.stripeNode.sendConnectPayout);
   const sendReferralCommission = useAction(api.payments.stripeNode.sendReferralCommissionConnect);
   const getConnectPlatformBalance = useAction(
@@ -131,9 +135,11 @@ const AdminPayouts = () => {
       creatorId: b.creatorId,
       name: b.name,
       earned: b.earned,
+      pending: b.pending,
       paid: b.paid,
       inFlight: b.inFlight,
       available: b.available,
+      debt: b.debt,
     }));
   }, [overview]);
 
@@ -379,6 +385,58 @@ const AdminPayouts = () => {
       <DashboardKpiStrip items={primaryKpis} variant="clay" className="mb-6 sm:mb-8" />
 
       <section className={cn(clayCard, 'mb-8 overflow-hidden')}>
+        <div className="flex flex-col gap-3 border-b border-border p-4 sm:flex-row sm:items-center sm:justify-between sm:px-6">
+          <div>
+            <h2 className={adminSectionTitle}>Monday Connect batch</h2>
+            <p className="mt-0.5 text-caption text-muted-foreground">
+              Auto-payouts{' '}
+              {batchPreview?.autoEnabled ? 'enabled' : 'disabled (featureFlags.autoPayoutsEnabled)'}.
+              Eligible now: {batchPreview?.candidateCount ?? '—'}. Hold:{' '}
+              {batchPreview?.earningsHoldDays ?? '—'}d.
+            </p>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            <Button
+              size="sm"
+              variant="outline"
+              className="h-10 text-caption"
+              disabled={busyId === 'batch-dry'}
+              onClick={() => {
+                setBusyId('batch-dry');
+                void runWeeklyBatch({ dryRun: true, force: true })
+                  .then(() => toast.success('Dry-run scheduled — check Convex logs for candidates'))
+                  .catch((e) => toast.error(e instanceof Error ? e.message : 'Dry-run failed'))
+                  .finally(() => setBusyId(null));
+              }}
+            >
+              {busyId === 'batch-dry' ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : 'Dry-run batch'}
+            </Button>
+            <Button
+              size="sm"
+              className="h-10 text-caption"
+              disabled={busyId === 'batch-run'}
+              onClick={() => {
+                if (
+                  !window.confirm(
+                    'Force-run Monday Connect Transfers for eligible creators now? This moves real funds when Stripe is configured.',
+                  )
+                ) {
+                  return;
+                }
+                setBusyId('batch-run');
+                void runWeeklyBatch({ dryRun: false, force: true })
+                  .then(() => toast.success('Batch scheduled'))
+                  .catch((e) => toast.error(e instanceof Error ? e.message : 'Batch failed'))
+                  .finally(() => setBusyId(null));
+              }}
+            >
+              {busyId === 'batch-run' ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : 'Run batch now'}
+            </Button>
+          </div>
+        </div>
+      </section>
+
+      <section className={cn(clayCard, 'mb-8 overflow-hidden')}>
         <div className="flex items-center gap-2 border-b border-border p-4 sm:px-6">
           <Crown className="h-4 w-4 text-muted-foreground" aria-hidden />
           <h2 className={adminSectionTitle}>Creator Balances</h2>
@@ -393,9 +451,13 @@ const AdminPayouts = () => {
                   <p className="text-sm font-medium truncate">{b.name}</p>
                   <div className="grid grid-cols-2 gap-2 text-caption">
                     <div><span className="text-muted-foreground">Lifetime</span><p className="mt-0.5">{fmt(b.earned)}</p></div>
+                    <div><span className="text-muted-foreground">Pending</span><p className="mt-0.5 text-amber-400">{fmt(b.pending)}</p></div>
                     <div><span className="text-muted-foreground">Paid</span><p className="mt-0.5">{fmt(b.paid)}</p></div>
                     <div><span className="text-muted-foreground">In progress</span><p className="mt-0.5 text-amber-400">{fmt(b.inFlight)}</p></div>
                     <div><span className="text-muted-foreground">Available</span><p className="mt-0.5 font-medium text-emerald-400">{fmt(b.available)}</p></div>
+                    {b.debt > 0 ? (
+                      <div><span className="text-muted-foreground">Debt</span><p className="mt-0.5 text-destructive">{fmt(b.debt)}</p></div>
+                    ) : null}
                   </div>
                   <Button
                     size="sm"
@@ -414,10 +476,12 @@ const AdminPayouts = () => {
                 <thead>
                   <tr className="border-b border-border bg-muted/20">
                     <th className="text-left text-caption font-medium text-muted-foreground p-4">Creator</th>
-                    <th className="text-left text-caption font-medium text-muted-foreground p-4">Lifetime Earnings</th>
+                    <th className="text-left text-caption font-medium text-muted-foreground p-4">Lifetime</th>
+                    <th className="text-left text-caption font-medium text-muted-foreground p-4">Pending</th>
                     <th className="text-left text-caption font-medium text-muted-foreground p-4">Paid</th>
                     <th className="text-left text-caption font-medium text-muted-foreground p-4">In Progress</th>
                     <th className="text-left text-caption font-medium text-muted-foreground p-4">Available</th>
+                    <th className="text-left text-caption font-medium text-muted-foreground p-4">Debt</th>
                     <th className="text-right text-caption font-medium text-muted-foreground p-4">Action</th>
                   </tr>
                 </thead>
@@ -426,9 +490,11 @@ const AdminPayouts = () => {
                     <tr key={b.creatorId} className="border-b border-border last:border-0 hover:bg-muted/20 transition-colors">
                       <td className="p-4 font-medium text-caption">{b.name}</td>
                       <td className="p-4 text-caption text-muted-foreground">{fmt(b.earned)}</td>
+                      <td className="p-4 text-caption text-amber-400">{fmt(b.pending)}</td>
                       <td className="p-4 text-caption text-muted-foreground">{fmt(b.paid)}</td>
                       <td className="p-4 text-caption text-amber-400">{fmt(b.inFlight)}</td>
                       <td className="p-4 font-medium text-emerald-400">{fmt(b.available)}</td>
+                      <td className="p-4 text-caption text-destructive">{b.debt > 0 ? fmt(b.debt) : '—'}</td>
                       <td className="p-4 text-right">
                         <Button
                           size="sm"

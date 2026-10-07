@@ -12,6 +12,10 @@ import { assertSandboxEnabled } from "../lib/sandbox";
 import { internal } from "../_generated/api";
 import { ADMIN_SCAN_MAX_DOCS } from "../lib/adminLists";
 import { PRIZELET_LEDGER_CURRENCY } from "../lib/stripeConnect";
+import {
+  computeAvailableAtMs,
+  parsePayoutDefaults,
+} from "../lib/payoutDefaults";
 
 export const sandboxSubscribe = mutation({
   args: {
@@ -72,7 +76,7 @@ export const sandboxSubscribe = mutation({
     const settings = {
       introFeePercent: settingsRow?.introFeePercent ?? 5,
       standardFeePercent: settingsRow?.standardFeePercent ?? 10,
-      introFeeDays: settingsRow?.introFeeDays ?? 90,
+      introFeeDays: settingsRow?.introFeeDays ?? 30,
     };
     const split = calculatePlatformFee(amountCents, creator.createdAt, settings);
     const now = Date.now();
@@ -108,6 +112,10 @@ export const sandboxSubscribe = mutation({
       });
     }
 
+    const holdDays = parsePayoutDefaults(
+      (settingsRow?.payoutDefaults ?? undefined) as Record<string, unknown> | undefined,
+    ).earningsHoldDays;
+    const availableAt = computeAvailableAtMs(now, holdDays);
     await ctx.db.insert("paymentEvents", {
       creatorId: creator._id,
       userId: user._id,
@@ -123,6 +131,8 @@ export const sandboxSubscribe = mutation({
       commercialRef: `sandbox:${sandboxRef}`,
       checkoutSessionId: sandboxRef,
       paymentMode: "sandbox",
+      availableAt,
+      balanceState: holdDays > 0 ? "pending" : "available",
       createdAt: now,
     });
 

@@ -109,7 +109,7 @@ export const CREATOR_TEAM_ROLE_PERMISSIONS: Array<{
 export const CREATOR_BILLING_DEMO = {
   introFeePercent: 5,
   standardFeePercent: 10,
-  introFeeDays: 90,
+  introFeeDays: 30,
   exampleGrossCents: 5299,
 } as const;
 
