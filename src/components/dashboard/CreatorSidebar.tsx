@@ -35,6 +35,7 @@ import {
   sidebarChildDotClass,
   sidebarChildLinkClass,
   sidebarFooterGhostClass,
+  sidebarNavGroupLabelClass,
   sidebarNavIconClass,
   sidebarNavItemClass,
 } from '@/lib/sidebarNav';
@@ -47,17 +48,36 @@ interface NavItem {
   chevron?: boolean;
 }
 
-/** Primary mockup nav order — matches PO Overview chrome. */
-const primaryItems: NavItem[] = [
-  { label: 'Overview', href: '/creator', icon: Home },
-  { label: 'Posts', href: '/creator/posts', icon: PenLine },
-  { label: 'Products', href: '/creator/products', icon: Package },
-  { label: 'Subscribers', href: '/creator/subscribers', icon: Users },
-  { label: 'Performance', href: '/creator/performance-tracker', icon: TrendingUp },
-  { label: 'Messages', href: '/creator/messages', icon: MessageSquare },
-  { label: 'Marketing', href: '/creator/promo', icon: Megaphone, chevron: true },
-  { label: 'Finance', href: '/creator/earnings', icon: DollarSign, chevron: true },
-  { label: 'Growth Manager', href: '/creator/personal-growth-manager', icon: Brain },
+type NavGroup = {
+  label?: string;
+  items: NavItem[];
+};
+
+/** Primary mockup nav order — same items, light grouping for scanability. */
+const primaryGroups: NavGroup[] = [
+  {
+    items: [
+      { label: 'Overview', href: '/creator', icon: Home },
+      { label: 'Posts', href: '/creator/posts', icon: PenLine },
+      { label: 'Products', href: '/creator/products', icon: Package },
+    ],
+  },
+  {
+    label: 'Audience',
+    items: [
+      { label: 'Subscribers', href: '/creator/subscribers', icon: Users },
+      { label: 'Performance', href: '/creator/performance-tracker', icon: TrendingUp },
+      { label: 'Messages', href: '/creator/messages', icon: MessageSquare },
+    ],
+  },
+  {
+    label: 'Business',
+    items: [
+      { label: 'Marketing', href: '/creator/promo', icon: Megaphone, chevron: true },
+      { label: 'Finance', href: '/creator/earnings', icon: DollarSign, chevron: true },
+      { label: 'Growth Manager', href: '/creator/personal-growth-manager', icon: Brain },
+    ],
+  },
 ];
 
 const marketingChildItems: NavItem[] = [
@@ -192,28 +212,44 @@ function ExpandableNavSection({
 }) {
   return (
     <div className="space-y-0.5">
-      <button
-        type="button"
-        aria-expanded={open}
-        onClick={() => onOpenChange(!open)}
-        className={cn(sidebarNavItemClass(active, dark), 'w-full text-left')}
-      >
-        <item.icon className={sidebarNavIconClass(active, dark)} />
-        <span className="flex-1 truncate">{item.label}</span>
-        {item.badge ? <span className={SIDEBAR_BADGE_CLASS}>{item.badge}</span> : null}
-        <ChevronDown
+      <div className={cn(sidebarNavItemClass(active, dark), 'pr-1.5')}>
+        <Link
+          to={item.href}
+          preventScrollReset
+          onClick={(e) => {
+            onOpenChange(true);
+            if (active && open) e.preventDefault();
+          }}
+          className="flex min-w-0 flex-1 items-center gap-3.5"
+        >
+          <item.icon className={sidebarNavIconClass(active, dark)} />
+          <span className="flex-1 truncate text-left">{item.label}</span>
+          {item.badge ? <span className={SIDEBAR_BADGE_CLASS}>{item.badge}</span> : null}
+        </Link>
+        <button
+          type="button"
+          aria-expanded={open}
+          aria-label={open ? `Collapse ${item.label}` : `Expand ${item.label}`}
+          onClick={() => onOpenChange(!open)}
           className={cn(
-            'h-3.5 w-3.5 shrink-0 transition-transform duration-150',
-            open ? 'rotate-0' : '-rotate-90',
-            dark
-              ? active
-                ? 'text-[var(--active-text)]'
-                : 'text-[var(--text-muted)] group-hover:text-[var(--text-primary)]'
-              : 'text-muted-foreground',
+            'flex h-8 w-8 shrink-0 items-center justify-center rounded-md transition-colors',
+            dark ? 'hover:bg-white/[0.08]' : 'hover:bg-black/[0.05]',
           )}
-          aria-hidden
-        />
-      </button>
+        >
+          <ChevronDown
+            className={cn(
+              'h-3.5 w-3.5 shrink-0 transition-transform duration-150',
+              open ? 'rotate-0' : '-rotate-90',
+              dark
+                ? active
+                  ? 'text-[var(--active-text)]'
+                  : 'text-[var(--text-muted)]'
+                : 'text-muted-foreground',
+            )}
+            aria-hidden
+          />
+        </button>
+      </div>
       {open ? (
         <div
           className={cn(
@@ -322,68 +358,81 @@ export function CreatorSidebar({ mobile = false }: { mobile?: boolean } = {}) {
         </div>
       )}
 
-      <nav className={cn('flex-1 space-y-1 overflow-y-auto px-3 pb-4', mobile && 'pt-4')}>
-        {primaryItems.map((item) => {
-          if (item.href === '/creator/promo') {
-            return (
-              <ExpandableNavSection
-                key={item.href}
-                item={withBadges(item)}
-                active={marketingActive}
-                dark={dark}
-                open={marketingOpen}
-                onOpenChange={setMarketingOpen}
-              >
-                {marketingChildItems.map((child) => (
-                  <ChildNavLink
-                    key={child.href}
-                    href={child.href}
-                    label={child.label}
-                    active={isMarketingChildActive(pathname, child.href)}
+      <nav
+        className={cn(
+          'flex-1 overflow-y-auto overscroll-y-contain px-3 pb-4',
+          '[scrollbar-width:thin]',
+          mobile && 'pt-4',
+        )}
+      >
+        {primaryGroups.map((group) => (
+          <div key={group.label ?? 'main'} className="space-y-0.5">
+            {group.label ? (
+              <p className={sidebarNavGroupLabelClass(dark)}>{group.label}</p>
+            ) : null}
+            {group.items.map((item) => {
+              if (item.href === '/creator/promo') {
+                return (
+                  <ExpandableNavSection
+                    key={item.href}
+                    item={withBadges(item)}
+                    active={marketingActive}
                     dark={dark}
-                  />
-                ))}
-              </ExpandableNavSection>
-            );
-          }
+                    open={marketingOpen}
+                    onOpenChange={setMarketingOpen}
+                  >
+                    {marketingChildItems.map((child) => (
+                      <ChildNavLink
+                        key={child.href}
+                        href={child.href}
+                        label={child.label}
+                        active={isMarketingChildActive(pathname, child.href)}
+                        dark={dark}
+                      />
+                    ))}
+                  </ExpandableNavSection>
+                );
+              }
 
-          if (item.href === '/creator/earnings') {
-            return (
-              <ExpandableNavSection
-                key={item.href}
-                item={withBadges(item)}
-                active={earningsActive}
-                dark={dark}
-                open={earningsOpen}
-                onOpenChange={setEarningsOpen}
-              >
-                {earningsChildItems.map((child) => (
-                  <ChildNavLink
-                    key={child.href}
-                    href={child.href}
-                    label={child.label}
-                    active={isEarningsChildActive(pathname, child.href, hash)}
+              if (item.href === '/creator/earnings') {
+                return (
+                  <ExpandableNavSection
+                    key={item.href}
+                    item={withBadges(item)}
+                    active={earningsActive}
                     dark={dark}
-                    badge={
-                      child.href === '/creator/resolution-case'
-                        ? formatBadge(resolutionUnread ?? 0)
-                        : undefined
-                    }
-                  />
-                ))}
-              </ExpandableNavSection>
-            );
-          }
+                    open={earningsOpen}
+                    onOpenChange={setEarningsOpen}
+                  >
+                    {earningsChildItems.map((child) => (
+                      <ChildNavLink
+                        key={child.href}
+                        href={child.href}
+                        label={child.label}
+                        active={isEarningsChildActive(pathname, child.href, hash)}
+                        dark={dark}
+                        badge={
+                          child.href === '/creator/resolution-case'
+                            ? formatBadge(resolutionUnread ?? 0)
+                            : undefined
+                        }
+                      />
+                    ))}
+                  </ExpandableNavSection>
+                );
+              }
 
-          return (
-            <NavItemLink
-              key={item.href}
-              item={withBadges(item)}
-              active={isActivePath(pathname, item.href)}
-              dark={dark}
-            />
-          );
-        })}
+              return (
+                <NavItemLink
+                  key={item.href}
+                  item={withBadges(item)}
+                  active={isActivePath(pathname, item.href)}
+                  dark={dark}
+                />
+              );
+            })}
+          </div>
+        ))}
       </nav>
 
       <div

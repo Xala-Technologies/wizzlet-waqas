@@ -58,3 +58,12 @@ export function sidebarFooterGhostClass(dark: boolean): string {
 
 export const SIDEBAR_BADGE_CLASS =
   'flex h-[22px] min-w-[22px] items-center justify-center rounded-full bg-[var(--danger)] px-1.5 text-[12px] font-bold text-white';
+
+/** Soft section label inside dashboard sidebars — hierarchy without redesign. */
+export function sidebarNavGroupLabelClass(dark: boolean): string {
+  return cn(
+    'px-4 pb-1.5 pt-3 text-[11px] font-semibold uppercase tracking-[0.08em]',
+    'first:pt-1',
+    dark ? 'text-[var(--text-muted)]' : 'text-muted-foreground/80',
+  );
+}

@@ -91,6 +91,9 @@ export default {
         lg: "var(--radius)",
         md: "calc(var(--radius) - 2px)",
         sm: "calc(var(--radius) - 4px)",
+        xl: "var(--radius-xl)",
+        "2xl": "var(--radius-2xl)",
+        "3xl": "var(--radius-2xl)",
       },
       keyframes: {
         "accordion-down": {

@@ -1,8 +1,9 @@
-import { Crown, Layers, Users } from 'lucide-react';
+import { Package, Users } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Checkbox } from '@/components/ui/checkbox';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 
+/** `premium` kept for older edits — treated as product targeting. */
 export type PostVisibilityMode = 'all' | 'premium' | 'products';
 
 export type PostVisibilityProduct = {
@@ -19,8 +20,6 @@ type PostVisibilityPickerProps = {
   products: PostVisibilityProduct[];
   selectedProductIds: string[];
   onSelectedProductIdsChange: (ids: string[]) => void;
-  /** Product id used for the “Premium only” shortcut (featured / Premium tier). */
-  premiumProductId?: string | null;
   className?: string;
 };
 
@@ -40,56 +39,29 @@ export function PostVisibilityPicker({
   products,
   selectedProductIds,
   onSelectedProductIdsChange,
-  premiumProductId,
   className,
 }: PostVisibilityPickerProps) {
   const selected = new Set(selectedProductIds);
-  const showProductList = mode === 'products' || mode === 'premium';
+  const targetingProducts = mode === 'products' || mode === 'premium';
+  const radioValue = targetingProducts ? 'products' : 'all';
 
   const toggleProduct = (id: string) => {
     const next = new Set(selected);
     if (next.has(id)) next.delete(id);
     else next.add(id);
-    onSelectedProductIdsChange([...next]);
+    const ids = [...next];
+    onSelectedProductIdsChange(ids);
+    onModeChange(ids.length > 0 ? 'products' : 'all');
   };
 
-  const handleModeChange = (next: PostVisibilityMode) => {
-    onModeChange(next);
-    if (next === 'premium' && premiumProductId) {
-      onSelectedProductIdsChange([premiumProductId]);
-    }
+  const handleModeChange = (next: 'all' | 'products') => {
     if (next === 'all') {
+      onModeChange('all');
       onSelectedProductIdsChange([]);
+      return;
     }
+    onModeChange('products');
   };
-
-  const options: Array<{
-    value: PostVisibilityMode;
-    label: string;
-    description: string;
-    icon: typeof Users;
-  }> = [
-    {
-      value: 'all',
-      label: 'All subscribers',
-      description: 'Visible to everyone who subscribes to your page.',
-      icon: Users,
-    },
-    {
-      value: 'premium',
-      label: 'Premium only',
-      description: premiumProductId
-        ? 'Only subscribers to your Premium product can see this post.'
-        : 'Only paying subscribers can see this post.',
-      icon: Crown,
-    },
-    {
-      value: 'products',
-      label: 'Specific product(s)',
-      description: 'Choose one or more products.',
-      icon: Layers,
-    },
-  ];
 
   return (
     <section className={cn('space-y-3', className)}>
@@ -101,52 +73,67 @@ export function PostVisibilityPicker({
       </div>
 
       <RadioGroup
-        value={mode}
-        onValueChange={(v) => handleModeChange(v as PostVisibilityMode)}
+        value={radioValue}
+        onValueChange={(v) => handleModeChange(v as 'all' | 'products')}
         className="gap-2"
       >
-        {options.map((opt) => {
-          const active = mode === opt.value;
-          const Icon = opt.icon;
-          return (
-            <label
-              key={opt.value}
-              className={cn(
-                'flex cursor-pointer items-start gap-3 rounded-xl border px-3.5 py-3 transition-colors',
-                active
-                  ? 'border-primary/40 bg-primary/5'
-                  : 'border-border bg-background hover:bg-muted/40',
-              )}
-            >
-              <RadioGroupItem value={opt.value} className="mt-1" aria-label={opt.label} />
-              <span
-                className={cn(
-                  'mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg',
-                  active ? 'bg-primary/15 text-primary' : 'bg-muted text-muted-foreground',
-                )}
-              >
-                <Icon className="h-4 w-4" aria-hidden />
-              </span>
-              <span className="min-w-0 flex-1">
-                <span className="block text-sm font-semibold text-foreground">{opt.label}</span>
-                <span className="mt-0.5 block text-caption text-muted-foreground">
-                  {opt.description}
-                </span>
-              </span>
-            </label>
-          );
-        })}
-      </RadioGroup>
-
-      {showProductList ? (
-        <div
+        <label
           className={cn(
-            'rounded-xl border border-border bg-background/60 p-3',
-            mode === 'premium' && 'opacity-90',
+            'flex cursor-pointer items-start gap-3 rounded-xl border px-3.5 py-3 transition-colors',
+            radioValue === 'all'
+              ? 'border-primary/40 bg-primary/5'
+              : 'border-border bg-background hover:bg-muted/40',
           )}
         >
+          <RadioGroupItem value="all" className="mt-1" aria-label="All subscribers" />
+          <span
+            className={cn(
+              'mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg',
+              radioValue === 'all' ? 'bg-primary/15 text-primary' : 'bg-muted text-muted-foreground',
+            )}
+          >
+            <Users className="h-4 w-4" aria-hidden />
+          </span>
+          <span className="min-w-0 flex-1">
+            <span className="block text-sm font-semibold text-foreground">All subscribers</span>
+            <span className="mt-0.5 block text-caption text-muted-foreground">
+              Visible to everyone who subscribes to your page.
+            </span>
+          </span>
+        </label>
+
+        <label
+          className={cn(
+            'flex cursor-pointer items-start gap-3 rounded-xl border px-3.5 py-3 transition-colors',
+            radioValue === 'products'
+              ? 'border-primary/40 bg-primary/5'
+              : 'border-border bg-background hover:bg-muted/40',
+          )}
+        >
+          <RadioGroupItem value="products" className="mt-1" aria-label="Premium products" />
+          <span
+            className={cn(
+              'mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg',
+              radioValue === 'products'
+                ? 'bg-primary/15 text-primary'
+                : 'bg-muted text-muted-foreground',
+            )}
+          >
+            <Package className="h-4 w-4" aria-hidden />
+          </span>
+          <span className="min-w-0 flex-1">
+            <span className="block text-sm font-semibold text-foreground">Premium products</span>
+            <span className="mt-0.5 block text-caption text-muted-foreground">
+              Choose which of your products can see this post.
+            </span>
+          </span>
+        </label>
+      </RadioGroup>
+
+      {radioValue === 'products' ? (
+        <div className="rounded-xl border border-border bg-background/60 p-3">
           <p className="mb-2 text-caption font-semibold text-muted-foreground">
-            {mode === 'premium' ? 'Premium product' : 'Select product(s)'}
+            Select product(s)
           </p>
           {products.length === 0 ? (
             <p className="rounded-lg border border-dashed border-border px-3 py-4 text-center text-caption text-muted-foreground">
@@ -156,24 +143,19 @@ export function PostVisibilityPicker({
             <ul className="space-y-1.5">
               {products.map((product) => {
                 const checked = selected.has(product.id);
-                const disabled = mode === 'premium' && product.id !== premiumProductId;
                 return (
                   <li key={product.id}>
                     <label
                       className={cn(
-                        'flex items-center gap-3 rounded-lg border px-3 py-2.5 transition-colors',
+                        'flex cursor-pointer items-center gap-3 rounded-lg border px-3 py-2.5 transition-colors',
                         checked
                           ? 'border-primary/35 bg-primary/5'
                           : 'border-transparent hover:bg-muted/50',
-                        disabled && 'cursor-not-allowed opacity-45',
                       )}
                     >
                       <Checkbox
                         checked={checked}
-                        disabled={disabled || mode === 'premium'}
-                        onCheckedChange={() => {
-                          if (mode === 'products') toggleProduct(product.id);
-                        }}
+                        onCheckedChange={() => toggleProduct(product.id)}
                         aria-label={product.name}
                       />
                       <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-muted text-sm font-bold text-foreground">
@@ -194,7 +176,7 @@ export function PostVisibilityPicker({
               })}
             </ul>
           )}
-          {mode === 'products' && products.length > 0 && selectedProductIds.length === 0 ? (
+          {products.length > 0 && selectedProductIds.length === 0 ? (
             <p className="mt-2 text-caption text-amber-700 dark:text-amber-300">
               Select at least one product, or switch to All subscribers.
             </p>
