@@ -455,42 +455,20 @@ export function CreateProductForm({
         onChange={(e) => void handleImagePick(e.target.files?.[0])}
       />
 
-      <div className="mb-6 flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-        <div className="min-w-0">
-          <button
-            type="button"
-            onClick={onCancel}
-            className="mb-3 text-sm font-semibold text-muted-foreground transition-colors hover:text-foreground"
-          >
-            ← Back to Products
-          </button>
-          <h1 className="text-2xl font-extrabold tracking-tight text-foreground sm:text-3xl">
-            {initial?.id ? 'Edit Product' : 'Create Product'}
-          </h1>
-          <p className="mt-1.5 max-w-xl text-sm font-medium text-muted-foreground">
-            Set up your product and start earning. You can always edit it later.
-          </p>
-        </div>
-        <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row">
-          <Button
-            type="button"
-            variant="outline"
-            className="h-11 rounded-xl"
-            disabled={saving || uploading}
-            onClick={() => void save(true)}
-          >
-            Save as Draft
-          </Button>
-          <Button
-            type="button"
-            className="h-11 rounded-xl"
-            disabled={saving || uploading}
-            onClick={() => void save(false)}
-          >
-            {saving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-            {initial?.id ? 'Publish changes' : 'Publish Product'}
-          </Button>
-        </div>
+      <div className="mb-6 min-w-0">
+        <button
+          type="button"
+          onClick={onCancel}
+          className="mb-3 text-sm font-semibold text-muted-foreground transition-colors hover:text-foreground"
+        >
+          ← Back to Products
+        </button>
+        <h1 className="text-2xl font-extrabold tracking-tight text-foreground sm:text-3xl">
+          {initial?.id ? 'Edit Product' : 'Create Product'}
+        </h1>
+        <p className="mt-1.5 max-w-xl text-sm font-medium text-muted-foreground">
+          Set up your product and start earning. You can always edit it later.
+        </p>
       </div>
 
       <div className="grid grid-cols-1 gap-5 xl:grid-cols-12 xl:items-stretch">
@@ -892,82 +870,110 @@ export function CreateProductForm({
         </div>
 
         <aside className="xl:col-span-4">
-          <div className="overflow-hidden rounded-2xl border border-border bg-card shadow-[var(--shadow-card)] xl:sticky xl:top-[calc(var(--topbar-height)+1rem)] xl:max-h-[calc(100dvh-var(--topbar-height)-2rem)] xl:overflow-y-auto xl:overflow-x-hidden">
-            <div className="border-b border-border px-4 py-3">
-              <p className="text-sm font-extrabold text-foreground">Preview</p>
-              <p className="text-xs text-muted-foreground">How fans will see this offer</p>
-            </div>
-            <div className="aspect-video bg-muted/40">
-              {imagePreviewUrl ? (
-                <img src={imagePreviewUrl} alt="" className="h-full w-full object-cover" />
-              ) : (
-                <div className="flex h-full items-center justify-center text-muted-foreground">
-                  <Sparkles className="h-8 w-8 opacity-40" aria-hidden />
-                </div>
-              )}
-            </div>
-            <div className="space-y-4 p-5">
-              <div>
-                <div className="flex flex-wrap items-center gap-2">
-                  <p className="text-lg font-extrabold tracking-tight text-foreground">
-                    {name.trim() || 'Product name'}
-                  </p>
-                  {isFeatured ? (
-                    <span className="inline-flex items-center gap-1 rounded-full bg-amber-500/15 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-amber-700 dark:text-amber-400">
-                      <Star className="h-3 w-3 fill-current" aria-hidden />
-                      Featured
-                    </span>
-                  ) : null}
-                </div>
-                <p className="mt-1 text-sm text-muted-foreground">
-                  {shortDescription.trim() ||
-                    description.trim().slice(0, 100) ||
-                    'Short description appears here.'}
-                </p>
+          <div
+            className={cn(
+              'flex flex-col overflow-hidden rounded-2xl border border-border bg-card shadow-[var(--shadow-card)]',
+              'xl:sticky xl:top-[calc(var(--topbar-height)+1rem)] xl:max-h-[calc(100dvh-var(--topbar-height)-2rem)]',
+            )}
+          >
+            <div className="min-h-0 flex-1 xl:overflow-y-auto xl:overflow-x-hidden">
+              <div className="border-b border-border px-4 py-3">
+                <p className="text-sm font-extrabold text-foreground">Preview</p>
+                <p className="text-xs text-muted-foreground">How fans will see this offer</p>
               </div>
-              <div className="flex items-center gap-2">
-                {creatorAvatarUrl ? (
-                  <img
-                    src={creatorAvatarUrl}
-                    alt=""
-                    className="h-8 w-8 rounded-full border border-border object-cover"
-                  />
+              <div className="aspect-video bg-muted/40">
+                {imagePreviewUrl ? (
+                  <img src={imagePreviewUrl} alt="" className="h-full w-full object-cover" />
                 ) : (
-                  <span className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/15 text-xs font-bold text-primary">
-                    {creatorName.slice(0, 1).toUpperCase()}
-                  </span>
+                  <div className="flex h-full items-center justify-center text-muted-foreground">
+                    <Sparkles className="h-8 w-8 opacity-40" aria-hidden />
+                  </div>
                 )}
-                <div className="min-w-0">
-                  <p className="truncate text-sm font-bold text-foreground">{creatorName}</p>
-                  <p className="inline-flex items-center gap-1 text-xs font-semibold text-amber-600 dark:text-amber-400">
-                    <Star className="h-3 w-3 fill-current" aria-hidden />
-                    4.9
-                    <span className="font-medium text-muted-foreground">(120 reviews)</span>
+              </div>
+              <div className="space-y-4 p-5">
+                <div>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <p className="text-lg font-extrabold tracking-tight text-foreground">
+                      {name.trim() || 'Product name'}
+                    </p>
+                    {isFeatured ? (
+                      <span className="inline-flex items-center gap-1 rounded-full bg-amber-500/15 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-amber-700 dark:text-amber-400">
+                        <Star className="h-3 w-3 fill-current" aria-hidden />
+                        Featured
+                      </span>
+                    ) : null}
+                  </div>
+                  <p className="mt-1 text-sm text-muted-foreground">
+                    {shortDescription.trim() ||
+                      description.trim().slice(0, 100) ||
+                      'Short description appears here.'}
                   </p>
                 </div>
+                <div className="flex items-center gap-2">
+                  {creatorAvatarUrl ? (
+                    <img
+                      src={creatorAvatarUrl}
+                      alt=""
+                      className="h-8 w-8 rounded-full border border-border object-cover"
+                    />
+                  ) : (
+                    <span className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/15 text-xs font-bold text-primary">
+                      {creatorName.slice(0, 1).toUpperCase()}
+                    </span>
+                  )}
+                  <div className="min-w-0">
+                    <p className="truncate text-sm font-bold text-foreground">{creatorName}</p>
+                    <p className="inline-flex items-center gap-1 text-xs font-semibold text-amber-600 dark:text-amber-400">
+                      <Star className="h-3 w-3 fill-current" aria-hidden />
+                      4.9
+                      <span className="font-medium text-muted-foreground">(120 reviews)</span>
+                    </p>
+                  </div>
+                </div>
+                <div>
+                  <p className="text-2xl font-extrabold tabular-nums text-foreground">{priceLabel}</p>
+                  {freeTrial && payType === 'subscription' ? (
+                    <p className="mt-1 text-xs font-semibold text-emerald-600 dark:text-emerald-400">
+                      {trialDays || '7'}-day free trial
+                    </p>
+                  ) : null}
+                  <Button type="button" className="mt-3 h-11 w-full rounded-xl" disabled>
+                    Get Access
+                  </Button>
+                </div>
+                <div>
+                  <p className="mb-2 text-sm font-extrabold text-foreground">What&apos;s included</p>
+                  <ul className="space-y-2">
+                    {includedFeatures.map((f) => (
+                      <li key={f} className="flex items-start gap-2 text-sm text-foreground">
+                        <Check className="mt-0.5 h-4 w-4 shrink-0 text-emerald-600" aria-hidden />
+                        <span>{f}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
               </div>
-              <div>
-                <p className="text-2xl font-extrabold tabular-nums text-foreground">{priceLabel}</p>
-                {freeTrial && payType === 'subscription' ? (
-                  <p className="mt-1 text-xs font-semibold text-emerald-600 dark:text-emerald-400">
-                    {trialDays || '7'}-day free trial
-                  </p>
-                ) : null}
-                <Button type="button" className="mt-3 h-11 w-full rounded-xl" disabled>
-                  Get Access
-                </Button>
-              </div>
-              <div>
-                <p className="mb-2 text-sm font-extrabold text-foreground">What&apos;s included</p>
-                <ul className="space-y-2">
-                  {includedFeatures.map((f) => (
-                    <li key={f} className="flex items-start gap-2 text-sm text-foreground">
-                      <Check className="mt-0.5 h-4 w-4 shrink-0 text-emerald-600" aria-hidden />
-                      <span>{f}</span>
-                    </li>
-                  ))}
-                </ul>
-              </div>
+            </div>
+
+            <div className="shrink-0 space-y-2 border-t border-border bg-card p-4">
+              <Button
+                type="button"
+                className="h-11 w-full rounded-xl"
+                disabled={saving || uploading}
+                onClick={() => void save(false)}
+              >
+                {saving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+                {initial?.id ? 'Publish changes' : 'Publish Product'}
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                className="h-11 w-full rounded-xl"
+                disabled={saving || uploading}
+                onClick={() => void save(true)}
+              >
+                Save as Draft
+              </Button>
             </div>
           </div>
         </aside>

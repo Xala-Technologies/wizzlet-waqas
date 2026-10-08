@@ -51,7 +51,6 @@ import {
 } from '@/lib/creatorPicksDemo';
 import { clayCard } from '@/lib/overviewClay';
 import { kpiIconTone, resultPillTone } from '@/lib/kpiIconTones';
-import { isSettledPickResult } from '../../convex/lib/results';
 import { Checkbox } from '@/components/ui/checkbox';
 import {
   PostVisibilityPicker,
@@ -260,7 +259,6 @@ const CreatorPosts = () => {
   const subsRaw = useQuery(api.subscriptions.mutations.listForMyCreator);
   const upsertPost = useMutation(api.posts.queries.upsert);
   const removePost = useMutation(api.posts.queries.remove);
-  const setPostResult = useMutation(api.posts.queries.setResult);
 
   const loading = creator === undefined || postsStatus === 'LoadingFirstPage';
   const creatorId = creator?._id ?? null;
@@ -330,13 +328,6 @@ const CreatorPosts = () => {
         subscriberCount: r.subscribers,
       }));
   }, [productsRaw, subsRaw]);
-
-  const premiumProductId = useMemo(() => {
-    const byName = visibilityProducts.find((p) => /premium/i.test(p.name));
-    if (byName) return byName.id;
-    const featured = (productsRaw ?? []).find((p) => p.isFeatured && p.isActive);
-    return featured?._id ?? visibilityProducts[0]?.id ?? null;
-  }, [productsRaw, visibilityProducts]);
 
   const enriched = useMemo(() => posts.map(enrichPost), [posts]);
 
@@ -444,7 +435,7 @@ const CreatorPosts = () => {
   const guardDemoAction = (id?: string): boolean => {
     if (useDemo || (id && isCreatorPicksDemoId(id))) {
       toast.message('Sample preview data', {
-        description: 'Publish a real pick to edit, settle, or delete live rows. Add ?demo=0 to hide samples.',
+        description: 'Publish a real pick to edit or delete live rows. Add ?demo=0 to hide samples.',
       });
       return true;
     }
@@ -491,11 +482,7 @@ const CreatorPosts = () => {
       setVisibilityMode('all');
       setSelectedProductIds([]);
     } else if (post.visible_product_ids.length > 0) {
-      const onlyPremium =
-        premiumProductId &&
-        post.visible_product_ids.length === 1 &&
-        post.visible_product_ids[0] === premiumProductId;
-      setVisibilityMode(onlyPremium ? 'premium' : 'products');
+      setVisibilityMode('products');
       setSelectedProductIds(post.visible_product_ids);
     } else {
       setVisibilityMode('all');
@@ -556,25 +543,20 @@ const CreatorPosts = () => {
       toast.error('Creator profile not ready — try again in a moment');
       return;
     }
-    if (visibilityMode === 'products' && selectedProductIds.length === 0) {
+    if (
+      (visibilityMode === 'products' || visibilityMode === 'premium') &&
+      selectedProductIds.length === 0
+    ) {
       toast.error('Select at least one product for this post');
       return;
     }
     if (
-      visibilityMode === 'products' &&
+      (visibilityMode === 'products' || visibilityMode === 'premium') &&
       selectedProductIds.some((id) => id.startsWith('demo-'))
     ) {
       toast.message('Sample products', {
-        description: 'Create a real product before targeting specific tiers. Add ?demo=0 after you have products.',
-      });
-      return;
-    }
-    if (
-      visibilityMode === 'premium' &&
-      premiumProductId?.startsWith('demo-')
-    ) {
-      toast.message('Sample products', {
-        description: 'Create a real Premium product before publishing with this audience.',
+        description:
+          'Create a real product before targeting specific tiers. Add ?demo=0 after you have products.',
       });
       return;
     }
@@ -582,13 +564,7 @@ const CreatorPosts = () => {
     const contentStr = buildContent();
     const isPremium = true;
     const visibleProductIds =
-      visibilityMode === 'all'
-        ? []
-        : visibilityMode === 'premium'
-          ? premiumProductId && !premiumProductId.startsWith('demo-')
-            ? [premiumProductId as Id<'products'>]
-            : []
-          : (selectedProductIds as Id<'products'>[]);
+      visibilityMode === 'all' ? [] : (selectedProductIds as Id<'products'>[]);
     try {
       await upsertPost({
         postId: editId ? (editId as Id<'posts'>) : undefined,
@@ -603,25 +579,6 @@ const CreatorPosts = () => {
       toast.error(e instanceof Error ? e.message : 'Failed to save post');
     } finally {
       setSaving(false);
-    }
-  };
-
-  const settlePost = async (post: Post, result: 'won' | 'lost' | 'push') => {
-    if (guardDemoAction(post.id)) return;
-    if (isSettledPickResult(post.result)) {
-      toast.error('Settled results are locked and cannot be changed');
-      return;
-    }
-    try {
-      await setPostResult({ postId: post.id as Id<'posts'>, result });
-      toast.success(`Marked as ${result}`);
-    } catch (e) {
-      const msg = e instanceof Error ? e.message : '';
-      if (msg.includes('RESULT_LOCKED')) {
-        toast.error('Settled results are locked and cannot be changed');
-      } else {
-        toast.error(msg || 'Failed to settle pick');
-      }
     }
   };
 
@@ -810,7 +767,6 @@ const CreatorPosts = () => {
               products={visibilityProducts}
               selectedProductIds={selectedProductIds}
               onSelectedProductIdsChange={setSelectedProductIds}
-              premiumProductId={premiumProductId}
             />
 
             <div className="space-y-2">
@@ -1275,28 +1231,6 @@ const CreatorPosts = () => {
                             <DropdownMenuItem onClick={() => openEdit(row)}>
                               <Pencil className="mr-2 h-4 w-4" /> Edit
                             </DropdownMenuItem>
-                            {!isSettledPickResult(row.result) ? (
-                              <>
-                                <DropdownMenuItem onClick={() => void settlePost(row, 'won')}>
-                                  Mark as won
-                                </DropdownMenuItem>
-                                <DropdownMenuItem onClick={() => void settlePost(row, 'lost')}>
-                                  Mark as lost
-                                </DropdownMenuItem>
-                                <DropdownMenuItem onClick={() => void settlePost(row, 'push')}>
-                                  Mark as push
-                                </DropdownMenuItem>
-                              </>
-                            ) : (
-                              <DropdownMenuItem
-                                disabled
-                                onClick={() =>
-                                  toast.error('Settled results are locked and cannot be changed')
-                                }
-                              >
-                                Result locked
-                              </DropdownMenuItem>
-                            )}
                             <DropdownMenuItem
                               className="text-destructive focus:text-destructive"
                               onClick={() => setDeleteId(row.id)}
