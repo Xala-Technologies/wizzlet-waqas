@@ -7,6 +7,7 @@ import {
 } from "../lib/auth";
 import { internal } from "../_generated/api";
 import { ADMIN_SCAN_MAX_DOCS } from "../lib/adminLists";
+import { subscriptionGrantsContentAccess } from "../lib/contentAccess";
 
 const BOT_PERMISSIONS = 268435457; // Manage Roles + Create Instant Invite
 
@@ -120,7 +121,7 @@ export const retryMyAccess = mutation({
         q.eq("userId", user._id).eq("creatorId", args.creatorId),
       )
       .take(ADMIN_SCAN_MAX_DOCS);
-    const allowed = subs.some((s) => s.status === "active" || s.status === "past_due");
+    const allowed = subs.some((s) => subscriptionGrantsContentAccess(s, Date.now()));
     if (!allowed) throw new ConvexError("FORBIDDEN");
     await ctx.scheduler.runAfter(0, internal.discord.roles.syncSubscriberRole, {
       userId: user._id,

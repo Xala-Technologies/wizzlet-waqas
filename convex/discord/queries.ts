@@ -3,6 +3,7 @@ import { v } from "convex/values";
 import { getAuthUserId } from "@convex-dev/auth/server";
 import { getCreatorForUser, requireAppUser } from "../lib/auth";
 import { ADMIN_SCAN_MAX_DOCS } from "../lib/adminLists";
+import { subscriptionGrantsContentAccess } from "../lib/contentAccess";
 
 function discordClientId(): string | null {
   return (
@@ -131,7 +132,7 @@ export const roleSyncPrep = internalQuery({
         )
         .take(ADMIN_SCAN_MAX_DOCS);
       const active =
-        subs.find((s) => s.status === "active" || s.status === "past_due") ?? subs[0];
+        subs.find((s) => subscriptionGrantsContentAccess(s, Date.now())) ?? subs[0];
       productId = active?.productId;
     }
 
@@ -197,7 +198,7 @@ export const memberAccess = query({
         q.eq("userId", userId).eq("creatorId", creator._id),
       )
       .take(ADMIN_SCAN_MAX_DOCS);
-    const sub = subs.find((s) => s.status === "active" || s.status === "past_due");
+    const sub = subs.find((s) => subscriptionGrantsContentAccess(s, Date.now()));
     if (!sub) return { includesDiscord: false as const };
 
     let includes = false;
@@ -246,6 +247,7 @@ export const hasActiveAccess = internalQuery({
   args: {
     userId: v.id("users"),
     creatorId: v.id("creators"),
+    productId: v.optional(v.id("products")),
   },
   returns: v.boolean(),
   handler: async (ctx, args) => {
@@ -255,7 +257,10 @@ export const hasActiveAccess = internalQuery({
         q.eq("userId", args.userId).eq("creatorId", args.creatorId),
       )
       .take(ADMIN_SCAN_MAX_DOCS);
-    return subs.some((s) => s.status === "active" || s.status === "past_due");
+    return subs.some((s) =>
+      (!args.productId || s.productId === args.productId) &&
+      subscriptionGrantsContentAccess(s, Date.now()),
+    );
   },
 });
 

@@ -52,6 +52,7 @@ export const listByCreator = query({
   args: { creatorId: v.id("creators"), activeOnly: v.optional(v.boolean()) },
   returns: v.array(productDocValidator),
   handler: async (ctx, args) => {
+    await requireCreatorOwner(ctx, args.creatorId);
     const rows = await ctx.db
       .query("products")
       .withIndex("by_creatorId", (q) => q.eq("creatorId", args.creatorId))

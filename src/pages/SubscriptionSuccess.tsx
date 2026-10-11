@@ -1,14 +1,15 @@
 import { useEffect, useState } from 'react';
-import { Link, useSearchParams } from 'react-router-dom';
-import { useAction, useMutation, useQuery } from 'convex/react';
+import { Link, useLocation, useSearchParams } from 'react-router-dom';
+import { useAction, useConvexAuth, useMutation, useQuery } from 'convex/react';
 import { useAuthActions } from '@convex-dev/auth/react';
 import { Button } from '@/components/ui/button';
-import { CheckCircle, Loader2 } from 'lucide-react';
+import { CheckCircle, CircleHelp, Loader2 } from 'lucide-react';
 import { confirmStripeCheckoutSession, PAYMENTS_MODE } from '@/lib/stripe';
 import { creatorProfilePath } from '@/lib/creatorProfilePath';
 import { api } from '../../convex/_generated/api';
 import { authCallbackUrl, ensureCanonicalAuthOrigin } from '@/lib/authSession';
-import { storeReturnTo } from '@/lib/safeReturnPath';
+import { buildLoginHref, storeReturnTo } from '@/lib/safeReturnPath';
+import { subscriptionGrantsContentAccess } from '../../convex/lib/contentAccess';
 import { toast } from 'sonner';
 
 function DiscordMark({ className }: { className?: string }) {
@@ -26,34 +27,49 @@ const SubscriptionSuccess = () => {
   const [searchParams] = useSearchParams();
   const creatorUsername = searchParams.get('creator');
   const sessionId = searchParams.get('session_id');
+  const location = useLocation();
+  const { isLoading: authLoading, isAuthenticated } = useConvexAuth();
   const { signIn } = useAuthActions();
-  const [confirming, setConfirming] = useState(
-    () => PAYMENTS_MODE === 'stripe' && !!sessionId,
-  );
-  const [confirmFailed, setConfirmFailed] = useState(false);
+  const [confirmation, setConfirmation] = useState<{
+    sessionId: string;
+    state: 'confirmed' | 'failed';
+  } | null>(null);
   const [inviteBusy, setInviteBusy] = useState(false);
   const [later, setLater] = useState(false);
 
   const access = useQuery(
     api.discord.queries.memberAccess,
-    creatorUsername ? { creatorUsername } : 'skip',
+    creatorUsername && isAuthenticated ? { creatorUsername } : 'skip',
+  );
+  const subscriptions = useQuery(
+    api.subscriptions.mutations.mySubscriptionsDetailed,
+    !sessionId && creatorUsername && isAuthenticated ? {} : 'skip',
   );
   const createInvite = useAction(api.discord.roles.createMemberInvite);
   const retryAccess = useMutation(api.discord.mutations.retryMyAccess);
 
   useEffect(() => {
-    if (PAYMENTS_MODE !== 'stripe' || !sessionId) return;
+    if (authLoading || !isAuthenticated || PAYMENTS_MODE !== 'stripe' || !sessionId) return;
     let cancelled = false;
     void (async () => {
-      const ok = await confirmStripeCheckoutSession(sessionId);
+      const ok = await confirmStripeCheckoutSession(sessionId).catch(() => false);
       if (cancelled) return;
-      setConfirming(false);
-      if (!ok) setConfirmFailed(true);
+      setConfirmation({ sessionId, state: ok ? 'confirmed' : 'failed' });
     })();
     return () => {
       cancelled = true;
     };
-  }, [sessionId]);
+  }, [sessionId, authLoading, isAuthenticated]);
+
+  const currentConfirmation = confirmation?.sessionId === sessionId ? confirmation.state : null;
+  const confirmed = isAuthenticated && (sessionId
+    ? currentConfirmation === 'confirmed'
+    : Boolean(subscriptions?.some((sub) =>
+        sub.creator.username === creatorUsername && subscriptionGrantsContentAccess(sub, Date.now()),
+      )));
+  const confirming = authLoading || (isAuthenticated && (sessionId
+    ? PAYMENTS_MODE === 'stripe' && currentConfirmation === null
+    : Boolean(creatorUsername) && subscriptions === undefined));
 
   const discord = access?.includesDiscord ? access : null;
 
@@ -89,36 +105,44 @@ const SubscriptionSuccess = () => {
     }
   };
 
-  const showDiscordCard = Boolean(discord) && !later && !confirming;
+  const showDiscordCard = confirmed && Boolean(discord) && !later;
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-background px-4">
       <div className="w-full max-w-md text-center">
-        <div className="mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-full bg-emerald-500/15">
+        <div className={`mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-full ${confirmed ? 'bg-emerald-500/15' : 'bg-muted'}`}>
           {confirming ? (
             <Loader2 className="h-8 w-8 animate-spin text-emerald-600" />
-          ) : (
+          ) : confirmed ? (
             <CheckCircle className="h-8 w-8 text-emerald-600" />
+          ) : (
+            <CircleHelp className="h-8 w-8 text-muted-foreground" />
           )}
         </div>
         <h1 className="text-2xl font-bold">
           {confirming
             ? 'Confirming subscription…'
-            : confirmFailed
+            : confirmed
               ? 'Subscription confirmed'
-              : showDiscordCard
-                ? 'Subscription successful!'
-                : 'Subscription confirmed'}
+              : 'Subscription not confirmed'}
         </h1>
         <p className="mb-8 mt-2 text-sm text-muted-foreground">
           {confirming
             ? 'Finishing payment confirmation. This only takes a moment.'
-            : confirmFailed
-              ? 'Payment may still be processing. Refresh in a minute or check Subscriptions.'
-              : showDiscordCard
-                ? `You now have access${discord?.productName ? ` to ${discord.productName}` : ''}.`
-                : `You're subscribed${creatorUsername ? ` to @${creatorUsername}` : ''}. Open Subscriptions to see recent posts and manage access.`}
+            : !isAuthenticated
+              ? 'Sign in to verify your subscription and view your access.'
+              : !confirmed
+                ? 'We could not verify an active subscription. Payment may still be processing. Check Subscriptions before trying to pay again.'
+                : showDiscordCard
+                  ? `You now have access${discord?.productName ? ` to ${discord.productName}` : ''}.`
+                  : `You're subscribed${creatorUsername ? ` to @${creatorUsername}` : ''}. Open Subscriptions to see recent posts and manage access.`}
         </p>
+
+        {!authLoading && !isAuthenticated ? (
+          <Button asChild className="mb-4">
+            <Link to={buildLoginHref(location.pathname, location.search)}>Sign in to confirm</Link>
+          </Button>
+        ) : null}
 
         {showDiscordCard ? (
           <div className="rounded-2xl border border-border bg-card p-5 text-left shadow-[var(--shadow-card)]">

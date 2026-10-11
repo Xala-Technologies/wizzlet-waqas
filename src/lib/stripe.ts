@@ -7,6 +7,8 @@ import { convex } from '@/integrations/convex/client';
 import { api } from '@convex/_generated/api';
 import type { Id } from '@convex/_generated/dataModel';
 import { publicEnv } from '@/config/publicEnv';
+import { buildLoginHref } from '@/lib/safeReturnPath';
+import { creatorProfilePath } from '@/lib/creatorProfilePath';
 import {
   clearStoredCreatorLinkId,
   readStoredCreatorLinkId,
@@ -78,7 +80,7 @@ export async function createCheckoutSession(
     const message = err instanceof Error ? err.message : 'Checkout failed. Please try again.';
     if (message.includes('UNAUTHENTICATED') || message.includes('Not authenticated')) {
       toast.error('Please sign in to subscribe.', { id: toastId });
-      window.location.href = `/login?redirect=/${creatorUsername}`;
+      window.location.href = buildLoginHref(creatorProfilePath(creatorUsername));
       return;
     }
     toast.error(message, { id: toastId });
@@ -87,8 +89,8 @@ export async function createCheckoutSession(
 
 export async function confirmStripeCheckoutSession(sessionId: string): Promise<boolean> {
   try {
-    await convex.action(api.payments.stripeNode.confirmCheckoutSession, { sessionId });
-    return true;
+    const result = await convex.action(api.payments.stripeNode.confirmCheckoutSession, { sessionId });
+    return result.ok === true;
   } catch (err) {
     console.error('[Payments] confirmCheckoutSession error:', err);
     return false;

@@ -1,6 +1,7 @@
 import { Link, useSearchParams } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { XCircle } from 'lucide-react';
+import { creatorProfilePath } from '@/lib/creatorProfilePath';
 
 const SubscriptionCancel = () => {
   const [searchParams] = useSearchParams();
@@ -18,7 +19,7 @@ const SubscriptionCancel = () => {
         </p>
         <div className="flex flex-col sm:flex-row gap-3 justify-center">
           {creatorUsername && (
-            <Link to={`/${creatorUsername}`}>
+            <Link to={creatorProfilePath(creatorUsername)}>
               <Button variant="hero" size="lg">Back to Creator</Button>
             </Link>
           )}

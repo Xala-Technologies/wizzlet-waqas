@@ -95,6 +95,9 @@ const PROTECTED_PATHS = [
 const GOTO_MS = 45_000;
 
 async function assertNoCrash(page: import("@playwright/test").Page) {
+  // Wait for React content: checking the empty document can hide a late crash.
+  await expect.poll(async () => (await page.locator('#root').innerText()).trim().length,
+    { timeout: 15_000 }).toBeGreaterThan(20);
   await expect(page.locator("body")).not.toContainText("Something went wrong");
 }
 
@@ -102,6 +105,18 @@ test.describe("Wave 2 world-ready surface smoke", () => {
   test.describe.configure({ mode: "serial", timeout: 240_000 });
 
   test.skip(({ browserName }) => browserName !== "chromium");
+
+  const runtimeErrors = new WeakMap<import('@playwright/test').Page, string[]>();
+  test.beforeEach(async ({ page }) => {
+    const errors: string[] = [];
+    runtimeErrors.set(page, errors);
+    page.on('pageerror', (error) => errors.push(error.message));
+  });
+  test.afterEach(async ({ page }, testInfo) => {
+    const errors = runtimeErrors.get(page) ?? [];
+    await testInfo.attach('runtime-errors', { body: JSON.stringify(errors), contentType: 'application/json' });
+    expect(errors).toEqual([]);
+  });
 
   test("public and marketing routes load without ErrorBoundary", async ({ page }) => {
     for (const path of PUBLIC_PATHS) {
