@@ -112,7 +112,7 @@ const CustomerDiscover = () => {
           id: c._id,
           username: c.username,
           displayName: name,
-          bio: c.bio?.trim() || 'Verified Sweeph creator.',
+          bio: c.bio?.trim() || 'Sweeph creator.',
           avatarUrl: c.avatarUrl ?? null,
           bannerUrl: c.bannerUrl ?? null,
           sports: inferSports(c.bio ?? null, c.username),

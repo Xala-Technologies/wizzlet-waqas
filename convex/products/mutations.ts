@@ -16,6 +16,8 @@ export const listPublicByCreator = query({
   args: { creatorId: v.id("creators") },
   returns: v.array(productPublicValidator),
   handler: async (ctx, args) => {
+    const creator = await ctx.db.get(args.creatorId);
+    if (!creator?.isPublished) return [];
     const rows = await ctx.db
       .query("products")
       .withIndex("by_creatorId", (q) => q.eq("creatorId", args.creatorId))
@@ -23,7 +25,12 @@ export const listPublicByCreator = query({
     const out = [];
     for (const p of rows) {
       if (!p.isActive || p.isClosed) continue;
-      const imageUrl = p.imageStorageId
+      const asset = p.imageStorageId
+        ? await ctx.db.query("fileAssets")
+          .withIndex("by_storageId", (q) => q.eq("storageId", p.imageStorageId!))
+          .unique()
+        : null;
+      const imageUrl = asset?.ownerUserId === creator.userId && p.imageStorageId
         ? await ctx.storage.getUrl(p.imageStorageId)
         : null;
       out.push({
@@ -80,7 +87,18 @@ export const upsert = mutation({
   },
   returns: v.id("products"),
   handler: async (ctx, args) => {
-    const { user } = await requireCreatorOwner(ctx, args.creatorId);
+    const { user, creator } = await requireCreatorOwner(ctx, args.creatorId);
+    if (!Number.isSafeInteger(args.priceCents) || args.priceCents < 0) {
+      throw new ConvexError("INVALID_PRICE");
+    }
+    if (args.imageStorageId) {
+      const asset = await ctx.db.query("fileAssets")
+        .withIndex("by_storageId", (q) => q.eq("storageId", args.imageStorageId!))
+        .unique();
+      if (!asset || asset.ownerUserId !== creator.userId) {
+        throw new ConvexError("FORBIDDEN");
+      }
+    }
     const billingPeriod = normalizeProductBillingPeriod(args.billingPeriod);
     const now = Date.now();
 

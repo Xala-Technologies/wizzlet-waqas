@@ -177,7 +177,7 @@ const Dashboard = () => {
             username: p.creator.username,
             display_name: p.creator.displayName ?? null,
             avatar_url: p.creator.avatarUrl ?? null,
-            verified: true,
+            verified: p.creator.verificationStatus === 'verified',
           },
           body: parsed?.notes ?? undefined,
           picks,
@@ -462,7 +462,7 @@ const Dashboard = () => {
                             >
                               {creatorName}
                             </Link>
-                            {post.creator.verified !== false ? (
+                            {post.creator.verified === true ? (
                               <BadgeCheck
                                 className="h-4 w-4 shrink-0 text-primary"
                                 aria-label="Verified"

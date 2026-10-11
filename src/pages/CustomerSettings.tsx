@@ -564,11 +564,11 @@ const CustomerSettings = () => {
           <div className="flex flex-col gap-3 rounded-xl border border-border bg-muted/40 p-4 sm:flex-row sm:items-center sm:justify-between">
             <div className="flex items-center gap-4">
               <div className="flex h-12 w-[72px] items-center justify-center rounded-lg bg-[#1A1F71] text-xs font-extrabold italic tracking-wide text-white shadow-[var(--shadow-card)]">
-                VISA
+                {useDemo ? 'VISA' : <CreditCard className="h-5 w-5" aria-hidden="true" />}
               </div>
               <div>
                 <p className="text-sm font-bold text-foreground">
-                  {useDemo ? 'Visa •••• 4242' : 'Card on file via Stripe'}
+                  {useDemo ? 'Visa •••• 4242' : 'Payment details via Stripe'}
                 </p>
                 <p className="text-xs font-medium text-muted-foreground">
                   {useDemo ? 'Expires 04/28' : 'Open the portal to view or update your method'}

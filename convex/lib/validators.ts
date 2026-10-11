@@ -1,5 +1,11 @@
 import { v } from "convex/values";
 
+export const verificationStatusValidator = v.union(
+  v.literal("none"),
+  v.literal("pending"),
+  v.literal("verified"),
+);
+
 export const appRoleValidator = v.union(
   v.literal("admin"),
   v.literal("moderator"),
@@ -103,6 +109,7 @@ export const subscriptionWithCreatorValidator = v.object({
     avatarUrl: v.optional(v.string()),
     monthlyPriceCents: v.optional(v.number()),
     messagingEnabled: v.boolean(),
+    verificationStatus: v.optional(verificationStatusValidator),
   }),
 });
 
@@ -154,12 +161,6 @@ export const pickResultValidator = v.union(
   v.literal("won"),
   v.literal("lost"),
   v.literal("push"),
-);
-
-export const verificationStatusValidator = v.union(
-  v.literal("none"),
-  v.literal("pending"),
-  v.literal("verified"),
 );
 
 export const creatorDocValidator = v.object({
@@ -263,6 +264,7 @@ export const memberFeedItemValidator = v.object({
     username: v.string(),
     displayName: v.optional(v.string()),
     avatarUrl: v.optional(v.string()),
+    verificationStatus: v.optional(verificationStatusValidator),
   }),
 });
 
