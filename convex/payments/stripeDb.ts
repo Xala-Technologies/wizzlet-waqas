@@ -865,7 +865,8 @@ export const persistConnectStatusByStripeAccountId = internalMutation({
 
 /**
  * Ledger clawback for Stripe refunds / disputes.
- * Inserts a negative paymentEvent; marks original fully reversed when refund covers creator share.
+ * The negative event is the reversal. Keep the original credit in the ledger
+ * so the payout calculator subtracts the refunded earnings exactly once.
  */
 export const applyChargeRefund = internalMutation({
   args: {
@@ -945,15 +946,30 @@ export const applyChargeRefund = internalMutation({
     }
 
     if (!original) {
-      // Best-effort: cannot attribute — ignore quietly (ops can adjust manually).
+      // The webhook must remain retryable if checkout fulfillment arrived later.
       return { ok: false, duplicate: false, creatorId: null, debtLikely: false };
     }
 
-    const gross = original.amountCents > 0 ? original.amountCents : 1;
-    const refundGross = Math.min(Math.max(0, args.amountCents), gross);
-    const ratio = refundGross / gross;
-    const creatorClawback = Math.round(original.creatorEarningsCents * ratio);
-    const platformClawback = Math.round(original.platformFeeCents * ratio);
+    if (!Number.isSafeInteger(args.amountCents) || args.amountCents <= 0 || original.amountCents <= 0) {
+      throw new Error("INVALID_REFUND_AMOUNT");
+    }
+    const originalRef = original.commercialRef ?? `payment:${original._id}`;
+    const adjustments = await ctx.db.query("paymentEvents")
+      .withIndex("by_relatedCommercialRef", (q) => q.eq("relatedCommercialRef", originalRef))
+      .take(ADMIN_SCAN_MAX_DOCS + 1);
+    if (adjustments.length > ADMIN_SCAN_MAX_DOCS) {
+      throw new Error("REFUND_HISTORY_LIMIT_EXCEEDED");
+    }
+    const settled = adjustments.filter((e) => e.status === "settled" && (e.type === "refund" || e.type === "dispute"));
+    const priorGross = settled.reduce((sum, e) => sum - e.amountCents, 0);
+    const priorCreator = settled.reduce((sum, e) => sum - e.creatorEarningsCents, 0);
+    const gross = original.amountCents;
+    const refundGross = Math.min(args.amountCents, Math.max(0, gross - priorGross));
+    // Allocate against the cumulative refunded total to preserve every cent
+    // when several small refunds round differently from a single full refund.
+    const creatorClawback = Math.max(0, Math.min(refundGross,
+      Math.round(original.creatorEarningsCents * Math.min(gross, priorGross + refundGross) / gross) - priorCreator));
+    const platformClawback = refundGross - creatorClawback;
     const now = Date.now();
 
     await ctx.db.insert("paymentEvents", {
@@ -969,18 +985,11 @@ export const applyChargeRefund = internalMutation({
       status: "settled",
       externalRef: args.deliveryRef ?? args.chargeId,
       commercialRef,
-      relatedCommercialRef: original.commercialRef,
+      relatedCommercialRef: originalRef,
       paymentMode: args.paymentMode ?? "test",
       balanceState: "available",
       createdAt: now,
     });
-
-    if (
-      refundGross >= original.amountCents &&
-      original.balanceState !== "reversed"
-    ) {
-      await ctx.db.patch(original._id, { balanceState: "reversed" });
-    }
 
     const balance = await getCreatorAvailableBalanceCents(ctx, original.creatorId, now);
     if (balance.debtCents > 0 || balance.payoutBlocked) {
