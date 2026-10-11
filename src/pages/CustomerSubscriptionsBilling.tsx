@@ -90,7 +90,7 @@ const CustomerSubscriptionsBilling = () => {
         avatarUrl: s.creator.avatarUrl ?? null,
         planLabel: planFromAmount(price),
         tags: inferTags(null, s.creator.username),
-        verified: true,
+        verified: s.creator.verificationStatus === 'verified',
         isDemo: false,
         hasAccess: access.hasAccess,
       };

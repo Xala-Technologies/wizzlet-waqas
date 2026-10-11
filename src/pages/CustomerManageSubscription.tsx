@@ -162,7 +162,7 @@ const CustomerManageSubscription = () => {
       avatarTone: 'bg-muted text-muted-foreground',
       planLabel,
       tags: ['Sports'],
-      verified: true,
+      verified: liveSub.creator.verificationStatus === 'verified',
       statusLabel: access.hasAccess ? 'Active' : 'Canceled',
       priceCents: price,
       pricePeriod: 'month',

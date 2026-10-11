@@ -123,6 +123,7 @@ export const mySubscriptionsDetailed = query({
           avatarUrl: creator.avatarUrl,
           monthlyPriceCents: creator.monthlyPriceCents,
           messagingEnabled: creator.messagingEnabled,
+          verificationStatus: creator.verificationStatus ?? "none",
         },
       });
     }

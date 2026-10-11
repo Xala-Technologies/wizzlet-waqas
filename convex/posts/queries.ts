@@ -108,6 +108,7 @@ export const memberFeed = query({
         username: string;
         displayName: string | undefined;
         avatarUrl: string | undefined;
+        verificationStatus: "none" | "pending" | "verified";
       };
     }> = [];
 
@@ -134,6 +135,7 @@ export const memberFeed = query({
             username: creator.username,
             displayName: creator.displayName,
             avatarUrl: creator.avatarUrl,
+            verificationStatus: creator.verificationStatus ?? "none",
           },
         });
       }

@@ -135,7 +135,6 @@ const CreatorPromoCodes = () => {
   const [code, setCode] = useState('WELCOME10');
   const [discountType, setDiscountType] = useState<'percentage' | 'fixed'>('percentage');
   const [discount, setDiscount] = useState('10');
-  const [appliesTo, setAppliesTo] = useState('all');
   const [duration, setDuration] = useState<PromoDiscountDuration>('once');
   const [maxUses, setMaxUses] = useState('100');
   const [expiresDate, setExpiresDate] = useState('');
@@ -240,12 +239,6 @@ const CreatorPromoCodes = () => {
       : Number.isFinite(reviewDiscountNum)
         ? `$${reviewDiscountNum.toFixed(2)}`
         : '—';
-  const appliesToLabel =
-    appliesTo === 'all'
-      ? 'All products'
-      : appliesTo === 'subscriptions'
-        ? 'Subscriptions'
-        : 'One-time products';
   const expiresLabel = expiresDate.trim()
     ? format(new Date(`${expiresDate}T12:00:00`), 'MMM d, yyyy')
     : 'No expiration';
@@ -257,7 +250,6 @@ const CreatorPromoCodes = () => {
     setCode('WELCOME10');
     setDiscountType('percentage');
     setDiscount('10');
-    setAppliesTo('all');
     setDuration('once');
     setMaxUses('100');
     setExpiresDate('');
@@ -892,18 +884,16 @@ const CreatorPromoCodes = () => {
 
               <div className="space-y-2">
                 <Label className="text-sm font-semibold text-foreground">Applies To</Label>
-                <Select value={appliesTo} onValueChange={setAppliesTo}>
-                  <SelectTrigger className="h-11 min-h-11">
+                <Select value="all" disabled>
+                  <SelectTrigger className="h-11 min-h-11" aria-label="Applies to">
                     <SelectValue placeholder="All products" />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="all">All products</SelectItem>
-                    <SelectItem value="subscriptions">Subscriptions</SelectItem>
-                    <SelectItem value="one-time">One-time products</SelectItem>
                   </SelectContent>
                 </Select>
                 <p className="text-xs text-muted-foreground">
-                  Choose which products this discount applies to.
+                  Codes apply to all your products. Product-specific discounts are not available yet.
                 </p>
               </div>
 
@@ -1027,7 +1017,7 @@ const CreatorPromoCodes = () => {
                 </div>
                 <div className="flex items-center justify-between gap-3">
                   <dt className="text-muted-foreground">Applies to</dt>
-                  <dd className="text-right font-bold text-foreground">{appliesToLabel}</dd>
+                  <dd className="text-right font-bold text-foreground">All products</dd>
                 </div>
                 <div className="flex items-center justify-between gap-3">
                   <dt className="text-muted-foreground">Usage limit</dt>

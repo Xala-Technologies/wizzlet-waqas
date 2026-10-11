@@ -177,6 +177,7 @@ const CustomerMessages = () => {
         avatarUrl: string | null;
         messagingEnabled: boolean;
         subActive: boolean;
+        verified: boolean;
       }
     >();
     for (const s of subscriptions ?? []) {
@@ -186,6 +187,7 @@ const CustomerMessages = () => {
         avatarUrl: s.creator.avatarUrl ?? null,
         messagingEnabled: s.creator.messagingEnabled !== false,
         subActive: s.status === 'active',
+        verified: s.creator.verificationStatus === 'verified',
       });
     }
     return map;
@@ -219,7 +221,7 @@ const CustomerMessages = () => {
           avatarUrl: meta?.avatarUrl ?? null,
           avatarInitials: initialsFrom(displayName),
           avatarTone: 'bg-slate-900',
-          verified: true,
+          verified: meta?.verified === true,
           online: false,
           unread: sorted.filter((m) => m.senderRole === 'creator' && !m.read).length,
           preview: last?.body ?? '',
@@ -328,7 +330,7 @@ const CustomerMessages = () => {
       avatarUrl: meta?.avatarUrl ?? null,
       avatarInitials: initialsFrom(displayName),
       avatarTone: 'bg-slate-900',
-      verified: true,
+      verified: meta?.verified === true,
       online: false,
       unread: 0,
       preview: '',
