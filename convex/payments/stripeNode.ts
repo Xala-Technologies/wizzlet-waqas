@@ -59,6 +59,54 @@ function checkoutAmountCents(session: {
   return Number(session.metadata?.amountCents ?? 0);
 }
 
+function stripeObjectId(value: string | { id: string } | null | undefined): string | undefined {
+  return typeof value === "string" ? value : value?.id;
+}
+
+/** Refund deliveries identify charges, while our ledger identifies checkouts/invoices. */
+async function resolveChargeCommerce(stripe: Stripe, charge: Stripe.Charge) {
+  const paymentIntentId = stripeObjectId(charge.payment_intent);
+  // Legacy event snapshots contain charge.invoice; current API versions expose
+  // the association through InvoicePayment instead.
+  let invoiceId = stripeObjectId((charge as Stripe.Charge & {
+    invoice?: string | { id: string } | null;
+  }).invoice);
+  if (!invoiceId && paymentIntentId) {
+    const invoiceIds = new Set<string>();
+    for await (const payment of stripe.invoicePayments.list({
+      payment: { type: "payment_intent", payment_intent: paymentIntentId }, limit: 100,
+    })) {
+      const id = stripeObjectId(payment.invoice);
+      if (id) invoiceIds.add(id);
+    }
+    if (invoiceIds.size > 1) throw new Error("AMBIGUOUS_CHARGE_INVOICE");
+    invoiceId = [...invoiceIds][0];
+  }
+  let checkoutSessionId: string | undefined;
+  if (invoiceId) {
+    const invoice = await stripe.invoices.retrieve(invoiceId);
+    const subscriptionId = extractStripeSubscriptionId(invoice);
+    // Renewal invoices have their own ledger entries. Only an initial invoice
+    // may fall back to its exact checkout; never match merely by subscription.
+    if (invoice.billing_reason === "subscription_create" && subscriptionId) {
+      for await (const session of stripe.checkout.sessions.list({ subscription: subscriptionId, limit: 100 })) {
+        if (stripeObjectId(session.invoice) === invoiceId) {
+          checkoutSessionId = session.id;
+          break;
+        }
+      }
+    }
+  } else if (paymentIntentId) {
+    for await (const session of stripe.checkout.sessions.list({ payment_intent: paymentIntentId, limit: 100 })) {
+      if (stripeObjectId(session.payment_intent) === paymentIntentId) {
+        checkoutSessionId = session.id;
+        break;
+      }
+    }
+  }
+  return { paymentIntentId, invoiceId, checkoutSessionId };
+}
+
 export const createCheckoutSession = action({
   args: {
     creatorId: v.id("creators"),
@@ -462,51 +510,36 @@ export const fulfillWebhook = internalAction({
           stripeSubscriptionId: subscription.id,
           deliveryRef: event.id,
         });
-      } else if (event.type === "charge.refunded") {
-        const charge = event.data.object as Stripe.Charge & {
-          invoice?: string | { id: string } | null;
-        };
-        const refunds = charge.refunds?.data ?? [];
-        const latest = refunds[0];
-        const amountCents =
-          latest?.amount ??
-          charge.amount_refunded ??
-          charge.amount ??
-          0;
-        const invoiceRaw = charge.invoice;
-        const invoiceId =
-          typeof invoiceRaw === "string"
-            ? invoiceRaw
-            : invoiceRaw && typeof invoiceRaw === "object" && "id" in invoiceRaw
-              ? invoiceRaw.id
-              : undefined;
-        await ctx.runMutation(internal.payments.stripeDb.applyChargeRefund, {
-          chargeId: charge.id,
-          refundId: latest?.id,
-          amountCents,
-          invoiceId,
-          paymentIntentId:
-            typeof charge.payment_intent === "string"
-              ? charge.payment_intent
-              : undefined,
-          deliveryRef: event.id,
-          paymentMode: stripeMode(event.livemode),
-          kind: "refund",
-        });
+      } else if (event.type === "charge.refunded" || event.type === "refund.updated") {
+        const refundChargeId = event.type === "refund.updated"
+          ? stripeObjectId((event.data.object as Stripe.Refund).charge) : undefined;
+        if (event.type === "refund.updated" && !refundChargeId) throw new Error("REFUND_CHARGE_NOT_FOUND");
+        const charge = refundChargeId
+          ? await stripe.charges.retrieve(refundChargeId) : event.data.object as Stripe.Charge;
+        const commerce = await resolveChargeCommerce(stripe, charge);
+        // Fetch all pages: event snapshots can omit refunds or contain only a
+        // subset. Each refund has its own stable identity, so retries and
+        // out-of-order deliveries cannot subtract a cumulative total twice.
+        // refund.updated handles pending refunds when they later succeed.
+        for await (const refund of stripe.refunds.list({ charge: charge.id, limit: 100 })) {
+          if (refund.status !== "succeeded") continue;
+          const result = await ctx.runMutation(internal.payments.stripeDb.applyChargeRefund, {
+            ...commerce, chargeId: charge.id, refundId: refund.id, amountCents: refund.amount,
+            deliveryRef: event.id, paymentMode: stripeMode(event.livemode), kind: "refund",
+          });
+          if (!result.ok) throw new Error("REFUND_ORIGINAL_PAYMENT_NOT_FOUND");
+        }
       } else if (event.type === "charge.dispute.created") {
         const dispute = event.data.object as Stripe.Dispute;
-        const chargeId =
-          typeof dispute.charge === "string" ? dispute.charge : dispute.charge?.id;
-        if (chargeId) {
-          await ctx.runMutation(internal.payments.stripeDb.applyChargeRefund, {
-            chargeId,
-            refundId: dispute.id,
-            amountCents: dispute.amount ?? 0,
-            deliveryRef: event.id,
-            paymentMode: stripeMode(event.livemode),
-            kind: "dispute",
-          });
-        }
+        const chargeId = stripeObjectId(dispute.charge);
+        if (!chargeId) throw new Error("DISPUTE_CHARGE_NOT_FOUND");
+        const charge = await stripe.charges.retrieve(chargeId);
+        const commerce = await resolveChargeCommerce(stripe, charge);
+        const result = await ctx.runMutation(internal.payments.stripeDb.applyChargeRefund, {
+          ...commerce, chargeId, refundId: dispute.id, amountCents: dispute.amount,
+          deliveryRef: event.id, paymentMode: stripeMode(event.livemode), kind: "dispute",
+        });
+        if (!result.ok) throw new Error("DISPUTE_ORIGINAL_PAYMENT_NOT_FOUND");
       } else if (event.type === "charge.dispute.closed") {
         // Clawback already applied on charge.dispute.created (idempotent).
         // Won disputes can be reversed manually via adjustment if needed.

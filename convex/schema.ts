@@ -264,6 +264,7 @@ export default defineSchema({
     .index("by_status", ["status"])
     .index("by_externalRef", ["externalRef"])
     .index("by_commercialRef", ["commercialRef"])
+    .index("by_relatedCommercialRef", ["relatedCommercialRef"])
     .index("by_checkoutSessionId", ["checkoutSessionId"]),
 
   /** Stripe (or other) webhook delivery receipts — separate from financial ledger. */

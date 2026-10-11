@@ -34,6 +34,8 @@ export type BalanceEvent = {
   type?: string;
   availableAt?: number;
   balanceState?: string;
+  commercialRef?: string;
+  relatedCommercialRef?: string;
   createdAt?: number;
 };
 
@@ -64,7 +66,7 @@ export function computeAvailableBalanceCents(
 }
 
 export type CreatorBalanceBreakdown = {
-  /** Lifetime positive earnings (pending + released), excluding reversed. */
+  /** Net earnings after settled adjustments, before reserved payouts. */
   earnedCents: number;
   pendingCents: number;
   /** Released earnings after hold, before reserve/payouts/adjustments. */
@@ -90,10 +92,18 @@ export function computeCreatorBalanceBreakdown(
   let pending = 0;
   let released = 0;
   let adjustments = 0;
+  // Older refund handlers marked the original reversed AND wrote a negative
+  // event. Count that original when its explicit reversal is present, while
+  // retaining support for legacy reversed rows without a matching debit.
+  const explicitlyReversed = new Set(events
+    .filter((e) => isSettledEarningEvent(e) && e.creatorEarningsCents < 0 &&
+      (e.type === "refund" || e.type === "dispute"))
+    .map((e) => e.relatedCommercialRef).filter(Boolean));
 
   for (const event of events) {
     if (!isSettledEarningEvent(event)) continue;
-    if (event.balanceState === "reversed") continue;
+    if (event.balanceState === "reversed" &&
+      (!event.commercialRef || !explicitlyReversed.has(event.commercialRef))) continue;
     const type = event.type ?? "subscription_charge";
     if (IGNORED_TYPES.has(type)) continue;
 
@@ -132,7 +142,11 @@ export function computeCreatorBalanceBreakdown(
     released -= fromReleased;
     adj += fromReleased;
   }
-  const debtCents = adj < 0 ? -adj : 0;
+  // Positive adjustments (for example an ops recovery credit) restore funds.
+  released += Math.max(0, adj);
+  // A refund after payout creates debt even when its original credit covered
+  // the refund on paper: those reserved/paid funds have already left the pool.
+  const debtCents = Math.max(0, -adj) + Math.max(0, reservedCents - pending - released);
 
   const reserveHoldCents =
     payoutReservePercent > 0
@@ -143,7 +157,7 @@ export function computeCreatorBalanceBreakdown(
     0,
     released - reserveHoldCents - reservedCents,
   );
-  const earnedCents = pending + released + Math.max(0, adjustments);
+  const earnedCents = pending + released;
 
   return {
     earnedCents,
