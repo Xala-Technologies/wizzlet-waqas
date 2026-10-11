@@ -104,7 +104,7 @@ export const recordLinkClick = mutation({
 
 /** Public destination lookup for `/go/:linkId` tracking redirects. */
 export const getLinkPublic = query({
-  args: { linkId: v.id("creatorLinks") },
+  args: { linkId: v.string() },
   returns: v.union(
     v.object({
       url: v.string(),
@@ -113,7 +113,9 @@ export const getLinkPublic = query({
     v.null(),
   ),
   handler: async (ctx, args) => {
-    const link = await ctx.db.get(args.linkId);
+    const linkId = ctx.db.normalizeId("creatorLinks", args.linkId);
+    if (!linkId) return null;
+    const link = await ctx.db.get(linkId);
     if (!link) return null;
     return { url: link.url, name: link.name };
   },

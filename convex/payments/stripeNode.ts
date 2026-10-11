@@ -32,8 +32,9 @@ function siteUrl(): string {
 
 function extractStripeSubscriptionId(obj: {
   subscription?: string | { id: string } | null;
+  parent?: { subscription_details?: { subscription?: string | { id: string } | null } | null } | null;
 }): string | undefined {
-  const sub = obj.subscription;
+  const sub = obj.parent?.subscription_details?.subscription ?? obj.subscription;
   if (typeof sub === "string") return sub;
   if (sub && typeof sub === "object" && "id" in sub) return sub.id;
   return undefined;
@@ -52,7 +53,7 @@ function checkoutAmountCents(session: {
   amount_total?: number | null;
   metadata?: Record<string, string> | null;
 }): number {
-  if (session.amount_total != null && session.amount_total > 0) {
+  if (session.amount_total != null) {
     return session.amount_total;
   }
   return Number(session.metadata?.amountCents ?? 0);
@@ -185,6 +186,9 @@ export const confirmCheckoutSession = action({
     }
     if (session.status !== "complete") {
       throw new Error("SESSION_INCOMPLETE");
+    }
+    if (session.payment_status !== "paid" && session.payment_status !== "no_payment_required") {
+      throw new Error("PAYMENT_PENDING");
     }
 
     const creatorId = session.metadata?.creatorId as Id<"creators"> | undefined;
@@ -324,7 +328,7 @@ export const fulfillWebhook = internalAction({
     payload: v.string(),
   },
   returns: v.object({ success: v.boolean(), error: v.optional(v.string()) }),
-  handler: async (ctx, args) => {
+  handler: async (ctx, args): Promise<{ success: boolean; error?: string }> => {
     const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
     if (!webhookSecret) {
       return { success: false, error: "WEBHOOK_SECRET_MISSING" };
@@ -340,19 +344,22 @@ export const fulfillWebhook = internalAction({
       };
     }
 
-    const receipt = await ctx.runMutation(internal.payments.stripeDb.recordWebhookReceipt, {
+    const receipt = await ctx.runQuery(internal.payments.stripeDb.getWebhookReceipt, {
       provider: "stripe",
       eventId: event.id,
-      eventType: event.type,
-      processingState: "processed",
     });
-    if (receipt.duplicate) {
+    if (receipt?.processingState === "processed") {
       return { success: true };
     }
 
     try {
-      if (event.type === "checkout.session.completed") {
+      if (event.type === "checkout.session.completed" || event.type === "checkout.session.async_payment_succeeded") {
         const session = event.data.object as Stripe.Checkout.Session;
+        // Delayed payment methods can complete checkout before money settles.
+        // Stripe sends a distinct async_payment_succeeded delivery when paid.
+        if (session.payment_status !== "paid" && session.payment_status !== "no_payment_required") {
+          return { success: true };
+        }
         const userId = session.metadata?.userId as Id<"users"> | undefined;
         const creatorId = session.metadata?.creatorId as Id<"creators"> | undefined;
         if (!userId || !creatorId) {
@@ -399,7 +406,7 @@ export const fulfillWebhook = internalAction({
           const line = invoice.lines?.data?.[0] as
             | { period?: { end?: number } }
             | undefined;
-          await ctx.runMutation(internal.payments.stripeDb.applyInvoicePaid, {
+          const result = await ctx.runMutation(internal.payments.stripeDb.applyInvoicePaid, {
             stripeSubscriptionId,
             invoiceId: invoice.id,
             amountCents: invoice.amount_paid ?? 0,
@@ -407,6 +414,7 @@ export const fulfillWebhook = internalAction({
             deliveryRef: event.id,
             paymentMode: stripeMode(event.livemode),
           });
+          if (!result.ok) throw new Error(result.reason);
         }
       } else if (event.type === "invoice.payment_failed") {
         const invoice = event.data.object as Stripe.Invoice & {
@@ -414,10 +422,11 @@ export const fulfillWebhook = internalAction({
         };
         const stripeSubscriptionId = extractStripeSubscriptionId(invoice);
         if (stripeSubscriptionId) {
-          await ctx.runMutation(internal.payments.stripeDb.applyInvoicePaymentFailed, {
+          const result = await ctx.runMutation(internal.payments.stripeDb.applyInvoicePaymentFailed, {
             stripeSubscriptionId,
             deliveryRef: event.id,
           });
+          if (!result.ok) throw new Error(result.reason);
         }
       } else if (event.type === "customer.subscription.updated") {
         const subscription = event.data.object as Stripe.Subscription & {
@@ -432,15 +441,21 @@ export const fulfillWebhook = internalAction({
               : subscription.status === "active" || subscription.status === "trialing"
                 ? "active"
                 : undefined;
-        await ctx.runMutation(internal.payments.stripeDb.applySubscriptionUpdated, {
+        const itemPeriodEnds = subscription.items?.data
+          .map((item) => item.current_period_end)
+          .filter((end) => Number.isFinite(end)) ?? [];
+        const periodEnd = subscription.current_period_end ??
+          (itemPeriodEnds.length ? Math.min(...itemPeriodEnds) : undefined);
+        const result = await ctx.runMutation(internal.payments.stripeDb.applySubscriptionUpdated, {
           stripeSubscriptionId: subscription.id,
           billingStatus: subscription.status,
-          currentPeriodEnd: subscription.current_period_end
-            ? subscription.current_period_end * 1000
+          currentPeriodEnd: periodEnd
+            ? periodEnd * 1000
             : undefined,
           cancelAtPeriodEnd: subscription.cancel_at_period_end,
           accessStatus,
         });
+        if (!result.ok) throw new Error(result.reason);
       } else if (event.type === "customer.subscription.deleted") {
         const subscription = event.data.object as Stripe.Subscription;
         await ctx.runMutation(internal.payments.stripeDb.markSubscriptionCancelled, {
@@ -508,6 +523,11 @@ export const fulfillWebhook = internalAction({
           },
         );
       }
+      // Only acknowledge a delivery after its effects have succeeded. Ledger
+      // mutations deduplicate concurrent deliveries by commercial identity.
+      await ctx.runMutation(internal.payments.stripeDb.recordWebhookReceipt, {
+        provider: "stripe", eventId: event.id, eventType: event.type, processingState: "processed",
+      });
       return { success: true };
     } catch (err) {
       return {

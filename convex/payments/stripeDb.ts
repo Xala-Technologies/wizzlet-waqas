@@ -9,7 +9,7 @@ import {
   normalizeBillingPeriod,
 } from "../lib/commerceIdentity";
 import { applySubscribeGrowthAttribution } from "../lib/growthAttribution";
-import type { Id } from "../_generated/dataModel";
+import type { Doc, Id } from "../_generated/dataModel";
 import { internal } from "../_generated/api";
 import { userHasRole } from "../lib/auth";
 import { ADMIN_SCAN_MAX_DOCS } from "../lib/adminLists";
@@ -20,6 +20,23 @@ import {
 } from "../lib/payoutDefaults";
 import { getCreatorAvailableBalanceCents } from "../lib/payoutBalance";
 import { notifyAdmins, previewBody } from "../lib/notify";
+import { subscriptionGrantsContentAccess } from "../lib/contentAccess";
+
+/** Keep Discord aligned with the same paid-access policy as posts and messages. */
+async function scheduleDiscordAccessSync(ctx: MutationCtx, sub: Doc<"subscriptions">): Promise<void> {
+  const now = Date.now();
+  const assign = subscriptionGrantsContentAccess(sub, now);
+  const target = { userId: sub.userId, creatorId: sub.creatorId, productId: sub.productId };
+  await ctx.scheduler.runAfter(0, internal.discord.roles.syncSubscriberRole, { ...target, assign });
+  const canceling = sub.cancelAtPeriodEnd || sub.billingStatus === "cancel_pending" || sub.billingStatus === "canceled";
+  if (assign && canceling && sub.currentPeriodEnd != null) {
+    await ctx.scheduler.runAfter(
+      Math.max(0, sub.currentPeriodEnd - now + 1),
+      internal.discord.roles.syncSubscriberRole,
+      { ...target, assign: false },
+    );
+  }
+}
 
 /** Action auth helper: confirm Convex Auth userId holds the admin role. */
 export const assertAdminUserId = internalQuery({
@@ -288,6 +305,17 @@ export const fulfillCheckout = internalMutation({
   },
 });
 
+export const getWebhookReceipt = internalQuery({
+  args: { provider: v.string(), eventId: v.string() },
+  returns: v.union(v.object({ processingState: v.union(v.literal("processed"), v.literal("failed"), v.literal("ignored")) }), v.null()),
+  handler: async (ctx, args) => {
+    const receipt = await ctx.db.query("webhookReceipts")
+      .withIndex("by_provider_eventId", (q) => q.eq("provider", args.provider).eq("eventId", args.eventId))
+      .unique();
+    return receipt ? { processingState: receipt.processingState } : null;
+  },
+});
+
 export const recordWebhookReceipt = internalMutation({
   args: {
     provider: v.string(),
@@ -307,13 +335,17 @@ export const recordWebhookReceipt = internalMutation({
         q.eq("provider", args.provider).eq("eventId", args.eventId),
       )
       .unique();
-    if (
+    if (existing?.processingState === "processed" &&
       isDuplicateWebhookReceipt(existing, {
         provider: args.provider,
         eventId: args.eventId,
       })
     ) {
       return { duplicate: true as const, id: existing!._id };
+    }
+    if (existing) {
+      await ctx.db.patch(existing._id, { processingState: args.processingState, error: args.error });
+      return { duplicate: false as const, id: existing._id };
     }
     const id = await ctx.db.insert("webhookReceipts", {
       provider: args.provider,
@@ -405,7 +437,8 @@ export const applyInvoicePaid = internalMutation({
     const creator = await ctx.db.get(sub.creatorId);
     if (!creator) throw new ConvexError("NOT_FOUND");
     const settings = await loadFeeSettings(ctx);
-    const amount = args.amountCents > 0 ? args.amountCents : sub.amountCents;
+    // Zero is a valid settled amount (100% discount or customer credit).
+    const amount = args.amountCents;
     const split = calculatePlatformFee(amount, creator.createdAt, settings);
     const now = Date.now();
 
@@ -441,6 +474,9 @@ export const applyInvoicePaid = internalMutation({
       createdAt: now,
     });
 
+    await scheduleDiscordAccessSync(ctx, {
+      ...sub, status: "active", billingStatus: "active", currentPeriodEnd: args.periodEnd,
+    });
     return { ok: true as const, duplicate: false, subscriptionId: sub._id };
   },
 });
@@ -459,12 +495,13 @@ export const applyInvoicePaymentFailed = internalMutation({
       .first();
     if (!sub) return { ok: false as const, reason: "NOT_FOUND" };
     const now = Date.now();
-    // Access may remain until period end; billing status reflects failure.
+    // Failed payment pauses paid access immediately, including Discord.
     await ctx.db.patch(sub._id, {
       billingStatus: "past_due",
       status: "past_due",
       updatedAt: now,
     });
+    await scheduleDiscordAccessSync(ctx, { ...sub, status: "past_due", billingStatus: "past_due" });
     return { ok: true as const };
   },
 });
@@ -493,18 +530,13 @@ export const applySubscriptionUpdated = internalMutation({
     if (args.cancelAtPeriodEnd !== undefined) patch.cancelAtPeriodEnd = args.cancelAtPeriodEnd;
     if (args.accessStatus !== undefined) patch.status = args.accessStatus;
     await ctx.db.patch(sub._id, patch);
-    const ended =
-      args.accessStatus === "cancelled" ||
-      args.billingStatus === "canceled" ||
-      args.billingStatus === "unpaid";
-    if (ended) {
-      await ctx.scheduler.runAfter(0, internal.discord.roles.syncSubscriberRole, {
-        userId: sub.userId,
-        creatorId: sub.creatorId,
-        productId: sub.productId,
-        assign: false,
-      });
-    }
+    await scheduleDiscordAccessSync(ctx, {
+      ...sub,
+      status: args.accessStatus ?? sub.status,
+      billingStatus: args.billingStatus,
+      currentPeriodEnd: args.currentPeriodEnd ?? sub.currentPeriodEnd,
+      cancelAtPeriodEnd: args.cancelAtPeriodEnd ?? sub.cancelAtPeriodEnd,
+    });
     return { ok: true as const };
   },
 });

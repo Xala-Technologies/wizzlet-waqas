@@ -1,9 +1,9 @@
-import { useEffect, useRef } from 'react';
-import { useMutation, useQuery } from 'convex/react';
-import { useParams } from 'react-router-dom';
+import { useEffect, useState } from 'react';
+import { useConvex, useMutation } from 'convex/react';
+import { Link, useParams } from 'react-router-dom';
 import { api } from '../../convex/_generated/api';
 import type { Id } from '../../convex/_generated/dataModel';
-import { storeCreatorLinkId } from '@/lib/creatorLinkHandoff';
+import { sanitizeCreatorLinkId, storeCreatorLinkId } from '@/lib/creatorLinkHandoff';
 import { Loader2 } from 'lucide-react';
 
 /**
@@ -12,33 +12,43 @@ import { Loader2 } from 'lucide-react';
  */
 const CreatorLinkRedirect = () => {
   const { linkId } = useParams<{ linkId: string }>();
-  const recorded = useRef(false);
-  const link = useQuery(
-    api.creators.growth.getLinkPublic,
-    linkId ? { linkId: linkId as Id<'creatorLinks'> } : 'skip',
-  );
+  const convex = useConvex();
+  const [status, setStatus] = useState<'loading' | 'not-found' | 'error'>('loading');
   const recordClick = useMutation(api.creators.growth.recordLinkClick);
 
   useEffect(() => {
-    if (!linkId || link === undefined) return;
-    if (link === null) return;
-    if (recorded.current) return;
-    recorded.current = true;
-    storeCreatorLinkId(linkId);
-    void recordClick({ linkId: linkId as Id<'creatorLinks'> })
-      .catch(() => {
-        /* still redirect even if click write fails */
-      })
-      .finally(() => {
-        window.location.replace(link.url);
-      });
-  }, [linkId, link, recordClick]);
+    const safeId = sanitizeCreatorLinkId(linkId);
+    if (!safeId) { setStatus('not-found'); return; }
+    let cancelled = false;
+    setStatus('loading');
+    void (async () => {
+      try {
+        // A route segment is untrusted. Catch validation/network failures here
+        // instead of allowing a reactive query to crash the whole application.
+        const link = await convex.query(api.creators.growth.getLinkPublic, {
+          linkId: safeId as Id<'creatorLinks'>,
+        });
+        if (cancelled) return;
+        if (!link) { setStatus('not-found'); return; }
+        storeCreatorLinkId(safeId);
+        await recordClick({ linkId: safeId as Id<'creatorLinks'> }).catch(() => undefined);
+        if (!cancelled) window.location.replace(link.url);
+      } catch {
+        if (!cancelled) setStatus('error');
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [linkId, convex, recordClick]);
 
-  if (link === null) {
+  if (status !== 'loading') {
     return (
-      <div className="min-h-screen flex items-center justify-center p-6">
-        <p className="text-sm text-muted-foreground">This tracking link was not found.</p>
-      </div>
+      <main className="min-h-screen flex flex-col items-center justify-center gap-4 p-6">
+        <h1 className="text-xl font-semibold">Tracking link unavailable</h1>
+        <p className="text-sm text-muted-foreground">{status === 'not-found'
+          ? 'This tracking link was not found.'
+          : 'This tracking link could not be loaded. Please try again later.'}</p>
+        <Link to="/discover" className="underline">Browse creators</Link>
+      </main>
     );
   }
 

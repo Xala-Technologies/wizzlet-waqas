@@ -240,6 +240,13 @@ export const syncSubscriberRole = internalAction({
       }
       let anyFail = false;
       for (const grant of grants) {
+        // Delayed revocation must not remove access renewed since scheduling.
+        const stillAllowed = await ctx.runQuery(internal.discord.queries.hasActiveAccess, {
+          userId: args.userId,
+          creatorId: args.creatorId,
+          productId: grant.productId,
+        });
+        if (stillAllowed) continue;
         const prepUser = await ctx.runQuery(internal.discord.queries.roleSyncPrep, {
           userId: args.userId,
           creatorId: args.creatorId,
@@ -264,6 +271,14 @@ export const syncSubscriberRole = internalAction({
       }
       return { attempted: grants.length > 0, ok: !anyFail };
     }
+
+    // A queued retry may run after cancellation or failed renewal.
+    const allowed = await ctx.runQuery(internal.discord.queries.hasActiveAccess, {
+      userId: args.userId,
+      creatorId: args.creatorId,
+      productId: args.productId,
+    });
+    if (!allowed) return { attempted: false, ok: false, reason: "NO_ACTIVE_ACCESS" };
 
     const prep = await ctx.runQuery(internal.discord.queries.roleSyncPrep, {
       userId: args.userId,

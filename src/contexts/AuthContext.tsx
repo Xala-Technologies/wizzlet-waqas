@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useState, useCallback, ReactNode } from 'react';
+import { createContext, useContext, useEffect, useState, useCallback, useRef, ReactNode } from 'react';
 import { useConvex, useConvexAuth, useQuery, useMutation } from 'convex/react';
 import { useAuthActions } from '@convex-dev/auth/react';
 import { api } from '@convex/_generated/api';
@@ -81,11 +81,13 @@ function AuthProviderInner({ children }: { children: ReactNode }) {
   const [roleLoading, setRoleLoading] = useState(true);
   const [ensured, setEnsured] = useState(false);
   const [signingOut, setSigningOut] = useState(false);
+  const optimisticRole = useRef<{ role: AppRole; snapshot: typeof me } | null>(null);
 
   // Sync profile + roles from Convex
   useEffect(() => {
     if (convexAuthLoading) return;
     if (!isAuthenticated) {
+      optimisticRole.current = null;
       setRoles([]);
       setRole(null);
       setRoleLoading(false);
@@ -97,20 +99,26 @@ function AuthProviderInner({ children }: { children: ReactNode }) {
       return;
     }
     if (me === null) {
+      optimisticRole.current = null;
       setRoles([]);
       setRole(null);
       setRoleLoading(false);
       return;
     }
     const held = (me.roles ?? []).filter(isAppRole) as AppRole[];
-    setRoles((prev) => {
-      // Keep optimistic roles from acceptAssignedRole until the query catches up.
-      const next = held.length > 0 ? held : prev;
-      const active = resolveActiveRole(next, readStoredRole());
-      setRole(active);
-      persistRole(active);
-      return next;
-    });
+    // Optimism lasts only for the snapshot that preceded the assignment.
+    // A new server snapshot (including zero roles) is authoritative.
+    const pending = optimisticRole.current;
+    const next = pending?.snapshot === me && !held.includes(pending.role)
+      ? [...held, pending.role]
+      : held;
+    if (pending && (pending.snapshot !== me || held.includes(pending.role))) {
+      optimisticRole.current = null;
+    }
+    setRoles(next);
+    const active = resolveActiveRole(next, readStoredRole());
+    setRole(active);
+    persistRole(active);
     setRoleLoading(false);
 
     if (!ensured) {
@@ -127,11 +135,12 @@ function AuthProviderInner({ children }: { children: ReactNode }) {
   }, []);
 
   const acceptAssignedRole = useCallback((assigned: AppRole) => {
+    optimisticRole.current = { role: assigned, snapshot: me };
     setRoles((prev) => (prev.includes(assigned) ? prev : [...prev, assigned]));
     setRole(assigned);
     persistRole(assigned);
     setRoleLoading(false);
-  }, []);
+  }, [me]);
 
   const refreshRole = useCallback(
     async (expectRole?: AppRole): Promise<AppRole | null> => {
@@ -184,6 +193,7 @@ function AuthProviderInner({ children }: { children: ReactNode }) {
   );
 
   const signOut = async () => {
+    optimisticRole.current = null;
     // Mark first so ProtectedRoute does not treat cleared/stale roles as “pick a role”.
     setSigningOut(true);
     persistRole(null);
