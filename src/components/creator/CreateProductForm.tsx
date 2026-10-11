@@ -288,8 +288,6 @@ export function CreateProductForm({
   const [billingPeriod, setBillingPeriod] = useState(
     isOneTimeInitial ? 'monthly' : initial?.billingPeriod || 'monthly',
   );
-  const [freeTrial, setFreeTrial] = useState(true);
-  const [trialDays, setTrialDays] = useState('7');
   const [yearlyPricing, setYearlyPricing] = useState(false);
   const [access, setAccess] = useState<Set<string>>(() => {
     if (initial?.accessIds && initial.accessIds.length > 0) return new Set(initial.accessIds);
@@ -370,9 +368,6 @@ export function CreateProductForm({
   const buildDescription = (): string => {
     const body = description.trim();
     const extras: string[] = [];
-    if (freeTrial && payType === 'subscription') {
-      extras.push(`Free trial: ${trialDays.trim() || '7'} days`);
-    }
     if (expiration && expiresOn) {
       extras.push(`Expires on: ${expiresOn}`);
     }
@@ -611,7 +606,6 @@ export function CreateProductForm({
                 type="button"
                 onClick={() => {
                   setPayType('one-time');
-                  setFreeTrial(false);
                   setYearlyPricing(false);
                 }}
                 className={cn(
@@ -675,34 +669,9 @@ export function CreateProductForm({
 
             {payType === 'subscription' ? (
               <div className="mt-4 space-y-3">
-                <div className="rounded-xl border border-border px-3 py-3">
-                  <div className="flex items-center justify-between gap-3">
-                    <div>
-                      <p className="text-sm font-semibold">Offer a free trial</p>
-                      <p className="text-xs text-muted-foreground">
-                        Let fans try before they buy
-                      </p>
-                    </div>
-                    <Switch checked={freeTrial} onCheckedChange={setFreeTrial} />
-                  </div>
-                  {freeTrial ? (
-                    <div className="mt-3 space-y-2 border-t border-border pt-3">
-                      <Label htmlFor="cp-trial">Trial length</Label>
-                      <div className="flex items-center gap-2">
-                        <Input
-                          id="cp-trial"
-                          type="number"
-                          min="1"
-                          max="90"
-                          value={trialDays}
-                          onChange={(e) => setTrialDays(e.target.value)}
-                          className="h-10 w-24 rounded-xl"
-                        />
-                        <span className="text-sm font-medium text-muted-foreground">days</span>
-                      </div>
-                    </div>
-                  ) : null}
-                </div>
+                <p className="rounded-xl border border-border px-3 py-3 text-sm text-muted-foreground">
+                  Free trials are not currently supported.
+                </p>
 
                 <div className="flex items-center justify-between gap-3 rounded-xl border border-border px-3 py-3">
                   <div className="min-w-0">
@@ -932,11 +901,6 @@ export function CreateProductForm({
                 </div>
                 <div>
                   <p className="text-2xl font-extrabold tabular-nums text-foreground">{priceLabel}</p>
-                  {freeTrial && payType === 'subscription' ? (
-                    <p className="mt-1 text-xs font-semibold text-emerald-600 dark:text-emerald-400">
-                      {trialDays || '7'}-day free trial
-                    </p>
-                  ) : null}
                   <Button type="button" className="mt-3 h-11 w-full rounded-xl" disabled>
                     Get Access
                   </Button>

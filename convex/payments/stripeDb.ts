@@ -6,6 +6,7 @@ import {
   commercialRefForInvoice,
   isDuplicateWebhookReceipt,
   LAUNCH_BILLING_PERIOD,
+  DEFAULT_CREATOR_MONTHLY_PRICE_CENTS,
   normalizeBillingPeriod,
 } from "../lib/commerceIdentity";
 import { applySubscribeGrowthAttribution } from "../lib/growthAttribution";
@@ -97,7 +98,7 @@ export const getCheckoutContext = internalQuery({
     const creator = await ctx.db.get(args.creatorId);
     if (!creator || !creator.isPublished) throw new ConvexError("NOT_FOUND");
 
-    let amountCents = creator.monthlyPriceCents ?? 999;
+    let amountCents = creator.monthlyPriceCents ?? DEFAULT_CREATOR_MONTHLY_PRICE_CENTS;
     let productName: string | undefined;
     if (args.productId) {
       const product = await ctx.db.get(args.productId);

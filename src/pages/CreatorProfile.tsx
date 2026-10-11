@@ -28,6 +28,7 @@ import { format } from 'date-fns';
 import { toast } from 'sonner';
 import { subscriptionGrantsContentAccess } from '../../convex/lib/contentAccess';
 import { computeWinRate } from '../../convex/lib/results';
+import { DEFAULT_CREATOR_MONTHLY_PRICE_CENTS } from '../../convex/lib/commerceIdentity';
 import {
   CREATOR_PUBLIC_PROFILE_DEMO,
   isCreatorProfileDemoProductId,
@@ -322,7 +323,7 @@ const CreatorProfile = () => {
   const heroPriceCents = useDemo
     ? demo.subscribePriceCents
     : (featured?.priceCents ??
-      (creatorData?.monthlyPriceCents != null ? creatorData.monthlyPriceCents : 2999));
+      creatorData?.monthlyPriceCents ?? DEFAULT_CREATOR_MONTHLY_PRICE_CENTS);
 
   const checkout = (productId?: string) => {
     if (!creatorData || (productId && isCreatorProfileDemoProductId(productId))) {
@@ -387,7 +388,9 @@ const CreatorProfile = () => {
                   <h1 className="text-heading font-extrabold tracking-tight sm:text-heading-lg">
                     {displayName}
                   </h1>
-                  <BadgeCheck className="h-7 w-7 shrink-0 text-sky-400" aria-label="Verified" />
+                  {useDemo || creatorData?.verificationStatus === 'verified' ? (
+                    <BadgeCheck className="h-7 w-7 shrink-0 text-sky-400" aria-label="Verified" />
+                  ) : null}
                 </div>
                 <p className="mt-1.5 text-ui font-medium text-slate-300">@{handle}</p>
                 <p className="mt-4 max-w-xl text-body leading-relaxed text-slate-200">

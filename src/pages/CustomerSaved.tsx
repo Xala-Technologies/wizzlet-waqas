@@ -12,6 +12,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { api } from '@convex/_generated/api';
 import type { Id } from '@convex/_generated/dataModel';
 import { segmentedItemClassName, segmentedTrackClassName } from '@/lib/segmentedControl';
+import { DEFAULT_CREATOR_MONTHLY_PRICE_CENTS } from '../../convex/lib/commerceIdentity';
 
 interface SavedPost {
   id: string;
@@ -291,7 +292,7 @@ const CustomerSaved = () => {
                 </p>
                 <div className="flex items-center justify-between gap-3">
                   <span className="text-ui font-bold text-primary">
-                    ${Number(c.monthly_price ?? 0).toFixed(2)}/mo
+                    ${Number(c.monthly_price ?? DEFAULT_CREATOR_MONTHLY_PRICE_CENTS / 100).toFixed(2)}/mo
                   </span>
                   {c.username && (
                     <Button className="min-h-11" asChild>

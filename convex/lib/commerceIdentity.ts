@@ -64,6 +64,7 @@ export function yearMonthKey(epochMs: number): string {
 }
 
 export const LAUNCH_BILLING_PERIOD = "monthly" as const;
+export const DEFAULT_CREATOR_MONTHLY_PRICE_CENTS = 999;
 
 export type ProductBillingPeriod =
   | "daily"
