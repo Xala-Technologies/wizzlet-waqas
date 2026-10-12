@@ -12,7 +12,7 @@ export type TxnType =
   | 'Refund'
   | 'Chargeback';
 
-export type TxnStatus = 'succeeded' | 'refunded' | 'chargeback' | 'failed';
+export type TxnStatus = 'succeeded' | 'refunded' | 'chargeback' | 'failed' | 'pending';
 
 export type PaymentMethodKind = 'visa' | 'mastercard' | 'apple_pay' | 'google_pay' | 'unknown';
 

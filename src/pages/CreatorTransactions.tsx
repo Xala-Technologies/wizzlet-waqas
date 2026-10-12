@@ -67,6 +67,7 @@ import { kpiIconTone } from '@/lib/kpiIconTones';
 import { paymentTypeLabel, isRefundablePayment, type PaymentFeeDetail } from '@/lib/paymentFeeDetail';
 import { cn } from '@/lib/utils';
 import { downloadCsv } from '@/lib/csv';
+import { transactionStatus } from '@/lib/earningsReporting';
 
 const PAGE_SIZE = 10;
 
@@ -103,6 +104,7 @@ function statusLabel(status: TxnStatus): string {
   if (status === 'succeeded') return 'Succeeded';
   if (status === 'refunded') return 'Refunded';
   if (status === 'chargeback') return 'Chargeback';
+  if (status === 'pending') return 'Pending';
   return 'Failed';
 }
 
@@ -174,11 +176,7 @@ const CreatorTransactions = () => {
         platformFeeCents: p.platformFeeCents,
         creatorEarningsCents: p.creatorEarningsCents,
         feePercentage: p.feePercentage,
-        status: (p.status === 'chargeback' || type === 'Chargeback'
-          ? 'chargeback'
-          : p.status === 'refunded' || type === 'Refund' || p.amountCents < 0
-            ? 'refunded'
-            : p.status === 'failed' ? 'failed' : 'succeeded') as TxnStatus,
+        status: transactionStatus(p),
         paymentMethod: 'unknown' as const,
         paymentLast4: '',
         customerEmail: p.customerEmail ?? undefined,
@@ -202,12 +200,12 @@ const CreatorTransactions = () => {
         totalRevenueCents: earnings?.grossCents ?? 0,
         totalRevenueDelta: null as number | null,
         totalRefundsCents: liveRows
-          .filter((r) => r.amountCents < 0)
+          .filter((r) => r.status === 'refunded' && r.amountCents < 0)
           .reduce((sum, r) => sum + Math.abs(r.amountCents), 0),
         totalRefundsDelta: null as number | null,
         successfulPayments: liveRows.filter((r) => r.status === 'succeeded').length,
         successfulPaymentsDelta: null as number | null,
-        dateRangeLabel: 'All time',
+        dateRangeLabel: earnings?.truncated ? 'Loaded payments' : 'All time',
         summary: {
           successful: {
             count: liveRows.filter((r) => r.status === 'succeeded').length,
@@ -316,6 +314,10 @@ const CreatorTransactions = () => {
       });
       return;
     }
+    if (earnings?.truncated) {
+      toast.error('Payment history exceeds the export limit. No incomplete CSV was downloaded.');
+      return;
+    }
     if (filtered.length === 0) {
       toast.error('Nothing to export');
       return;
@@ -362,6 +364,7 @@ const CreatorTransactions = () => {
 
   return (
     <DashboardLayout type="creator" mainClassName="bg-clay-page">
+      {!useDemo && earnings?.truncated && <p role="status" className="mb-4 text-sm text-amber-600">Showing a limited payment history. Totals may be incomplete; CSV export is unavailable.</p>}
       <header className="mb-4 flex flex-col gap-3 sm:mb-5 sm:flex-row sm:items-center sm:justify-end sm:gap-8">
         <Button
           type="button"
@@ -406,7 +409,7 @@ const CreatorTransactions = () => {
               trendPositive: true,
             },
             {
-              label: 'Total revenue',
+              label: useDemo ? 'Total revenue' : 'Net paid revenue',
               value: money(metrics.totalRevenueCents),
               icon: DollarSign,
               iconClassName: kpiIconTone.emerald,
@@ -521,6 +524,7 @@ const CreatorTransactions = () => {
                 <SelectItem value="refunded">Refunded</SelectItem>
                 <SelectItem value="chargeback">Chargeback</SelectItem>
                 <SelectItem value="failed">Failed</SelectItem>
+                <SelectItem value="pending">Pending</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -776,6 +780,7 @@ const CreatorTransactions = () => {
                     <SelectItem value="refunded">Refunded</SelectItem>
                     <SelectItem value="chargeback">Chargeback</SelectItem>
                     <SelectItem value="failed">Failed</SelectItem>
+                <SelectItem value="pending">Pending</SelectItem>
                   </SelectContent>
                 </Select>
               </div>

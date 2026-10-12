@@ -1,3 +1,4 @@
+import { sumReportPayments, isReportPayment, paymentFeePercent } from "../lib/reportingLedger";
 import { paginationOptsValidator, paginationResultValidator } from "convex/server";
 import { query } from "../_generated/server";
 import { v } from "convex/values";
@@ -89,7 +90,8 @@ export const listUsersPage = query({
         .withIndex("by_userId", (q) => q.eq("userId", u._id))
         .take(joinCap);
       const activeSubs = subs.filter((s) => s.status === "active");
-      const totalSpend = subs.reduce((a, s) => a + s.amountCents / 100, 0);
+      const payments = await ctx.db.query("paymentEvents").withIndex("by_userId", q => q.eq("userId", u._id)).take(joinCap);
+      const totalSpend = sumReportPayments(payments).amountCents / 100;
 
       const ownedCreators = await ctx.db
         .query("creators")
@@ -99,16 +101,14 @@ export const listUsersPage = query({
       let creatorEarnings = 0;
       let paidOut = 0;
       let metricsTruncated =
-        subs.length >= joinCap || ownedCreators.length >= joinCap;
+        subs.length >= joinCap || ownedCreators.length >= joinCap || payments.length >= joinCap;
       for (const c of ownedCreators) {
-        const creatorSubs = await ctx.db
-          .query("subscriptions")
+        const creatorPayments = await ctx.db
+          .query("paymentEvents")
           .withIndex("by_creatorId", (q) => q.eq("creatorId", c._id))
           .take(joinCap);
-        if (creatorSubs.length >= joinCap) metricsTruncated = true;
-        creatorEarnings += creatorSubs
-          .filter((s) => s.status === "active")
-          .reduce((a, s) => a + s.creatorEarningsCents / 100, 0);
+        if (creatorPayments.length >= joinCap) metricsTruncated = true;
+        creatorEarnings += sumReportPayments(creatorPayments).creatorEarningsCents / 100;
 
         const payouts = await ctx.db
           .query("payouts")
@@ -176,7 +176,7 @@ export const listCreatorsPage = query({
         .withIndex("by_creatorId", (q) => q.eq("creatorId", c._id))
         .take(joinCap);
       const activeCount = subs.filter((s) => s.status === "active").length;
-      const monthly = (c.monthlyPriceCents ?? 999) / 100;
+      const payments = await ctx.db.query("paymentEvents").withIndex("by_creatorId", q => q.eq("creatorId", c._id)).take(joinCap);
       page.push({
         id: c._id,
         username: c.username ?? null,
@@ -187,8 +187,8 @@ export const listCreatorsPage = query({
         userId: c.userId,
         email: user?.email ?? "—",
         subCount: activeCount,
-        revenue: activeCount * monthly,
-        metricsTruncated: subs.length >= joinCap,
+        revenue: sumReportPayments(payments).amountCents / 100,
+        metricsTruncated: subs.length >= joinCap || payments.length >= joinCap,
         verificationStatus: c.verificationStatus,
       });
     }
@@ -303,8 +303,9 @@ const adminSupportRowValidator = v.object({
   createdAt: v.number(),
 });
 
-const adminTransactionRowValidator = v.object({
-  id: v.id("subscriptions"),
+const adminPaymentTransactionRowValidator = v.object({
+  id: v.id("paymentEvents"),
+  type: v.string(),
   status: v.string(),
   createdAt: v.number(),
   userName: v.string(),
@@ -347,7 +348,8 @@ export const listCustomersPage = query({
       const canceled = subs.filter(
         (s) => s.status === "canceled" || s.status === "cancelled",
       );
-      const totalSpent = subs.reduce((a, s) => a + s.amountCents / 100, 0);
+      const payments = await ctx.db.query("paymentEvents").withIndex("by_userId", q => q.eq("userId", row.userId)).take(joinCap);
+      const totalSpent = sumReportPayments(payments).amountCents / 100;
       const createdAt = u.createdAt ?? u._creationTime;
       const lastActivity = subs.reduce((max, s) => Math.max(max, s.createdAt), createdAt);
       page.push({
@@ -360,7 +362,7 @@ export const listCustomersPage = query({
         canceledCount: canceled.length,
         totalSpent,
         lastActivity,
-        metricsTruncated: subs.length >= joinCap,
+        metricsTruncated: subs.length >= joinCap || payments.length >= joinCap,
       });
     }
 
@@ -432,6 +434,87 @@ export const listSupportMessagesPage = query({
 
     return { ...result, page };
   },
+});
+
+const paymentStatusFilterValidator = v.union(
+  v.literal("all"), v.literal("settled"), v.literal("paid"),
+  v.literal("failed"), v.literal("pending"),
+);
+
+/** Cursor-paginated payment ledger. Cancellation records and sandbox entries are not transactions. */
+export const listPaymentTransactionsPage = query({
+  args: { paginationOpts: paginationOptsValidator, status: v.optional(paymentStatusFilterValidator) },
+  returns: paginationResultValidator(adminPaymentTransactionRowValidator),
+  handler: async (ctx, args) => {
+    await requireAdmin(ctx);
+    const status = args.status ?? "all";
+    const source = ctx.db.query("paymentEvents");
+    const result = status === "all"
+      ? await source.withIndex("by_createdAt").order("desc").paginate(args.paginationOpts)
+      : await source.withIndex("by_status", q => q.eq("status", status)).order("desc").paginate(args.paginationOpts);
+    const page = [];
+    for (const e of result.page.filter(isReportPayment)) {
+      const user = e.userId ? await ctx.db.get(e.userId) : null;
+      const creator = await ctx.db.get(e.creatorId);
+      page.push({
+        id: e._id, type: e.type, status: e.status, createdAt: e.createdAt,
+        userName: user?.fullName ?? user?.email ?? "Unknown",
+        creatorName: creator?.displayName ?? creator?.username ?? "Unknown",
+        amountCents: e.amountCents, platformFeeCents: e.platformFeeCents,
+        creatorEarningsCents: e.creatorEarningsCents,
+        feePercentage: paymentFeePercent(e.amountCents, e.platformFeeCents),
+      });
+    }
+    return { ...result, page };
+  },
+});
+
+const adminCampaignRowValidator = v.object({
+  id: v.id("emailCampaigns"),
+  subject: v.string(),
+  body: v.string(),
+  audience: v.union(v.string(), v.null()),
+  recipients: v.number(),
+  status: v.string(),
+  createdAt: v.number(),
+});
+
+/** Cursor-paginated in-app announcement history. */
+export const listCampaignsPage = query({
+  args: { paginationOpts: paginationOptsValidator },
+  returns: paginationResultValidator(adminCampaignRowValidator),
+  handler: async (ctx, args) => {
+    await requireAdmin(ctx);
+    const result = await ctx.db
+      .query("emailCampaigns")
+      .order("desc")
+      .paginate(args.paginationOpts);
+    return {
+      ...result,
+      page: result.page.map((c) => ({
+        id: c._id,
+        subject: c.subject,
+        body: c.body,
+        audience: c.audience ?? null,
+        recipients: c.recipients,
+        status: c.status,
+        createdAt: c.createdAt,
+      })),
+    };
+  },
+});
+
+// Retained for older published clients during the payment-ledger transition.
+const adminTransactionRowValidator = v.object({
+  id: v.id("subscriptions"),
+  status: v.string(),
+  createdAt: v.number(),
+  userName: v.string(),
+  creatorName: v.string(),
+  amountCents: v.number(),
+  creatorEarningsCents: v.number(),
+  platformFeeCents: v.number(),
+  feePercentage: v.number(),
 });
 
 const transactionStatusFilterValidator = v.union(
@@ -536,40 +619,5 @@ export const listTransactionsPage = query({
       .order("desc")
       .paginate(args.paginationOpts);
     return { ...result, page: await enrich(result.page) };
-  },
-});
-
-const adminCampaignRowValidator = v.object({
-  id: v.id("emailCampaigns"),
-  subject: v.string(),
-  body: v.string(),
-  audience: v.union(v.string(), v.null()),
-  recipients: v.number(),
-  status: v.string(),
-  createdAt: v.number(),
-});
-
-/** Cursor-paginated in-app announcement history. */
-export const listCampaignsPage = query({
-  args: { paginationOpts: paginationOptsValidator },
-  returns: paginationResultValidator(adminCampaignRowValidator),
-  handler: async (ctx, args) => {
-    await requireAdmin(ctx);
-    const result = await ctx.db
-      .query("emailCampaigns")
-      .order("desc")
-      .paginate(args.paginationOpts);
-    return {
-      ...result,
-      page: result.page.map((c) => ({
-        id: c._id,
-        subject: c.subject,
-        body: c.body,
-        audience: c.audience ?? null,
-        recipients: c.recipients,
-        status: c.status,
-        createdAt: c.createdAt,
-      })),
-    };
   },
 });

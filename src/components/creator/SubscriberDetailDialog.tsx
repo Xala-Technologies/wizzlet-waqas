@@ -33,7 +33,7 @@ export type SubscriberDetail = {
   status: 'active' | 'cancelled' | 'trial';
   joinedAtMs: number;
   renewalAtMs: number | null;
-  totalSpentCents: number;
+  totalSpentCents: number | null;
   avatarUrl: string | null;
 };
 
@@ -176,7 +176,7 @@ export function SubscriberDetailDialog({
             <StatTile
               icon={DollarSign}
               label="Spent"
-              value={`$${(row.totalSpentCents / 100).toFixed(2)}`}
+              value={row.totalSpentCents === null ? 'Unavailable' : `$${(row.totalSpentCents / 100).toFixed(2)}`}
               tone={kpiIconTone.emerald}
             />
             <StatTile

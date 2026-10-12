@@ -89,7 +89,7 @@ type Row = {
   status: UiStatus;
   joinedAtMs: number;
   renewalAtMs: number | null;
-  totalSpentCents: number;
+  totalSpentCents: number | null;
   avatarUrl: string | null;
   country: string;
   countryFlag: string;
@@ -188,7 +188,7 @@ const CreatorSubscribers = () => {
           status: mapStatus(s.status),
           joinedAtMs: s.createdAt,
           renewalAtMs: s.currentPeriodEnd ?? null,
-          totalSpentCents: s.amountCents ?? 0,
+          totalSpentCents: s.totalSpentCents ?? null,
           avatarUrl: s.user?.image ?? null,
           country: '—',
           countryFlag: '',
@@ -248,7 +248,7 @@ const CreatorSubscribers = () => {
     });
     list = [...list].sort((a, b) => {
       if (sortKey === 'oldest') return a.joinedAtMs - b.joinedAtMs;
-      if (sortKey === 'spent') return b.totalSpentCents - a.totalSpentCents;
+      if (sortKey === 'spent') return (b.totalSpentCents ?? -Infinity) - (a.totalSpentCents ?? -Infinity);
       return b.joinedAtMs - a.joinedAtMs;
     });
     return list;
@@ -341,7 +341,7 @@ const CreatorSubscribers = () => {
           statusLabel(r.status),
           r.country,
           format(r.joinedAtMs, 'yyyy-MM-dd'),
-          (r.totalSpentCents / 100).toFixed(2),
+          r.totalSpentCents === null ? 'Unavailable' : (r.totalSpentCents / 100).toFixed(2),
       ]),
     );
     toast.success('Exported subscribers CSV');
@@ -612,7 +612,7 @@ const CreatorSubscribers = () => {
                               <span>{row.product}</span>
                               <span>·</span>
                               <span className="tabular-nums">
-                                ${(row.totalSpentCents / 100).toFixed(2)}
+                                {row.totalSpentCents === null ? 'Unavailable' : `$${(row.totalSpentCents / 100).toFixed(2)}`}
                               </span>
                             </div>
                           </button>
@@ -707,7 +707,7 @@ const CreatorSubscribers = () => {
                               {format(row.joinedAtMs, 'MMM d, yyyy')}
                             </TableCell>
                             <TableCell className="font-semibold tabular-nums">
-                              ${(row.totalSpentCents / 100).toFixed(2)}
+                              {row.totalSpentCents === null ? 'Unavailable' : `$${(row.totalSpentCents / 100).toFixed(2)}`}
                             </TableCell>
                             <TableCell
                               className="text-right"
@@ -879,10 +879,10 @@ const CreatorSubscribers = () => {
                           </span>
                           <div>
                             <p className="text-xs font-semibold text-muted-foreground">
-                              Total spent
+                              Net paid
                             </p>
                             <p className="text-sm font-extrabold tabular-nums">
-                              ${(selectedRow.totalSpentCents / 100).toFixed(2)}
+                              {selectedRow.totalSpentCents === null ? 'Unavailable' : `$${(selectedRow.totalSpentCents / 100).toFixed(2)}`}
                             </p>
                           </div>
                         </li>
@@ -1068,9 +1068,9 @@ const CreatorSubscribers = () => {
                   {detailTab === 'payments' ? (
                     <div className="space-y-3">
                       <div className="rounded-xl border border-border px-4 py-3">
-                        <p className="text-xs font-semibold text-muted-foreground">Total spent</p>
+                        <p className="text-xs font-semibold text-muted-foreground">Net paid</p>
                         <p className="mt-1 text-lg font-extrabold tabular-nums">
-                          ${(selectedRow.totalSpentCents / 100).toFixed(2)}
+                          {selectedRow.totalSpentCents === null ? 'Unavailable' : `$${(selectedRow.totalSpentCents / 100).toFixed(2)}`}
                         </p>
                       </div>
                       <div className="rounded-xl border border-border px-4 py-3">

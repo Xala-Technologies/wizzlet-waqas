@@ -15,7 +15,7 @@ describe('financeOverview F-012', () => {
     expect(body).toMatch(/requireAdmin/);
     expect(body).toMatch(/takeSubsByStatus\(ctx, status\)/);
     expect(body).toMatch(/takePayoutsByStatus\(ctx, "paid"\)/);
-    expect(body).toMatch(/query\("subscriptions"\)\.order\("desc"\)\.take\(8\)/);
+    expect(body).toMatch(/takeReportPayments\(ctx\)/);
     expect(body).not.toMatch(/adminScanAll/);
     expect(body).not.toMatch(/adminScanAll\(ctx, "creators"\)/);
   });

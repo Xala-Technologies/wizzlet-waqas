@@ -1,3 +1,6 @@
+import type { Id } from "../_generated/dataModel";
+import { settledReportPayments } from "../lib/reportingLedger";
+import type { QueryCtx } from "../_generated/server";
 import { paginationOptsValidator, paginationResultValidator } from "convex/server";
 import { internalMutation, mutation, query, type MutationCtx } from "../_generated/server";
 import { ConvexError, v } from "convex/values";
@@ -169,6 +172,19 @@ export const myPaymentEvents = query({
   },
 });
 
+/** Unknown when the bounded ledger cannot establish an exact lifetime total. */
+async function subscriberSpend(ctx: QueryCtx, creatorId: Id<"creators">) {
+  const events = await ctx.db.query("paymentEvents")
+    .withIndex("by_creatorId", q => q.eq("creatorId", creatorId))
+    .take(ADMIN_SCAN_MAX_DOCS);
+  if (events.length >= ADMIN_SCAN_MAX_DOCS) return null;
+  const bySubscription = new Map<string, number>();
+  for (const e of settledReportPayments(events)) {
+    if (e.subscriptionId) bySubscription.set(e.subscriptionId, (bySubscription.get(e.subscriptionId) ?? 0) + e.amountCents);
+  }
+  return bySubscription;
+}
+
 /** Creator view: subscribers with user profile. Bounded for name maps / secondary UIs. */
 export const listSubscribersDetailed = query({
   args: {},
@@ -182,11 +198,13 @@ export const listSubscribersDetailed = query({
       .withIndex("by_creatorId", (q) => q.eq("creatorId", creator._id))
       .order("desc")
       .take(500);
+    const spent = await subscriberSpend(ctx, creator._id);
     const out = [];
     for (const s of subs) {
       const u = await ctx.db.get(s.userId);
       out.push({
         ...s,
+        totalSpentCents: spent ? spent.get(s._id) ?? 0 : null,
         user: u
           ? {
               _id: u._id,
@@ -218,11 +236,13 @@ export const listSubscribersDetailedPage = query({
       .order("desc")
       .paginate(args.paginationOpts);
 
+    const spent = await subscriberSpend(ctx, creator._id);
     const page = [];
     for (const s of result.page) {
       const u = await ctx.db.get(s.userId);
       page.push({
         ...s,
+        totalSpentCents: spent ? spent.get(s._id) ?? 0 : null,
         user: u
           ? {
               _id: u._id,

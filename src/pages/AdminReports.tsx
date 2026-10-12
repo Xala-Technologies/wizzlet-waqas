@@ -1,3 +1,4 @@
+import { sumReportPayments, settledReportPayments, paymentFeePercent } from "../../convex/lib/reportingLedger";
 import { cn } from '@/lib/utils';
 import { toCsv, downloadCsvText as download } from '@/lib/csv';
 import { useState } from 'react';
@@ -13,7 +14,7 @@ import { kpiIconTone, type KpiIconTone } from '@/lib/kpiIconTones';
 import { Button } from '@/components/ui/button';
 import { FileText, Download, Crown, Users, CreditCard, Percent, Wallet, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
-import { ADMIN_SCAN_MAX_DOCS, scanTruncationNote } from '@/lib/adminTruncation';
+import { ADMIN_SCAN_MAX_DOCS } from '@/lib/adminTruncation';
 
 type Row = Record<string, string | number>;
 
@@ -44,22 +45,23 @@ const AdminReports = () => {
     {
       key: 'creators',
       title: 'Creators Report',
-      description: 'Creators with subscriber counts, gross revenue, platform fees, and net earnings',
+      description: 'Creators with subscriber counts, net paid revenue, platform fees, and creator earnings',
       icon: Crown,
       iconTone: kpiIconTone.amber,
       build: (source) => {
         const active = source.subscriptions.filter((s) => s.status === 'active');
         return source.creators.map((c) => {
           const mine = active.filter((s) => s.creatorId === c._id);
+          const totals = sumReportPayments(source.payments.filter(p => p.creatorId === c._id));
           return {
             creator: c.displayName ?? '',
             username: c.username ?? '',
             published: c.isPublished ? 'yes' : 'no',
             monthly_price: money(c.monthlyPriceCents ?? 0),
             active_subscribers: mine.length,
-            gross_revenue: money(mine.reduce((a, b) => a + b.amountCents, 0)),
-            platform_fees: money(mine.reduce((a, b) => a + b.platformFeeCents, 0)),
-            net_earnings: money(mine.reduce((a, b) => a + b.creatorEarningsCents, 0)),
+            net_paid_revenue: money(totals.amountCents),
+            platform_fees: money(totals.platformFeeCents),
+            net_earnings: money(totals.creatorEarningsCents),
             joined: day(c.createdAt),
           };
         });
@@ -79,7 +81,7 @@ const AdminReports = () => {
             email: u.email ?? '',
             subscriptions: mine.length,
             active_subscriptions: mine.filter((s) => s.status === 'active').length,
-            total_spend: money(mine.reduce((a, b) => a + b.amountCents, 0)),
+            net_paid: money(sumReportPayments(source.payments.filter(p => p.userId === u._id)).amountCents),
             joined: day(u.createdAt ?? 0),
           };
         }),
@@ -87,23 +89,29 @@ const AdminReports = () => {
     {
       key: 'transactions',
       title: 'Transactions Report',
-      description: 'Subscription ledger with amounts, fees, creator earnings, and status',
+      description: 'Payment ledger including renewals, refunds, disputes, and failed attempts',
       icon: CreditCard,
       iconTone: kpiIconTone.violet,
       build: (source) => {
         const cMap = new Map(source.creators.map((c) => [c._id, c.displayName ?? c.username ?? '']));
         const uMap = new Map(source.users.map((u) => [u._id, u.email ?? '']));
-        return [...source.subscriptions]
+        const included = new Set(settledReportPayments(source.payments).map(p => p._id));
+        return [...source.payments]
           .sort((a, b) => b.createdAt - a.createdAt)
           .map((s) => ({
             date: day(s.createdAt),
-            creator: cMap.get(s.creatorId) ?? '',
-            customer: uMap.get(s.userId) ?? '',
+            creator: cMap.get(s.creatorId) ?? s.creatorId,
+            customer: s.userId ? uMap.get(s.userId) ?? s.userId : '',
+            payment_id: s._id,
+            type: s.type,
             amount: money(s.amountCents),
-            fee_percentage: s.feePercentage,
+            fee_percentage: paymentFeePercent(s.amountCents, s.platformFeeCents),
             platform_fee: money(s.platformFeeCents),
             creator_earnings: money(s.creatorEarningsCents),
             status: s.status,
+            payment_mode: s.paymentMode ?? 'legacy',
+            balance_state: s.balanceState ?? '',
+            included_in_totals: included.has(s._id) ? 'yes' : 'no',
           }));
       },
     },
@@ -131,7 +139,7 @@ const AdminReports = () => {
     {
       key: 'fees',
       title: 'Platform Fees Report',
-      description: 'Fee revenue per creator, split by intro and standard rates',
+      description: 'Collected fees after refunds, with current subscription rate counts',
       icon: Percent,
       iconTone: kpiIconTone.sky,
       build: (source) => {
@@ -139,15 +147,17 @@ const AdminReports = () => {
         return source.creators
           .map((c) => {
             const mine = active.filter((s) => s.creatorId === c._id);
+            const payments = settledReportPayments(source.payments.filter(p => p.creatorId === c._id));
             return {
               creator: c.displayName ?? c.username ?? '',
               subscriptions: mine.length,
               intro_rate_subs: mine.filter((s) => s.feePercentage <= 5).length,
               standard_rate_subs: mine.filter((s) => s.feePercentage > 5).length,
-              fees_collected: money(mine.reduce((a, b) => a + b.platformFeeCents, 0)),
+              payment_entries: payments.length,
+              fees_collected: money(sumReportPayments(payments).platformFeeCents),
             };
           })
-          .filter((r) => r.subscriptions > 0);
+          .filter((r) => r.subscriptions > 0 || r.payment_entries > 0);
       },
     },
   ];
@@ -156,6 +166,10 @@ const AdminReports = () => {
     setBusy(report.key);
     try {
       const source = await fetchReportSource(convex);
+      if (source.truncated) {
+        toast.error("Report exceeds the current export limit. No incomplete CSV was downloaded.");
+        return;
+      }
       const rows = report.build(source);
       if (rows.length === 0) {
         toast.info('No data available for this report yet');
@@ -185,14 +199,12 @@ const AdminReports = () => {
     }
   };
 
-  const capNote = scanTruncationNote(true, ADMIN_SCAN_MAX_DOCS);
 
   return (
     <DashboardLayout type="admin" mainClassName="bg-clay-page">
       <AdminPageHeader
         notice={
-          capNote ??
-          `Exports include up to ${ADMIN_SCAN_MAX_DOCS.toLocaleString()} newest rows per source table.`
+          `Money totals use settled payments after refunds. Exports stop if a source reaches the ${ADMIN_SCAN_MAX_DOCS.toLocaleString()}-row limit.`
         }
       />
 

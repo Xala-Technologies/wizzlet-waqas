@@ -16,6 +16,8 @@ import {
   isReservedPayoutStatus,
   sumSettledEarningsByCreatorCents,
 } from "../lib/payoutBalance";
+import { takeReportPayments, settledReportPayments, sumReportPayments } from "../lib/reportingLedger";
+import { reportPaymentValidator } from "../lib/validators";
 import { parsePayoutDefaults } from "../lib/payoutDefaults";
 
 const monthPointValidator = v.object({
@@ -35,7 +37,7 @@ const topCreatorValidator = v.object({
 });
 
 const recentTxnValidator = v.object({
-  id: v.id("subscriptions"),
+  id: v.id("paymentEvents"),
   creatorName: v.string(),
   userEmail: v.string(),
   amount: v.number(),
@@ -44,9 +46,7 @@ const recentTxnValidator = v.object({
 });
 
 /**
- * Finance aggregates from status-indexed subscription/payout buckets (F-012).
- * Does not scan the creators table. Gross is subscription rows in those buckets,
- * not settled paymentEvents (payoutsOverview remains the event-based lifetime).
+ * Settled ledger revenue and fees; subscription snapshots supply only active counts and MRR.
  */
 export const financeOverview = query({
   args: { nowMs: v.number() },
@@ -82,23 +82,27 @@ export const financeOverview = query({
     const subScans = await Promise.all(
       subStatuses.map((status) => takeSubsByStatus(ctx, status)),
     );
-    const [paidScan, completedScan, pendingScan, processingScan, requestedScan] =
+    const [paidScan, completedScan, pendingScan, processingScan, requestedScan, approvedScan] =
       await Promise.all([
         takePayoutsByStatus(ctx, "paid"),
         takePayoutsByStatus(ctx, "completed"),
         takePayoutsByStatus(ctx, "pending"),
         takePayoutsByStatus(ctx, "processing"),
         takePayoutsByStatus(ctx, "requested"),
+        takePayoutsByStatus(ctx, "approved"),
       ]);
-    const recentRows = await ctx.db.query("subscriptions").order("desc").take(8);
+    const ledger = await takeReportPayments(ctx);
+    const payments = settledReportPayments(ledger.docs);
+    const totals = sumReportPayments(ledger.docs);
+    const recentRows = ledger.docs.slice(0, 8);
 
     const truncated =
-      subScans.some((s) => s.truncated) ||
+      ledger.truncated || subScans.some((s) => s.truncated) ||
       paidScan.truncated ||
       completedScan.truncated ||
       pendingScan.truncated ||
       processingScan.truncated ||
-      requestedScan.truncated;
+      requestedScan.truncated || approvedScan.truncated;
 
     const seenSub = new Set<string>();
     const subs: Doc<"subscriptions">[] = [];
@@ -111,12 +115,9 @@ export const financeOverview = query({
     }
 
     const active = subs.filter((s) => s.status === "active");
-    const grossRevenue = subs.reduce((a, b) => a + b.amountCents / 100, 0);
-    const feeRevenue = subs.reduce((a, b) => a + b.platformFeeCents / 100, 0);
-    const creatorEarnings = subs.reduce(
-      (a, b) => a + b.creatorEarningsCents / 100,
-      0,
-    );
+    const grossRevenue = totals.amountCents / 100;
+    const feeRevenue = totals.platformFeeCents / 100;
+    const creatorEarnings = totals.creatorEarningsCents / 100;
     const mrr = active.reduce((a, b) => a + b.amountCents / 100, 0);
     const feeMrr = active.reduce((a, b) => a + b.platformFeeCents / 100, 0);
     const paidOut = [...paidScan.docs, ...completedScan.docs].reduce(
@@ -127,8 +128,15 @@ export const financeOverview = query({
       ...pendingScan.docs,
       ...processingScan.docs,
       ...requestedScan.docs,
+      ...approvedScan.docs,
     ].reduce((a, b) => a + b.amountCents / 100, 0);
-    const liability = Math.max(0, creatorEarnings - paidOut - inFlight);
+    // A debt owed by one creator must not erase money owed to another creator.
+    const owedByCreator = new Map<string, number>();
+    for (const e of payments) owedByCreator.set(e.creatorId, (owedByCreator.get(e.creatorId) ?? 0) + e.creatorEarningsCents);
+    for (const p of [...paidScan.docs, ...completedScan.docs, ...pendingScan.docs, ...processingScan.docs, ...requestedScan.docs, ...approvedScan.docs]) {
+      owedByCreator.set(p.creatorId, (owedByCreator.get(p.creatorId) ?? 0) - p.amountCents);
+    }
+    const liability = [...owedByCreator.values()].reduce((sum, cents) => sum + Math.max(0, cents), 0) / 100;
     const effectiveRate = grossRevenue > 0 ? (feeRevenue / grossRevenue) * 100 : 0;
 
     const now = new Date(args.nowMs);
@@ -149,7 +157,7 @@ export const financeOverview = query({
         earnings: 0,
       });
     }
-    for (const s of subs) {
+    for (const s of payments) {
       const d = new Date(s.createdAt);
       const pos = monthIndex.get(`${d.getFullYear()}-${d.getMonth()}`);
       if (pos === undefined) continue;
@@ -158,11 +166,13 @@ export const financeOverview = query({
       monthly[pos]!.earnings += s.creatorEarningsCents / 100;
     }
 
+    const activeByCreator = new Map<string, number>();
+    for (const sub of active) activeByCreator.set(sub.creatorId, (activeByCreator.get(sub.creatorId) ?? 0) + 1);
     const byCreator = new Map<
       string,
       { revenue: number; earnings: number; fees: number; subs: number }
     >();
-    for (const s of active) {
+    for (const s of payments) {
       const prev = byCreator.get(s.creatorId) ?? {
         revenue: 0,
         earnings: 0,
@@ -173,7 +183,7 @@ export const financeOverview = query({
         revenue: prev.revenue + s.amountCents / 100,
         earnings: prev.earnings + s.creatorEarningsCents / 100,
         fees: prev.fees + s.platformFeeCents / 100,
-        subs: prev.subs + 1,
+        subs: activeByCreator.get(s.creatorId) ?? 0,
       });
     }
     const topCreatorsRaw = [...byCreator.entries()]
@@ -203,7 +213,7 @@ export const financeOverview = query({
 
     const recentTransactions = [];
     for (const s of recentRows) {
-      const user = await ctx.db.get(s.userId);
+      const user = s.userId ? await ctx.db.get(s.userId) : null;
       recentTransactions.push({
         id: s._id,
         creatorName: creatorNames.get(s.creatorId) ?? "Unknown creator",
@@ -267,6 +277,9 @@ export const feesOverview = query({
     await requireAdmin(ctx);
     const activeScan = await takeSubsByStatus(ctx, "active");
     const active = activeScan.docs;
+    const ledger = await takeReportPayments(ctx);
+    const payments = settledReportPayments(ledger.docs);
+    const totals = sumReportPayments(ledger.docs);
 
     const now = new Date(args.nowMs);
     const buckets: Array<{ month: string; fees: number }> = [];
@@ -279,21 +292,23 @@ export const feesOverview = query({
         fees: 0,
       });
     }
-    for (const s of active) {
+    for (const s of payments) {
       const d = new Date(s.createdAt);
       const pos = index.get(`${d.getFullYear()}-${d.getMonth()}`);
       if (pos !== undefined) buckets[pos]!.fees += s.platformFeeCents / 100;
     }
 
+    const activeByCreator = new Map<string, number>();
+    for (const sub of active) activeByCreator.set(sub.creatorId, (activeByCreator.get(sub.creatorId) ?? 0) + 1);
     const feeByCreator = new Map<
       string,
       { fee: number; count: number; amount: number }
     >();
-    for (const s of active) {
+    for (const s of payments) {
       const prev = feeByCreator.get(s.creatorId) ?? { fee: 0, count: 0, amount: 0 };
       feeByCreator.set(s.creatorId, {
         fee: prev.fee + s.platformFeeCents / 100,
-        count: prev.count + 1,
+        count: activeByCreator.get(s.creatorId) ?? 0,
         amount: prev.amount + s.amountCents / 100,
       });
     }
@@ -324,12 +339,9 @@ export const feesOverview = query({
       .sort((a, b) => b.feeEarned - a.feeEarned);
 
     return {
-      totalRevenue: active.reduce((a, b) => a + b.amountCents / 100, 0),
-      totalFees: active.reduce((a, b) => a + b.platformFeeCents / 100, 0),
-      totalCreatorEarnings: active.reduce(
-        (a, b) => a + b.creatorEarningsCents / 100,
-        0,
-      ),
+      totalRevenue: totals.amountCents / 100,
+      totalFees: totals.platformFeeCents / 100,
+      totalCreatorEarnings: totals.creatorEarningsCents / 100,
       introFeeCount: active.filter((s) => s.feePercentage <= 5).length,
       standardFeeCount: active.filter((s) => s.feePercentage > 5).length,
       monthlyFees: buckets.map((b) => ({
@@ -337,7 +349,7 @@ export const feesOverview = query({
         fees: Number(b.fees.toFixed(2)),
       })),
       creatorFees,
-      truncated: activeScan.truncated || namesTruncated,
+      truncated: ledger.truncated || activeScan.truncated || namesTruncated,
       listLimit: ADMIN_SCAN_MAX_DOCS,
     };
   },
@@ -465,7 +477,9 @@ export const customersOverview = query({
         takeSubsByStatus(ctx, "past_due"),
         takeSubsByStatus(ctx, "failed"),
       ]);
+    const ledger = await takeReportPayments(ctx);
     const truncated =
+      ledger.truncated ||
       activeScan.truncated ||
       canceledScan.truncated ||
       cancelledScan.truncated ||
@@ -478,7 +492,6 @@ export const customersOverview = query({
         active: number;
         canceled: number;
         problem: number;
-        spent: number;
       }
     >();
 
@@ -491,9 +504,7 @@ export const customersOverview = query({
           active: 0,
           canceled: 0,
           problem: 0,
-          spent: 0,
         };
-        cur.spent += s.amountCents / 100;
         if (kind === "active") cur.active += 1;
         else if (kind === "canceled") cur.canceled += 1;
         else cur.problem += 1;
@@ -511,10 +522,9 @@ export const customersOverview = query({
     let activeSubCount = 0;
     let atRiskCount = 0;
     let churnedCount = 0;
-    let revenue = 0;
+    const revenue = sumReportPayments(ledger.docs).amountCents / 100;
 
     for (const row of byUser.values()) {
-      revenue += row.spent;
       activeSubCount += row.active;
       if (row.active > 0) activeSubscriberCount += 1;
       if (row.problem > 0) atRiskCount += 1;
@@ -769,6 +779,7 @@ export const reportSourceData = query({
         createdAt: v.number(),
       }),
     ),
+    payments: v.array(reportPaymentValidator),
     truncated: v.boolean(),
     listLimit: v.number(),
   }),
@@ -812,9 +823,10 @@ export const reportSourceData = query({
     ]);
     const subsScan = mergeIndexedTakes(subScans);
     const payoutsScan = mergeIndexedTakes(payoutScans);
+    const ledger = await takeReportPayments(ctx);
     const usersTruncated = userDocs.length >= ADMIN_SCAN_MAX_DOCS;
     const truncated =
-      creatorsScan.truncated ||
+      ledger.truncated || creatorsScan.truncated ||
       usersTruncated ||
       subsScan.truncated ||
       payoutsScan.truncated;
@@ -856,6 +868,7 @@ export const reportSourceData = query({
         processedAt: p.processedAt ?? null,
         createdAt: p.createdAt,
       })),
+      payments: ledger.docs.map(({ _id, creatorId, userId, subscriptionId, type, status, amountCents, platformFeeCents, creatorEarningsCents, createdAt, paymentMode, balanceState, commercialRef, relatedCommercialRef }) => ({ _id, creatorId, userId, subscriptionId, type, status, amountCents, platformFeeCents, creatorEarningsCents, createdAt, paymentMode, balanceState, commercialRef, relatedCommercialRef })),
       truncated,
       listLimit: ADMIN_SCAN_MAX_DOCS,
     };

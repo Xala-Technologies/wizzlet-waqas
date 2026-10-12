@@ -56,7 +56,7 @@ const AdminFinance = () => {
     const stats = overview;
     return [
       {
-        label: 'Gross Revenue (all time)',
+        label: 'Net paid revenue (all time)',
         value: fmt(stats.grossRevenue),
         icon: DollarSign,
         iconClassName: kpiIconTone.emerald,

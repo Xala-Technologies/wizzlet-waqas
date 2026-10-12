@@ -1,3 +1,4 @@
+import { earningsSeries, chargesByType } from "@/lib/earningsReporting";
 import { useMemo, useState } from 'react';
 import { Link, useLocation, useSearchParams } from 'react-router-dom';
 import { useQuery } from 'convex/react';
@@ -154,8 +155,6 @@ const CreatorEarnings = () => {
     [payouts],
   );
 
-  const feeRate =
-    (earnings?.feePolicy?.currentFeePercent ?? 10) / 100;
   const metrics = useDemo
     ? CREATOR_EARNINGS_DEMO_METRICS
     : {
@@ -168,46 +167,36 @@ const CreatorEarnings = () => {
         pendingPayoutCents: balance?.pendingCents ?? 0,
         pendingPayoutDelta: null as number | null,
         inFlightPayoutCents: pendingFromPayouts,
-        dateRangeLabel: 'Last 30 days',
+        dateRangeLabel: earnings?.truncated ? 'Loaded history' : 'All time',
         upcomingPayoutCents: balance?.availableCents ?? 0,
         upcomingPayoutDateLabel: 'Next Monday',
       };
 
   const series = useDemo
     ? CREATOR_EARNINGS_DEMO_SERIES
-    : (earnings?.monthly ?? []).slice(-8).map((m) => {
-        const revenue = Math.round(m.revenueCents) / 100;
-        const net = Math.round(revenue * (1 - feeRate) * 100) / 100;
-        const payoutsApprox = Math.round(revenue * 0.4 * 100) / 100;
-        return {
-          label: m.month.length >= 7 ? m.month.slice(5) : m.month,
-          revenue,
-          net,
-          payouts: payoutsApprox,
-        };
-      });
+    : earningsSeries(earnings?.monthly ?? [], payouts ?? []);
 
-  const byType = useDemo
-    ? CREATOR_EARNINGS_DEMO_BY_TYPE
-    : [{ name: 'Subscriptions', value: 100, color: 'hsl(239 84% 55%)' }];
+  const byType = useDemo ? CREATOR_EARNINGS_DEMO_BY_TYPE : chargesByType(earnings?.recentPayments ?? []);
 
   const transactions: DemoEarningTxn[] = useDemo
     ? CREATOR_EARNINGS_DEMO_TRANSACTIONS
     : (earnings?.recentPayments ?? []).slice(0, 8).map((p) => {
-        const isSub = p.label.toLowerCase().includes('subscription');
+        const type: DemoEarningTxn['type'] = ['subscription_charge', 'renewal'].includes(p.type) ? 'Subscription'
+          : p.type === 'tip' ? 'Tip' : p.type === 'refund' ? 'Refund' : p.type === 'dispute' ? 'Dispute'
+          : p.type === 'adjustment' ? 'Adjustment' : 'One-time purchase';
         return {
           id: p.id,
           dateMs: p.createdAt,
-          type: (isSub ? 'Subscription' : 'One-time purchase') as DemoEarningTxn['type'],
+          type,
           source: p.label.replace(/^Subscription\s*—\s*/i, '') || p.label,
           amountCents: p.amountCents,
           feeCents: p.platformFeeCents,
           netCents: p.creatorEarningsCents,
-          status: 'completed' as const,
+          status: (['settled', 'paid'].includes(p.status) ? 'completed' : p.status === 'failed' ? 'failed' : 'pending') as DemoEarningTxn['status'],
         };
       });
 
-  const donutTotalLabel = money(metrics.totalRevenueCents);
+  const donutTotalLabel = money(useDemo ? metrics.totalRevenueCents : chargesByType(earnings?.recentPayments ?? []).reduce((sum, row) => sum + row.cents, 0));
 
   if (loading) {
     return (
@@ -264,7 +253,7 @@ const CreatorEarnings = () => {
               variant="clay"
           items={[
                 {
-                  label: 'Total revenue',
+                  label: useDemo ? 'Total revenue' : 'Net paid revenue',
                   value: money(metrics.totalRevenueCents),
                   icon: DollarSign,
                   iconClassName: kpiIconTone.emerald,
@@ -403,7 +392,7 @@ const CreatorEarnings = () => {
 
             <section className={cn(clayCard, 'p-5 xl:col-span-4')}>
               <h2 className="mb-1 text-base font-extrabold tracking-tight text-foreground">
-                Revenue by Product Type
+                Gross charges by product type
               </h2>
               <div className="relative mx-auto h-48 w-full max-w-[14rem]">
                 <ResponsiveContainer width="100%" height="100%">

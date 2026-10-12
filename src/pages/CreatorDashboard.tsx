@@ -112,7 +112,7 @@ const CreatorDashboard = () => {
 
   const activeSubs = (subs ?? []).filter((s) => s.status === 'active');
   const realPostCount = postsRaw?.length ?? 0;
-  const realMrrNet = (earnings?.netCents ?? 0) / 100;
+  const realMrrNet = (earnings?.monthlyRecurringNetCents ?? 0) / 100;
   const realPostViews = (analytics ?? []).filter((e) => e.eventType === 'post_view').length;
   const displayName =
     creator?.displayName?.trim() ||

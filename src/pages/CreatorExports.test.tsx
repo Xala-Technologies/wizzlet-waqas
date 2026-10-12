@@ -14,11 +14,13 @@ const data = vi.hoisted(() => ({
   profile: { username: 'audit', display_name: '=1+1', referral_code: 'audit' },
   referrals: [{ _id: 'ref1', converted: true, referredEmail: 'qa@example.invalid', commissionEarnedCents: 123, createdAt: 1760000000000 }],
   reportSource: { creators: [{ _id: 'creator1', displayName: '=1+1', username: 'audit', createdAt: 1760000000000 }],
-    users: [], subscriptions: [], payouts: [], truncated: false, listLimit: 5000 },
+    users: [{ _id: 'member1', email: 'qa@example.invalid' }],
+    subscriptions: [{ _id: 'sub1', userId: 'member1', creatorId: 'creator1', status: 'cancelled', amountCents: 1000, platformFeeCents: 100, creatorEarningsCents: 900, feePercentage: 10, createdAt: 1760000000000 }],
+    payments: [1000, 1000, -500].map((amount, i) => ({ _id: `ledger${i}`, userId: 'member1', creatorId: 'creator1', status: 'settled', type: ['subscription_charge', 'renewal', 'refund'][i], amountCents: amount, platformFeeCents: amount / 10, creatorEarningsCents: amount * 0.9, createdAt: 1760000000000 })), payouts: [], truncated: false, listLimit: 5000 },
   mutate: vi.fn(),
-  subscribers: [{ _id: 'sub1', userId: 'member1', status: 'active', amountCents: 1234,
+  subscribers: [{ _id: 'sub1', userId: 'member1', status: 'active', amountCents: 1234, totalSpentCents: 1234,
     createdAt: 1760000000000, user: { fullName: 'Doe, "Jane"\nQA', email: 'qa@example.invalid' } }],
-  earnings: { grossCents: 1234, recentPayments: [
+  earnings: { truncated: false, grossCents: 1234, recentPayments: [
     { id: 'payment1', type: 'subscription_charge', label: 'Subscription — Doe, "Jane"', createdAt: 1760000000000,
       productName: 'Monthly, VIP', amountCents: 1234, platformFeeCents: 123,
       creatorEarningsCents: 1111, feePercentage: 10, status: 'succeeded',
@@ -49,6 +51,8 @@ let downloaded: Blob | undefined;
 let filename: string | undefined;
 beforeEach(() => {
   Object.assign(data.earnings.recentPayments[0], { type: 'subscription_charge', label: 'Subscription — Doe, "Jane"', amountCents: 1234, status: 'succeeded' });
+  data.reportSource.truncated = false;
+  data.earnings.truncated = false;
   downloaded = undefined;
   filename = undefined;
   vi.stubGlobal('URL', Object.assign(URL, {
@@ -84,6 +88,43 @@ describe('creator CSV exports', () => {
     downloaded = undefined;
     fireEvent.click(screen.getByRole('button', { name: `Download ${savedName}` }));
     expect(await exportedRows()).toEqual(original);
+  });
+
+  it.each([
+    [0, 'net_paid_revenue', '15.00'],
+    [1, 'net_paid', '15.00'],
+    [4, 'fees_collected', '1.50'],
+  ])('report %s uses settled ledger totals after cancellation', async (index, field, expected) => {
+    render(<MemoryRouter><AdminReports /></MemoryRouter>);
+    fireEvent.click(screen.getAllByRole('button', { name: 'CSV' })[Number(index)]);
+    await waitFor(() => expect(downloaded).toBeDefined());
+    const rows = await exportedRows();
+    expect(rows[1][rows[0].indexOf(String(field))]).toBe(expected);
+  });
+
+  it('exports the renewal and refund as separate payment records', async () => {
+    render(<MemoryRouter><AdminReports /></MemoryRouter>);
+    fireEvent.click(screen.getAllByRole('button', { name: 'CSV' })[2]);
+    await waitFor(() => expect(downloaded).toBeDefined());
+    const rows = await exportedRows();
+    expect(rows).toHaveLength(4);
+    expect(rows.slice(1).map(row => row[rows[0].indexOf('type')])).toContain('renewal');
+    expect(rows.slice(1).map(row => row[rows[0].indexOf('amount')])).toContain('-5.00');
+  });
+
+  it('refuses an incomplete admin report instead of saving partial totals', async () => {
+    data.reportSource.truncated = true;
+    render(<MemoryRouter><AdminReports /></MemoryRouter>);
+    fireEvent.click(screen.getAllByRole('button', { name: 'CSV' })[0]);
+    await waitFor(() => expect(screen.getAllByRole('button', { name: 'CSV' })).toHaveLength(5));
+    expect(downloaded).toBeUndefined();
+  });
+
+  it('refuses an incomplete creator transaction export', () => {
+    data.earnings.truncated = true;
+    render(<MemoryRouter initialEntries={['/?demo=0']}><CreatorTransactions /></MemoryRouter>);
+    fireEvent.click(screen.getByRole('button', { name: 'Export' }));
+    expect(downloaded).toBeUndefined();
   });
 
   it('keeps a subscriber name with commas, quotes and line breaks in one cell', async () => {
