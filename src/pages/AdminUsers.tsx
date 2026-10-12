@@ -12,7 +12,8 @@ import { DesktopTableRegion, MobileRecordCards } from '@/components/dashboard/Mo
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Users, Loader2, Search, Eye, Download, Shield, Inbox, Crown } from 'lucide-react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { useDialogFocusReturn } from '@/hooks/useDialogFocusReturn';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { downloadCsv } from '@/lib/csv';
 import { joinMetricsTruncationNote } from '@/lib/adminTruncation';
@@ -47,6 +48,7 @@ const AdminUsers = () => {
   const [search, setSearch] = useState('');
   const [grantRole, setGrantRole] = useState<'admin' | 'moderator' | 'creator' | 'subscriber' | 'user'>('subscriber');
   const [granting, setGranting] = useState(false);
+  const accountFocus = useDialogFocusReturn();
 
   const { results, status, loadMore } = usePaginatedQuery(
     api.admin.paginatedLists.listUsersPage,
@@ -384,7 +386,10 @@ const AdminUsers = () => {
                   <div><span className="text-muted-foreground">Earnings</span><p className="font-medium mt-0.5 text-emerald-400">{u.creatorEarnings > 0 ? `$${u.creatorEarnings.toFixed(2)}` : '—'}</p></div>
                   <div><span className="text-muted-foreground">Joined</span><p className="font-medium mt-0.5">{format(new Date(u.created_at), 'MMM d, yyyy')}</p></div>
                 </div>
-                <Button variant="outline" size="sm" className="mt-3 h-11 w-full text-caption" onClick={() => setSelected(u)}>
+                <Button variant="outline" size="sm" className="mt-3 h-11 w-full text-caption" onClick={(event) => {
+                  accountFocus.rememberOpener(event.currentTarget);
+                  setSelected(u);
+                }}>
                   <Eye className="mr-1.5 h-3.5 w-3.5" /> View account
                 </Button>
               </li>
@@ -425,7 +430,10 @@ const AdminUsers = () => {
                     <td className="p-4 text-caption text-muted-foreground">{format(new Date(u.created_at), 'MMM d, yyyy')}</td>
                     <td className="p-4">
                       <div className="flex items-center justify-end gap-1">
-                        <Button variant="ghost" size="sm" className="h-9 w-9 px-0 text-caption" onClick={() => setSelected(u)} title="View account" aria-label="View account">
+                        <Button variant="ghost" size="sm" className="h-9 w-9 px-0 text-caption" onClick={(event) => {
+                          accountFocus.rememberOpener(event.currentTarget);
+                          setSelected(u);
+                        }} title="View account" aria-label="View account">
                           <Eye className="h-3.5 w-3.5" />
                         </Button>
                       </div>
@@ -452,8 +460,11 @@ const AdminUsers = () => {
         </>
       )}
       <Dialog open={!!selected} onOpenChange={(open) => !open && setSelected(null)}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader><DialogTitle>{selected?.full_name ?? 'Account'}</DialogTitle></DialogHeader>
+        <DialogContent className="sm:max-w-md" onCloseAutoFocus={accountFocus.restoreFocus}>
+          <DialogHeader>
+            <DialogTitle>{selected?.full_name ?? 'Account'}</DialogTitle>
+            <DialogDescription>Review account activity and manage roles.</DialogDescription>
+          </DialogHeader>
           {selected && (
             <div className="space-y-3 text-sm">
               <div className="flex justify-between"><span className="text-muted-foreground">Email</span><span>{selected.email}</span></div>
@@ -484,12 +495,12 @@ const AdminUsers = () => {
                 </span>
               </div>
               <div className="border-t border-border pt-3 space-y-2">
-                <p className="text-caption font-medium text-muted-foreground flex items-center gap-1">
+                <label htmlFor="account-grant-role" className="text-caption font-medium text-muted-foreground flex items-center gap-1">
                   <Shield className="h-3 w-3" /> Grant role
-                </p>
+                </label>
                 <div className="flex gap-2">
                   <Select value={grantRole} onValueChange={(v) => setGrantRole(v as typeof grantRole)}>
-                    <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
+                    <SelectTrigger id="account-grant-role" className="h-9"><SelectValue /></SelectTrigger>
                     <SelectContent>
                       <SelectItem value="subscriber">Subscriber</SelectItem>
                       <SelectItem value="creator">Creator</SelectItem>

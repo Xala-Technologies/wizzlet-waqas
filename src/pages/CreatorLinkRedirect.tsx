@@ -5,6 +5,7 @@ import { api } from '../../convex/_generated/api';
 import type { Id } from '../../convex/_generated/dataModel';
 import { sanitizeCreatorLinkId, storeCreatorLinkId } from '@/lib/creatorLinkHandoff';
 import { Loader2 } from 'lucide-react';
+import { normalizeCreatorLinkUrl } from '@convex/lib/creatorLinkUrl';
 
 /**
  * Public tracking redirect: `/go/:linkId` records a click then navigates to the destination.
@@ -30,9 +31,11 @@ const CreatorLinkRedirect = () => {
         });
         if (cancelled) return;
         if (!link) { setStatus('not-found'); return; }
+        const destination = normalizeCreatorLinkUrl(link.url);
+        if (!destination) { setStatus('not-found'); return; }
         storeCreatorLinkId(safeId);
         await recordClick({ linkId: safeId as Id<'creatorLinks'> }).catch(() => undefined);
-        if (!cancelled) window.location.replace(link.url);
+        if (!cancelled) window.location.replace(destination);
       } catch {
         if (!cancelled) setStatus('error');
       }

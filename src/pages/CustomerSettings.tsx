@@ -16,6 +16,8 @@ import { DashboardLayout } from '@/components/dashboard/DashboardLayout';
 import { clayCard } from '@/lib/overviewClay';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { useDialogFocusReturn } from '@/hooks/useDialogFocusReturn';
 import { Switch } from '@/components/ui/switch';
 import {
   AlertDialog,
@@ -95,6 +97,18 @@ const CustomerSettings = () => {
   const [messagesOn, setMessagesOn] = useState(true);
   const [billingOn, setBillingOn] = useState(true);
   const [savingNotif, setSavingNotif] = useState(false);
+  const profileBeforeEdit = useRef({ fullName: '', phone: '' });
+  const passwordFocus = useDialogFocusReturn();
+
+  const setPasswordOpen = (open: boolean) => {
+    if (savingPassword) return;
+    setPasswordDialogOpen(open);
+    if (!open) {
+      setCurrentPassword('');
+      setPassword('');
+      setConfirmPassword('');
+    }
+  };
 
   const loading =
     user
@@ -341,7 +355,12 @@ const CustomerSettings = () => {
                   variant="outline"
                   size="sm"
                   className="h-9 rounded-xl"
-                  onClick={() => setEditing(false)}
+                  disabled={savingProfile}
+                  onClick={() => {
+                    setFullName(profileBeforeEdit.current.fullName);
+                    setPhone(profileBeforeEdit.current.phone);
+                    setEditing(false);
+                  }}
                 >
                   Cancel
                 </Button>
@@ -362,7 +381,10 @@ const CustomerSettings = () => {
                 variant="outline"
                 size="sm"
                 className="h-9 rounded-xl border-border"
-                onClick={() => setEditing(true)}
+                onClick={() => {
+                  profileBeforeEdit.current = { fullName, phone };
+                  setEditing(true);
+                }}
               >
                 Edit
               </Button>
@@ -379,7 +401,7 @@ const CustomerSettings = () => {
                 className="h-11 rounded-xl border-border bg-muted/40 text-sm"
                 value={fullName}
                 onChange={(e) => setFullName(e.target.value)}
-                disabled={!editing}
+                disabled={!editing || savingProfile}
               />
             </div>
             <div className="space-y-1.5 sm:col-span-2">
@@ -436,7 +458,7 @@ const CustomerSettings = () => {
                   value={displayPhone}
                   onChange={(e) => setPhone(e.target.value)}
                   placeholder="+47 412 34 567"
-                  disabled={!editing}
+                  disabled={!editing || savingProfile}
                 />
               </div>
             </div>
@@ -457,12 +479,13 @@ const CustomerSettings = () => {
                   type="button"
                   size="sm"
                   className="shrink-0 font-semibold"
-                  onClick={() => {
+                  onClick={(event) => {
                     if (!hasPasswordAccount && !useDemo) {
                       toast.message('This account signs in with a provider — no password to change.');
                       return;
                     }
-                    setPasswordDialogOpen(true);
+                    passwordFocus.rememberOpener(event.currentTarget);
+                    setPasswordOpen(true);
                   }}
                 >
                   Change Password
@@ -637,8 +660,8 @@ const CustomerSettings = () => {
         demo={useDemo}
       />
 
-      <Dialog open={passwordDialogOpen} onOpenChange={setPasswordDialogOpen}>
-        <DialogContent>
+      <Dialog open={passwordDialogOpen} onOpenChange={setPasswordOpen}>
+        <DialogContent onCloseAutoFocus={passwordFocus.restoreFocus}>
           <DialogHeader>
             <DialogTitle>Change password</DialogTitle>
             <DialogDescription>
@@ -658,37 +681,46 @@ const CustomerSettings = () => {
                 void changePassword();
               }}
             >
+              <Label htmlFor="current-password">Current password</Label>
               <Input
+                id="current-password"
                 type="password"
                 className="h-11 rounded-xl"
                 placeholder="Current password"
                 value={currentPassword}
                 onChange={(e) => setCurrentPassword(e.target.value)}
                 autoComplete="current-password"
+                disabled={savingPassword}
                 required
               />
+              <Label htmlFor="new-password">New password</Label>
               <Input
+                id="new-password"
                 type="password"
                 className="h-11 rounded-xl"
                 placeholder="New password (min 8 characters)"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 autoComplete="new-password"
+                disabled={savingPassword}
                 minLength={8}
                 required
               />
+              <Label htmlFor="confirm-new-password">Confirm new password</Label>
               <Input
+                id="confirm-new-password"
                 type="password"
                 className="h-11 rounded-xl"
                 placeholder="Confirm new password"
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
                 autoComplete="new-password"
+                disabled={savingPassword}
                 minLength={8}
                 required
               />
               <DialogFooter>
-                <Button type="button" variant="outline" onClick={() => setPasswordDialogOpen(false)}>
+                <Button type="button" variant="outline" disabled={savingPassword} onClick={() => setPasswordOpen(false)}>
                   Cancel
                 </Button>
                 <Button type="submit" disabled={savingPassword}>

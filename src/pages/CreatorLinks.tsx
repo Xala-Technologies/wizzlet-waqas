@@ -19,6 +19,7 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { api } from '../../convex/_generated/api';
+import { normalizeCreatorLinkUrl } from '@convex/lib/creatorLinkUrl';
 import type { Id } from '../../convex/_generated/dataModel';
 import { DashboardLayout } from '@/components/dashboard/DashboardLayout';
 import { DashboardKpiStrip } from '@/components/dashboard/DashboardKpiStrip';
@@ -68,6 +69,7 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { useCreatorProfile } from '@/hooks/useCreatorProfile';
+import { useDialogFocusReturn } from '@/hooks/useDialogFocusReturn';
 import {
   CREATOR_LINKS_DEMO_METRICS,
   CREATOR_LINKS_DEMO_ROWS,
@@ -145,9 +147,20 @@ const CreatorLinks = () => {
   const [createOpen, setCreateOpen] = useState(false);
   const [name, setName] = useState('');
   const [url, setUrl] = useState('');
+  const [urlError, setUrlError] = useState('');
   const [saving, setSaving] = useState(false);
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [deleting, setDeleting] = useState(false);
+  const createFocus = useDialogFocusReturn();
+  const setCreateDialogOpen = (open: boolean) => {
+    if (saving) return;
+    setCreateOpen(open);
+    if (!open) {
+      setName('');
+      setUrl('');
+      setUrlError('');
+    }
+  };
 
   const loading = creatorLoading || links === undefined;
   const liveCount = links?.length ?? 0;
@@ -242,6 +255,11 @@ const CreatorLinks = () => {
       toast.error('Fill in all fields');
       return;
     }
+    const destination = normalizeCreatorLinkUrl(url);
+    if (!destination) {
+      setUrlError('Enter a complete http:// or https:// URL without a username or password.');
+      return;
+    }
     if (useDemo) {
       toast.message('Sample preview — link not created', {
         description: 'Add a real tracking link when you leave demo mode (?demo=0).',
@@ -253,7 +271,7 @@ const CreatorLinks = () => {
     }
     setSaving(true);
     try {
-      await upsertLink({ name: name.trim(), url: url.trim() });
+      await upsertLink({ name: name.trim(), url: destination });
       setName('');
       setUrl('');
       setCreateOpen(false);
@@ -332,7 +350,10 @@ const CreatorLinks = () => {
         <Button
           type="button"
           className="clay-btn h-12 w-full shrink-0 gap-2 rounded-[0.875rem] px-6 sm:w-auto"
-          onClick={() => setCreateOpen(true)}
+          onClick={(event) => {
+            createFocus.rememberOpener(event.currentTarget);
+            setCreateDialogOpen(true);
+          }}
         >
           <Plus className="h-5 w-5" aria-hidden />
           Create Link
@@ -489,7 +510,10 @@ const CreatorLinks = () => {
                 <Button
                   type="button"
                   className="mt-4 min-h-11 rounded-xl"
-                  onClick={() => setCreateOpen(true)}
+                  onClick={(event) => {
+                    createFocus.rememberOpener(event.currentTarget);
+                    setCreateDialogOpen(true);
+                  }}
                 >
                   <Plus className="mr-1.5 h-3.5 w-3.5" /> Create Link
                 </Button>
@@ -644,7 +668,10 @@ const CreatorLinks = () => {
             <Button
               type="button"
               className="mt-4 min-h-11 w-full rounded-xl"
-              onClick={() => setCreateOpen(true)}
+              onClick={(event) => {
+                createFocus.rememberOpener(event.currentTarget);
+                setCreateDialogOpen(true);
+              }}
             >
               <Plus className="mr-1.5 h-3.5 w-3.5" /> Create Link
             </Button>
@@ -701,15 +728,9 @@ const CreatorLinks = () => {
 
       <Dialog
         open={createOpen}
-        onOpenChange={(open) => {
-          setCreateOpen(open);
-          if (!open) {
-            setName('');
-            setUrl('');
-          }
-        }}
+        onOpenChange={setCreateDialogOpen}
       >
-        <DialogContent className="sm:max-w-md">
+        <DialogContent className="sm:max-w-md" onCloseAutoFocus={createFocus.restoreFocus}>
           <DialogHeader>
             <DialogTitle>Create link</DialogTitle>
             <DialogDescription>
@@ -721,6 +742,7 @@ const CreatorLinks = () => {
               <Label htmlFor="creator-link-name">Link name</Label>
               <Input
                 id="creator-link-name"
+                disabled={saving}
                 className="h-11 min-h-11"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
@@ -731,11 +753,21 @@ const CreatorLinks = () => {
               <Label htmlFor="creator-link-url">Destination URL</Label>
               <Input
                 id="creator-link-url"
+                disabled={saving}
+                type="url"
+                aria-invalid={!!urlError}
+                aria-describedby="creator-link-url-help"
                 className="h-11 min-h-11"
                 value={url}
-                onChange={(e) => setUrl(e.target.value)}
+                onChange={(e) => {
+                  setUrl(e.target.value);
+                  setUrlError('');
+                }}
                 placeholder="https://…"
               />
+              <p id="creator-link-url-help" role={urlError ? 'alert' : undefined} className={cn('text-xs', urlError ? 'text-destructive' : 'text-muted-foreground')}>
+                {urlError || 'Use a complete http:// or https:// address.'}
+              </p>
             </div>
             <div className="rounded-xl border border-border bg-muted/30 px-3 py-2.5">
               <p className="text-caption uppercase tracking-wider text-muted-foreground">Preview</p>
@@ -748,7 +780,8 @@ const CreatorLinks = () => {
               type="button"
               variant="outline"
               className="min-h-11"
-              onClick={() => setCreateOpen(false)}
+              disabled={saving}
+              onClick={() => setCreateDialogOpen(false)}
             >
               Cancel
             </Button>

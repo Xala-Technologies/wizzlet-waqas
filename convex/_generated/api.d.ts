@@ -34,6 +34,7 @@ import type * as lib_adminLists from "../lib/adminLists.js";
 import type * as lib_auth from "../lib/auth.js";
 import type * as lib_commerceIdentity from "../lib/commerceIdentity.js";
 import type * as lib_contentAccess from "../lib/contentAccess.js";
+import type * as lib_creatorLinkUrl from "../lib/creatorLinkUrl.js";
 import type * as lib_credentialOwnership from "../lib/credentialOwnership.js";
 import type * as lib_devAdminGrant from "../lib/devAdminGrant.js";
 import type * as lib_emailOtp from "../lib/emailOtp.js";
@@ -118,6 +119,7 @@ declare const fullApi: ApiFromModules<{
   "lib/auth": typeof lib_auth;
   "lib/commerceIdentity": typeof lib_commerceIdentity;
   "lib/contentAccess": typeof lib_contentAccess;
+  "lib/creatorLinkUrl": typeof lib_creatorLinkUrl;
   "lib/credentialOwnership": typeof lib_credentialOwnership;
   "lib/devAdminGrant": typeof lib_devAdminGrant;
   "lib/emailOtp": typeof lib_emailOtp;
