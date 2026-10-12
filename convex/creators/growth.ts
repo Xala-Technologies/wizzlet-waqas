@@ -16,6 +16,7 @@ import {
   resolveDiscountDuration,
 } from "../lib/promoCodes";
 import { ADMIN_SCAN_MAX_DOCS } from "../lib/adminLists";
+import { normalizeCreatorLinkUrl } from "../lib/creatorLinkUrl";
 import {
   creatorLinkDocValidator,
   promoCodeDocValidator,
@@ -49,6 +50,8 @@ export const upsertLink = mutation({
     const creator = await getCreatorForUser(ctx, user._id);
     if (!creator) throw new ConvexError("NOT_FOUND");
     await requireCreatorOwner(ctx, creator._id);
+    const url = normalizeCreatorLinkUrl(args.url);
+    if (!url) throw new ConvexError("INVALID_LINK_URL");
     const now = Date.now();
     if (args.linkId) {
       const existing = await ctx.db.get(args.linkId);
@@ -57,7 +60,7 @@ export const upsertLink = mutation({
       }
       await ctx.db.patch(args.linkId, {
         name: args.name,
-        url: args.url,
+        url,
         slug: args.slug,
         updatedAt: now,
       });
@@ -66,7 +69,7 @@ export const upsertLink = mutation({
     return ctx.db.insert("creatorLinks", {
       creatorId: creator._id,
       name: args.name,
-      url: args.url,
+      url,
       slug: args.slug,
       clicks: 0,
       conversions: 0,
@@ -117,7 +120,9 @@ export const getLinkPublic = query({
     if (!linkId) return null;
     const link = await ctx.db.get(linkId);
     if (!link) return null;
-    return { url: link.url, name: link.name };
+    const url = normalizeCreatorLinkUrl(link.url);
+    if (!url) return null;
+    return { url, name: link.name };
   },
 });
 
