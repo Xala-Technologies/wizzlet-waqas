@@ -1,6 +1,8 @@
 import { action } from "../_generated/server";
 import { api } from "../_generated/api";
 import type { Id } from "../_generated/dataModel";
+import type { Infer } from "convex/values";
+import { reportPaymentValidator } from "../lib/validators";
 import { v } from "convex/values";
 
 type ReportBundle = {
@@ -40,6 +42,7 @@ type ReportBundle = {
     processedAt: number | null;
     createdAt: number;
   }>;
+  payments: Infer<typeof reportPaymentValidator>[];
   truncated: boolean;
   listLimit: number;
 };
@@ -92,6 +95,7 @@ export const exportReportBundle = action({
         createdAt: v.number(),
       }),
     ),
+    payments: v.array(reportPaymentValidator),
     truncated: v.boolean(),
     listLimit: v.number(),
   }),

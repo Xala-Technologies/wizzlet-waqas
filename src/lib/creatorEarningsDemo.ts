@@ -52,12 +52,12 @@ export const CREATOR_EARNINGS_DEMO_BY_TYPE = [
 export type DemoEarningTxn = {
   id: string;
   dateMs: number;
-  type: 'Subscription' | 'One-time purchase' | 'Tip';
+  type: 'Subscription' | 'One-time purchase' | 'Tip' | 'Refund' | 'Dispute' | 'Adjustment';
   source: string;
   amountCents: number;
   feeCents: number;
   netCents: number;
-  status: 'completed' | 'pending';
+  status: 'completed' | 'pending' | 'failed';
 };
 
 export const CREATOR_EARNINGS_DEMO_TRANSACTIONS: DemoEarningTxn[] = [

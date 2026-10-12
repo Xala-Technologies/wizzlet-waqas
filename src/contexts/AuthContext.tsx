@@ -81,7 +81,25 @@ function AuthProviderInner({ children }: { children: ReactNode }) {
   const [roleLoading, setRoleLoading] = useState(true);
   const [ensured, setEnsured] = useState(false);
   const [signingOut, setSigningOut] = useState(false);
+  const [clearingRevokedSession, setClearingRevokedSession] = useState(false);
+  const revokedSessionHandled = useRef(false);
   const optimisticRole = useRef<{ role: AppRole; snapshot: typeof me } | null>(null);
+
+  // A JWT can remain valid after its server session is revoked. Clear the SDK's
+  // token too; otherwise Password sign-in can reuse the revoked session ID.
+  useEffect(() => {
+    if (convexAuthLoading) return;
+    if (!isAuthenticated || me) {
+      revokedSessionHandled.current = false;
+      return;
+    }
+    if (me !== null || revokedSessionHandled.current) return;
+    revokedSessionHandled.current = true;
+    setClearingRevokedSession(true);
+    persistRole(null);
+    resetAnalyticsUser();
+    void convexSignOut().catch(() => undefined).finally(() => setClearingRevokedSession(false));
+  }, [convexAuthLoading, isAuthenticated, me, convexSignOut]);
 
   // Sync profile + roles from Convex
   useEffect(() => {
@@ -207,7 +225,7 @@ function AuthProviderInner({ children }: { children: ReactNode }) {
     }
   };
 
-  const loading = convexAuthLoading || (isAuthenticated && me === undefined);
+  const loading = convexAuthLoading || clearingRevokedSession || (isAuthenticated && me === undefined);
 
   return (
     <AuthContext.Provider

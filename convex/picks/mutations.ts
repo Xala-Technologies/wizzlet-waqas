@@ -1,3 +1,4 @@
+import { validatePickInput, pickImportKey } from "../lib/pickInput";
 import { mutation, query } from "../_generated/server";
 import { v } from "convex/values";
 import { requireAppUser, logMutation } from "../lib/auth";
@@ -35,6 +36,7 @@ export const upsert = mutation({
   returns: v.id("pickTracker"),
   handler: async (ctx, args) => {
     const user = await requireAppUser(ctx);
+    validatePickInput(args);
     const now = Date.now();
     const result = normalizePickResult(args.result);
     if (args.pickId) {
@@ -94,5 +96,38 @@ export const remove = mutation({
     if (!existing || existing.userId !== user._id) throw new Error("FORBIDDEN");
     await ctx.db.delete(args.pickId);
     return null;
+  },
+});
+
+/** One transaction prevents a failed import from leaving a partially written file. */
+export const importCsv = mutation({
+  args: { rows: v.array(v.object({
+    date: v.string(), pickEvent: v.string(), sport: v.string(),
+    euOdds: v.optional(v.number()), usOdds: v.optional(v.string()),
+    unitsRisked: v.number(), unitsWonLost: v.optional(v.number()),
+    result: v.string(), notes: v.optional(v.string()),
+  })) },
+  returns: v.object({ imported: v.number(), duplicates: v.number() }),
+  handler: async (ctx, args) => {
+    const user = await requireAppUser(ctx);
+    if (args.rows.length > 500) throw new Error("Import at most 500 rows at a time");
+    for (const row of args.rows) validatePickInput(row);
+    const existing = await ctx.db.query("pickTracker")
+      .withIndex("by_userId", q => q.eq("userId", user._id)).take(ADMIN_SCAN_MAX_DOCS);
+    if (existing.length >= ADMIN_SCAN_MAX_DOCS) throw new Error("Import limit reached; no rows were imported");
+    const keys = new Set(existing.map(pickImportKey));
+    let imported = 0;
+    let duplicates = 0;
+    for (const row of args.rows) {
+      const key = pickImportKey(row);
+      if (keys.has(key)) { duplicates++; continue; }
+      keys.add(key);
+      const id = await ctx.db.insert("pickTracker", {
+        ...row, userId: user._id, result: normalizePickResult(row.result), createdAt: Date.now(),
+      });
+      await logMutation(ctx, { table: "pickTracker", documentId: id, action: "import", actorExternalAuthId: user.externalAuthId });
+      imported++;
+    }
+    return { imported, duplicates };
   },
 });

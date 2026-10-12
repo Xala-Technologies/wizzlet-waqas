@@ -19,12 +19,13 @@ import { downloadCsv } from '@/lib/csv';
 
 const PAGE_SIZE = 25;
 
-const STATUS_OPTIONS = ['all', 'active', 'canceled', 'past_due', 'failed', 'incomplete', 'trialing', 'unpaid'] as const;
+const STATUS_OPTIONS = ['all', 'settled', 'paid', 'failed', 'pending'] as const;
 type StatusFilter = (typeof STATUS_OPTIONS)[number];
 
 interface Transaction {
   id: string;
   status: string;
+  type: string;
   created_at: number;
   userName: string;
   creatorName: string;
@@ -53,7 +54,7 @@ const AdminTransactions = () => {
   }, [searchParams]);
 
   const { results, status, loadMore } = usePaginatedQuery(
-    api.admin.paginatedLists.listTransactionsPage,
+    api.admin.paginatedLists.listPaymentTransactionsPage,
     { status: statusFilter },
     { initialNumItems: PAGE_SIZE },
   );
@@ -64,6 +65,7 @@ const AdminTransactions = () => {
     return (results ?? []).map((s) => ({
       id: s.id,
       status: s.status,
+      type: s.type,
       created_at: s.createdAt,
       userName: s.userName,
       creatorName: s.creatorName,
@@ -74,33 +76,34 @@ const AdminTransactions = () => {
     }));
   }, [results]);
 
-  const pageVolume = transactions.reduce((a, b) => a + b.amount, 0);
-  const pageFees = transactions.reduce((a, b) => a + b.platformFee, 0);
-  const pageCreator = transactions.reduce((a, b) => a + b.creatorEarnings, 0);
-  const activeOnPage = transactions.filter((t) => t.status === 'active').length;
+  const settled = transactions.filter(t => t.status === 'settled' || t.status === 'paid');
+  const pageVolume = settled.reduce((a, b) => a + b.amount, 0);
+  const pageFees = settled.reduce((a, b) => a + b.platformFee, 0);
+  const pageCreator = settled.reduce((a, b) => a + b.creatorEarnings, 0);
+  const activeOnPage = settled.length;
 
   const kpiItems = useMemo(
     () => [
       {
-        label: 'Volume (on this page)',
+        label: 'Volume (settled, loaded)',
         value: `$${pageVolume.toFixed(2)}`,
         icon: DollarSign,
         iconClassName: kpiIconTone.emerald,
       },
       {
-        label: 'Fees (on this page)',
+        label: 'Fees (settled, loaded)',
         value: `$${pageFees.toFixed(2)}`,
         icon: Percent,
         iconClassName: kpiIconTone.violet,
       },
       {
-        label: 'Creator (on this page)',
+        label: 'Creator (settled, loaded)',
         value: `$${pageCreator.toFixed(2)}`,
         icon: TrendingUp,
         iconClassName: kpiIconTone.sky,
       },
       {
-        label: 'Active (on this page)',
+        label: 'Settled (loaded)',
         value: String(activeOnPage),
         icon: Activity,
         iconClassName: kpiIconTone.amber,
@@ -132,9 +135,10 @@ const AdminTransactions = () => {
     }
     downloadCsv(
       `transactions-${new Date().toISOString().split('T')[0]}.csv`,
-      ['Date', 'Customer', 'Creator', 'Amount', 'Platform Fee', 'Fee %', 'Creator Earnings', 'Status'],
+      ['Date', 'Type', 'Customer', 'Creator', 'Amount', 'Platform Fee', 'Fee %', 'Creator Earnings', 'Status'],
       filtered.map((t) => [
         format(new Date(t.created_at), 'yyyy-MM-dd'),
+        t.type,
         t.userName,
         t.creatorName,
         t.amount.toFixed(2),
@@ -214,6 +218,7 @@ const AdminTransactions = () => {
                 <thead>
                   <tr className="border-b border-border bg-muted/30">
                     <th className="p-4 text-left text-caption font-medium text-muted-foreground">Date</th>
+                    <th className="p-4 text-left text-caption font-medium text-muted-foreground">Type</th>
                     <th className="p-4 text-left text-caption font-medium text-muted-foreground">Customer</th>
                     <th className="p-4 text-left text-caption font-medium text-muted-foreground">Creator</th>
                     <th className="p-4 text-left text-caption font-medium text-muted-foreground">Amount</th>
@@ -227,6 +232,7 @@ const AdminTransactions = () => {
                       <td className="p-4 text-caption text-muted-foreground">
                         {format(new Date(t.created_at), 'MMM d, yyyy')}
                       </td>
+                      <td className="p-4">{t.type.replace(/_/g, ' ')}</td>
                       <td className="p-4">{t.userName}</td>
                       <td className="p-4">{t.creatorName}</td>
                       <td className="p-4 font-medium">${t.amount.toFixed(2)}</td>
@@ -236,7 +242,7 @@ const AdminTransactions = () => {
                       <td className="p-4">
                         <Badge
                           variant="outline"
-                          className={`text-caption ${t.status === 'active' ? 'bg-primary/10 text-primary border-primary/20' : 'bg-destructive/10 text-destructive border-destructive/20'}`}
+                          className={`text-caption ${t.status === 'settled' || t.status === 'paid' ? 'bg-primary/10 text-primary border-primary/20' : 'bg-destructive/10 text-destructive border-destructive/20'}`}
                         >
                           {t.status}
                         </Badge>
@@ -247,7 +253,10 @@ const AdminTransactions = () => {
               </table>
             </div>
           </div>
-          {(status === 'CanLoadMore' || status === 'LoadingMore') && (
+
+        </>
+      )}
+      {(status === 'CanLoadMore' || status === 'LoadingMore') && (
             <div className="mt-4 flex justify-center">
               <Button
                 variant="outline"
@@ -263,8 +272,6 @@ const AdminTransactions = () => {
               </Button>
             </div>
           )}
-        </>
-      )}
     </DashboardLayout>
   );
 };

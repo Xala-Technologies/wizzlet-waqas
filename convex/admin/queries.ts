@@ -1,3 +1,4 @@
+import { settledReportPayments, sumReportPayments } from "../lib/reportingLedger";
 import { mutation, query } from "../_generated/server";
 import { v } from "convex/values";
 import type { Doc, Id } from "../_generated/dataModel";
@@ -89,7 +90,7 @@ export const dashboardStats = query({
       if (u) users.push(u);
     }
     const creators = creatorsScan.docs;
-    const events = eventsScan.docs;
+    const events = settledReportPayments(eventsScan.docs);
     const truncated =
       activeScan.truncated ||
       paidScan.truncated ||
@@ -111,8 +112,9 @@ export const dashboardStats = query({
       pendingCasesScan.docs.length +
       inProgressCasesScan.docs.length;
 
-    const platformFeesCents = active.reduce((a, b) => a + b.platformFeeCents, 0);
-    const totalRevenueCents = active.reduce((a, b) => a + b.amountCents, 0);
+    const totals = sumReportPayments(eventsScan.docs);
+    const platformFeesCents = totals.platformFeeCents;
+    const totalRevenueCents = totals.amountCents;
 
     const monthMap = new Map<
       string,
@@ -146,8 +148,8 @@ export const dashboardStats = query({
       .sort(([a], [b]) => a.localeCompare(b))
       .map(([month, row]) => ({
         month,
-        revenue: Math.round(row.revenue / 100),
-        fees: Math.round(row.fees / 100),
+        revenue: row.revenue / 100,
+        fees: row.fees / 100,
         creators: row.creators,
         customers: row.customers,
       }));
@@ -192,7 +194,7 @@ export const dashboardStats = query({
       pendingBalanceCents: 0,
       paidOutCents,
       openCases,
-      mrrCents: totalRevenueCents,
+      mrrCents: active.reduce((a, b) => a + b.amountCents, 0),
       monthly,
       recentSubs,
       recentCreators,

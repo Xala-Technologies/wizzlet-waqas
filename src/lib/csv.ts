@@ -42,29 +42,33 @@ export function parseCsv(text: string): string[][] {
   let row: string[] = [];
   let cell = '';
   let inQuotes = false;
+  let closedQuote = false;
 
   for (let i = 0; i < text.length; i++) {
     const char = text[i];
     if (inQuotes) {
       if (char === '"') {
-        if (text[i + 1] === '"') { cell += '"'; i++; } else { inQuotes = false; }
+        if (text[i + 1] === '"') { cell += '"'; i++; } else { inQuotes = false; closedQuote = true; }
       } else {
         cell += char;
       }
       continue;
     }
-    if (char === '"') { inQuotes = true; continue; }
-    if (char === ',') { row.push(cell); cell = ''; continue; }
+    if (closedQuote && char !== ',' && char !== '\n' && char !== '\r') throw new Error('Unexpected text after quoted CSV field');
+    if (char === '"') { if (cell) throw new Error('Unexpected quote in CSV field'); inQuotes = true; continue; }
+    if (char === ',') { row.push(cell); cell = ''; closedQuote = false; continue; }
     if (char === '\n' || char === '\r') {
       if (char === '\r' && text[i + 1] === '\n') i++;
       row.push(cell);
       if (row.some((c) => c.trim() !== '')) rows.push(row);
       row = [];
       cell = '';
+      closedQuote = false;
       continue;
     }
     cell += char;
   }
+  if (inQuotes) throw new Error('Unterminated quoted CSV field');
   row.push(cell);
   if (row.some((c) => c.trim() !== '')) rows.push(row);
   return rows;

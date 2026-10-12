@@ -82,7 +82,7 @@ const Login = () => {
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (loading) return;
+    if (loading || authLoading || signingOut) return;
     setLoading(true);
     setFormError(null);
     try {
@@ -127,7 +127,7 @@ const Login = () => {
       toast.error('Admin bootstrap login is only available in development builds.');
       return;
     }
-    if (loading) return;
+    if (loading || authLoading || signingOut) return;
     setLoading(true);
     setFormError(null);
     setEmail(ADMIN_BOOTSTRAP.email);
@@ -229,7 +229,7 @@ const Login = () => {
               if (formError) setFormError(null);
             }}
             required
-            disabled={loading}
+            disabled={loading || authLoading || signingOut}
             className={authInputClass}
           />
         </div>
@@ -250,7 +250,7 @@ const Login = () => {
                 if (formError) setFormError(null);
               }}
               required
-              disabled={loading}
+              disabled={loading || authLoading || signingOut}
               className={`${authInputClass} pr-11`}
               aria-invalid={formError ? true : undefined}
               aria-describedby={formError ? 'login-error' : undefined}
@@ -270,7 +270,7 @@ const Login = () => {
             {formError}
           </p>
         ) : null}
-        <Button type="submit" variant="default" className="h-12 w-full rounded-xl text-[15px] font-semibold" disabled={loading}>
+        <Button type="submit" variant="default" className="h-12 w-full rounded-xl text-[15px] font-semibold" disabled={loading || authLoading || signingOut}>
           {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
           Sign in
         </Button>
@@ -294,7 +294,7 @@ const Login = () => {
               storeReturnTo(null);
               void handleAdminLogin();
             }}
-            disabled={loading}
+            disabled={loading || authLoading || signingOut}
           >
             {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
             Sign in as platform owner

@@ -38,7 +38,7 @@ const AdminFees = () => {
     if (!overview) return [];
     return [
       {
-        label: 'Total Volume',
+        label: 'Net paid volume',
         value: `$${overview.totalRevenue.toFixed(2)}`,
         icon: DollarSign,
         iconClassName: kpiIconTone.emerald,
@@ -50,7 +50,7 @@ const AdminFees = () => {
         iconClassName: kpiIconTone.violet,
       },
       {
-        label: 'Creator Payouts',
+        label: 'Creator earnings',
         value: `$${overview.totalCreatorEarnings.toFixed(2)}`,
         icon: TrendingUp,
         iconClassName: kpiIconTone.sky,

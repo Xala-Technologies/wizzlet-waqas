@@ -82,6 +82,7 @@ const defaultForm = {
 const CustomerResults = () => {
   const { user } = useAuth();
   const picksRaw = useQuery(api.picks.mutations.listMine, user ? {} : 'skip');
+  const importPicks = useMutation(api.picks.mutations.importCsv);
   const upsertPick = useMutation(api.picks.mutations.upsert);
   const removePick = useMutation(api.picks.mutations.remove);
   const [form, setForm] = useState(defaultForm);
@@ -135,26 +136,20 @@ const CustomerResults = () => {
   const handleImportCSV = async (file: File | undefined) => {
     if (!file) return;
     if (!user) { toast.error('You must be signed in to import'); return; }
+    if (file.size > 1_000_000) { toast.error('CSV must be smaller than 1 MB'); return; }
     setImporting(true);
     try {
       const { rows, skipped } = parsePickCsv(await readFileAsText(file));
       if (rows.length === 0) { toast.error('No valid rows found in that CSV'); return; }
-      for (const row of rows) {
-        await upsertPick({
-          date: row.date,
-          pickEvent: row.pick_event,
-          sport: row.sport,
-          euOdds: row.eu_odds ?? undefined,
-          usOdds: row.us_odds ?? undefined,
-          unitsRisked: row.units_risked,
-          result: row.result,
-          unitsWonLost: row.units_won_lost ?? undefined,
-          notes: row.notes ?? undefined,
-        });
-      }
-      toast.success(`Imported ${rows.length} picks${skipped ? ` — ${skipped} rows skipped` : ''}`);
+      const result = await importPicks({ rows: rows.map(row => ({
+        date: row.date, pickEvent: row.pick_event, sport: row.sport,
+        euOdds: row.eu_odds ?? undefined, usOdds: row.us_odds ?? undefined,
+        unitsRisked: row.units_risked, result: row.result,
+        unitsWonLost: row.units_won_lost, notes: row.notes ?? undefined,
+      })) });
+      toast.success(`Imported ${result.imported} picks${result.duplicates ? ` — ${result.duplicates} duplicates skipped` : ''}${skipped ? ` — ${skipped} invalid rows skipped` : ''}`);
     } catch {
-      toast.error('Import failed — check the CSV format');
+      toast.error('Import could not be confirmed. Check the CSV template and 500-row limit, then retry. Exact duplicates are skipped.');
     } finally {
       setImporting(false);
       if (importInputRef.current) importInputRef.current.value = '';

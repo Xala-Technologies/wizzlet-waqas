@@ -4,7 +4,8 @@ import { ADMIN_SCAN_MAX_DOCS } from "../lib/adminLists";
 import { yearMonthKey } from "../lib/commerceIdentity";
 import { resolveCreatorFeePolicy } from "../lib/money";
 import { creatorEarningsValidator } from "../lib/validators";
-import type { Id } from "../_generated/dataModel";
+import { isReportPayment, settledReportPayments, sumReportPayments, paymentFeePercent } from "../lib/reportingLedger";
+import type { Doc, Id } from "../_generated/dataModel";
 
 const DEFAULT_FEE = {
   introFeePercent: 5,
@@ -18,11 +19,6 @@ function emptyFeePolicy() {
     currentFeePercent: DEFAULT_FEE.standardFeePercent,
     introDaysLeft: 0,
   };
-}
-
-function feePercentFromCents(amountCents: number, platformFeeCents: number): number {
-  if (!Number.isFinite(amountCents) || amountCents <= 0) return 0;
-  return Math.round((platformFeeCents / amountCents) * 1000) / 10;
 }
 
 /** Creator earnings dashboard — real subscriptions + paymentEvents (no fake names). */
@@ -47,9 +43,10 @@ export const myEarnings = query({
         grossCents: 0,
         feeCents: 0,
         netCents: 0,
+        monthlyRecurringNetCents: 0,
         perSubCents: 0,
         activeCount: 0,
-        monthly: [] as { month: string; revenueCents: number }[],
+        monthly: [] as { month: string; revenueCents: number; grossCents: number }[],
         recentPayments: [],
         feePolicy: emptyFeePolicy(),
         truncated: false,
@@ -64,32 +61,29 @@ export const myEarnings = query({
       .withIndex("by_creatorId", (q) => q.eq("creatorId", creator._id))
       .take(ADMIN_SCAN_MAX_DOCS);
     const active = subs.filter((s) => s.status === "active");
-    const grossCents = active.reduce((a, b) => a + b.amountCents, 0);
-    const feeCents = active.reduce((a, b) => a + b.platformFeeCents, 0);
-    const netCents = active.reduce((a, b) => a + b.creatorEarningsCents, 0);
 
     const events = await ctx.db
       .query("paymentEvents")
       .withIndex("by_creatorId", (q) => q.eq("creatorId", creator._id))
+      .order("desc")
       .take(ADMIN_SCAN_MAX_DOCS);
     const truncated =
       subs.length >= ADMIN_SCAN_MAX_DOCS ||
       events.length >= ADMIN_SCAN_MAX_DOCS;
     const sorted = events
-      .filter((e) => e.paymentMode !== "sandbox")
+      .filter(isReportPayment)
       .sort((a, b) => b.createdAt - a.createdAt);
 
-    const monthMap = new Map<string, number>();
-    for (const e of sorted) {
+    const totals = sumReportPayments(events);
+    const monthMap = new Map<string, { revenueCents: number; grossCents: number }>();
+    for (const e of settledReportPayments(sorted)) {
       const key = yearMonthKey(e.createdAt);
-      monthMap.set(key, (monthMap.get(key) ?? 0) + e.creatorEarningsCents);
+      const previous = monthMap.get(key) ?? { revenueCents: 0, grossCents: 0 };
+      monthMap.set(key, { revenueCents: previous.revenueCents + e.creatorEarningsCents, grossCents: previous.grossCents + e.amountCents });
     }
     const monthly = [...monthMap.entries()]
       .sort(([a], [b]) => a.localeCompare(b))
-      .map(([month, revenueCents]) => ({
-        month,
-        revenueCents,
-      }));
+      .map(([month, totals]) => ({ month, ...totals }));
 
     const recentPayments: Array<{
       id: Id<"paymentEvents">;
@@ -105,17 +99,21 @@ export const myEarnings = query({
       paymentRef: string | null;
       createdAt: number;
     }> = [];
-    for (const e of sorted.slice(0, 40)) {
+    const userCache = new Map<Id<"users">, Doc<"users"> | null>();
+    const productCache = new Map<Id<"products">, Doc<"products"> | null>();
+    for (const e of sorted) {
       let customerName = "Subscriber";
       let customerEmail: string | null = null;
       if (e.userId) {
-        const u = await ctx.db.get(e.userId);
+        if (!userCache.has(e.userId)) userCache.set(e.userId, await ctx.db.get(e.userId));
+        const u = userCache.get(e.userId);
         customerName = u?.fullName || u?.email || "Subscriber";
         customerEmail = u?.email ?? null;
       }
       let productName: string | null = null;
       if (e.productId) {
-        const product = await ctx.db.get(e.productId);
+        if (!productCache.has(e.productId)) productCache.set(e.productId, await ctx.db.get(e.productId));
+        const product = productCache.get(e.productId);
         productName = product?.name ?? null;
       }
       recentPayments.push({
@@ -124,7 +122,7 @@ export const myEarnings = query({
         amountCents: e.amountCents,
         platformFeeCents: e.platformFeeCents,
         creatorEarningsCents: e.creatorEarningsCents,
-        feePercentage: feePercentFromCents(e.amountCents, e.platformFeeCents),
+        feePercentage: paymentFeePercent(e.amountCents, e.platformFeeCents),
         status: e.status,
         type: e.type,
         productName,
@@ -135,9 +133,10 @@ export const myEarnings = query({
     }
 
     return {
-      grossCents,
-      feeCents,
-      netCents,
+      grossCents: totals.amountCents,
+      feeCents: totals.platformFeeCents,
+      netCents: totals.creatorEarningsCents,
+      monthlyRecurringNetCents: active.reduce((sum, s) => sum + s.creatorEarningsCents, 0),
       perSubCents: creator.monthlyPriceCents ?? 0,
       activeCount: active.length,
       monthly,

@@ -131,6 +131,7 @@ export const subscriptionWithUserValidator = v.object({
   feePercentage: v.number(),
   createdAt: v.number(),
   updatedAt: v.number(),
+  totalSpentCents: v.union(v.number(), v.null()),
   user: v.union(
     v.object({
       _id: v.id("users"),
@@ -534,12 +535,14 @@ export const creatorEarningsValidator = v.object({
   grossCents: v.number(),
   feeCents: v.number(),
   netCents: v.number(),
+  monthlyRecurringNetCents: v.number(),
   perSubCents: v.number(),
   activeCount: v.number(),
   monthly: v.array(
     v.object({
       month: v.string(),
       revenueCents: v.number(),
+      grossCents: v.number(),
     }),
   ),
   recentPayments: v.array(
@@ -676,4 +679,16 @@ export const adminDashboardStatsValidator = v.object({
   /** True when any underlying admin scan hit ADMIN_SCAN_MAX_DOCS (counts may be incomplete). */
   truncated: v.boolean(),
   listLimit: v.number(),
+});
+
+/** Minimal monetary ledger fields shared by admin report query and action. */
+export const reportPaymentValidator = v.object({
+  _id: v.id("paymentEvents"),
+  creatorId: v.id("creators"),
+  userId: v.optional(v.id("users")),
+  subscriptionId: v.optional(v.id("subscriptions")),
+  type: v.string(), status: v.string(),
+  amountCents: v.number(), platformFeeCents: v.number(), creatorEarningsCents: v.number(),
+  createdAt: v.number(), paymentMode: v.optional(v.string()), balanceState: v.optional(v.string()),
+  commercialRef: v.optional(v.string()), relatedCommercialRef: v.optional(v.string()),
 });
