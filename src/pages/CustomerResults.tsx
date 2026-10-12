@@ -35,6 +35,7 @@ import { api } from '@convex/_generated/api';
 import type { Id } from '@convex/_generated/dataModel';
 import { toast } from 'sonner';
 import { isSettledPickResult } from '../../convex/lib/results';
+import { validatePickInput } from '../../convex/lib/pickInput';
 import { ResponsiveContainer, AreaChart, Area, XAxis, YAxis, Tooltip, PieChart, Pie, Cell, BarChart, Bar } from 'recharts';
 import { downloadCsv, readFileAsText } from '@/lib/csv';
 import { PICK_CSV_HEADERS, parsePickCsv } from '@/lib/pickCsv';
@@ -77,6 +78,29 @@ const defaultForm = {
   notes: '',
   lastOddsField: '' as 'eu' | 'us' | '',
 };
+
+// Keep the component identity stable so typing does not remount the focused input.
+function OddsFields({ compact = false, euOdds, usOdds, onEuChange, onUsChange }: {
+  compact?: boolean;
+  euOdds: string;
+  usOdds: string;
+  onEuChange: (value: string) => void;
+  onUsChange: (value: string) => void;
+}) {
+  const prefix = compact ? 'quick' : 'edit';
+  return <>
+    <div className={compact ? 'w-full sm:w-auto xl:w-[80px]' : ''}>
+      <label htmlFor={`${prefix}-eu-odds`} className="text-support text-muted-foreground mb-1.5 block">EU Odds</label>
+      <Input id={`${prefix}-eu-odds`} type="number" step="0.01" min="1.01" placeholder="1.91"
+        className="h-11 min-h-11 text-ui" value={euOdds} onChange={e => onEuChange(e.target.value)} />
+    </div>
+    <div className={compact ? 'w-full sm:w-auto xl:w-[80px]' : ''}>
+      <label htmlFor={`${prefix}-us-odds`} className="text-support text-muted-foreground mb-1.5 block">US Odds</label>
+      <Input id={`${prefix}-us-odds`} placeholder="-110" className="h-11 min-h-11 text-ui"
+        value={usOdds} onChange={e => onUsChange(e.target.value)} />
+    </div>
+  </>;
+}
 
 // --- Component ---
 const CustomerResults = () => {
@@ -196,21 +220,28 @@ const CustomerResults = () => {
   const handleSubmit = async () => {
     if (!form.pick_event.trim()) { toast.error('Pick/Event is required'); return; }
     if (!form.eu_odds && !form.us_odds) { toast.error('Enter EU or US odds'); return; }
-    const euVal = form.eu_odds ? parseFloat(form.eu_odds) : undefined;
-    const usVal = form.us_odds || undefined;
+    const input = {
+      date: form.date,
+      pickEvent: form.pick_event,
+      sport: form.sport,
+      euOdds: form.eu_odds ? Number(form.eu_odds) : undefined,
+      usOdds: form.us_odds || undefined,
+      unitsRisked: form.units_risked.trim() ? Number(form.units_risked) : NaN,
+      result: form.result,
+      unitsWonLost: form.units_won_lost.trim() ? Number(form.units_won_lost) : undefined,
+      notes: form.notes || undefined,
+    };
+    try {
+      validatePickInput(input);
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : 'Check the pick details');
+      return;
+    }
     setSaving(true);
     try {
       await upsertPick({
         pickId: editId ? (editId as Id<'pickTracker'>) : undefined,
-        date: form.date,
-        pickEvent: form.pick_event,
-        sport: form.sport,
-        euOdds: euVal,
-        usOdds: usVal,
-        unitsRisked: parseFloat(form.units_risked) || 1,
-        result: form.result,
-        unitsWonLost: parseFloat(form.units_won_lost) || 0,
-        notes: form.notes || undefined,
+        ...input,
       });
       toast.success(editId ? 'Pick updated' : 'Pick added');
       resetForm();
@@ -341,7 +372,7 @@ const CustomerResults = () => {
       const decided = d.wins + d.losses;
       return {
         month,
-        label: new Date(month + '-01').toLocaleDateString('en-US', { month: 'short', year: 'numeric' }),
+        label: new Date(month + '-01').toLocaleDateString('en-US', { month: 'short', year: 'numeric', timeZone: 'UTC' }),
         ...d,
         winRate: decided > 0 ? Math.round((d.wins / decided) * 100) : 0,
         roi: d.risked > 0 ? Math.round((d.profit / d.risked) * 100) : 0,
@@ -366,7 +397,8 @@ const CustomerResults = () => {
     // Best / worst day of week
     const dayMap: Record<number, { wins: number; total: number }> = {};
     settled.forEach(p => {
-      const d = new Date(p.date).getDay();
+      // Stored YYYY-MM-DD values are calendar dates, parsed at midnight UTC.
+      const d = new Date(p.date).getUTCDay();
       if (!dayMap[d]) dayMap[d] = { wins: 0, total: 0 };
       dayMap[d].total++;
       if (p.result === 'win') dayMap[d].wins++;
@@ -385,33 +417,6 @@ const CustomerResults = () => {
 
     return { best, worst, biggestWin, biggestLoss, bestDay, worstDay, bestDayRate, worstDayRate, mostCommon };
   }, [picks, sportBreakdown]);
-
-  // --- Odds form fields component ---
-  const OddsFields = ({ compact = false }: { compact?: boolean }) => (
-    <>
-      <div className={compact ? 'w-full sm:w-auto xl:w-[80px]' : ''}>
-        <label className="text-support text-muted-foreground mb-1.5 block">EU Odds</label>
-        <Input
-          type="number"
-          step="0.01"
-          min="1.01"
-          placeholder="1.91"
-          className="h-11 min-h-11 text-ui"
-          value={form.eu_odds}
-          onChange={e => handleEuChange(e.target.value)}
-        />
-      </div>
-      <div className={compact ? 'w-full sm:w-auto xl:w-[80px]' : ''}>
-        <label className="text-support text-muted-foreground mb-1.5 block">US Odds</label>
-        <Input
-          placeholder="-110"
-          className="h-11 min-h-11 text-ui"
-          value={form.us_odds}
-          onChange={e => handleUsChange(e.target.value)}
-        />
-      </div>
-    </>
-  );
 
   const valColor = (v: number) => v > 0 ? 'text-emerald-400' : v < 0 ? 'text-destructive' : 'text-muted-foreground';
   const fmtUnit = (v: number) => `${v > 0 ? '+' : ''}${v.toFixed(1)}`;
@@ -559,35 +564,35 @@ const CustomerResults = () => {
         <div className="rounded-xl border border-border bg-card p-4 mb-4">
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4 xl:flex xl:flex-wrap xl:items-end">
             <div className="w-full sm:w-auto xl:w-[120px]">
-              <label className="text-support text-muted-foreground mb-1.5 block">Date</label>
-              <Input type="date" className="h-11 min-h-11 text-ui" value={form.date} onChange={e => setForm(f => ({ ...f, date: e.target.value }))} />
+              <label htmlFor="quick-pick-field-1" className="text-support text-muted-foreground mb-1.5 block">Date</label>
+              <Input id="quick-pick-field-1" type="date" className="h-11 min-h-11 text-ui" value={form.date} onChange={e => setForm(f => ({ ...f, date: e.target.value }))} />
             </div>
             <div className="w-full sm:col-span-2 xl:flex-1 xl:min-w-[140px]">
-              <label className="text-support text-muted-foreground mb-1.5 block">Pick / Event</label>
-              <Input className="h-11 min-h-11 text-ui" placeholder="Chiefs -3.5" value={form.pick_event} onChange={e => setForm(f => ({ ...f, pick_event: e.target.value }))} />
+              <label htmlFor="quick-pick-field-2" className="text-support text-muted-foreground mb-1.5 block">Pick / Event</label>
+              <Input id="quick-pick-field-2" className="h-11 min-h-11 text-ui" placeholder="Chiefs -3.5" value={form.pick_event} onChange={e => setForm(f => ({ ...f, pick_event: e.target.value }))} />
             </div>
             <div className="w-full sm:w-auto xl:w-[100px]">
-              <label className="text-support text-muted-foreground mb-1.5 block">Sport</label>
+              <label htmlFor="quick-pick-field-3" className="text-support text-muted-foreground mb-1.5 block">Sport</label>
               <Select value={form.sport} onValueChange={v => setForm(f => ({ ...f, sport: v }))}>
-                <SelectTrigger className="h-11 min-h-11 text-ui"><SelectValue /></SelectTrigger>
+                <SelectTrigger id="quick-pick-field-3" className="h-11 min-h-11 text-ui"><SelectValue /></SelectTrigger>
                 <SelectContent>{SPORTS.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}</SelectContent>
               </Select>
             </div>
-            <OddsFields compact />
+            <OddsFields compact euOdds={form.eu_odds} usOdds={form.us_odds} onEuChange={handleEuChange} onUsChange={handleUsChange} />
             <div className="w-full sm:w-auto xl:w-[88px]">
-              <label className="text-support text-muted-foreground mb-1.5 block">Risked</label>
-              <Input type="number" step="0.5" className="h-11 min-h-11 text-ui" value={form.units_risked} onChange={e => setForm(f => ({ ...f, units_risked: e.target.value }))} />
+              <label htmlFor="quick-pick-field-4" className="text-support text-muted-foreground mb-1.5 block">Risked</label>
+              <Input id="quick-pick-field-4" type="number" step="0.5" className="h-11 min-h-11 text-ui" value={form.units_risked} onChange={e => setForm(f => ({ ...f, units_risked: e.target.value }))} />
             </div>
             <div className="w-full sm:w-auto xl:w-[110px]">
-              <label className="text-support text-muted-foreground mb-1.5 block">Result</label>
+              <label htmlFor="quick-pick-field-5" className="text-support text-muted-foreground mb-1.5 block">Result</label>
               <Select value={form.result} onValueChange={v => setForm(f => ({ ...f, result: v }))}>
-                <SelectTrigger className="h-11 min-h-11 text-ui"><SelectValue /></SelectTrigger>
+                <SelectTrigger id="quick-pick-field-5" className="h-11 min-h-11 text-ui"><SelectValue /></SelectTrigger>
                 <SelectContent>{RESULTS.map(r => <SelectItem key={r} value={r}>{r.charAt(0).toUpperCase() + r.slice(1)}</SelectItem>)}</SelectContent>
               </Select>
             </div>
             <div className="w-full sm:w-auto xl:w-[88px]">
-              <label className="text-support text-muted-foreground mb-1.5 block">+/−</label>
-              <Input type="number" step="0.5" className="h-11 min-h-11 text-ui" value={form.units_won_lost} onChange={e => setForm(f => ({ ...f, units_won_lost: e.target.value }))} />
+              <label htmlFor="quick-pick-field-6" className="text-support text-muted-foreground mb-1.5 block">+/−</label>
+              <Input id="quick-pick-field-6" type="number" step="0.5" className="h-11 min-h-11 text-ui" value={form.units_won_lost} onChange={e => setForm(f => ({ ...f, units_won_lost: e.target.value }))} />
             </div>
             <div className="flex gap-2 w-full sm:w-auto">
               <Button type="button" className="min-h-11 flex-1 sm:flex-none" onClick={handleSubmit} disabled={saving || !form.pick_event.trim()}>
@@ -860,48 +865,48 @@ const CustomerResults = () => {
           <div className="grid gap-4 py-2">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div className="space-y-2">
-                <label className="text-support text-muted-foreground block">Date</label>
-                <Input type="date" className="h-11 min-h-11 text-ui" value={form.date} onChange={e => setForm(f => ({ ...f, date: e.target.value }))} />
+                <label htmlFor="edit-pick-field-1" className="text-support text-muted-foreground block">Date</label>
+                <Input id="edit-pick-field-1" type="date" className="h-11 min-h-11 text-ui" value={form.date} onChange={e => setForm(f => ({ ...f, date: e.target.value }))} />
               </div>
               <div className="space-y-2">
-                <label className="text-support text-muted-foreground block">Sport</label>
+                <label htmlFor="edit-pick-field-2" className="text-support text-muted-foreground block">Sport</label>
                 <Select value={form.sport} onValueChange={v => setForm(f => ({ ...f, sport: v }))}>
-                  <SelectTrigger className="h-11 min-h-11 text-ui"><SelectValue /></SelectTrigger>
+                  <SelectTrigger id="edit-pick-field-2" className="h-11 min-h-11 text-ui"><SelectValue /></SelectTrigger>
                   <SelectContent>{SPORTS.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}</SelectContent>
                 </Select>
               </div>
             </div>
             <div className="space-y-2">
-              <label className="text-support text-muted-foreground block">Pick / Event</label>
-              <Input className="h-11 min-h-11 text-ui" value={form.pick_event} onChange={e => setForm(f => ({ ...f, pick_event: e.target.value }))} />
+              <label htmlFor="edit-pick-field-3" className="text-support text-muted-foreground block">Pick / Event</label>
+              <Input id="edit-pick-field-3" className="h-11 min-h-11 text-ui" value={form.pick_event} onChange={e => setForm(f => ({ ...f, pick_event: e.target.value }))} />
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <OddsFields />
+              <OddsFields euOdds={form.eu_odds} usOdds={form.us_odds} onEuChange={handleEuChange} onUsChange={handleUsChange} />
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
               <div className="space-y-2">
-                <label className="text-support text-muted-foreground block">Units Risked</label>
-                <Input type="number" step="0.5" className="h-11 min-h-11 text-ui" value={form.units_risked} onChange={e => setForm(f => ({ ...f, units_risked: e.target.value }))} />
+                <label htmlFor="edit-pick-field-4" className="text-support text-muted-foreground block">Units Risked</label>
+                <Input id="edit-pick-field-4" type="number" step="0.5" className="h-11 min-h-11 text-ui" value={form.units_risked} onChange={e => setForm(f => ({ ...f, units_risked: e.target.value }))} />
               </div>
               <div className="space-y-2">
-                <label className="text-support text-muted-foreground block">Result</label>
+                <label htmlFor="edit-pick-field-5" className="text-support text-muted-foreground block">Result</label>
                 <Select
                   value={form.result}
                   disabled={Boolean(editId) && isSettledPickResult(form.result)}
                   onValueChange={v => setForm(f => ({ ...f, result: v }))}
                 >
-                  <SelectTrigger className="h-11 min-h-11 text-ui"><SelectValue /></SelectTrigger>
+                  <SelectTrigger id="edit-pick-field-5" className="h-11 min-h-11 text-ui"><SelectValue /></SelectTrigger>
                   <SelectContent>{RESULTS.map(r => <SelectItem key={r} value={r}>{r.charAt(0).toUpperCase() + r.slice(1)}</SelectItem>)}</SelectContent>
                 </Select>
               </div>
               <div className="space-y-2">
-                <label className="text-support text-muted-foreground block">Units Won/Lost</label>
-                <Input type="number" step="0.5" className="h-11 min-h-11 text-ui" value={form.units_won_lost} onChange={e => setForm(f => ({ ...f, units_won_lost: e.target.value }))} />
+                <label htmlFor="edit-pick-field-6" className="text-support text-muted-foreground block">Units Won/Lost</label>
+                <Input id="edit-pick-field-6" type="number" step="0.5" className="h-11 min-h-11 text-ui" value={form.units_won_lost} onChange={e => setForm(f => ({ ...f, units_won_lost: e.target.value }))} />
               </div>
             </div>
             <div className="space-y-2">
-              <label className="text-support text-muted-foreground block">Notes</label>
-              <Input className="h-11 min-h-11 text-ui" value={form.notes} onChange={e => setForm(f => ({ ...f, notes: e.target.value }))} />
+              <label htmlFor="edit-pick-field-7" className="text-support text-muted-foreground block">Notes</label>
+              <Input id="edit-pick-field-7" className="h-11 min-h-11 text-ui" value={form.notes} onChange={e => setForm(f => ({ ...f, notes: e.target.value }))} />
             </div>
           </div>
           <DialogFooter>
