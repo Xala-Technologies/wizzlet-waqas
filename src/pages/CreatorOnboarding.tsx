@@ -11,6 +11,7 @@ import { AuthShell } from '@/components/auth/AuthShell';
 import { authInputClass, authTextareaClass } from '@/components/auth/authFieldClass';
 import { clampOnboardingStep, ONBOARDING_STEPS, shouldPublishOnSave } from '@/lib/onboardingStep';
 import { uploadToConvexStorage } from '@/lib/upload';
+import { validateImageUpload } from '@convex/lib/imageUploadPolicy';
 import { Loader2, Camera, Check } from 'lucide-react';
 import { toast } from 'sonner';
 import { useQueryClient } from '@tanstack/react-query';
@@ -87,9 +88,12 @@ const CreatorOnboarding = () => {
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
+    e.target.value = '';
     if (!file) return;
-    if (file.size > 5 * 1024 * 1024) {
-      toast.error('File must be under 5MB');
+    try {
+      validateImageUpload(file, 'creator-onboarding');
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Invalid image');
       return;
     }
     setAvatarFile(file);

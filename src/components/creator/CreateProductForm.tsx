@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState, type ReactNode, type RefObject } from 'react';
+import { useMemo, useRef, useState, type ReactNode, type RefObject } from 'react';
 import { useConvex, useMutation, useQuery } from 'convex/react';
 import {
   Bold,
@@ -60,11 +60,13 @@ const ACCESS_HEADING = "What's included:";
 
 function parseStoredDescription(raw: string): { body: string; accessIds: string[] } {
   const marker = `\n\n${ACCESS_HEADING}\n`;
-  const idx = raw.lastIndexOf(marker);
+  // Saving trims the leading separators when the user leaves the body empty.
+  const leadingMarker = `${ACCESS_HEADING}\n`;
+  const idx = raw.startsWith(leadingMarker) ? 0 : raw.lastIndexOf(marker);
   if (idx === -1) return { body: raw, accessIds: [] };
   const body = raw.slice(0, idx).trimEnd();
   const labels = raw
-    .slice(idx + marker.length)
+    .slice(idx + (idx === 0 ? leadingMarker.length : marker.length))
     .split('\n')
     .filter((line) => line.startsWith('• '))
     .map((line) => line.slice(2).trim());
@@ -261,10 +263,6 @@ export function CreateProductForm({
   const convex = useConvex();
   const upsertProduct = useMutation(api.products.mutations.upsert);
   const posts = useQuery(api.posts.queries.listMine);
-  const imageUrlQuery = useQuery(
-    api.files.storage.getUrl,
-    initial?.imageStorageId ? { storageId: initial.imageStorageId } : 'skip',
-  );
 
   const [name, setName] = useState(initial?.name ?? 'Premium Picks');
   const [shortDescription, setShortDescription] = useState(
@@ -308,7 +306,7 @@ export function CreateProductForm({
   const [imageStorageId, setImageStorageId] = useState<Id<'_storage'> | null>(
     initial?.imageStorageId ?? null,
   );
-  const [imagePreviewUrl, setImagePreviewUrl] = useState<string | null>(
+  const [uploadedImageUrl, setImagePreviewUrl] = useState<string | null>(
     initial?.imageUrl ?? null,
   );
   const [uploading, setUploading] = useState(false);
@@ -316,11 +314,11 @@ export function CreateProductForm({
   const fileRef = useRef<HTMLInputElement>(null);
   const descriptionRef = useRef<HTMLTextAreaElement>(null);
 
-  useEffect(() => {
-    if (imageUrlQuery && !imagePreviewUrl) {
-      setImagePreviewUrl(imageUrlQuery);
-    }
-  }, [imageUrlQuery, imagePreviewUrl]);
+  const imageUrlQuery = useQuery(
+    api.files.storage.getUrl,
+    imageStorageId ? { storageId: imageStorageId } : 'skip',
+  );
+  const imagePreviewUrl = imageStorageId ? uploadedImageUrl || imageUrlQuery : null;
 
   const effectiveBilling = payType === 'one-time' ? 'one-time' : billingPeriod;
   const priceCents = Math.round((Number.parseFloat(price) || 0) * 100);
@@ -341,7 +339,8 @@ export function CreateProductForm({
   };
 
   const handleImagePick = async (file: File | undefined) => {
-    if (!file) return;
+    if (fileRef.current) fileRef.current.value = '';
+    if (!file || uploading || saving) return;
     if (file.size > 5 * 1024 * 1024) {
       toast.error('Image must be 5MB or smaller');
       return;
@@ -385,6 +384,7 @@ export function CreateProductForm({
   };
 
   const save = async (asDraft: boolean) => {
+    if (saving || uploading) return;
     if (demoMode) {
       toast.message('Sample preview', {
         description:
@@ -445,6 +445,7 @@ export function CreateProductForm({
       <input
         ref={fileRef}
         type="file"
+        disabled={uploading || saving}
         accept="image/png,image/jpeg,image/webp"
         className="hidden"
         onChange={(e) => void handleImagePick(e.target.files?.[0])}
@@ -536,7 +537,7 @@ export function CreateProductForm({
                         type="button"
                         size="sm"
                         className="rounded-lg bg-background/95 text-foreground hover:bg-background"
-                        disabled={uploading}
+                        disabled={uploading || saving}
                         onClick={() => fileRef.current?.click()}
                       >
                         Edit Image
@@ -547,6 +548,7 @@ export function CreateProductForm({
                         variant="secondary"
                         className="h-8 w-8 rounded-lg bg-background/95"
                         onClick={clearImage}
+                        disabled={uploading || saving}
                         aria-label="Remove image"
                       >
                         <Trash2 className="h-3.5 w-3.5 text-destructive" />
@@ -562,7 +564,7 @@ export function CreateProductForm({
               </div>
               <button
                 type="button"
-                disabled={uploading}
+                disabled={uploading || saving}
                 onClick={() => fileRef.current?.click()}
                 className="flex w-full flex-col items-center justify-center gap-2 rounded-xl border border-dashed border-border bg-background/60 px-4 py-8 text-center transition-colors hover:border-primary/40 hover:bg-muted/40"
               >
