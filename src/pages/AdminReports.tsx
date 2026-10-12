@@ -1,4 +1,5 @@
 import { cn } from '@/lib/utils';
+import { toCsv, downloadCsvText as download } from '@/lib/csv';
 import { useState } from 'react';
 import { useConvex } from 'convex/react';
 import { api } from '../../convex/_generated/api';
@@ -33,25 +34,6 @@ async function fetchReportSource(convex: ReturnType<typeof useConvex>) {
 
 const money = (cents: number) => (cents / 100).toFixed(2);
 const day = (ms: number) => (ms ? new Date(ms).toISOString().slice(0, 10) : '');
-
-const toCsv = (rows: Row[]) => {
-  if (rows.length === 0) return '';
-  const headers = Object.keys(rows[0]!);
-  const escape = (v: string | number) => {
-    const s = String(v ?? '');
-    return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
-  };
-  return [headers.join(','), ...rows.map((r) => headers.map((h) => escape(r[h]!)).join(','))].join('\n');
-};
-
-const download = (name: string, csv: string) => {
-  const url = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8;' }));
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = name;
-  a.click();
-  URL.revokeObjectURL(url);
-};
 
 const AdminReports = () => {
   const convex = useConvex();
@@ -179,7 +161,8 @@ const AdminReports = () => {
         toast.info('No data available for this report yet');
         return;
       }
-      const csv = toCsv(rows);
+      const headers = Object.keys(rows[0]);
+      const csv = toCsv(headers, rows.map((row) => headers.map((header) => row[header])));
       const name = `${report.key}_${new Date().toISOString().slice(0, 10)}.csv`;
       download(name, csv);
       setRecentExports((prev) => [
@@ -301,6 +284,7 @@ const AdminReports = () => {
                         variant="ghost"
                         size="sm"
                         className="h-7 px-2 text-caption"
+                        aria-label={`Download ${file.name}`}
                         onClick={() => download(file.name, file.csv)}
                       >
                         <Download className="h-3 w-3" />

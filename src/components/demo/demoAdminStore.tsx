@@ -1,3 +1,4 @@
+import { downloadCsv as downloadSharedCsv } from '@/lib/csv';
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
 
 /**
@@ -319,11 +320,6 @@ export function useDemoAdminStore(): DemoAdminStore {
 }
 
 export function downloadCsv(filename: string, rows: (string | number)[][]) {
-  const csv = rows.map(r => r.map(v => `"${String(v).replace(/"/g, '""')}"`).join(',')).join('\n');
-  const url = URL.createObjectURL(new Blob([csv], { type: 'text/csv' }));
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = filename;
-  a.click();
-  URL.revokeObjectURL(url);
+  const [headers = [], ...body] = rows;
+  downloadSharedCsv(filename, headers.map(String), body);
 }

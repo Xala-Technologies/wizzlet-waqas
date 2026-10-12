@@ -1,3 +1,4 @@
+import { downloadCsv } from '@/lib/csv';
 import { useMemo, useState } from 'react';
 import { format } from 'date-fns';
 import { toast } from 'sonner';
@@ -56,14 +57,9 @@ const DemoMemberResults = () => {
   };
 
   const exportCsv = () => {
-    const csv = [
-      'Date,Event,Sport,Odds,Units,Result,Units P/L',
-      ...rows.map(t => [format(new Date(t.date), 'yyyy-MM-dd'), `"${t.event}"`, t.sport, t.usOdds, t.units, t.result, unitsFor(t)].join(',')),
-    ].join('\n');
-    const url = URL.createObjectURL(new Blob([csv], { type: 'text/csv' }));
-    const a = document.createElement('a');
-    a.href = url; a.download = 'my-results.csv'; a.click();
-    URL.revokeObjectURL(url);
+    downloadCsv('my-results.csv', ['Date', 'Event', 'Sport', 'Odds', 'Units', 'Result', 'Units P/L'],
+      rows.map(t => [format(new Date(t.date), 'yyyy-MM-dd'), t.event, t.sport, t.usOdds, t.units, t.result, unitsFor(t)]),
+    );
   };
 
   return (

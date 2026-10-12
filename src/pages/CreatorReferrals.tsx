@@ -1,3 +1,4 @@
+import { downloadCsv } from '@/lib/csv';
 import { useEffect, useMemo, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { useMutation, useQuery } from 'convex/react';
@@ -100,11 +101,6 @@ function statusTone(status: DemoReferralStatus): string {
 function statusLabel(status: DemoReferralStatus): string {
   if (status === 'fraud') return 'Fraud';
   return status.charAt(0).toUpperCase() + status.slice(1);
-}
-
-function csvEscape(value: string): string {
-  if (/[",\n]/.test(value)) return `"${value.replace(/"/g, '""')}"`;
-  return value;
 }
 
 const CreatorReferrals = () => {
@@ -298,7 +294,7 @@ const CreatorReferrals = () => {
       'Status',
       'Date',
     ];
-    const lines = filtered.map((r) =>
+    const rows = filtered.map((r) =>
       [
         r.referrerName,
         r.referrerHandle,
@@ -309,19 +305,9 @@ const CreatorReferrals = () => {
         r.commissionCents > 0 ? money(r.commissionCents) : '',
         statusLabel(r.status),
         format(r.createdAtMs, 'yyyy-MM-dd'),
-      ]
-        .map((cell) => csvEscape(String(cell)))
-        .join(','),
+      ],
     );
-    const blob = new Blob([[header.join(','), ...lines].join('\n')], {
-      type: 'text/csv;charset=utf-8',
-    });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `referrals-${format(Date.now(), 'yyyy-MM-dd')}.csv`;
-    a.click();
-    URL.revokeObjectURL(url);
+    downloadCsv(`referrals-${format(Date.now(), 'yyyy-MM-dd')}.csv`, header, rows);
     toast.success('Export downloaded');
   };
 
