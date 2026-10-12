@@ -76,7 +76,7 @@ export function CreatorDiscoveryCard({
             'group relative flex h-full flex-col overflow-hidden rounded-3xl border border-border bg-card',
             'shadow-[0_8px_28px_rgba(8,24,47,0.06)] transition-[border-color,box-shadow,transform] duration-200',
             'hover:-translate-y-0.5 hover:border-primary/25 hover:shadow-[0_16px_40px_rgba(8,24,47,0.1)]',
-            'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2',
+            'focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2',
           )}
         >
           <div className="relative shrink-0">

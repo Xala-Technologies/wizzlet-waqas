@@ -2,7 +2,7 @@ import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react-swc";
 import path from "path";
 import { execSync } from "child_process";
-import { componentTagger } from "lovable-tagger";
+import tailwindcss from "@tailwindcss/vite";
 
 function gitSha(): string {
   if (process.env.VITE_RELEASE_SHA) return process.env.VITE_RELEASE_SHA;
@@ -25,7 +25,7 @@ export default defineConfig(({ mode }) => ({
       overlay: false,
     },
   },
-  plugins: [react(), mode === "development" && componentTagger()].filter(Boolean),
+  plugins: [react(), tailwindcss()],
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),

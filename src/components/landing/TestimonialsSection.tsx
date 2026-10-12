@@ -181,7 +181,7 @@ export function TestimonialsSection() {
                   'group flex flex-1 flex-col justify-between rounded-3xl border border-border bg-card/95 p-5 text-left shadow-[0_10px_32px_rgba(8,24,47,0.06)] backdrop-blur-sm dark:shadow-[0_10px_32px_rgba(0,0,0,0.35)]',
                   'transition-[transform,box-shadow,border-color] duration-200',
                   'hover:-translate-y-0.5 hover:border-[#429FF0]/30 hover:shadow-[0_16px_40px_rgba(8,24,47,0.1)]',
-                  'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#429FF0]/40 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-background',
+                  'focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-[#429FF0]/40 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-background',
                 )}
               >
                 <blockquote className="text-[15px] font-medium leading-relaxed text-foreground/90 line-clamp-3">

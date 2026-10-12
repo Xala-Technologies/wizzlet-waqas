@@ -70,7 +70,7 @@ export function AdminTopBar() {
               className={cn(
                 'inline-flex h-10 items-center gap-2 rounded-2xl border border-border bg-card px-2.5',
                 'text-sm font-semibold text-foreground transition-colors hover:bg-muted/60',
-                'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
+                'focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-ring',
               )}
               aria-label="Account menu"
             >

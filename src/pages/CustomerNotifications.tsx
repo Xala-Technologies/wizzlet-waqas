@@ -265,7 +265,7 @@ const CustomerNotifications = () => {
                 onClick={() => void markRead(n)}
                 className={cn(
                   clayCard,
-                  'flex w-full min-h-11 items-start gap-3 p-4 text-left transition-colors hover:border-primary/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-60',
+                  'flex w-full min-h-11 items-start gap-3 p-4 text-left transition-colors hover:border-primary/20 focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-60',
                   n.read ? 'opacity-70' : null,
                 )}
               >
