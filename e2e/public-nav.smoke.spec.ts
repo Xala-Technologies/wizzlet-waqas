@@ -13,10 +13,17 @@ test.describe("J9 public navigation smoke", () => {
     }
   });
 
-  test("login shows platform owner bootstrap in DEV", async ({ page }) => {
+  test("login limits platform owner bootstrap to DEV builds", async ({ page }) => {
     await page.goto("/login");
     await expect(page.getByRole("heading", { name: /welcome back/i })).toBeVisible();
-    await expect(page.getByText("admin@prizelet.dev")).toBeVisible();
-    await expect(page.getByRole("button", { name: /sign in as platform owner/i })).toBeVisible();
+    const ownerEmail = page.getByText("admin@prizelet.dev");
+    const ownerSignIn = page.getByRole("button", { name: /sign in as platform owner/i });
+    if (process.env.E2E_BUILD_MODE === "production") {
+      await expect(ownerEmail).toHaveCount(0);
+      await expect(ownerSignIn).toHaveCount(0);
+    } else {
+      await expect(ownerEmail).toBeVisible();
+      await expect(ownerSignIn).toBeVisible();
+    }
   });
 });

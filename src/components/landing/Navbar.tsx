@@ -103,7 +103,7 @@ export function Navbar() {
             className="relative inline-flex h-10 w-10 items-center justify-center rounded-full text-muted-foreground hover:bg-muted/50 hover:text-foreground transition-colors"
             aria-label="Notifications"
           >
-            <Bell className="h-4.5 w-4.5" />
+            <Bell className="h-[24px] w-[24px]" />
             {user && showNotifDot ? (
               <span className="absolute top-2 right-2 h-2 w-2 rounded-full bg-primary" />
             ) : null}

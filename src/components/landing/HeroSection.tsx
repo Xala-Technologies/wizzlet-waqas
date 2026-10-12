@@ -56,7 +56,7 @@ export function HeroSection() {
               Create&nbsp;&nbsp;•&nbsp;&nbsp;Grow&nbsp;&nbsp;•&nbsp;&nbsp;Earn
             </p>
 
-            <h1 className="mb-5 text-[2.75rem] font-extrabold leading-[1.05] tracking-[-0.05em] text-foreground animate-fade-in-up sm:text-5xl lg:text-[3.65rem]">
+            <h1 className="mb-5 text-[2.75rem] font-extrabold leading-[1.05] tracking-[-0.05em] text-foreground animate-fade-in-up sm:text-5xl sm:leading-none lg:text-[3.65rem]">
               One place.
               <br />
               <span className="text-[#429FF0] dark:text-primary">Endless</span>

@@ -290,3 +290,67 @@
   button, [role="button"] { cursor: pointer; }
   input::placeholder, textarea::placeholder { color: #9ca3af; opacity: 1; }
 }
+
+/* V4 applies trailing margins, which collapse differently around inline labels.
+ * Preserve v3 sibling spacing, including hidden children and responsive variants.
+ * Revert the new logical margins without erasing lower-layer component margins.
+ */
+@theme inline { --spacing-px: 1px; }
+@utility space-y-* {
+  & > :where(:not(:last-child)) {
+    margin-block-start: revert-layer;
+    margin-block-end: revert-layer;
+  }
+  & > :not([hidden]) ~ :not([hidden]) {
+    --tw-space-y-reverse: 0;
+    margin-top: calc(--value(number) * 0.25rem * (1 - var(--tw-space-y-reverse)));
+    margin-top: calc(--value(--spacing-*, [length], [percentage]) * (1 - var(--tw-space-y-reverse)));
+    margin-bottom: calc(--value(number) * 0.25rem * var(--tw-space-y-reverse));
+    margin-bottom: calc(--value(--spacing-*, [length], [percentage]) * var(--tw-space-y-reverse));
+  }
+}
+@utility -space-y-* {
+  & > :where(:not(:last-child)) {
+    margin-block-start: revert-layer;
+    margin-block-end: revert-layer;
+  }
+  & > :not([hidden]) ~ :not([hidden]) {
+    --tw-space-y-reverse: 0;
+    margin-top: calc(--value(number) * 0.25rem * -1 * (1 - var(--tw-space-y-reverse)));
+    margin-top: calc(--value(--spacing-*, [length], [percentage]) * -1 * (1 - var(--tw-space-y-reverse)));
+    margin-bottom: calc(--value(number) * 0.25rem * -1 * var(--tw-space-y-reverse));
+    margin-bottom: calc(--value(--spacing-*, [length], [percentage]) * -1 * var(--tw-space-y-reverse));
+  }
+}
+@utility space-y-reverse {
+  & > :not([hidden]) ~ :not([hidden]) { --tw-space-y-reverse: 1; }
+}
+@utility space-x-* {
+  & > :where(:not(:last-child)) {
+    margin-inline-start: revert-layer;
+    margin-inline-end: revert-layer;
+  }
+  & > :not([hidden]) ~ :not([hidden]) {
+    --tw-space-x-reverse: 0;
+    margin-left: calc(--value(number) * 0.25rem * (1 - var(--tw-space-x-reverse)));
+    margin-left: calc(--value(--spacing-*, [length], [percentage]) * (1 - var(--tw-space-x-reverse)));
+    margin-right: calc(--value(number) * 0.25rem * var(--tw-space-x-reverse));
+    margin-right: calc(--value(--spacing-*, [length], [percentage]) * var(--tw-space-x-reverse));
+  }
+}
+@utility -space-x-* {
+  & > :where(:not(:last-child)) {
+    margin-inline-start: revert-layer;
+    margin-inline-end: revert-layer;
+  }
+  & > :not([hidden]) ~ :not([hidden]) {
+    --tw-space-x-reverse: 0;
+    margin-left: calc(--value(number) * 0.25rem * -1 * (1 - var(--tw-space-x-reverse)));
+    margin-left: calc(--value(--spacing-*, [length], [percentage]) * -1 * (1 - var(--tw-space-x-reverse)));
+    margin-right: calc(--value(number) * 0.25rem * -1 * var(--tw-space-x-reverse));
+    margin-right: calc(--value(--spacing-*, [length], [percentage]) * -1 * var(--tw-space-x-reverse));
+  }
+}
+@utility space-x-reverse {
+  & > :not([hidden]) ~ :not([hidden]) { --tw-space-x-reverse: 1; }
+}
