@@ -14,7 +14,7 @@ export type TxnType =
 
 export type TxnStatus = 'succeeded' | 'refunded' | 'chargeback' | 'failed';
 
-export type PaymentMethodKind = 'visa' | 'mastercard' | 'apple_pay' | 'google_pay';
+export type PaymentMethodKind = 'visa' | 'mastercard' | 'apple_pay' | 'google_pay' | 'unknown';
 
 export type DemoTransaction = {
   id: string;
@@ -440,5 +440,7 @@ export function paymentMethodLabel(kind: PaymentMethodKind, last4: string): stri
       return 'Apple Pay';
     case 'google_pay':
       return 'Google Pay';
+    case 'unknown':
+      return 'Not available';
   }
 }

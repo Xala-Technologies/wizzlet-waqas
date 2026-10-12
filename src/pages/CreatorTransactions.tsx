@@ -66,6 +66,7 @@ import {
 import { kpiIconTone } from '@/lib/kpiIconTones';
 import { paymentTypeLabel, isRefundablePayment, type PaymentFeeDetail } from '@/lib/paymentFeeDetail';
 import { cn } from '@/lib/utils';
+import { downloadCsv } from '@/lib/csv';
 
 const PAGE_SIZE = 10;
 
@@ -154,13 +155,13 @@ const CreatorTransactions = () => {
     const payments = earnings?.recentPayments ?? [];
     return payments.map((p) => {
       const labelParts = p.label.split('—').map((s) => s.trim());
-      const typeHint = (labelParts[0] ?? 'Subscription').toLowerCase();
-      const name = labelParts[1] ?? labelParts[0] ?? 'Subscriber';
+      const typeHint = (p.type || labelParts[0] || 'Subscription').toLowerCase();
+      const name = labelParts.length > 1 ? labelParts.slice(1).join(' — ') : labelParts[0] || 'Subscriber';
       let type: TxnType = 'Subscription';
       if (typeHint.includes('tip')) type = 'Tip';
       else if (typeHint.includes('refund')) type = 'Refund';
       else if (typeHint.includes('one') || typeHint.includes('purchase')) type = 'One-time purchase';
-      else if (typeHint.includes('chargeback')) type = 'Chargeback';
+      else if (typeHint.includes('chargeback') || typeHint.includes('dispute')) type = 'Chargeback';
       return {
         id: p.id,
         dateMs: p.createdAt,
@@ -173,15 +174,13 @@ const CreatorTransactions = () => {
         platformFeeCents: p.platformFeeCents,
         creatorEarningsCents: p.creatorEarningsCents,
         feePercentage: p.feePercentage,
-        status: (p.status === 'refunded' || p.amountCents < 0
-          ? 'refunded'
-          : p.status === 'failed'
-            ? 'failed'
-            : p.status === 'chargeback'
-              ? 'chargeback'
-              : 'succeeded') as TxnStatus,
-        paymentMethod: 'visa' as const,
-        paymentLast4: '••••',
+        status: (p.status === 'chargeback' || type === 'Chargeback'
+          ? 'chargeback'
+          : p.status === 'refunded' || type === 'Refund' || p.amountCents < 0
+            ? 'refunded'
+            : p.status === 'failed' ? 'failed' : 'succeeded') as TxnStatus,
+        paymentMethod: 'unknown' as const,
+        paymentLast4: '',
         customerEmail: p.customerEmail ?? undefined,
         paymentRef: p.paymentRef ?? p.id,
       };
@@ -317,9 +316,19 @@ const CreatorTransactions = () => {
       });
       return;
     }
-    toast.message('Export started', {
-      description: `${filtered.length} transactions queued.`,
-    });
+    if (filtered.length === 0) {
+      toast.error('Nothing to export');
+      return;
+    }
+    downloadCsv(`transactions-${format(Date.now(), 'yyyy-MM-dd')}.csv`,
+      ['Date', 'Type', 'Subscriber', 'Email', 'Product', 'Amount (USD)', 'Platform fee (USD)', 'Creator earnings (USD)', 'Status', 'Payment reference'],
+      filtered.map((row) => [
+        new Date(row.dateMs).toISOString(), row.type, row.subscriberName, row.customerEmail ?? '', row.product,
+        (row.amountCents / 100).toFixed(2), (row.platformFeeCents / 100).toFixed(2),
+        (row.creatorEarningsCents / 100).toFixed(2), statusLabel(row.status), row.paymentRef ?? row.id,
+      ]),
+    );
+    toast.success(`Exported ${filtered.length} transactions`);
   };
 
   const openRefund = (row: DemoTransaction) => {

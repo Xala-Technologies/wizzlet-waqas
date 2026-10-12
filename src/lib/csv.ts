@@ -5,7 +5,13 @@
  */
 
 const escapeCell = (value: unknown): string => {
-  const str = value === null || value === undefined ? '' : String(value);
+  let str = value === null || value === undefined ? '' : String(value);
+  // Quoting alone does not stop spreadsheet formula evaluation. Preserve plain
+  // signed numbers (including American odds), but export formula-like text as text.
+  const signedNumber = /^[+-]?(?:\d+(?:\.\d*)?|\.\d+)$/.test(str);
+  if (typeof value === 'string' && !signedNumber && (/^\s*[=+\-@]/.test(str) || /^[\t\r\n]/.test(str))) {
+    str = `'${str}`;
+  }
   return /[",\n\r]/.test(str) ? `"${str.replace(/"/g, '""')}"` : str;
 };
 
@@ -14,7 +20,12 @@ export function toCsv(headers: string[], rows: (string | number | null | undefin
 }
 
 export function downloadCsv(filename: string, headers: string[], rows: (string | number | null | undefined)[][]) {
-  const blob = new Blob([toCsv(headers, rows)], { type: 'text/csv;charset=utf-8;' });
+  downloadCsvText(filename, toCsv(headers, rows));
+}
+
+/** Download already-serialized CSV, also used for saved report downloads. */
+export function downloadCsvText(filename: string, csv: string) {
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
   const url = URL.createObjectURL(blob);
   const link = document.createElement('a');
   link.href = url;

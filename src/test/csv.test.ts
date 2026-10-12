@@ -12,6 +12,17 @@ describe('csv', () => {
     const rows = [['x,y', 'he said "hi"'], ['plain', '2']];
     expect(parseCsv(toCsv(['a', 'b'], rows))).toEqual([['a', 'b'], ...rows]);
   });
+
+  it.each(['=1+1', '+SUM(1,2)', '-SUM(1,2)', '@SUM(1,2)', '\t=1+1', '\r=1+1', '  =1+1'])('exports formula-like text as a literal: %j', (value) => {
+    const rows = parseCsv(toCsv(['Text'], [[value]]));
+    expect(rows[1][0]).toBe(`'${value}`);
+  });
+
+  it('preserves signed numeric values and American odds', () => {
+    expect(parseCsv(toCsv(['Loss', 'Odds'], [[-1.25, '+100'], ['-110', '-2.00']]))).toEqual([
+      ['Loss', 'Odds'], ['-1.25', '+100'], ['-110', '-2.00'],
+    ]);
+  });
 });
 
 describe('parsePickCsv', () => {

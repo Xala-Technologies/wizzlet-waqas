@@ -58,6 +58,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { creatorProfilePath } from '@/lib/creatorProfilePath';
 import { kpiIconTone, resultPillTone } from '@/lib/kpiIconTones';
 import { cn } from '@/lib/utils';
+import { downloadCsv } from '@/lib/csv';
 import {
   CREATOR_SUBSCRIBERS_DEMO_METRICS,
   CREATOR_SUBSCRIBERS_DEMO_ROWS,
@@ -332,10 +333,8 @@ const CreatorSubscribers = () => {
   };
 
   const exportCsv = () => {
-    const header = 'Name,Email,Product,Status,Country,Joined,Revenue\n';
-    const body = filtered
-      .map((r) =>
-        [
+    downloadCsv('subscribers.csv', ['Name', 'Email', 'Product', 'Status', 'Country', 'Joined', 'Revenue'],
+      filtered.map((r) => [
           r.name,
           r.email,
           r.product,
@@ -343,16 +342,8 @@ const CreatorSubscribers = () => {
           r.country,
           format(r.joinedAtMs, 'yyyy-MM-dd'),
           (r.totalSpentCents / 100).toFixed(2),
-        ].join(','),
-      )
-      .join('\n');
-    const blob = new Blob([header + body], { type: 'text/csv' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = 'subscribers.csv';
-    a.click();
-    URL.revokeObjectURL(url);
+      ]),
+    );
     toast.success('Exported subscribers CSV');
   };
 
