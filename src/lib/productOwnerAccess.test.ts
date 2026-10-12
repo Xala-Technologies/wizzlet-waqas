@@ -2,13 +2,13 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { listByCreator } from '../../convex/products/mutations';
 
 const identity = vi.hoisted(() => ({ userId: 'owner' as string | null, admin: false }));
-vi.mock('@convex-dev/auth/server', () => ({ getAuthUserId: async () => identity.userId }));
+vi.mock('@convex-dev/auth/server', () => ({ getAuthUserId: async () => identity.userId, getAuthSessionId: async () => identity.userId ? 'session1' : null }));
 
 function fixture() {
   const drafts = [{ _id: 'draft1', creatorId: 'creator1', name: 'Private draft', isActive: false }];
   const readProducts = vi.fn(async () => drafts);
   const ctx = { db: {
-    get: vi.fn(async (id: string) => id === 'creator1' ? { _id: id, userId: 'owner' } : { _id: id }),
+    get: vi.fn(async (id: string) => id === 'session1' ? { _id: id, userId: identity.userId, expirationTime: Date.now() + 60_000 } : id === 'creator1' ? { _id: id, userId: 'owner' } : { _id: id }),
     query: vi.fn((table: string) => ({ withIndex: () => ({
       unique: async () => table === 'userRoles' && identity.admin ? { role: 'admin' } : null,
       take: readProducts,

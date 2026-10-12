@@ -332,8 +332,8 @@ const CreatorSettings = () => {
   const handleSave = async () => {
     if (!creator || saving) return;
     if (tab === 'notifications') {
-      toast.success('Notification preferences saved', {
-        description: 'Stored on this device until server flags ship.',
+      toast.message('Notification settings are a preview', {
+        description: 'Preferences are not saved and do not change delivery yet.',
       });
       return;
     }
@@ -1716,8 +1716,7 @@ const CreatorSettings = () => {
                   Notifications
                 </h2>
                 <p className="mt-1 text-sm text-muted-foreground">
-                  Choose what you want to be notified about and how you want to receive
-                  notifications.
+                  Preview only. These controls are not saved and do not change notification delivery.
                 </p>
               </div>
 
@@ -1880,10 +1879,9 @@ const CreatorSettings = () => {
                 type="button"
                 className="h-12 gap-2 rounded-[var(--radius-md)] px-6"
                 onClick={() => void handleSave()}
-                disabled={busy}
+                disabled
               >
-                {saving ? <Loader2 className="h-5 w-5 animate-spin" aria-hidden /> : null}
-                Save Changes
+                Coming soon
               </Button>
             </section>
           </div>

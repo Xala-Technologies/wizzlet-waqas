@@ -23,7 +23,9 @@ describe('Stripe ledger and webhook regressions (isolated adapters)', () => {
   it('records zero revenue for a checkout with a 100% discount', async () => {
     stripe.retrieve.mockResolvedValue({ id: 'cs_free', status: 'complete', payment_status: 'no_payment_required', amount_total: 0,
       metadata: { userId: 'user1', creatorId: 'creator1', amountCents: '10000' } });
-    const ctx = { runMutation: vi.fn(async () => ({ ok: true, duplicate: false })) };
+    const ctx = { runQuery: vi.fn(async (ref: Parameters<typeof getFunctionName>[0]) => {
+      expect(getFunctionName(ref)).toBe('session:currentUserId'); return 'user1';
+    }), runMutation: vi.fn(async () => ({ ok: true, duplicate: false })) };
     await invoke(confirmCheckoutSession, ctx, { sessionId: 'cs_free' });
     expect(ctx.runMutation).toHaveBeenCalledWith(expect.anything(), expect.objectContaining({ amountCents: 0 }));
   });
@@ -45,7 +47,9 @@ describe('Stripe ledger and webhook regressions (isolated adapters)', () => {
   it('does not fulfill a completed checkout while delayed payment is still unpaid', async () => {
     stripe.retrieve.mockResolvedValue({ id: 'cs_pending', status: 'complete', payment_status: 'unpaid', amount_total: 1000,
       metadata: { userId: 'user1', creatorId: 'creator1' } });
-    const ctx = { runMutation: vi.fn(async () => ({ ok: true, duplicate: false })) };
+    const ctx = { runQuery: vi.fn(async (ref: Parameters<typeof getFunctionName>[0]) => {
+      expect(getFunctionName(ref)).toBe('session:currentUserId'); return 'user1';
+    }), runMutation: vi.fn(async () => ({ ok: true, duplicate: false })) };
     await expect(invoke(confirmCheckoutSession, ctx, { sessionId: 'cs_pending' })).rejects.toThrow('PAYMENT_PENDING');
     expect(ctx.runMutation).not.toHaveBeenCalled();
   });

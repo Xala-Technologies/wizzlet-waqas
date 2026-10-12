@@ -3,6 +3,7 @@
  * Gated by deployment env ALLOW_SANDBOX_CHECKOUT (never a client boolean).
  */
 
+import { createNotification } from "../lib/notify";
 import { mutation } from "../_generated/server";
 import { ConvexError, v } from "convex/values";
 import { logMutation, requireAppUser } from "../lib/auth";
@@ -136,14 +137,12 @@ export const sandboxSubscribe = mutation({
       createdAt: now,
     });
 
-    await ctx.db.insert("notifications", {
+    await createNotification(ctx, {
       userId: user._id,
       type: "subscription",
       title: `Subscribed to ${creator.displayName ?? creator.username}`,
       description: `Sandbox payment of $${(amountCents / 100).toFixed(2)} — no real charge.`,
-      read: false,
       link: "/dashboard/subscriptions-billing",
-      createdAt: now,
     });
 
     await applySubscribeGrowthAttribution(ctx, {

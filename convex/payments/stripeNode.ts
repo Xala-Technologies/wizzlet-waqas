@@ -3,7 +3,7 @@
 import Stripe from "stripe";
 import { action, internalAction, type ActionCtx } from "../_generated/server";
 import { v } from "convex/values";
-import { getAuthUserId } from "@convex-dev/auth/server";
+import { requireActionUserId } from "../lib/actionAuth";
 import { internal } from "../_generated/api";
 import type { Id } from "../_generated/dataModel";
 import { isStripeAlreadyCanceledError } from "../lib/commerceIdentity";
@@ -122,8 +122,7 @@ export const createCheckoutSession = action({
     alreadySubscribed: v.optional(v.boolean()),
   }),
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
-    if (!userId) throw new Error("UNAUTHENTICATED");
+    const userId = await requireActionUserId(ctx);
 
     const prep = await ctx.runQuery(internal.payments.stripeDb.getCheckoutContext, {
       userId,
@@ -223,8 +222,7 @@ export const confirmCheckoutSession = action({
   args: { sessionId: v.string() },
   returns: v.object({ ok: v.boolean(), duplicate: v.optional(v.boolean()) }),
   handler: async (ctx, args): Promise<{ ok: boolean; duplicate?: boolean }> => {
-    const userId = await getAuthUserId(ctx);
-    if (!userId) throw new Error("UNAUTHENTICATED");
+    const userId = await requireActionUserId(ctx);
     const stripe = requireStripe();
     const session = await stripe.checkout.sessions.retrieve(args.sessionId, {
       expand: ["subscription"],
@@ -280,8 +278,7 @@ export const createBillingPortalSession = action({
   args: {},
   returns: v.object({ url: v.string() }),
   handler: async (ctx) => {
-    const userId = await getAuthUserId(ctx);
-    if (!userId) throw new Error("UNAUTHENTICATED");
+    const userId = await requireActionUserId(ctx);
 
     const prep = await ctx.runQuery(internal.payments.stripeDb.getBillingPortalContext, {
       userId,
@@ -330,8 +327,7 @@ export const cancelCreatorSubscription = action({
   args: { creatorId: v.id("creators") },
   returns: v.object({ ok: v.boolean(), status: v.string() }),
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
-    if (!userId) throw new Error("UNAUTHENTICATED");
+    const userId = await requireActionUserId(ctx);
     const sub = await ctx.runQuery(internal.payments.stripeDb.getSubscriptionForCancel, {
       userId,
       creatorId: args.creatorId,
@@ -643,8 +639,7 @@ export const cancelStripeSubscriptionsAdmin = action({
   },
   returns: cancelStripeResultValidator,
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
-    if (!userId) throw new Error("UNAUTHENTICATED");
+    const userId = await requireActionUserId(ctx);
     await ctx.runQuery(internal.payments.stripeDb.assertAdminUserId, { userId });
     return cancelStripeSubscriptionsImpl({
       stripeSubscriptionIds: args.stripeSubscriptionIds,
@@ -786,8 +781,7 @@ export const createConnectOnboardingSession = action({
   args: {},
   returns: v.object({ url: v.string(), stripeAccountId: v.string() }),
   handler: async (ctx): Promise<{ url: string; stripeAccountId: string }> => {
-    const userId = await getAuthUserId(ctx);
-    if (!userId) throw new Error("UNAUTHENTICATED");
+    const userId = await requireActionUserId(ctx);
     const stripe = requireStripe();
     const prep: {
       creatorId: Id<"creators">;
@@ -864,8 +858,7 @@ export const getConnectPlatformBalance = action({
     stripeFxFundingAvailable: v.boolean(),
   }),
   handler: async (ctx) => {
-    const userId = await getAuthUserId(ctx);
-    if (!userId) throw new Error("UNAUTHENTICATED");
+    const userId = await requireActionUserId(ctx);
     await ctx.runQuery(internal.payments.stripeDb.assertAdminUserId, { userId });
     const stripe = requireStripe();
     const [balance, account] = await Promise.all([
@@ -912,8 +905,7 @@ export const refreshConnectAccountStatus = action({
     chargesEnabled: boolean;
     payoutsEnabled: boolean;
   }> => {
-    const userId = await getAuthUserId(ctx);
-    if (!userId) throw new Error("UNAUTHENTICATED");
+    const userId = await requireActionUserId(ctx);
     const stripe = requireStripe();
     const prep = await ctx.runQuery(internal.payments.stripeDb.getConnectOnboardingContext, {
       userId,
@@ -1053,8 +1045,7 @@ export const sendConnectPayout = action({
   args: { payoutId: v.id("payouts") },
   returns: connectTransferResultValidator,
   handler: async (ctx, args): Promise<ConnectTransferResult> => {
-    const userId = await getAuthUserId(ctx);
-    if (!userId) throw new Error("UNAUTHENTICATED");
+    const userId = await requireActionUserId(ctx);
     await ctx.runQuery(internal.payments.stripeDb.assertAdminUserId, { userId });
     return runConnectPayoutTransfer(ctx, args.payoutId);
   },
@@ -1087,8 +1078,7 @@ export const sendReferralCommissionConnect = action({
     transferAmount: number;
     funding: "matched" | "stripe_fx";
   }> => {
-    const userId = await getAuthUserId(ctx);
-    if (!userId) throw new Error("UNAUTHENTICATED");
+    const userId = await requireActionUserId(ctx);
     await ctx.runQuery(internal.payments.stripeDb.assertAdminUserId, { userId });
     const stripe = requireStripe();
     const prep: {

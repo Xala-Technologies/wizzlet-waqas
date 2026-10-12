@@ -57,6 +57,9 @@ const Mfa = () => {
     setBusy(true);
     try {
       const result = await verifyLogin({ code: trimmed });
+      if ('error' in result) {
+        throw new Error(result.error);
+      }
       if (result.usedBackupCode) {
         toast.message('Backup code used. Regenerate codes in Settings when you can.');
       }
@@ -64,7 +67,9 @@ const Mfa = () => {
     } catch (err) {
       const msg = err instanceof Error ? err.message : 'Could not verify code';
       toast.error(
-        msg.includes('INVALID_CODE')
+        msg.includes('MFA_RATE_LIMITED')
+          ? 'Too many attempts. Wait five minutes before trying again.'
+          : msg.includes('INVALID_CODE')
           ? useBackup
             ? 'That backup code is not valid or was already used.'
             : 'That code is not valid. Try the current authenticator code.'

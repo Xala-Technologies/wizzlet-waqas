@@ -59,6 +59,11 @@ const Login = () => {
 
   const finishAdminSession = async () => {
     await waitForAuthenticated(() => authReady.current);
+    const mfaStatus = await withAuthRetry(() => convex.query(api.mfa.status, {}));
+    if (mfaStatus.required) {
+      navigate(destinationAfterMfa({ mfaRequired: true, dest: '/admin' }), { replace: true });
+      return;
+    }
     await withAuthRetry(() =>
       ensureUser({
         username: ADMIN_BOOTSTRAP.username,
@@ -70,7 +75,6 @@ const Login = () => {
     await refreshRole('admin');
     clearStoredReturnTo();
     toast.success('Signed in as platform owner');
-    const mfaStatus = await withAuthRetry(() => convex.query(api.mfa.status, {}));
     navigate(destinationAfterMfa({ mfaRequired: mfaStatus.required, dest: '/admin' }), {
       replace: true,
     });

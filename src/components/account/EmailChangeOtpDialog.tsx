@@ -129,7 +129,11 @@ export function EmailChangeOtpDialog({
     }
     setBusy(true);
     try {
-      await verifyEmailChangeOtp({ code });
+      const result = await verifyEmailChangeOtp({ code });
+      if (result.status === 'invalid') {
+        handleError(new Error(result.error));
+        return;
+      }
       toast.success('Email updated — sign in with the new address');
       close(false);
       await signOut();

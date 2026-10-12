@@ -1,5 +1,5 @@
 import { ConvexError } from "convex/values";
-import { getAuthUserId } from "@convex-dev/auth/server";
+import { getAuthSessionId, getAuthUserId } from "@convex-dev/auth/server";
 import type { MutationCtx, QueryCtx } from "../_generated/server";
 import type { Doc, Id } from "../_generated/dataModel";
 import { ADMIN_SCAN_MAX_DOCS } from "./adminLists";
@@ -23,15 +23,41 @@ export async function getAppUserByExternalAuthId(ctx: Ctx, externalAuthId: strin
     .unique();
 }
 
-export async function requireAppUser(ctx: Ctx): Promise<Doc<"users">> {
+/** A valid JWT can outlive sign-out/password rotation. Check the backing session too. */
+export async function getSessionUser(ctx: Ctx): Promise<Doc<"users"> | null> {
   const userId = await getAuthUserId(ctx);
-  if (!userId) {
-    throw new ConvexError("UNAUTHENTICATED");
-  }
-  const user = await ctx.db.get(userId);
-  if (!user) {
-    throw new ConvexError("USER_PROFILE_MISSING");
-  }
+  const sessionId = await getAuthSessionId(ctx);
+  if (!userId || !sessionId) return null;
+  const session = await ctx.db.get(sessionId);
+  if (!session || session.userId !== userId || session.expirationTime <= Date.now()) return null;
+  return ctx.db.get(userId);
+}
+
+/** Only bootstrap and the MFA challenge may use a session before its second factor. */
+export async function requireSessionUser(ctx: Ctx): Promise<Doc<"users">> {
+  const user = await getSessionUser(ctx);
+  if (!user) throw new ConvexError("UNAUTHENTICATED");
+  return user;
+}
+
+export async function sessionMfaVerified(ctx: Ctx, user: Doc<"users">): Promise<boolean> {
+  if (!user.totpEnabled || !user.totpSecret) return true;
+  const sessionId = await getAuthSessionId(ctx);
+  if (!sessionId) return false;
+  const grant = await ctx.db.query("mfaSessionGrants")
+    .withIndex("by_sessionId", q => q.eq("sessionId", sessionId)).unique();
+  return grant?.userId === user._id;
+}
+
+/** Public endpoints treat an unverified or revoked session as an anonymous viewer. */
+export async function getOptionalAppUser(ctx: Ctx): Promise<Doc<"users"> | null> {
+  const user = await getSessionUser(ctx);
+  return user && await sessionMfaVerified(ctx, user) ? user : null;
+}
+
+export async function requireAppUser(ctx: Ctx): Promise<Doc<"users">> {
+  const user = await requireSessionUser(ctx);
+  if (!await sessionMfaVerified(ctx, user)) throw new ConvexError("MFA_REQUIRED");
   return user;
 }
 

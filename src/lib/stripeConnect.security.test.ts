@@ -189,7 +189,7 @@ describe('stripe Connect Express helpers', () => {
 describe('stripe Connect Express wiring', () => {
   it('creates Express accounts and Account Links from an authenticated action', () => {
     expect(stripeNode).toMatch(/export const createConnectOnboardingSession/);
-    expect(stripeNode).toMatch(/getAuthUserId/);
+    expect(stripeNode).toMatch(/requireActionUserId/);
     expect(stripeNode).toMatch(/type: "express"/);
     expect(stripeNode).toMatch(/expressConnectCapabilities/);
     expect(stripeNode).toMatch(/accountLinks\.create/);

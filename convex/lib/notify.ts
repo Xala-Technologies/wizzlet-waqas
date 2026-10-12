@@ -25,7 +25,15 @@ export async function createNotification(
     description?: string;
     link?: string;
   },
-): Promise<Id<"notifications">> {
+): Promise<Id<"notifications"> | null> {
+  // Only optional delivery categories are suppressible. Support, security and
+  // admin operational alerts remain available regardless of these preferences.
+  const preference = args.type === "message" ? "messages"
+    : args.type === "subscription" ? "billing" : null;
+  if (preference) {
+    const user = await ctx.db.get(args.userId);
+    if (user?.notificationPrefs?.[preference] === false) return null;
+  }
   return ctx.db.insert("notifications", {
     userId: args.userId,
     type: args.type,
@@ -52,14 +60,14 @@ export async function notifyAdmins(
   let created = 0;
   for (const userId of adminIds) {
     if (args.exceptUserId && userId === args.exceptUserId) continue;
-    await createNotification(ctx, {
+    const notificationId = await createNotification(ctx, {
       userId,
       type: args.type,
       title: args.title,
       description: args.description,
       link: args.link,
     });
-    created += 1;
+    if (notificationId) created += 1;
   }
   return created;
 }
