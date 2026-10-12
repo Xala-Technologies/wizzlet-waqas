@@ -23,7 +23,6 @@ import {
   shouldUseMemberDiscoverDemo,
   type MemberDiscoverSportFilter,
 } from '@/lib/memberDiscoverDemo';
-import { Seo } from '@/components/Seo';
 import { SweephRibbonBackground } from '@/components/brand/SweephRibbonBackground';
 import { api } from '@convex/_generated/api';
 import type { Id } from '@convex/_generated/dataModel';
@@ -203,11 +202,11 @@ const CustomerDiscover = () => {
     sort === 'newest' ? 'Newest' : sort === 'price' ? 'Lowest price' : 'Popular';
 
   return (
-    <DashboardLayout type="member" mainClassName="bg-clay-page">
-      <Seo
-        title="Discover — Sweeph"
-        description="Find winning creators and join a growing community on Sweeph."
-      />
+    <DashboardLayout
+      type="member"
+      mainClassName="bg-clay-page"
+      description="Find winning creators and join a growing community on Sweeph."
+    >
 
       <div className="relative -mx-4 mb-8 overflow-hidden rounded-2xl px-4 py-8 sm:-mx-6 sm:px-6 md:-mx-8 md:px-8 lg:-mx-10 lg:px-10 xl:-mx-12 xl:px-12 sm:py-10">
         <SweephRibbonBackground variant="discover" className="rounded-2xl" />

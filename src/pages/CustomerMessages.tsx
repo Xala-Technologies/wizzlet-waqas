@@ -28,7 +28,6 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { MessageSeenReceipt } from '@/components/messaging/MessageSeenReceipt';
-import { Seo } from '@/components/Seo';
 import { useAppUser } from '@/hooks/useAppUser';
 import { creatorProfilePath } from '@/lib/creatorProfilePath';
 import {
@@ -470,11 +469,11 @@ const CustomerMessages = () => {
   };
 
   return (
-    <DashboardLayout type="member" mainClassName="bg-clay-page">
-      <Seo
-        title="Messages — Prizelet"
-        description="Chat with creators or get help from our support team."
-      />
+    <DashboardLayout
+      type="member"
+      mainClassName="bg-clay-page"
+      description="Chat with creators or get help from our support team."
+    >
 
       <header className="mb-5">
       </header>

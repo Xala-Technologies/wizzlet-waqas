@@ -14,7 +14,6 @@ import {
 import { toast } from 'sonner';
 import { DashboardLayout } from '@/components/dashboard/DashboardLayout';
 import { clayCard } from '@/lib/overviewClay';
-import { Seo } from '@/components/Seo';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Switch } from '@/components/ui/switch';
@@ -296,11 +295,11 @@ const CustomerSettings = () => {
   const displayPhone = phone;
 
   return (
-    <DashboardLayout type="member" mainClassName="bg-clay-page">
-      <Seo
-        title="Settings — Prizelet"
-        description="Manage your account and preferences on Prizelet."
-      />
+    <DashboardLayout
+      type="member"
+      mainClassName="bg-clay-page"
+      description="Manage your account and preferences on Sweeph."
+    >
 
       <header className="mb-4">
         <p className="mt-1.5 text-sm font-medium text-muted-foreground sm:text-base">

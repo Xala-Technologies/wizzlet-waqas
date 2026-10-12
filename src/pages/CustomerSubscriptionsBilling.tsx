@@ -10,7 +10,6 @@ import {
   MemberMyCreatorRow,
   MemberMyCreatorRowSkeleton,
 } from '@/components/my-creators/MemberMyCreatorRow';
-import { Seo } from '@/components/Seo';
 import { useAppUser } from '@/hooks/useAppUser';
 import { api } from '@convex/_generated/api';
 import { openCustomerPortal } from '@/lib/stripe';
@@ -140,11 +139,11 @@ const CustomerSubscriptionsBilling = () => {
   };
 
   return (
-    <DashboardLayout type="member" mainClassName="bg-clay-page">
-      <Seo
-        title="My Creators — Prizelet"
-        description="Your active subscriptions and exclusive content on Prizelet."
-      />
+    <DashboardLayout
+      type="member"
+      mainClassName="bg-clay-page"
+      description="Your active subscriptions and exclusive content on Sweeph."
+    >
 
       <header className="mb-6 flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
         <div className="min-w-0">

@@ -40,7 +40,6 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Seo } from '@/components/Seo';
 import { trackPostView } from '@/lib/analytics';
 import { sportVisual } from '@/lib/sportVisual';
 import {
@@ -326,8 +325,7 @@ const Dashboard = () => {
 
   if (loading) {
     return (
-      <DashboardLayout type="member" mainClassName="bg-clay-page">
-        <Seo title="Home — Sweeph" description="Your Sweeph member home feed." />
+      <DashboardLayout type="member" mainClassName="bg-clay-page" description="Your Sweeph member home feed.">
         <header className="mb-4 sm:mb-5">
           <Skeleton className="h-4 w-40" />
           <Skeleton className="mt-3 h-10 w-72 max-w-full" />
@@ -369,11 +367,7 @@ const Dashboard = () => {
   const todayLabel = format(new Date(), 'EEEE, MMM d, yyyy');
 
   return (
-    <DashboardLayout type="member" mainClassName="bg-clay-page">
-      <Seo
-        title="Home — Sweeph"
-        description="Latest from creators you follow on Sweeph."
-      />
+    <DashboardLayout type="member" mainClassName="bg-clay-page" description="Latest from creators you follow on Sweeph.">
 
       <header className="mb-7 sm:mb-9">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between sm:gap-6">

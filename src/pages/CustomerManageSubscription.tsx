@@ -31,7 +31,6 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import { Seo } from '@/components/Seo';
 import { useAppUser } from '@/hooks/useAppUser';
 import { api } from '@convex/_generated/api';
 import { cancelSubscription, openCustomerPortal } from '@/lib/stripe';
@@ -225,10 +224,6 @@ const CustomerManageSubscription = () => {
   if (loading) {
     return (
       <DashboardLayout type="member" mainClassName="bg-clay-page">
-        <Seo
-          title="Manage Subscription — Prizelet"
-          description="Manage your Prizelet creator subscription, billing, and cancel options."
-        />
         <div className="flex min-h-[40vh] items-center justify-center">
           <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
         </div>
@@ -239,10 +234,6 @@ const CustomerManageSubscription = () => {
   if (!detail) {
     return (
       <DashboardLayout type="member" mainClassName="bg-clay-page">
-        <Seo
-          title="Manage Subscription — Prizelet"
-          description="Manage your Prizelet creator subscription, billing, and cancel options."
-        />
         <Link
           to={backHref}
           className="mb-4 inline-flex items-center gap-1 text-sm font-semibold text-primary hover:underline"
@@ -269,11 +260,12 @@ const CustomerManageSubscription = () => {
     detail.avatarInitials.length === 1;
 
   return (
-    <DashboardLayout type="member" mainClassName="bg-clay-page">
-      <Seo
-        title={`Manage ${detail.displayName} — Prizelet`}
-        description={`View and manage your subscription to ${detail.displayName}.`}
-      />
+    <DashboardLayout
+      type="member"
+      mainClassName="bg-clay-page"
+      documentTitle={`Manage ${detail.displayName} — Sweeph`}
+      description={`View and manage your subscription to ${detail.displayName}.`}
+    >
 
       <Link
         to={backHref}

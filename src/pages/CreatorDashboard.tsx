@@ -18,7 +18,6 @@ import { api } from '../../convex/_generated/api';
 import { computeWinRate } from '../../convex/lib/results';
 import { DashboardLayout } from '@/components/dashboard/DashboardLayout';
 import { Button } from '@/components/ui/button';
-import { Seo } from '@/components/Seo';
 import { OverviewKpiStrip } from '@/components/creator/overview/OverviewKpiStrip';
 import { OverviewEarningsChart } from '@/components/creator/overview/OverviewEarningsChart';
 import { OverviewQuickActions } from '@/components/creator/overview/OverviewQuickActions';
@@ -275,11 +274,12 @@ const CreatorDashboard = () => {
   const todayLabel = format(new Date(), 'EEEE, MMM d, yyyy');
 
   return (
-    <DashboardLayout type="creator" mainClassName="bg-clay-page">
-      <Seo
-        title="Creator overview — Sweeph"
-        description="Your Sweeph creator overview: posts, earnings, subscribers, and performance."
-      />
+    <DashboardLayout
+      type="creator"
+      mainClassName="bg-clay-page"
+      documentTitle="Creator overview — Sweeph"
+      description="Your Sweeph creator overview: posts, earnings, subscribers, and performance."
+    >
 
       <header className="mb-4 sm:mb-5">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between sm:gap-6">
