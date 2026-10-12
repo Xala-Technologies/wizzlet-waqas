@@ -3,7 +3,7 @@ import { v } from "convex/values";
 import { getAuthSessionId } from "@convex-dev/auth/server";
 import type { MutationCtx, QueryCtx } from "./_generated/server";
 import type { Id } from "./_generated/dataModel";
-import { requireAdmin, requireAppUser, logMutation } from "./lib/auth";
+import { requireAdmin, requireAppUser, requireSessionUser, sessionMfaVerified, logMutation } from "./lib/auth";
 import { ADMIN_SCAN_MAX_DOCS } from "./lib/adminLists";
 import {
   findBackupCodeIndex,
@@ -17,17 +17,6 @@ async function currentSessionId(ctx: QueryCtx | MutationCtx): Promise<Id<"authSe
   const sessionId = await getAuthSessionId(ctx);
   if (!sessionId) throw new Error("UNAUTHENTICATED");
   return sessionId;
-}
-
-async function sessionIsGranted(
-  ctx: QueryCtx | MutationCtx,
-  sessionId: Id<"authSessions">,
-): Promise<boolean> {
-  const grant = await ctx.db
-    .query("mfaSessionGrants")
-    .withIndex("by_sessionId", (q) => q.eq("sessionId", sessionId))
-    .unique();
-  return Boolean(grant);
 }
 
 async function grantSession(
@@ -69,6 +58,9 @@ async function clearMfaState(ctx: MutationCtx, userId: Id<"users">): Promise<voi
     updatedAt: Date.now(),
   });
   await clearGrantsForUser(ctx, userId);
+  const attempts = await ctx.db.query("mfaChallengeAttempts")
+    .withIndex("by_userId", q => q.eq("userId", userId)).unique();
+  if (attempts) await ctx.db.delete(attempts._id);
 }
 
 export const status = query({
@@ -80,7 +72,7 @@ export const status = query({
     backupCodesRemaining: v.number(),
   }),
   handler: async (ctx) => {
-    const user = await requireAppUser(ctx);
+    const user = await requireSessionUser(ctx);
     const totpEnabled = Boolean(user.totpEnabled && user.totpSecret);
     const pendingEnroll = Boolean(user.totpSecret && !user.totpEnabled);
     const backupCodesRemaining = user.totpBackupCodeHashes?.length ?? 0;
@@ -101,7 +93,7 @@ export const status = query({
         backupCodesRemaining,
       };
     }
-    const granted = await sessionIsGranted(ctx, sessionId);
+    const granted = await sessionMfaVerified(ctx, user);
     return {
       totpEnabled: true,
       pendingEnroll: false,
@@ -239,22 +231,39 @@ export const regenerateBackupCodes = mutation({
 
 export const verifyLogin = mutation({
   args: { code: v.string() },
-  returns: v.object({ usedBackupCode: v.boolean() }),
+  returns: v.union(v.object({ usedBackupCode: v.boolean() }), v.object({
+    error: v.union(v.literal("INVALID_CODE"), v.literal("MFA_RATE_LIMITED")),
+  })),
   handler: async (ctx, args) => {
-    const user = await requireAppUser(ctx);
+    const user = await requireSessionUser(ctx);
     if (!user.totpEnabled || !user.totpSecret) {
       throw new Error("NOT_ENABLED");
     }
     const sessionId = await currentSessionId(ctx);
+    // Account-wide so opening another password session cannot reset the budget.
+    const attemptRow = await ctx.db.query("mfaChallengeAttempts")
+      .withIndex("by_userId", q => q.eq("userId", user._id)).unique();
+    const now = Date.now();
+    const withinWindow = !!attemptRow && now - attemptRow.windowStartedAt < 5 * 60_000;
+    const attempts = withinWindow ? attemptRow.attempts : 0;
+    if (attempts >= 5) return { error: "MFA_RATE_LIMITED" as const };
+    const invalid = async () => {
+      const patch = { userId: user._id, attempts: attempts + 1,
+        windowStartedAt: withinWindow ? attemptRow.windowStartedAt : now };
+      if (attemptRow) await ctx.db.patch(attemptRow._id, patch);
+      else await ctx.db.insert("mfaChallengeAttempts", patch);
+      // Commit the failed attempt; throwing would roll it back.
+      return { error: "INVALID_CODE" as const };
+    };
     let usedBackupCode = false;
 
     if (isValidTotpCode(args.code)) {
       const ok = await verifyTotp(user.totpSecret, args.code);
-      if (!ok) throw new Error("INVALID_CODE");
+      if (!ok) return invalid();
     } else if (isValidBackupCode(args.code)) {
       const hashes = user.totpBackupCodeHashes ?? [];
       const idx = await findBackupCodeIndex(hashes, args.code);
-      if (idx < 0) throw new Error("INVALID_CODE");
+      if (idx < 0) return invalid();
       const next = hashes.filter((_, i) => i !== idx);
       await ctx.db.patch(user._id, {
         totpBackupCodeHashes: next.length > 0 ? next : undefined,
@@ -262,9 +271,10 @@ export const verifyLogin = mutation({
       });
       usedBackupCode = true;
     } else {
-      throw new Error("INVALID_CODE");
+      return invalid();
     }
 
+    if (attemptRow) await ctx.db.delete(attemptRow._id);
     await grantSession(ctx, user._id, sessionId);
     await logMutation(ctx, {
       table: "users",

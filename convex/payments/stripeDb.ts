@@ -20,7 +20,7 @@ import {
   parsePayoutDefaults,
 } from "../lib/payoutDefaults";
 import { getCreatorAvailableBalanceCents } from "../lib/payoutBalance";
-import { notifyAdmins, previewBody } from "../lib/notify";
+import { createNotification, notifyAdmins, previewBody } from "../lib/notify";
 import { subscriptionGrantsContentAccess } from "../lib/contentAccess";
 
 /** Keep Discord aligned with the same paid-access policy as posts and messages. */
@@ -270,14 +270,12 @@ export const fulfillCheckout = internalMutation({
       createdAt: now,
     });
 
-    await ctx.db.insert("notifications", {
+    await createNotification(ctx, {
       userId: args.userId,
       type: "subscription",
       title: `Subscribed to ${creator.displayName ?? creator.username}`,
       description: `Payment of $${(args.amountCents / 100).toFixed(2)} received.`,
-      read: false,
       link: "/dashboard/subscriptions-billing",
-      createdAt: now,
     });
 
     await applySubscribeGrowthAttribution(ctx, {

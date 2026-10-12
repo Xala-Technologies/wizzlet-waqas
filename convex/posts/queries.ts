@@ -1,8 +1,8 @@
 import { paginationOptsValidator, paginationResultValidator } from "convex/server";
 import { mutation, query } from "../_generated/server";
 import { v } from "convex/values";
-import { getAuthUserId } from "@convex-dev/auth/server";
 import {
+  getOptionalAppUser,
   getCreatorForUser,
   requireAppUser,
   requireCreatorOwner,
@@ -24,7 +24,7 @@ export const listPreviewsByCreator = query({
   args: { creatorId: v.id("creators") },
   returns: v.array(postPreviewValidator),
   handler: async (ctx, args) => {
-    const viewerUserId = await getAuthUserId(ctx);
+    const viewerUserId = (await getOptionalAppUser(ctx))?._id ?? null;
     const posts = await ctx.db
       .query("posts")
       .withIndex("by_creatorId_createdAt", (q) => q.eq("creatorId", args.creatorId))

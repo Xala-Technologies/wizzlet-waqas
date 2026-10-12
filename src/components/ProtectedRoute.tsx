@@ -25,9 +25,12 @@ export function ProtectedRoute({ children, allowedRoles }: ProtectedRouteProps) 
 
   const grantedRole = allowedRoles?.find((r) => roles.includes(r)) ?? null;
 
+  const mfa = useQuery(api.mfa.status, user && !signingOut ? {} : 'skip');
+
   const needsCreatorProfile =
     !!user &&
     !signingOut &&
+    mfa?.required === false &&
     allowedRoles?.includes('creator') === true &&
     location.pathname !== '/creator/onboarding';
 
@@ -35,8 +38,6 @@ export function ProtectedRoute({ children, allowedRoles }: ProtectedRouteProps) 
     api.creators.queries.myCreator,
     needsCreatorProfile ? {} : 'skip',
   );
-
-  const mfa = useQuery(api.mfa.status, user && !signingOut ? {} : 'skip');
 
   useEffect(() => {
     if (grantedRole && role !== grantedRole) switchRole(grantedRole);

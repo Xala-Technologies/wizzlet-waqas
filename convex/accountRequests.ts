@@ -2,7 +2,7 @@ import { action, internalMutation, mutation, query } from "./_generated/server";
 import { v } from "convex/values";
 import type { MutationCtx } from "./_generated/server";
 import type { Doc, Id } from "./_generated/dataModel";
-import { getAuthUserId } from "@convex-dev/auth/server";
+import { requireActionUserId } from "./lib/actionAuth";
 import { internal } from "./_generated/api";
 import { getCreatorForUser, requireAdmin, requireAppUser, logMutation } from "./lib/auth";
 import { ADMIN_SCAN_MAX_DOCS } from "./lib/adminLists";
@@ -56,6 +56,9 @@ async function clearAuthSessions(ctx: MutationCtx, userId: Id<"users">) {
     }
     await ctx.db.delete(session._id);
   }
+  const grants = await ctx.db.query("mfaSessionGrants")
+    .withIndex("by_userId", q => q.eq("userId", userId)).take(ADMIN_SCAN_MAX_DOCS);
+  for (const grant of grants) await ctx.db.delete(grant._id);
 }
 
 async function deleteAuthAccounts(ctx: MutationCtx, userId: Id<"users">) {
@@ -250,6 +253,9 @@ async function fulfillAccountDeletion(
   await clearAuthSessions(ctx, req.userId);
   await deleteAuthAccounts(ctx, req.userId);
   await stripUserRoles(ctx, req.userId);
+  const attempts = await ctx.db.query("mfaChallengeAttempts")
+    .withIndex("by_userId", q => q.eq("userId", req.userId)).unique();
+  if (attempts) await ctx.db.delete(attempts._id);
 
   const creator = await getCreatorForUser(ctx, req.userId);
   if (creator?.isPublished) {
@@ -285,6 +291,9 @@ async function fulfillAccountDeletion(
     bio: undefined,
     discordId: undefined,
     discordUsername: undefined,
+    totpSecret: undefined,
+    totpEnabled: false,
+    totpBackupCodeHashes: undefined,
     emailVerificationTime: undefined,
     updatedAt: now,
   });
@@ -396,8 +405,7 @@ export const startEmailChange = action({
     delivery: "email" | "dev";
     devCode?: string;
   }> => {
-    const userId = await getAuthUserId(ctx);
-    if (!userId) throw new Error("UNAUTHENTICATED");
+    const userId = await requireActionUserId(ctx);
     const minted: {
       requestId: Id<"accountRequests">;
       code: string;
@@ -426,8 +434,7 @@ export const resendEmailChangeOtp = action({
     delivery: "email" | "dev";
     devCode?: string;
   }> => {
-    const userId = await getAuthUserId(ctx);
-    if (!userId) throw new Error("UNAUTHENTICATED");
+    const userId = await requireActionUserId(ctx);
     const minted: {
       requestId: Id<"accountRequests">;
       code: string;
@@ -476,10 +483,10 @@ export const remintOpenEmailChangeOtp = internalMutation({
 /** Member/creator: verify OTP and rotate sign-in email (clears sessions). */
 export const verifyEmailChangeOtp = mutation({
   args: { code: v.string() },
-  returns: v.object({
+  returns: v.union(v.object({
     status: v.literal("fulfilled"),
     category: v.literal("email_change"),
-  }),
+  }), v.object({ status: v.literal("invalid"), error: v.literal("OTP_INVALID") })),
   handler: async (ctx, args) => {
     const user = await requireAppUser(ctx);
     if (!isValidOtpCode(args.code)) throw new Error("INVALID_OTP");
@@ -502,7 +509,8 @@ export const verifyEmailChangeOtp = mutation({
         otpAttemptCount: attempts + 1,
         updatedAt: now,
       });
-      throw new Error("OTP_INVALID");
+      // Throwing would roll back the attempt increment with the transaction.
+      return { status: "invalid" as const, error: "OTP_INVALID" as const };
     }
     await fulfillEmailChange(ctx, req);
     await ctx.db.patch(req._id, {

@@ -1,6 +1,6 @@
 import { internalMutation, internalQuery, query } from "../_generated/server";
 import { v } from "convex/values";
-import { getAuthUserId } from "@convex-dev/auth/server";
+import { getOptionalAppUser } from "../lib/auth";
 import { getCreatorForUser, requireAppUser } from "../lib/auth";
 import { ADMIN_SCAN_MAX_DOCS } from "../lib/adminLists";
 import { subscriptionGrantsContentAccess } from "../lib/contentAccess";
@@ -180,11 +180,11 @@ export const memberAccess = query({
     }),
   ),
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
-    if (!userId) {
+    const user = await getOptionalAppUser(ctx);
+    if (!user) {
       return { includesDiscord: false as const };
     }
-    const user = await ctx.db.get(userId);
+    const userId = user._id;
     const creator = await ctx.db
       .query("creators")
       .withIndex("by_username", (q) => q.eq("username", args.creatorUsername))

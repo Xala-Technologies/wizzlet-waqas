@@ -5,7 +5,7 @@ import { retryMyAccess } from '../../convex/discord/mutations';
 import { syncSubscriberRole } from '../../convex/discord/roles';
 import { applyInvoicePaymentFailed, applySubscriptionUpdated } from '../../convex/payments/stripeDb';
 
-vi.mock('@convex-dev/auth/server', () => ({ getAuthUserId: async () => 'user1' }));
+vi.mock('@convex-dev/auth/server', () => ({ getAuthUserId: async () => 'user1', getAuthSessionId: async () => 'session1' }));
 
 // Execute the registered handlers with isolated DB/network adapters; no live writes.
 function invoke<T>(fn: unknown, ctx: unknown, args: Record<string, unknown> = {}): Promise<T> {
@@ -14,7 +14,7 @@ function invoke<T>(fn: unknown, ctx: unknown, args: Record<string, unknown> = {}
 function context(subscriptions: Array<Record<string, unknown>>) {
   return {
     db: {
-      get: vi.fn(async () => ({ _id: 'user1', discordId: 'discord-user' })),
+      get: vi.fn(async (id: string) => id === 'session1' ? { _id: id, userId: 'user1', expirationTime: Date.now() + 60_000 } : { _id: 'user1', discordId: 'discord-user' }),
       query: vi.fn((table: string) => ({
         withIndex: vi.fn(() => ({
           take: vi.fn(async () => table === 'subscriptions' ? subscriptions : []),

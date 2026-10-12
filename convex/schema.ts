@@ -83,6 +83,12 @@ export default defineSchema({
     .index("by_sessionId", ["sessionId"])
     .index("by_userId", ["userId"]),
 
+  mfaChallengeAttempts: defineTable({
+    userId: v.id("users"),
+    attempts: v.number(),
+    windowStartedAt: v.number(),
+  }).index("by_userId", ["userId"]),
+
   creators: defineTable({
     legacyId: v.optional(v.string()),
     userId: v.id("users"),

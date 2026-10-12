@@ -58,7 +58,7 @@ export async function otpMatches(
 }
 
 export function otpExpired(expiresAt: number | undefined, now: number): boolean {
-  return !expiresAt || now > expiresAt;
+  return !expiresAt || now >= expiresAt;
 }
 
 export function otpResendTooSoon(

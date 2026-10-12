@@ -1,12 +1,12 @@
 import { mutation, query, action, internalQuery } from "../_generated/server";
 import { v } from "convex/values";
 import {
-  getAuthUserId,
   modifyAccountCredentials,
   retrieveAccount,
   invalidateSessions,
 } from "@convex-dev/auth/server";
-import { listRolesForUser, logMutation, requireAppUser } from "../lib/auth";
+import { getOptionalAppUser, getSessionUser, sessionMfaVerified, listRolesForUser, logMutation, requireAppUser } from "../lib/auth";
+import { requireActionUserId } from "../lib/actionAuth";
 import { internal } from "../_generated/api";
 import { publicUserFields } from "../lib/publicUser";
 import { userDocValidator, userWithRolesValidator } from "../lib/validators";
@@ -21,10 +21,8 @@ export const ensureUser = mutation({
   },
   returns: v.id("users"),
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
-    if (!userId) throw new Error("UNAUTHENTICATED");
-    const existing = await ctx.db.get(userId);
-    if (!existing) throw new Error("USER_PROFILE_MISSING");
+    const existing = await requireAppUser(ctx);
+    const userId = existing._id;
     const now = Date.now();
     await ctx.db.patch(userId, {
       // Do not patch email from client args
@@ -47,11 +45,12 @@ export const me = query({
   args: {},
   returns: v.union(userWithRolesValidator, v.null()),
   handler: async (ctx) => {
-    const userId = await getAuthUserId(ctx);
-    if (!userId) return null;
-    const user = await ctx.db.get(userId);
+    const user = await getSessionUser(ctx);
     if (!user) return null;
     const roles = await listRolesForUser(ctx, user._id);
+    if (!await sessionMfaVerified(ctx, user)) {
+      return { _id: user._id, _creationTime: user._creationTime, email: user.email, totpEnabled: true, roles };
+    }
     return { ...publicUserFields(user), roles };
   },
 });
@@ -125,8 +124,9 @@ export const hasPasswordAccount = query({
   args: {},
   returns: v.boolean(),
   handler: async (ctx) => {
-    const userId = await getAuthUserId(ctx);
-    if (!userId) return false;
+    const user = await getOptionalAppUser(ctx);
+    if (!user) return false;
+    const userId = user._id;
     const account = await ctx.db
       .query("authAccounts")
       .withIndex("userIdAndProvider", (q) =>
@@ -151,8 +151,7 @@ export const changePassword = action({
     if (args.newPassword.length < 8) {
       throw new Error("Password must be at least 8 characters");
     }
-    const userId = await getAuthUserId(ctx);
-    if (!userId) throw new Error("UNAUTHENTICATED");
+    const userId = await requireActionUserId(ctx);
 
     const owned = await ctx.runQuery(internal.users.queries.getPasswordAccountId, {
       userId,

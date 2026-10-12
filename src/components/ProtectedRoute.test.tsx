@@ -10,11 +10,13 @@ const fixture = vi.hoisted(() => ({
     roles: ['subscriber'] as AppRole[], loading: false, roleLoading: false, signingOut: false, switchRole: vi.fn() },
   mfa: { required: false },
   creator: null as object | null,
+  creatorRequests: vi.fn(),
 }));
 vi.mock('@/contexts/AuthContext', () => ({ useAuth: () => fixture.auth }));
 vi.mock('convex/react', () => ({ useQuery: (ref: Parameters<typeof getFunctionName>[0], args: unknown) => {
   if (args === 'skip') return undefined;
-  return getFunctionName(ref) === 'mfa:status' ? fixture.mfa : fixture.creator;
+  if (getFunctionName(ref) === 'mfa:status') return fixture.mfa;
+  fixture.creatorRequests(); return fixture.creator;
 } }));
 
 function Destination() { const location = useLocation(); return <output data-testid="destination">{location.pathname}{location.search}</output>; }
@@ -27,7 +29,7 @@ function show(path: string, roles: AppRole[]) {
 beforeEach(() => {
   fixture.auth = { user: { id: 'test-user' }, role: 'subscriber', roles: ['subscriber'], loading: false, roleLoading: false, signingOut: false, switchRole: vi.fn() };
   fixture.mfa = { required: false };
-  fixture.creator = null;
+  fixture.creator = null; fixture.creatorRequests.mockClear();
 });
 afterEach(cleanup);
 
@@ -54,6 +56,12 @@ describe('protected journey role matrix (isolated identities)', () => {
     fixture.auth.role = 'creator'; fixture.auth.roles = ['creator'];
     show('/creator/products', ['creator']);
     expect(await screen.findByTestId('destination')).toHaveTextContent('/creator/onboarding');
+  });
+  it('does not request protected creator data while MFA is pending', async () => {
+    fixture.auth.role = 'creator'; fixture.auth.roles = ['creator']; fixture.mfa.required = true;
+    show('/creator/products', ['creator']);
+    expect(await screen.findByTestId('destination')).toHaveTextContent('/mfa');
+    expect(fixture.creatorRequests).not.toHaveBeenCalled();
   });
   it('requires MFA even when the account has the correct role', async () => {
     fixture.auth.role = 'admin'; fixture.auth.roles = ['admin']; fixture.mfa.required = true;
