@@ -1,4 +1,4 @@
-import { FormEvent, useState } from 'react';
+import { FormEvent, useRef, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -17,6 +17,7 @@ const navLinks = [
 
 export function Navbar() {
   const [mobileOpen, setMobileOpen] = useState(false);
+  const mobileToggleRef = useRef<HTMLButtonElement>(null);
   const [query, setQuery] = useState('');
   const { user, role } = useAuth();
   const { pathname } = useLocation();
@@ -50,7 +51,16 @@ export function Navbar() {
     >
       Skip to main content
     </a>
-    <nav className="fixed top-0 left-0 right-0 z-50 border-b border-[var(--border-subtle)] bg-[var(--bg-sidebar)]">
+    <nav
+      className="fixed top-0 left-0 right-0 z-50 border-b border-[var(--border-subtle)] bg-[var(--bg-sidebar)]"
+      onKeyDown={(event) => {
+        if (event.key === 'Escape' && mobileOpen) {
+          event.preventDefault();
+          setMobileOpen(false);
+          mobileToggleRef.current?.focus();
+        }
+      }}
+    >
 
       <div className="container flex h-[var(--topbar-height)] items-center justify-between gap-4">
         {/* LEFT: Logo */}
@@ -109,23 +119,19 @@ export function Navbar() {
             ) : null}
           </Link>
           {user ? (
-            <Link to={dashboardPath}>
-              <Button variant="default" size="sm" className="h-10 rounded-full px-5">
-                Dashboard
-              </Button>
-            </Link>
+            <Button asChild variant="default" size="sm" className="h-10 rounded-full px-5">
+              <Link to={dashboardPath}>Dashboard</Link>
+            </Button>
           ) : (
             <>
-              <Link to="/login">
-                <Button variant="outline" size="sm" className="h-10 rounded-full px-5">
-                  Log in
-                </Button>
-              </Link>
-              <Link to="/signup">
-                <Button variant="default" size="sm" className="h-10 rounded-full px-5">
+              <Button asChild variant="outline" size="sm" className="h-10 rounded-full px-5">
+                <Link to="/login">Log in</Link>
+              </Button>
+              <Button asChild variant="default" size="sm" className="h-10 rounded-full px-5">
+                <Link to="/signup">
                   Get Started <ArrowRight className="ml-1 h-3.5 w-3.5" />
-                </Button>
-              </Link>
+                </Link>
+              </Button>
             </>
           )}
         </div>
@@ -146,6 +152,7 @@ export function Navbar() {
           )}
           <ThemeToggle />
           <button
+            ref={mobileToggleRef}
             type="button"
             aria-label={mobileOpen ? 'Close menu' : 'Open menu'}
             aria-expanded={mobileOpen}
@@ -188,17 +195,17 @@ export function Navbar() {
           })}
           <div className="flex flex-col gap-2 pt-3 border-t border-border mt-2">
             {user ? (
-              <Link to={dashboardPath} onClick={() => setMobileOpen(false)}>
-                <Button variant="default" size="sm" className="w-full justify-center min-h-11">Dashboard</Button>
-              </Link>
+              <Button asChild variant="default" size="sm" className="w-full justify-center min-h-11">
+                <Link to={dashboardPath} onClick={() => setMobileOpen(false)}>Dashboard</Link>
+              </Button>
             ) : (
               <>
-                <Link to="/login" onClick={() => setMobileOpen(false)}>
-                  <Button variant="ghost" size="sm" className="w-full justify-center min-h-11">Log in</Button>
-                </Link>
-                <Link to="/signup" onClick={() => setMobileOpen(false)}>
-                  <Button variant="default" size="sm" className="w-full justify-center min-h-11">Get Started</Button>
-                </Link>
+                <Button asChild variant="ghost" size="sm" className="w-full justify-center min-h-11">
+                  <Link to="/login" onClick={() => setMobileOpen(false)}>Log in</Link>
+                </Button>
+                <Button asChild variant="default" size="sm" className="w-full justify-center min-h-11">
+                  <Link to="/signup" onClick={() => setMobileOpen(false)}>Get Started</Link>
+                </Button>
               </>
             )}
           </div>

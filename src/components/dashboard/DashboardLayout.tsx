@@ -14,12 +14,16 @@ import { SupportChatProvider } from '@/contexts/SupportChatContext';
 import { DASHBOARD_CONTENT_CLASS, DASHBOARD_GUTTER_CLASS } from '@/lib/dashboardSidebar';
 import { dashboardPageTitle } from '@/lib/dashboardPageTitle';
 import { cn } from '@/lib/utils';
+import { Seo } from '@/components/Seo';
 
 interface DashboardLayoutProps {
   children: ReactNode;
   type: 'creator' | 'member' | 'admin';
   /** Optional main canvas class (e.g. Overview clay page bg). */
   mainClassName?: string;
+  /** Optional detail-page title; ordinary pages use their navigation label. */
+  documentTitle?: string;
+  description?: string;
 }
 
 const HOME_HREF: Record<DashboardLayoutProps['type'], string> = {
@@ -47,7 +51,7 @@ function useLockDocumentScroll() {
   }, []);
 }
 
-export function DashboardLayout({ children, type, mainClassName }: DashboardLayoutProps) {
+export function DashboardLayout({ children, type, mainClassName, documentTitle, description }: DashboardLayoutProps) {
   useLockDocumentScroll();
   const location = useLocation();
   const pageTitle = dashboardPageTitle(type, location);
@@ -55,6 +59,12 @@ export function DashboardLayout({ children, type, mainClassName }: DashboardLayo
 
   const body = (
     <div className="flex h-dvh max-h-dvh overflow-hidden bg-clay-page">
+      <Seo
+        title={documentTitle ?? `${pageTitle} — Sweeph`}
+        description={description ?? 'Manage your Sweeph account, content, and activity.'}
+        canonicalPath={location.pathname}
+        noindex
+      />
       <UnreadMessageWatcher />
       <Sidebar />
       <main

@@ -75,15 +75,16 @@ export function HeroSection() {
               className="opacity-0 animate-fade-in-up"
               style={{ animationDelay: '0.16s' }}
             >
-              <Link to={primaryHref}>
-                <Button
-                  variant="hero"
-                  size="lg"
-                  className="h-14 rounded-full px-8 text-base font-semibold"
-                >
+              <Button
+                asChild
+                variant="hero"
+                size="lg"
+                className="h-14 rounded-full px-8 text-base font-semibold"
+              >
+                <Link to={primaryHref}>
                   {primaryLabel} <ArrowRight className="ml-1 h-4 w-4" />
-                </Button>
-              </Link>
+                </Link>
+              </Button>
             </div>
 
             <div

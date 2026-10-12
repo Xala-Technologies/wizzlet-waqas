@@ -59,15 +59,16 @@ export function LandingFooterCta() {
             <p className="mt-3 text-lg text-muted-foreground">
               Build your community and earn with Sweeph.
             </p>
-            <Link to={href} className="mt-7 inline-block">
-              <Button
-                variant="hero"
-                size="lg"
-                className="h-12 rounded-full px-7 text-base font-semibold"
-              >
+            <Button
+              asChild
+              variant="hero"
+              size="lg"
+              className="mt-7 h-12 rounded-full px-7 text-base font-semibold"
+            >
+              <Link to={href}>
                 {label} <ArrowRight className="ml-1 h-4 w-4" />
-              </Button>
-            </Link>
+              </Link>
+            </Button>
           </div>
           <CtaCollage />
         </div>
