@@ -271,7 +271,7 @@ export function SupportChatWidget({ audience }: { audience: Audience }) {
           'pointer-events-auto relative inline-flex h-14 w-14 items-center justify-center rounded-full',
           'bg-primary text-primary-foreground shadow-[0_12px_32px_rgba(88,70,245,0.35)]',
           'transition-transform hover:scale-105 hover:bg-primary/90',
-          'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2',
+          'focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2',
           'dark:shadow-[0_12px_32px_rgba(0,0,0,0.4)]',
         )}
         aria-label={open ? 'Close support chat' : 'Open support chat'}

@@ -78,7 +78,7 @@ export function SweephLogo({
     return (
       <Link
         to={linkTo}
-        className="inline-flex shrink-0 items-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background rounded-[var(--radius-sm)]"
+        className="inline-flex shrink-0 items-center focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background rounded-[var(--radius-sm)]"
         aria-label="Sweeph home"
       >
         {content}

@@ -573,7 +573,7 @@ const Dashboard = () => {
                         {post.video ? (
                           <button
                             type="button"
-                            className="group relative mt-4 block w-full overflow-hidden rounded-xl border border-border bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                            className="group relative mt-4 block w-full overflow-hidden rounded-xl border border-border bg-muted focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-ring"
                             onClick={() =>
                               toast.message('Video', {
                                 description: post.isDemo

@@ -1,6 +1,6 @@
 # Browser support
 
-Prizelet / Wizzlet targets **modern evergreen browsers**. Autoprefixer and related tooling use the `browserslist` entry in `package.json`.
+Sweeph targets **modern evergreen browsers**. Tailwind 4 compiles CSS through its Vite plugin; `package.json` declares the supported browser policy. A Browserslist entry alone does not polyfill Tailwind's required CSS features.
 
 ## Supported
 
@@ -10,9 +10,9 @@ Prizelet / Wizzlet targets **modern evergreen browsers**. Autoprefixer and relat
 | Firefox | Latest 2 major versions | Latest (Android) |
 | Edge | Latest 2 major versions | — |
 | Opera | Latest 2 major versions | — |
-| Safari | **16+** | **iOS Safari 16+** |
+| Safari | **16.4+** | **iOS Safari 16.4+** |
 
-Build target remains **ES2020** (Vite / `tsconfig.app.json`). No `@vitejs/plugin-legacy` polyfill stack.
+Tailwind 4 requires Safari 16.4+, Chrome/Edge 111+, or Firefox 128+; the latest-two policy above is stricter for evergreen desktop browsers. Safari/iOS 16.0–16.3 are no longer supported by this build. See the [Tailwind upgrade guide](https://tailwindcss.com/docs/upgrade-guide#browser-requirements). No `@vitejs/plugin-legacy` polyfill stack is installed.
 
 ## Explicitly out of scope
 
@@ -21,6 +21,7 @@ Build target remains **ES2020** (Vite / `tsconfig.app.json`). No `@vitejs/plugin
 ## QA
 
 - Automated smoke: `npm run test:e2e` (Playwright Chromium, WebKit, Firefox via `playwright.qa.config.ts`).
+- Visual migration checks: [`qa/style-regression.md`](./qa/style-regression.md), covering light/dark themes and desktop/mobile viewports. Playwright WebKit is not proof of behavior on a physical iPhone or the minimum supported Safari version.
 - Manual once per release: iPhone Safari, desktop Safari, Chrome, Firefox, Edge, Opera — login, copy link, Stripe Checkout redirect, sticky tracker tables.
 
 ## OAuth notes (Safari / ITP)

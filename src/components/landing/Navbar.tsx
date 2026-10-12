@@ -103,7 +103,7 @@ export function Navbar() {
             className="relative inline-flex h-10 w-10 items-center justify-center rounded-full text-muted-foreground hover:bg-muted/50 hover:text-foreground transition-colors"
             aria-label="Notifications"
           >
-            <Bell className="h-4.5 w-4.5" />
+            <Bell className="h-[24px] w-[24px]" />
             {user && showNotifDot ? (
               <span className="absolute top-2 right-2 h-2 w-2 rounded-full bg-primary" />
             ) : null}
@@ -150,7 +150,7 @@ export function Navbar() {
             aria-label={mobileOpen ? 'Close menu' : 'Open menu'}
             aria-expanded={mobileOpen}
             aria-controls="landing-mobile-nav"
-            className="inline-flex h-11 w-11 items-center justify-center rounded-lg text-muted-foreground hover:bg-muted/50 hover:text-foreground transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            className="inline-flex h-11 w-11 items-center justify-center rounded-lg text-muted-foreground hover:bg-muted/50 hover:text-foreground transition-colors focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-ring"
             onClick={() => setMobileOpen(!mobileOpen)}
           >
             {mobileOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}

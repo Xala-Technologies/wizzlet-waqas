@@ -114,6 +114,7 @@ See [`.env.example`](.env.example) for a full annotated template.
 | `npm test` | Unit tests (Vitest) |
 | `npm run test:watch` | Vitest watch mode |
 | `npm run lint` | ESLint |
+| `npm run audit:dependencies` | Fail on Moderate/High/Critical runtime or build dependency advisories |
 | `npm run test:e2e` | Playwright smoke (Chromium, WebKit, Firefox) |
 | `npm run env:validate` | Fail closed on dangerous env combinations |
 | `npm run release:manifest` | Print nonsecret release manifest JSON |
@@ -139,7 +140,7 @@ Do **not** treat ad-hoc Vercel promotes of feature-branch previews as the normal
 - **Roles** (`member`, `creator`, `admin`) are enforced server-side; clients cannot self-assign admin.
 - **Checkout** uses Stripe Checkout when publishable + secret keys are configured; webhooks update the payment ledger.
 - Mobile-first shell and tracker notes live under [`docs/mobile-first/`](docs/mobile-first/) when that work is present on the branch.
-- Supported browsers (Safari 16+ / modern Chrome, Firefox, Edge, Opera): [`docs/browser-support.md`](docs/browser-support.md).
+- Supported browsers (Safari 16.4+ / modern Chrome, Firefox, Edge, Opera): [`docs/browser-support.md`](docs/browser-support.md).
 
 ## Security
 

@@ -107,7 +107,7 @@ const CustomerActivity = () => {
             <Link
               key={stat.label}
               to={stat.href}
-              className={`${className} transition-colors hover:border-primary/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring`}
+              className={`${className} transition-colors hover:border-primary/30 focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-ring`}
             >
               {card}
             </Link>

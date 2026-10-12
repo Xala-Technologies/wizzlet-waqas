@@ -13,6 +13,9 @@ export default defineConfig({
   timeout: 120_000,
   workers: 4,
   reporter: "list",
+  snapshotPathTemplate: process.env.E2E_VISUAL_BASELINES
+    ? `${process.env.E2E_VISUAL_BASELINES}/{projectName}/{arg}{ext}`
+    : undefined,
   use: {
     baseURL: process.env.PLAYWRIGHT_BASE_URL ?? "http://localhost:8080",
     trace: "retain-on-failure",
