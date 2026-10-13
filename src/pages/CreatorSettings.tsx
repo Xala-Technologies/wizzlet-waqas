@@ -9,6 +9,7 @@ import { uploadToConvexStorage } from '@/lib/upload';
 import { DashboardLayout } from '@/components/dashboard/DashboardLayout';
 import { clayCard } from '@/lib/overviewClay';
 import { SettingsSubnav, useSettingsTab } from '@/components/creator/SettingsSubnav';
+import { CreatorAccountStatus } from '@/components/creator/CreatorAccountStatus';
 import {
   PaymentFeeDetailSheet,
   PaymentFeeStack,
@@ -76,7 +77,6 @@ import {
   CREATOR_NOTIFICATIONS_TIPS,
   CREATOR_SECURITY_TIPS,
   CREATOR_SETTINGS_DEMO,
-  CREATOR_SETTINGS_STATUS_COPY,
   CREATOR_TEAM_DEMO_MEMBERS,
   CREATOR_TEAM_ROLE_PERMISSIONS,
   shouldUseCreatorSettingsDemo,
@@ -759,27 +759,7 @@ const CreatorSettings = () => {
           </div>
 
           <aside className="flex flex-col gap-4 xl:col-span-4">
-            <section className={cn(cardClass, 'space-y-3')}>
-              <div className="flex items-center justify-between gap-2">
-                <h2 className="text-base font-extrabold tracking-tight text-foreground">
-                  Account Status
-                </h2>
-                <span className="inline-flex rounded-full border border-emerald-500/25 bg-emerald-500/10 px-2.5 py-0.5 text-xs font-bold text-emerald-700 dark:text-emerald-400">
-                  Active
-                </span>
-              </div>
-              <p className="text-sm text-muted-foreground">{CREATOR_SETTINGS_STATUS_COPY}</p>
-              <ul className="space-y-2.5">
-                {CREATOR_SETTINGS_DEMO.statusChecks.map((item) => (
-                  <li key={item} className="flex items-center gap-2.5 text-sm text-foreground">
-                    <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-emerald-500/15 text-emerald-700 dark:text-emerald-400">
-                      <Check className="h-3 w-3" aria-hidden />
-                    </span>
-                    {item}
-                  </li>
-                ))}
-              </ul>
-            </section>
+            <CreatorAccountStatus creator={creator} user={me} />
 
             <section className={cn(cardClass, 'p-0')}>
               <h2 className="border-b border-border px-5 py-4 text-base font-extrabold tracking-tight text-foreground">
