@@ -11,17 +11,7 @@ export const CREATOR_SETTINGS_DEMO = {
   dateFormat: 'MMM d, yyyy',
   draftByDefault: false,
   commentsEnabled: true,
-  accountStatus: 'Active' as const,
-  statusChecks: [
-    'Email verified',
-    'Identity verified',
-    'Payout method added',
-    'No active restrictions',
-  ],
 } as const;
-
-export const CREATOR_SETTINGS_STATUS_COPY =
-  'Your account is in good standing. Keep creating and growing!';
 
 export const CREATOR_BRANDING_DEMO = {
   brandName: 'AlexPicks',
