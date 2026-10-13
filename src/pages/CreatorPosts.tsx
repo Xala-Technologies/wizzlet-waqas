@@ -1,4 +1,7 @@
-import { useMemo, useState } from 'react';
+import { useDraftForm } from '@/hooks/useDraftForm';
+import { draftKey, postDraftSchema } from '@/lib/formDrafts';
+import { DraftNotice } from '@/components/DraftNotice';
+import { useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useMutation, usePaginatedQuery, useQuery } from 'convex/react';
 import { api } from '../../convex/_generated/api';
@@ -333,7 +336,6 @@ const CreatorPosts = () => {
 
   const [mode, setMode] = useState<'list' | 'create'>('list');
   const [saving, setSaving] = useState(false);
-  const [editId, setEditId] = useState<string | null>(null);
   const [showSuccess, setShowSuccess] = useState(false);
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [deleting, setDeleting] = useState(false);
@@ -348,18 +350,22 @@ const CreatorPosts = () => {
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [previewPost, setPreviewPost] = useState<EnrichedPick | null>(null);
 
-  const [title, setTitle] = useState('');
-  const [sport, setSport] = useState('');
-  const [event, setEvent] = useState('');
-  const [pick, setPick] = useState('');
-  const [usOdds, setUsOdds] = useState('');
-  const [euOdds, setEuOdds] = useState('');
-  const [units, setUnits] = useState('1');
-  const [tags, setTags] = useState('');
-  const [notes, setNotes] = useState('');
-  const [visibilityMode, setVisibilityMode] = useState<PostVisibilityMode>('all');
-  const [selectedProductIds, setSelectedProductIds] = useState<string[]>([]);
-  const [oddsSource, setOddsSource] = useState<'us' | 'eu' | null>(null);
+  const emptyPost = { editId: null, title: '', sport: '', event: '', pick: '', usOdds: '', euOdds: '', units: '1', tags: '', notes: '', visibilityMode: 'all' as PostVisibilityMode, selectedProductIds: [] as string[], oddsSource: null as 'us' | 'eu' | null };
+  const draft = useDraftForm(creatorId && !forceDemo ? draftKey(creatorId, 'post') : null, postDraftSchema.parse(emptyPost), postDraftSchema);
+  const { editId, title, sport, event, pick, usOdds, euOdds, units, tags, notes, visibilityMode, selectedProductIds, oddsSource } = draft.data;
+  const setTitle = draft.field('title');
+  const setSport = draft.field('sport');
+  const setEvent = draft.field('event');
+  const setPick = draft.field('pick');
+  const setUsOdds = draft.field('usOdds');
+  const setEuOdds = draft.field('euOdds');
+  const setUnits = draft.field('units');
+  const setTags = draft.field('tags');
+  const setNotes = draft.field('notes');
+  const setVisibilityMode = draft.field('visibilityMode');
+  const setSelectedProductIds = draft.field('selectedProductIds');
+  const setOddsSource = draft.field('oddsSource');
+  useEffect(() => { if (draft.restored) { setMode('create'); setDetailsOpen(true); } }, [draft.restored]);
 
   const hasPickDetails = Boolean(
     sport || event || pick || usOdds || euOdds || (units && units !== '1') || tags,
@@ -442,52 +448,21 @@ const CreatorPosts = () => {
     return false;
   };
 
-  const resetForm = () => {
-    setEditId(null);
-    setTitle('');
-    setSport('');
-    setEvent('');
-    setPick('');
-    setUsOdds('');
-    setEuOdds('');
-    setUnits('1');
-    setTags('');
-    setNotes('');
-    setVisibilityMode('all');
-    setSelectedProductIds([]);
-    setOddsSource(null);
-    setDetailsOpen(false);
-  };
+  const resetForm = () => { draft.reset(postDraftSchema.parse(emptyPost)); setDetailsOpen(false); };
 
   const openCreate = () => {
+    if (!draft.canReplace()) return;
     resetForm();
     setMode('create');
   };
 
   const openEdit = (post: Post) => {
-    if (guardDemoAction(post.id)) return;
-    resetForm();
+    if (guardDemoAction(post.id) || !draft.canReplace()) return;
     const parsed = parsePostContent(post.content);
-    setEditId(post.id);
-    setTitle(post.title);
-    setSport(parsed.sport);
-    setEvent(parsed.event);
-    setPick(parsed.pick);
-    setUsOdds(parsed.usOdds);
-    setEuOdds(parsed.euOdds);
-    setUnits(parsed.units);
-    setTags(parsed.tags);
-    setNotes(parsed.notes);
-    if (!post.is_premium) {
-      setVisibilityMode('all');
-      setSelectedProductIds([]);
-    } else if (post.visible_product_ids.length > 0) {
-      setVisibilityMode('products');
-      setSelectedProductIds(post.visible_product_ids);
-    } else {
-      setVisibilityMode('all');
-      setSelectedProductIds([]);
-    }
+    draft.reset({ ...emptyPost, ...parsed, editId: post.id, title: post.title,
+      visibilityMode: post.is_premium && post.visible_product_ids.length ? 'products' : 'all',
+      selectedProductIds: post.is_premium ? post.visible_product_ids : [],
+    });
     setDetailsOpen(
       Boolean(
         parsed.sport ||
@@ -566,7 +541,7 @@ const CreatorPosts = () => {
     const visibleProductIds =
       visibilityMode === 'all' ? [] : (selectedProductIds as Id<'products'>[]);
     try {
-      await upsertPost({
+      const savedId = await upsertPost({
         postId: editId ? (editId as Id<'posts'>) : undefined,
         creatorId,
         title: title.trim(),
@@ -574,6 +549,7 @@ const CreatorPosts = () => {
         isPremium,
         visibleProductIds,
       });
+      draft.saved({ ...draft.data, editId: savedId });
       setShowSuccess(true);
     } catch (e) {
       toast.error(e instanceof Error ? e.message : 'Failed to save post');
@@ -677,6 +653,7 @@ const CreatorPosts = () => {
         <DialogFooter className="gap-2 border-t border-border bg-muted/20 px-5 py-4 sm:flex-col sm:space-x-0 sm:gap-2 sm:px-6">
           <Button
             onClick={() => {
+              if (!draft.canReplace()) return;
               setShowSuccess(false);
               resetForm();
             }}
@@ -724,6 +701,7 @@ const CreatorPosts = () => {
             Share your analysis and optional odds so subscribers know exactly what to play.
           </p>
 
+          <DraftNotice {...draft} disabled={saving} onDiscard={draft.discard} />
           <div className={cn(clayCard, 'mt-6 space-y-5 p-5 sm:p-7')}>
             <div className="space-y-2">
               <Label htmlFor="pick-title" className="text-support font-medium text-foreground">
@@ -993,6 +971,7 @@ const CreatorPosts = () => {
 
   return (
     <DashboardLayout type="creator" mainClassName="bg-clay-page">
+      <DraftNotice {...draft} onDiscard={draft.discard} onResume={() => setMode('create')} />
       <div
         className={cn(
           'flex flex-col gap-6',

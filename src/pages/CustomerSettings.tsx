@@ -1,3 +1,6 @@
+import { useDraftForm } from '@/hooks/useDraftForm';
+import { draftKey, memberProfileDraftSchema } from '@/lib/formDrafts';
+import { DraftNotice } from '@/components/DraftNotice';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { useQuery, useMutation, useAction } from 'convex/react';
@@ -80,9 +83,12 @@ const CustomerSettings = () => {
   const hydratedUserId = useRef<string | null>(null);
 
   const [editing, setEditing] = useState(false);
-  const [fullName, setFullName] = useState('');
+  const draft = useDraftForm(user && me && !forceDemo ? draftKey(user.id, 'profile') : null, { fullName: me?.fullName ?? me?.name ?? '', phone: me?.phone ?? '' }, memberProfileDraftSchema);
+  const { fullName, phone } = draft.data;
+  const setFullName = draft.field('fullName');
+  const setPhone = draft.field('phone');
+  useEffect(() => { if (draft.restored) setEditing(true); }, [draft.restored]);
   const [email, setEmail] = useState('');
-  const [phone, setPhone] = useState('');
   const [emailDialogOpen, setEmailDialogOpen] = useState(false);
   const [savingProfile, setSavingProfile] = useState(false);
   const [passwordDialogOpen, setPasswordDialogOpen] = useState(false);
@@ -97,7 +103,6 @@ const CustomerSettings = () => {
   const [messagesOn, setMessagesOn] = useState(true);
   const [billingOn, setBillingOn] = useState(true);
   const [savingNotif, setSavingNotif] = useState(false);
-  const profileBeforeEdit = useRef({ fullName: '', phone: '' });
   const passwordFocus = useDialogFocusReturn();
 
   const setPasswordOpen = (open: boolean) => {
@@ -126,7 +131,7 @@ const CustomerSettings = () => {
     setNewPicks(true);
     setMessagesOn(true);
     setBillingOn(true);
-  }, [useDemo]);
+  }, [useDemo, setFullName, setPhone]);
 
   useEffect(() => {
     hydratedUserId.current = null;
@@ -145,9 +150,7 @@ const CustomerSettings = () => {
     hydratedUserId.current = id;
 
     if (me) {
-      setFullName(me.fullName ?? me.name ?? '');
       setEmail(me.email ?? user.email ?? '');
-      setPhone(me.phone ?? '');
       const prefs = readPrefs(me.notificationPrefs);
       setNewPicks(prefs.newPicks);
       setMessagesOn(prefs.messages);
@@ -179,6 +182,7 @@ const CustomerSettings = () => {
         fullName: fullName.trim() || undefined,
         phone: phone.trim() || undefined,
       });
+      draft.saved();
       toast.success('Profile updated');
       setEditing(false);
     } catch {
@@ -335,6 +339,7 @@ const CustomerSettings = () => {
         </div>
       ) : null}
 
+      <DraftNotice {...draft} disabled={savingProfile} onDiscard={() => { draft.discard(); setEditing(false); }} />
       <div className="space-y-5">
         {/* Account */}
         <section className={cn(clayCard, 'p-5 sm:p-6')}>
@@ -357,8 +362,7 @@ const CustomerSettings = () => {
                   className="h-9 rounded-xl"
                   disabled={savingProfile}
                   onClick={() => {
-                    setFullName(profileBeforeEdit.current.fullName);
-                    setPhone(profileBeforeEdit.current.phone);
+                    draft.discard();
                     setEditing(false);
                   }}
                 >
@@ -382,7 +386,6 @@ const CustomerSettings = () => {
                 size="sm"
                 className="h-9 rounded-xl border-border"
                 onClick={() => {
-                  profileBeforeEdit.current = { fullName, phone };
                   setEditing(true);
                 }}
               >
