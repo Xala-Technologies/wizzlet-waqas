@@ -6,12 +6,7 @@ import { ConvexReactClient } from "convex/react";
 import { api } from "@convex/_generated/api";
 import type { Id } from "@convex/_generated/dataModel";
 
-const ALLOWED_IMAGE_TYPES = new Set([
-  "image/jpeg",
-  "image/png",
-  "image/webp",
-  "image/gif",
-]);
+import { validateImageUpload } from "@convex/lib/imageUploadPolicy";
 
 export async function uploadToConvexStorage(
   client: ConvexReactClient,
@@ -28,13 +23,8 @@ export async function uploadImageToConvex(
   file: File,
   purpose = "image",
 ): Promise<{ storageId: Id<"_storage">; url: string }> {
-  const contentType = file.type || "application/octet-stream";
-  if (file.type && !ALLOWED_IMAGE_TYPES.has(file.type) && purpose === "image") {
-    throw new Error("Use a JPG, PNG, or WebP image");
-  }
-  if (file.size > 5 * 1024 * 1024) {
-    throw new Error("Image must be 5MB or smaller");
-  }
+  validateImageUpload(file, purpose);
+  const contentType = file.type;
 
   const uploadUrl = await client.mutation(api.files.storage.generateUploadUrl, {});
   const result = await fetch(uploadUrl, {

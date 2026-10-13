@@ -1,6 +1,7 @@
 import { mutation, query } from "../_generated/server";
 import { v } from "convex/values";
 import { requireAppUser } from "../lib/auth";
+import { validateImageUpload } from "../lib/imageUploadPolicy";
 
 /** Generate a short-lived upload URL for Convex file storage. */
 export const generateUploadUrl = mutation({
@@ -32,6 +33,9 @@ export const registerOwnedFile = mutation({
       if (existing.ownerUserId !== user._id) throw new Error("FORBIDDEN");
       return existing._id;
     }
+    const metadata = await ctx.db.system.get("_storage", args.storageId);
+    if (!metadata) throw new Error("FILE_NOT_FOUND");
+    validateImageUpload({ size: metadata.size, type: metadata.contentType }, args.purpose);
     return await ctx.db.insert("fileAssets", {
       storageId: args.storageId,
       ownerUserId: user._id,

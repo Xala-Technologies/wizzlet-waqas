@@ -42,6 +42,7 @@ import type * as lib_entitlements from "../lib/entitlements.js";
 import type * as lib_envGuards from "../lib/envGuards.js";
 import type * as lib_envOrigin from "../lib/envOrigin.js";
 import type * as lib_growthAttribution from "../lib/growthAttribution.js";
+import type * as lib_imageUploadPolicy from "../lib/imageUploadPolicy.js";
 import type * as lib_messagingAccess from "../lib/messagingAccess.js";
 import type * as lib_mfaBackup from "../lib/mfaBackup.js";
 import type * as lib_money from "../lib/money.js";
@@ -127,6 +128,7 @@ declare const fullApi: ApiFromModules<{
   "lib/envGuards": typeof lib_envGuards;
   "lib/envOrigin": typeof lib_envOrigin;
   "lib/growthAttribution": typeof lib_growthAttribution;
+  "lib/imageUploadPolicy": typeof lib_imageUploadPolicy;
   "lib/messagingAccess": typeof lib_messagingAccess;
   "lib/mfaBackup": typeof lib_mfaBackup;
   "lib/money": typeof lib_money;

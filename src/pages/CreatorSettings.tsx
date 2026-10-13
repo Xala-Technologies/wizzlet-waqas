@@ -330,7 +330,7 @@ const CreatorSettings = () => {
   }, [useDemo, creator, displayName, bio, email, brandName]);
 
   const handleSave = async () => {
-    if (!creator || saving) return;
+    if (!creator || saving || uploadingAvatar || uploadingBanner || uploadingLogo || uploadingFavicon) return;
     if (tab === 'notifications') {
       toast.message('Notification settings are a preview', {
         description: 'Preferences are not saved and do not change delivery yet.',
@@ -348,18 +348,18 @@ const CreatorSettings = () => {
       const nextDisplayName =
         tab === 'branding' ? brandName.trim() || displayName.trim() : displayName.trim();
       const nextAvatar =
-        tab === 'branding' ? logoUrl.trim() || avatarUrl.trim() : avatarUrl.trim();
+        tab === 'branding' ? logoUrl.trim() : avatarUrl.trim();
       await updateSettings({
         displayName: nextDisplayName || undefined,
         bio: bio.trim() || undefined,
-        avatarUrl: nextAvatar || undefined,
-        bannerUrl: bannerUrl.trim() || undefined,
+        avatarUrl: nextAvatar || null,
+        bannerUrl: bannerUrl.trim() || null,
         discordServerId: discordServerId.trim() || null,
         discordRoleId: discordRoleId.trim() || null,
       });
       writeStoredBranding(creator._id, {
         brandName: brandName.trim() || nextDisplayName,
-        logoUrl: logoUrl.trim() || nextAvatar,
+        logoUrl: nextAvatar,
         faviconUrl: faviconUrl.trim() || undefined,
         primaryColor,
         secondaryColor,
@@ -367,7 +367,8 @@ const CreatorSettings = () => {
         font: brandFont,
       });
       if (tab === 'branding' && nextDisplayName) setDisplayName(nextDisplayName);
-      if (tab === 'branding' && nextAvatar) setAvatarUrl(nextAvatar);
+      setAvatarUrl(nextAvatar);
+      setLogoUrl(nextAvatar);
       toast.success('Settings saved');
     } catch (e) {
       toast.error(e instanceof Error ? e.message : 'Failed to save settings');
@@ -443,7 +444,7 @@ const CreatorSettings = () => {
     if (!validateImageFile(file)) return;
     setUploadingLogo(true);
     try {
-      const publicUrl = await uploadToConvexStorage(convex, file, 'creator-avatar');
+      const publicUrl = await uploadToConvexStorage(convex, file, 'creator-logo');
       setLogoUrl(publicUrl);
       toast.success('Logo uploaded — save to publish');
     } catch (err) {
@@ -684,7 +685,7 @@ const CreatorSettings = () => {
                     size="sm"
                     className="w-full text-muted-foreground"
                     onClick={removeAvatar}
-                    disabled={!avatarUrl || saving}
+                    disabled={!avatarUrl || uploadingAvatar || saving}
                   >
                     Remove photo
                   </Button>
@@ -960,7 +961,8 @@ const CreatorSettings = () => {
                         variant="ghost"
                         className="min-h-9 w-full rounded-xl text-muted-foreground"
                         onClick={removeLogo}
-                        disabled={!logoUrl || saving}
+                        disabled={!logoUrl || uploadingLogo || saving}
+                        aria-label="Remove logo"
                       >
                         Remove
                       </Button>
@@ -1019,7 +1021,8 @@ const CreatorSettings = () => {
                         variant="ghost"
                         className="min-h-9 w-full rounded-xl text-muted-foreground"
                         onClick={removeFavicon}
-                        disabled={!faviconUrl || saving}
+                        disabled={!faviconUrl || uploadingFavicon || saving}
+                        aria-label="Remove favicon"
                       >
                         Remove
                       </Button>
