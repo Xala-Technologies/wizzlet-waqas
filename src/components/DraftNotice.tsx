@@ -13,6 +13,7 @@ import {
 
 type Props = {
   dirty: boolean;
+  kind?: "form" | "message";
   restored?: boolean;
   storageFailed?: boolean;
   disabled?: boolean;
@@ -21,6 +22,7 @@ type Props = {
 };
 export function DraftNotice({
   dirty,
+  kind = "form",
   restored,
   storageFailed,
   disabled,
@@ -45,8 +47,12 @@ export function DraftNotice({
           </p>
           <p className="text-muted-foreground">
             {storageFailed
-              ? "Keep this page open and save your changes before refreshing or closing it."
-              : "Not submitted. You can return in this tab for 24 hours. Save before closing the tab."}
+              ? kind === "message"
+                ? "Keep this page open. Send or copy your message before refreshing or closing it."
+                : "Keep this page open and save your changes before refreshing or closing it."
+              : kind === "message"
+                ? "Unsent. Kept in this tab for 24 hours. Send or copy it before closing the tab."
+                : "Not submitted. You can return in this tab for 24 hours. Save before closing the tab."}
           </p>
         </div>
         <div className="flex gap-2">

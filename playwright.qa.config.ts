@@ -1,5 +1,9 @@
 import { defineConfig, devices } from "@playwright/test";
 
+// Playwright's automatic error-context snapshot includes password input values,
+// even when screenshots and tracing are off. Keep private actor runs out of it.
+if (process.env.E2E_FORM_FIXTURES) process.env.PLAYWRIGHT_NO_COPY_PROMPT = "1";
+
 /**
  * Multi-browser smoke — Chromium, WebKit (Safari), Firefox.
  * Run: npm run test:e2e

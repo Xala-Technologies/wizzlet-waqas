@@ -38,6 +38,9 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Switch } from '@/components/ui/switch';
 import { Textarea } from '@/components/ui/textarea';
+import { DraftNotice } from '@/components/DraftNotice';
+import { useDraftForm } from '@/hooks/useDraftForm';
+import { draftKey, messageDraftSchema } from '@/lib/formDrafts';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -205,7 +208,6 @@ const CreatorMessages = () => {
   const initialActive =
     threadParam === 'support' ? SUPPORT_THREAD_ID : subscriberIdParam;
   const [activeId, setActiveId] = useState<string | null>(initialActive);
-  const [reply, setReply] = useState('');
   const [sending, setSending] = useState(false);
   const [messagingEnabled, setMessagingEnabled] = useState(true);
   const [savingToggle, setSavingToggle] = useState(false);
@@ -220,7 +222,6 @@ const CreatorMessages = () => {
   );
   const [notes, setNotes] = useState('');
   const markedRef = useRef<Set<string>>(new Set());
-  const prevActiveIdRef = useRef<string | null>(activeId);
   const chatEndRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
@@ -231,13 +232,6 @@ const CreatorMessages = () => {
   useEffect(() => {
     if (creator) setMessagingEnabled(creator.messaging_enabled ?? true);
   }, [creator]);
-
-  useEffect(() => {
-    if (prevActiveIdRef.current !== activeId) {
-      setReply('');
-      prevActiveIdRef.current = activeId;
-    }
-  }, [activeId]);
 
   useEffect(() => {
     if (!activeId) {
@@ -530,6 +524,16 @@ const CreatorMessages = () => {
     );
   };
 
+  const messageDraft = useDraftForm(
+    creator?.id && active && active.kind !== 'support'
+      ? draftKey(creator.id, `creator-message:${active.id}`)
+      : null,
+    { body: '' },
+    messageDraftSchema,
+  );
+  const reply = messageDraft.data.body;
+  const setReply = messageDraft.field('body');
+
   const composeBlockReason = useMemo(() => {
     if (!active || active.kind === 'support' || active.isDemo) return null;
     return messagingComposeBlockReason({
@@ -555,7 +559,7 @@ const CreatorMessages = () => {
       toast.message('Sample conversation', {
         description: 'Replies are preview-only. Real subscriber chats send through Convex.',
       });
-      setReply('');
+      messageDraft.saved({ body: '' });
       return;
     }
     setSending(true);
@@ -566,7 +570,7 @@ const CreatorMessages = () => {
         senderRole: 'creator',
         body: reply.trim(),
       });
-      setReply('');
+      messageDraft.saved({ body: '' });
     } catch (e) {
       toast.error(e instanceof Error ? e.message : 'Failed to send message');
     } finally {
@@ -752,6 +756,14 @@ const CreatorMessages = () => {
 
   const composer = (
     <div className="border-t border-border bg-card px-3 py-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] sm:px-4">
+      <DraftNotice
+        kind="message"
+        dirty={messageDraft.dirty}
+        restored={messageDraft.restored}
+        storageFailed={messageDraft.storageFailed}
+        disabled={sending}
+        onDiscard={messageDraft.discard}
+      />
       <div className={cn(clayCard, 'flex items-end gap-2 bg-muted/20 p-2')}>
         <div className="flex shrink-0 items-center gap-0.5 pb-1">
           <button
@@ -780,6 +792,7 @@ const CreatorMessages = () => {
           </button>
         </div>
         <Textarea
+          aria-label="Message"
           placeholder="Write a message..."
           value={reply}
           onChange={(e) => setReply(e.target.value)}
