@@ -71,6 +71,15 @@ export const memberProfileDraftSchema = z.object({
   fullName: text,
   phone: text,
 });
+export const messageDraftSchema = z.object({ body: text });
+export const onboardingDraftSchema = z.object({
+  step: z.number().int().min(0).max(2),
+  displayName: text,
+  username: text,
+  bio: text,
+  avatarUrl: text,
+  pendingPhotoName: text,
+});
 
 export type DraftRecord<T> = {
   version: 1;

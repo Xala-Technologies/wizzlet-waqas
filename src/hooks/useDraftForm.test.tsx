@@ -206,3 +206,47 @@ it("clears storage synchronously when success unmounts the editor in the same ba
   });
   expect(readDraft(scope, schema)).toBeNull();
 });
+
+it('a completed save clears only its conversation after switching keys', () => {
+  const a = key(), b = key();
+  const { result, rerender } = renderHook(({ scope }) => useDraftForm(scope, initial, schema), {
+    initialProps: { scope: a },
+  });
+  act(() => result.current.field('fullName')('Submitted A'));
+  const completeA = result.current.saved;
+  rerender({ scope: b });
+  act(() => result.current.field('fullName')('Unsubmitted B'));
+  act(() => completeA());
+  expect(readDraft(a, schema)).toBeNull();
+  expect(result.current.data.fullName).toBe('Unsubmitted B');
+  expect(readDraft(b, schema)?.data.fullName).toBe('Unsubmitted B');
+  rerender({ scope: a });
+  expect(result.current.dirty).toBe(false);
+});
+
+it('a completed send preserves later edits to its original conversation', () => {
+  const a = key(), b = key();
+  const { result, rerender } = renderHook(({ scope }) => useDraftForm(scope, initial, schema), {
+    initialProps: { scope: a },
+  });
+  act(() => result.current.field('fullName')('Submitted A'));
+  const completeA = result.current.saved;
+  act(() => result.current.field('fullName')('Next draft A'));
+  rerender({ scope: b });
+  act(() => completeA(initial));
+  expect(readDraft(a, schema)?.data.fullName).toBe('Next draft A');
+  expect(result.current.data).toEqual(initial);
+});
+
+it('a completed request does not resurrect a discarded inactive conversation', () => {
+  const a = key(), b = key();
+  const { result, rerender } = renderHook(({ scope }) => useDraftForm(scope, initial, schema), {
+    initialProps: { scope: a },
+  });
+  act(() => result.current.field('fullName')('Submitted A'));
+  const completeA = result.current.saved;
+  act(() => result.current.discard());
+  rerender({ scope: b });
+  act(() => completeA());
+  expect(readDraft(a, schema)).toBeNull();
+});

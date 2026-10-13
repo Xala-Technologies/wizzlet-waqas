@@ -103,8 +103,13 @@ export function useDraftForm<T extends object>(
       // A request may finish after the user has typed more. Clear only the
       // submitted snapshot; keep edits made while that request was in flight.
       const submitted = current.data;
-      const prev = liveState.current;
-      if (prev.key !== key) return;
+      const active = liveState.current;
+      // The user may have opened another conversation while this request was
+      // running. Acknowledge only the submitted key, without changing that UI.
+      const prev = active.key === key
+        ? active
+        : key ? readDraft(key, schema) : null;
+      if (!prev) return;
       const remaining = { ...data };
       for (const name of Object.keys(submitted) as (keyof T)[]) {
         if (JSON.stringify(prev.data[name]) !== JSON.stringify(submitted[name]))
@@ -112,13 +117,14 @@ export function useDraftForm<T extends object>(
       }
       // onSaved can unmount the form in this same batch. Persist synchronously,
       // rather than relying on an effect that may never run after submission.
-      if (key)
-        setStorageFailed(
-          !(JSON.stringify(remaining) === JSON.stringify(data)
-            ? removeDraft(key)
-            : writeDraft(key, remaining, data)),
-        );
-      setState({ key, data: remaining, baseline: data, restored: false });
+      if (key) {
+        const persisted = JSON.stringify(remaining) === JSON.stringify(data)
+          ? removeDraft(key)
+          : writeDraft(key, remaining, data);
+        if (active.key === key) setStorageFailed(!persisted);
+      }
+      if (active.key === key)
+        setState({ key, data: remaining, baseline: data, restored: false });
     },
     discard: () => reset(current.baseline),
     canReplace: () =>

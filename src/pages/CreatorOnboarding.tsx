@@ -1,4 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
+import { DraftNotice } from '@/components/DraftNotice';
+import { useDraftForm } from '@/hooks/useDraftForm';
+import { draftKey, onboardingDraftSchema } from '@/lib/formDrafts';
 import { Link, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -27,64 +30,46 @@ const CreatorOnboarding = () => {
   const me = useQuery(api.users.queries.me, user ? {} : 'skip');
   const upsertOnboarding = useMutation(api.creators.queries.upsertOnboarding);
   const setPublished = useMutation(api.creators.queries.setPublished);
-  const [step, setStep] = useState(0);
   const [loading, setLoading] = useState(false);
-  const [hydrated, setHydrated] = useState(false);
-
-  const [displayName, setDisplayName] = useState('');
-  const [username, setUsername] = useState('');
-  const [bio, setBio] = useState('');
+  const socialName = (me?.fullName ?? me?.name ?? '').trim();
+  const socialUser = (me?.username ?? me?.discordUsername ?? '')
+    .trim().toLowerCase().replace(/[^a-z0-9_]/g, '');
+  const socialAvatar = me?.image?.replace('_normal.', '.').replace('_bigger.', '.') ?? '';
+  const draft = useDraftForm(
+    user && existing !== undefined && me !== undefined
+      ? draftKey(user.id, 'creator-onboarding') : null,
+    {
+      step: clampOnboardingStep(existing?.onboardingStep, ONBOARDING_STEPS.length),
+      displayName: (existing?.displayName || socialName).slice(0, 50),
+      username: (existing?.username || socialUser).slice(0, 30),
+      bio: (existing?.bio || me?.bio || '').trim().slice(0, BIO_MAX),
+      avatarUrl: existing?.avatarUrl || socialAvatar,
+      pendingPhotoName: '',
+    },
+    onboardingDraftSchema,
+  );
+  const { step, displayName, username, bio, avatarUrl: savedAvatarUrl, pendingPhotoName } = draft.data;
+  const setStep = draft.field('step');
+  const setDisplayName = draft.field('displayName');
+  const setBio = draft.field('bio');
+  const setPendingPhotoName = draft.field('pendingPhotoName');
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
-  const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
-  const [savedAvatarUrl, setSavedAvatarUrl] = useState<string | undefined>();
+  const [localPreview, setLocalPreview] = useState<string | null>(null);
+  const avatarPreview = localPreview || savedAvatarUrl || null;
   const avatarRef = useRef<HTMLInputElement>(null);
   const saveInFlight = useRef(false);
 
+  // Files stay in memory; never put binary images or temporary URLs in storage.
   useEffect(() => {
-    if (hydrated || existing === undefined || me === undefined) return;
+    setAvatarFile(null);
+    setLocalPreview(null);
+  }, [user?.id]);
 
-    const socialName = (me.fullName ?? me.name ?? '').trim();
-    const socialUser = (me.username ?? me.discordUsername ?? '')
-      .trim()
-      .toLowerCase()
-      .replace(/[^a-z0-9_]/g, '');
-    const socialBio = (me.bio ?? '').trim().slice(0, BIO_MAX);
-    const socialAvatar =
-      typeof me.image === 'string' && me.image.length > 0
-        ? me.image.replace('_normal.', '.').replace('_bigger.', '.')
-        : undefined;
-
-    if (existing) {
-      setDisplayName(existing.displayName || socialName.slice(0, 50));
-      setUsername(existing.username || socialUser.slice(0, 30));
-      setBio((existing.bio || socialBio).slice(0, BIO_MAX));
-      const avatar = existing.avatarUrl || socialAvatar;
-      if (avatar) {
-        setAvatarPreview(avatar);
-        setSavedAvatarUrl(avatar);
-      }
-      if (typeof existing.onboardingStep === 'number') {
-        setStep(clampOnboardingStep(existing.onboardingStep, ONBOARDING_STEPS.length));
-      }
-    } else {
-      if (socialName) setDisplayName(socialName.slice(0, 50));
-      if (socialUser) setUsername(socialUser.slice(0, 30));
-      if (socialBio) setBio(socialBio);
-      if (socialAvatar) {
-        setAvatarPreview(socialAvatar);
-        setSavedAvatarUrl(socialAvatar);
-      }
-    }
-    setHydrated(true);
-  }, [existing, me, hydrated]);
-
-  useEffect(() => {
-    if (!me?.image) return;
-    if (avatarPreview || savedAvatarUrl || avatarFile) return;
-    const url = me.image.replace('_normal.', '.').replace('_bigger.', '.');
-    setAvatarPreview(url);
-    setSavedAvatarUrl(url);
-  }, [me, avatarPreview, savedAvatarUrl, avatarFile]);
+  const discard = () => {
+    draft.discard();
+    setAvatarFile(null);
+    setLocalPreview(null);
+  };
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -97,13 +82,18 @@ const CreatorOnboarding = () => {
       return;
     }
     setAvatarFile(file);
+    setPendingPhotoName(file.name);
     const reader = new FileReader();
-    reader.onloadend = () => setAvatarPreview(reader.result as string);
+    reader.onloadend = () => setLocalPreview(reader.result as string);
     reader.readAsDataURL(file);
   };
 
-  const persistDraft = async (nextStep: number, opts?: { publish?: boolean }) => {
+  const persistDraft = async (nextStep: number, opts?: { publish?: boolean; skipPhoto?: boolean }) => {
     if (!user || saveInFlight.current) return false;
+    if (pendingPhotoName && !avatarFile && !opts?.skipPhoto) {
+      toast.error('Choose your profile photo again or remove the selection before continuing');
+      return false;
+    }
     const cleanUsername = (username || displayName)
       .toLowerCase()
       .replace(/[^a-z0-9_]/g, '')
@@ -145,10 +135,17 @@ const CreatorOnboarding = () => {
         avatarUrl: avatarUrl ?? undefined,
         onboardingStep: nextStep,
       });
-      if (avatarUrl) {
-        setSavedAvatarUrl(avatarUrl);
-        setAvatarFile(null);
-      }
+      draft.saved({
+        ...draft.data,
+        step: nextStep,
+        username: cleanUsername,
+        displayName: displayName.trim(),
+        bio: bio.trim(),
+        avatarUrl: avatarUrl ?? '',
+        pendingPhotoName: '',
+      });
+      setAvatarFile(null);
+      setLocalPreview(null);
 
       if (shouldPublishOnSave(opts)) {
         await setPublished({ creatorId, isPublished: true });
@@ -157,7 +154,6 @@ const CreatorOnboarding = () => {
         navigate('/creator');
         return true;
       }
-      setStep(nextStep);
       return true;
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Failed to save';
@@ -176,7 +172,7 @@ const CreatorOnboarding = () => {
   };
 
   const handleContinue = () => {
-    if (step === 1 && !avatarPreview && !avatarFile) {
+    if (step === 1 && ((!avatarPreview && !avatarFile) || (pendingPhotoName && !avatarFile))) {
       avatarRef.current?.click();
       return;
     }
@@ -190,11 +186,11 @@ const CreatorOnboarding = () => {
   const handleSkip = () => {
     void persistDraft(
       step >= ONBOARDING_STEPS.length - 1 ? step : step + 1,
-      step >= ONBOARDING_STEPS.length - 1 ? { publish: true } : undefined,
+      step >= ONBOARDING_STEPS.length - 1 ? { publish: true } : { skipPhoto: true },
     );
   };
 
-  if (user && (existing === undefined || me === undefined || !hydrated)) {
+  if (user && (existing === undefined || me === undefined)) {
     return (
       <main id="main-content" className="flex min-h-screen items-center justify-center bg-background">
         <Loader2 className="h-5 w-5 animate-spin text-primary" />
@@ -228,12 +224,30 @@ const CreatorOnboarding = () => {
       logoLinkTo=""
       progressStep={3 + step}
     >
+      <DraftNotice
+        dirty={draft.dirty}
+        restored={draft.restored}
+        storageFailed={draft.storageFailed}
+        disabled={loading}
+        onDiscard={discard}
+      />
+      {pendingPhotoName ? (
+        <div role="status" className="mb-4 text-sm text-muted-foreground">
+          <p>{avatarFile
+            ? 'Your selected photo is not uploaded yet. Continue to upload it before leaving this page.'
+            : 'Your text was recovered. Choose your profile photo again; photo files are not kept after leaving the page.'}</p>
+          <Button type="button" variant="ghost" disabled={loading} onClick={() => {
+            setAvatarFile(null); setLocalPreview(null); setPendingPhotoName('');
+          }}>Remove photo selection</Button>
+        </div>
+      ) : null}
       {step === 0 ? (
         <div className="space-y-2">
           <Label htmlFor="displayName">Creator name</Label>
           <div className="relative">
             <Input
               id="displayName"
+              disabled={loading}
               placeholder="SharkPicks"
               value={displayName}
               onChange={(e) => setDisplayName(e.target.value.slice(0, 50))}
@@ -257,6 +271,7 @@ const CreatorOnboarding = () => {
             onClick={() => avatarRef.current?.click()}
             className="relative flex h-36 w-36 items-center justify-center overflow-hidden rounded-full border border-dashed border-border bg-muted/30 transition-colors hover:border-primary/60"
             aria-label="Upload profile image"
+            disabled={loading}
           >
             {avatarPreview ? (
               <img
@@ -286,6 +301,8 @@ const CreatorOnboarding = () => {
         <div className="space-y-2">
           <Textarea
             id="bio"
+            aria-label="Page description"
+            disabled={loading}
             placeholder="Only the Sharpest Picks"
             value={bio}
             onChange={(e) => setBio(e.target.value.slice(0, BIO_MAX))}
@@ -308,11 +325,13 @@ const CreatorOnboarding = () => {
         {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
         {loading
           ? 'Saving…'
-          : step === 1 && !avatarPreview
-            ? 'Upload image'
-            : step === 2
-              ? 'Finish setup'
-              : 'Continue'}
+          : step === 1 && pendingPhotoName && !avatarFile
+            ? 'Choose photo again'
+            : step === 1 && !avatarPreview
+              ? 'Upload image'
+              : step === 2
+                ? 'Finish setup'
+                : 'Continue'}
       </Button>
 
       {step === 1 || step === 2 ? (
