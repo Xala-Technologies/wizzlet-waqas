@@ -21,6 +21,9 @@ import { clayCard } from '@/lib/overviewClay';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
+import { DraftNotice } from '@/components/DraftNotice';
+import { useDraftForm } from '@/hooks/useDraftForm';
+import { draftKey, messageDraftSchema } from '@/lib/formDrafts';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -129,7 +132,7 @@ function daySeparatorLabel(ms: number): string {
 
 const CustomerMessages = () => {
   const { appUserId, loading: userLoading } = useAppUser();
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
   const creatorIdParam = searchParams.get('creatorId');
   const forceDemo = searchParams.get('demo') === '1';
   const disableDemo = searchParams.get('demo') === '0';
@@ -149,23 +152,24 @@ const CustomerMessages = () => {
   const [filter, setFilter] = useState<FilterKey>('all');
   const [search, setSearch] = useState('');
   const [activeId, setActiveId] = useState<string | null>(creatorIdParam);
-  const [reply, setReply] = useState('');
   const [sending, setSending] = useState(false);
   const [demoExtra, setDemoExtra] = useState<Record<string, MemberMessagesDemoMessage[]>>({});
   const markedRef = useRef<Set<string>>(new Set());
-  const prevActiveIdRef = useRef<string | null>(activeId);
   const chatEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    if (creatorIdParam) setActiveId(creatorIdParam);
+    setActiveId(creatorIdParam);
   }, [creatorIdParam]);
 
-  useEffect(() => {
-    if (prevActiveIdRef.current !== activeId) {
-      setReply('');
-      prevActiveIdRef.current = activeId;
-    }
-  }, [activeId]);
+  const openThread = (id: string | null) => {
+    setActiveId(id);
+    setSearchParams((prev) => {
+      const next = new URLSearchParams(prev);
+      if (id) next.set('creatorId', id);
+      else next.delete('creatorId');
+      return next;
+    }, { replace: true });
+  };
 
   const nameMap = useMemo(() => {
     const map = new Map<
@@ -371,6 +375,16 @@ const CustomerMessages = () => {
     chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [active?.id, active?.messages.length]);
 
+  const messageDraft = useDraftForm(
+    appUserId && active && active.kind !== 'support'
+      ? draftKey(appUserId, `member-message:${active.id}`)
+      : null,
+    { body: '' },
+    messageDraftSchema,
+  );
+  const reply = messageDraft.data.body;
+  const setReply = messageDraft.field('body');
+
   const composeBlockReason = useMemo(() => {
     if (!active || active.isDemo || active.kind === 'support') return null;
     const meta = nameMap.get(active.id);
@@ -406,7 +420,7 @@ const CustomerMessages = () => {
         ...prev,
         [active.id]: [...(prev[active.id] ?? []), msg],
       }));
-      setReply('');
+      messageDraft.saved({ body: '' });
       toast.message('Sample preview — messages sync after a real subscription.');
       return;
     }
@@ -423,7 +437,7 @@ const CustomerMessages = () => {
         senderRole: 'subscriber',
         body,
       });
-      setReply('');
+      messageDraft.saved({ body: '' });
     } catch (e) {
       toast.error(e instanceof Error ? e.message : 'Failed to send message');
     } finally {
@@ -559,7 +573,7 @@ const CustomerMessages = () => {
                       <li key={thread.id}>
                         <button
                           type="button"
-                          onClick={() => setActiveId(thread.id)}
+                          onClick={() => openThread(thread.id)}
                           className={cn(
                             'flex w-full items-start gap-3 border-b border-border px-4 py-3.5 text-left transition-colors',
                             selected ? 'bg-primary/5' : 'hover:bg-muted/50',
@@ -631,7 +645,7 @@ const CustomerMessages = () => {
                     type="button"
                     className="inline-flex h-10 w-10 items-center justify-center rounded-xl text-muted-foreground hover:bg-muted/50 lg:hidden"
                     aria-label="Back to conversations"
-                    onClick={() => setActiveId(null)}
+                    onClick={() => openThread(null)}
                   >
                     <ArrowLeft className="h-5 w-5" />
                   </button>
@@ -759,6 +773,14 @@ const CustomerMessages = () => {
                   </div>
                 ) : (
                   <div className="border-t border-border bg-card p-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] sm:p-4">
+                    <DraftNotice
+                      kind="message"
+                      dirty={messageDraft.dirty}
+                      restored={messageDraft.restored}
+                      storageFailed={messageDraft.storageFailed}
+                      disabled={sending}
+                      onDiscard={messageDraft.discard}
+                    />
                     <div className="flex items-end gap-2">
                       <Button
                         type="button"
@@ -778,6 +800,7 @@ const CustomerMessages = () => {
                       </Button>
                       <div className="relative min-w-0 flex-1">
                         <Textarea
+                          aria-label="Message"
                           placeholder="Type a message..."
                           value={reply}
                           onChange={(e) => setReply(e.target.value)}
