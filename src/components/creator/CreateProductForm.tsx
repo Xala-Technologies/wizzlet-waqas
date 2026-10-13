@@ -1,3 +1,6 @@
+import { useDraftForm } from '@/hooks/useDraftForm';
+import { draftKey, productDraftSchema } from '@/lib/formDrafts';
+import { DraftNotice } from '@/components/DraftNotice';
 import { useMemo, useRef, useState, type ReactNode, type RefObject } from 'react';
 import { useConvex, useMutation, useQuery } from 'convex/react';
 import {
@@ -264,51 +267,40 @@ export function CreateProductForm({
   const upsertProduct = useMutation(api.products.mutations.upsert);
   const posts = useQuery(api.posts.queries.listMine);
 
-  const [name, setName] = useState(initial?.name ?? 'Premium Picks');
-  const [shortDescription, setShortDescription] = useState(
-    initial?.shortDescription ??
-      (initial ? '' : 'Daily betting picks, analysis and more.'),
-  );
   const storedDescription = parseStoredDescription(initial?.description ?? '');
-  const [description, setDescription] = useState(
-    storedDescription.body ||
-      (initial
-        ? ''
-        : 'Get my best daily picks with clear unit sizing, write-ups, and early locks before the open.'),
-  );
-  const [price, setPrice] = useState(
-    initial ? (initial.priceCents / 100).toFixed(2) : '29.99',
-  );
-  const isOneTimeInitial = initial?.billingPeriod === 'one-time';
-  const [payType, setPayType] = useState<'subscription' | 'one-time'>(
-    isOneTimeInitial ? 'one-time' : 'subscription',
-  );
-  const [billingPeriod, setBillingPeriod] = useState(
-    isOneTimeInitial ? 'monthly' : initial?.billingPeriod || 'monthly',
-  );
-  const [yearlyPricing, setYearlyPricing] = useState(false);
-  const [access, setAccess] = useState<Set<string>>(() => {
-    if (initial?.accessIds && initial.accessIds.length > 0) return new Set(initial.accessIds);
-    if (storedDescription.accessIds.length > 0) return new Set(storedDescription.accessIds);
-    return new Set(ACCESS_OPTIONS.map((o) => o.id));
-  });
-  const [linkedPostId, setLinkedPostId] = useState<string>('none');
-  const [limitSubs, setLimitSubs] = useState(initial?.isLimited ?? false);
-  const [maxSpots, setMaxSpots] = useState(
-    initial?.maxSpots != null ? String(initial.maxSpots) : '100',
-  );
-  const [expiration, setExpiration] = useState(false);
-  const [expiresOn, setExpiresOn] = useState('');
-  const [visibility, setVisibility] = useState<'public' | 'hidden'>(
-    initial && !initial.isActive ? 'hidden' : 'public',
-  );
-  const [isFeatured, setIsFeatured] = useState(initial?.isFeatured ?? false);
-  const [imageStorageId, setImageStorageId] = useState<Id<'_storage'> | null>(
-    initial?.imageStorageId ?? null,
-  );
-  const [uploadedImageUrl, setImagePreviewUrl] = useState<string | null>(
-    initial?.imageUrl ?? null,
-  );
+  const initialAccess = initial?.accessIds?.length ? initial.accessIds : storedDescription.accessIds.length ? storedDescription.accessIds : ACCESS_OPTIONS.map(o => o.id);
+  const draft = useDraftForm(!demoMode ? draftKey(creatorId, 'product') : null, productDraftSchema.parse({
+    recordId: initial?.id ?? null,
+    name: initial?.name ?? 'Premium Picks',
+    shortDescription: initial?.shortDescription ?? (initial ? '' : 'Daily betting picks, analysis and more.'),
+    description: storedDescription.body || (initial ? '' : 'Get my best daily picks with clear unit sizing, write-ups, and early locks before the open.'),
+    price: initial ? (initial.priceCents / 100).toFixed(2) : '29.99',
+    payType: initial?.billingPeriod === 'one-time' ? 'one-time' : 'subscription',
+    billingPeriod: initial?.billingPeriod === 'one-time' ? 'monthly' : initial?.billingPeriod || 'monthly',
+    yearlyPricing: false, access: initialAccess, linkedPostId: 'none',
+    limitSubs: initial?.isLimited ?? false, maxSpots: initial?.maxSpots != null ? String(initial.maxSpots) : '100',
+    expiration: false, expiresOn: '', visibility: initial && !initial.isActive ? 'hidden' : 'public',
+    isFeatured: initial?.isFeatured ?? false, imageStorageId: initial?.imageStorageId ?? null, uploadedImageUrl: initial?.imageUrl ?? null,
+  }), productDraftSchema);
+  const { name, shortDescription, description, price, payType, billingPeriod, yearlyPricing, linkedPostId, limitSubs, maxSpots, expiration, expiresOn, visibility, isFeatured, uploadedImageUrl } = draft.data;
+  const imageStorageId = draft.data.imageStorageId as Id<'_storage'> | null;
+  const access = useMemo(() => new Set(draft.data.access), [draft.data.access]);
+  const setName = draft.field('name');
+  const setShortDescription = draft.field('shortDescription');
+  const setDescription = draft.field('description');
+  const setPrice = draft.field('price');
+  const setPayType = draft.field('payType');
+  const setBillingPeriod = draft.field('billingPeriod');
+  const setYearlyPricing = draft.field('yearlyPricing');
+  const setLinkedPostId = draft.field('linkedPostId');
+  const setLimitSubs = draft.field('limitSubs');
+  const setMaxSpots = draft.field('maxSpots');
+  const setExpiration = draft.field('expiration');
+  const setExpiresOn = draft.field('expiresOn');
+  const setVisibility = draft.field('visibility');
+  const setIsFeatured = draft.field('isFeatured');
+  const setImageStorageId = draft.field('imageStorageId');
+  const setImagePreviewUrl = draft.field('uploadedImageUrl');
   const [uploading, setUploading] = useState(false);
   const [saving, setSaving] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
@@ -330,12 +322,7 @@ export function CreateProductForm({
   }, [access]);
 
   const toggleAccess = (id: string, checked: boolean) => {
-    setAccess((prev) => {
-      const next = new Set(prev);
-      if (checked) next.add(id);
-      else next.delete(id);
-      return next;
-    });
+    draft.field('access')(prev => checked ? [...new Set([...prev, id])] : prev.filter(value => value !== id));
   };
 
   const handleImagePick = async (file: File | undefined) => {
@@ -410,7 +397,7 @@ export function CreateProductForm({
 
     setSaving(true);
     try {
-      await upsertProduct({
+      const savedId = await upsertProduct({
         productId: initial?.id ? (initial.id as Id<'products'>) : undefined,
         creatorId,
         name: name.trim(),
@@ -432,6 +419,7 @@ export function CreateProductForm({
             ? 'Product updated'
             : 'Product published',
       );
+      draft.saved({ ...draft.data, recordId: savedId });
       onSaved();
     } catch (e) {
       toast.error(e instanceof Error ? e.message : 'Failed to save product');
@@ -442,6 +430,7 @@ export function CreateProductForm({
 
   return (
     <div className="pb-10">
+      <DraftNotice {...draft} disabled={saving || uploading} onDiscard={draft.discard} />
       <input
         ref={fileRef}
         type="file"

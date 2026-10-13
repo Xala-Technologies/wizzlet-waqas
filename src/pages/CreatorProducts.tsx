@@ -1,3 +1,5 @@
+import { draftKey, productDraftSchema, readDraft, removeDraft } from '@/lib/formDrafts';
+import { DraftNotice } from '@/components/DraftNotice';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useMutation, useQuery } from 'convex/react';
@@ -507,7 +509,17 @@ const CreatorProducts = () => {
     }
   };
 
+  const productDraftKey = creator?._id && !useDemo ? draftKey(creator._id, 'product') : null;
+  const pendingDraft = productDraftKey ? readDraft(productDraftKey, productDraftSchema) : null;
+  const [, refreshDraft] = useState(0);
+  const discardProductDraft = () => { if (productDraftKey) removeDraft(productDraftKey); refreshDraft(n => n + 1); };
+  const replaceDraft = () => {
+    if (pendingDraft && !window.confirm('Discard your unsaved product changes and open another editor?')) return false;
+    discardProductDraft();
+    return true;
+  };
   const openCreate = () => {
+    if (!replaceDraft()) return;
     if (useDemo) {
       toast.message('Sample preview', {
         description:
@@ -518,7 +530,8 @@ const CreatorProducts = () => {
     setFormOpen(true);
   };
 
-  const openEdit = (row: TableRowModel) => {
+  const openEdit = (row: TableRowModel, resume = false) => {
+    if (!resume && !replaceDraft()) return;
     if (useDemo || isCreatorProductsDemoId(row.id)) {
       toast.message('Sample preview data', {
         description: 'Edit is available for live products only.',
@@ -607,6 +620,12 @@ const CreatorProducts = () => {
 
   return (
     <DashboardLayout type="creator" mainClassName="bg-clay-page">
+      <DraftNotice dirty={!!pendingDraft} onDiscard={discardProductDraft} onResume={() => {
+        if (!pendingDraft?.data.recordId) { setFormInitial(null); setFormOpen(true); return; }
+        const row = liveRows.find(p => p.id === pendingDraft.data.recordId);
+        if (row) openEdit(row, true);
+        else toast.error('This product is no longer available. You can discard its draft.');
+      }} />
       <header className="mb-4 flex flex-col gap-3 sm:mb-5 sm:flex-row sm:items-center sm:justify-end sm:gap-8">
         <Button
           type="button"

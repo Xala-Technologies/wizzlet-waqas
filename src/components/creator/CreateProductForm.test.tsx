@@ -64,3 +64,38 @@ it('repeated saves of an empty description do not duplicate generated access det
     view.unmount();
   }
 });
+
+it('restores failed edits to the same product and clears recovery only after a successful save', async () => {
+  const { draftKey, readDraft, removeDraft, productDraftSchema } = await import('@/lib/formDrafts');
+  const key = draftKey('creator1', 'product'); removeDraft(key);
+  state.save.mockRejectedValueOnce(new Error('Offline'));
+  let view = mediaForm();
+  fireEvent.change(screen.getByLabelText('Product Name'), { target: { value: 'Recovered product edit' } });
+  fireEvent.click(screen.getByRole('button', { name: 'Save as Draft' }));
+  await waitFor(() => expect(state.save).toHaveBeenCalledOnce());
+  await waitFor(() => expect(screen.getByRole('button', { name: 'Save as Draft' })).toBeEnabled());
+  view.unmount(); view = mediaForm();
+  expect(screen.getByLabelText('Product Name')).toHaveValue('Recovered product edit');
+  expect(readDraft(key, productDraftSchema)?.data.recordId).toBe('product1');
+  fireEvent.click(screen.getByRole('button', { name: 'Save as Draft' }));
+  await waitFor(() => expect(readDraft(key, productDraftSchema)).toBeNull());
+  expect(state.save.mock.calls[1][0]).toMatchObject({ productId: 'product1', name: 'Recovered product edit' });
+  view.unmount();
+});
+
+it('retains a newly created product ID when later edits outlive the save request', async () => {
+  const { draftKey, readDraft, removeDraft, productDraftSchema } = await import('@/lib/formDrafts');
+  const key = draftKey('creator-late-save', 'product'); removeDraft(key);
+  let finish!: (id: string) => void;
+  state.save.mockImplementationOnce(() => new Promise(resolve => { finish = resolve; }));
+  const view = render(<CreateProductForm creatorId={'creator-late-save' as Id<'creators'>} creatorName="Test Creator" onCancel={() => {}} onSaved={() => {}} />);
+  fireEvent.change(screen.getByLabelText('Product Name'), { target: { value: 'Submitted product' } });
+  fireEvent.click(screen.getByRole('button', { name: 'Save as Draft' }));
+  fireEvent.change(screen.getByLabelText('Product Name'), { target: { value: 'Later product edit' } });
+  await act(async () => finish('new-product-id'));
+  view.unmount();
+  const recovered = readDraft(key, productDraftSchema);
+  expect(recovered?.data).toMatchObject({ recordId: 'new-product-id', name: 'Later product edit' });
+  expect(recovered?.baseline).toMatchObject({ recordId: 'new-product-id', name: 'Submitted product' });
+  removeDraft(key);
+});

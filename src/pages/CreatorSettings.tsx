@@ -1,3 +1,6 @@
+import { useDraftForm } from '@/hooks/useDraftForm';
+import { creatorProfileDraftSchema, draftKey } from '@/lib/formDrafts';
+import { DraftNotice } from '@/components/DraftNotice';
 import { useEffect, useRef, useState } from 'react';
 import { Link, Navigate, useNavigate, useSearchParams } from 'react-router-dom';
 import { useConvex, useMutation, useQuery } from 'convex/react';
@@ -166,34 +169,48 @@ const CreatorSettings = () => {
   const avatarRef = useRef<HTMLInputElement>(null);
   const logoRef = useRef<HTMLInputElement>(null);
   const faviconRef = useRef<HTMLInputElement>(null);
-  const hydratedCreatorId = useRef<string | null>(null);
   const demoHydrated = useRef(false);
-  const brandingHydrated = useRef(false);
 
   const [saving, setSaving] = useState(false);
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
   const [uploadingBanner, setUploadingBanner] = useState(false);
   const [uploadingLogo, setUploadingLogo] = useState(false);
   const [uploadingFavicon, setUploadingFavicon] = useState(false);
-  const [displayName, setDisplayName] = useState('');
+  const profileSparse =
+    !creator?.displayName?.trim() && !creator?.bio?.trim() && !creator?.avatarUrl?.trim();
+
+  const useDemo = shouldUseCreatorSettingsDemo({
+    profileSparse: Boolean(profileSparse),
+    forceDemo,
+    disableDemo,
+  });
+
+  const storedBranding = creator ? readStoredBranding(creator._id) : null;
+  const draft = useDraftForm(creator && !useDemo ? draftKey(creator._id, 'profile') : null, creatorProfileDraftSchema.parse({
+    displayName: creator?.displayName ?? '', bio: creator?.bio ?? '', avatarUrl: creator?.avatarUrl ?? '', bannerUrl: creator?.bannerUrl ?? '',
+    discordServerId: creator?.discordServerId ?? '', discordRoleId: creator?.discordRoleId ?? '',
+    brandName: storedBranding?.brandName ?? creator?.displayName ?? '', logoUrl: storedBranding?.logoUrl ?? creator?.avatarUrl ?? '',
+    faviconUrl: storedBranding?.faviconUrl ?? '', primaryColor: storedBranding?.primaryColor ?? CREATOR_BRANDING_DEMO.primaryColor,
+    secondaryColor: storedBranding?.secondaryColor ?? CREATOR_BRANDING_DEMO.secondaryColor,
+    accentColor: storedBranding?.accentColor ?? CREATOR_BRANDING_DEMO.accentColor, brandFont: storedBranding?.font ?? CREATOR_BRANDING_DEMO.font,
+  }), creatorProfileDraftSchema);
+  const { displayName, bio, avatarUrl, bannerUrl, discordServerId, discordRoleId, brandName, logoUrl, faviconUrl, primaryColor, secondaryColor, accentColor, brandFont } = draft.data;
+  const setDisplayName = draft.field('displayName');
+  const setBio = draft.field('bio');
+  const setAvatarUrl = draft.field('avatarUrl');
+  const setBannerUrl = draft.field('bannerUrl');
+  const setDiscordServerId = draft.field('discordServerId');
+  const setDiscordRoleId = draft.field('discordRoleId');
+  const setBrandName = draft.field('brandName');
+  const setLogoUrl = draft.field('logoUrl');
+  const setFaviconUrl = draft.field('faviconUrl');
+  const setPrimaryColor = draft.field('primaryColor');
+  const setSecondaryColor = draft.field('secondaryColor');
+  const setAccentColor = draft.field('accentColor');
+  const setBrandFont = draft.field('brandFont');
   const [username, setUsername] = useState('');
-  const [bio, setBio] = useState('');
-  const [avatarUrl, setAvatarUrl] = useState('');
-  const [bannerUrl, setBannerUrl] = useState('');
-  const [discordServerId, setDiscordServerId] = useState('');
-  const [discordRoleId, setDiscordRoleId] = useState('');
   const [email, setEmail] = useState('');
   const [emailDialogOpen, setEmailDialogOpen] = useState(false);
-
-  const [brandName, setBrandName] = useState('');
-  const [logoUrl, setLogoUrl] = useState('');
-  const [faviconUrl, setFaviconUrl] = useState('');
-  const [primaryColor, setPrimaryColor] = useState<string>(CREATOR_BRANDING_DEMO.primaryColor);
-  const [secondaryColor, setSecondaryColor] = useState<string>(
-    CREATOR_BRANDING_DEMO.secondaryColor,
-  );
-  const [accentColor, setAccentColor] = useState<string>(CREATOR_BRANDING_DEMO.accentColor);
-  const [brandFont, setBrandFont] = useState<string>(CREATOR_BRANDING_DEMO.font);
 
   const [language, setLanguage] = useState('en-US');
   const [timezone, setTimezone] = useState('Europe/Tallinn');
@@ -224,47 +241,7 @@ const CreatorSettings = () => {
   const [publicProfileEnabled, setPublicProfileEnabled] = useState(true);
   const [billingPayment, setBillingPayment] = useState<PaymentFeeDetail | null>(null);
 
-  useEffect(() => {
-    if (!creator) {
-      hydratedCreatorId.current = null;
-      brandingHydrated.current = false;
-      return;
-    }
-    if (hydratedCreatorId.current === creator._id) return;
-    hydratedCreatorId.current = creator._id;
-    setDisplayName(creator.displayName ?? '');
-    setUsername(creator.username ?? '');
-    setBio(creator.bio ?? '');
-    setAvatarUrl(creator.avatarUrl ?? '');
-    setBannerUrl(creator.bannerUrl ?? '');
-    setDiscordServerId(creator.discordServerId ?? '');
-    setDiscordRoleId(creator.discordRoleId ?? '');
-    setBrandName(creator.displayName ?? '');
-    setLogoUrl(creator.avatarUrl ?? '');
-  }, [creator]);
-
-  useEffect(() => {
-    if (!creator || brandingHydrated.current) return;
-    brandingHydrated.current = true;
-    const stored = readStoredBranding(creator._id);
-    if (!stored) return;
-    if (stored.brandName) setBrandName(stored.brandName);
-    if (stored.logoUrl) setLogoUrl(stored.logoUrl);
-    if (stored.faviconUrl) setFaviconUrl(stored.faviconUrl);
-    if (stored.primaryColor) setPrimaryColor(stored.primaryColor);
-    if (stored.secondaryColor) setSecondaryColor(stored.secondaryColor);
-    if (stored.accentColor) setAccentColor(stored.accentColor);
-    if (stored.font) setBrandFont(stored.font);
-  }, [creator]);
-
-  const profileSparse =
-    !creator?.displayName?.trim() && !creator?.bio?.trim() && !creator?.avatarUrl?.trim();
-
-  const useDemo = shouldUseCreatorSettingsDemo({
-    profileSparse: Boolean(profileSparse),
-    forceDemo,
-    disableDemo,
-  });
+  useEffect(() => { setUsername(creator?.username ?? ''); }, [creator?.username]);
 
   const feePolicy = earnings?.feePolicy ?? {
     introFeePercent: CREATOR_BILLING_DEMO.introFeePercent,
@@ -327,7 +304,7 @@ const CreatorSettings = () => {
     setSecondaryColor(CREATOR_BRANDING_DEMO.secondaryColor);
     setAccentColor(CREATOR_BRANDING_DEMO.accentColor);
     setBrandFont(CREATOR_BRANDING_DEMO.font);
-  }, [useDemo, creator, displayName, bio, email, brandName]);
+  }, [useDemo, creator, displayName, bio, email, brandName, setAccentColor, setBio, setBrandFont, setBrandName, setDisplayName, setPrimaryColor, setSecondaryColor]);
 
   const handleSave = async () => {
     if (!creator || saving || uploadingAvatar || uploadingBanner || uploadingLogo || uploadingFavicon) return;
@@ -369,6 +346,7 @@ const CreatorSettings = () => {
       if (tab === 'branding' && nextDisplayName) setDisplayName(nextDisplayName);
       setAvatarUrl(nextAvatar);
       setLogoUrl(nextAvatar);
+      draft.saved({ ...draft.data, displayName: tab === 'branding' && nextDisplayName ? nextDisplayName : displayName, avatarUrl: nextAvatar, logoUrl: nextAvatar });
       toast.success('Settings saved');
     } catch (e) {
       toast.error(e instanceof Error ? e.message : 'Failed to save settings');
@@ -567,6 +545,7 @@ const CreatorSettings = () => {
         </div>
       ) : null}
 
+      <DraftNotice {...draft} disabled={busy} onDiscard={draft.discard} />
       {tab === 'general' ? (
         <div className="grid grid-cols-1 gap-4 xl:grid-cols-12">
           <div className="flex flex-col gap-4 xl:col-span-8">
