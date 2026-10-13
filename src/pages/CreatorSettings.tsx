@@ -180,7 +180,6 @@ const CreatorSettings = () => {
     !creator?.displayName?.trim() && !creator?.bio?.trim() && !creator?.avatarUrl?.trim();
 
   const useDemo = shouldUseCreatorSettingsDemo({
-    profileSparse: Boolean(profileSparse),
     forceDemo,
     disableDemo,
   });
@@ -486,11 +485,12 @@ const CreatorSettings = () => {
     return <Navigate to="/creator/integrations" replace />;
   }
 
-  if (creator === undefined || me === undefined) {
+  const billingLoading = Boolean(creator) && tab === 'billing' && !useDemo && earnings === undefined;
+  if (creator === undefined || me === undefined || billingLoading) {
     return (
       <DashboardLayout type="creator" mainClassName="bg-clay-page">
-        <div className="flex justify-center py-20">
-          <Loader2 className="h-5 w-5 animate-spin text-primary" />
+        <div role="status" aria-label={billingLoading ? 'Loading billing' : 'Loading settings'} className="flex justify-center py-20">
+          <Loader2 className="h-5 w-5 animate-spin text-primary" aria-hidden />
         </div>
       </DashboardLayout>
     );
@@ -539,7 +539,7 @@ const CreatorSettings = () => {
             aria-hidden
           />
           <p className="min-w-0 flex-1 text-sm font-semibold leading-snug">
-            Sample preview data — profile fields are mock content for design review. Add{' '}
+            Sample preview data — settings, team members, and payments are examples for design review. Add{' '}
             <span className="font-mono text-xs">?demo=0</span> to see empty real states.
           </p>
         </div>
@@ -1184,7 +1184,7 @@ const CreatorSettings = () => {
                 Team Members
               </h2>
               <p className="mt-1 text-sm text-muted-foreground">
-                Invite team members and manage their access to your Prizelet account.
+                {useDemo ? 'Preview team members and their access.' : 'Your creator account is managed by its owner.'}
               </p>
             </div>
             <div className="overflow-x-auto">
@@ -1348,7 +1348,7 @@ const CreatorSettings = () => {
                   Invite Team Member
                 </h2>
                 <p className="mt-1 text-sm text-muted-foreground">
-                  Add a new team member to your account.
+                  {useDemo ? 'Try adding a sample team member locally. No invitation is sent.' : 'Team invitations and shared access are not available yet.'}
                 </p>
               </div>
               <div className="space-y-2">
@@ -1356,6 +1356,7 @@ const CreatorSettings = () => {
                 <Input
                   id="invite-email"
                   type="email"
+                  disabled={!useDemo}
                   value={inviteEmail}
                   onChange={(e) => setInviteEmail(e.target.value)}
                   placeholder="name@company.com"
@@ -1366,9 +1367,10 @@ const CreatorSettings = () => {
                 <Label>Role</Label>
                 <Select
                   value={inviteRole}
+                  disabled={!useDemo}
                   onValueChange={(v) => setInviteRole(v as TeamRole)}
                 >
-                  <SelectTrigger className="min-h-11 rounded-xl">
+                  <SelectTrigger aria-label="Invitation role" className="min-h-11 rounded-xl">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -1382,8 +1384,9 @@ const CreatorSettings = () => {
                 type="button"
                 size="sm"
                 className="w-full"
-                disabled={sendingInvite}
+                disabled={sendingInvite || !useDemo}
                 onClick={() => {
+                  if (!useDemo) return;
                   const email = inviteEmail.trim();
                   if (!email || !email.includes('@')) {
                     toast.error('Enter a valid email address');
@@ -1414,10 +1417,6 @@ const CreatorSettings = () => {
                       toast.message('Sample preview — invite added locally', {
                         description: `${email} as ${teamRoleLabel(inviteRole)}`,
                       });
-                    } else {
-                      toast.message('Invite sent (preview)', {
-                        description: 'Team invites are not wired to the backend yet.',
-                      });
                     }
                     setSendingInvite(false);
                   }, 350);
@@ -1430,7 +1429,7 @@ const CreatorSettings = () => {
               </Button>
             </section>
 
-            <section className={cn(cardClass, 'space-y-3')}>
+            {useDemo ? <section className={cn(cardClass, 'space-y-3')}>
               <div>
                 <h2 className="text-base font-extrabold tracking-tight text-foreground">
                   Role Permissions
@@ -1459,7 +1458,7 @@ const CreatorSettings = () => {
                   );
                 })}
               </ul>
-            </section>
+            </section> : null}
 
             <section className={cn(cardClass, 'space-y-3')}>
               <div className="flex items-center gap-2">
@@ -1469,20 +1468,15 @@ const CreatorSettings = () => {
                 </h2>
               </div>
               <p className="text-sm text-muted-foreground">
-                Visit the Help Center for more information about team roles and permissions.
+                Contact support with questions about account access.
               </p>
               <Button
                 type="button"
                 variant="secondary"
                 className={cn(softPrimaryBtn, 'w-full gap-2')}
-                onClick={() =>
-                  toast.message('Help Center', {
-                    description: 'Team role docs will open here soon.',
-                  })
-                }
+                asChild
               >
-                View Help Center
-                <ExternalLink className="h-3.5 w-3.5" aria-hidden />
+                <Link to="/creator/support">Contact support</Link>
               </Button>
             </section>
           </aside>
@@ -1641,20 +1635,15 @@ const CreatorSettings = () => {
                 </h2>
               </div>
               <p className="text-sm text-muted-foreground">
-                Questions about fees or payouts? Visit the Help Center or contact support.
+                Contact support with questions about fees or payouts.
               </p>
               <Button
                 type="button"
                 variant="secondary"
                 className={cn(softPrimaryBtn, 'w-full gap-2')}
-                onClick={() =>
-                  toast.message('Help Center', {
-                    description: 'Billing help articles will open here soon.',
-                  })
-                }
+                asChild
               >
-                View Help Center
-                <ExternalLink className="h-3.5 w-3.5" aria-hidden />
+                <Link to="/creator/support">Contact support</Link>
               </Button>
             </section>
           </aside>

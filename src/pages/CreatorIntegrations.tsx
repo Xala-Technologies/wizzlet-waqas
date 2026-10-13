@@ -163,9 +163,9 @@ const CreatorIntegrations = () => {
   }, [loadRoles]);
 
   useEffect(() => {
-    if (discordParam === 'connected') toast.success('Discord server connected');
+    if (discordParam === 'connected' && liveConnected && !useDemo) toast.success('Discord server connected');
     if (discordParam === 'error') toast.error('Could not connect Discord. Try again.');
-  }, [discordParam]);
+  }, [discordParam, liveConnected, useDemo]);
 
   const mappedProducts: DemoDiscordProductMap[] = useDemo
     ? CREATOR_DISCORD_DEMO.products
@@ -346,14 +346,15 @@ const CreatorIntegrations = () => {
                       type="button"
                       className="h-10 rounded-xl bg-[#5865F2] hover:bg-[#4752c4]"
                       onClick={() => void onAddBot()}
-                      disabled={busy}
+                      disabled={busy || !configured}
+                      aria-describedby={!configured ? 'discord-availability' : undefined}
                     >
                       {busy ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <DiscordMark className="mr-2 h-4 w-4" />}
                       Add to Discord
                     </Button>
                     {!configured && !useDemo ? (
-                      <p className="max-w-[220px] text-right text-xs text-muted-foreground">
-                        Bot env (token, client id, secret) is not set on this deployment.
+                      <p id="discord-availability" className="max-w-[220px] text-right text-xs text-muted-foreground">
+                        {botStatus === undefined ? 'Checking Discord availability…' : 'Discord connections are currently unavailable.'}
                       </p>
                     ) : null}
                   </div>

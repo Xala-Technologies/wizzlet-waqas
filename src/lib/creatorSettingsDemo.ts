@@ -1,5 +1,5 @@
 /**
- * Sample Settings values for design review when the profile is empty.
+ * Sample Settings values for explicitly requested design previews.
  */
 
 export const CREATOR_SETTINGS_DEMO = {
@@ -279,11 +279,8 @@ export const CREATOR_ADVANCED_TIPS = [
 ] as const;
 
 export function shouldUseCreatorSettingsDemo(opts: {
-  profileSparse: boolean;
   forceDemo: boolean;
   disableDemo: boolean;
 }): boolean {
-  if (opts.disableDemo) return false;
-  if (opts.forceDemo) return true;
-  return opts.profileSparse;
+  return opts.forceDemo && !opts.disableDemo;
 }
