@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Link, Navigate, useNavigate, useSearchParams } from 'react-router-dom';
+import { Navigate, useNavigate, useSearchParams } from 'react-router-dom';
 import { useMutation, useQuery } from 'convex/react';
 import { Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
@@ -9,11 +9,11 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { InputOTP, InputOTPGroup, InputOTPSlot } from '@/components/ui/input-otp';
 import { useAuth } from '@/contexts/AuthContext';
-import { sanitizeReturnPath } from '@/lib/safeReturnPath';
+import { buildLoginHref, sanitizeReturnPath } from '@/lib/safeReturnPath';
 import { destinationAfterMfaVerify } from '@/lib/mfaGate';
 
 const Mfa = () => {
-  const { user, role, roles, loading, roleLoading, signingOut } = useAuth();
+  const { user, role, roles, loading, roleLoading, signingOut, signOut } = useAuth();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const returnTo = sanitizeReturnPath(searchParams.get('returnTo'));
@@ -22,8 +22,30 @@ const Mfa = () => {
   const [code, setCode] = useState('');
   const [busy, setBusy] = useState(false);
   const [useBackup, setUseBackup] = useState(false);
+  const [switchingAccount, setSwitchingAccount] = useState(false);
 
   const dest = destinationAfterMfaVerify({ roles, preferred: role, returnTo });
+
+  const switchAccount = async () => {
+    if (busy || switchingAccount) return;
+    setSwitchingAccount(true);
+    try {
+      // /login redirects an authenticated pending session straight back to MFA.
+      // Clear that session before navigating so another account can sign in.
+      await signOut();
+      navigate(buildLoginHref(returnTo ?? ''), { replace: true });
+    } catch {
+      toast.error('Could not sign out. Please try again.');
+      setSwitchingAccount(false);
+    }
+  };
+
+  if (switchingAccount) {
+    return <main className="flex min-h-screen items-center justify-center gap-2" role="status">
+      <Loader2 className="h-6 w-6 animate-spin text-primary" aria-hidden />
+      <span>Signing out…</span>
+    </main>;
+  }
 
   if (signingOut) return <Navigate to="/" replace />;
 
@@ -93,9 +115,10 @@ const Mfa = () => {
       footer={
         <p className="text-center text-[14px] text-muted-foreground">
           Wrong account?{' '}
-          <Link to="/login" className="font-semibold text-foreground underline-offset-4 hover:underline">
+          <button type="button" disabled={busy} onClick={() => void switchAccount()}
+            className="font-semibold text-foreground underline-offset-4 hover:underline disabled:opacity-50">
             Sign in again
-          </Link>
+          </button>
         </p>
       }
     >
@@ -108,6 +131,7 @@ const Mfa = () => {
       >
         {useBackup ? (
           <Input
+            aria-label="Backup code"
             value={code}
             onChange={(e) => setCode(e.target.value.toUpperCase())}
             placeholder="XXXX-XXXX"
@@ -116,7 +140,7 @@ const Mfa = () => {
             disabled={busy}
           />
         ) : (
-          <InputOTP maxLength={6} value={code} onChange={setCode} disabled={busy}>
+          <InputOTP aria-label="Authenticator code" maxLength={6} value={code} onChange={setCode} disabled={busy}>
             <InputOTPGroup>
               {Array.from({ length: 6 }, (_, i) => (
                 <InputOTPSlot key={i} index={i} />

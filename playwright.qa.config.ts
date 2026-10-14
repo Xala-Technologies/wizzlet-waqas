@@ -2,7 +2,7 @@ import { defineConfig, devices } from "@playwright/test";
 
 // Playwright's automatic error-context snapshot includes password input values,
 // even when screenshots and tracing are off. Keep private actor runs out of it.
-if (process.env.E2E_FORM_FIXTURES) process.env.PLAYWRIGHT_NO_COPY_PROMPT = "1";
+if (process.env.E2E_FORM_FIXTURES || process.env.E2E_SECURITY_FIXTURES) process.env.PLAYWRIGHT_NO_COPY_PROMPT = "1";
 
 /**
  * Multi-browser smoke — Chromium, WebKit (Safari), Firefox.
@@ -16,7 +16,7 @@ export default defineConfig({
   retries: process.env.CI ? 1 : 0,
   timeout: 120_000,
   // Private journeys share test accounts and may temporarily change their settings.
-  workers: process.env.E2E_FORM_FIXTURES ? 1 : 4,
+  workers: process.env.E2E_FORM_FIXTURES || process.env.E2E_SECURITY_FIXTURES ? 1 : 4,
   reporter: "list",
   snapshotPathTemplate: process.env.E2E_VISUAL_BASELINES
     ? `${process.env.E2E_VISUAL_BASELINES}/{projectName}/{arg}{ext}`

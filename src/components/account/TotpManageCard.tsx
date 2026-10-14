@@ -242,7 +242,7 @@ export function TotpManageCard({
               Open in authenticator
             </a>
           ) : null}
-          <InputOTP maxLength={6} value={code} onChange={setCode} disabled={busy}>
+          <InputOTP aria-label="Authenticator code" maxLength={6} value={code} onChange={setCode} disabled={busy}>
             <InputOTPGroup>
               {Array.from({ length: 6 }, (_, i) => (
                 <InputOTPSlot key={i} index={i} />
@@ -266,7 +266,7 @@ export function TotpManageCard({
           <p className="text-xs text-muted-foreground">
             Enter the current authenticator code to turn two-factor authentication off.
           </p>
-          <InputOTP maxLength={6} value={code} onChange={setCode} disabled={busy}>
+          <InputOTP aria-label="Authenticator code" maxLength={6} value={code} onChange={setCode} disabled={busy}>
             <InputOTPGroup>
               {Array.from({ length: 6 }, (_, i) => (
                 <InputOTPSlot key={i} index={i} />
@@ -299,7 +299,7 @@ export function TotpManageCard({
           <p className="text-xs text-muted-foreground">
             Enter your authenticator code. This replaces all unused backup codes.
           </p>
-          <InputOTP maxLength={6} value={code} onChange={setCode} disabled={busy}>
+          <InputOTP aria-label="Authenticator code" maxLength={6} value={code} onChange={setCode} disabled={busy}>
             <InputOTPGroup>
               {Array.from({ length: 6 }, (_, i) => (
                 <InputOTPSlot key={i} index={i} />
