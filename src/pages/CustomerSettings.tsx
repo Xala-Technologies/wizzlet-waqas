@@ -3,7 +3,7 @@ import { draftKey, memberProfileDraftSchema } from '@/lib/formDrafts';
 import { DraftNotice } from '@/components/DraftNotice';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
-import { useQuery, useMutation, useAction } from 'convex/react';
+import { useQuery, useMutation } from 'convex/react';
 import {
   BarChart3,
   Bell,
@@ -19,8 +19,6 @@ import { DashboardLayout } from '@/components/dashboard/DashboardLayout';
 import { clayCard } from '@/lib/overviewClay';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { useDialogFocusReturn } from '@/hooks/useDialogFocusReturn';
 import { Switch } from '@/components/ui/switch';
 import {
   AlertDialog,
@@ -32,17 +30,10 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
 import { useAuth } from '@/contexts/AuthContext';
 import { api } from '@convex/_generated/api';
 import { EmailChangeOtpDialog } from '@/components/account/EmailChangeOtpDialog';
+import { PasswordChangeButton } from '@/components/account/PasswordChangeButton';
 import { TotpManageCard } from '@/components/account/TotpManageCard';
 import { openCustomerPortal } from '@/lib/stripe';
 import { cn } from '@/lib/utils';
@@ -75,9 +66,7 @@ const CustomerSettings = () => {
   const disableDemo = searchParams.get('demo') === '0';
 
   const me = useQuery(api.users.queries.me, user ? {} : 'skip');
-  const hasPasswordAccount = useQuery(api.users.queries.hasPasswordAccount, user ? {} : 'skip');
   const updateProfile = useMutation(api.users.queries.updateProfile);
-  const changePasswordAction = useAction(api.users.queries.changePassword);
   const requestAccountDeletion = useMutation(api.accountRequests.requestAccountDeletion);
   const myAccountRequests = useQuery(api.accountRequests.listMine, user ? {} : 'skip');
   const hydratedUserId = useRef<string | null>(null);
@@ -91,11 +80,6 @@ const CustomerSettings = () => {
   const [email, setEmail] = useState('');
   const [emailDialogOpen, setEmailDialogOpen] = useState(false);
   const [savingProfile, setSavingProfile] = useState(false);
-  const [passwordDialogOpen, setPasswordDialogOpen] = useState(false);
-  const [password, setPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
-  const [currentPassword, setCurrentPassword] = useState('');
-  const [savingPassword, setSavingPassword] = useState(false);
   const [portalLoading, setPortalLoading] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [deleting, setDeleting] = useState(false);
@@ -103,21 +87,9 @@ const CustomerSettings = () => {
   const [messagesOn, setMessagesOn] = useState(true);
   const [billingOn, setBillingOn] = useState(true);
   const [savingNotif, setSavingNotif] = useState(false);
-  const passwordFocus = useDialogFocusReturn();
-
-  const setPasswordOpen = (open: boolean) => {
-    if (savingPassword) return;
-    setPasswordDialogOpen(open);
-    if (!open) {
-      setCurrentPassword('');
-      setPassword('');
-      setConfirmPassword('');
-    }
-  };
-
   const loading =
     user
-      ? me === undefined || myAccountRequests === undefined || hasPasswordAccount === undefined
+      ? me === undefined || myAccountRequests === undefined
       : false;
 
   const useDemo = forceDemo && !disableDemo;
@@ -215,49 +187,6 @@ const CustomerSettings = () => {
       toast.error('Could not update notifications');
     } finally {
       setSavingNotif(false);
-    }
-  };
-
-  const changePassword = async () => {
-    if (useDemo) {
-      toast.message('Sample preview — password changes need a live account.');
-      setPasswordDialogOpen(false);
-      return;
-    }
-    if (savingPassword || !hasPasswordAccount) return;
-    if (!currentPassword) {
-      toast.error('Enter your current password');
-      return;
-    }
-    if (password.length < 8) {
-      toast.error('Password must be at least 8 characters');
-      return;
-    }
-    if (password !== confirmPassword) {
-      toast.error('New password and confirmation do not match');
-      return;
-    }
-    if (password === currentPassword) {
-      toast.error('Choose a new password different from your current one');
-      return;
-    }
-    setSavingPassword(true);
-    try {
-      await changePasswordAction({ currentPassword, newPassword: password });
-      setPassword('');
-      setConfirmPassword('');
-      setCurrentPassword('');
-      setPasswordDialogOpen(false);
-      toast.success('Password updated — please sign in again');
-    } catch (e) {
-      const msg = e instanceof Error ? e.message : '';
-      if (msg.includes('INVALID_CURRENT_PASSWORD')) toast.error('Current password is incorrect');
-      else if (msg.includes('PASSWORD_ACCOUNT_MISSING')) {
-        toast.error('This account signs in with Discord or another provider — no password to change');
-      } else if (msg.includes('at least 8')) toast.error('Password must be at least 8 characters');
-      else toast.error('Could not update password');
-    } finally {
-      setSavingPassword(false);
     }
   };
 
@@ -478,21 +407,7 @@ const CustomerSettings = () => {
                   disabled
                   readOnly
                 />
-                <Button
-                  type="button"
-                  size="sm"
-                  className="shrink-0 font-semibold"
-                  onClick={(event) => {
-                    if (!hasPasswordAccount && !useDemo) {
-                      toast.message('This account signs in with a provider — no password to change.');
-                      return;
-                    }
-                    passwordFocus.rememberOpener(event.currentTarget);
-                    setPasswordOpen(true);
-                  }}
-                >
-                  Change Password
-                </Button>
+                <PasswordChangeButton demo={useDemo} variant="default" className="shrink-0 font-semibold" />
               </div>
             </div>
             <div className="sm:col-span-2">
@@ -662,79 +577,6 @@ const CustomerSettings = () => {
         onOpenChange={setEmailDialogOpen}
         demo={useDemo}
       />
-
-      <Dialog open={passwordDialogOpen} onOpenChange={setPasswordOpen}>
-        <DialogContent onCloseAutoFocus={passwordFocus.restoreFocus}>
-          <DialogHeader>
-            <DialogTitle>Change password</DialogTitle>
-            <DialogDescription>
-              After a successful update you may need to sign in again.
-            </DialogDescription>
-          </DialogHeader>
-          {!hasPasswordAccount && !useDemo ? (
-            <p className="text-sm text-muted-foreground">
-              This account signs in with Discord or another provider, so there is no Prizelet
-              password to change.
-            </p>
-          ) : (
-            <form
-              className="space-y-3 py-2"
-              onSubmit={(e) => {
-                e.preventDefault();
-                void changePassword();
-              }}
-            >
-              <Label htmlFor="current-password">Current password</Label>
-              <Input
-                id="current-password"
-                type="password"
-                className="h-11 rounded-xl"
-                placeholder="Current password"
-                value={currentPassword}
-                onChange={(e) => setCurrentPassword(e.target.value)}
-                autoComplete="current-password"
-                disabled={savingPassword}
-                required
-              />
-              <Label htmlFor="new-password">New password</Label>
-              <Input
-                id="new-password"
-                type="password"
-                className="h-11 rounded-xl"
-                placeholder="New password (min 8 characters)"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                autoComplete="new-password"
-                disabled={savingPassword}
-                minLength={8}
-                required
-              />
-              <Label htmlFor="confirm-new-password">Confirm new password</Label>
-              <Input
-                id="confirm-new-password"
-                type="password"
-                className="h-11 rounded-xl"
-                placeholder="Confirm new password"
-                value={confirmPassword}
-                onChange={(e) => setConfirmPassword(e.target.value)}
-                autoComplete="new-password"
-                disabled={savingPassword}
-                minLength={8}
-                required
-              />
-              <DialogFooter>
-                <Button type="button" variant="outline" disabled={savingPassword} onClick={() => setPasswordOpen(false)}>
-                  Cancel
-                </Button>
-                <Button type="submit" disabled={savingPassword}>
-                  {savingPassword ? <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" /> : null}
-                  Update password
-                </Button>
-              </DialogFooter>
-            </form>
-          )}
-        </DialogContent>
-      </Dialog>
 
       <AlertDialog open={deleteOpen} onOpenChange={setDeleteOpen}>
         <AlertDialogContent>

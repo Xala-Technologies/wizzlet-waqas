@@ -255,27 +255,24 @@ export const CREATOR_INTEGRATIONS_TIPS = [
 ] as const;
 
 export const CREATOR_NOTIFICATIONS_TIPS = [
-  'Stay updated on new subscribers and sales',
-  'Never miss a payout status update',
-  'Get message alerts so fans get a reply faster',
-  'Critical security alerts will always be sent',
-  'You can change these anytime',
+  'Notification preferences are not available yet',
+  'These controls show examples, not saved preferences',
+  'Preview changes do not affect notification delivery',
+  'Contact support with questions about notifications',
 ] as const;
 
 export const CREATOR_SECURITY_TIPS = [
   'Use a strong, unique password',
   'Enable two-factor authentication',
-  'Review active sessions regularly',
-  'Turn on login alerts for new devices',
+  'Sign out when using a shared device',
+  'Contact support if you suspect unauthorized access',
   'Never share recovery codes',
 ] as const;
 
 export const CREATOR_ADVANCED_TIPS = [
-  'Use a custom domain',
-  'Control your public visibility',
-  'Set legal policies',
-  'Customize email templates',
-  'Export your data anytime',
+  'Public profile visibility saves immediately',
+  'Custom domains and policies are not available yet',
+  'Contact support for account data or deletion requests',
 ] as const;
 
 export function shouldUseCreatorSettingsDemo(opts: {
