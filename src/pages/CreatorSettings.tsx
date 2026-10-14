@@ -15,6 +15,7 @@ import {
   PaymentFeeStack,
 } from '@/components/creator/PaymentFeeDetailSheet';
 import { EmailChangeOtpDialog } from '@/components/account/EmailChangeOtpDialog';
+import { PasswordChangeButton } from '@/components/account/PasswordChangeButton';
 import { TotpManageCard } from '@/components/account/TotpManageCard';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -164,6 +165,7 @@ const CreatorSettings = () => {
   const me = useQuery(api.users.queries.me);
   const earnings = useQuery(api.creators.earnings.myEarnings);
   const updateSettings = useMutation(api.creators.queries.updateSettings);
+  const setPublished = useMutation(api.creators.queries.setPublished);
   const convex = useConvex();
   const bannerRef = useRef<HTMLInputElement>(null);
   const avatarRef = useRef<HTMLInputElement>(null);
@@ -238,6 +240,7 @@ const CreatorSettings = () => {
   const [loginAlertsEnabled, setLoginAlertsEnabled] = useState(true);
   const [sessionsOpen, setSessionsOpen] = useState(false);
   const [publicProfileEnabled, setPublicProfileEnabled] = useState(true);
+  const [savingVisibility, setSavingVisibility] = useState(false);
   const [billingPayment, setBillingPayment] = useState<PaymentFeeDetail | null>(null);
 
   useEffect(() => { setUsername(creator?.username ?? ''); }, [creator?.username]);
@@ -304,6 +307,24 @@ const CreatorSettings = () => {
     setAccentColor(CREATOR_BRANDING_DEMO.accentColor);
     setBrandFont(CREATOR_BRANDING_DEMO.font);
   }, [useDemo, creator, displayName, bio, email, brandName, setAccentColor, setBio, setBrandFont, setBrandName, setDisplayName, setPrimaryColor, setSecondaryColor]);
+
+  const changeVisibility = async (isPublished: boolean) => {
+    if (!creator || savingVisibility) return;
+    if (useDemo) {
+      setPublicProfileEnabled(isPublished);
+      toast.message('Sample preview — visibility not saved');
+      return;
+    }
+    setSavingVisibility(true);
+    try {
+      await setPublished({ creatorId: creator._id, isPublished });
+      toast.success(isPublished ? 'Profile published' : 'Profile unpublished');
+    } catch {
+      toast.error('Could not update profile visibility. Please try again.');
+    } finally {
+      setSavingVisibility(false);
+    }
+  };
 
   const handleSave = async () => {
     if (!creator || saving || uploadingAvatar || uploadingBanner || uploadingLogo || uploadingFavicon) return;
@@ -520,10 +541,6 @@ const CreatorSettings = () => {
   const usernameLocked = Boolean(creator.username?.trim());
   const showSave = tab === 'general' || tab === 'branding';
   const liveEmail = me?.email || email;
-
-  const quickAction = (label: string, description: string) => {
-    toast.message(label, { description });
-  };
 
   return (
     <DashboardLayout type="creator" mainClassName="bg-clay-page">
@@ -773,43 +790,34 @@ const CreatorSettings = () => {
                       icon: Lock,
                       danger: false,
                       onClick: () =>
-                        quickAction(
-                          'Change password',
-                          'Use your sign-in provider or account recovery email.',
-                        ),
+                        navigate(`/creator/settings?tab=security${useDemo ? '&demo=1' : ''}`),
                     },
                     {
                       label: 'Enable two-factor authentication',
                       icon: Shield,
                       danger: false,
-                      onClick: () => navigate('/creator/settings?tab=security#totp-mfa'),
+                      onClick: () => navigate(`/creator/settings?tab=security${useDemo ? '&demo=1' : ''}#totp-mfa`),
                     },
                     {
                       label: 'Manage connected accounts',
                       icon: RefreshCw,
                       danger: false,
                       onClick: () =>
-                        quickAction(
-                          'Connected accounts',
-                          'Manage social connections from Integrations.',
-                        ),
+                        navigate(`/creator/integrations${useDemo ? '?demo=1' : ''}`),
                     },
                     {
                       label: 'Download my data',
                       icon: Download,
                       danger: false,
                       onClick: () =>
-                        quickAction('Download data', 'Data export is not available in this preview.'),
+                        navigate(`/creator/settings?tab=advanced${useDemo ? '&demo=1' : ''}`),
                     },
                     {
                       label: 'Close account',
                       icon: Trash2,
                       danger: true,
                       onClick: () =>
-                        quickAction(
-                          'Close account',
-                          'Account closure is not enabled in this preview.',
-                        ),
+                        navigate('/creator/support'),
                     },
                   ] as const
                 ).map((item) => (
@@ -1682,6 +1690,7 @@ const CreatorSettings = () => {
                   <Switch
                     checked={notifEmailEnabled}
                     onCheckedChange={setNotifEmailEnabled}
+                    disabled={!useDemo}
                     aria-label="Email Notifications"
                   />
                 </div>
@@ -1760,7 +1769,7 @@ const CreatorSettings = () => {
                       <Checkbox
                         id={`notif-${row.id}`}
                         checked={row.checked}
-                        disabled={row.locked}
+                        disabled={!useDemo || !notifEmailEnabled || row.locked}
                         onCheckedChange={(v) => {
                           if (row.locked) return;
                           row.onChange(v === true);
@@ -1790,6 +1799,7 @@ const CreatorSettings = () => {
                 <Switch
                   checked={notifInApp}
                   onCheckedChange={setNotifInApp}
+                  disabled={!useDemo}
                   aria-label="In-app Notifications"
                 />
               </div>
@@ -1804,14 +1814,15 @@ const CreatorSettings = () => {
                 <Switch
                   checked={notifPush}
                   onCheckedChange={setNotifPush}
+                  disabled={!useDemo}
                   aria-label="Push Notifications"
                 />
               </div>
 
               <div className="space-y-2 border-t border-border pt-5">
-                <Label>Notification Frequency</Label>
-                <Select value={notifFrequency} onValueChange={setNotifFrequency}>
-                  <SelectTrigger className="min-h-11 max-w-md rounded-xl">
+                <Label htmlFor="notification-frequency">Notification Frequency</Label>
+                <Select value={notifFrequency} onValueChange={setNotifFrequency} disabled={!useDemo}>
+                  <SelectTrigger id="notification-frequency" className="min-h-11 max-w-md rounded-xl">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -1864,20 +1875,10 @@ const CreatorSettings = () => {
                 </h2>
               </div>
               <p className="text-sm text-muted-foreground">
-                Visit the Help Center for more about notification channels and delivery.
+                Contact support with questions about notification availability.
               </p>
-              <Button
-                type="button"
-                variant="secondary"
-                className={cn(softPrimaryBtn, 'w-full gap-2')}
-                onClick={() =>
-                  toast.message('Help Center', {
-                    description: 'Notification help articles will open here soon.',
-                  })
-                }
-              >
-                View Help Center
-                <ExternalLink className="h-3.5 w-3.5" aria-hidden />
+              <Button asChild variant="secondary" className={cn(softPrimaryBtn, 'w-full gap-2')}>
+                <Link to="/creator/support">Contact support <ExternalLink className="h-3.5 w-3.5" aria-hidden /></Link>
               </Button>
             </section>
           </aside>
@@ -1910,20 +1911,7 @@ const CreatorSettings = () => {
                       </p>
                     </div>
                   </div>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    className="shrink-0"
-                    onClick={() =>
-                      quickAction(
-                        'Change Password',
-                        'Use your sign-in provider or account recovery email.',
-                      )
-                    }
-                  >
-                    Change Password
-                  </Button>
+                  <PasswordChangeButton demo={useDemo} className="shrink-0" />
                 </div>
 
                 <div className="flex flex-col gap-3 p-4 sm:p-5">
@@ -1938,7 +1926,7 @@ const CreatorSettings = () => {
                     <div>
                       <p className="text-sm font-bold text-foreground">Active Sessions</p>
                       <p className="text-xs text-muted-foreground">
-                        Manage your active sessions across different devices.
+                        {useDemo ? 'Example sessions for this preview.' : 'Session history and remote sign-out are not available yet.'}
                       </p>
                     </div>
                   </div>
@@ -1947,13 +1935,14 @@ const CreatorSettings = () => {
                     variant="outline"
                     size="sm"
                     className="shrink-0"
+                    disabled={!useDemo}
                     onClick={() => setSessionsOpen((open) => !open)}
                   >
                     {sessionsOpen ? 'Hide Sessions' : 'View Sessions'}
                   </Button>
                 </div>
 
-                {sessionsOpen ? (
+                {useDemo && sessionsOpen ? (
                   <div className="border-t border-border bg-muted/10 px-4 py-3 sm:px-5">
                     <ul className="divide-y divide-border rounded-xl border border-border bg-card">
                       <li className="flex items-center justify-between gap-3 px-4 py-3.5">
@@ -1980,9 +1969,7 @@ const CreatorSettings = () => {
                           <div>
                             <p className="text-sm font-bold text-foreground">Mobile Safari</p>
                             <p className="text-xs text-muted-foreground">
-                              {useDemo
-                                ? 'Tallinn, EE · 2 days ago'
-                                : 'Session details unavailable'}
+                              Tallinn, EE · 2 days ago
                             </p>
                           </div>
                         </div>
@@ -1991,8 +1978,8 @@ const CreatorSettings = () => {
                           variant="ghost"
                           className="min-h-9 rounded-lg text-xs font-bold text-destructive hover:text-destructive"
                           onClick={() =>
-                            toast.message('Sign out device', {
-                              description: 'Remote session revoke is coming soon.',
+                            toast.message('Sample preview — no session signed out', {
+                              description: 'Remote session sign-out is not available yet.',
                             })
                           }
                         >
@@ -2010,13 +1997,15 @@ const CreatorSettings = () => {
                     </span>
                     <div>
                       <p className="text-sm font-bold text-foreground">Login Alerts</p>
-                      <p className="text-xs text-muted-foreground">
-                        Get notified about new login attempts.
+                      <p id="login-alert-availability" className="text-xs text-muted-foreground">
+                        {useDemo ? 'Example login alert preference.' : 'Login alert delivery is not available yet.'}
                       </p>
                     </div>
                   </div>
                   <Switch
-                    checked={loginAlertsEnabled}
+                    checked={useDemo && loginAlertsEnabled}
+                    disabled={!useDemo}
+                    aria-describedby="login-alert-availability"
                     onCheckedChange={setLoginAlertsEnabled}
                     aria-label="Login Alerts"
                   />
@@ -2030,7 +2019,7 @@ const CreatorSettings = () => {
                     <div>
                       <p className="text-sm font-bold text-foreground">Trusted Devices</p>
                       <p className="text-xs text-muted-foreground">
-                        Manage devices that you trust.
+                        Trusted device management is not available yet.
                       </p>
                     </div>
                   </div>
@@ -2039,9 +2028,7 @@ const CreatorSettings = () => {
                     variant="outline"
                     size="sm"
                     className="shrink-0"
-                    onClick={() =>
-                      quickAction('Manage Devices', 'Trusted device management is coming soon.')
-                    }
+                    disabled
                   >
                     Manage Devices
                   </Button>
@@ -2055,7 +2042,7 @@ const CreatorSettings = () => {
                     <div>
                       <p className="text-sm font-bold text-foreground">Account Recovery</p>
                       <p className="text-xs text-muted-foreground">
-                        Set up recovery options to regain access to your account.
+                        Recovery setup is not available here yet. Contact support if you need help accessing your account.
                       </p>
                     </div>
                   </div>
@@ -2064,9 +2051,7 @@ const CreatorSettings = () => {
                     variant="outline"
                     size="sm"
                     className="shrink-0"
-                    onClick={() =>
-                      quickAction('Set Up Recovery', 'Account recovery setup is coming soon.')
-                    }
+                    disabled
                   >
                     Set Up Recovery
                   </Button>
@@ -2085,23 +2070,12 @@ const CreatorSettings = () => {
                       Danger Zone
                     </h2>
                     <p className="mt-0.5 text-sm text-muted-foreground">
-                      Permanently delete your account and all associated data. This action cannot
-                      be undone.
+                      Contact support to request account deletion and review the next steps.
                     </p>
                   </div>
                 </div>
-                <Button
-                  type="button"
-                  variant="destructive-outline"
-                  size="sm"
-                  className="shrink-0"
-                  onClick={() =>
-                    toast.message('Delete Account', {
-                      description: 'Account deletion is not enabled in this preview.',
-                    })
-                  }
-                >
-                  Delete Account
+                <Button asChild variant="destructive-outline" size="sm" className="shrink-0">
+                  <Link to="/creator/support">Request account deletion</Link>
                 </Button>
               </div>
             </section>
@@ -2134,20 +2108,10 @@ const CreatorSettings = () => {
                 </h2>
               </div>
               <p className="text-sm text-muted-foreground">
-                Visit the Help Center for security best practices and account recovery.
+                Contact support for account recovery and security questions.
               </p>
-              <Button
-                type="button"
-                variant="secondary"
-                className={cn(softPrimaryBtn, 'w-full gap-2')}
-                onClick={() =>
-                  toast.message('Help Center', {
-                    description: 'Security help will open here soon.',
-                  })
-                }
-              >
-                View Help Center
-                <ExternalLink className="h-3.5 w-3.5" aria-hidden />
+              <Button asChild variant="secondary" className={cn(softPrimaryBtn, 'w-full gap-2')}>
+                <Link to="/creator/support">Contact support <ExternalLink className="h-3.5 w-3.5" aria-hidden /></Link>
               </Button>
             </section>
           </aside>
@@ -2176,7 +2140,7 @@ const CreatorSettings = () => {
                     <div>
                       <p className="text-sm font-bold text-foreground">Custom Domain</p>
                       <p className="text-xs text-muted-foreground">
-                        Connect your own domain (e.g. yourbrand.com) to your Prizelet page.
+                        Custom domain connections are not available yet.
                       </p>
                     </div>
                   </div>
@@ -2185,9 +2149,7 @@ const CreatorSettings = () => {
                     variant="outline"
                     size="sm"
                     className="shrink-0"
-                    onClick={() =>
-                      quickAction('Connect Domain', 'Custom domains are coming soon.')
-                    }
+                    disabled
                   >
                     Connect Domain
                   </Button>
@@ -2201,13 +2163,14 @@ const CreatorSettings = () => {
                     <div>
                       <p className="text-sm font-bold text-foreground">Public Profile</p>
                       <p className="text-xs text-muted-foreground">
-                        Make your profile public and discoverable in search engines.
+                        {useDemo ? 'Example visibility preference — not saved.' : 'Show or hide your public creator page. Changes save immediately.'}
                       </p>
                     </div>
                   </div>
                   <Switch
-                    checked={publicProfileEnabled}
-                    onCheckedChange={setPublicProfileEnabled}
+                    checked={useDemo ? publicProfileEnabled : Boolean(creator.isPublished)}
+                    disabled={savingVisibility}
+                    onCheckedChange={(value) => void changeVisibility(value)}
                     aria-label="Public Profile"
                   />
                 </div>
@@ -2220,7 +2183,7 @@ const CreatorSettings = () => {
                     <div>
                       <p className="text-sm font-bold text-foreground">Terms of Service</p>
                       <p className="text-xs text-muted-foreground">
-                        Set your own terms of service for subscribers.
+                        Custom terms are not available yet.
                       </p>
                     </div>
                   </div>
@@ -2229,9 +2192,7 @@ const CreatorSettings = () => {
                     variant="outline"
                     size="sm"
                     className="shrink-0"
-                    onClick={() =>
-                      quickAction('Edit Terms', 'Custom terms editor is coming soon.')
-                    }
+                    disabled
                   >
                     Edit Terms
                   </Button>
@@ -2244,7 +2205,7 @@ const CreatorSettings = () => {
                     </span>
                     <div>
                       <p className="text-sm font-bold text-foreground">Privacy Policy</p>
-                      <p className="text-xs text-muted-foreground">Set your own privacy policy.</p>
+                      <p className="text-xs text-muted-foreground">Custom privacy policies are not available yet.</p>
                     </div>
                   </div>
                   <Button
@@ -2252,9 +2213,7 @@ const CreatorSettings = () => {
                     variant="outline"
                     size="sm"
                     className="shrink-0"
-                    onClick={() =>
-                      quickAction('Edit Policy', 'Privacy policy editor is coming soon.')
-                    }
+                    disabled
                   >
                     Edit Policy
                   </Button>
@@ -2268,7 +2227,7 @@ const CreatorSettings = () => {
                     <div>
                       <p className="text-sm font-bold text-foreground">Email Templates</p>
                       <p className="text-xs text-muted-foreground">
-                        Customize transactional emails (welcome, receipts, etc).
+                        Email template customization is not available yet.
                       </p>
                     </div>
                   </div>
@@ -2277,9 +2236,7 @@ const CreatorSettings = () => {
                     variant="outline"
                     size="sm"
                     className="shrink-0"
-                    onClick={() =>
-                      quickAction('Customize', 'Email template customization is coming soon.')
-                    }
+                    disabled
                   >
                     Customize
                   </Button>
@@ -2293,7 +2250,7 @@ const CreatorSettings = () => {
                     <div>
                       <p className="text-sm font-bold text-foreground">Data Export</p>
                       <p className="text-xs text-muted-foreground">
-                        Download a copy of your data (subscribers, earnings, etc).
+                        A full account export is not available here yet. Contact support for help with your data.
                       </p>
                     </div>
                   </div>
@@ -2302,11 +2259,7 @@ const CreatorSettings = () => {
                     variant="outline"
                     size="sm"
                     className="shrink-0"
-                    onClick={() =>
-                      toast.message(useDemo ? 'Sample preview — export' : 'Export requested', {
-                        description: 'Data export is not wired up in this preview.',
-                      })
-                    }
+                    disabled
                   >
                     Export Data
                   </Button>
@@ -2320,23 +2273,12 @@ const CreatorSettings = () => {
                     <div>
                       <p className="text-sm font-bold text-destructive">Delete Account</p>
                       <p className="text-xs text-muted-foreground">
-                        Permanently delete your account and all associated data.
+                        Contact support to request account deletion and review the next steps.
                       </p>
                     </div>
                   </div>
-                  <Button
-                    type="button"
-                    variant="destructive-outline"
-                    size="sm"
-                    className="shrink-0"
-                    onClick={() =>
-                      quickAction(
-                        'Delete Account',
-                        'Account deletion is not enabled in this preview.',
-                      )
-                    }
-                  >
-                    Delete Account
+                  <Button asChild variant="destructive-outline" size="sm" className="shrink-0">
+                    <Link to="/creator/support">Request account deletion</Link>
                   </Button>
                 </div>
               </div>
@@ -2370,20 +2312,10 @@ const CreatorSettings = () => {
                 </h2>
               </div>
               <p className="text-sm text-muted-foreground">
-                Visit the Help Center for guides on domains, policies, and account data.
+                Contact support with questions about domains, policies, and account data.
               </p>
-              <Button
-                type="button"
-                variant="secondary"
-                className={cn(softPrimaryBtn, 'w-full gap-2')}
-                onClick={() =>
-                  toast.message('Help Center', {
-                    description: 'Advanced account help will open here soon.',
-                  })
-                }
-              >
-                View Help Center
-                <ExternalLink className="h-3.5 w-3.5" aria-hidden />
+              <Button asChild variant="secondary" className={cn(softPrimaryBtn, 'w-full gap-2')}>
+                <Link to="/creator/support">Contact support <ExternalLink className="h-3.5 w-3.5" aria-hidden /></Link>
               </Button>
             </section>
           </aside>

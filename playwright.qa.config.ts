@@ -15,7 +15,8 @@ export default defineConfig({
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 1 : 0,
   timeout: 120_000,
-  workers: 4,
+  // Private journeys share test accounts and may temporarily change their settings.
+  workers: process.env.E2E_FORM_FIXTURES ? 1 : 4,
   reporter: "list",
   snapshotPathTemplate: process.env.E2E_VISUAL_BASELINES
     ? `${process.env.E2E_VISUAL_BASELINES}/{projectName}/{arg}{ext}`
