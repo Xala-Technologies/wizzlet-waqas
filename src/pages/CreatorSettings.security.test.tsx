@@ -78,9 +78,9 @@ it('opens a real password form and clears cancelled values without a request', a
 });
 it.each(['', '&demo=1'])('the general password shortcut opens security and preserves demo isolation (%s)', suffix => {
   render(view(`general${suffix}`));
-  fireEvent.click(screen.getByRole('button', { name: 'Change password', exact: true }));
-  expect(screen.getByRole('heading', { name: 'Security', exact: true })).toBeInTheDocument();
-  fireEvent.click(screen.getByRole('button', { name: 'Change Password', exact: true }));
+  fireEvent.click(screen.getByRole('button', { name: 'Change password' }));
+  expect(screen.getByRole('heading', { name: 'Security' })).toBeInTheDocument();
+  fireEvent.click(screen.getByRole('button', { name: 'Change Password' }));
   expect(screen.getByRole('dialog', { name: 'Change password' })).toBeInTheDocument();
   if (suffix) expect(screen.getByText(/Sample preview data/)).toBeInTheDocument();
   expect(f.password).not.toHaveBeenCalled();
@@ -88,7 +88,7 @@ it.each(['', '&demo=1'])('the general password shortcut opens security and prese
 it('explains unavailable advanced actions without a false export confirmation', () => {
   render(view('advanced'));
   for (const name of ['Connect Domain', 'Edit Terms', 'Edit Policy', 'Customize', 'Export Data']) {
-    expect(screen.getByRole('button', { name, exact: true })).toBeDisabled();
+    expect(screen.getByRole('button', { name })).toBeDisabled();
   }
   expect(screen.getByRole('link', { name: 'Request account deletion' })).toHaveAttribute('href', '/creator/support');
   fireEvent.click(screen.getByRole('button', { name: 'Export Data' }));
