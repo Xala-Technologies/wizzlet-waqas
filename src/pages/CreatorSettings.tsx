@@ -17,6 +17,7 @@ import {
 import { EmailChangeOtpDialog } from '@/components/account/EmailChangeOtpDialog';
 import { PasswordChangeButton } from '@/components/account/PasswordChangeButton';
 import { TotpManageCard } from '@/components/account/TotpManageCard';
+import { SessionManagementCard } from '@/components/account/SessionManagementCard';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -54,7 +55,6 @@ import {
   Loader2,
   Lock,
   Mail,
-  Monitor,
   MoreVertical,
   RefreshCw,
   Settings,
@@ -238,7 +238,6 @@ const CreatorSettings = () => {
   const [discordExpanded, setDiscordExpanded] = useState(false);
   const [savingDiscord, setSavingDiscord] = useState(false);
   const [loginAlertsEnabled, setLoginAlertsEnabled] = useState(true);
-  const [sessionsOpen, setSessionsOpen] = useState(false);
   const [publicProfileEnabled, setPublicProfileEnabled] = useState(true);
   const [savingVisibility, setSavingVisibility] = useState(false);
   const [billingPayment, setBillingPayment] = useState<PaymentFeeDetail | null>(null);
@@ -1918,77 +1917,7 @@ const CreatorSettings = () => {
                   <TotpManageCard demo={useDemo} />
                 </div>
 
-                <div className="flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between sm:p-5">
-                  <div className="flex items-start gap-3">
-                    <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-violet-500/10 text-violet-700 dark:text-violet-400">
-                      <Monitor className="h-4 w-4" aria-hidden />
-                    </span>
-                    <div>
-                      <p className="text-sm font-bold text-foreground">Active Sessions</p>
-                      <p className="text-xs text-muted-foreground">
-                        {useDemo ? 'Example sessions for this preview.' : 'Session history and remote sign-out are not available yet.'}
-                      </p>
-                    </div>
-                  </div>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    className="shrink-0"
-                    disabled={!useDemo}
-                    onClick={() => setSessionsOpen((open) => !open)}
-                  >
-                    {sessionsOpen ? 'Hide Sessions' : 'View Sessions'}
-                  </Button>
-                </div>
-
-                {useDemo && sessionsOpen ? (
-                  <div className="border-t border-border bg-muted/10 px-4 py-3 sm:px-5">
-                    <ul className="divide-y divide-border rounded-xl border border-border bg-card">
-                      <li className="flex items-center justify-between gap-3 px-4 py-3.5">
-                        <div className="flex items-start gap-3">
-                          <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-emerald-500/10 text-emerald-700 dark:text-emerald-400">
-                            <Monitor className="h-4 w-4" />
-                          </span>
-                          <div>
-                            <p className="text-sm font-bold text-foreground">This browser</p>
-                            <p className="text-xs text-muted-foreground">
-                              Current session · just now
-                            </p>
-                          </div>
-                        </div>
-                        <span className="inline-flex rounded-full border border-emerald-500/25 bg-emerald-500/10 px-2.5 py-0.5 text-xs font-bold text-emerald-700 dark:text-emerald-400">
-                          Active
-                        </span>
-                      </li>
-                      <li className="flex items-center justify-between gap-3 px-4 py-3.5">
-                        <div className="flex items-start gap-3">
-                          <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-sky-500/10 text-sky-700 dark:text-sky-400">
-                            <Smartphone className="h-4 w-4" />
-                          </span>
-                          <div>
-                            <p className="text-sm font-bold text-foreground">Mobile Safari</p>
-                            <p className="text-xs text-muted-foreground">
-                              Tallinn, EE · 2 days ago
-                            </p>
-                          </div>
-                        </div>
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          className="min-h-9 rounded-lg text-xs font-bold text-destructive hover:text-destructive"
-                          onClick={() =>
-                            toast.message('Sample preview — no session signed out', {
-                              description: 'Remote session sign-out is not available yet.',
-                            })
-                          }
-                        >
-                          Sign out
-                        </Button>
-                      </li>
-                    </ul>
-                  </div>
-                ) : null}
+                <SessionManagementCard demo={useDemo} className="p-4 sm:p-5" />
 
                 <div className="flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between sm:p-5">
                   <div className="flex items-start gap-3">

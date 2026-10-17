@@ -35,6 +35,7 @@ import { api } from '@convex/_generated/api';
 import { EmailChangeOtpDialog } from '@/components/account/EmailChangeOtpDialog';
 import { PasswordChangeButton } from '@/components/account/PasswordChangeButton';
 import { TotpManageCard } from '@/components/account/TotpManageCard';
+import { SessionManagementCard } from '@/components/account/SessionManagementCard';
 import { openCustomerPortal } from '@/lib/stripe';
 import { cn } from '@/lib/utils';
 
@@ -410,8 +411,9 @@ const CustomerSettings = () => {
                 <PasswordChangeButton demo={useDemo} variant="default" className="shrink-0 font-semibold" />
               </div>
             </div>
-            <div className="sm:col-span-2">
+            <div className="space-y-3 sm:col-span-2">
               <TotpManageCard demo={useDemo} className="rounded-xl border border-border bg-muted/20 p-4" />
+              <SessionManagementCard demo={useDemo} className="rounded-xl border border-border bg-muted/20 p-4" />
             </div>
           </div>
 

@@ -9,6 +9,7 @@
  */
 
 import type * as accountRequests from "../accountRequests.js";
+import type * as accountSessions from "../accountSessions.js";
 import type * as admin_exportReports from "../admin/exportReports.js";
 import type * as admin_paginatedLists from "../admin/paginatedLists.js";
 import type * as admin_queries from "../admin/queries.js";
@@ -95,6 +96,7 @@ import type {
 
 declare const fullApi: ApiFromModules<{
   accountRequests: typeof accountRequests;
+  accountSessions: typeof accountSessions;
   "admin/exportReports": typeof admin_exportReports;
   "admin/paginatedLists": typeof admin_paginatedLists;
   "admin/queries": typeof admin_queries;

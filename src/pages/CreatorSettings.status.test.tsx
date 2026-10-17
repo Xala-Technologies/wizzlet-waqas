@@ -131,3 +131,5 @@ it('does not show a fabricated status for a missing creator profile', () => {
   expect(screen.getByText('No creator profile yet')).toBeInTheDocument();
   expect(screen.queryByRole('region', { name: 'Account Status' })).not.toBeInTheDocument();
 });
+
+vi.mock('@/components/account/SessionManagementCard', () => ({ SessionManagementCard: () => null }));
