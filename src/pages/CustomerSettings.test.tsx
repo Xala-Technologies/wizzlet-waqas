@@ -112,3 +112,5 @@ it('password failure retains the draft, prevents duplicate saves, and permits a 
   await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
   expect(fixture.password).toHaveBeenCalledTimes(2);
 });
+
+vi.mock('@/components/account/SessionManagementCard', () => ({ SessionManagementCard: () => null }));

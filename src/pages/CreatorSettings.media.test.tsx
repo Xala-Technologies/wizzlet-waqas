@@ -41,3 +41,5 @@ it('blocks save and removal during upload, then retains the old image on failure
   expect(screen.getByRole('button',{name:'Remove photo'})).toBeEnabled();
   expect(view.container.querySelector('img')?.getAttribute('src')).toBe('https://image.example/old');
 });
+
+vi.mock('@/components/account/SessionManagementCard', () => ({ SessionManagementCard: () => null }));

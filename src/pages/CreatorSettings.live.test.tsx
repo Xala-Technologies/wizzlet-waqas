@@ -92,3 +92,5 @@ it('keeps team interaction confined to an explicitly labeled local preview', asy
   expect(f.message).toHaveBeenCalledWith('Sample preview — invite added locally', expect.anything());
   expect(f.mutation).not.toHaveBeenCalled();
 });
+
+vi.mock('@/components/account/SessionManagementCard', () => ({ SessionManagementCard: () => null }));

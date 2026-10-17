@@ -22,6 +22,7 @@ vi.mock('sonner', () => ({ toast: { message: f.message, error: f.error, success:
 vi.mock('@/components/dashboard/DashboardLayout', () => ({ DashboardLayout: ({ children }: { children: React.ReactNode }) => children }));
 vi.mock('@/components/account/EmailChangeOtpDialog', () => ({ EmailChangeOtpDialog: () => null }));
 vi.mock('@/components/account/TotpManageCard', () => ({ TotpManageCard: () => null }));
+vi.mock('@/contexts/AuthContext', () => ({ useAuth: () => ({ user: { id: 'user1' }, signOut: vi.fn() }) }));
 beforeEach(() => { vi.clearAllMocks(); localStorage.clear(); f.creator.isPublished = false; });
 afterEach(cleanup);
 function view(tab: string) { return <MemoryRouter initialEntries={[`/creator/settings?tab=${tab}`]}><CreatorSettings /></MemoryRouter>; }
@@ -51,19 +52,21 @@ it('does not publish from a demo switch', () => {
   expect(f.mutate).not.toHaveBeenCalled();
   expect(f.message).toHaveBeenCalledWith('Sample preview — visibility not saved');
 });
-it('does not invent live sessions or enabled login protection', () => {
+it('opens real session management without inventing device details or login protection', () => {
   render(view('security'));
-  expect(screen.getByRole('button', { name: 'View Sessions' })).toBeDisabled();
+  expect(screen.getByRole('button', { name: 'View Sessions' })).toBeEnabled();
   expect(screen.queryByText('Mobile Safari')).not.toBeInTheDocument();
-  expect(screen.getByText('Session history and remote sign-out are not available yet.')).toBeInTheDocument();
+  expect(screen.getByText('Review your sign-ins and sign out any you do not recognize.')).toBeInTheDocument();
   const alerts = screen.getByRole('switch', { name: 'Login Alerts' });
   expect(alerts).not.toBeChecked(); expect(alerts).toBeDisabled();
   expect(alerts).toHaveAccessibleDescription('Login alert delivery is not available yet.');
 });
-it('keeps example session details inside explicit demo mode', () => {
+it('keeps demo session management isolated from real accounts', () => {
   render(view('security&demo=1'));
   fireEvent.click(screen.getByRole('button', { name: 'View Sessions' }));
-  expect(screen.getByText('Mobile Safari')).toBeInTheDocument();
+  expect(screen.queryByText('Mobile Safari')).not.toBeInTheDocument();
+  expect(screen.getByText('Sample preview — sign-in management needs a live account.')).toBeInTheDocument();
+  expect(f.mutate).not.toHaveBeenCalled();
   expect(screen.getByText(/Sample preview data/)).toBeInTheDocument();
 });
 it('opens a real password form and clears cancelled values without a request', async () => {

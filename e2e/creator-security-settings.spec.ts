@@ -54,7 +54,12 @@ for (const width of [1440, 390]) test.describe(`${width}px creator security sett
       await capture('advanced');
       await page.getByRole('link', { name: 'Request account deletion' }).click(); await expect(page).toHaveURL(/\/creator\/support$/);
       await page.goto('/creator/settings?tab=security');
-      await expect(page.getByRole('button', { name: 'View Sessions' })).toBeDisabled();
+      const sessions = page.getByRole('button', { name: 'View Sessions' });
+      await expect(sessions).toBeEnabled();
+      await sessions.click();
+      await expect(page.getByRole('listitem', { name: 'Current session', exact: true })).toBeVisible();
+      await page.getByRole('dialog', { name: 'Active sessions', exact: true }).press('Escape');
+      await expect(sessions).toBeFocused();
       await expect(page.getByText('Mobile Safari', { exact: true })).toHaveCount(0);
       const alerts = page.getByRole('switch', { name: 'Login Alerts', exact: true });
       await expect(alerts).toBeDisabled(); await expect(alerts).not.toBeChecked();
